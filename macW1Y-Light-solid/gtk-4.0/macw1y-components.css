@@ -647,7 +647,7 @@ preferencesgroup > box > box.header,
 preferencesgroup box.header {
   font-size: 13.5px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--mac-text-primary, @window_fg_color);
   margin-left: 15px;
   margin-right: 15px;
   margin-bottom: 4px;
@@ -661,7 +661,7 @@ preferencesgroup > box > box.header label,
 preferencesgroup box.header label {
   font-size: 13.5px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--mac-text-primary, @window_fg_color);
   margin-left: 0px;
   margin-right: 0px;
   padding-left: 0px;
@@ -671,7 +671,13 @@ label.heading,
 .heading {
   font-size: 13.5px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--mac-text-primary, @window_fg_color);
+}
+
+preferencesgroup > box > box.header button.flat,
+preferencesgroup > box > box.header button.flat label {
+  color: @accent_bg_color;
+  font-weight: 500;
 }
 
 /* =========================================================================
@@ -1071,11 +1077,11 @@ splitbutton.image-button > button:hover,
 menubutton.image-button > button:hover,
 button.image-button:not(.text-button):not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
 button.circular:hover {
-  background-color: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.12);
+  background-color: var(--mac-row-hover, rgba(255, 255, 255, 0.16));
+  border-color: var(--mac-card-border, rgba(255, 255, 255, 0.12));
   border-radius: 9999px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
-  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):active,
@@ -1094,11 +1100,11 @@ splitbutton.image-button > button:active,
 menubutton.image-button > button:active,
 button.image-button:not(.text-button):not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
 button.circular:active {
-  background-color: rgba(255, 255, 255, 0.24);
-  border-color: rgba(255, 255, 255, 0.16);
+  background-color: var(--mac-row-active, rgba(255, 255, 255, 0.24));
+  border-color: var(--mac-card-border, rgba(255, 255, 255, 0.16));
   border-radius: 9999px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 headerbar button image,
@@ -1282,9 +1288,9 @@ NautilusHistoryControls button image {
 headerbar NautilusHistoryControls button:hover,
 headerbar .history-controls button:hover,
 NautilusHistoryControls button:hover {
-  background-color: rgba(255, 255, 255, 0.14);
+  background-color: var(--mac-row-hover, rgba(255, 255, 255, 0.14));
   border-radius: 9999px;
-  color: #ffffff;
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 .nautilus-window headerbar NautilusHistoryControls button:active,
@@ -1293,9 +1299,9 @@ NautilusHistoryControls button:hover {
 headerbar NautilusHistoryControls button:active,
 headerbar .history-controls button:active,
 NautilusHistoryControls button:active {
-  background-color: rgba(255, 255, 255, 0.22);
+  background-color: var(--mac-row-active, rgba(255, 255, 255, 0.22));
   border-radius: 9999px;
-  color: #ffffff;
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 /* Nautilus View Controls (splitbutton: grid/list + options dropdown) —
@@ -1306,8 +1312,8 @@ NautilusHistoryControls button:active {
 .nautilus-window headerbar splitbutton.flat {
   min-height: 26px;
   border-radius: 9999px;
-  background-color: rgba(255, 255, 255, 0.09);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: var(--mac-input-bg, rgba(255, 255, 255, 0.09));
+  border: 1px solid var(--mac-input-border, rgba(255, 255, 255, 0.08));
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   padding: 0;
   margin: 2px 3px;
@@ -1319,7 +1325,7 @@ NautilusHistoryControls button:active {
   min-height: 14px;
   margin: 5px 0;
   padding: 0;
-  background-color: rgba(255, 255, 255, 0.12);
+  background-color: var(--mac-card-sep, rgba(255, 255, 255, 0.12));
   border: none;
 }
 
@@ -1336,19 +1342,19 @@ NautilusHistoryControls button:active {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   box-shadow: none;
-  color: rgba(255, 255, 255, 0.90);
+  color: var(--mac-text-primary, @window_fg_color);
   transition: background-color 150ms ease-out, color 150ms ease-out;
 }
 
 .nautilus-window headerbar splitbutton > button:hover {
-  background-color: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background-color: var(--mac-row-hover, rgba(255, 255, 255, 0.12));
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 .nautilus-window headerbar splitbutton > button:active,
 .nautilus-window headerbar splitbutton > button:checked {
-  background-color: rgba(255, 255, 255, 0.20);
-  color: #ffffff;
+  background-color: var(--mac-row-active, rgba(255, 255, 255, 0.20));
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 .nautilus-window headerbar splitbutton > menubutton {
@@ -1372,19 +1378,19 @@ NautilusHistoryControls button:active {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
   box-shadow: none;
-  color: rgba(255, 255, 255, 0.90);
+  color: var(--mac-text-primary, @window_fg_color);
   transition: background-color 150ms ease-out, color 150ms ease-out;
 }
 
 .nautilus-window headerbar splitbutton > menubutton > button:hover {
-  background-color: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background-color: var(--mac-row-hover, rgba(255, 255, 255, 0.12));
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 .nautilus-window headerbar splitbutton > menubutton > button:active,
 .nautilus-window headerbar splitbutton > menubutton > button:checked {
-  background-color: rgba(255, 255, 255, 0.20);
-  color: #ffffff;
+  background-color: var(--mac-row-active, rgba(255, 255, 255, 0.20));
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 /* Nautilus headerbar individual circular control buttons (Search) */
@@ -1399,10 +1405,10 @@ NautilusHistoryControls button:active {
   border-radius: 9999px;
   padding: 0;
   margin: 2px 4px;
-  background-color: rgba(255, 255, 255, 0.09);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: var(--mac-input-bg, rgba(255, 255, 255, 0.09));
+  border: 1px solid var(--mac-input-border, rgba(255, 255, 255, 0.08));
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-  color: rgba(255, 255, 255, 0.90);
+  color: var(--mac-text-primary, @window_fg_color);
   transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out;
 }
 
@@ -1441,9 +1447,9 @@ NautilusHistoryControls button:active {
 .nautilus-window headerbar .end > menubutton > button:hover,
 .nautilus-window .content-pane headerbar box.end > menubutton > button:hover,
 .nautilus-window .content-pane headerbar .end > menubutton > button:hover {
-  background-color: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background-color: var(--mac-row-hover, rgba(255, 255, 255, 0.16));
+  border-color: var(--mac-card-border, rgba(255, 255, 255, 0.12));
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 .nautilus-window .content-pane headerbar box.end > button:active,
@@ -1464,9 +1470,9 @@ NautilusHistoryControls button:active {
 .nautilus-window headerbar .end > menubutton > button:checked,
 .nautilus-window .content-pane headerbar box.end > menubutton > button:active,
 .nautilus-window .content-pane headerbar box.end > menubutton > button:checked {
-  background-color: rgba(255, 255, 255, 0.24);
-  border-color: rgba(255, 255, 255, 0.16);
-  color: #ffffff;
+  background-color: var(--mac-row-active, rgba(255, 255, 255, 0.24));
+  border-color: var(--mac-card-border, rgba(255, 255, 255, 0.16));
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 .nautilus-window .nautilus-pathbar button,
@@ -1555,7 +1561,7 @@ row button.circular {
   border: none;
   border-style: none;
   box-shadow: none;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--mac-text-primary, @window_fg_color);
   transition: background-color 150ms ease-out, color 150ms ease-out;
 }
 
@@ -1585,12 +1591,12 @@ preferencesgroup row box.suffixes button:not(.text-button):hover,
 row.property button.image-button:hover,
 row button.image-button:hover,
 row button.circular:hover {
-  background-color: rgba(255, 255, 255, 0.12);
+  background-color: var(--mac-row-hover, rgba(255, 255, 255, 0.12));
   border: none;
   border-style: none;
   border-radius: 9999px;
   box-shadow: none;
-  color: #ffffff;
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 adwactionrow button.image-button:active,
@@ -1619,12 +1625,12 @@ preferencesgroup row box.suffixes button:not(.text-button):active,
 row.property button.image-button:active,
 row button.image-button:active,
 row button.circular:active {
-  background-color: rgba(255, 255, 255, 0.20);
+  background-color: var(--mac-row-active, rgba(255, 255, 255, 0.20));
   border: none;
   border-style: none;
   border-radius: 9999px;
   box-shadow: none;
-  color: #ffffff;
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 button.suggested-action,
@@ -1703,9 +1709,9 @@ box.linked:not(.vertical) > togglebutton:hover,
 .linked > button.toggle:hover,
 .linked > button:hover,
 .linked > togglebutton:hover {
-  background-color: rgba(255, 255, 255, 0.10);
+  background-color: var(--mac-row-hover, rgba(255, 255, 255, 0.10));
   background-image: none;
-  color: #ffffff;
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 box.linked:not(.vertical) > button:checked,
@@ -1724,7 +1730,7 @@ button:checked:not(.flat):not(.accent-button) {
   background-color: @accent_bg_color;
   background-image: none;
   border-color: @accent_bg_color;
-  color: #ffffff;
+  color: @accent_fg_color;
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
@@ -1796,7 +1802,7 @@ spinbutton.horizontal text {
   padding: 0 6px;
   font-size: 13px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 spinbutton.horizontal button,
@@ -1810,14 +1816,14 @@ spinbutton.horizontal button.image-button {
   background-image: none;
   border-radius: 9999px;
   box-shadow: none;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 spinbutton.horizontal button:hover,
 spinbutton.horizontal button.image-button:hover {
-  background-color: rgba(255, 255, 255, 0.14);
+  background-color: var(--mac-row-hover, rgba(255, 255, 255, 0.14));
   background-image: none;
-  color: #ffffff;
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 /* =========================================================================
@@ -1829,7 +1835,7 @@ entry {
   border-radius: 8px;
   background-color: rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(0, 0, 0, 0.12);
-  color: #ffffff;
+  color: var(--mac-text-primary, @window_fg_color);
   font-size: 13px;
   transition: background-color 150ms ease-out, border-color 150ms ease-out;
 }
@@ -1883,7 +1889,7 @@ combobox:hover,
 dropdown:hover > button.combo,
 combobox:hover > box.linked > button {
   background-color: alpha(currentColor, 0.04);
-  color: #ffffff;
+  color: var(--mac-text-primary, @window_fg_color);
 }
 
 dropdown > button.combo,

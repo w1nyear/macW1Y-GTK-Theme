@@ -641,6 +641,21 @@ static void safe_set_string(GSettings *s, GSettingsSchema *schema, const char *k
     }
 }
 
+static gboolean mac_is_light_mode(void) {
+    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+    if (!src) return FALSE;
+    GSettingsSchema *schema = g_settings_schema_source_lookup(src, "org.gnome.desktop.interface", TRUE);
+    if (!schema) return FALSE;
+    g_settings_schema_unref(schema);
+    GSettings *iface = g_settings_new("org.gnome.desktop.interface");
+    if (!iface) return FALSE;
+    char *scheme = g_settings_get_string(iface, "color-scheme");
+    gboolean is_light = (scheme && (g_strcmp0(scheme, "prefer-light") == 0 || g_strcmp0(scheme, "default") == 0));
+    g_free(scheme);
+    g_object_unref(iface);
+    return is_light;
+}
+
 static void apply_liquid_glass(void) {
     GSettingsSchemaSource *src = g_settings_schema_source_get_default();
     if (!src) return;
@@ -655,6 +670,10 @@ static void apply_liquid_glass(void) {
 
     GSettingsSchema *schema = NULL;
     g_object_get(lg, "settings-schema", &schema, NULL);
+
+    gboolean is_light = mac_is_light_mode();
+    const char *tint_col = is_light ? "#ffffff" : "#000000";
+    const char *dock_col = is_light ? "#ffffff" : "#29292e";
 
     int radius = state.liquid_blur;
     double tint = (double)state.liquid_tint / 100.0;
@@ -705,10 +724,11 @@ static void apply_liquid_glass(void) {
     if (dock_tint_val < 0.0) dock_tint_val = 0.0;
     if (dock_tint_val > 1.0) dock_tint_val = 1.0;
     safe_set_double(lg, schema, "dock-tint-strength", dock_tint_val);
-    double dock_brightness = 1.0 - (dock_tint_val * 0.5);
+    double dock_brightness = is_light ? (1.0 + (dock_tint_val * 0.25)) : (1.0 - (dock_tint_val * 0.5));
     if (dock_brightness < 0.2) dock_brightness = 0.2;
-    if (dock_brightness > 1.0) dock_brightness = 1.0;
+    if (dock_brightness > 1.25) dock_brightness = 1.25;
     safe_set_double(lg, schema, "dock-brightness", dock_brightness);
+    safe_set_string(lg, schema, "dock-tint-color", dock_col);
 
     /* Preserve Context Menu configuration (from Group 4) - do not stomp with liquid_* values */
     int menu_radius = (state.menu_blur > 0) ? (int)round((double)state.menu_blur * 30.0 / 100.0) : 0;
@@ -718,9 +738,9 @@ static void apply_liquid_glass(void) {
     safe_set_int(lg, schema, "panel-menu-blur-radius", menu_radius);
 
     double menu_tint_val = (double)state.menu_tint / 100.0;
-    double menu_brightness = 1.0 - (menu_tint_val * 0.5);
+    double menu_brightness = is_light ? (1.0 + (menu_tint_val * 0.25)) : (1.0 - (menu_tint_val * 0.5));
     if (menu_brightness < 0.2) menu_brightness = 0.2;
-    if (menu_brightness > 1.0) menu_brightness = 1.0;
+    if (menu_brightness > 1.25) menu_brightness = 1.25;
     safe_set_double(lg, schema, "menu-tint-strength", menu_tint_val);
     safe_set_double(lg, schema, "desktop-menu-tint-strength", menu_tint_val);
     safe_set_double(lg, schema, "panel-menu-tint-strength", menu_tint_val);
@@ -728,9 +748,13 @@ static void apply_liquid_glass(void) {
     safe_set_double(lg, schema, "desktop-menu-brightness", menu_brightness);
     safe_set_double(lg, schema, "panel-menu-brightness", menu_brightness);
 
-    safe_set_string(lg, schema, "menu-tint-color", "#000000");
-    safe_set_string(lg, schema, "desktop-menu-tint-color", "#000000");
-    safe_set_string(lg, schema, "panel-menu-tint-color", "#000000");
+    safe_set_string(lg, schema, "menu-tint-color", tint_col);
+    safe_set_string(lg, schema, "desktop-menu-tint-color", tint_col);
+    safe_set_string(lg, schema, "panel-menu-tint-color", tint_col);
+    safe_set_string(lg, schema, "quick-settings-tint-color", tint_col);
+    safe_set_string(lg, schema, "osd-tint-color", tint_col);
+    safe_set_string(lg, schema, "notification-tint-color", tint_col);
+    safe_set_string(lg, schema, "application-tint-color", tint_col);
 
     double menu_shadow_rad = (double)state.menu_shadow_blur;
     safe_set_double(lg, schema, "shadow-radius", menu_shadow_rad);
@@ -905,6 +929,8 @@ static void apply_dock_settings(void) {
     GSettingsSchemaSource *src = g_settings_schema_source_get_default();
     if (!src) return;
 
+    gboolean is_light = mac_is_light_mode();
+
     /* 1. Apply to Liquid Glass */
     const char *lg_schema = "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com";
     if (g_settings_schema_source_lookup(src, lg_schema, TRUE)) {
@@ -918,15 +944,18 @@ static void apply_dock_settings(void) {
             if (blur_rad > 50) blur_rad = 50;
             safe_set_int(lg, schema, "dock-blur-radius", blur_rad);
 
+            const char *dock_col = is_light ? "#ffffff" : "#29292e";
+
             double tint_val = (double)state.dock_tint / 100.0;
             if (tint_val < 0.0) tint_val = 0.0;
             if (tint_val > 1.0) tint_val = 1.0;
             safe_set_double(lg, schema, "dock-tint-strength", tint_val);
 
-            double brightness = 1.0 - (tint_val * 0.5);
+            double brightness = is_light ? (1.0 + (tint_val * 0.25)) : (1.0 - (tint_val * 0.5));
             if (brightness < 0.2) brightness = 0.2;
-            if (brightness > 1.0) brightness = 1.0;
+            if (brightness > 1.25) brightness = 1.25;
             safe_set_double(lg, schema, "dock-brightness", brightness);
+            safe_set_string(lg, schema, "dock-tint-color", dock_col);
 
             double shadow_val = (double)state.dock_shadow / 100.0;
             if (shadow_val < 0.0) shadow_val = 0.0;
@@ -951,9 +980,9 @@ static void apply_dock_settings(void) {
             safe_set_int(bms, schema, "sigma", sigma);
 
             double tint_val = (double)state.dock_tint / 100.0;
-            double brightness = 1.0 - (tint_val * 0.5);
+            double brightness = is_light ? (1.0 + (tint_val * 0.25)) : (1.0 - (tint_val * 0.5));
             if (brightness < 0.2) brightness = 0.2;
-            if (brightness > 1.0) brightness = 1.0;
+            if (brightness > 1.25) brightness = 1.25;
             safe_set_double(bms, schema, "brightness", brightness);
 
             if (schema) g_settings_schema_unref(schema);
@@ -1083,10 +1112,11 @@ static void apply_blur_tint(void) {
     GSettingsSchemaSource *src = g_settings_schema_source_get_default();
     if (!src) return;
 
+    gboolean is_light = mac_is_light_mode();
     double tint = (double)state.blur_tint / 100.0;
-    double brightness = 1.0 - (tint * 0.5);
+    double brightness = is_light ? (1.0 + (tint * 0.25)) : (1.0 - (tint * 0.5));
     if (brightness < 0.2) brightness = 0.2;
-    if (brightness > 1.0) brightness = 1.0;
+    if (brightness > 1.25) brightness = 1.25;
 
     const char *schemas[] = {
         "org.gnome.shell.extensions.blur-my-shell",
@@ -1164,16 +1194,18 @@ static void apply_menu_tint(void) {
     GSettingsSchemaSource *src = g_settings_schema_source_get_default();
     if (!src) return;
 
+    gboolean is_light = mac_is_light_mode();
+    const char *tint_col = is_light ? "#ffffff" : "#000000";
     double tint = (double)state.menu_tint / 100.0;
-    double brightness = 1.0 - (tint * 0.5);
+    double brightness = is_light ? (1.0 + (tint * 0.25)) : (1.0 - (tint * 0.5));
     if (brightness < 0.2) brightness = 0.2;
-    if (brightness > 1.0) brightness = 1.0;
+    if (brightness > 1.25) brightness = 1.25;
 
     if (g_settings_schema_source_lookup(src, "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com", TRUE)) {
         GSettings *lg = g_settings_new("org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com");
-        g_settings_set_string(lg, "menu-tint-color", "#000000");
-        g_settings_set_string(lg, "desktop-menu-tint-color", "#000000");
-        g_settings_set_string(lg, "panel-menu-tint-color", "#000000");
+        g_settings_set_string(lg, "menu-tint-color", tint_col);
+        g_settings_set_string(lg, "desktop-menu-tint-color", tint_col);
+        g_settings_set_string(lg, "panel-menu-tint-color", tint_col);
         g_settings_set_double(lg, "menu-tint-strength", tint);
         g_settings_set_double(lg, "desktop-menu-tint-strength", tint);
         g_settings_set_double(lg, "panel-menu-tint-strength", tint);
@@ -1799,9 +1831,13 @@ static void draw_frosted_glass_card(cairo_t *cr, cairo_surface_t *blurred_bg,
         cairo_paint(cr);
     }
 
-    // Dark glass tint overlay
+    // Glass tint overlay (Reversible: bright white frosted glass in light mode, dark tint in dark mode)
     double ta = CLAMP(tint_alpha, 0.12, 0.92);
-    cairo_set_source_rgba(cr, 0.07, 0.08, 0.11, ta);
+    if (mac_is_light_mode()) {
+        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, ta * 0.85);
+    } else {
+        cairo_set_source_rgba(cr, 0.07, 0.08, 0.11, ta);
+    }
     cairo_paint(cr);
 
     // Top-down specular reflection / sheen
@@ -1819,9 +1855,15 @@ static void draw_frosted_glass_card(cairo_t *cr, cairo_surface_t *blurred_bg,
     // 3. Specular rim highlight border
     draw_rounded_rect_path(cr, x + 0.5, y + 0.5, w - 1.0, h - 1.0, r);
     cairo_pattern_t *rim_pat = cairo_pattern_create_linear(x, y, x + w, y + h);
-    cairo_pattern_add_color_stop_rgba(rim_pat, 0.0, 1.0, 1.0, 1.0, 0.38);
-    cairo_pattern_add_color_stop_rgba(rim_pat, 0.45, 1.0, 1.0, 1.0, 0.18);
-    cairo_pattern_add_color_stop_rgba(rim_pat, 1.0, 1.0, 1.0, 1.0, 0.08);
+    if (mac_is_light_mode()) {
+        cairo_pattern_add_color_stop_rgba(rim_pat, 0.0, 1.0, 1.0, 1.0, 0.85);
+        cairo_pattern_add_color_stop_rgba(rim_pat, 0.45, 1.0, 1.0, 1.0, 0.50);
+        cairo_pattern_add_color_stop_rgba(rim_pat, 1.0, 1.0, 1.0, 1.0, 0.30);
+    } else {
+        cairo_pattern_add_color_stop_rgba(rim_pat, 0.0, 1.0, 1.0, 1.0, 0.38);
+        cairo_pattern_add_color_stop_rgba(rim_pat, 0.45, 1.0, 1.0, 1.0, 0.18);
+        cairo_pattern_add_color_stop_rgba(rim_pat, 1.0, 1.0, 1.0, 1.0, 0.08);
+    }
     cairo_set_source(cr, rim_pat);
     cairo_set_line_width(cr, 1.0);
     cairo_stroke(cr);
@@ -1853,9 +1895,100 @@ static void reorder_group_previews_to_top(GtkWidget *widget) {
     }
 }
 
+typedef struct {
+    const char *row_id;
+    const char *title_dark_uk;
+    const char *title_light_uk;
+    const char *title_dark_en;
+    const char *title_light_en;
+} TintRowInfo;
+
+static const TintRowInfo s_tint_rows[] = {
+    { "liquid_tint_row", "Затемнення (тінт)", "Засвітлення (тінт)", "Darkening (tint)", "Lightening (tint)" },
+    { "menubar_tint_row", "Затемнення градієнтне", "Засвітлення градієнтне", "Gradient darkening", "Gradient lightening" },
+    { "dock_tint_row", "Затемнення", "Засвітлення", "Darkening", "Lightening" },
+    { "label_tint_row", "Затемнення", "Засвітлення", "Darkening", "Lightening" },
+    { "alert_tint_row", "Затемнення", "Засвітлення", "Darkening", "Lightening" },
+    { "notification_tint_row", "Затемнення", "Засвітлення", "Darkening", "Lightening" },
+    { "spotlight_tint_row", "Затемнення", "Засвітлення", "Darkening", "Lightening" },
+    { "blur_tint_row", "Затемнення", "Засвітлення", "Darkening", "Lightening" },
+    { "menu_tint_row", "Затемнення", "Засвітлення", "Darkening", "Lightening" },
+    { "widget_tint_row", "Затемнення фону", "Засвітлення фону", "Darkening background", "Lightening background" },
+    { NULL, NULL, NULL, NULL, NULL }
+};
+
+typedef struct {
+    const char *group_id;
+    const char *desc_dark_uk;
+    const char *desc_light_uk;
+    const char *desc_dark_en;
+    const char *desc_light_en;
+} TintGroupInfo;
+
+static const TintGroupInfo s_tint_groups[] = {
+    { "liquid_group", "Налаштування параметрів Liquid Glass (розмиття, затінення, насиченість)", "Налаштування параметрів Liquid Glass (розмиття, засвітлення, насиченість)", "Settings for Liquid Glass (blur, darkening, saturation)", "Settings for Liquid Glass (blur, lightening, saturation)" },
+    { "menubar_group", "Налаштування затемнення та розмиття верхньої панелі", "Налаштування засвітлення та розмиття верхньої панелі", "Upper menubar darkening and blur settings", "Upper menubar lightening and blur settings" },
+    { "dock_group", "Параметри затемнення, розмиття та тіні нижньої панелі Док", "Параметри засвітлення, розмиття та тіні нижньої панелі Док", "Dock darkening, blur and shadow settings", "Dock lightening, blur and shadow settings" },
+    { "label_group", "Параметри розмиття, затемнення та тіні бірок програм док-панелі", "Параметри розмиття, засвітлення та тіні бірок програм док-панелі", "Dock label blur, darkening and shadow settings", "Dock label blur, lightening and shadow settings" },
+    { "alert_group", "Параметри затемнення, розмиття та тіні діалогових вікон попереджень", "Параметри засвітлення, розмиття та тіні діалогових вікон попереджень", "Alert dialog darkening, blur and shadow settings", "Alert dialog lightening, blur and shadow settings" },
+    { "notification_group", "Параметри розмиття, затемнення та тіні для сповіщень та Центру повідомлень", "Параметри розмиття, засвітлення та тіні для сповіщень та Центру повідомлень", "Notification blur, darkening and shadow settings", "Notification blur, lightening and shadow settings" },
+    { "spotlight_group", "Параметри розмиття, затемнення та тіні Spotlight і Spotlight меню", "Параметри розмиття, засвітлення та тіні Spotlight і Spotlight меню", "Spotlight blur, darkening and shadow settings", "Spotlight blur, lightening and shadow settings" },
+    { "blur_group", "Глобальні параметри фонового розмиття та затемнення", "Глобальні параметри фонового розмиття та засвітлення", "Global background blur and darkening settings", "Global background blur and lightening settings" },
+    { "menu_group", "Глобальні параметри затемнення та розмиття контекстних меню", "Глобальні параметри засвітлення та розмиття контекстних меню", "Context menu darkening and blur settings", "Context menu lightening and blur settings" },
+    { "widget_group", "Параметри заокруглення, тіні, розмиття та затемнення фону віджетів стільниці", "Параметри заокруглення, тіні, розмиття та засвітлення фону віджетів стільниці", "Desktop widget radius, shadow, blur and darkening settings", "Desktop widget radius, shadow, blur and lightening settings" },
+    { NULL, NULL, NULL, NULL, NULL }
+};
+
+static void redraw_all_mac_styling_previews(void) {
+    redraw_liquid_preview();
+    redraw_menubar_preview();
+    redraw_dock_preview();
+    redraw_labels_preview();
+    redraw_alerts_preview();
+    redraw_notifications_preview();
+    redraw_spotlight_preview();
+    redraw_blur_preview();
+    redraw_context_menu_preview();
+    redraw_widgets_preview();
+}
+
+static void update_mac_styling_tint_labels(GtkWidget *widget, gboolean is_light) {
+    if (!widget) return;
+    const char *loc = mac_get_locale();
+    gboolean is_uk = (loc && (strcmp(loc, "uk") == 0 || strcmp(loc, "uk_UA") == 0));
+
+    if (GTK_IS_BUILDABLE(widget)) {
+        const char *bid = gtk_buildable_get_buildable_id(GTK_BUILDABLE(widget));
+        if (bid) {
+            for (int i = 0; s_tint_rows[i].row_id != NULL; i++) {
+                if (g_strcmp0(bid, s_tint_rows[i].row_id) == 0 && ADW_IS_PREFERENCES_ROW(widget)) {
+                    const char *target = is_light ? (is_uk ? s_tint_rows[i].title_light_uk : s_tint_rows[i].title_light_en)
+                                                  : (is_uk ? s_tint_rows[i].title_dark_uk : s_tint_rows[i].title_dark_en);
+                    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(widget), target);
+                    break;
+                }
+            }
+            for (int i = 0; s_tint_groups[i].group_id != NULL; i++) {
+                if (g_strcmp0(bid, s_tint_groups[i].group_id) == 0 && ADW_IS_PREFERENCES_GROUP(widget)) {
+                    const char *target = is_light ? (is_uk ? s_tint_groups[i].desc_light_uk : s_tint_groups[i].desc_light_en)
+                                                  : (is_uk ? s_tint_groups[i].desc_dark_uk : s_tint_groups[i].desc_dark_en);
+                    adw_preferences_group_set_description(ADW_PREFERENCES_GROUP(widget), target);
+                    break;
+                }
+            }
+        }
+    }
+
+    for (GtkWidget *c = gtk_widget_get_first_child(widget); c; c = gtk_widget_get_next_sibling(c)) {
+        update_mac_styling_tint_labels(c, is_light);
+    }
+}
+
 static void on_mac_styling_page_map(GtkWidget *widget, gpointer user_data) {
     (void)user_data;
     reorder_group_previews_to_top(widget);
+    update_mac_styling_tint_labels(widget, mac_is_light_mode());
+    redraw_all_mac_styling_previews();
 }
 
 
@@ -3681,8 +3814,12 @@ static void blur_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
 
     double ar, ag, ab;
     get_system_accent_color(&ar, &ag, &ab);
+    gboolean is_light = mac_is_light_mode();
+    const char *loc = mac_get_locale();
+    gboolean is_uk = (loc && (strcmp(loc, "uk") == 0 || strcmp(loc, "uk_UA") == 0));
+    const char *tint_word = is_light ? (is_uk ? "Засвітлення" : "Lightening") : (is_uk ? "Затемнення" : "Darkening");
     char val_txt[64];
-    g_snprintf(val_txt, sizeof(val_txt), "Sigma: %d • Затемнення: %d%%", state.blur_sigma, state.blur_tint);
+    g_snprintf(val_txt, sizeof(val_txt), "Sigma: %d • %s: %d%%", state.blur_sigma, tint_word, state.blur_tint);
     cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 9.0);
     cairo_text_extents_t ex_v;
@@ -7746,6 +7883,15 @@ static GtkWidget *get_widgets_page(void)
     return widgets_page;
 }
 
+static void on_interface_color_scheme_changed(GSettings *settings, const gchar *key, gpointer user_data) {
+    (void)settings; (void)key;
+    GtkWidget *page = (GtkWidget *)user_data;
+    if (page && GTK_IS_WIDGET(page)) {
+        update_mac_styling_tint_labels(page, mac_is_light_mode());
+        redraw_all_mac_styling_previews();
+    }
+}
+
 static GtkWidget *get_mac_styling_page(void)
 {
     static GtkWidget *mac_styling_page = NULL;
@@ -7768,7 +7914,18 @@ static GtkWidget *get_mac_styling_page(void)
         if (mac_styling_page) {
             g_object_ref(mac_styling_page);
             reorder_group_previews_to_top(mac_styling_page);
+            update_mac_styling_tint_labels(mac_styling_page, mac_is_light_mode());
             g_signal_connect(mac_styling_page, "map", G_CALLBACK(on_mac_styling_page_map), NULL);
+
+            static gboolean s_scheme_listener_added = FALSE;
+            if (!s_scheme_listener_added) {
+                s_scheme_listener_added = TRUE;
+                GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+                if (src && g_settings_schema_source_lookup(src, "org.gnome.desktop.interface", TRUE)) {
+                    GSettings *iface = g_settings_new("org.gnome.desktop.interface");
+                    g_signal_connect(iface, "changed::color-scheme", G_CALLBACK(on_interface_color_scheme_changed), mac_styling_page);
+                }
+            }
         }
     } else {
         if (error) {
@@ -8293,6 +8450,44 @@ static void init_mac_settings_css(void) {
 
     GtkCssProvider *provider = gtk_css_provider_new();
     gtk_css_provider_load_from_string(provider,
+        "window.mac-settings-window, "
+        "window.mac-settings-window.background, "
+        "window.mac-settings-window > dialog-host, "
+        "window.mac-settings-window navigation-split-view { "
+        "  background-color: var(--mac-window-bg, @window_bg_color) !important; "
+        "  color: var(--mac-text-primary, @window_fg_color) !important; "
+        "} "
+        "window.mac-settings-window navigation-split-view > widget.sidebar-pane, "
+        "window.mac-settings-window navigation-split-view .sidebar-pane, "
+        "window.mac-settings-window .sidebar-pane, "
+        "window.mac-settings-window .sidebar-pane:dir(ltr), "
+        "window.mac-settings-window .sidebar-pane:dir(rtl) { "
+        "  margin: 6px 0px 6px 6px !important; "
+        "  border: none !important; "
+        "  border-radius: 20px !important; "
+        "  background-color: var(--mac-sidebar-bg-translucent, color-mix(in srgb, @window_bg_color 85%, transparent)) !important; "
+        "  background-clip: padding-box !important; "
+        "  box-shadow: none !important; "
+        "} "
+        "window.mac-settings-window preferencesgroup > box > box.header, "
+        "window.mac-settings-window preferencesgroup box.header, "
+        "window.mac-settings-window preferencesgroup > box > box.header label.heading, "
+        "window.mac-settings-window preferencesgroup > box > box.header .heading, "
+        "window.mac-settings-window preferencesgroup > box > box.header label.title, "
+        "window.mac-settings-window preferencesgroup > box > box.header label, "
+        "window.mac-settings-window preferencesgroup box.header label, "
+        "window.mac-settings-window label.heading, "
+        "window.mac-settings-window .heading, "
+        "window.mac-settings-window label.title, "
+        "window.mac-settings-window #list_label, "
+        "window.mac-settings-window .mac-panel-section-title { "
+        "  color: var(--mac-text-primary, @window_fg_color) !important; "
+        "} "
+        "window.mac-settings-window preferencesgroup > box > box.header button.flat, "
+        "window.mac-settings-window preferencesgroup > box > box.header button.flat label { "
+        "  color: @accent_bg_color !important; "
+        "  font-weight: 500 !important; "
+        "} "
         "window.mac-settings-window list.mac-settings-sidebar-list, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar { "
         "  background-color: transparent; "
@@ -8305,12 +8500,12 @@ static void init_mac_settings_css(void) {
         "  margin: 1.5px 18px 1.5px 8px; "
         "  border-radius: 8px; "
         "  font-size: 13px; "
-        "  color: rgba(255, 255, 255, 0.90); "
+        "  color: var(--mac-text-primary, @window_fg_color); "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:hover, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:hover { "
         "  border-radius: 8px; "
-        "  background-color: rgba(255, 255, 255, 0.08); "
+        "  background-color: var(--mac-row-hover, color-mix(in srgb, @window_fg_color 8%, transparent)); "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:selected, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected { "
@@ -8380,11 +8575,11 @@ static void init_mac_settings_css(void) {
         "} "
         "window.mac-settings-window .mac-settings-account-row:hover { "
         "  border-radius: 8px; "
-        "  background-color: rgba(255, 255, 255, 0.05); "
+        "  background-color: var(--mac-row-hover, color-mix(in srgb, @window_fg_color 5%, transparent)); "
         "} "
         "window.mac-settings-window .mac-settings-account-row:selected { "
         "  border-radius: 8px; "
-        "  background-color: rgba(255, 255, 255, 0.08); "
+        "  background-color: var(--mac-row-active, color-mix(in srgb, @window_fg_color 8%, transparent)); "
         "} "
         "window.mac-settings-window .mac-settings-account-row avatar { "
         "  border-radius: 9999px; "
@@ -8405,11 +8600,11 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-settings-account-row .account-title { "
         "  font-weight: 600; "
         "  font-size: 13.5px; "
-        "  color: #ffffff; "
+        "  color: var(--mac-text-primary, @window_fg_color); "
         "} "
         "window.mac-settings-window .mac-settings-account-row .account-subtitle { "
         "  font-size: 11px; "
-        "  color: rgba(255, 255, 255, 0.55); "
+        "  color: var(--mac-text-secondary, color-mix(in srgb, @window_fg_color 55%, transparent)); "
         "} "
         "window.mac-settings-window .mac-settings-sidebar searchbar { "
         "  background: transparent; "
@@ -8425,15 +8620,15 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-settings-sidebar searchbar entry { "
         "  min-height: 28px; "
         "  border-radius: 9999px; "
-        "  background-color: rgba(255, 255, 255, 0.08); "
-        "  border: 1px solid rgba(255, 255, 255, 0.08); "
-        "  color: #ffffff; "
+        "  background-color: var(--mac-input-bg, color-mix(in srgb, @window_fg_color 8%, transparent)); "
+        "  border: 1px solid var(--mac-input-border, color-mix(in srgb, @window_fg_color 8%, transparent)); "
+        "  color: var(--mac-text-primary, @window_fg_color); "
         "  font-size: 13px; "
         "  padding: 2px 12px; "
         "} "
         "window.mac-settings-window .mac-settings-sidebar searchbar entry:focus-within { "
-        "  background-color: rgba(255, 255, 255, 0.12); "
-        "  border-color: rgba(255, 255, 255, 0.20); "
+        "  background-color: var(--mac-input-focus-bg, color-mix(in srgb, @window_fg_color 12%, transparent)); "
+        "  border-color: var(--mac-input-focus-border, color-mix(in srgb, @window_fg_color 20%, transparent)); "
         "} "
         ".mac-panel-header-banner, "
         ".mac-panel-header-badge, "
@@ -8528,10 +8723,10 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window preferencespage list.boxed-list:not(.nested), "
         "window.mac-settings-window .content-pane list.boxed-list:not(.nested), "
         "window.mac-settings-window .mac-settings-content list.boxed-list:not(.nested) { "
-        "  background-color: #1e1e1e; "
-        "  border: 1px solid rgba(255, 255, 255, 0.07); "
+        "  background-color: var(--mac-card-bg, @card_bg_color); "
+        "  border: 1px solid var(--mac-card-border, color-mix(in srgb, @window_fg_color 8%, transparent)); "
         "  border-radius: 14px; "
-        "  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20); "
+        "  box-shadow: var(--mac-card-shadow, 0 1px 3px rgba(0, 0, 0, 0.06)); "
         "  margin-left: 15px; "
         "  margin-right: 15px; "
         "  margin-bottom: 12px; "
@@ -8873,7 +9068,7 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window list.boxed-list row image:dir(ltr):last-child, "
         "window.mac-settings-window .mac-settings-content list.boxed-list row image:dir(ltr):last-child, "
         "window.mac-settings-window cclistrow image:dir(ltr):last-child { "
-        "  color: rgba(255, 255, 255, 0.30); "
+        "  color: color-mix(in srgb, @window_fg_color 30%, transparent); "
         "  -gtk-icon-size: 11px; "
         "  min-height: 11px; "
         "  min-width: 11px; "
@@ -9372,10 +9567,10 @@ static void init_mac_settings_css(void) {
         "  min-height: 28px; "
         "  border-radius: 9999px; "
         "  padding: 3px; "
-        "  background-color: rgba(20, 20, 22, 0.75); "
+        "  background-color: var(--mac-input-bg, color-mix(in srgb, @window_fg_color 8%, transparent)); "
         "  background-image: none; "
-        "  border: 1px solid rgba(255, 255, 255, 0.08); "
-        "  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.40); "
+        "  border: 1px solid var(--mac-input-border, color-mix(in srgb, @window_fg_color 8%, transparent)); "
+        "  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.10); "
         "} "
         "window.mac-settings-window viewswitcher button.toggle, "
         "window.mac-settings-window .mac-view-switcher button.toggle, "
@@ -9385,7 +9580,7 @@ static void init_mac_settings_css(void) {
         "  margin: 0 1px; "
         "  border-radius: 9999px; "
         "  font-size: 13px; "
-        "  color: rgba(255, 255, 255, 0.75); "
+        "  color: var(--mac-text-secondary, color-mix(in srgb, @window_fg_color 70%, transparent)); "
         "  background: transparent; "
         "  background-color: transparent; "
         "  border: none; "
@@ -9395,13 +9590,13 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window viewswitcher button.toggle:hover, "
         "window.mac-settings-window .mac-view-switcher button.toggle:hover, "
         "window.mac-settings-window headerbar viewswitcher button.toggle:hover { "
-        "  color: #ffffff; "
-        "  background-color: rgba(255, 255, 255, 0.06); "
+        "  color: var(--mac-text-primary, @window_fg_color); "
+        "  background-color: var(--mac-row-hover, color-mix(in srgb, @window_fg_color 8%, transparent)); "
         "} "
         "window.mac-settings-window viewswitcher button.toggle:checked, "
         "window.mac-settings-window .mac-view-switcher button.toggle:checked, "
         "window.mac-settings-window headerbar viewswitcher button.toggle:checked { "
-        "  color: #ffffff; "
+        "  color: var(--mac-text-primary, @window_fg_color); "
         "  font-weight: 600; "
         "  background: transparent; "
         "  background-color: transparent; "
@@ -9535,8 +9730,8 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill { "
         "  padding: 0; "
         "  border-radius: 9999px; "
-        "  background-color: rgba(255, 255, 255, 0.08); "
-        "  border: 1px solid rgba(255, 255, 255, 0.08); "
+        "  background-color: var(--mac-input-bg, color-mix(in srgb, @window_fg_color 8%, transparent)); "
+        "  border: 1px solid var(--mac-input-border, color-mix(in srgb, @window_fg_color 8%, transparent)); "
         "  box-shadow: none; "
         "} "
         "window.mac-settings-window .mac-nav-pill > button, "
@@ -9555,7 +9750,7 @@ static void init_mac_settings_css(void) {
         "  background-color: transparent; "
         "  border: none; "
         "  box-shadow: none; "
-        "  color: rgba(255, 255, 255, 0.85); "
+        "  color: var(--mac-text-primary, @window_fg_color); "
         "  transition: background-color 150ms ease-out; "
         "} "
         "window.mac-settings-window .mac-nav-pill > button image, "
@@ -9581,8 +9776,8 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-nav-pill > button:hover, "
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:hover, "
         "window.mac-settings-window .mac-nav-btn:hover { "
-        "  background-color: rgba(255, 255, 255, 0.12); "
-        "  color: #ffffff; "
+        "  background-color: var(--mac-row-hover, color-mix(in srgb, @window_fg_color 12%, transparent)); "
+        "  color: var(--mac-text-primary, @window_fg_color); "
         "  border-radius: 9999px; "
         "  border-top-left-radius: 9999px; "
         "  border-bottom-left-radius: 9999px; "
@@ -9592,8 +9787,8 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-nav-pill > button:active, "
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:active, "
         "window.mac-settings-window .mac-nav-btn:active { "
-        "  background-color: rgba(255, 255, 255, 0.20); "
-        "  color: #ffffff; "
+        "  background-color: var(--mac-row-active, color-mix(in srgb, @window_fg_color 20%, transparent)); "
+        "  color: var(--mac-text-primary, @window_fg_color); "
         "  border-radius: 9999px; "
         "  border-top-left-radius: 9999px; "
         "  border-bottom-left-radius: 9999px; "
@@ -9603,7 +9798,7 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-nav-pill > button:disabled, "
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:disabled, "
         "window.mac-settings-window .mac-nav-btn:disabled { "
-        "  color: rgba(255, 255, 255, 0.25); "
+        "  color: var(--mac-text-disabled, color-mix(in srgb, @window_fg_color 30%, transparent)); "
         "  background: transparent; "
         "  background-color: transparent; "
         "  border-radius: 9999px; "
@@ -9612,7 +9807,7 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill separator, "
         "window.mac-settings-window separator.mac-nav-sep { "
         "  min-width: 1px; "
-        "  background-color: rgba(255, 255, 255, 0.12); "
+        "  background-color: var(--mac-card-sep, color-mix(in srgb, @window_fg_color 12%, transparent)); "
         "  border: none; "
         "  opacity: 1; "
         "  margin: 4px 0px; "
@@ -9620,7 +9815,7 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-panel-title-label { "
         "  font-size: 14px; "
         "  font-weight: 700; "
-        "  color: #ffffff; "
+        "  color: var(--mac-text-primary, @window_fg_color) !important; "
         "  margin-left: 4px; "
         "  margin-top: 1px; "
         "} "
@@ -9956,8 +10151,8 @@ static void init_mac_settings_css(void) {
         "  background-color: color-mix(in srgb, @accent_bg_color 80%, black); "
         "  color: @accent_fg_color; "
         "} "
-        "window.mac-settings-window button:checked:not(.flat):not(.accent-button), "
-        "window.mac-settings-window togglebutton:checked:not(.flat), "
+        "window.mac-settings-window button:checked:not(.flat):not(.accent-button):not(.background-preview-button), "
+        "window.mac-settings-window togglebutton:checked:not(.flat):not(.background-preview-button), "
         "window.mac-settings-window .mac-pill-btn.active, "
         "window.mac-settings-window .mac-pill-btn:checked { "
         "  background-color: @accent_bg_color; "
@@ -9969,6 +10164,84 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window radio:indeterminate { "
         "  background-color: @accent_bg_color; "
         "  color: @accent_fg_color; "
+        "} "
+        "window.mac-settings-window .background-preview-button, "
+        "window.mac-settings-window button.background-preview-button, "
+        "window.mac-settings-window togglebutton.background-preview-button, "
+        ".background-preview-button { "
+        "  border-radius: 14px !important; "
+        "  padding: 4px !important; "
+        "  background: none !important; "
+        "  background-color: transparent !important; "
+        "  background-image: none !important; "
+        "  border: none !important; "
+        "  box-shadow: none !important; "
+        "  outline: none !important; "
+        "  transition: box-shadow 150ms ease; "
+        "} "
+        "window.mac-settings-window .background-preview-button:hover, "
+        ".background-preview-button:hover { "
+        "  border-radius: 14px !important; "
+        "  box-shadow: 0 0 0 2px color-mix(in srgb, @window_fg_color 25%, transparent) !important; "
+        "} "
+        "window.mac-settings-window .background-preview-button:checked, "
+        "window.mac-settings-window togglebutton.background-preview-button:checked, "
+        ".background-preview-button:checked { "
+        "  border-radius: 14px !important; "
+        "  box-shadow: 0 0 0 3px @accent_bg_color !important; "
+        "  background: none !important; "
+        "  background-color: transparent !important; "
+        "} "
+        "window.mac-settings-window .background-preview-button:focus:focus-visible, "
+        "window.mac-settings-window .background-preview-button:checked:focus:focus-visible { "
+        "  border-radius: 14px !important; "
+        "  box-shadow: 0 0 0 3px @accent_bg_color, 0 0 0 5px color-mix(in srgb, @accent_bg_color 30%, transparent) !important; "
+        "} "
+        "background-preview { "
+        "  border-radius: 12px; "
+        "} "
+        "background-preview .window { "
+        "  border-radius: 8px; "
+        "} "
+        "#default_preview .window, "
+        "background-preview .window.front.light, "
+        "background-preview .window.back { "
+        "  background-color: rgba(255, 255, 255, 0.85) !important; "
+        "  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 240, 245, 0.80) 100%) !important; "
+        "  border: 1px solid rgba(255, 255, 255, 0.85) !important; "
+        "  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important; "
+        "} "
+        "#default_preview .window .header-bar, "
+        "background-preview .window.front.light .header-bar { "
+        "  background-color: rgba(255, 255, 255, 0.94) !important; "
+        "  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important; "
+        "  min-height: 15px; "
+        "} "
+        "#default_preview .window .sidebar, "
+        "background-preview .window.front.light .sidebar { "
+        "  background-color: rgba(235, 235, 242, 0.80) !important; "
+        "  border-right: 1px solid rgba(0, 0, 0, 0.08) !important; "
+        "  min-width: 30px; "
+        "} "
+        "#dark_preview .window, "
+        "background-preview .window.dark, "
+        "background-preview .window.front.dark { "
+        "  background-color: rgba(34, 34, 38, 0.86) !important; "
+        "  background-image: linear-gradient(180deg, rgba(50, 50, 56, 0.92) 0%, rgba(28, 28, 32, 0.82) 100%) !important; "
+        "  border: 1px solid rgba(255, 255, 255, 0.15) !important; "
+        "  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important; "
+        "} "
+        "#dark_preview .window .header-bar, "
+        "background-preview .window.dark .header-bar { "
+        "  background-color: rgba(52, 52, 58, 0.94) !important; "
+        "  border-bottom: 1px solid rgba(0, 0, 0, 0.40) !important; "
+        "  min-height: 15px; "
+        "} "
+        "#dark_preview .window .sidebar, "
+        "background-preview .window.dark .sidebar { "
+        "  background-color: rgba(28, 28, 32, 0.82) !important; "
+        "  border-right: 1px solid rgba(0, 0, 0, 0.40) !important; "
+        "  min-width: 30px; "
         "}"
     );
     gtk_style_context_add_provider_for_display(
@@ -10552,6 +10825,58 @@ static void fix_accent_color_buttons(GtkWidget *widget) {
     }
 }
 
+static void on_color_scheme_toggle_toggled(GtkToggleButton *btn, gpointer user_data) {
+    if (!gtk_toggle_button_get_active(btn)) return;
+    const char *target_mode = (const char *)user_data;
+    if (!target_mode) return;
+    char *cmd = g_strdup_printf("/usr/local/bin/mac-theme-sync %s", target_mode);
+    g_spawn_command_line_async(cmd, NULL);
+    g_free(cmd);
+}
+
+static void polish_background_panel(GtkWidget *widget) {
+    if (!widget) return;
+
+    /* 1. Find default_label and rename to 'Світла' (or 'Light') */
+    const char *bid = GTK_IS_BUILDABLE(widget) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(widget)) : NULL;
+    if (g_strcmp0(bid, "default_label") == 0 && GTK_IS_LABEL(widget)) {
+        const char *loc = mac_get_locale();
+        if (loc && (strcmp(loc, "uk") == 0 || strcmp(loc, "uk_UA") == 0)) {
+            gtk_label_set_text(GTK_LABEL(widget), "Світла");
+        } else {
+            gtk_label_set_text(GTK_LABEL(widget), "Light");
+        }
+    } else if (GTK_IS_LABEL(widget)) {
+        const char *txt = gtk_label_get_text(GTK_LABEL(widget));
+        if (txt && (g_strcmp0(txt, "Типово") == 0 || g_strcmp0(txt, "_Типово") == 0 || g_strcmp0(txt, "Default") == 0)) {
+            const char *loc = mac_get_locale();
+            if (loc && (strcmp(loc, "uk") == 0 || strcmp(loc, "uk_UA") == 0)) {
+                gtk_label_set_text(GTK_LABEL(widget), "Світла");
+            } else {
+                gtk_label_set_text(GTK_LABEL(widget), "Light");
+            }
+        }
+    }
+
+    /* 2. Wire default_toggle and dark_toggle to trigger mac-theme-sync */
+    if (g_strcmp0(bid, "default_toggle") == 0 && GTK_IS_TOGGLE_BUTTON(widget)) {
+        if (!g_object_get_data(G_OBJECT(widget), "mac_theme_sync_hooked")) {
+            g_object_set_data(G_OBJECT(widget), "mac_theme_sync_hooked", GINT_TO_POINTER(1));
+            g_signal_connect(widget, "toggled", G_CALLBACK(on_color_scheme_toggle_toggled), (gpointer)"light");
+        }
+    }
+    if (g_strcmp0(bid, "dark_toggle") == 0 && GTK_IS_TOGGLE_BUTTON(widget)) {
+        if (!g_object_get_data(G_OBJECT(widget), "mac_theme_sync_hooked")) {
+            g_object_set_data(G_OBJECT(widget), "mac_theme_sync_hooked", GINT_TO_POINTER(1));
+            g_signal_connect(widget, "toggled", G_CALLBACK(on_color_scheme_toggle_toggled), (gpointer)"dark");
+        }
+    }
+
+    for (GtkWidget *c = gtk_widget_get_first_child(widget); c; c = gtk_widget_get_next_sibling(c)) {
+        polish_background_panel(c);
+    }
+}
+
 static void update_panel_headerbar(AdwNavigationSplitView *split_view);
 static guint s_update_headerbar_idle_id = 0;
 
@@ -10978,6 +11303,7 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
     hide_subtitles_recursive(target_root);
     format_property_rows_recursive(target_root);
     fix_accent_color_buttons(target_root);
+    polish_background_panel(target_root);
 
     sync_sidebar_selection(split_view, cur_id);
 
@@ -11284,6 +11610,19 @@ static gboolean warmup_mac_styling_idle(gpointer user_data) {
     return G_SOURCE_REMOVE;
 }
 
+static void on_style_manager_notify_dark(GObject *gobject, GParamSpec *pspec, gpointer user_data) {
+    (void)gobject; (void)pspec;
+    AdwNavigationSplitView *split_view = (AdwNavigationSplitView *)user_data;
+    GtkWidget *msp = get_mac_styling_page();
+    if (msp) {
+        update_mac_styling_tint_labels(msp, mac_is_light_mode());
+    }
+    if (split_view && GTK_IS_WIDGET(split_view)) {
+        schedule_update_panel_headerbar(split_view);
+    }
+    redraw_all_mac_styling_previews();
+}
+
 static gboolean mac_fix_settings_window(gpointer user_data)
 {
     GtkWindow *window = GTK_WINDOW(user_data);
@@ -11302,6 +11641,12 @@ static gboolean mac_fix_settings_window(gpointer user_data)
     AdwNavigationSplitView *split_view = NULL;
     find_navigation_split_view(GTK_WIDGET(window), &split_view);
     if (!split_view) return G_SOURCE_REMOVE;
+
+    AdwStyleManager *sm = adw_style_manager_get_default();
+    if (sm && !g_object_get_data(G_OBJECT(sm), "mac_dark_notify_connected")) {
+        g_object_set_data(G_OBJECT(sm), "mac_dark_notify_connected", GINT_TO_POINTER(1));
+        g_signal_connect(sm, "notify::dark", G_CALLBACK(on_style_manager_notify_dark), split_view);
+    }
 
     /* Lock sidebar width to 280px to match blur and prevent unblurred scrollbar gaps */
     adw_navigation_split_view_set_min_sidebar_width(split_view, 280.0);

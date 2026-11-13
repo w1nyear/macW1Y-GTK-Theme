@@ -9526,7 +9526,7 @@ themeswitcher checkbutton.light {
 
 themeswitcher checkbutton.dark {
   color: white;
-  background-color: #1e1e1e;
+  background-color: var(--mac-card-bg, #1e1e1e);
 }
 
 @define-color theme_bg_color color-mix(in srgb, @window_bg_color 96%, transparent);
@@ -9859,7 +9859,7 @@ window.mac-settings-window,
 window.mac-settings-window.background,
 window.mac-settings-window > dialog-host,
 window.mac-settings-window navigation-split-view {
-    background-color: #202022;
+    background-color: var(--mac-window-bg, @window_bg_color);
     background-image: none;
 }
 
@@ -9880,7 +9880,7 @@ navigation-split-view .sidebar-pane {
     margin: 6px 0px 6px 6px;
     border: none;
     border-radius: 20px;
-    background-color: rgba(30, 30, 34, 0.40);
+    background-color: var(--mac-sidebar-bg-translucent, rgba(30, 30, 34, 0.40));
     background-clip: padding-box;
     box-shadow: none;
 }
@@ -10278,7 +10278,7 @@ window.nautilus-window .content-pane > toolbarview,
 window.nautilus-window .content-pane .view,
 window.nautilus-window .content-pane > toolbarview > scrolledwindow,
 window.nautilus-window .content-pane > scrolledwindow {
-    background-color: #202022;
+    background-color: var(--mac-window-bg, @view_bg_color);
     border-left-style: none;
     border-left-width: 0;
     box-shadow: none;
@@ -10355,7 +10355,7 @@ window.nautilus-window .sidebar-pane list.navigation-sidebar row image {
    to avoid double-stacking translucency.
    ============================================================ */
 window.nautilus-window .sidebar-pane {
-    background-color: rgba(28, 28, 32, 0.55);
+    background-color: var(--mac-sidebar-bg-translucent, rgba(28, 28, 32, 0.55));
     background-image: none;
 }
 
@@ -10574,7 +10574,7 @@ columnview ~ undershoot {
 /* Universal solid background for tab bars */
 panelframetabbar,
 panelframetabbar.frameheader.header {
-    background-color: #242424;
+    background-color: var(--mac-sidebar-bg, #242424);
     background-image: none;
     min-height: 26px;
     padding: 0;
@@ -10594,7 +10594,7 @@ tabbar.inline {
 
 tabbar > revealer,
 tabbar.inline > revealer {
-    background-color: #242424;
+    background-color: var(--mac-sidebar-bg, #242424);
     background-image: none;
     border: none;
     box-shadow: none;
@@ -10603,7 +10603,7 @@ tabbar.inline > revealer {
 /* Compact tab bar inner box container */
 tabbar .box,
 tabbar.inline .box {
-    background-color: #1c1c1e;
+    background-color: var(--mac-window-bg, #1c1c1e);
     background-image: none;
     min-height: 24px;
     margin: 1px 4px;
@@ -10991,7 +10991,7 @@ window.mac-settings-window preferencesgroup list,
 window.mac-settings-window preferencespage list.boxed-list,
 window.mac-settings-window .content-pane list.boxed-list,
 window.mac-settings-window .mac-settings-content list.boxed-list {
-    background-color: #1e1e1e;
+    background-color: var(--mac-card-bg, #1e1e1e);
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 14px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
@@ -11247,13 +11247,8 @@ window.mac-settings-window .mac-settings-content-headerbar.has-view-switcher,
 window.mac-settings-window .mac-settings-switcher-headerbar,
 window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {
     min-height: 38px;
-    background: linear-gradient(to bottom,
-        #1e1e1e 0%,
-        rgba(30, 30, 32, 0.96) 50%,
-        rgba(30, 30, 32, 0.85) 75%,
-        rgba(30, 30, 32, 0.35) 90%,
-        transparent 100%);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    background: transparent;
+    box-shadow: none;
 }
 
 window.mac-settings-window viewswitcher,
@@ -11313,7 +11308,7 @@ window.mac-settings-window .panel-has-switcher preferencespage > scrolledwindow 
 window.mac-settings-window .panel-has-switcher scrolledwindow > undershoot.top {
     min-height: 96px;
     background: linear-gradient(to bottom,
-        #1e1e1e 0%,
+        var(--mac-window-bg, #1e1e1e) 0%,
         rgba(30, 30, 30, 0.98) 35%,
         rgba(30, 30, 30, 0.88) 60%,
         rgba(30, 30, 30, 0.45) 80%,
@@ -11492,7 +11487,7 @@ window.mac-settings-window preferencesgroup list,
 window.mac-settings-window preferencespage list.boxed-list,
 window.mac-settings-window .content-pane list.boxed-list,
 window.mac-settings-window .mac-settings-content list.boxed-list {
-  background-color: #1e1e1e;
+  background-color: var(--mac-card-bg, #1e1e1e);
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
@@ -11916,6 +11911,7 @@ window.mac-settings-window button.suggested-action.circular:active {
   color: #ffffff;
   border-radius: 9999px;
 }
+
 
 
 

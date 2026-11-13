@@ -292,11 +292,11 @@ window box.inline-toolbar#devtab-grid-toolbar button:last-child:hover,
 window box.inline-toolbar#devtab-grid-toolbar button.destructive-action:hover,
 button.image-button:not(.text-button):hover,
 button.circular:hover {
-  background-color: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background-color: var(--mac-row-hover, rgba(255, 255, 255, 0.16));
+  border-color: var(--mac-card-border, rgba(255, 255, 255, 0.12));
+  color: var(--mac-text-primary, @theme_text_color);
   border-radius: 9999px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 headerbar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):active,
@@ -371,11 +371,11 @@ button.image-button:not(.text-button):active,
 button.image-button:not(.text-button):checked,
 button.circular:active,
 button.circular:checked {
-  background-color: rgba(255, 255, 255, 0.24);
-  border-color: rgba(255, 255, 255, 0.16);
-  color: #ffffff;
+  background-color: var(--mac-row-active, rgba(255, 255, 255, 0.24));
+  border-color: var(--mac-card-border, rgba(255, 255, 255, 0.16));
+  color: var(--mac-text-primary, @theme_text_color);
   border-radius: 9999px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
 }
 
 headerbar button.image-button image,
@@ -450,7 +450,7 @@ entry {
   border-radius: 8px;
   background-color: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  color: var(--mac-text-primary, @theme_text_color);
 }
 
 entry:focus {

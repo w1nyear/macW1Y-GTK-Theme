@@ -21075,3 +21075,54 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - bin/mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
    - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
    - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).
+
+
+Завдання 736: Повна адаптація системи до світлої теми (Light Theme), ліквідація білого тексту на білому фоні та синхронізація кольорів інтерфейсу
+1. Системний аналіз дефектів та першопричин (Root Cause Analysis):
+   - Білий текст на білому фоні у «Параметрах» (GNOME Control Center):
+     * У bin/mac-build-theme у секції генерації компонентів GTK4 правила preferencesgroup > box > box.header, preferencesgroup > box > box.header label.heading та label.heading містили жорстко закодований колір color: #ffffff;. Через це при перемиканні на світлу тему назви розділів («Стиль», «Колір акценту», «Тло») та кнопки дій ставали білими поверх світлого фону карток.
+     * Кнопка «+ Додати зображення...» успадковувала білий колір тексту від box.header та була невидимою.
+     * Заголовок панелі у верхній панелі вікна (.mac-panel-title-label) у libmac_settings.c мав жорстко закодований color: #ffffff;.
+   - Темна бічна панель (Sidebar) та заголовок у світлій темі:
+     * У config/gtk-4.0/gtk-Light.css був повністю відсутній 2069-рядковий блок правил віконного дизайну macOS Tahoe (вікна mac-settings-window, nautilus-window, плаваюча заокруглена скляна панель 20px, таб-бари, контрольні елементи), через що вікна спиралися на застарілі або темні правила.
+     * У gtk-Dark.css фони window.mac-settings-window, nautilus-window .content-pane та sidebar-pane містили прямі значення #202022 та rgba(30, 30, 34, 0.40) замість токенів CSS-змінних.
+     * Заголовок .mac-settings-content-headerbar мав жорсткий градієнт із #1e1e1e.
+     * Бібліотека libmac_settings.so завантажувалася оболонкою з /usr/lib/x86_64-linux-gnu/libmac_settings.so та ~/.local/lib/libmac_settings.so, які не містили останніх правил адаптації.
+   - Меню-бар GNOME Shell у темі macW1Y-Light:
+     * macW1Y-Light/gnome-shell/gnome-shell.css містив копію темного меню-бару з color: white; та чорним градієнтом rgba(0, 0, 0, 0.65).
+     * Іконка яблучка activities.svg у темі macW1Y-Light містила білу заливку fill:#fff.
+
+2. Реалізовані зміни та технічні рішення:
+   - bin/mac-build-theme:
+     * Замінено hardcoded #ffffff у правилах заголовків секцій preferencesgroup, label.heading та .heading на var(--mac-text-primary, @window_fg_color);.
+     * Додано явне виділення кнопки додавання зображень: preferencesgroup > box > box.header button.flat label { color: @accent_bg_color; font-weight: 500; }.
+     * Адаптовано стан наведення/активації для кнопок заголовка, splitbutton, кнопок перегляду Nautilus, actionrow-кнопок, linked-перемикачів, числових полів вводу (spinbutton) та текстових полів (entry): колір тексту прив'язано до var(--mac-text-primary, @window_fg_color).
+     * Оновлено токени GTK3 для світлої теми (entry, button, image-button) із використанням var(--mac-text-primary, @theme_text_color).
+     * Скомпільовано свіжі таблиці стилів macw1y-tokens.css та macw1y-components.css для GTK4 та GTK3.
+   - control-center/libmac_settings.c та gnome-control-center-overlay/libmac_settings.c:
+     * В init_mac_settings_css() додано правила фону вікна background-color: var(--mac-window-bg, @window_bg_color) !important; та плаваючої світлої скляної панелі background-color: var(--mac-sidebar-bg-translucent, color-mix(in srgb, @window_bg_color 85%, transparent)) !important; border-radius: 20px !important;.
+     * Додано правило контрасту для заголовків вікна налаштувань: .heading, label.title, #list_label, .mac-panel-section-title { color: var(--mac-text-primary, @window_fg_color) !important; }.
+     * Оновлено .mac-panel-title-label на використання var(--mac-text-primary, @window_fg_color) !important;.
+     * Оновлено капсульні перемикачі навігації .mac-nav-pill та viewswitcher для адаптації фону, рамок і тексту під активну колірну схему.
+     * Підключено слухач notify::dark на AdwStyleManager для миттєвого динамічного оновлення підписів «Затемнення» / «Засвітлення» та перемалювання передогляду стилів при перемиканні теми без перезапуску застосунку.
+     * Скомпільовано нову libmac_settings.so та синхронізовано в усі робочі шляхи: /usr/lib/x86_64-linux-gnu/, ~/.local/lib/, /usr/local/lib/, control-center/, gnome-control-center-overlay/, /usr/share/mactheme/gnome-control-center-overlay/ та ~/.local/share/gnome-control-center-overlay/.
+   - config/gtk-4.0/gtk-Light.css та gtk-Dark.css:
+     * Усі жорсткі темно-сірі значення (#202022, #1e1e1e, rgba(30, 30, 34, 0.40)) переведено на системні змінні var(--mac-window-bg), var(--mac-sidebar-bg-translucent), var(--mac-card-bg).
+     * Вміст робочої зони файлів Nautilus (.content-pane) переведено на var(--mac-window-bg, @view_bg_color), забезпечуючи білосніжний фон списку файлів у світлій темі.
+     * Повний адаптований блок оформлення macOS Tahoe успішно інтегровано в config/gtk-4.0/gtk-Light.css.
+   - Меню-бар та GNOME Shell (macW1Y-Light):
+     * У macW1Y-Light/gnome-shell/gnome-shell.css верхню панель (#panel, #panel.gradient-panel, #panel .panel-button) налаштовано на світлий напівпрозорий градієнт rgba(255, 255, 255, 0.65) та контрастний темний текст rgba(0, 0, 0, 0.88) !important;.
+     * В activities.svg логотип Apple переведено на насичений темний колір #1d1d1f.
+     * Синхронізовано тему до ~/.themes/macW1Y-Light/gnome-shell/ та /usr/share/themes/macW1Y-Light/gnome-shell/.
+
+3. Результати тестування та верифікації:
+   - Перевірено роботу mac-theme-sync light:
+     * Колірна схема: prefer-light.
+     * GTK-тема: macW1Y-Light.
+     * Тема значків: MacTahoe.
+     * Тема оболонки: macW1Y-Light.
+     * Заголовки «Стиль», «Колір акценту», «Тло» та написи у «Параметрах» і Nautilus мають бездоганний контраст (чорний текст на світлому фоні).
+     * Бічна панель Settings та вікно мають правильну світлу мак-стилізацію та плавні заокруглення 20px.
+   - bin/mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
+   - bin/mac-audit-sync check — 100% PASS! System and repository are in sync.
+   - bin/mac-i18n-verify — 100% SUCCESSFUL (install.sh contains 0 Cyrillic characters).

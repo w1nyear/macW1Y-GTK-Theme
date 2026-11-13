@@ -8450,6 +8450,44 @@ static void init_mac_settings_css(void) {
 
     GtkCssProvider *provider = gtk_css_provider_new();
     gtk_css_provider_load_from_string(provider,
+        "window.mac-settings-window, "
+        "window.mac-settings-window.background, "
+        "window.mac-settings-window > dialog-host, "
+        "window.mac-settings-window navigation-split-view { "
+        "  background-color: var(--mac-window-bg, @window_bg_color) !important; "
+        "  color: var(--mac-text-primary, @window_fg_color) !important; "
+        "} "
+        "window.mac-settings-window navigation-split-view > widget.sidebar-pane, "
+        "window.mac-settings-window navigation-split-view .sidebar-pane, "
+        "window.mac-settings-window .sidebar-pane, "
+        "window.mac-settings-window .sidebar-pane:dir(ltr), "
+        "window.mac-settings-window .sidebar-pane:dir(rtl) { "
+        "  margin: 6px 0px 6px 6px !important; "
+        "  border: none !important; "
+        "  border-radius: 20px !important; "
+        "  background-color: var(--mac-sidebar-bg-translucent, color-mix(in srgb, @window_bg_color 85%, transparent)) !important; "
+        "  background-clip: padding-box !important; "
+        "  box-shadow: none !important; "
+        "} "
+        "window.mac-settings-window preferencesgroup > box > box.header, "
+        "window.mac-settings-window preferencesgroup box.header, "
+        "window.mac-settings-window preferencesgroup > box > box.header label.heading, "
+        "window.mac-settings-window preferencesgroup > box > box.header .heading, "
+        "window.mac-settings-window preferencesgroup > box > box.header label.title, "
+        "window.mac-settings-window preferencesgroup > box > box.header label, "
+        "window.mac-settings-window preferencesgroup box.header label, "
+        "window.mac-settings-window label.heading, "
+        "window.mac-settings-window .heading, "
+        "window.mac-settings-window label.title, "
+        "window.mac-settings-window #list_label, "
+        "window.mac-settings-window .mac-panel-section-title { "
+        "  color: var(--mac-text-primary, @window_fg_color) !important; "
+        "} "
+        "window.mac-settings-window preferencesgroup > box > box.header button.flat, "
+        "window.mac-settings-window preferencesgroup > box > box.header button.flat label { "
+        "  color: @accent_bg_color !important; "
+        "  font-weight: 500 !important; "
+        "} "
         "window.mac-settings-window list.mac-settings-sidebar-list, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar { "
         "  background-color: transparent; "
@@ -9529,10 +9567,10 @@ static void init_mac_settings_css(void) {
         "  min-height: 28px; "
         "  border-radius: 9999px; "
         "  padding: 3px; "
-        "  background-color: rgba(20, 20, 22, 0.75); "
+        "  background-color: var(--mac-input-bg, color-mix(in srgb, @window_fg_color 8%, transparent)); "
         "  background-image: none; "
-        "  border: 1px solid rgba(255, 255, 255, 0.08); "
-        "  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.40); "
+        "  border: 1px solid var(--mac-input-border, color-mix(in srgb, @window_fg_color 8%, transparent)); "
+        "  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.10); "
         "} "
         "window.mac-settings-window viewswitcher button.toggle, "
         "window.mac-settings-window .mac-view-switcher button.toggle, "
@@ -9542,7 +9580,7 @@ static void init_mac_settings_css(void) {
         "  margin: 0 1px; "
         "  border-radius: 9999px; "
         "  font-size: 13px; "
-        "  color: rgba(255, 255, 255, 0.75); "
+        "  color: var(--mac-text-secondary, color-mix(in srgb, @window_fg_color 70%, transparent)); "
         "  background: transparent; "
         "  background-color: transparent; "
         "  border: none; "
@@ -9552,13 +9590,13 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window viewswitcher button.toggle:hover, "
         "window.mac-settings-window .mac-view-switcher button.toggle:hover, "
         "window.mac-settings-window headerbar viewswitcher button.toggle:hover { "
-        "  color: #ffffff; "
-        "  background-color: rgba(255, 255, 255, 0.06); "
+        "  color: var(--mac-text-primary, @window_fg_color); "
+        "  background-color: var(--mac-row-hover, color-mix(in srgb, @window_fg_color 8%, transparent)); "
         "} "
         "window.mac-settings-window viewswitcher button.toggle:checked, "
         "window.mac-settings-window .mac-view-switcher button.toggle:checked, "
         "window.mac-settings-window headerbar viewswitcher button.toggle:checked { "
-        "  color: #ffffff; "
+        "  color: var(--mac-text-primary, @window_fg_color); "
         "  font-weight: 600; "
         "  background: transparent; "
         "  background-color: transparent; "
@@ -9692,8 +9730,8 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill { "
         "  padding: 0; "
         "  border-radius: 9999px; "
-        "  background-color: rgba(255, 255, 255, 0.08); "
-        "  border: 1px solid rgba(255, 255, 255, 0.08); "
+        "  background-color: var(--mac-input-bg, color-mix(in srgb, @window_fg_color 8%, transparent)); "
+        "  border: 1px solid var(--mac-input-border, color-mix(in srgb, @window_fg_color 8%, transparent)); "
         "  box-shadow: none; "
         "} "
         "window.mac-settings-window .mac-nav-pill > button, "
@@ -9712,7 +9750,7 @@ static void init_mac_settings_css(void) {
         "  background-color: transparent; "
         "  border: none; "
         "  box-shadow: none; "
-        "  color: rgba(255, 255, 255, 0.85); "
+        "  color: var(--mac-text-primary, @window_fg_color); "
         "  transition: background-color 150ms ease-out; "
         "} "
         "window.mac-settings-window .mac-nav-pill > button image, "
@@ -9738,8 +9776,8 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-nav-pill > button:hover, "
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:hover, "
         "window.mac-settings-window .mac-nav-btn:hover { "
-        "  background-color: rgba(255, 255, 255, 0.12); "
-        "  color: #ffffff; "
+        "  background-color: var(--mac-row-hover, color-mix(in srgb, @window_fg_color 12%, transparent)); "
+        "  color: var(--mac-text-primary, @window_fg_color); "
         "  border-radius: 9999px; "
         "  border-top-left-radius: 9999px; "
         "  border-bottom-left-radius: 9999px; "
@@ -9749,8 +9787,8 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-nav-pill > button:active, "
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:active, "
         "window.mac-settings-window .mac-nav-btn:active { "
-        "  background-color: rgba(255, 255, 255, 0.20); "
-        "  color: #ffffff; "
+        "  background-color: var(--mac-row-active, color-mix(in srgb, @window_fg_color 20%, transparent)); "
+        "  color: var(--mac-text-primary, @window_fg_color); "
         "  border-radius: 9999px; "
         "  border-top-left-radius: 9999px; "
         "  border-bottom-left-radius: 9999px; "
@@ -9760,7 +9798,7 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-nav-pill > button:disabled, "
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill > button:disabled, "
         "window.mac-settings-window .mac-nav-btn:disabled { "
-        "  color: rgba(255, 255, 255, 0.25); "
+        "  color: var(--mac-text-disabled, color-mix(in srgb, @window_fg_color 30%, transparent)); "
         "  background: transparent; "
         "  background-color: transparent; "
         "  border-radius: 9999px; "
@@ -9769,7 +9807,7 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mc-toggle-group.mac-nav-pill separator, "
         "window.mac-settings-window separator.mac-nav-sep { "
         "  min-width: 1px; "
-        "  background-color: rgba(255, 255, 255, 0.12); "
+        "  background-color: var(--mac-card-sep, color-mix(in srgb, @window_fg_color 12%, transparent)); "
         "  border: none; "
         "  opacity: 1; "
         "  margin: 4px 0px; "
@@ -9777,7 +9815,7 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .mac-panel-title-label { "
         "  font-size: 14px; "
         "  font-weight: 700; "
-        "  color: #ffffff; "
+        "  color: var(--mac-text-primary, @window_fg_color) !important; "
         "  margin-left: 4px; "
         "  margin-top: 1px; "
         "} "
@@ -11572,6 +11610,19 @@ static gboolean warmup_mac_styling_idle(gpointer user_data) {
     return G_SOURCE_REMOVE;
 }
 
+static void on_style_manager_notify_dark(GObject *gobject, GParamSpec *pspec, gpointer user_data) {
+    (void)gobject; (void)pspec;
+    AdwNavigationSplitView *split_view = (AdwNavigationSplitView *)user_data;
+    GtkWidget *msp = get_mac_styling_page();
+    if (msp) {
+        update_mac_styling_tint_labels(msp, mac_is_light_mode());
+    }
+    if (split_view && GTK_IS_WIDGET(split_view)) {
+        schedule_update_panel_headerbar(split_view);
+    }
+    redraw_all_mac_styling_previews();
+}
+
 static gboolean mac_fix_settings_window(gpointer user_data)
 {
     GtkWindow *window = GTK_WINDOW(user_data);
@@ -11590,6 +11641,12 @@ static gboolean mac_fix_settings_window(gpointer user_data)
     AdwNavigationSplitView *split_view = NULL;
     find_navigation_split_view(GTK_WIDGET(window), &split_view);
     if (!split_view) return G_SOURCE_REMOVE;
+
+    AdwStyleManager *sm = adw_style_manager_get_default();
+    if (sm && !g_object_get_data(G_OBJECT(sm), "mac_dark_notify_connected")) {
+        g_object_set_data(G_OBJECT(sm), "mac_dark_notify_connected", GINT_TO_POINTER(1));
+        g_signal_connect(sm, "notify::dark", G_CALLBACK(on_style_manager_notify_dark), split_view);
+    }
 
     /* Lock sidebar width to 280px to match blur and prevent unblurred scrollbar gaps */
     adw_navigation_split_view_set_min_sidebar_width(split_view, 280.0);
