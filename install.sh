@@ -499,11 +499,9 @@ EOF_NAUT
         sudo chmod 755 /usr/local/bin/mac-generate-bookmarks.sh
         run_as_user /usr/local/bin/mac-generate-bookmarks.sh "$TARGET_USER" "$TARGET_HOME"
     fi
-    if [ -f "$SCRIPT_DIR/autostart/mac-sync-applications.desktop" ]; then
-        mkdir -p "$TARGET_HOME/.config/autostart"
-        cp -f "$SCRIPT_DIR/autostart/mac-sync-applications.desktop" "$TARGET_HOME/.config/autostart/mac-sync-applications.desktop"
-        chown "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/autostart/mac-sync-applications.desktop"
-    fi
+    # Clean up redundant legacy autostart entries (handled by systemd user services & /etc/xdg/autostart)
+    rm -f "$TARGET_HOME/.config/autostart/mac-sync-applications.desktop" 2>/dev/null || true
+    rm -f "$TARGET_HOME/.config/autostart/mac-ensure-extensions.desktop" 2>/dev/null || true
 
     run_as_user gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark"
     run_as_user gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
@@ -2107,6 +2105,24 @@ EOF_CUR_THEME_UP
         run_as_user systemctl --user enable --now mac-theme-sync.service 2>/dev/null || true
     fi
 
+    # Installing and enabling mac-app-manager user service (replaces autostart mac-sync-applications)
+    if [ -f "$SCRIPT_DIR/systemd/mac-app-manager.service" ]; then
+        local USER_SYSTEMD="$TARGET_HOME/.config/systemd/user"
+        mkdir -p "$USER_SYSTEMD"
+        sync_or_update_file "$SCRIPT_DIR/systemd/mac-app-manager.service" "$USER_SYSTEMD/mac-app-manager.service" false
+        run_as_user systemctl --user daemon-reload 2>/dev/null || true
+        run_as_user systemctl --user enable --now mac-app-manager.service 2>/dev/null || true
+    fi
+
+    # Installing and enabling mac-screenshot-daemon user service
+    if [ -f "$SCRIPT_DIR/systemd/mac-screenshot-daemon.service" ]; then
+        local USER_SYSTEMD="$TARGET_HOME/.config/systemd/user"
+        mkdir -p "$USER_SYSTEMD"
+        sync_or_update_file "$SCRIPT_DIR/systemd/mac-screenshot-daemon.service" "$USER_SYSTEMD/mac-screenshot-daemon.service" false
+        run_as_user systemctl --user daemon-reload 2>/dev/null || true
+        run_as_user systemctl --user enable --now mac-screenshot-daemon.service 2>/dev/null || true
+    fi
+
     # Installing and enabling macW1Y background integrity check timer
     if [ -f "$SCRIPT_DIR/systemd/mac-integrity-check.service" ] && [ -f "$SCRIPT_DIR/systemd/mac-integrity-check.timer" ]; then
         local USER_SYSTEMD="$TARGET_HOME/.config/systemd/user"
@@ -2285,10 +2301,9 @@ EOF_NAUT
         sudo chmod 755 /usr/local/bin/mac-generate-bookmarks.sh
         run_as_user /usr/local/bin/mac-generate-bookmarks.sh "$TARGET_USER" "$TARGET_HOME"
     fi
-    if [ -f "$SCRIPT_DIR/autostart/mac-sync-applications.desktop" ]; then
-        mkdir -p "$TARGET_HOME/.config/autostart"
-        sync_or_update_file "$SCRIPT_DIR/autostart/mac-sync-applications.desktop" "$TARGET_HOME/.config/autostart/mac-sync-applications.desktop" false
-    fi
+    # Clean up redundant legacy autostart entries (handled by systemd user services & /etc/xdg/autostart)
+    rm -f "$TARGET_HOME/.config/autostart/mac-sync-applications.desktop" 2>/dev/null || true
+    rm -f "$TARGET_HOME/.config/autostart/mac-ensure-extensions.desktop" 2>/dev/null || true
     run_as_user /usr/local/bin/mac-sync-applications 2>/dev/null || true
 
     log_info "9/10 Checking Plymouth and GDM transition..."

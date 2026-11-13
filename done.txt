@@ -21451,3 +21451,43 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
    - mac-audit-sync check — 100% PASS (5/5 checks passed).
    - mac-i18n-verify — 100% SUCCESSFUL (Parity 0 missing).
+
+================================================================================
+
+Завдання 748: macW1Y — Усунення дублювання автозапуску та системних служб (Пріоритет 3)
+Дата виконання: 13 листопада 2026 р.
+Статус: ВИКОНАНО (Пункт 3: 100%)
+
+1. Фактичний стан та першопричина:
+   - Служба синхронізації програм (mac-sync-applications daemon) запускалася одночасно двома шляхами:
+     1) Як systemd користувацький юніт (~/.config/systemd/user/mac-app-manager.service) з автоматичним перезапуском.
+     2) Через XDG autostart (~/.config/autostart/mac-sync-applications.desktop).
+     Через це при кожному вході в систему паралельно створювався другий процес, який намагався захопити mutex-файл блокування fcntl.flock та відхилявся.
+   - Сторожовий скрипт розширень (mac-ensure-extensions.sh) мав два абсолютно ідентичні файли автозапуску:
+     1) /etc/xdg/autostart/mac-ensure-extensions.desktop (системний рівень).
+     2) ~/.config/autostart/mac-ensure-extensions.desktop (користувацький рівень).
+     Це призводило до подвійного запуску циклу перевірки D-Bus та gsettings при старті сесії GNOME.
+   - У репозиторії в каталозі systemd/ були відсутні файли mac-app-manager.service та mac-screenshot-daemon.service, хоча вони активно використовувалися в системі.
+
+2. Реалізовані дії та технічні рішення:
+   - Створено повні резервні копії всіх змінюваних файлів у .backup_conflict_fixes/step3_autostart/.
+   - До репозиторію додано файли служб:
+     * systemd/mac-app-manager.service (керування додатками, Drag & Drop Wine автоінсталятор).
+     * systemd/mac-screenshot-daemon.service (фоновий обробник знімків екрана та відеозаписів).
+   - Оновлено install.sh:
+     * Прибрано копіювання застарілого mac-sync-applications.desktop до ~/.config/autostart/.
+     * Додано автоматичне очищення ~/.config/autostart/mac-sync-applications.desktop та ~/.config/autostart/mac-ensure-extensions.desktop.
+     * Додано встановлення та активацію mac-app-manager.service і mac-screenshot-daemon.service у блок користувацьких служб systemd.
+     * Забезпечено 100% сумісність із правилом відсутності кирилиці в install.sh та валідність синтаксису bash.
+   - Оновлено uninstall.sh:
+     * Додано очищення користувацьких служб mac-app-manager.service та mac-screenshot-daemon.service при деінсталяції.
+   - У встановленій системі:
+     * Вилучено дублікати ~/.config/autostart/mac-sync-applications.desktop та ~/.config/autostart/mac-ensure-extensions.desktop.
+     * Перевірено працездатність /etc/xdg/autostart/mac-ensure-extensions.desktop та активний статус mac-app-manager.service.
+
+3. Результати тестування та верифікації:
+   - mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
+   - mac-audit-sync check — 100% PASS (5/5 checks passed).
+   - mac-i18n-verify — 100% SUCCESSFUL (0 missing keys, 194 languages, English-only install.sh valid).
+   - systemctl --user status mac-app-manager.service — active (running).
+   - systemctl --user status mac-screenshot-daemon.service — active (running).

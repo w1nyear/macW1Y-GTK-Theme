@@ -166,7 +166,14 @@ restore_system() {
     sudo rm -f /etc/xdg/autostart/nautilus-daemon.desktop
     rm -f "$TARGET_HOME/.config/autostart/nautilus-daemon.desktop"
     rm -f "$TARGET_HOME/.config/autostart/mac-sync-applications.desktop"
+    rm -f "$TARGET_HOME/.config/autostart/mac-ensure-extensions.desktop"
     rm -f "$TARGET_HOME/.config/environment.d/20-macw1y-performance.conf"
+
+    # User systemd services
+    systemctl --user disable --now mac-app-manager.service 2>/dev/null || true
+    systemctl --user disable --now mac-screenshot-daemon.service 2>/dev/null || true
+    rm -f "$TARGET_HOME/.config/systemd/user/mac-app-manager.service"
+    rm -f "$TARGET_HOME/.config/systemd/user/mac-screenshot-daemon.service"
 
     # Nautilus
     log_info "Відновлення стандартного Nautilus..."
