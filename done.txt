@@ -21491,3 +21491,31 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
    - mac-i18n-verify — 100% SUCCESSFUL (0 missing keys, 194 languages, English-only install.sh valid).
    - systemctl --user status mac-app-manager.service — active (running).
    - systemctl --user status mac-screenshot-daemon.service — active (running).
+
+================================================================================
+
+Завдання 749: macW1Y — Дослідження та усунення розбіжності обгорток gnome-control-center (Пріоритет 4)
+Дата виконання: 13 листопада 2026 р.
+Статус: ВИКОНАНО (Пункт 4: 100%)
+
+1. Фактичний стан та першопричина:
+   - Проведено глибокий аналіз усіх бінарників та скриптів gnome-control-center у системі:
+     * /usr/bin/gnome-control-center.orig — оригінальний ELF-бінарник GNOME Control Center (неушкоджений).
+     * bin/gnome-control-center (репозиторій), /usr/bin/gnome-control-center та ~/.local/bin/gnome-control-center містили актуальну версію обгортки (Task 729), яка підключає як системні панелі (window, system, power, mouse), так і панель вибору шпалер та попереднього перегляду оформлення (cc-background-panel.ui та preview.css).
+     * /usr/local/bin/gnome-control-center містив застарілу версію обгортки від 10 листопада, де в G_RESOURCE_OVERLAYS були відсутні cc-background-panel.ui та preview.css.
+   - Оскільки /usr/local/bin має вищий пріоритет у $PATH, ніж /usr/bin, запуск gnome-control-center системними службами або користувачами без ~/.local/bin у $PATH призводив до завантаження застарілої обгортки без підтримки карток стилів та прев'ю шпалер.
+   - Утиліта аудиту bin/mac-audit-sync не містила gnome-control-center у переліку core_scripts, через що розбіжність не відстежувалася автоматично.
+
+2. Реалізовані дії та технічні рішення:
+   - Створено резервні копії всіх причетних файлів у .backup_conflict_fixes/step4_control_center/.
+   - Досліджено аргументи командного рядка (about, screenshot, widgets, mac-styling) та бібліотеки ін'єкцій (libmacpopover.so, libmac_settings.so). Підтверджено їх повну ідентичність в обох версіях.
+   - Синхронізовано /usr/local/bin/gnome-control-center з актуальною канонічною версією bin/gnome-control-center (MD5: 2770bf1b6b3df4650e567e16703e4f81).
+   - Оновлено bin/mac-audit-sync: додано gnome-control-center до переліку core_scripts для постійного моніторингу цілісності та синхронізації.
+   - Синхронізовано bin/mac-audit-sync з /usr/local/bin/mac-audit-sync та ~/.local/bin/mac-audit-sync.
+
+3. Результати тестування та верифікації:
+   - which -a gnome-control-center: усі системні копії (/home/vitaliy/.local/bin, /usr/local/bin, /usr/bin, /bin) мають 100% ідентичний MD5-хеш (2770bf1b6b3df4650e567e16703e4f81).
+   - /usr/bin/gnome-control-center.orig залишається чистим ELF-бінарником без пошкоджень.
+   - mac-audit-sync check — 100% PASS (всі перевірки пройдено, розбіжності відсутні).
+   - mac-extension-guard verify — 21/21 OK (VERIFICATION SUCCESS).
+   - mac-i18n-verify — 100% SUCCESSFUL.
