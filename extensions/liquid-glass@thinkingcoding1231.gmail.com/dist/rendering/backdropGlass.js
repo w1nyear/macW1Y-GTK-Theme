@@ -19,7 +19,10 @@ import {
     isFrameSyncFrozen,
     glassRefreshDue,
     glassRefreshDone,
-    glassForceRefresh
+    glassForceRefresh,
+    addGlassWakeListener,
+    removeGlassWakeListener,
+    isActorNearGlass
 } from '../utils.js?v=fix1';
 
 function lgDir() {
@@ -202,6 +205,13 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
             }
         } catch (_) {}
 
+        this._wakeUnsub = (damagedActor) => {
+            if (this._cleanedUp || !this.visible) return;
+            if (!damagedActor || isActorNearGlass(damagedActor, this)) {
+                this.wakeFrameSync?.();
+            }
+        };
+        addGlassWakeListener?.(this._wakeUnsub);
         this._startTick();
     }
 
@@ -424,6 +434,10 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
 
     destroy() {
         this._cleanedUp = true;
+        if (this._wakeUnsub) {
+            removeGlassWakeListener?.(this._wakeUnsub);
+            this._wakeUnsub = null;
+        }
         this.hide();
         try { this._effect?.cleanup?.(); } catch (_) {}
         this._effect = null;

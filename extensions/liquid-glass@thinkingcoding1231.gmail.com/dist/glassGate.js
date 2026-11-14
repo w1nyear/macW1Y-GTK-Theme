@@ -28,9 +28,9 @@ import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 export const GLASS_REFRESH_ACTIVE_INTERVAL_US = 8333;   // до 120 FPS під час активного руху/трансформації (Apple ProMotion)
-export const GLASS_REFRESH_BACKGROUND_INTERVAL_US = 33333; // 30 FPS для фонових змін під статичним склом
+export const GLASS_REFRESH_BACKGROUND_INTERVAL_US = 16666; // 60 FPS для фонових змін під склом (відео, ігри, анімації)
 export const GLASS_REFRESH_60FPS_INTERVAL_US = 16666;      // звичайна межа 60 FPS
-export const GLASS_REFRESH_HEARTBEAT_US = 1000000;         // пульс узгодженості: 1 с
+export const GLASS_REFRESH_HEARTBEAT_US = 1500000;         // пульс узгодженості у спокої: 1.5 с
 
 let _backdropDamageVersion = 0;
 let _backdropFailCounter = 0;
@@ -40,6 +40,24 @@ let _backdropSkipCount = 0;
 let _eventDrivenDefault = true;
 const _backdropDamageHooked = new WeakSet();
 const _backdropPolls = new WeakMap();
+const _wakeListeners = new Set();
+
+export function addGlassWakeListener(fn) {
+    if (typeof fn === 'function')
+        _wakeListeners.add(fn);
+}
+
+export function removeGlassWakeListener(fn) {
+    _wakeListeners.delete(fn);
+}
+
+export function notifyGlassWake(actor) {
+    for (const fn of _wakeListeners) {
+        try {
+            fn(actor);
+        } catch (_) {}
+    }
+}
 
 function _isActorValid(actor) {
     try {
@@ -123,13 +141,86 @@ function _stageBackdropHash(nowUs) {
 
 function _hookWindowDamage(actor) {
     try {
-        if (_backdropDamageHooked.has(actor))
+        if (!actor || !_isActorValid(actor) || _backdropDamageHooked.has(actor))
             return;
         _backdropDamageHooked.add(actor);
         actor.connect('damaged', () => {
+            actor._lastDamageUs = GLib.get_monotonic_time();
             noteWindowContentDamaged();
+            notifyGlassWake(actor);
+        });
+        actor.connect('destroy', () => {
+            _backdropDamageHooked.delete(actor);
         });
     } catch (_) {}
+}
+
+export function hookWindowDamage(actor) {
+    _hookWindowDamage(actor);
+}
+
+/** Перевіряє, чи вікно перетинає або знаходиться близько (в межах 100px) до актора скла. */
+export function isActorNearGlass(windowActor, glassActor) {
+    try {
+        if (!windowActor || !_isActorValid(windowActor))
+            return false;
+        if (!glassActor || !_isActorValid(glassActor))
+            return false;
+
+        const wRect = windowActor.get_buffer_rect?.();
+        let wX = wRect?.x;
+        let wY = wRect?.y;
+        let wW = wRect?.width;
+        let wH = wRect?.height;
+
+        if (!Number.isFinite(wX) || !Number.isFinite(wY) || !wW || !wH || wW <= 0 || wH <= 0) {
+            const [wx, wy] = windowActor.get_transformed_position?.() ?? [windowActor.x, windowActor.y];
+            const [ww, wh] = windowActor.get_transformed_size?.() ?? [windowActor.width, windowActor.height];
+            wX = wx; wY = wy; wW = ww; wH = wh;
+        }
+
+        if (!Number.isFinite(wX) || !Number.isFinite(wY) || !wW || !wH || wW <= 0 || wH <= 0)
+            return true;
+
+        let [gx, gy] = glassActor.get_transformed_position?.() ?? [glassActor.x, glassActor.y];
+        let [gw, gh] = glassActor.get_transformed_size?.() ?? [glassActor.width, glassActor.height];
+
+        if (glassActor.has_clip?.()) {
+            const clipRes = glassActor.get_clip?.();
+            if (Array.isArray(clipRes)) {
+                if (clipRes.length === 5 && clipRes[0]) {
+                    gx += clipRes[1];
+                    gy += clipRes[2];
+                    gw = clipRes[3];
+                    gh = clipRes[4];
+                } else if (clipRes.length === 4) {
+                    gx += clipRes[0];
+                    gy += clipRes[1];
+                    gw = clipRes[2];
+                    gh = clipRes[3];
+                }
+            }
+        }
+
+        if (!Number.isFinite(gx) || !Number.isFinite(gy) || !gw || !gh || gw <= 0 || gh <= 0)
+            return true;
+
+        // Зона чутливості 100px навколо елемента скла
+        const MARGIN = 100;
+        const gLeft = gx - MARGIN;
+        const gTop = gy - MARGIN;
+        const gRight = gx + gw + MARGIN;
+        const gBottom = gy + gh + MARGIN;
+
+        return !(
+            wX + wW < gLeft ||
+            wX > gRight ||
+            wY + wH < gTop ||
+            wY > gBottom
+        );
+    } catch (_) {
+        return true;
+    }
 }
 
 /** Хеш власної геометрії скла. */
@@ -155,7 +246,15 @@ function _ownGlassHash(actor) {
 
 function _newPollState() {
     _backdropSurfaceCount++;
-    return { lastScanH: 0, lastDamage: -1, lastOwnH: -1, dirty: false, lastFull: 0 };
+    const nowUs = GLib.get_monotonic_time();
+    return {
+        lastScanH: 0,
+        lastDamage: -1,
+        lastOwnH: -1,
+        dirty: true,
+        lastFull: 0,
+        settleUntilUs: nowUs + 800000 // 800ms адаптивного осідання після створення/відкриття
+    };
 }
 
 /**
@@ -172,27 +271,63 @@ export function glassRefreshDue(glassActor, extraHash) {
             _backdropPolls.set(glassActor, st);
         }
         const nowUs = GLib.get_monotonic_time();
+        if (!st.lastFull) {
+            st.settleUntilUs = nowUs + 800000;
+            return true; // перший тік після створення / show().
+        }
+
         const scanH = _stageBackdropHash(nowUs);
         const dmg = _backdropDamageVersion;
         const ownH = _hmix(_ownGlassHash(glassActor), extraHash);
+
         const scanChanged = (st.lastScanH !== scanH);
         const ownChanged = (st.lastOwnH !== ownH);
-        if (scanChanged || ownChanged) {
+        const dmgChanged = (st.lastDamage !== dmg);
+
+        // Перевіряємо, чи елемент зараз у періоді осідання після відкриття
+        const isSettling = (nowUs < (st.settleUntilUs || 0));
+
+        // Перевіряємо, чи було пошкодження (відео, гра, анімація) вікна під чи поблизу скла
+        let isNearDamaged = false;
+        if (dmgChanged) {
+            try {
+                const actors = global.get_window_actors?.() ?? [];
+                for (let i = 0; i < actors.length; i++) {
+                    const a = actors[i];
+                    if (a && a.visible && a.mapped && (a._lastDamageUs && a._lastDamageUs >= st.lastFull)) {
+                        if (isActorNearGlass(a, glassActor)) {
+                            isNearDamaged = true;
+                            break;
+                        }
+                    }
+                }
+            } catch (_) {
+                isNearDamaged = true;
+            }
+        }
+
+        if (scanChanged || ownChanged || isNearDamaged || isSettling) {
             st.lastScanH = scanH;
             st.lastDamage = dmg;
             st.lastOwnH = ownH;
             st.dirty = true;
         }
-        if (!st.lastFull)
-            return true; // перший тік після створення / show().
+
         const sinceFull = nowUs - st.lastFull;
+
         if (st.dirty) {
             // Apple ProMotion Dynamic Adaptivity:
             // Активний рух власної геометрії скла -> до 120 FPS (8.3 мс)
-            // Фонова зміна під нерухомим склом -> 30 FPS (33.3 мс, економія 75% GPU)
-            const dueInterval = ownChanged ? GLASS_REFRESH_ACTIVE_INTERVAL_US : GLASS_REFRESH_BACKGROUND_INTERVAL_US;
+            // Зміна фону під склом / вікно поруч (відео, гра, анімація) -> 60 FPS (16.6 мс)
+            const dueInterval = ownChanged ? GLASS_REFRESH_ACTIVE_INTERVAL_US : GLASS_REFRESH_60FPS_INTERVAL_US;
             return sinceFull >= dueInterval;
         }
+
+        // Пульс узгодженості у спокої: 1.5 с
+        if (sinceFull >= GLASS_REFRESH_HEARTBEAT_US) {
+            return true;
+        }
+
         // [GPU-OPTIMIZE] У спокої, коли нічого не брудне (st.dirty === false),
         // не виконувати дорогі оновлення взагалі (0% GPU в idle).
         return false;
@@ -230,6 +365,7 @@ export function glassForceRefresh(glassActor) {
         }
         st.dirty = true;
         st.lastFull = 0;
+        st.settleUntilUs = GLib.get_monotonic_time() + 800000;
     } catch (_) {}
 }
 
@@ -264,6 +400,17 @@ export function getActorPollState(actor) {
     return _backdropPolls.get(actor);
 }
 
+export function glassPollStats(enable) {
+    if (enable === undefined || enable === null)
+        return { refreshes: _backdropRefreshCount, surfaces: _backdropSurfaceCount,
+            damageVersion: _backdropDamageVersion };
+    if (enable) {
+        _backdropRefreshCount = 0;
+        return { refreshes: 0, started: true };
+    }
+    return { refreshes: _backdropRefreshCount, stopped: true };
+}
+
 /**
  * Швидка пасивна перевірка для фонового watchdog/heartbeat:
  * повертає true, якщо фон, вікна або пошкодження сцени змінилися
@@ -276,10 +423,20 @@ export function isBackdropDirtyOrChanged(glassActor) {
         let st = _backdropPolls.get(glassActor);
         if (!st) return true;
         const nowUs = GLib.get_monotonic_time();
+        if (st.dirty || (st.settleUntilUs && nowUs < st.settleUntilUs)) return true;
         const scanH = _stageBackdropHash(nowUs);
+        if (st.lastScanH !== scanH) return true;
         const dmg = _backdropDamageVersion;
-        if (st.lastScanH !== scanH || st.lastDamage !== dmg || st.dirty) {
-            return true;
+        if (st.lastDamage !== dmg) {
+            const actors = global.get_window_actors?.() ?? [];
+            for (let i = 0; i < actors.length; i++) {
+                const a = actors[i];
+                if (a && a.visible && a.mapped && (a._lastDamageUs && a._lastDamageUs >= st.lastFull)) {
+                    if (isActorNearGlass(a, glassActor)) {
+                        return true;
+                    }
+                }
+            }
         }
         return false;
     } catch (_) {

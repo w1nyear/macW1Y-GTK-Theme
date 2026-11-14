@@ -4,7 +4,7 @@ import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import { LiquidEffect } from './liquidEffect.js?v=fix1';
 import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip } from './utils.js?v=fix1';
-import { glassRefreshDue, glassRefreshDone, glassForceRefresh, isBackdropDirtyOrChanged } from './glassGate.js?v=fix3';
+import { glassRefreshDue, glassRefreshDone, glassForceRefresh, isBackdropDirtyOrChanged, addGlassWakeListener, removeGlassWakeListener, isActorNearGlass, hookWindowDamage } from './glassGate.js?v=fix3';
 // Padding to allow the shader to draw effects (like refraction and blur) outside the actor's strict bounds.
 const SHADER_PADDING = 20;
 // Utility: Convert HEX color string (e.g., "#ffffff") to normalized RGB array [1.0, 1.0, 1.0]
@@ -391,6 +391,7 @@ export class DashManager {
         // starts being cloned into its own glass — ghost icons inside the dock.
         this._uiSampler = new UILayerSampler(this.bgActor, this.liquidBox, [dockRoot, global.windowGroup, global.window_group], this._cloneContainer, 'dock', [this.targetActor]);
         this.bgActor.show();
+        glassForceRefresh?.(this.bgActor);
         const laterAdd = (laterType, callback) => {
             return global.compositor.get_laters().add(laterType, callback);
         };
@@ -485,6 +486,13 @@ export class DashManager {
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
         };
+        this._wakeUnsub = (damagedActor) => {
+            if (this._torndown || !this.bgActor || !this.targetActor?.mapped) return;
+            if (!damagedActor || isActorNearGlass(damagedActor, this.bgActor)) {
+                this.wakeFrameSync();
+            }
+        };
+        addGlassWakeListener(this._wakeUnsub);
         this._scheduleIdleHeartbeat = () => {
             if (this._idleTimeoutId || this._torndown)
                 return;
@@ -517,6 +525,7 @@ export class DashManager {
                 let currentWindows = new Set();
                 for (let a of actors) {
                     if (!a || a._isDisposed) continue;
+                    hookWindowDamage?.(a);
                     let mw = a.get_meta_window?.();
                     if (!mw) continue;
                     currentWindows.add(mw);
@@ -979,6 +988,8 @@ export class DashManager {
             if (this._lastHidden === true) {
                 this._lastHidden = false;
                 this._logger.log('[Liquid Glass][dock] glass visible again');
+                glassForceRefresh?.(this.bgActor);
+                this.wakeFrameSync();
             }
             this.bgActor.show();
             if (!isD2DTransitioning) {
@@ -1179,6 +1190,10 @@ export class DashManager {
         this.liquidBox = null;
         this._uiSampler?.destroy();
         this._windowCloneManager?.destroy();
+        if (this._wakeUnsub) {
+            removeGlassWakeListener(this._wakeUnsub);
+            this._wakeUnsub = null;
+        }
     }
     // 拡張機能全体が無効化される時の最終クリーンアップ
     // [FIX] Teardown must not be all-or-nothing.
@@ -1224,6 +1239,10 @@ export class DashManager {
         });
         // エフェクトを解除
         this._teardownStep('removeEffect', () => this._removeEffect());
+        if (this._wakeUnsub) {
+            removeGlassWakeListener(this._wakeUnsub);
+            this._wakeUnsub = null;
+        }
         // メモリリークを防ぐため、GSettingsのリスナーもすべて解除する
         this._teardownStep('settingsSignals', () => {
             if (this._settings) {

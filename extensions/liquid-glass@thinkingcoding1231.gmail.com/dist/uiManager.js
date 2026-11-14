@@ -9,7 +9,7 @@ import Meta from 'gi://Meta';
 import Gio from 'gi://Gio';
 import { LiquidEffect } from './liquidEffect.js?v=fix1';
 import { StageContrastSampler, AdaptiveContrastConfig } from './contrastSampler.js';
-import { UnpickableActor, UILayerSampler, UnpickableWidget, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, resolveMonitorGeometry, isActorValid, getAllocatedSize, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, resolveCrossFade, adaptiveColorTweener, glassRefreshDue, glassRefreshDone, glassForceRefresh } from './utils.js?v=fix1';
+import { UnpickableActor, UILayerSampler, UnpickableWidget, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, resolveMonitorGeometry, isActorValid, getAllocatedSize, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, resolveCrossFade, adaptiveColorTweener, glassRefreshDue, glassRefreshDone, glassForceRefresh, addGlassWakeListener, removeGlassWakeListener, isActorNearGlass } from './utils.js?v=fix1';
 // ========== Configuration Parameters ==========
 // Transparent padding outside the glass area.
 // This prevents the shader distortion or rounded corners from being clipped by the actor bounds.
@@ -671,11 +671,20 @@ export class UIManager {
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
         };
+        this._wakeUnsub = (damagedActor) => {
+            if (this._torndown || !this.bgActor || !this.targetActor?.mapped) return;
+            if (this.menu && !this.menu.isOpen) return;
+            if (!damagedActor || isActorNearGlass(damagedActor, this.bgActor)) {
+                this.wakeFrameSync?.();
+            }
+        };
+        addGlassWakeListener(this._wakeUnsub);
         this._scheduleIdleHeartbeat = () => {
             // [GPU-OPTIMIZE] No-op in idle.
         };
         // Starts the render loop and builds fresh clones when the menu is opened
         let startFrameSync = () => {
+            glassForceRefresh?.(this.bgActor);
             this.wakeFrameSync();
             if (this._frameSyncId === 0) {
                 buildClones();
@@ -1360,6 +1369,10 @@ export class UIManager {
             GLib.Source.remove(this._tickId);
             this._tickId = 0;
         }
+        if (this._wakeUnsub) {
+            removeGlassWakeListener(this._wakeUnsub);
+            this._wakeUnsub = null;
+        }
         // Stop the render frame loop
         if (this._frameSyncId !== 0) {
             if (global.compositor?.get_laters)
@@ -1734,6 +1747,10 @@ export class UIManager {
         // leaving the signal handlers, the glass actors and the per-frame later
         // chain in place across disable().
         this._teardownStep('removeEffect', () => this._removeEffect());
+        if (this._wakeUnsub) {
+            removeGlassWakeListener(this._wakeUnsub);
+            this._wakeUnsub = null;
+        }
     }
 }
 // A straightforward mathematical implementation of Hooke's Law for spring physics
