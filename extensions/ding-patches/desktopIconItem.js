@@ -231,6 +231,8 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
                 c.closePath();
             }
 
+            let minStep = 8.5; /* Minimum step difference to warrant two-tier fillet contour */
+
             if (pillLines.length === 1) {
                 cr.newPath();
                 drawRoundedRect(cr, pillLines[0].x, pillLines[0].y, pillLines[0].w, pillLines[0].h, rCorner);
@@ -244,7 +246,7 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
                 let dwL = x1L - x0L;
                 let dwR = x0R - x1R;
 
-                if (dwL > 2.0 && dwR > 2.0) {
+                if (dwL >= minStep && dwR >= minStep) {
                     let rfR = Math.max(1.0, Math.min(rFillet, dwR / 2.0, pillLines[0].h / 2.0, pillLines[1].h / 2.0));
                     let rfL = Math.max(1.0, Math.min(rFillet, dwL / 2.0, pillLines[0].h / 2.0, pillLines[1].h / 2.0));
                     let rtl = Math.min(rCorner, pillLines[0].w / 2.0, pillLines[0].h / 2.0);
@@ -263,7 +265,7 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
                     cr.arc(x0L + rtl, y0T + rtl, rtl, Math.PI, 1.5 * Math.PI);
                     cr.closePath();
                     cr.fill();
-                } else if (dwL < -2.0 && dwR < -2.0) {
+                } else if (dwL <= -minStep && dwR <= -minStep) {
                     let rfR = Math.max(1.0, Math.min(rFillet, -dwR / 2.0, pillLines[0].h / 2.0, pillLines[1].h / 2.0));
                     let rfL = Math.max(1.0, Math.min(rFillet, -dwL / 2.0, pillLines[0].h / 2.0, pillLines[1].h / 2.0));
                     let rtl = Math.min(rCorner, pillLines[0].w / 2.0, pillLines[0].h / 2.0);
@@ -283,18 +285,38 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
                     cr.closePath();
                     cr.fill();
                 } else {
+                    /* Lines are close in width -> UNIFY into a single whole rounded rectangle! */
+                    let uxMin = Math.min(x0L, x1L);
+                    let uxMax = Math.max(x0R, x1R);
+                    let uyMin = y0T;
+                    let uyMax = y1B;
+                    cr.newPath();
+                    drawRoundedRect(cr, uxMin, uyMin, uxMax - uxMin, uyMax - uyMin, rCorner);
+                    cr.fill();
+                }
+            } else {
+                let uxMin = pillLines[0].x;
+                let uxMax = pillLines[0].x + pillLines[0].w;
+                let uyMin = pillLines[0].y;
+                let uyMax = pillLines[pillLines.length - 1].y + pillLines[pillLines.length - 1].h;
+                let minW = pillLines[0].w, maxW = pillLines[0].w;
+                for (let p of pillLines) {
+                    if (p.x < uxMin) uxMin = p.x;
+                    if (p.x + p.w > uxMax) uxMax = p.x + p.w;
+                    if (p.w < minW) minW = p.w;
+                    if (p.w > maxW) maxW = p.w;
+                }
+                if ((maxW - minW) < 17.0) {
+                    cr.newPath();
+                    drawRoundedRect(cr, uxMin, uyMin, uxMax - uxMin, uyMax - uyMin, rCorner);
+                    cr.fill();
+                } else {
                     cr.newPath();
                     for (let p of pillLines) {
                         drawRoundedRect(cr, p.x, p.y, p.w, p.h, rCorner);
                     }
                     cr.fill();
                 }
-            } else {
-                cr.newPath();
-                for (let p of pillLines) {
-                    drawRoundedRect(cr, p.x, p.y, p.w, p.h, rCorner);
-                }
-                cr.fill();
             }
 
             return false;

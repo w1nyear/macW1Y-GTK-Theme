@@ -558,7 +558,7 @@
         "49",
         "50"
       ],
-      "sha256": "13a1b96885229be2a48e04dd8d06d0d2fc876de51fa9b38bc59186220b66cb64",
+      "sha256": "9227d6b42b31e2e3af402eb6cd251628ab6ade784e16e7934c61e25db0004b86",
       "status": "locked",
       "source": "apt_system_patched",
       "macw1y_components": [
@@ -568,7 +568,7 @@
       "has_custom_patches": true,
       "patch_description": "macOS Finder style stepped label selection pill, semi-transparent hover state, askRenamePopup, and desktopManager patches",
       "last_verified": "2026-11-14",
-      "pinned_sha256": "13a1b96885229be2a48e04dd8d06d0d2fc876de51fa9b38bc59186220b66cb64"
+      "pinned_sha256": "9227d6b42b31e2e3af402eb6cd251628ab6ade784e16e7934c61e25db0004b86"
     },
     "desktop-widgets@r3nhick": {
       "uuid": "desktop-widgets@r3nhick",

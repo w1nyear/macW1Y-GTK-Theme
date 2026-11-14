@@ -449,9 +449,10 @@ static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
 
             double dwL = x1L - x0L;
             double dwR = x0R - x1R;
+            double min_step = 8.5; /* Minimum step difference to warrant two-tier fillet contour */
 
-            if (dwL > 2.0 && dwR > 2.0) {
-                /* Line 0 is wider on both sides */
+            if (dwL >= min_step && dwR >= min_step) {
+                /* Line 0 is substantially wider than Line 1 on both sides */
                 double rf_R = r_fillet;
                 if (rf_R > dwR / 2.0) rf_R = dwR / 2.0;
                 if (rf_R > pill_lines[0].h / 2.0) rf_R = pill_lines[0].h / 2.0;
@@ -491,8 +492,8 @@ static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
                 cairo_arc(cr, x0L + rtl, y0T + rtl, rtl, G_PI, 1.5 * G_PI);
                 cairo_close_path(cr);
                 cairo_fill(cr);
-            } else if (dwL < -2.0 && dwR < -2.0) {
-                /* Line 1 is wider on both sides */
+            } else if (dwL <= -min_step && dwR <= -min_step) {
+                /* Line 1 is substantially wider than Line 0 on both sides */
                 double rf_R = r_fillet;
                 if (rf_R > -dwR / 2.0) rf_R = -dwR / 2.0;
                 if (rf_R > pill_lines[0].h / 2.0) rf_R = pill_lines[0].h / 2.0;
@@ -533,18 +534,40 @@ static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
                 cairo_close_path(cr);
                 cairo_fill(cr);
             } else {
+                /* Lines are close in width -> UNIFY into a single whole rounded rectangle! */
+                double ux_min = (x0L < x1L) ? x0L : x1L;
+                double ux_max = (x0R > x1R) ? x0R : x1R;
+                double uy_min = y0T;
+                double uy_max = y1B;
                 cairo_new_path(cr);
-                for (int i = 0; i < 2; i++) {
+                mac_draw_rounded_rect(cr, ux_min, uy_min, ux_max - ux_min, uy_max - uy_min, r_corner);
+                cairo_fill(cr);
+            }
+        } else {
+            /* For 3+ lines, check if all lines are close in width */
+            double ux_min = pill_lines[0].x;
+            double ux_max = pill_lines[0].x + pill_lines[0].w;
+            double uy_min = pill_lines[0].y;
+            double uy_max = pill_lines[n_lines - 1].y + pill_lines[n_lines - 1].h;
+            double min_w = pill_lines[0].w;
+            double max_w = pill_lines[0].w;
+            for (int i = 0; i < n_lines; i++) {
+                if (pill_lines[i].x < ux_min) ux_min = pill_lines[i].x;
+                if (pill_lines[i].x + pill_lines[i].w > ux_max) ux_max = pill_lines[i].x + pill_lines[i].w;
+                if (pill_lines[i].w < min_w) min_w = pill_lines[i].w;
+                if (pill_lines[i].w > max_w) max_w = pill_lines[i].w;
+            }
+            if ((max_w - min_w) < 17.0) {
+                cairo_new_path(cr);
+                mac_draw_rounded_rect(cr, ux_min, uy_min, ux_max - ux_min, uy_max - uy_min, r_corner);
+                cairo_fill(cr);
+            } else {
+                cairo_new_path(cr);
+                for (int i = 0; i < n_lines; i++) {
                     mac_draw_rounded_rect(cr, pill_lines[i].x, pill_lines[i].y, pill_lines[i].w, pill_lines[i].h, r_corner);
                 }
                 cairo_fill(cr);
             }
-        } else {
-            cairo_new_path(cr);
-            for (int i = 0; i < n_lines; i++) {
-                mac_draw_rounded_rect(cr, pill_lines[i].x, pill_lines[i].y, pill_lines[i].w, pill_lines[i].h, r_corner);
-            }
-            cairo_fill(cr);
         }
         cairo_destroy(cr);
     }
