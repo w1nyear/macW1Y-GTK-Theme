@@ -224,7 +224,7 @@ static void install_mac_popover_hooks(void) {
 }
 
 /* =========================================================================
- * macOS Finder Style Grid View Selection Pill for Nautilus
+ * macOS Finder Style Grid View Selection & Hover Pill for Nautilus
  * Wraps tightly around each line of filename text, avoiding wide empty boxes
  * ========================================================================= */
 static void (*orig_gtk_label_snapshot)(GtkWidget *widget, GtkSnapshot *snapshot) = NULL;
@@ -243,30 +243,62 @@ static void get_system_accent_color(double *r, double *g, double *b) {
     }
 }
 
-static gboolean is_selected_grid_label(GtkWidget *widget) {
-    if (!widget || !GTK_IS_LABEL(widget)) return FALSE;
+typedef enum {
+    MAC_GRID_STATE_NONE = 0,
+    MAC_GRID_STATE_SELECTED = 1,
+    MAC_GRID_STATE_HOVER = 2
+} MacGridState;
+
+static void on_grid_item_enter(GtkEventControllerMotion *controller, double x, double y, gpointer user_data) {
+    GtkWidget *item = GTK_WIDGET(user_data);
+    if (GTK_IS_WIDGET(item)) {
+        GtkWidget *label = GTK_WIDGET(g_object_get_data(G_OBJECT(item), "mac-target-label"));
+        if (label && GTK_IS_WIDGET(label)) {
+            g_object_set_data(G_OBJECT(label), "mac-hovered", GINT_TO_POINTER(1));
+            gtk_widget_queue_draw(label);
+        }
+    }
+}
+
+static void on_grid_item_leave(GtkEventControllerMotion *controller, gpointer user_data) {
+    GtkWidget *item = GTK_WIDGET(user_data);
+    if (GTK_IS_WIDGET(item)) {
+        GtkWidget *label = GTK_WIDGET(g_object_get_data(G_OBJECT(item), "mac-target-label"));
+        if (label && GTK_IS_WIDGET(label)) {
+            g_object_set_data(G_OBJECT(label), "mac-hovered", GINT_TO_POINTER(0));
+            gtk_widget_queue_draw(label);
+        }
+    }
+}
+
+static MacGridState get_grid_label_state(GtkWidget *widget) {
+    if (!widget || !GTK_IS_LABEL(widget)) return MAC_GRID_STATE_NONE;
 
     GtkWidget *labels_box = gtk_widget_get_parent(widget);
-    if (!labels_box || !gtk_widget_has_css_class(labels_box, "icon-ui-labels-box")) return FALSE;
+    if (!labels_box || !gtk_widget_has_css_class(labels_box, "icon-ui-labels-box")) return MAC_GRID_STATE_NONE;
 
     if (gtk_widget_has_css_class(widget, "caption") || gtk_widget_has_css_class(widget, "dim-label")) {
-        return FALSE;
+        return MAC_GRID_STATE_NONE;
     }
 
     gboolean selected = FALSE;
+    gboolean hovered = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "mac-hovered"));
+
     for (GtkWidget *p = widget; p != NULL; p = gtk_widget_get_parent(p)) {
         GtkStateFlags flags = gtk_widget_get_state_flags(p);
-        if (flags & GTK_STATE_FLAG_SELECTED) {
+        if ((flags & GTK_STATE_FLAG_SELECTED) || gtk_widget_has_css_class(p, "selected")) {
             selected = TRUE;
             break;
         }
-        if (gtk_widget_has_css_class(p, "selected")) {
-            selected = TRUE;
-            break;
+        if (flags & GTK_STATE_FLAG_PRELIGHT) {
+            hovered = TRUE;
         }
         if (GTK_IS_GRID_VIEW(p)) break;
     }
-    return selected;
+
+    if (selected) return MAC_GRID_STATE_SELECTED;
+    if (hovered) return MAC_GRID_STATE_HOVER;
+    return MAC_GRID_STATE_NONE;
 }
 
 typedef struct {
@@ -288,7 +320,35 @@ static void mac_draw_rounded_rect(cairo_t *cr, double x, double y, double w, dou
 static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
     if (!orig_gtk_label_snapshot) return;
 
-    if (!is_selected_grid_label(widget)) {
+    /* Ensure overflow is visible so top and bottom rounded arcs are never clipped */
+    gtk_widget_set_overflow(widget, GTK_OVERFLOW_VISIBLE);
+    GtkWidget *labels_box = gtk_widget_get_parent(widget);
+    if (labels_box) {
+        gtk_widget_set_overflow(labels_box, GTK_OVERFLOW_VISIBLE);
+    }
+
+    GtkWidget *item = NULL;
+    for (GtkWidget *p = widget; p != NULL; p = gtk_widget_get_parent(p)) {
+        GtkWidget *parent = gtk_widget_get_parent(p);
+        if (parent && GTK_IS_GRID_VIEW(parent)) {
+            item = p;
+            break;
+        }
+    }
+    if (item) {
+        gtk_widget_set_overflow(item, GTK_OVERFLOW_VISIBLE);
+        g_object_set_data(G_OBJECT(item), "mac-target-label", widget);
+        if (!g_object_get_data(G_OBJECT(item), "mac-hover-controller-installed")) {
+            g_object_set_data(G_OBJECT(item), "mac-hover-controller-installed", GINT_TO_POINTER(1));
+            GtkEventController *motion = gtk_event_controller_motion_new();
+            g_signal_connect(motion, "enter", G_CALLBACK(on_grid_item_enter), item);
+            g_signal_connect(motion, "leave", G_CALLBACK(on_grid_item_leave), item);
+            gtk_widget_add_controller(item, motion);
+        }
+    }
+
+    MacGridState state = get_grid_label_state(widget);
+    if (state == MAC_GRID_STATE_NONE) {
         orig_gtk_label_snapshot(widget, snapshot);
         return;
     }
@@ -333,12 +393,13 @@ static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
     }
 
     graphene_rect_t bounds;
-    graphene_rect_init(&bounds, 0.0f, 0.0f, (float)widget_w, (float)widget_h);
+    graphene_rect_init(&bounds, -30.0f, -30.0f, (float)widget_w + 60.0f, (float)widget_h + 60.0f);
     cairo_t *cr = gtk_snapshot_append_cairo(snapshot, &bounds);
     if (cr) {
-        double px = 5.5;
-        double py = 2.0;
-        double r = 5.0;
+        double px = 6.0;
+        double py = 2.5;
+        double r_corner = 7.5;
+        double r_fillet = 6.0;
 
         MacLineBox pill_lines[8];
         for (int i = 0; i < n_lines; i++) {
@@ -356,17 +417,29 @@ static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
             }
         }
 
-        double ar, ag, ab;
-        get_system_accent_color(&ar, &ag, &ab);
-        if (gtk_widget_get_state_flags(widget) & GTK_STATE_FLAG_BACKDROP) {
-            cairo_set_source_rgba(cr, 0.45, 0.45, 0.47, 0.90);
+        if (state == MAC_GRID_STATE_SELECTED) {
+            double ar, ag, ab;
+            get_system_accent_color(&ar, &ag, &ab);
+            if (gtk_widget_get_state_flags(widget) & GTK_STATE_FLAG_BACKDROP) {
+                cairo_set_source_rgba(cr, 0.45, 0.45, 0.47, 0.90);
+            } else {
+                cairo_set_source_rgb(cr, ar, ag, ab);
+            }
         } else {
-            cairo_set_source_rgb(cr, ar, ag, ab);
+            /* Hover state: grey-transparent */
+            gboolean dark = TRUE;
+            AdwStyleManager *sm = adw_style_manager_get_default();
+            if (sm) dark = adw_style_manager_get_dark(sm);
+            if (dark) {
+                cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
+            } else {
+                cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.08);
+            }
         }
 
         if (n_lines == 1) {
             cairo_new_path(cr);
-            mac_draw_rounded_rect(cr, pill_lines[0].x, pill_lines[0].y, pill_lines[0].w, pill_lines[0].h, r);
+            mac_draw_rounded_rect(cr, pill_lines[0].x, pill_lines[0].y, pill_lines[0].w, pill_lines[0].h, r_corner);
             cairo_fill(cr);
         } else if (n_lines == 2) {
             double x0L = pill_lines[0].x, x0R = pill_lines[0].x + pill_lines[0].w;
@@ -379,55 +452,97 @@ static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
 
             if (dwL > 2.0 && dwR > 2.0) {
                 /* Line 0 is wider on both sides */
-                double cur_r = r;
-                if (cur_r > dwL) cur_r = dwL;
-                if (cur_r > dwR) cur_r = dwR;
-                if (cur_r > pill_lines[0].h / 2.0) cur_r = pill_lines[0].h / 2.0;
-                if (cur_r > pill_lines[1].h / 2.0) cur_r = pill_lines[1].h / 2.0;
-                if (cur_r < 1.0) cur_r = 1.0;
+                double rf_R = r_fillet;
+                if (rf_R > dwR / 2.0) rf_R = dwR / 2.0;
+                if (rf_R > pill_lines[0].h / 2.0) rf_R = pill_lines[0].h / 2.0;
+                if (rf_R > pill_lines[1].h / 2.0) rf_R = pill_lines[1].h / 2.0;
+                if (rf_R < 1.0) rf_R = 1.0;
+
+                double rf_L = r_fillet;
+                if (rf_L > dwL / 2.0) rf_L = dwL / 2.0;
+                if (rf_L > pill_lines[0].h / 2.0) rf_L = pill_lines[0].h / 2.0;
+                if (rf_L > pill_lines[1].h / 2.0) rf_L = pill_lines[1].h / 2.0;
+                if (rf_L < 1.0) rf_L = 1.0;
+
+                double rtl = r_corner;
+                if (rtl > pill_lines[0].w / 2.0) rtl = pill_lines[0].w / 2.0;
+                if (rtl > pill_lines[0].h / 2.0) rtl = pill_lines[0].h / 2.0;
+
+                double rtr = r_corner;
+                if (rtr > pill_lines[0].w / 2.0) rtr = pill_lines[0].w / 2.0;
+                if (rtr > pill_lines[0].h / 2.0) rtr = pill_lines[0].h / 2.0;
+
+                double rbl = r_corner;
+                if (rbl > pill_lines[1].w / 2.0) rbl = pill_lines[1].w / 2.0;
+                if (rbl > pill_lines[1].h / 2.0) rbl = pill_lines[1].h / 2.0;
+
+                double rbr = r_corner;
+                if (rbr > pill_lines[1].w / 2.0) rbr = pill_lines[1].w / 2.0;
+                if (rbr > pill_lines[1].h / 2.0) rbr = pill_lines[1].h / 2.0;
 
                 cairo_new_path(cr);
-                cairo_arc(cr, x0L + cur_r, y0T + cur_r, cur_r, G_PI, 1.5 * G_PI);
-                cairo_arc(cr, x0R - cur_r, y0T + cur_r, cur_r, 1.5 * G_PI, 2.0 * G_PI);
-                cairo_arc(cr, x0R - cur_r, y0B - cur_r, cur_r, 0, 0.5 * G_PI);
-                cairo_arc_negative(cr, x1R + cur_r, y0B + cur_r, cur_r, 1.5 * G_PI, G_PI);
-                cairo_arc(cr, x1R - cur_r, y1B - cur_r, cur_r, 0, 0.5 * G_PI);
-                cairo_arc(cr, x1L + cur_r, y1B - cur_r, cur_r, 0.5 * G_PI, G_PI);
-                cairo_arc_negative(cr, x1L - cur_r, y0B + cur_r, cur_r, 0, 1.5 * G_PI);
-                cairo_arc(cr, x0L + cur_r, y0B - cur_r, cur_r, 0.5 * G_PI, G_PI);
+                cairo_arc(cr, x0R - rtr, y0T + rtr, rtr, 1.5 * G_PI, 2.0 * G_PI);
+                cairo_arc(cr, x0R - rf_R, y0B - rf_R, rf_R, 0, 0.5 * G_PI);
+                cairo_arc_negative(cr, x1R + rf_R, y0B + rf_R, rf_R, 1.5 * G_PI, G_PI);
+                cairo_arc(cr, x1R - rbr, y1B - rbr, rbr, 0, 0.5 * G_PI);
+                cairo_arc(cr, x1L + rbl, y1B - rbl, rbl, 0.5 * G_PI, G_PI);
+                cairo_arc_negative(cr, x1L - rf_L, y0B + rf_L, rf_L, 0, 1.5 * G_PI);
+                cairo_arc(cr, x0L + rf_L, y0B - rf_L, rf_L, 0.5 * G_PI, G_PI);
+                cairo_arc(cr, x0L + rtl, y0T + rtl, rtl, G_PI, 1.5 * G_PI);
                 cairo_close_path(cr);
                 cairo_fill(cr);
             } else if (dwL < -2.0 && dwR < -2.0) {
                 /* Line 1 is wider on both sides */
-                double cur_r = r;
-                if (cur_r > -dwL) cur_r = -dwL;
-                if (cur_r > -dwR) cur_r = -dwR;
-                if (cur_r > pill_lines[0].h / 2.0) cur_r = pill_lines[0].h / 2.0;
-                if (cur_r > pill_lines[1].h / 2.0) cur_r = pill_lines[1].h / 2.0;
-                if (cur_r < 1.0) cur_r = 1.0;
+                double rf_R = r_fillet;
+                if (rf_R > -dwR / 2.0) rf_R = -dwR / 2.0;
+                if (rf_R > pill_lines[0].h / 2.0) rf_R = pill_lines[0].h / 2.0;
+                if (rf_R > pill_lines[1].h / 2.0) rf_R = pill_lines[1].h / 2.0;
+                if (rf_R < 1.0) rf_R = 1.0;
+
+                double rf_L = r_fillet;
+                if (rf_L > -dwL / 2.0) rf_L = -dwL / 2.0;
+                if (rf_L > pill_lines[0].h / 2.0) rf_L = pill_lines[0].h / 2.0;
+                if (rf_L > pill_lines[1].h / 2.0) rf_L = pill_lines[1].h / 2.0;
+                if (rf_L < 1.0) rf_L = 1.0;
+
+                double rtl = r_corner;
+                if (rtl > pill_lines[0].w / 2.0) rtl = pill_lines[0].w / 2.0;
+                if (rtl > pill_lines[0].h / 2.0) rtl = pill_lines[0].h / 2.0;
+
+                double rtr = r_corner;
+                if (rtr > pill_lines[0].w / 2.0) rtr = pill_lines[0].w / 2.0;
+                if (rtr > pill_lines[0].h / 2.0) rtr = pill_lines[0].h / 2.0;
+
+                double rbl = r_corner;
+                if (rbl > pill_lines[1].w / 2.0) rbl = pill_lines[1].w / 2.0;
+                if (rbl > pill_lines[1].h / 2.0) rbl = pill_lines[1].h / 2.0;
+
+                double rbr = r_corner;
+                if (rbr > pill_lines[1].w / 2.0) rbr = pill_lines[1].w / 2.0;
+                if (rbr > pill_lines[1].h / 2.0) rbr = pill_lines[1].h / 2.0;
 
                 cairo_new_path(cr);
-                cairo_arc(cr, x0L + cur_r, y0T + cur_r, cur_r, G_PI, 1.5 * G_PI);
-                cairo_arc(cr, x0R - cur_r, y0T + cur_r, cur_r, 1.5 * G_PI, 2.0 * G_PI);
-                cairo_arc_negative(cr, x0R + cur_r, y0B - cur_r, cur_r, G_PI, 0.5 * G_PI);
-                cairo_arc(cr, x1R - cur_r, y1T + cur_r, cur_r, 1.5 * G_PI, 2.0 * G_PI);
-                cairo_arc(cr, x1R - cur_r, y1B - cur_r, cur_r, 0, 0.5 * G_PI);
-                cairo_arc(cr, x1L + cur_r, y1B - cur_r, cur_r, 0.5 * G_PI, G_PI);
-                cairo_arc(cr, x1L + cur_r, y1T + cur_r, cur_r, G_PI, 1.5 * G_PI);
-                cairo_arc_negative(cr, x0L - cur_r, y0B - cur_r, cur_r, 0.5 * G_PI, 0);
+                cairo_arc(cr, x0R - rtr, y0T + rtr, rtr, 1.5 * G_PI, 2.0 * G_PI);
+                cairo_arc_negative(cr, x0R + rf_R, y0B - rf_R, rf_R, G_PI, 0.5 * G_PI);
+                cairo_arc(cr, x1R - rf_R, y0B + rf_R, rf_R, 1.5 * G_PI, 2.0 * G_PI);
+                cairo_arc(cr, x1R - rbr, y1B - rbr, rbr, 0, 0.5 * G_PI);
+                cairo_arc(cr, x1L + rbl, y1B - rbl, rbl, 0.5 * G_PI, G_PI);
+                cairo_arc(cr, x1L + rf_L, y0B + rf_L, rf_L, G_PI, 1.5 * G_PI);
+                cairo_arc_negative(cr, x0L - rf_L, y0B - rf_L, rf_L, 0.5 * G_PI, 0);
+                cairo_arc(cr, x0L + rtl, y0T + rtl, rtl, G_PI, 1.5 * G_PI);
                 cairo_close_path(cr);
                 cairo_fill(cr);
             } else {
                 cairo_new_path(cr);
                 for (int i = 0; i < 2; i++) {
-                    mac_draw_rounded_rect(cr, pill_lines[i].x, pill_lines[i].y, pill_lines[i].w, pill_lines[i].h, r);
+                    mac_draw_rounded_rect(cr, pill_lines[i].x, pill_lines[i].y, pill_lines[i].w, pill_lines[i].h, r_corner);
                 }
                 cairo_fill(cr);
             }
         } else {
             cairo_new_path(cr);
             for (int i = 0; i < n_lines; i++) {
-                mac_draw_rounded_rect(cr, pill_lines[i].x, pill_lines[i].y, pill_lines[i].w, pill_lines[i].h, r);
+                mac_draw_rounded_rect(cr, pill_lines[i].x, pill_lines[i].y, pill_lines[i].w, pill_lines[i].h, r_corner);
             }
             cairo_fill(cr);
         }
@@ -2049,11 +2164,20 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "window.nautilus-window .nautilus-grid-view gridview > child:selected:hover,\n"
             "window.nautilus-window gridview > child:selected:hover,\n"
             ".nautilus-grid-view gridview > child:selected:hover,\n"
-            "gridview > child:selected:hover {\n"
+            "gridview > child:selected:hover,\n"
+            "window.nautilus-window .nautilus-grid-view gridview > child:hover,\n"
+            "window.nautilus-window gridview > child:hover,\n"
+            ".nautilus-grid-view gridview > child:hover,\n"
+            "gridview > child:hover {\n"
             "    background-color: transparent;\n"
             "    background: transparent;\n"
             "    box-shadow: none;\n"
+            "    border: none;\n"
             "}\n"
+            "window.nautilus-window .nautilus-grid-view gridview > child .icon-ui-labels-box,\n"
+            "window.nautilus-window gridview > child .icon-ui-labels-box,\n"
+            ".nautilus-grid-view gridview > child .icon-ui-labels-box,\n"
+            "gridview > child .icon-ui-labels-box,\n"
             "window.nautilus-window .nautilus-grid-view gridview > child:selected .icon-ui-labels-box,\n"
             "window.nautilus-window gridview > child:selected .icon-ui-labels-box,\n"
             ".nautilus-grid-view gridview > child:selected .icon-ui-labels-box,\n"
@@ -2061,6 +2185,14 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "    background-color: transparent;\n"
             "    background: transparent;\n"
             "}\n"
+            "window.nautilus-window .nautilus-grid-view gridview > child .icon-ui-labels-box #label,\n"
+            "window.nautilus-window .nautilus-grid-view gridview > child #labels_box #label,\n"
+            "window.nautilus-window .nautilus-grid-view gridview > child label#label,\n"
+            "window.nautilus-window gridview > child .icon-ui-labels-box #label,\n"
+            "window.nautilus-window gridview > child label#label,\n"
+            ".nautilus-grid-view gridview > child .icon-ui-labels-box #label,\n"
+            ".nautilus-grid-view gridview > child label#label,\n"
+            "gridview > child .icon-ui-labels-box #label,\n"
             "window.nautilus-window .nautilus-grid-view gridview > child:selected .icon-ui-labels-box #label,\n"
             "window.nautilus-window .nautilus-grid-view gridview > child:selected #labels_box #label,\n"
             "window.nautilus-window .nautilus-grid-view gridview > child:selected label#label,\n"
@@ -2076,7 +2208,7 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "    border: none;\n"
             "    box-shadow: none;\n"
             "    border-radius: 0px;\n"
-            "    padding: 0px;\n"
+            "    padding: 4px 6px;\n"
             "    margin: 1px 2px;\n"
             "}\n"
             "window.nautilus-window .nautilus-grid-view gridview > child:selected label.caption,\n"

@@ -2623,12 +2623,20 @@ widget.thumbnail {
 }
 
 /* =========================================================================
- * 101. Nautilus & File Grid View Selection (macOS Finder style: label pill)
+ * 101. Nautilus & File Grid View Selection & Hover (macOS Finder style: label pill)
  * ========================================================================= */
 .nautilus-grid-view gridview > child:selected,
 window.nautilus-window .nautilus-grid-view gridview > child:selected,
 window.nautilus-window gridview > child:selected,
-gridview > child:selected {
+gridview > child:selected,
+.nautilus-grid-view gridview > child:selected:hover,
+window.nautilus-window .nautilus-grid-view gridview > child:selected:hover,
+window.nautilus-window gridview > child:selected:hover,
+gridview > child:selected:hover,
+.nautilus-grid-view gridview > child:hover,
+window.nautilus-window .nautilus-grid-view gridview > child:hover,
+window.nautilus-window gridview > child:hover,
+gridview > child:hover {
   background-color: transparent;
   background: transparent;
   box-shadow: none;
@@ -2636,22 +2644,27 @@ gridview > child:selected {
   border-color: transparent;
 }
 
-.nautilus-grid-view gridview > child:selected:hover,
-window.nautilus-window .nautilus-grid-view gridview > child:selected:hover,
-window.nautilus-window gridview > child:selected:hover,
-gridview > child:selected:hover {
+.nautilus-grid-view gridview > child .icon-ui-labels-box,
+window.nautilus-window gridview > child .icon-ui-labels-box,
+gridview > child .icon-ui-labels-box,
+.nautilus-grid-view gridview > child:selected .icon-ui-labels-box,
+window.nautilus-window gridview > child:selected .icon-ui-labels-box,
+gridview > child:selected .icon-ui-labels-box,
+.nautilus-grid-view gridview > child:hover .icon-ui-labels-box,
+window.nautilus-window gridview > child:hover .icon-ui-labels-box,
+gridview > child:hover .icon-ui-labels-box {
   background-color: transparent;
   background: transparent;
   box-shadow: none;
+  border: none;
 }
 
-.nautilus-grid-view gridview > child:selected .icon-ui-labels-box,
-window.nautilus-window gridview > child:selected .icon-ui-labels-box,
-gridview > child:selected .icon-ui-labels-box {
-  background-color: transparent;
-  background: transparent;
-}
-
+.nautilus-grid-view gridview > child .icon-ui-labels-box #label,
+.nautilus-grid-view gridview > child #labels_box #label,
+.nautilus-grid-view gridview > child label#label,
+window.nautilus-window gridview > child .icon-ui-labels-box #label,
+window.nautilus-window gridview > child label#label,
+gridview > child .icon-ui-labels-box #label,
 .nautilus-grid-view gridview > child:selected .icon-ui-labels-box #label,
 .nautilus-grid-view gridview > child:selected #labels_box #label,
 .nautilus-grid-view gridview > child:selected label#label,
@@ -2659,15 +2672,24 @@ gridview > child:selected .icon-ui-labels-box {
 window.nautilus-window gridview > child:selected .icon-ui-labels-box #label,
 window.nautilus-window gridview > child:selected label#label,
 window.nautilus-window gridview > child:selected label:first-child,
-gridview > child:selected .icon-ui-labels-box #label {
+gridview > child:selected .icon-ui-labels-box #label,
+.nautilus-grid-view gridview > child:hover .icon-ui-labels-box #label,
+window.nautilus-window gridview > child:hover .icon-ui-labels-box #label,
+gridview > child:hover .icon-ui-labels-box #label {
   background-color: transparent;
   background: transparent;
   color: #ffffff;
   border-radius: 0px;
   border: none;
   box-shadow: none;
-  padding: 0px;
+  padding: 4px 6px;
   margin: 1px 2px;
+}
+
+.nautilus-grid-view gridview > child:selected .icon-ui-labels-box #label,
+window.nautilus-window gridview > child:selected .icon-ui-labels-box #label,
+gridview > child:selected .icon-ui-labels-box #label {
+  color: #ffffff;
 }
 
 .nautilus-grid-view gridview > child:selected label.caption,
