@@ -21831,3 +21831,29 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
      - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21 керованих розширень).
      - bin/mac-i18n-verify: 100% SUCCESSFUL (194 підтримувані мови).
      - Синхронізовано done.txt на ~/Desktop/done.txt.
+
+760. [UI/UX] Симетричне центрування кнопок лівої бічної панелі Nautilus (16px від обох країв) (2026-11-14):
+   - Контекст та вимоги користувача:
+     1. Зробити кнопки бічної панелі Nautilus трохи менш широкими ("ще менш широким чуть чуть кнопки зроби").
+     2. Забезпечити однакові симетричні відступи: відступ від правої частини кнопки до правого краю скролбара/розділювача бічної панелі повинен дорівнювати відступу від лівої частини кнопки до лівого краю вікна/панелі.
+   - Виявлені особливості геометрії GTK:
+     - Контейнер .sidebar-pane має margin-left: 6px та margin-right: 0px.
+     - Раніше рядок мав margin-left: 10px та margin-right: 8px (фактична відстань: 16px зліва vs 11px справа), через що кнопка була асиметричною й притиснутою праворуч.
+   - Виконані виправлення:
+     A. Бібліотека інжекції Nautilus (src/mac_nautilus.c, lib/libmac_nautilus.so):
+        - Для window.nautilus-window .sidebar-pane placessidebar та scrolledwindow встановлено нульові зовнішні й внутрішні відступи (padding: 0px; margin: 0px;).
+        - Для рядків бічної панелі (.sidebar-pane placessidebar row) встановлено margin: 1.5px 15px 1.5px 10px;.
+        - Перекомпільовано lib/libmac_nautilus.so та синхронізовано з /usr/lib/x86_64-linux-gnu/libmac_nautilus.so.
+     B. Дизайн-токени та компілятор тем (config/macw1y-tokens.json, bin/mac-build-theme, config/gtk-4.0/macw1y-components.css):
+        - Додано параметри sidebar_row_margin_left: 10 та sidebar_row_margin_right: 15 до SSOT токенів.
+        - Скомпільовано й синхронізовано всі GTK 3/4 теми через python3 bin/mac-build-theme.
+        - Оновлено бінарний скрипт /usr/local/bin/mac-build-theme.
+   - Результати верифікації:
+     - Піксельне вимірювання за живим скріншотом Nautilus:
+       * Відстань від лівого краю вікна (x=0) до плашки: 16px.
+       * Відстань від правого краю плашки до розділювача (x=231): 16px.
+       * Точне симетричне співвідношення 16px == 16px (1:1 як у macOS Finder).
+     - bin/mac-audit-sync check: 100% PASS (5/5 перевірок).
+     - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21 керованих розширень).
+     - bin/mac-i18n-verify: 100% SUCCESSFUL (194 підтримувані мови).
+     - Синхронізовано done.txt на ~/Desktop/done.txt.

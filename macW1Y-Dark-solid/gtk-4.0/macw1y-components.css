@@ -240,7 +240,7 @@ navigation-split-view list.navigation-sidebar row,
 window.nautilus-window .sidebar-pane placessidebar row {
   min-height: 28px;
   padding: 2px 8px;
-  margin: 1.5px 8px 1.5px 10px;
+  margin: 1.5px 15px 1.5px 10px;
   border-radius: 7px;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.90);

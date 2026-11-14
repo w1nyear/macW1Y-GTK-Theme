@@ -96,7 +96,9 @@
     "button_min_height": 24,
     "input_min_height": 28,
     "search_min_height": 28,
-    "sidebar_row_height": 28
+    "sidebar_row_height": 28,
+    "sidebar_row_margin_left": 10,
+    "sidebar_row_margin_right": 15
   },
   "typography": {
     "font_family_interface": "SF Pro Text",

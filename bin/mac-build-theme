@@ -349,7 +349,7 @@ navigation-split-view list.navigation-sidebar row,
 window.nautilus-window .sidebar-pane placessidebar row {{
   min-height: {d["sidebar_row_height"]}px;
   padding: 2px 8px;
-  margin: 1.5px 8px 1.5px 10px;
+  margin: 1.5px {d.get("sidebar_row_margin_right", 15)}px 1.5px {d.get("sidebar_row_margin_left", 10)}px;
   border-radius: {g["sidebar_row_radius"]}px;
   font-size: 13px;
   color: {c["text_primary"]};
