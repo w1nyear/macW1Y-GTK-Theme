@@ -22,3 +22,11 @@
    - Очищено непідтримувані у GTK4 CSS властивості (align-items, valign) та директиви !important у preview.css, ліквідовано всі попередження парсера тем.
    - Оновлено та скомпільовано control-center/libmac_settings.c, синхронізовано libmac_settings.so в усі системні розташування та перекомпільовано глобальні таблиці тем через bin/mac-build-theme.
    - Повний аудит підтверджено: mac-audit-sync check, mac-extension-guard verify, mac-i18n-verify (100% PASS).
+
+767. Плавна анімація прозорості та усунення накладання бірок/тагів у Dock:
+   - Виправлено логіку появи та зникнення підказок (dash-label) та стрілок-покажчиків (dash-label-tail) у розширенні dash2dock-motion@unmade.space.
+   - Реалізовано синхронну анімацію плавної появи (opacity: 0 -> 255) та зникнення (opacity: 255 -> 0) з тривалістю 150ms/120ms та згладжуванням Clutter.AnimationMode.EASE_OUT_QUAD.
+   - Додано метод itemHideLabel для повноцінного анімованого згортання бірок DockDashItemContainer та DockShowAppsIcon.
+   - Усунено дефект накладання двох напівпрозорих бірок одночасно (ghosting) при переміщенні курсора між сусідніми іконками: при активації нової мітки будь-які попередні бірки та стрілки миттєво приховуються, запобігаючи одночасній видимості двох підказок на екрані.
+   - Синхронізовано оновлені файли розширення в ~/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/, оновлено контрольний хеш цілісності в config/extensions.lock.json.
+   - Успішно пройдено повний комплекс перевірок: mac-audit-sync check, mac-extension-guard verify, mac-i18n-verify (100% PASS).

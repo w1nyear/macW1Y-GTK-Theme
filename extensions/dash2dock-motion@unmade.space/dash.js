@@ -67,6 +67,10 @@ class DockDashItemContainer extends Dash.DashItemContainer {
         return AppIcons.itemShowLabel.call(this);
     }
 
+    hideLabel(...args) {
+        return AppIcons.itemHideLabel.call(this, ...args);
+    }
+
     // Called by the magnifier each frame so a visible label keeps tracking
     // the magnified edge of its icon.
     updateLabelPosition() {

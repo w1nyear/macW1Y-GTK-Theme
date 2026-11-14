@@ -152,6 +152,7 @@ const scrollAction = Object.freeze({
 
 // module "Dash" did not export DASH_ITEM_LABEL_SHOW_TIME, so let's define it.
 const DASH_ITEM_LABEL_SHOW_TIME = Dash.DASH_ITEM_LABEL_SHOW_TIME ?? 150;
+const DASH_ITEM_LABEL_HIDE_TIME = Dash.DASH_ITEM_LABEL_HIDE_TIME ?? 120;
 
 let recentlyClickedAppLoopId = 0;
 let recentlyClickedApp = null;
@@ -1826,6 +1827,10 @@ export const DockShowAppsIcon = GObject.registerClass({
         itemShowLabel.call(this, ...args);
     }
 
+    hideLabel(...args) {
+        itemHideLabel.call(this, ...args);
+    }
+
     setForcedHighlight(...args) {
         AppDisplay.AppIcon.prototype.setForcedHighlight.call(this, ...args);
     }
@@ -2138,9 +2143,43 @@ export function itemShowLabel() {
     if (!this._labelText || !this.label.get_stage())
         return;
 
+    // Immediately dismiss any other visible or animating dock labels and their arrow tails
+    // so no two tags ever linger or overlap simultaneously.
+    try {
+        const allLabels = Main.uiGroup.get_children().filter(
+            a => a && a.has_style_class_name && a.has_style_class_name('dash-label') && a !== this.label
+        );
+        for (const other of allLabels) {
+            other.remove_all_transitions();
+            other.opacity = 0;
+            other.hide();
+            if (other._arrowTailActor) {
+                other._arrowTailActor.remove_all_transitions();
+                other._arrowTailActor.opacity = 0;
+                other._arrowTailActor.hide();
+            }
+        }
+        const allTails = Main.uiGroup.get_children().filter(
+            a => a && a.has_style_class_name && a.has_style_class_name('dash-label-tail') && a !== this.label._arrowTailActor
+        );
+        for (const tail of allTails) {
+            tail.remove_all_transitions();
+            tail.opacity = 0;
+            tail.hide();
+        }
+    } catch (_) {}
+
     this.label.set_text(this._labelText);
+    this.label.remove_all_transitions();
+    if (this.label._arrowTailActor)
+        this.label._arrowTailActor.remove_all_transitions();
+
     this.label.opacity = 0;
     this.label.show();
+    if (this.label._arrowTailActor) {
+        this.label._arrowTailActor.opacity = 0;
+        this.label._arrowTailActor.show();
+    }
 
     if (globalThis._macLabelStylingConfig) {
         const { blur, tint, shadow } = globalThis._macLabelStylingConfig;
@@ -2173,7 +2212,6 @@ export function itemShowLabel() {
     const blurEff = this.label.get_effect?.('tahoe-label-blur');
     blurEff?.queue_repaint?.();
 
-    this.label.remove_all_transitions();
     this.label.ease({
         opacity: 255,
         duration: DASH_ITEM_LABEL_SHOW_TIME,
@@ -2181,6 +2219,38 @@ export function itemShowLabel() {
         onComplete: () => {
             blurEff?.queue_repaint?.();
             this.label.set_offscreen_redirect?.(0);
+        },
+    });
+    /* eslint-enable no-invalid-this */
+}
+
+export function itemHideLabel(immediate = false) {
+    /* eslint-disable no-invalid-this */
+    if (!this.label || !this.label.get_stage())
+        return;
+
+    this.label.remove_all_transitions();
+    if (this.label._arrowTailActor)
+        this.label._arrowTailActor.remove_all_transitions();
+
+    if (immediate) {
+        this.label.opacity = 0;
+        this.label.hide();
+        if (this.label._arrowTailActor) {
+            this.label._arrowTailActor.opacity = 0;
+            this.label._arrowTailActor.hide();
+        }
+        return;
+    }
+
+    this.label.ease({
+        opacity: 0,
+        duration: DASH_ITEM_LABEL_HIDE_TIME,
+        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+        onComplete: () => {
+            this.label.hide();
+            if (this.label._arrowTailActor)
+                this.label._arrowTailActor.hide();
         },
     });
     /* eslint-enable no-invalid-this */

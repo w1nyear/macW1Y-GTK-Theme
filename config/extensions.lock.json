@@ -138,7 +138,7 @@
       "shell_compatibility": [
         "50"
       ],
-      "sha256": "e2b7243ca5a6fa9a7304aa0a2427264e546040760cbf14f4ca6d8a29e82a989e",
+      "sha256": "f0b76dce6bf36294e88b1c8d3185e36d5397e16ccb5fcc716e0db3c5a71f009b",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -147,7 +147,7 @@
         "dock_bounce"
       ],
       "has_custom_patches": true,
-      "patch_description": "Custom glass dock with dynamic startingApps tracking, expanded paint volume, and strict separator position after all favorites",
+      "patch_description": "Smooth opacity animation and ghost overlap prevention for dock tags",
       "last_verified": "2026-11-12",
       "files": {
         "windowPreview.js": "61829213a92e864511c4d4eb81f3dc98f785d390beb67d2872b78e414f727815",
@@ -225,7 +225,7 @@
         "locale/nl/LC_MESSAGES/dash2dock-motion.mo": "ba7e144e0ee6edcb4f84f5ffbd0727eb3104c1b1bd2c1e520cc3af49affd5d39",
         "locale/ro/LC_MESSAGES/dash2dock-motion.mo": "3c44204f5671296cb522d7ee5769b18e0506870f8a413f79a23983ebc04bd3fe"
       },
-      "pinned_sha256": "39af88045e7ebfb422656f43f2bd3231010a96b6fa05b696d28e96aeae7935ae"
+      "pinned_sha256": "f0b76dce6bf36294e88b1c8d3185e36d5397e16ccb5fcc716e0db3c5a71f009b"
     },
     "eval-helper@mactheme": {
       "uuid": "eval-helper@mactheme",
