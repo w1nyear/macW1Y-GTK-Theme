@@ -14,3 +14,11 @@
    - Оновлено модуль src/mac_nautilus.c (додано захисну перевірку в mac_grid_label_snapshot для виключення бічної панелі, видалено невалідну властивість valign), перекомпільовано libmac_nautilus.so та встановлено у /usr/lib/x86_64-linux-gnu/.
    - Оновлено генератор тем bin/mac-build-theme для включення виправлених стилів активного рядка бічної панелі.
    - Успішно пройдено верифікацію: mac-audit-sync check, mac-extension-guard verify, mac-i18n-verify (100% PASS).
+
+766. Оптимізація інтерфейсу Параметрів (GNOME Control Center Sidebar & Titlebar):
+   - Зменшено ширину кнопок/рядків лівої бічної панелі з правого боку: збільшено правий відступ з 12px до 26px (margin: 1.5px 26px 1.5px 10px для списку навігації, margin: 6px 26px 18px 10px для рядка акаунта, padding: 4px 26px 4px 10px для поля пошуку). Виділення кнопок тепер має акуратний зазор і не впирається у правий край чи смугу прокручування.
+   - Повністю видалено білу смугу (розділювач border-bottom) під заголовком над лівою панеллю та справа над вмістом параметрів: усунено border-bottom: 1px solid у стилях headerbar та toolbarview > .top-bar, встановлено border-bottom: none.
+   - Вимкнено градієнтні смуги undershoot.top / undershoot.bottom для window.mac-settings-window: список тепер безшовно і плавно заходить під тітл бар без появи зайвих білих смуг при прокручуванні.
+   - Очищено непідтримувані у GTK4 CSS властивості (align-items, valign) та директиви !important у preview.css, ліквідовано всі попередження парсера тем.
+   - Оновлено та скомпільовано control-center/libmac_settings.c, синхронізовано libmac_settings.so в усі системні розташування та перекомпільовано глобальні таблиці тем через bin/mac-build-theme.
+   - Повний аудит підтверджено: mac-audit-sync check, mac-extension-guard verify, mac-i18n-verify (100% PASS).

@@ -2571,23 +2571,124 @@ navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
   box-shadow: none;
 }}
 
-window.mac-settings-window toolbarview.undershoot-top scrolledwindow > undershoot.top,
-window.mac-settings-window toolbarview.undershoot-top scrolledwindow undershoot.top,
-window.mac-settings-window preferencespage scrolledwindow undershoot.top,
-window.mac-settings-window preferencespage > scrolledwindow > undershoot.top,
-window.mac-settings-window .content-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
-window.mac-settings-window .content-pane scrolledwindow undershoot.top,
-window.mac-settings-window .panel-has-switcher toolbarview.undershoot-top scrolledwindow > undershoot.top,
-window.mac-settings-window .panel-has-switcher preferencespage scrolledwindow undershoot.top,
-window.mac-settings-window .panel-has-switcher scrolledwindow undershoot.top {{
-  min-height: {d.get("headerbar_height", 38)}px;
-  background: linear-gradient(to bottom,
-    var(--mac-window-bg, {c["window_bg"]}) 0%,
-    alpha(var(--mac-window-bg, {c["window_bg"]}), 0.90) 12px,
-    alpha(var(--mac-window-bg, {c["window_bg"]}), 0.40) 24px,
-    transparent {d.get("headerbar_height", 38)}px);
+window.mac-settings-window undershoot,
+window.mac-settings-window undershoot.top,
+window.mac-settings-window undershoot.bottom,
+window.mac-settings-window undershoot.left,
+window.mac-settings-window undershoot.right,
+window.mac-settings-window scrolledwindow undershoot,
+window.mac-settings-window scrolledwindow undershoot.top,
+window.mac-settings-window scrolledwindow undershoot.bottom,
+window.mac-settings-window scrolledwindow > undershoot.top,
+window.mac-settings-window scrolledwindow > undershoot.bottom,
+window.mac-settings-window scrolledwindow > undershoot.left,
+window.mac-settings-window scrolledwindow > undershoot.right,
+window.mac-settings-window .mac-settings-sidebar undershoot,
+window.mac-settings-window .mac-settings-sidebar undershoot.top,
+window.mac-settings-window .mac-settings-sidebar-list undershoot,
+window.mac-settings-window .content-pane undershoot,
+window.mac-settings-window preferencespage undershoot {{
+  min-height: 0px;
+  min-width: 0px;
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
   border: none;
   box-shadow: none;
+  opacity: 0;
+}}
+
+window.mac-settings-window toolbarview > .top-bar,
+window.mac-settings-window toolbarview > .top-bar.flat,
+window.mac-settings-window toolbarview > .top-bar.raised,
+window.mac-settings-window toolbarview > .top-bar.border,
+window.mac-settings-window toolbarview > .top-bar.raised.border,
+window.mac-settings-window toolbarview > revealer.top-bar,
+window.mac-settings-window .mac-settings-sidebar toolbarview > .top-bar,
+window.mac-settings-window .mac-settings-sidebar toolbarview > .top-bar headerbar,
+window.mac-settings-window .mac-settings-sidebar headerbar,
+window.mac-settings-window .mac-settings-sidebar-headerbar,
+window.mac-settings-window headerbar,
+window.mac-settings-window headerbar.flat,
+window.mac-settings-window headerbar.default-decoration,
+window.mac-settings-window .mac-settings-content-headerbar,
+window.mac-settings-window .mac-settings-content-headerbar.has-view-switcher,
+window.mac-settings-window .mac-settings-switcher-headerbar,
+window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {{
+  border: none;
+  border-bottom: none;
+  box-shadow: none;
+}}
+
+window.mac-settings-window .mac-settings-sidebar,
+window.mac-settings-window .mac-settings-sidebar toolbarview,
+window.mac-settings-window .mac-settings-sidebar toolbarview > .top-bar,
+window.mac-settings-window .mac-settings-sidebar toolbarview > .top-bar headerbar,
+window.mac-settings-window .mac-settings-sidebar headerbar,
+window.mac-settings-window .mac-settings-sidebar-headerbar,
+window.mac-settings-window navigation-split-view > widget:first-child,
+window.mac-settings-window navigation-split-view > widget:first-child toolbarview,
+window.mac-settings-window navigation-split-view > widget:first-child toolbarview > .top-bar,
+window.mac-settings-window navigation-split-view > widget:first-child headerbar {{
+  background: {c["sidebar_bg"] if "sidebar_bg" in c else ("#18181a" if is_dark else "rgba(240, 240, 245, 0.85)")};
+  background-color: {c["sidebar_bg"] if "sidebar_bg" in c else ("#18181a" if is_dark else "rgba(240, 240, 245, 0.85)")};
+  border: none;
+  border-bottom: none;
+  box-shadow: none;
+}}
+
+window.mac-settings-window list.mac-settings-sidebar-list,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar {{
+  background-color: transparent;
+  padding: 4px 0px;
+}}
+
+window.mac-settings-window list.mac-settings-sidebar-list row,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row {{
+  min-height: 28px;
+  padding: 2px 8px;
+  margin: 1.5px 26px 1.5px 10px;
+  border-radius: 7px;
+  font-size: 13px;
+}}
+
+window.mac-settings-window list.mac-settings-sidebar-list row:hover,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:hover {{
+  border-radius: 7px;
+  background-color: {"rgba(255, 255, 255, 0.06)" if is_dark else "rgba(0, 0, 0, 0.05)"};
+}}
+
+window.mac-settings-window list.mac-settings-sidebar-list row:selected,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected {{
+  border-radius: 7px;
+  background-color: {"rgba(255, 255, 255, 0.10)" if is_dark else "rgba(0, 0, 0, 0.08)"};
+  color: @accent_bg_color;
+}}
+
+window.mac-settings-window list.mac-settings-sidebar-list row:selected *,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected * {{
+  background-color: transparent;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}}
+
+window.mac-settings-window .mac-settings-account-row {{
+  min-height: 48px;
+  padding: 6px 10px;
+  margin: 6px 26px 18px 10px;
+  border-radius: 8px;
+  background-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+  outline-width: 0;
+}}
+
+window.mac-settings-window .mac-settings-sidebar searchbar {{
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 4px 26px 4px 10px;
 }}
 
 toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
@@ -2598,15 +2699,7 @@ preferencespage scrolledwindow undershoot.bottom,
 preferencespage > scrolledwindow > undershoot.bottom,
 navigation-view-page toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
 .content-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
-.content-pane scrolledwindow undershoot.bottom,
-window.mac-settings-window toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
-window.mac-settings-window toolbarview.undershoot-bottom scrolledwindow undershoot.bottom,
-window.mac-settings-window preferencespage scrolledwindow undershoot.bottom,
-window.mac-settings-window preferencespage > scrolledwindow > undershoot.bottom,
-window.mac-settings-window .content-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
-window.mac-settings-window .content-pane scrolledwindow undershoot.bottom,
-window.mac-settings-window .panel-has-switcher preferencespage scrolledwindow undershoot.bottom,
-window.mac-settings-window .panel-has-switcher scrolledwindow undershoot.bottom {{
+.content-pane scrolledwindow undershoot.bottom {{
   min-height: 28px;
   background: linear-gradient(to top,
     var(--mac-window-bg, {c["window_bg"]}) 0%,
@@ -2622,17 +2715,6 @@ window.mac-settings-window .panel-has-switcher scrolledwindow undershoot.bottom 
 .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
 .sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .sidebar-pane toolbarview.undershoot-top scrolledwindow undershoot.top,
-window.mac-settings-window .sidebar-pane scrolledwindow undershoot.top,
-window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.top,
-window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
-window.mac-settings-window .sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
-window.mac-settings-window .sidebar-pane toolbarview.undershoot-top scrolledwindow undershoot.top,
-window.mac-settings-window .mac-settings-sidebar scrolledwindow undershoot.top,
-window.mac-settings-window .mac-settings-sidebar scrolledwindow > undershoot.top,
-window.mac-settings-window .mac-settings-sidebar scrolledwindow.undershoot-top > undershoot.top,
-window.mac-settings-window .mac-settings-sidebar toolbarview.undershoot-top scrolledwindow > undershoot.top,
-window.mac-settings-window .mac-settings-sidebar toolbarview.undershoot-top scrolledwindow undershoot.top,
-window.mac-settings-window .mac-settings-sidebar-list undershoot.top,
 navigation-split-view .sidebar-pane scrolledwindow undershoot.top,
 navigation-split-view .sidebar-pane scrolledwindow > undershoot.top,
 navigation-split-view .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
@@ -2658,17 +2740,6 @@ navigation-split-view > .sidebar-pane toolbarview.undershoot-top scrolledwindow 
 .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
 .sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
 .sidebar-pane toolbarview.undershoot-bottom scrolledwindow undershoot.bottom,
-window.mac-settings-window .sidebar-pane scrolledwindow undershoot.bottom,
-window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.bottom,
-window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
-window.mac-settings-window .sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
-window.mac-settings-window .sidebar-pane toolbarview.undershoot-bottom scrolledwindow undershoot.bottom,
-window.mac-settings-window .mac-settings-sidebar scrolledwindow undershoot.bottom,
-window.mac-settings-window .mac-settings-sidebar scrolledwindow > undershoot.bottom,
-window.mac-settings-window .mac-settings-sidebar scrolledwindow.undershoot-bottom > undershoot.bottom,
-window.mac-settings-window .mac-settings-sidebar toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
-window.mac-settings-window .mac-settings-sidebar toolbarview.undershoot-bottom scrolledwindow undershoot.bottom,
-window.mac-settings-window .mac-settings-sidebar-list undershoot.bottom,
 navigation-split-view .sidebar-pane scrolledwindow undershoot.bottom,
 navigation-split-view .sidebar-pane scrolledwindow > undershoot.bottom,
 navigation-split-view .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
@@ -2693,14 +2764,6 @@ navigation-split-view > .sidebar-pane toolbarview.undershoot-bottom scrolledwind
 .sidebar-pane undershoot.right,
 .sidebar-pane scrolledwindow > undershoot.left,
 .sidebar-pane scrolledwindow > undershoot.right,
-window.mac-settings-window .sidebar-pane undershoot.left,
-window.mac-settings-window .sidebar-pane undershoot.right,
-window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.left,
-window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.right,
-window.mac-settings-window .mac-settings-sidebar undershoot.left,
-window.mac-settings-window .mac-settings-sidebar undershoot.right,
-window.mac-settings-window .mac-settings-sidebar scrolledwindow > undershoot.left,
-window.mac-settings-window .mac-settings-sidebar scrolledwindow > undershoot.right,
 navigation-split-view > .sidebar-pane undershoot.left,
 navigation-split-view > .sidebar-pane undershoot.right {{
   min-height: 0px;

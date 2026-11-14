@@ -21,25 +21,25 @@ background-preview .window.back,
 #default_preview .window,
 #default_preview .window.front,
 #default_preview .window.back {
-  background-color: rgba(255, 255, 255, 0.82) !important;
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(240, 240, 245, 0.80) 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.75) !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.90) !important;
+  background-color: rgba(255, 255, 255, 0.82);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(240, 240, 245, 0.80) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.90);
 }
 
 background-preview .window .header-bar,
 background-preview .window.front.light .header-bar,
 #default_preview .window .header-bar {
-  background-color: rgba(255, 255, 255, 0.92) !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+  background-color: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   min-height: 15px;
 }
 
 background-preview .window .sidebar,
 background-preview .window.front.light .sidebar,
 #default_preview .window .sidebar {
-  background-color: rgba(235, 235, 242, 0.75) !important;
-  border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
+  background-color: rgba(235, 235, 242, 0.75);
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
   min-width: 30px;
 }
 
@@ -56,25 +56,25 @@ background-preview .window.front.dark,
   --sidebar-backdrop-color: #2a2a2a;
   --sidebar-border-color: rgb(0 0 0 / 36%);
 
-  background-color: rgba(34, 34, 38, 0.84) !important;
-  background-image: linear-gradient(180deg, rgba(48, 48, 54, 0.90) 0%, rgba(28, 28, 32, 0.80) 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  background-color: rgba(34, 34, 38, 0.84);
+  background-image: linear-gradient(180deg, rgba(48, 48, 54, 0.90) 0%, rgba(28, 28, 32, 0.80) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 background-preview .window.dark .header-bar,
 background-preview .window.front.dark .header-bar,
 #dark_preview .window .header-bar {
-  background-color: rgba(50, 50, 56, 0.92) !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.40) !important;
+  background-color: rgba(50, 50, 56, 0.92);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.40);
   min-height: 15px;
 }
 
 background-preview .window.dark .sidebar,
 background-preview .window.front.dark .sidebar,
 #dark_preview .window .sidebar {
-  background-color: rgba(28, 28, 32, 0.78) !important;
-  border-right: 1px solid rgba(0, 0, 0, 0.40) !important;
+  background-color: rgba(28, 28, 32, 0.78);
+  border-right: 1px solid rgba(0, 0, 0, 0.40);
   min-width: 30px;
 }
 
@@ -90,32 +90,32 @@ background-preview .window.sidebar:dir(rtl) {
 /* Authentic Rounded Rectangle Selection Outline - NOT a pill! */
 .background-preview-button {
   background: none;
-  border-radius: 14px !important;
-  padding: 4px !important;
-  box-shadow: none !important;
-  outline: none !important;
-  border: none !important;
+  border-radius: 14px;
+  padding: 4px;
+  box-shadow: none;
+  outline: none;
+  border: none;
   transition: box-shadow 150ms ease;
 }
 
 .background-preview-button:hover {
-  box-shadow: 0 0 0 2px rgba(128, 128, 128, 0.25) !important;
-  border-radius: 14px !important;
+  box-shadow: 0 0 0 2px rgba(128, 128, 128, 0.25);
+  border-radius: 14px;
 }
 
 .background-preview-button:checked {
-  box-shadow: 0 0 0 3px var(--accent-bg-color) !important;
-  border-radius: 14px !important;
+  box-shadow: 0 0 0 3px var(--accent-bg-color);
+  border-radius: 14px;
 }
 
 .background-preview-button:focus:focus-visible {
-  box-shadow: 0 0 0 3px var(--accent-bg-color), 0 0 0 5px color-mix(in srgb, var(--accent-color) 30%, transparent) !important;
-  border-radius: 14px !important;
+  box-shadow: 0 0 0 3px var(--accent-bg-color), 0 0 0 5px color-mix(in srgb, var(--accent-color) 30%, transparent);
+  border-radius: 14px;
 }
 
 .background-preview-button:checked:focus:focus-visible {
-  box-shadow: 0 0 0 3px var(--accent-color), 0 0 0 5px color-mix(in srgb, var(--accent-color) 30%, transparent) !important;
-  border-radius: 14px !important;
+  box-shadow: 0 0 0 3px var(--accent-color), 0 0 0 5px color-mix(in srgb, var(--accent-color) 30%, transparent);
+  border-radius: 14px;
 }
 
 .background-flowbox > flowboxchild {
@@ -224,7 +224,7 @@ flowboxchild.active-item .selected-check {
 
 #default_label,
 #dark_label {
-  color: var(--mac-text-primary, #ffffff) !important;
+  color: var(--mac-text-primary, #ffffff);
   font-weight: 500;
   font-size: 13px;
   margin-top: 4px;
