@@ -9488,15 +9488,15 @@ placessidebar row,
 placessidebar .navigation-sidebar row,
 .nautilus-window .sidebar-pane placessidebar row,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row {
-    border-radius: 8px !important;
-    margin: 1px 6px !important;
-    padding: 4px 8px !important;
-    min-height: 28px !important;
+    border-radius: 8px;
+    margin: 1px 6px;
+    padding: 4px 8px;
+    min-height: 28px;
     color: rgba(0, 0, 0, 0.85);
-    background-clip: padding-box !important;
-    outline: none !important;
-    transition: background-color 120ms ease, color 120ms ease !important;
-    transition-property: background-color, color !important;
+    background-clip: padding-box;
+    outline: none;
+    transition: background-color 120ms ease, color 120ms ease;
+    transition-property: background-color, color;
 }
 
 /* Hover state - strictly lock border-radius: 8px to completely eliminate square hover glitch during fast mouse movement */
@@ -9514,11 +9514,11 @@ list.navigation-sidebar row:hover:not(:selected),
 placessidebar row:hover:not(:selected),
 .nautilus-window .sidebar-pane placessidebar row:hover:not(:selected),
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:hover {
-    border-radius: 8px !important;
-    background-color: rgba(0, 0, 0, 0.06) !important;
-    outline: none !important;
-    transition: background-color 120ms ease, color 120ms ease !important;
-    transition-property: background-color, color !important;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.06);
+    outline: none;
+    transition: background-color 120ms ease, color 120ms ease;
+    transition-property: background-color, color;
 }
 
 /* Selected state */
@@ -9529,17 +9529,17 @@ placessidebar row:selected,
 placessidebar .navigation-sidebar row:selected,
 .nautilus-window .sidebar-pane placessidebar row:selected,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected {
-    border-radius: 8px !important;
-    background-color: rgba(0, 0, 0, 0.12) !important;
-    color: #000000 !important;
-    outline: none !important;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.12);
+    color: #000000;
+    outline: none;
 }
 
 .navigation-sidebar row:selected label,
 list.navigation-sidebar row:selected label,
 placessidebar row:selected label,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected label {
-    color: #000000 !important;
+    color: #000000;
 }
 
 .navigation-sidebar row:selected:hover,
@@ -9547,10 +9547,10 @@ list.navigation-sidebar row:selected:hover,
 placessidebar row:selected:hover,
 .nautilus-window .sidebar-pane placessidebar row:selected:hover,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:hover {
-    border-radius: 8px !important;
-    background-color: rgba(0, 0, 0, 0.16) !important;
-    color: #000000 !important;
-    outline: none !important;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.16);
+    color: #000000;
+    outline: none;
 }
 
 /* Unhovered state - strictly prevent any transition on border-radius */
@@ -9561,9 +9561,9 @@ placessidebar row:not(:hover),
 placessidebar .navigation-sidebar row:not(:hover),
 .nautilus-window .sidebar-pane placessidebar row:not(:hover),
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:not(:hover) {
-    border-radius: 8px !important;
-    transition: background-color 150ms ease, color 150ms ease !important;
-    transition-property: background-color, color !important;
+    border-radius: 8px;
+    transition: background-color 150ms ease, color 150ms ease;
+    transition-property: background-color, color;
 }
 
 /* Section Header Typography */

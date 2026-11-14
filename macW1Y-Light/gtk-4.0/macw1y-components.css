@@ -1,4 +1,4 @@
-/* macW1Y 0.6 — Master Unified Component Stylesheet for GTK 4 / Libadwaita */
+/* macW1Y 0.7 — Master Unified Component Stylesheet for GTK 4 / Libadwaita */
 /* DO NOT EDIT DIRECTLY: Generated from config/macw1y-tokens.json */
 
 /* =========================================================================
@@ -319,9 +319,51 @@ list.navigation-sidebar row:selected label,
 placessidebar row:selected label,
 .nautilus-window .sidebar-pane placessidebar row:selected label,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected label,
-window.nautilus-window .sidebar-pane placessidebar row:selected label {
+.nautilus-window .sidebar-pane list.navigation-sidebar row:selected label,
+.nautilus-window .sidebar-pane row:selected label,
+.nautilus-window .navigation-sidebar row:selected label,
+.nautilus-window placessidebar row:selected label,
+.nautilus-window row.sidebar-row:selected label,
+window.nautilus-window .sidebar-pane placessidebar row:selected label,
+window.nautilus-window .sidebar-pane list.navigation-sidebar row:selected label,
+window.nautilus-window .sidebar-pane row:selected label,
+window.nautilus-window .navigation-sidebar row:selected label,
+window.nautilus-window placessidebar row:selected label,
+window.nautilus-window row.sidebar-row:selected label,
+row:selected label,
+row:selected label:selected,
+row:selected label selection,
+row:selected selection {
   color: @accent_bg_color;
   font-weight: 500;
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  border: none;
+  outline: none;
+}
+
+/* All children inside selected sidebar rows must have transparent background */
+navigation-split-view list row:selected *,
+overlay-split-view list row:selected *,
+.navigation-sidebar row:selected *,
+list.navigation-sidebar row:selected *,
+placessidebar row:selected *,
+.nautilus-window .sidebar-pane row:selected *,
+.nautilus-window .navigation-sidebar row:selected *,
+.nautilus-window placessidebar row:selected *,
+.nautilus-window row.sidebar-row:selected *,
+window.nautilus-window .sidebar-pane row:selected *,
+window.nautilus-window .navigation-sidebar row:selected *,
+window.nautilus-window placessidebar row:selected *,
+window.nautilus-window row.sidebar-row:selected * {
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  border: none;
+  outline: none;
 }
 
 /* Clean, transparent icons everywhere (only Settings sidebar has background tiles) */
@@ -446,6 +488,17 @@ list.navigation-sidebar row:selected image,
 placessidebar row:selected image,
 .nautilus-window .sidebar-pane placessidebar row:selected image,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected image,
+.nautilus-window .sidebar-pane list.navigation-sidebar row:selected image,
+.nautilus-window .sidebar-pane row:selected image,
+.nautilus-window .navigation-sidebar row:selected image,
+.nautilus-window placessidebar row:selected image,
+.nautilus-window row.sidebar-row:selected image,
+window.nautilus-window .sidebar-pane placessidebar row:selected image,
+window.nautilus-window .sidebar-pane list.navigation-sidebar row:selected image,
+window.nautilus-window .sidebar-pane row:selected image,
+window.nautilus-window .navigation-sidebar row:selected image,
+window.nautilus-window placessidebar row:selected image,
+window.nautilus-window row.sidebar-row:selected image,
 navigation-split-view list row:selected box image,
 .navigation-sidebar row:selected box image,
 navigationview.sidebar list row:selected image,
@@ -453,7 +506,9 @@ navigationview.sidebar list row:selected image,
 .navigation-sidebar row:selected .sidebar-orange-icon,
 .navigation-sidebar row:selected .sidebar-neutral-icon,
 placessidebar row:selected .sidebar-orange-icon,
-placessidebar row:selected .sidebar-neutral-icon {
+placessidebar row:selected .sidebar-neutral-icon,
+row:selected image,
+row:selected image:selected {
   color: @accent_bg_color;
   background: transparent;
   background-color: transparent;

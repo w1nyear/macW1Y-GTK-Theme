@@ -10161,18 +10161,67 @@ navigation-split-view list.navigation-sidebar row:selected:backdrop,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:backdrop,
 window.nautilus-window .sidebar-pane placessidebar row:selected,
-window.nautilus-window .sidebar-pane placessidebar row:selected:backdrop {
-    border-radius: 8px;
-    background-color: @accent_bg_color;
-    color: #ffffff;
+window.nautilus-window .sidebar-pane placessidebar row:selected:backdrop,
+window.nautilus-window .sidebar-pane row:selected,
+window.nautilus-window .navigation-sidebar row:selected,
+window.nautilus-window placessidebar row:selected,
+window.nautilus-window row.sidebar-row:selected {
+    border-radius: 7px;
+    background-color: rgba(255, 255, 255, 0.10);
+    color: @accent_bg_color;
     outline: none;
 }
 
 .navigation-sidebar row:selected label,
 list.navigation-sidebar row:selected label,
 placessidebar row:selected label,
-.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected label {
-    color: #ffffff;
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected label,
+window.nautilus-window .sidebar-pane row:selected label,
+window.nautilus-window .navigation-sidebar row:selected label,
+window.nautilus-window placessidebar row:selected label,
+window.nautilus-window row.sidebar-row:selected label,
+row:selected label,
+row:selected label:selected,
+row:selected label selection,
+row:selected selection {
+    color: @accent_bg_color;
+    font-weight: 500;
+    background: transparent;
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+    border: none;
+}
+
+.navigation-sidebar row:selected image,
+list.navigation-sidebar row:selected image,
+placessidebar row:selected image,
+window.nautilus-window .sidebar-pane row:selected image,
+window.nautilus-window .navigation-sidebar row:selected image,
+window.nautilus-window placessidebar row:selected image,
+window.nautilus-window row.sidebar-row:selected image,
+row:selected image,
+row:selected image:selected {
+    color: @accent_bg_color;
+    background: transparent;
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+    border: none;
+}
+
+.navigation-sidebar row:selected *,
+list.navigation-sidebar row:selected *,
+placessidebar row:selected *,
+window.nautilus-window .sidebar-pane row:selected *,
+window.nautilus-window .navigation-sidebar row:selected *,
+window.nautilus-window placessidebar row:selected *,
+window.nautilus-window row.sidebar-row:selected * {
+    background: transparent;
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+    border: none;
 }
 
 .navigation-sidebar row:selected:hover,
@@ -10181,10 +10230,14 @@ list.navigation-sidebar > row:selected:hover,
 placessidebar row:selected:hover,
 navigation-split-view list.navigation-sidebar row:selected:hover,
 .nautilus-window .sidebar-pane placessidebar row:selected:hover,
-.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:hover {
-    border-radius: 8px;
-    background-color: color-mix(in srgb, @accent_bg_color 88%, white);
-    color: #ffffff;
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:hover,
+window.nautilus-window .sidebar-pane row:selected:hover,
+window.nautilus-window .navigation-sidebar row:selected:hover,
+window.nautilus-window placessidebar row:selected:hover,
+window.nautilus-window row.sidebar-row:selected:hover {
+    border-radius: 7px;
+    background-color: rgba(255, 255, 255, 0.14);
+    color: @accent_bg_color;
     outline: none;
 }
 
@@ -11977,6 +12030,9 @@ window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {
     border-bottom: 1px solid var(--mac-card-sep, rgba(255, 255, 255, 0.08));
     box-shadow: none;
 }
+
+
+
 
 
 

@@ -7,3 +7,10 @@
    - Оновлено системну версію з 0.6 до 0.7 у всіх ключових компонентах (install.sh, config/mac-styling/version, bin/macW1Y, bin/mac-setup-wizard, bin/mac-audit-sync, bin/mac-build-theme, bin/mac-i18n-verify, config/i18n/catalog.json, README.md).
    - Очищено та підготовлено файл журналу завдань done.txt для розробки оновленої версії v0.7.
    - Синхронізовано done.txt на ~/Desktop/done.txt.
+
+765. Виправлення підсвічування активного пункту бічної панелі Nautilus (Nautilus Sidebar Active Item Fix):
+   - Усунено небажаний внутрішній фон та рамку навколо іконки та тексту активної кнопки у лівій бічній панелі (sidebar) файлового менеджера Nautilus (AdwOverlaySplitView / NautilusSidebar / NautilusSidebarRow).
+   - Забезпечено прозорість внутрішніх елементів (*, revealer, box, image, label, selection) всередині вибраного рядка row:selected через CSS без використання непідтримуваного у GTK CSS синтаксису !important (який спричиняв відхилення правил парсером).
+   - Оновлено модуль src/mac_nautilus.c (додано захисну перевірку в mac_grid_label_snapshot для виключення бічної панелі, видалено невалідну властивість valign), перекомпільовано libmac_nautilus.so та встановлено у /usr/lib/x86_64-linux-gnu/.
+   - Оновлено генератор тем bin/mac-build-theme для включення виправлених стилів активного рядка бічної панелі.
+   - Успішно пройдено верифікацію: mac-audit-sync check, mac-extension-guard verify, mac-i18n-verify (100% PASS).
