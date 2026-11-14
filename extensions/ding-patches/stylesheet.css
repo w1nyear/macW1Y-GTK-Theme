@@ -16,15 +16,24 @@
     border-color: transparent;
 }
 
-/* macOS style selection: transparent item container, rounded accent pill on file label */
+/* macOS style selection & hover: transparent item container, rounded accent or hover pill on file label */
+.file-item,
+.file-item:hover,
+.file-item.file-item-hover,
 .file-item.desktop-icons-selected,
 .file-item.desktop-icons-selected:backdrop,
 .file-item.desktop-icons-keyboard-selected,
 .file-item.desktop-icons-keyboard-selected:backdrop {
-    background-color: transparent !important;
-    background: transparent !important;
-    border-color: transparent !important;
-    box-shadow: none !important;
+    background-color: transparent;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+label.file-label,
+label.file-label-dark {
+    padding: 4px 8px;
+    border-radius: 7.5px;
 }
 
 .file-item.desktop-icons-selected label.file-label,
@@ -34,12 +43,17 @@
 .file-item.desktop-icons-keyboard-selected label.file-label,
 .file-item.desktop-icons-keyboard-selected label.file-label-dark,
 .file-item.desktop-icons-keyboard-selected:backdrop label.file-label,
-.file-item.desktop-icons-keyboard-selected:backdrop label.file-label-dark {
-    background-color: @accent_bg_color;
-    color: #ffffff !important;
-    border-radius: 5px;
-    padding: 2px 6px;
-    text-shadow: none !important;
+.file-item.desktop-icons-keyboard-selected:backdrop label.file-label-dark,
+.file-item.file-item-hover label.file-label,
+.file-item.file-item-hover label.file-label-dark,
+.file-item-hover label.file-label,
+.file-item-hover label.file-label-dark {
+    background-color: transparent;
+    background: transparent;
+    color: #ffffff;
+    text-shadow: none;
+    padding: 4px 8px;
+    border-radius: 7.5px;
 }
 
 .not-found {

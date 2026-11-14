@@ -413,7 +413,22 @@ var DesktopManager = class {
     }
 
     _setSelectionColor() {
-        this.selectColor = this._styleContext.get_color(Gtk.StateFlags.NORMAL);
+        let accent = 'orange';
+        try {
+            accent = Prefs.schemaGnomeInterface?.get_string('accent-color') || 'orange';
+        } catch(e) {}
+        const accentMap = {
+            'blue': new Gdk.RGBA({red: 0.21, green: 0.53, blue: 0.95, alpha: 1.0}),
+            'teal': new Gdk.RGBA({red: 0.00, green: 0.60, blue: 0.60, alpha: 1.0}),
+            'green': new Gdk.RGBA({red: 0.18, green: 0.68, blue: 0.38, alpha: 1.0}),
+            'yellow': new Gdk.RGBA({red: 0.95, green: 0.70, blue: 0.00, alpha: 1.0}),
+            'orange': new Gdk.RGBA({red: 0.98, green: 0.43, blue: 0.04, alpha: 1.0}),
+            'red': new Gdk.RGBA({red: 0.90, green: 0.20, blue: 0.20, alpha: 1.0}),
+            'pink': new Gdk.RGBA({red: 0.88, green: 0.30, blue: 0.60, alpha: 1.0}),
+            'purple': new Gdk.RGBA({red: 0.58, green: 0.32, blue: 0.85, alpha: 1.0}),
+            'slate': new Gdk.RGBA({red: 0.45, green: 0.50, blue: 0.55, alpha: 1.0})
+        };
+        this.selectColor = accentMap[accent] || new Gdk.RGBA({red: 0.98, green: 0.43, blue: 0.04, alpha: 1.0});
         const highContrast = !!Prefs.a11YInterface?.get_boolean('high-contrast');
         // FIXME: In Gtk3 there's no such thing as dark mode and high contrast,
         // so we consider it always light if high contrast is set.
@@ -426,11 +441,21 @@ var DesktopManager = class {
         let style = `.desktop-icons-selected,
         .desktop-icons-selected:backdrop,
         .desktop-icons-keyboard-selected,
-        .desktop-icons-keyboard-selected:not(:backdrop) {
+        .desktop-icons-keyboard-selected:not(:backdrop),
+        .file-item,
+        .file-item:hover,
+        .file-item-hover,
+        .file-item-hover:not(.desktop-icons-selected),
+        .file-item-hover:backdrop {
             background-color: transparent;
             background: transparent;
             box-shadow: none;
             border-color: transparent;
+        }
+        label.file-label,
+        label.file-label-dark {
+            padding: 4px 8px;
+            border-radius: 7.5px;
         }
         .desktop-icons-selected label.file-label,
         .desktop-icons-selected label.file-label-dark,
@@ -439,15 +464,17 @@ var DesktopManager = class {
         .desktop-icons-keyboard-selected label.file-label,
         .desktop-icons-keyboard-selected label.file-label-dark,
         .desktop-icons-keyboard-selected:not(:backdrop) label.file-label,
-        .desktop-icons-keyboard-selected:not(:backdrop) label.file-label-dark {
-            background-color: rgb(${this.selectColor.red * 255}, ${this.selectColor.green * 255}, ${this.selectColor.blue * 255});
+        .desktop-icons-keyboard-selected:not(:backdrop) label.file-label-dark,
+        .file-item-hover label.file-label,
+        .file-item-hover label.file-label-dark,
+        .file-item.file-item-hover label.file-label,
+        .file-item.file-item-hover label.file-label-dark {
+            background-color: transparent;
+            background: transparent;
             color: #ffffff;
-            border-radius: 5px;
-            padding: 2px 6px;
             text-shadow: none;
-        }
-        .file-item-hover:not(.desktop-icons-selected) {
-            background-color: rgba(${this.selectColor.red * 255},${this.selectColor.green * 255}, ${this.selectColor.blue * 255}, ${highContrast ? 0.3 : 0.08});
+            padding: 4px 8px;
+            border-radius: 7.5px;
         }`;
         this._cssProviderSelection.load_from_data(style);
         Gtk.StyleContext.add_provider_for_screen(Gdk.Screen.get_default(), this._cssProviderSelection, 600);

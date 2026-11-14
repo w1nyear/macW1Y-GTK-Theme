@@ -728,8 +728,9 @@ install_extensions() {
     # Patch for DING
     if [ -d "$SCRIPT_DIR/extensions/ding-patches" ] && [ -d "/usr/share/gnome-shell/extensions/ding@rastersoft.com/app" ]; then
         require_root
-        log_info "Applying rename dialog patch for DING..."
+        log_info "Applying rename dialog and selection pill patches for DING..."
         sudo cp "$SCRIPT_DIR/extensions/ding-patches/askRenamePopup.js" /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ 2>/dev/null || true
+        sudo cp "$SCRIPT_DIR/extensions/ding-patches/desktopIconItem.js" /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ 2>/dev/null || true
         sudo cp "$SCRIPT_DIR/extensions/ding-patches/desktopManager.js" /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ 2>/dev/null || true
         sudo cp "$SCRIPT_DIR/extensions/ding-patches/stylesheet.css" /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ 2>/dev/null || true
     fi

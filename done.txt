@@ -21880,3 +21880,33 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
      - bin/mac-extension-guard verify: SUCCESS (21/21).
      - bin/mac-i18n-verify: 100% SUCCESSFUL.
      - Збережено детальні макрознімки в галерею перевірки: screenshot_nautilus_selection_zoom.png та screenshot_nautilus_hover_zoom.png.
+
+762. [UI/UX] Повне поширення автентичних macOS Finder плашок виділення та наведення (Selection & Hover Pill) на Робочий стіл (DING Desktop Icons NG) (2026-11-14):
+   - Контекст та вимоги користувача:
+     1. Запитання: "Всюди такий самий вибір файлів ховер і активності? Типу чи є таке саме і на робочому столі?"
+     2. Підтвердження користувача: "Так, таке саме і на робочому столі і всюди треба зробити".
+     3. Необхідно уніфікувати поведінку виділення та наведення: на робочому столі прямокутний контейнер навколо іконки має бути повністю прозорим; навколо самої назви файлу має малюватися заокруглена плашка точно за контуром рядків переносу (з r=7.5px та радіусом галтелей 6.0px); при наведенні курсора — сіро-прозора (rgba(255, 255, 255, 0.15)), а при виборі — акцентна помаранчева (#fa6e0a / @accent_bg_color).
+   - Технічна реалізація та математична оптимізація:
+     A. Модифікація DING Desktop Icons NG (extensions/ding-patches/desktopIconItem.js):
+        - Підключено сигнал Cairo 'draw' до this._label. За допомогою PangoLayoutLine визначено координати кожного окремого рядка тексту переносу.
+        - Реалізовано побудову контуру плашки з горизонтальним відступом px=6.0px та вертикальним py=2.5px: для однорядкових назв формується прямокутник із радіусом 7.5px; для дворядкових назв будується єдиний контур із зовнішніми кутами r=7.5px та плавними радіальними ввігнутими галтелями (r=6.0px) у місці переходу між рядками різної довжини.
+        - Для стану вибору (isSelected) плашка зафарбовується системним акцентним кольором (помаранчевий #fa6e0a / rgb(250, 110, 10)).
+        - Для стану наведення (isHovered) плашка зафарбовується напівпрозорим кольором: rgba(255, 255, 255, 0.15) для темного фону та rgba(0, 0, 0, 0.10) для світлого.
+        - У методах _onEnter, _onLeave та _setSelectedStatus додано негайний виклик this._label.queue_draw() для реактивного оновлення плашки.
+     B. Менеджер стилів та CSS DING (extensions/ding-patches/desktopManager.js, extensions/ding-patches/stylesheet.css):
+        - Усунено фонову заливку всього блоку елемента: для класів .file-item, .file-item:hover, .file-item.desktop-icons-selected встановлено background: transparent; box-shadow: none; border-color: transparent;.
+        - Впроваджено функцію _setSelectionColor() у desktopManager.js із читанням org.gnome.desktop.interface accent-color та відповідним мапінгом RGBA-кольорів.
+        - Вилучено непідтримувані парсером GTK 3 прапорці !important на background-color для запобігання помилкам парсингу.
+     C. Інтеграція інсталятора та контроль цілісності (install.sh, config/extensions.lock.json):
+        - Додано автоматичне копіювання desktopIconItem.js у /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ під час встановлення.
+        - Оновлено хеш цілісності розширення ding@rastersoft.com у config/extensions.lock.json до актуального значення 13a1b96885229be2a48e04dd8d06d0d2fc876de51fa9b38bc59186220b66cb64.
+   - Результати верифікації:
+     - За живими скріншотами на робочому столі верифіковано:
+       * Однорядковий файл (done.txt): бездоганна симетрична плашка 69x22px із радіусом 7.5px.
+       * Дворядковий перенос назви (Документи проекту.txt): плавний ступінчастий контур 93x41px із галтельним звуженням між рядками (w=93 -> w=82 -> w=92) та r=7.5px / 6.0px.
+       * Стан Hover: напівпрозора сіра плашка навколо тексту, що динамічно з'являється при наведенні курсора без виділення всієї піктограми.
+     - bin/mac-audit-sync check: 100% PASS (5/5).
+     - bin/mac-extension-guard verify: SUCCESS (21/21).
+     - bin/mac-i18n-verify: 100% SUCCESSFUL.
+     - Збережено фотопідтвердження: screenshot_desktop_selection_zoom.png, screenshot_desktop_hover_zoom.png, screenshot_desktop_done_selection.png, screenshot_desktop_overview.png.
+     - Синхронізовано done.txt на ~/Desktop/done.txt.
