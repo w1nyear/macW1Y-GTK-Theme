@@ -223,6 +223,233 @@ static void install_mac_popover_hooks(void) {
     }
 }
 
+/* =========================================================================
+ * macOS Finder Style Grid View Selection Pill for Nautilus
+ * Wraps tightly around each line of filename text, avoiding wide empty boxes
+ * ========================================================================= */
+static void (*orig_gtk_label_snapshot)(GtkWidget *widget, GtkSnapshot *snapshot) = NULL;
+
+static void get_system_accent_color(double *r, double *g, double *b) {
+    *r = 0.98; *g = 0.43; *b = 0.04; /* default orange #fa6e0a */
+    AdwStyleManager *sm = adw_style_manager_get_default();
+    if (sm) {
+        GdkRGBA *rgba = adw_style_manager_get_accent_color_rgba(sm);
+        if (rgba) {
+            *r = (double)rgba->red;
+            *g = (double)rgba->green;
+            *b = (double)rgba->blue;
+            gdk_rgba_free(rgba);
+        }
+    }
+}
+
+static gboolean is_selected_grid_label(GtkWidget *widget) {
+    if (!widget || !GTK_IS_LABEL(widget)) return FALSE;
+
+    GtkWidget *labels_box = gtk_widget_get_parent(widget);
+    if (!labels_box || !gtk_widget_has_css_class(labels_box, "icon-ui-labels-box")) return FALSE;
+
+    if (gtk_widget_has_css_class(widget, "caption") || gtk_widget_has_css_class(widget, "dim-label")) {
+        return FALSE;
+    }
+
+    gboolean selected = FALSE;
+    for (GtkWidget *p = widget; p != NULL; p = gtk_widget_get_parent(p)) {
+        GtkStateFlags flags = gtk_widget_get_state_flags(p);
+        if (flags & GTK_STATE_FLAG_SELECTED) {
+            selected = TRUE;
+            break;
+        }
+        if (gtk_widget_has_css_class(p, "selected")) {
+            selected = TRUE;
+            break;
+        }
+        if (GTK_IS_GRID_VIEW(p)) break;
+    }
+    return selected;
+}
+
+typedef struct {
+    double x, y, w, h;
+} MacLineBox;
+
+static void mac_draw_rounded_rect(cairo_t *cr, double x, double y, double w, double h, double r) {
+    if (r > w / 2.0) r = w / 2.0;
+    if (r > h / 2.0) r = h / 2.0;
+    if (r < 0.5) r = 0.5;
+    cairo_new_sub_path(cr);
+    cairo_arc(cr, x + w - r, y + r, r, -G_PI_2, 0);
+    cairo_arc(cr, x + w - r, y + h - r, r, 0, G_PI_2);
+    cairo_arc(cr, x + r, y + h - r, r, G_PI_2, G_PI);
+    cairo_arc(cr, x + r, y + r, r, G_PI, 3.0 * G_PI_2);
+    cairo_close_path(cr);
+}
+
+static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
+    if (!orig_gtk_label_snapshot) return;
+
+    if (!is_selected_grid_label(widget)) {
+        orig_gtk_label_snapshot(widget, snapshot);
+        return;
+    }
+
+    PangoLayout *layout = gtk_label_get_layout(GTK_LABEL(widget));
+    if (!layout) {
+        orig_gtk_label_snapshot(widget, snapshot);
+        return;
+    }
+
+    int ox = 0, oy = 0;
+    gtk_label_get_layout_offsets(GTK_LABEL(widget), &ox, &oy);
+
+    MacLineBox raw_lines[8];
+    int n_lines = 0;
+    PangoLayoutIter *iter = pango_layout_get_iter(layout);
+    if (iter) {
+        do {
+            PangoRectangle logical;
+            pango_layout_iter_get_line_extents(iter, NULL, &logical);
+            if (n_lines < 8 && logical.width > 0) {
+                raw_lines[n_lines].x = (double)logical.x / PANGO_SCALE + ox;
+                raw_lines[n_lines].y = (double)logical.y / PANGO_SCALE + oy;
+                raw_lines[n_lines].w = (double)logical.width / PANGO_SCALE;
+                raw_lines[n_lines].h = (double)logical.height / PANGO_SCALE;
+                n_lines++;
+            }
+        } while (pango_layout_iter_next_line(iter));
+        pango_layout_iter_free(iter);
+    }
+
+    if (n_lines <= 0) {
+        orig_gtk_label_snapshot(widget, snapshot);
+        return;
+    }
+
+    int widget_w = gtk_widget_get_width(widget);
+    int widget_h = gtk_widget_get_height(widget);
+    if (widget_w <= 0 || widget_h <= 0) {
+        orig_gtk_label_snapshot(widget, snapshot);
+        return;
+    }
+
+    graphene_rect_t bounds;
+    graphene_rect_init(&bounds, 0.0f, 0.0f, (float)widget_w, (float)widget_h);
+    cairo_t *cr = gtk_snapshot_append_cairo(snapshot, &bounds);
+    if (cr) {
+        double px = 5.5;
+        double py = 2.0;
+        double r = 5.0;
+
+        MacLineBox pill_lines[8];
+        for (int i = 0; i < n_lines; i++) {
+            pill_lines[i].x = raw_lines[i].x - px;
+            pill_lines[i].w = raw_lines[i].w + 2.0 * px;
+            if (i == 0) {
+                pill_lines[i].y = raw_lines[i].y - py;
+            } else {
+                pill_lines[i].y = raw_lines[i].y;
+            }
+            if (i == n_lines - 1) {
+                pill_lines[i].h = (raw_lines[i].y + raw_lines[i].h + py) - pill_lines[i].y;
+            } else {
+                pill_lines[i].h = (raw_lines[i + 1].y - pill_lines[i].y) + 0.5;
+            }
+        }
+
+        double ar, ag, ab;
+        get_system_accent_color(&ar, &ag, &ab);
+        if (gtk_widget_get_state_flags(widget) & GTK_STATE_FLAG_BACKDROP) {
+            cairo_set_source_rgba(cr, 0.45, 0.45, 0.47, 0.90);
+        } else {
+            cairo_set_source_rgb(cr, ar, ag, ab);
+        }
+
+        if (n_lines == 1) {
+            cairo_new_path(cr);
+            mac_draw_rounded_rect(cr, pill_lines[0].x, pill_lines[0].y, pill_lines[0].w, pill_lines[0].h, r);
+            cairo_fill(cr);
+        } else if (n_lines == 2) {
+            double x0L = pill_lines[0].x, x0R = pill_lines[0].x + pill_lines[0].w;
+            double y0T = pill_lines[0].y, y0B = pill_lines[0].y + pill_lines[0].h;
+            double x1L = pill_lines[1].x, x1R = pill_lines[1].x + pill_lines[1].w;
+            double y1T = y0B, y1B = pill_lines[1].y + pill_lines[1].h;
+
+            double dwL = x1L - x0L;
+            double dwR = x0R - x1R;
+
+            if (dwL > 2.0 && dwR > 2.0) {
+                /* Line 0 is wider on both sides */
+                double cur_r = r;
+                if (cur_r > dwL) cur_r = dwL;
+                if (cur_r > dwR) cur_r = dwR;
+                if (cur_r > pill_lines[0].h / 2.0) cur_r = pill_lines[0].h / 2.0;
+                if (cur_r > pill_lines[1].h / 2.0) cur_r = pill_lines[1].h / 2.0;
+                if (cur_r < 1.0) cur_r = 1.0;
+
+                cairo_new_path(cr);
+                cairo_arc(cr, x0L + cur_r, y0T + cur_r, cur_r, G_PI, 1.5 * G_PI);
+                cairo_arc(cr, x0R - cur_r, y0T + cur_r, cur_r, 1.5 * G_PI, 2.0 * G_PI);
+                cairo_arc(cr, x0R - cur_r, y0B - cur_r, cur_r, 0, 0.5 * G_PI);
+                cairo_arc_negative(cr, x1R + cur_r, y0B + cur_r, cur_r, 1.5 * G_PI, G_PI);
+                cairo_arc(cr, x1R - cur_r, y1B - cur_r, cur_r, 0, 0.5 * G_PI);
+                cairo_arc(cr, x1L + cur_r, y1B - cur_r, cur_r, 0.5 * G_PI, G_PI);
+                cairo_arc_negative(cr, x1L - cur_r, y0B + cur_r, cur_r, 0, 1.5 * G_PI);
+                cairo_arc(cr, x0L + cur_r, y0B - cur_r, cur_r, 0.5 * G_PI, G_PI);
+                cairo_close_path(cr);
+                cairo_fill(cr);
+            } else if (dwL < -2.0 && dwR < -2.0) {
+                /* Line 1 is wider on both sides */
+                double cur_r = r;
+                if (cur_r > -dwL) cur_r = -dwL;
+                if (cur_r > -dwR) cur_r = -dwR;
+                if (cur_r > pill_lines[0].h / 2.0) cur_r = pill_lines[0].h / 2.0;
+                if (cur_r > pill_lines[1].h / 2.0) cur_r = pill_lines[1].h / 2.0;
+                if (cur_r < 1.0) cur_r = 1.0;
+
+                cairo_new_path(cr);
+                cairo_arc(cr, x0L + cur_r, y0T + cur_r, cur_r, G_PI, 1.5 * G_PI);
+                cairo_arc(cr, x0R - cur_r, y0T + cur_r, cur_r, 1.5 * G_PI, 2.0 * G_PI);
+                cairo_arc_negative(cr, x0R + cur_r, y0B - cur_r, cur_r, G_PI, 0.5 * G_PI);
+                cairo_arc(cr, x1R - cur_r, y1T + cur_r, cur_r, 1.5 * G_PI, 2.0 * G_PI);
+                cairo_arc(cr, x1R - cur_r, y1B - cur_r, cur_r, 0, 0.5 * G_PI);
+                cairo_arc(cr, x1L + cur_r, y1B - cur_r, cur_r, 0.5 * G_PI, G_PI);
+                cairo_arc(cr, x1L + cur_r, y1T + cur_r, cur_r, G_PI, 1.5 * G_PI);
+                cairo_arc_negative(cr, x0L - cur_r, y0B - cur_r, cur_r, 0.5 * G_PI, 0);
+                cairo_close_path(cr);
+                cairo_fill(cr);
+            } else {
+                cairo_new_path(cr);
+                for (int i = 0; i < 2; i++) {
+                    mac_draw_rounded_rect(cr, pill_lines[i].x, pill_lines[i].y, pill_lines[i].w, pill_lines[i].h, r);
+                }
+                cairo_fill(cr);
+            }
+        } else {
+            cairo_new_path(cr);
+            for (int i = 0; i < n_lines; i++) {
+                mac_draw_rounded_rect(cr, pill_lines[i].x, pill_lines[i].y, pill_lines[i].w, pill_lines[i].h, r);
+            }
+            cairo_fill(cr);
+        }
+        cairo_destroy(cr);
+    }
+
+    orig_gtk_label_snapshot(widget, snapshot);
+}
+
+static void install_mac_grid_label_hooks(void) {
+    static gboolean installed = FALSE;
+    if (installed) return;
+    installed = TRUE;
+
+    g_type_ensure(GTK_TYPE_LABEL);
+    GtkWidgetClass *klass = GTK_WIDGET_CLASS(g_type_class_ref(GTK_TYPE_LABEL));
+    if (klass) {
+        orig_gtk_label_snapshot = klass->snapshot;
+        klass->snapshot = mac_grid_label_snapshot;
+    }
+}
+
 static gboolean is_nautilus(void)
 {
     static int cached = -1;
@@ -243,6 +470,8 @@ void init_mac_nautilus(void)
         unsetenv("LD_PRELOAD");
         g_type_ensure(GTK_TYPE_POPOVER);
         install_mac_popover_hooks();
+        g_type_ensure(GTK_TYPE_LABEL);
+        install_mac_grid_label_hooks();
     }
 }
 
@@ -1841,10 +2070,13 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             ".nautilus-grid-view gridview > child:selected .icon-ui-labels-box #label,\n"
             ".nautilus-grid-view gridview > child:selected label#label,\n"
             "gridview > child:selected .icon-ui-labels-box #label {\n"
-            "    background-color: @accent_bg_color;\n"
+            "    background-color: transparent;\n"
+            "    background: transparent;\n"
             "    color: #ffffff;\n"
-            "    border-radius: 5px;\n"
-            "    padding: 2px 6px;\n"
+            "    border: none;\n"
+            "    box-shadow: none;\n"
+            "    border-radius: 0px;\n"
+            "    padding: 0px;\n"
             "    margin: 1px 2px;\n"
             "}\n"
             "window.nautilus-window .nautilus-grid-view gridview > child:selected label.caption,\n"
@@ -1951,6 +2183,7 @@ void gtk_window_present(GtkWindow *window)
     }
     if (is_nautilus() && window) {
         install_mac_popover_hooks();
+        install_mac_grid_label_hooks();
         find_and_enable_scrolled_windows(GTK_WIDGET(window));
         mac_fix_nautilus_window(window);
         g_idle_add(mac_fix_nautilus_window, window);
@@ -1967,6 +2200,7 @@ void gtk_window_present_with_time(GtkWindow *window, guint32 timestamp)
     }
     if (is_nautilus() && window) {
         install_mac_popover_hooks();
+        install_mac_grid_label_hooks();
         find_and_enable_scrolled_windows(GTK_WIDGET(window));
         mac_fix_nautilus_window(window);
         g_idle_add(mac_fix_nautilus_window, window);

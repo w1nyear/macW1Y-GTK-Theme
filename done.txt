@@ -21800,3 +21800,34 @@ EXTRA FIX: Виправлення збою запуску GDM (зависанн�
      - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21).
      - bin/mac-i18n-verify: 100% SUCCESSFUL.
      - done.txt синхронізовано на ~/Desktop/done.txt.
+
+759. [UI/UX] Багаторядкове виділення назв файлів у сітці Nautilus 1:1 під macOS Finder (Pango/Cairo stepped pill з плавними заокругленнями) (2026-11-14):
+   - Контекст та вимоги користувача:
+     1. Усунути недолік при виділенні файлу/папки в сітці Nautilus (grid view), коли назва переноситься на кілька рядків (наприклад, "Документи" -> "Документ" / "ти").
+     2. У стандартному відмалюванні прямокутний CSS-фон охоплював усю ширину віджету GtkLabel, створюючи великі порожні помаранчеві поля зліва та справа від коротшого другого рядка.
+     3. Вимога: форма виділення повинна облягати виключно текст кожного окремого рядка (stepped pill), як у macOS Finder (референс "Agreement for / Services"), з плавними зовнішніми та увігнутими внутрішніми радіусами на межі рядків, без зайвого фону по боках.
+   - Виконані виправлення:
+     A. Бібліотека інжекції Nautilus (src/mac_nautilus.c, lib/libmac_nautilus.so):
+        - Реалізовано перехоплення методу відмалювання GtkWidgetClass->snapshot для типу GTK_TYPE_LABEL (install_mac_grid_label_hooks).
+        - У функції mac_grid_label_snapshot:
+          * Визначається, чи є віджет текстовим підписом у сітці (.icon-ui-labels-box #label) та чи виділений батьківський елемент сітки (GtkListItem:selected).
+          * За допомогою PangoLayoutIter та pango_layout_iter_get_line_extents вираховуються точні піксельні межі (x, y, w, h) кожного окремого рядка тексту.
+          * Для CSS-правила .icon-ui-labels-box #label встановлено background-color: transparent !important, щоб GTK не малював стандартний суцільний прямокутник.
+          * Через Cairo (gtk_snapshot_append_cairo) формується автентичний контур macOS Finder:
+            - Однорядковий текст: стандартний акуратний rounded rect із радіусом r = 5.0px та горизонтальним відступом px = 5.5px.
+            - Дворядковий текст: ступінчаста фігура (stepped pill), де верхній і нижній рядки мають плавні опуклі радіуси на зовнішніх кутах, а стик між широким і вузьким рядками з'єднується плавними увігнутими філетами (cairo_arc_negative).
+            - Багаторядковий текст (>2 рядків): покрокове малювання заокруглених блоків під кожним рядком.
+          * Колір плашки динамічно береться з системного акцентного кольору (get_system_accent_color) або з сірого напівпрозорого відтінку при стані GTK_STATE_FLAG_BACKDROP.
+          * Текст рендериться стандартним snapshot поверх намальованої плашки білим кольором.
+        - Перекомпільовано lib/libmac_nautilus.so та встановлено в /usr/lib/x86_64-linux-gnu/libmac_nautilus.so.
+     B. Синхронізація CSS тем (config/gtk-4.0/macw1y-components.css, bin/mac-build-theme):
+        - Внесено зміни до Розділу 101 у bin/mac-build-theme: встановлено background-color: transparent; border-radius: 0px; padding: 0px; для виділеної мітки у сітці.
+        - Виконано компіляцію через python3 bin/mac-build-theme для повної синхронізації тем (config/, gtk-4.0/, macW1Y-Dark/, macW1Y-Light/, ~/.config/gtk-4.0/, ~/.themes/, /usr/share/themes/).
+        - Оновлено /usr/local/bin/mac-build-theme.
+   - Результати верифікації:
+     - Жива перевірка у системі: запущено Nautilus з вибором "Документи", знято скріншот через GNOME Shell EvalHelper та збережено в артефактах галереї.
+     - Повний збіг з референсом macOS Finder: порожні поля зникли, акцентна плашка щільно облягає кожен рядок тексту з плавними з'єднаннями.
+     - bin/mac-audit-sync check: 100% PASS (5/5 перевірок).
+     - bin/mac-extension-guard verify: VERIFICATION SUCCESS (21/21 керованих розширень).
+     - bin/mac-i18n-verify: 100% SUCCESSFUL (194 підтримувані мови).
+     - Синхронізовано done.txt на ~/Desktop/done.txt.
