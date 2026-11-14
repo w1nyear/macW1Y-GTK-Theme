@@ -184,7 +184,7 @@ def print_status():
     bat = get_battery_info()
     
     print("==================================================")
-    print("  macW1Y 0.6 Adaptive Graphics & Performance System")
+    print("  macW1Y 0.7 Adaptive Graphics & Performance System")
     print("==================================================")
     print(f"Configured Profile : {cfg.get('profile', 'balanced')}")
     print(f"Effective Profile  : {eff.upper()} ({reason})")

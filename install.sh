@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ==============================================================================
 #   macOS Sequoia / Tahoe Transformation Modpack (macW1Y Release)
-#  Installer & Maintenance System - Version 0.6
+#  Installer & Maintenance System - Version 0.7
 # ==============================================================================
 
 set -e
 
 # Version Constants
-NEW_VERSION="0.6"
+NEW_VERSION="0.7"
 
 # ANSI Color Codes
 C_RESET="\033[0m"
@@ -2516,7 +2516,7 @@ get_debug_installed_version() {
     elif [ -f "$TARGET_HOME/.local/share/macW1Y/debug.version" ]; then
         cat "$TARGET_HOME/.local/share/macW1Y/debug.version" 2>/dev/null | tr -d 'v \n\r'
     elif [ -x "/usr/local/bin/macW1Y" ] || [ -x "/usr/bin/macW1Y" ]; then
-        echo "0.6"
+        echo "0.7"
     fi
 }
 
