@@ -262,3 +262,25 @@
         * Під час огляду: pbVisible: true, trackFullscreen: false.
         * Після виходу з огляду: pbVisible: false, trackFullscreen: true — панель миттєво прихована без потреби рухати курсор.
      2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
+
+
+783. Виправлення переміщення та перетягування файлів на робочому столі (macOS Finder DnD):
+   - Запит користувача: Під час переміщення файлу на робочому столі видалити показ клітинок (помаранчеві квадрати). Якщо переміщувати файли на коротку дистанцію, вони також мають переміщуватись туди. При взятті файлу він не повинен дублюватись (повинен бути лише під курсором, а не залишатися на робочому столі).
+   - Реалізовані зміни:
+     1) Видалення помаранчевих квадратів сітки під час DnD:
+        * У extensions/ding-patches/desktopGrid.js у функції _doDrawRubberBand() вилучено малювання напівпрозорих помаранчевих прямокутників сітки (showDropPlace), залишивши лише rubberband виділення рамкою при перетягуванні по порожньому столу.
+        * У extensions/ding-patches/desktopManager.js та dconf/gnome-all.dconf встановлено showDropPlace = false.
+     2) Усунення дублювання іконки під час перетягування:
+        * У extensions/ding-patches/desktopManager.js у функцію onDragBegin() додано встановлення container.set_opacity(0.0) та container.set_sensitive(false) для всіх перетягуваних елементів (джерело миттєво стає невидимим на робочому столі, на екрані залишається виключно іконка під курсором миші без подвоєння).
+        * У onDragEnd() відновлено container.set_opacity(1.0) та container.set_sensitive(true).
+        * У extensions/ding-patches/desktopIconItem.js підключено сигнал drag-failed для гарантованого повернення видимості при скасуванні перетягування клавішею Escape.
+     3) Підтримка переміщення на коротку дистанцію:
+        * Виявлено причину блокування: раніше при перетягуванні на невелику відстань курсор залишався над віджетом вихідного файлу; fileItem.js у drag-data-received відхиляв скидання на себе через drag_finish(context, false, false), а highLightDropTarget скидав координати до початкових.
+        * Завдяки set_sensitive(false) на період перетягування віджет вихідного файлу не перехоплює події скидання — подія чисто потрапляє у desktopGrid, де обчислюються точні координати курсору.
+        * У extensions/ding-patches/fileItem.js та desktopIconItem.js оновлено _hasToRouteDragToGrid(), додано підтримку DING_ICON_LIST у цільові типи та перенаправлення будь-якого скидання на робочий стіл у _grid.receiveDrop() замість скасування.
+        * Оновлено install.sh для копіювання всіх патчів DING у систему.
+        * Оновлено контрольний хеш ding@rastersoft.com у config/extensions.lock.json (c638b0ec...).
+   - Верифікація:
+     1) DING перезапущено та перевірено журнали — запуск без помилок.
+     2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
+

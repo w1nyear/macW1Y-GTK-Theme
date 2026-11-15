@@ -570,6 +570,7 @@ widget-theme-unified='dark'
 
 [org/gnome/shell/extensions/ding]
 check-x11wayland=true
+show-drop-place=false
 show-home=false
 
 [org/gnome/shell/extensions/kiwi]

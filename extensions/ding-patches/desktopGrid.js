@@ -418,19 +418,7 @@ var DesktopGrid = class extends SignalManager.SignalManager{
             Gdk.cairo_set_source_rgba(cr, this._desktopManager.borderColor);
             cr.stroke();
         }
-        if (this._desktopManager.showDropPlace && (this._selectedList !== null)) {
-            for (let [x, y] of this._selectedList) {
-                this._roundedRectangle(cr, x + 0.5, y + 0.5, this._elementWidth, this._elementHeight, 10);
-                const color = this._desktopManager.selectColor.copy();
-                color.alpha = 0.4;
-                Gdk.cairo_set_source_rgba(cr, color);
-                cr.fill();
-                cr.setLineWidth(2);
-                this._roundedRectangle(cr, x + 0.5, y + 0.5, this._elementWidth, this._elementHeight, 10);
-                Gdk.cairo_set_source_rgba(cr, this._desktopManager.borderColor);
-                cr.stroke();
-            }
-        }
+        // macOS Tahoe desktop: drop place orange grid rectangles are removed
     }
 
     getDistance(x, y) {

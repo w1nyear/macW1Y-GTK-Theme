@@ -578,10 +578,19 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
     }
 
     _hasToRouteDragToGrid() {
-        if (this._grid) {
+        if (!this._grid) {
+            return false;
+        }
+        if (!this._desktopManager || !this._desktopManager.dragItem) {
+            return false;
+        }
+        if (this._desktopManager.dragItem === this || (this._file && this._desktopManager.dragItem.uri === this._file.get_uri())) {
             return true;
         }
-        return false;
+        if (!this.isDirectory && !this._isValidDesktopFile && (this._fileExtra !== Enums.FileType.USER_DIRECTORY_TRASH)) {
+            return true;
+        }
+        return this._isSelected;
     }
 
     _updateDragStatus(context, time) {
@@ -592,9 +601,9 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
         }
     }
 
-    highLightDropTarget() {
+    highLightDropTarget(x = 0, y = 0) {
         if (this._hasToRouteDragToGrid()) {
-            this._grid.receiveMotion(this._x1, this._y1, true);
+            this._grid.receiveMotion(this._x1 + x, this._y1 + y, true);
             return;
         }
         if (!this._fullStyleContext.has_class('desktop-icons-selected')) {
@@ -711,7 +720,7 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
             Gtk.drag_set_icon_surface(context, surf);
             let [x, y] = this._calculateOffset(widget);
             context.set_hotspot(x + border.left, y + border.top);
-            this._desktopManager.onDragBegin(this);
+            this._desktopManager.onDragBegin(this, widget);
             cr.$dispose();
         });
         this.connectSignal(widget, 'drag-data-get', (w, context, data, info, time) => {
@@ -723,6 +732,10 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
         });
         this.connectSignal(widget, 'drag-end', (w, context) => {
             this._desktopManager.onDragEnd();
+        });
+        this.connectSignal(widget, 'drag-failed', (w, context, result) => {
+            this._desktopManager.onDragEnd();
+            return false;
         });
     }
 

@@ -119,7 +119,7 @@ var DesktopManager = class {
         }
         Prefs.a11YInterface?.connect('changed::high-contrast', () => this._setSelectionColor());
         this._showHidden = Prefs.gtkSettings.get_boolean('show-hidden');
-        this.showDropPlace = Prefs.desktopSettings.get_boolean('show-drop-place');
+        this.showDropPlace = false;
         this.useNemo = Prefs.desktopSettings.get_boolean('use-nemo');
         this.showLinkEmblem = Prefs.desktopSettings.get_boolean('show-link-emblem');
         this.darkText = Prefs.desktopSettings.get_boolean('dark-text-in-labels');
@@ -182,7 +182,7 @@ var DesktopManager = class {
                 }
                 return;
             }
-            this.showDropPlace = Prefs.desktopSettings.get_boolean('show-drop-place');
+            this.showDropPlace = false;
             this._updateDesktop().catch(e => {
                 print(`Exception while updating Desktop after Settings Changed: ${e.message}\n${e.stack}`);
             });
@@ -657,11 +657,26 @@ var DesktopManager = class {
         }
     }
 
-    onDragBegin(item) {
+    onDragBegin(item, widget = null) {
         this.dragItem = item;
-        let [hx, hy] = (item && item._calculateOffset) ? item._calculateOffset(item._eventBox) : [0, 0];
+        let [hx, hy] = (item && item._calculateOffset) ? item._calculateOffset(widget || item._eventBox) : [0, 0];
         this.dragHotspotX = hx;
         this.dragHotspotY = hy;
+
+        let itemList = this.getCurrentSelection(false);
+        if (itemList && itemList.length > 0) {
+            this._draggedItems = itemList;
+        } else if (item) {
+            this._draggedItems = [item];
+        } else {
+            this._draggedItems = [];
+        }
+        for (let it of this._draggedItems) {
+            if (it && it.container) {
+                it.container.set_opacity(0.0);
+                it.container.set_sensitive(false);
+            }
+        }
     }
 
     onDragMotion(x, y) {
@@ -698,6 +713,16 @@ var DesktopManager = class {
     }
 
     onDragEnd() {
+        if (this._draggedItems) {
+            for (let it of this._draggedItems) {
+                if (it && it.container) {
+                    it.container.set_opacity(1.0);
+                    it.container.set_sensitive(true);
+                    it.container.queue_draw();
+                }
+            }
+            this._draggedItems = null;
+        }
         this.dragItem = null;
         this.dragHotspotX = 0;
         this.dragHotspotY = 0;
