@@ -10602,7 +10602,6 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row {
     border-radius: 7px;
     font-size: 13px;
     color: rgba(0, 0, 0, 0.88);
-    align-items: center;
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:hover,
@@ -11754,6 +11753,7 @@ window.mac-settings-window button.suggested-action.circular:active {
   color: #ffffff;
   border-radius: 9999px;
 }
+
 
 
 

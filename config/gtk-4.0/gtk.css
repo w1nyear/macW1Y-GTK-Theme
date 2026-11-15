@@ -10853,7 +10853,6 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row {
     border-radius: 7px;
     font-size: 13px;
     color: rgba(255, 255, 255, 0.90);
-    align-items: center;
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:hover,
@@ -12098,6 +12097,7 @@ window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {
     border-bottom: 1px solid var(--mac-card-sep, rgba(255, 255, 255, 0.08));
     box-shadow: none;
 }
+
 
 
 

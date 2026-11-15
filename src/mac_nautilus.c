@@ -249,25 +249,57 @@ typedef enum {
     MAC_GRID_STATE_HOVER = 2
 } MacGridState;
 
+static GtkWidget *g_active_hover_item = NULL;
+
+static void clear_grid_item_hover(GtkWidget *item) {
+    if (!item || !GTK_IS_WIDGET(item)) return;
+    g_object_set_data(G_OBJECT(item), "mac-hovered", GINT_TO_POINTER(0));
+    GtkWidget *label = GTK_WIDGET(g_object_get_data(G_OBJECT(item), "mac-target-label"));
+    if (label && GTK_IS_WIDGET(label)) {
+        g_object_set_data(G_OBJECT(label), "mac-hovered", GINT_TO_POINTER(0));
+        gtk_widget_queue_draw(label);
+    }
+    gtk_widget_queue_draw(item);
+}
+
+static void on_item_destroy(GtkWidget *widget, gpointer user_data) {
+    if (g_active_hover_item == widget) {
+        g_active_hover_item = NULL;
+    }
+}
+
 static void on_grid_item_enter(GtkEventControllerMotion *controller, double x, double y, gpointer user_data) {
     GtkWidget *item = GTK_WIDGET(user_data);
-    if (GTK_IS_WIDGET(item)) {
-        GtkWidget *label = GTK_WIDGET(g_object_get_data(G_OBJECT(item), "mac-target-label"));
-        if (label && GTK_IS_WIDGET(label)) {
-            g_object_set_data(G_OBJECT(label), "mac-hovered", GINT_TO_POINTER(1));
-            gtk_widget_queue_draw(label);
-        }
+    if (!GTK_IS_WIDGET(item)) return;
+
+    if (g_active_hover_item && g_active_hover_item != item) {
+        clear_grid_item_hover(g_active_hover_item);
     }
+    g_active_hover_item = item;
+
+    g_object_set_data(G_OBJECT(item), "mac-hovered", GINT_TO_POINTER(1));
+    GtkWidget *label = GTK_WIDGET(g_object_get_data(G_OBJECT(item), "mac-target-label"));
+    if (label && GTK_IS_WIDGET(label)) {
+        g_object_set_data(G_OBJECT(label), "mac-hovered", GINT_TO_POINTER(1));
+        gtk_widget_queue_draw(label);
+    }
+    gtk_widget_queue_draw(item);
 }
 
 static void on_grid_item_leave(GtkEventControllerMotion *controller, gpointer user_data) {
     GtkWidget *item = GTK_WIDGET(user_data);
-    if (GTK_IS_WIDGET(item)) {
-        GtkWidget *label = GTK_WIDGET(g_object_get_data(G_OBJECT(item), "mac-target-label"));
-        if (label && GTK_IS_WIDGET(label)) {
-            g_object_set_data(G_OBJECT(label), "mac-hovered", GINT_TO_POINTER(0));
-            gtk_widget_queue_draw(label);
-        }
+    if (!GTK_IS_WIDGET(item)) return;
+
+    clear_grid_item_hover(item);
+    if (g_active_hover_item == item) {
+        g_active_hover_item = NULL;
+    }
+}
+
+static void on_grid_view_leave(GtkEventControllerMotion *controller, gpointer user_data) {
+    if (g_active_hover_item) {
+        clear_grid_item_hover(g_active_hover_item);
+        g_active_hover_item = NULL;
     }
 }
 
@@ -282,18 +314,23 @@ static MacGridState get_grid_label_state(GtkWidget *widget) {
     }
 
     gboolean selected = FALSE;
-    gboolean hovered = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "mac-hovered"));
+    gboolean hovered = FALSE;
+
+    if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(widget), "mac-hovered"))) {
+        hovered = TRUE;
+    }
 
     for (GtkWidget *p = widget; p != NULL; p = gtk_widget_get_parent(p)) {
+        if (GTK_IS_GRID_VIEW(p)) break;
+
         GtkStateFlags flags = gtk_widget_get_state_flags(p);
         if ((flags & GTK_STATE_FLAG_SELECTED) || gtk_widget_has_css_class(p, "selected")) {
             selected = TRUE;
             break;
         }
-        if (flags & GTK_STATE_FLAG_PRELIGHT) {
+        if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(p), "mac-hovered"))) {
             hovered = TRUE;
         }
-        if (GTK_IS_GRID_VIEW(p)) break;
     }
 
     if (selected) return MAC_GRID_STATE_SELECTED;
@@ -341,23 +378,34 @@ static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
     }
 
     GtkWidget *item = NULL;
+    GtkWidget *grid_view = NULL;
     for (GtkWidget *p = widget; p != NULL; p = gtk_widget_get_parent(p)) {
         GtkWidget *parent = gtk_widget_get_parent(p);
         if (parent && GTK_IS_GRID_VIEW(parent)) {
             item = p;
+            grid_view = parent;
             break;
         }
     }
     if (item) {
         gtk_widget_set_overflow(item, GTK_OVERFLOW_VISIBLE);
-        g_object_set_data(G_OBJECT(item), "mac-target-label", widget);
+        if (!gtk_widget_has_css_class(widget, "caption") && !gtk_widget_has_css_class(widget, "dim-label")) {
+            g_object_set_data(G_OBJECT(item), "mac-target-label", widget);
+        }
         if (!g_object_get_data(G_OBJECT(item), "mac-hover-controller-installed")) {
             g_object_set_data(G_OBJECT(item), "mac-hover-controller-installed", GINT_TO_POINTER(1));
+            g_signal_connect(item, "destroy", G_CALLBACK(on_item_destroy), NULL);
             GtkEventController *motion = gtk_event_controller_motion_new();
             g_signal_connect(motion, "enter", G_CALLBACK(on_grid_item_enter), item);
             g_signal_connect(motion, "leave", G_CALLBACK(on_grid_item_leave), item);
             gtk_widget_add_controller(item, motion);
         }
+    }
+    if (grid_view && !g_object_get_data(G_OBJECT(grid_view), "mac-gridview-leave-installed")) {
+        g_object_set_data(G_OBJECT(grid_view), "mac-gridview-leave-installed", GINT_TO_POINTER(1));
+        GtkEventController *gv_motion = gtk_event_controller_motion_new();
+        g_signal_connect(gv_motion, "leave", G_CALLBACK(on_grid_view_leave), grid_view);
+        gtk_widget_add_controller(grid_view, gv_motion);
     }
 
     MacGridState state = get_grid_label_state(widget);
