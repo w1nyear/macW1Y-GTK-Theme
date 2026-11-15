@@ -227,25 +227,16 @@ function _disconnectTrackedSignals() {
 
 function _anchorX(monitor, kind = 'volume') {
     try {
-        let candidates;
-        if (kind === 'volume') {
-            candidates = [
-                Main.panel?.statusArea?.['macVolume'],
-                Main.panel?.statusArea?.['ydotool-trigger-button'],
-                Main.panel?.statusArea?.['quickSettings'],
-            ];
-        } else {
-            candidates = [
-                Main.panel?.statusArea?.['ydotool-trigger-button'],
-                Main.panel?.statusArea?.['quickSettings'],
-                Main.panel?.statusArea?.['macVolume'],
-            ];
-        }
+        const candidates = [
+            Main.panel?.statusArea?.['ydotool-trigger-button'],
+            Main.panel?.statusArea?.['quickSettings'],
+            Main.panel?.statusArea?.['macVolume'],
+        ];
         for (const btn of candidates) {
             if (!btn)
                 continue;
             const actor = btn.actor ?? btn;
-            if (actor && actor.visible) {
+            if (actor && actor.visible && (typeof actor.is_mapped !== 'function' || actor.is_mapped())) {
                 const [x] = actor.get_transformed_position();
                 const w = actor.width || 0;
                 if (typeof x === 'number' && !isNaN(x) && x > 0 && w > 0)
@@ -271,7 +262,7 @@ function _isFullscreenOrPanelHidden(monitor, fsOverride = null) {
         if (focusWin && focusWin.is_fullscreen() && (!monitor || focusWin.get_monitor() === monitor.index))
             return true;
         const ws = global.workspace_manager?.get_active_workspace();
-        if (ws && ws.list_windows().some(w => w.is_fullscreen() && (!monitor || w.get_monitor() === monitor.index)))
+        if (ws && ws.list_windows().some(w => w.is_fullscreen() && !w.minimized && (!monitor || w.get_monitor() === monitor.index)))
             return true;
         const panel = Main.panel;
         const panelBox = Main.layoutManager?.panelBox;
@@ -308,8 +299,18 @@ function _computeTargetCoordinates(fsOverride = null, kind = 'volume') {
         _lastKnownPanelH = Math.round(curPanelH);
     const panelH = _lastKnownPanelH || 34;
 
-    // Horizontally centered across the screen (as requested: "відцентровано")
-    const targetX = Math.round(monitor.x + (monitor.width - OSD_W) / 2);
+    let targetX;
+    if (_isFullscreenOrPanelHidden(monitor, fsOverride)) {
+        // Fullscreen application: centered horizontally across the screen
+        targetX = Math.round(monitor.x + (monitor.width - OSD_W) / 2);
+    } else {
+        // Desktop or non-fullscreen window with visible menubar: on the right, directly under the Control Center item
+        const anchorCenter = _anchorX(monitor, kind);
+        const margin = 16;
+        const cx = Math.round(anchorCenter - OSD_W / 2);
+        // Ensure within monitor boundaries with margin
+        targetX = Math.max(monitor.x + margin, Math.min(monitor.x + monitor.width - OSD_W - margin, cx));
+    }
     const targetY = monitor.y + panelH + 12;
     return { monitor, targetX, targetY };
 }
