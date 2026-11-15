@@ -57,7 +57,7 @@ Suggested evaluation order: existing Ubuntu dock baseline -> user theme -> one s
 
 ## Excluded from this program unless separately requested and approved
 
-GDM/login customization; GRUB/Plymouth; initramfs, kernel, dracut; systemd daemons; power/GPU tweaks; udev/input group changes; sudoers changes; environment rewrites; GNOME binary diversion; Nautilus binary wrapper; arbitrary D-Bus JavaScript Eval; auto-repair watchdogs; global dconf import/reset; installing Wine/Steam/NVIDIA drivers solely for appearance.
+GDM/login customization; GRUB/Plymouth; initramfs, kernel, dracut; systemd daemons (including the root-privileged mac-grub-status.service that executes a script from the user's home directory); power/GPU tweaks; udev/input group changes; sudoers changes; environment rewrites; GNOME binary diversion; Nautilus or GNOME Control Center binary wrappers; arbitrary D-Bus JavaScript Eval; auto-repair watchdogs; the ~/Applications auto-execute watcher (mac-sync-applications); mac-gdm-bypass auto-login/GDM-restart behavior; global dconf import/reset; installing Wine/Steam/NVIDIA drivers solely for appearance.
 
 ## Local CI contract
 
