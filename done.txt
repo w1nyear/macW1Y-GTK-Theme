@@ -191,3 +191,24 @@
         * Рамка-артефакт на x=94 зникла (яскравий пік RGB [106, 130, 152] замінено на плавний монолітний фон RGB [71, 101, 129]). Меню має одне чисте скло Liquid Glass.
         * Ширина меню строго зафіксована на min-width: 250px (box_w = 262px, actor_w = 274px).
      2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
+
+
+779. Оновлення OSD-меню (більша висота, центрування, розділювачі прогрес-бару):
+   - Запит користувача: Онови OSD меню. Більша висота, відцентровано, розділювачі прогрес бару. Референс на фото.
+   - Реалізовані зміни:
+     1) Збільшено висоту та скориговано геометрію капсули OSD:
+        * У extensions/kiwi@kemma/apps/tahoeOSD.js та tahoeOnScreenDisplay.js параметри оновлено до OSD_W = 320, OSD_H = 64, OSD_RADIUS = 32 (замість 310×50 з радіусом 25).
+        * У extensions/kiwi@kemma/stylesheet.css клас .tahoe-osd отримав padding: 14px 22px 14px 18px, а .tahoe-osd-icon збільшено до icon-size: 28px (замість 26px).
+        * Шейдер Liquid Glass автоматично підлаштував радіус скруглення фону до bh / 2 = 32px.
+     2) Відцентровано OSD по ширині монітора:
+        * У _computeTargetCoordinates OSD позиціонується строго по центру монітора: targetX = Math.round(monitor.x + (monitor.width - OSD_W) / 2) (x = 800 на екрані 1920px), targetY = monitor.y + panelH + 12 (46px).
+     3) Реалізовано розділювачі прогрес-бару на 16 сегментів:
+        * У класі TahoeSegSlider замінено суцільний повзунок на векторний Cairo Canvas із 16 дискретними сегментами.
+        * Застосовано напівпрозорий трек rgba(1, 1, 1, 0.22) та суцільне біле заповнення rgba(1, 1, 1, 1.0) для активних сегментів.
+        * На стиках усіх сегментів прорізано 2px вертикальні розділювачі оператором cr.setOperator(0) (CAIRO_OPERATOR_CLEAR).
+     4) Оновлено config/extensions.lock.json із новим sha256 хешем kiwi@kemma (d002017e...), синхронізовано в ~/.local/share/gnome-shell/extensions/kiwi@kemma/.
+   - Верифікація:
+     1) Попіксельне тестування наживо через PIL (osd_menu_verified.png):
+        * Координати OSD: x = 800, y = 46, w = 320, h = 64.
+        * Виявлено рівно 15 розділювачів, що розділяють 16 блоків із рівномірним кроком 14–15px, повністю відповідаючи референсу користувача.
+     2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).

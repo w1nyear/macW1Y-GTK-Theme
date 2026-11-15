@@ -32,12 +32,12 @@ import('file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/l
         syncGlassCaptureClip = m.syncGlassCaptureClip;
 }).catch(e => console.warn(`[tahoe-osd] liquid-glass utils unavailable: ${e}`));
 
-const OSD_W = 310;
-const OSD_H = 50;
+const OSD_W = 320;
+const OSD_H = 64;
 const MAX_TITLE_W = OSD_W - 32;
 const HIDE_MS = 1800;
 const OSD_PAD = 20;
-const OSD_RADIUS = 25;
+const OSD_RADIUS = 32;
 
 function _setTitleText(text) {
     if (!_title)
@@ -95,7 +95,7 @@ const TahoeSegSlider = GObject.registerClass({
     GTypeName: `TahoeSegSlider_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
 }, class TahoeSegSlider extends St.DrawingArea {
     _init() {
-        super._init({reactive: false, height: 26});
+        super._init({reactive: false, height: 32});
         this._v = 0;
         this._isOveramp = false;
         this.connect('repaint', () => {
@@ -139,48 +139,46 @@ const TahoeSegSlider = GObject.registerClass({
             let v = this._v;
             const isOveramp = this._isOveramp || v > 1.0001;
 
-            // solid background track
-            const barH = 8;
+            const n = 16;
+            const gap = 2.0;
+            const barH = 10;
             const barY = Math.round((h - barH) / 2);
             const r = barH / 2;
-            cr.setSourceRGBA(1, 1, 1, 0.20);
+
+            // 1. Draw solid background track across full width
+            cr.setSourceRGBA(1, 1, 1, 0.22);
             this._rr(cr, 0, barY, w, barH, r);
             cr.fill();
 
-            // Colors: RED if overamplified (100%+), solid opaque WHITE if <= 100%
+            // 2. Active fill
             const RED = [1.00, 0.23, 0.19];
             const WHITE = [1.00, 1.00, 1.00];
             const [colorR, colorG, colorB] = isOveramp ? RED : WHITE;
 
-            // Step snapping for 16 segments (matching volume/brightness stops)
-            const n = 16;
             const stepIdx = Math.max(0, Math.min(n, Math.round(v * n)));
-            if (v <= 1.0001 && Math.abs(v - stepIdx / n) <= 0.038)
-                v = stepIdx / n;
+            const activeCount = isOveramp ? n : stepIdx;
 
-            // Step positions (i = 0 to 16): 0 at the start of slider, 16 at the end
-            const stepXs = [];
-            for (let i = 0; i <= n; i++) {
-                stepXs.push(r + i * (w - 2 * r) / n);
+            if (activeCount > 0) {
+                const fillW = (w / n) * activeCount;
+                cr.save();
+                this._rr(cr, 0, barY, w, barH, r);
+                cr.clip();
+                cr.setSourceRGBA(colorR, colorG, colorB, 1.0);
+                cr.rectangle(0, barY, fillW, barH);
+                cr.fill();
+                cr.restore();
             }
 
-            // filled bar: stops exactly where the step is
-            let fillW = 0;
-            if (isOveramp) {
-                fillW = w;
-                cr.setSourceRGBA(colorR, colorG, colorB, 1.0);
-                this._rr(cr, 0, barY, fillW, barH, r);
-                cr.fill();
-            } else if (v > 0.001) {
-                if (Math.abs(v - stepIdx / n) < 0.001) {
-                    fillW = (stepIdx === n) ? w : stepXs[stepIdx];
-                } else {
-                    fillW = Math.max(barH, Math.min(w, Math.round(r + v * (w - 2 * r))));
-                }
-                cr.setSourceRGBA(colorR, colorG, colorB, 1.0);
-                this._rr(cr, 0, barY, fillW, barH, r);
+            // 3. Cut vertical dividers between segments
+            cr.setOperator(0); // CAIRO_OPERATOR_CLEAR
+            const segW = w / n;
+            for (let i = 1; i < n; i++) {
+                const gx = i * segW - gap / 2.0;
+                cr.rectangle(gx, barY - 1, gap, barH + 2);
                 cr.fill();
             }
+            cr.setOperator(2); // CAIRO_OPERATOR_OVER
+
             cr.restore();
         } finally {
             try {
@@ -310,19 +308,9 @@ function _computeTargetCoordinates(fsOverride = null, kind = 'volume') {
         _lastKnownPanelH = Math.round(curPanelH);
     const panelH = _lastKnownPanelH || 34;
 
-    let targetX;
-    if (_isFullscreenOrPanelHidden(monitor, fsOverride)) {
-        // Fullscreen application (not maximized) or hidden menubar: center horizontally across the screen
-        targetX = Math.round(monitor.x + (monitor.width - OSD_W) / 2);
-    } else {
-        // Desktop or maximized window with visible menubar: center horizontally directly under the icon (macOS Tahoe style)
-        const anchorCenter = _anchorX(monitor, kind);
-        const margin = 16;
-        const cx = Math.round(anchorCenter - OSD_W / 2);
-        // Ensure within monitor boundaries with margin
-        targetX = Math.max(monitor.x + margin, Math.min(monitor.x + monitor.width - OSD_W - margin, cx));
-    }
-    const targetY = monitor.y + panelH + 10;
+    // Horizontally centered across the screen (as requested: "відцентровано")
+    const targetX = Math.round(monitor.x + (monitor.width - OSD_W) / 2);
+    const targetY = monitor.y + panelH + 12;
     return { monitor, targetX, targetY };
 }
 
@@ -1231,7 +1219,7 @@ export function enable() {
 
         _iconL = new St.Icon({
             style_class: 'tahoe-osd-icon',
-            icon_size: 26,
+            icon_size: 28,
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.CENTER,
         });
