@@ -630,20 +630,29 @@ var DesktopManager = class {
         let fileItems = [];
         for (let item of this._fileList) {
             if (item.isSelected) {
+                let [x, y] = item.getCoordinates();
+                let targetX = x + deltaX;
+                let targetY = y + deltaY;
                 if (keepArranged) {
                     if (item.isSpecial) {
                         fileItems.push(item);
                         item.removeFromGrid(false);
-                        let [x, y, a, b, c] = item.getCoordinates();
-                        item.savedCoordinates = [x + deltaX, y + deltaY];
+                        item.savedCoordinates = [targetX, targetY];
                     } else {
                         continue;
                     }
                 } else {
+                    for (let desktop of this._desktops) {
+                        let minX = desktop._x + desktop._marginLeft;
+                        let maxX = desktop._x + desktop._marginLeft + desktop._width - desktop._elementWidth;
+                        let minY = desktop._y + desktop._marginTop;
+                        let maxY = desktop._y + desktop._marginTop + desktop._height - desktop._elementHeight;
+                        targetX = DesktopIconsUtil.clamp(targetX, minX, Math.max(minX, maxX));
+                        targetY = DesktopIconsUtil.clamp(targetY, minY, Math.max(minY, maxY));
+                    }
                     fileItems.push(item);
                     item.removeFromGrid(false);
-                    let [x, y, a, b, c] = item.getCoordinates();
-                    item.savedCoordinates = [x + deltaX, y + deltaY];
+                    item.savedCoordinates = [targetX, targetY];
                 }
             }
         }
@@ -674,7 +683,6 @@ var DesktopManager = class {
         for (let it of this._draggedItems) {
             if (it && it.container) {
                 it.container.set_opacity(0.0);
-                it.container.set_sensitive(false);
             }
         }
     }
@@ -717,27 +725,35 @@ var DesktopManager = class {
             for (let it of this._draggedItems) {
                 if (it && it.container) {
                     it.container.set_opacity(1.0);
-                    it.container.set_sensitive(true);
                     it.container.queue_draw();
                 }
             }
             this._draggedItems = null;
         }
-        this.dragItem = null;
-        this.dragHotspotX = 0;
-        this.dragHotspotY = 0;
+        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            this.dragItem = null;
+            this.dragHotspotX = 0;
+            this.dragHotspotY = 0;
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     onDragDataReceived(context, xDestination, yDestination, selection, info, forceLocal, forceCopy) {
         this.onDragLeave();
         let fileList = DesktopIconsUtil.getFilesFromNautilusDnD(selection, info);
-        if (forceLocal) {
+        if (forceLocal || this.dragItem !== null) {
             info = Enums.DndTargetInfo.DING_ICON_LIST;
         }
         switch (info) {
         case Enums.DndTargetInfo.DING_ICON_LIST:
             if (fileList.length != 0) {
-                let [xOrigin, yOrigin, a, b, c] = this.dragItem.getCoordinates();
+                let xOrigin = 0;
+                let yOrigin = 0;
+                if (this.dragItem) {
+                    let [x1, y1] = this.dragItem.getCoordinates();
+                    xOrigin = x1;
+                    yOrigin = y1;
+                }
                 this.doMoveWithDragAndDrop(xOrigin, yOrigin, xDestination, yDestination);
                 Gtk.drag_finish(context, true, true, Gtk.get_current_event_time());
             }
@@ -1834,7 +1850,10 @@ var DesktopManager = class {
         for (let fileItem of notAssignedYet) {
             let x, y;
             if (fileItem.dropCoordinates == null) {
-                if (this._primaryScreen !== null) {
+                if (fileItem._x1 !== undefined && fileItem._y1 !== undefined && fileItem._x1 > 0 && fileItem._y1 > 0) {
+                    x = fileItem._x1;
+                    y = fileItem._y1;
+                } else if (this._primaryScreen !== null) {
                     x = this._primaryScreen.x;
                     y = this._primaryScreen.y;
                 } else {

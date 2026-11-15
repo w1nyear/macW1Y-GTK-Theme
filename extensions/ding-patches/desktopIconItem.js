@@ -350,7 +350,7 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
         this.connectSignal(this._eventBox, 'leave-notify-event', (actor, event) => this._onLeave(this._eventBox));
         this.connectSignal(this._eventBox, 'button-release-event', (actor, event) => this._onReleaseButton(actor, event));
         this.connectSignal(this._eventBox, 'drag-motion', (widget, context, x, y, time) => {
-            this.highLightDropTarget(x, y);
+            this.highLightDropTarget(x, y, widget);
             this._updateDragStatus(context, time);
         });
         this.connectSignal(this._eventBox, 'drag-leave', () => {
@@ -362,7 +362,7 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
         this.connectSignal(this._labelEventBox, 'leave-notify-event', (actor, event) => this._onLeave(this._labelEventBox));
         this.connectSignal(this._labelEventBox, 'button-release-event', (actor, event) => this._onReleaseButton(actor, event));
         this.connectSignal(this._labelEventBox, 'drag-motion', (widget, context, x, y, time) => {
-            this.highLightDropTarget(x, y);
+            this.highLightDropTarget(x, y, widget);
             this._updateDragStatus(context, time);
         });
         this.connectSignal(this._labelEventBox, 'drag-leave', () => {
@@ -372,19 +372,16 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
             this._doLabelSizeAllocated();
         });
         this.connectSignal(this.container, 'drag-motion', (widget, context, x, y, time) => {
-            this.highLightDropTarget(x, y);
+            this.highLightDropTarget(x, y, widget);
             this._updateDragStatus(context, time);
         });
         this.connectSignal(this.container, 'drag-leave', () => {
             this.unHighLightDropTarget();
         });
 
-        if (this._desktopManager.showDropPlace) {
-            this._setDropDestination(this.container);
-        } else {
-            this._setDropDestination(this._eventBox);
-            this._setDropDestination(this._labelEventBox);
-        }
+        this._setDropDestination(this.container);
+        this._setDropDestination(this._eventBox);
+        this._setDropDestination(this._labelEventBox);
         this._setDragSource(this._eventBox);
         this._setDragSource(this._labelEventBox);
         this.container.show_all();
@@ -581,10 +578,15 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
         if (!this._grid) {
             return false;
         }
-        if (!this._desktopManager || !this._desktopManager.dragItem) {
+        if (!this._desktopManager) {
             return false;
         }
-        if (this._desktopManager.dragItem === this || (this._file && this._desktopManager.dragItem.uri === this._file.get_uri())) {
+        let isSelf = (this._desktopManager.dragItem === this) ||
+                     (this._file && this._desktopManager.dragItem && this._desktopManager.dragItem.uri === this._file.get_uri());
+        if (!isSelf && (this.isDirectory || this._isValidDesktopFile || (this._fileExtra === Enums.FileType.USER_DIRECTORY_TRASH))) {
+            return false;
+        }
+        if (isSelf) {
             return true;
         }
         if (!this.isDirectory && !this._isValidDesktopFile && (this._fileExtra !== Enums.FileType.USER_DIRECTORY_TRASH)) {
@@ -601,9 +603,18 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
         }
     }
 
-    highLightDropTarget(x = 0, y = 0) {
+    highLightDropTarget(x = 0, y = 0, widget = null) {
         if (this._hasToRouteDragToGrid()) {
-            this._grid.receiveMotion(this._x1 + x, this._y1 + y, true);
+            let globalX = this._x1 + x;
+            let globalY = this._y1 + y;
+            if (widget && this._grid && this._grid._window) {
+                let [belongs, X, Y] = widget.translate_coordinates(this._grid._window, x, y);
+                if (belongs) {
+                    globalX = X + this._grid._x;
+                    globalY = Y + this._grid._y;
+                }
+            }
+            this._grid.receiveMotion(globalX, globalY, true);
             return;
         }
         if (!this._fullStyleContext.has_class('desktop-icons-selected')) {
@@ -667,7 +678,7 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
         widget.drag_source_set(Gdk.ModifierType.BUTTON1_MASK, null, Gdk.DragAction.MOVE | Gdk.DragAction.COPY);
         let targets = new Gtk.TargetList(null);
         targets.add(Gdk.atom_intern('x-special/ding-icon-list', false),
-            Gtk.TargetFlags.SAME_APP, Enums.DndTargetInfo.DING_ICON_LIST);
+            0, Enums.DndTargetInfo.DING_ICON_LIST);
         if ((this._fileExtra != Enums.FileType.USER_DIRECTORY_TRASH) &&
             (this._fileExtra != Enums.FileType.USER_DIRECTORY_HOME) &&
             (this._fileExtra != Enums.FileType.EXTERNAL_DRIVE)) {

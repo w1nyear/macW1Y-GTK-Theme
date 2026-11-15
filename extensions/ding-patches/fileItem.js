@@ -516,7 +516,7 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
             (this._fileExtra != Enums.FileType.EXTERNAL_DRIVE) ||
             this._isDirectory) {
             let targets = new Gtk.TargetList(null);
-            targets.add(Gdk.atom_intern('x-special/ding-icon-list', false), Gtk.TargetFlags.SAME_APP,
+            targets.add(Gdk.atom_intern('x-special/ding-icon-list', false), 0,
                 Enums.DndTargetInfo.DING_ICON_LIST);
             targets.add(Gdk.atom_intern('x-special/gnome-icon-list', false), 0, 1);
             targets.add(Gdk.atom_intern('text/uri-list', false), 0, 2);
@@ -525,7 +525,16 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
             this.connectSignal(dropDestination, 'drag-data-received', (widget, context, x, y, selection, info, time) => {
                 const forceCopy = context.get_selected_action() === Gdk.DragAction.COPY;
                 if (this._hasToRouteDragToGrid()) {
-                    this._grid.receiveDrop(context, this._x1 + x, this._y1 + y, selection, info, true, forceCopy);
+                    let globalX = this._x1 + x;
+                    let globalY = this._y1 + y;
+                    if (widget && this._grid && this._grid._window) {
+                        let [belongs, X, Y] = widget.translate_coordinates(this._grid._window, x, y);
+                        if (belongs) {
+                            globalX = X + this._grid._x;
+                            globalY = Y + this._grid._y;
+                        }
+                    }
+                    this._grid.receiveDrop(context, globalX, globalY, selection, info, true, forceCopy);
                     return;
                 }
                 if (info === Enums.DndTargetInfo.DING_ICON_LIST ||
@@ -533,9 +542,18 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
                     info === Enums.DndTargetInfo.URI_LIST) {
                     let fileList = DesktopIconsUtil.getFilesFromNautilusDnD(selection, info);
                     if (fileList.length != 0) {
-                        if (this._desktopManager.dragItem && ((this._desktopManager.dragItem.uri == this._file.get_uri()) || !(this._isValidDesktopFile || this.isDirectory))) {
+                        if (this._hasToRouteDragToGrid() || (this._desktopManager.dragItem && ((this._desktopManager.dragItem.uri == this._file.get_uri()) || !(this._isValidDesktopFile || this.isDirectory)))) {
                             // Route drag over self or non-folder item to grid as desktop move
-                            this._grid.receiveDrop(context, this._x1 + x, this._y1 + y, selection, info, true, forceCopy);
+                            let globalX = this._x1 + x;
+                            let globalY = this._y1 + y;
+                            if (widget && this._grid && this._grid._window) {
+                                let [belongs, X, Y] = widget.translate_coordinates(this._grid._window, x, y);
+                                if (belongs) {
+                                    globalX = X + this._grid._x;
+                                    globalY = Y + this._grid._y;
+                                }
+                            }
+                            this._grid.receiveDrop(context, globalX, globalY, selection, info, true, forceCopy);
                             return;
                         }
                         if (this._isValidDesktopFile) {

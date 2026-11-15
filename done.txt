@@ -284,3 +284,27 @@
      1) DING перезапущено та перевірено журнали — запуск без помилок.
      2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
 
+
+784. Виправлення стрибка іконки у лівий верхній кут (0, 0) при переміщенні на коротку дистанцію на робочому столі:
+   - Запит користувача: Якщо перемістити файл на коротку дистанцію, зараз виправити те що у лівий верхній кут переміщується.
+   - Першопричини та комплексне виправлення:
+     1) Wayland та прапорець Gtk.TargetFlags.SAME_APP:
+        * Раніше в extensions/ding-patches/desktopGrid.js, fileItem.js та desktopIconItem.js цільовий тип 'x-special/ding-icon-list' реєструвався з Gtk.TargetFlags.SAME_APP. Під Wayland GDK не може перевірити клієнтські вікна джерела, через що цей тип відхилявся, і GTK обирав запасний тип x-special/gnome-icon-list або uri-list.
+        * У результаті desktopManager обробляв переміщення як зовнішній дроп з Nautilus і викликав clearFileCoordinates(), обнуляючи координати у metadata::nautilus-icon-position.
+        * Замінено Gtk.TargetFlags.SAME_APP на 0, а в desktopManager.js додано примусове розпізнавання внутрішнього переміщення (forceLocal || this.dragItem !== null), унеможлививши випадкове скидання координат.
+     2) Обчислення локальних vs екранних координат:
+        * У fileItem.js та desktopIconItem.js координати події drag-motion та drag-data-received були відносними до _eventBox або _labelEventBox.
+        * Додано точну трансляцію координат через widget.translate_coordinates(this._grid._window, x, y), що вираховує точні абсолютні координати курсору на полотні робочого столу без зміщень.
+     3) Захист від втрати координат при unparent:
+        * У desktopManager.js у doMoveWithDragAndDrop() отримання координат [x, y] = item.getCoordinates() перенесено до виклику item.removeFromGrid(false) (раніше unparent віджета з сітки призводив до неможливості зчитати позицію).
+        * Додано обмеження (clamping) координат у межах робочого столу, що гарантує getDistance() == 0 та унеможливлює потрапляння іконки до черги notAssignedYet.
+        * У _addFilesToDesktop() для fallback notAssignedYet додано збереження наявних координат _x1, _y1 замість безальтернативного скидання на (0, 0).
+     4) Інтеграція та оновлення замка розширень:
+        * Усі патчі DING синхронізовано з /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/.
+        * Оновлено контрольний хеш sha256 у config/extensions.lock.json (707239f3...).
+        * Перезапущено процес DING.
+   - Верифікація:
+     1) DING успішно перезапущено (без попереджень чи помилок синтаксису GJS).
+     2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
+
+
