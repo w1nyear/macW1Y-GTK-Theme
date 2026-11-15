@@ -235,6 +235,8 @@ typedef struct {
     double cur_tx, cur_ty;
     double vel_sx, vel_sy;
     double vel_tx, vel_ty;
+    double anchor_ox, anchor_oy;
+    double button_radius_x, button_radius_y;
     guint tick_id;
     gint64 last_time;
     int target_button_idx; /* 0: close, 1: min, 2: max */
@@ -246,6 +248,8 @@ static MacWcDragData *get_wc_drag_data(GtkWidget *w) {
         d = g_new0(MacWcDragData, 1);
         d->cur_sx = 1.0;
         d->cur_sy = 1.0;
+        d->button_radius_x = 8.0;
+        d->button_radius_y = 8.0;
         g_object_set_data_full(G_OBJECT(w), "mac_wc_drag_data", d, g_free);
     }
     return d;
@@ -274,20 +278,19 @@ static gboolean mac_wc_spring_tick(GtkWidget *widget, GdkFrameClock *clock, gpoi
     d->vel_sy += f_sy * dt;
     d->cur_sy += d->vel_sy * dt;
 
-    double f_tx = -stiffness * d->cur_tx - damping * d->vel_tx;
-    d->vel_tx += f_tx * dt;
-    d->cur_tx += d->vel_tx * dt;
+    /* Anchor smoothly glides back to center as the spring settles */
+    d->anchor_ox *= exp(-14.0 * dt);
+    d->anchor_oy *= exp(-14.0 * dt);
 
-    double f_ty = -stiffness * d->cur_ty - damping * d->vel_ty;
-    d->vel_ty += f_ty * dt;
-    d->cur_ty += d->vel_ty * dt;
+    d->cur_tx = 0.0;
+    d->cur_ty = 0.0;
 
     gtk_widget_queue_draw(widget);
 
     gboolean settled = (fabs(d->cur_sx - 1.0) < 0.005) &&
                        (fabs(d->cur_sy - 1.0) < 0.005) &&
-                       (fabs(d->cur_tx) < 0.1) &&
-                       (fabs(d->cur_ty) < 0.1) &&
+                       (fabs(d->anchor_ox) < 0.05) &&
+                       (fabs(d->anchor_oy) < 0.05) &&
                        (fabs(d->vel_sx) < 0.01) &&
                        (fabs(d->vel_sy) < 0.01);
 
@@ -296,6 +299,8 @@ static gboolean mac_wc_spring_tick(GtkWidget *widget, GdkFrameClock *clock, gpoi
         d->cur_sy = 1.0;
         d->cur_tx = 0.0;
         d->cur_ty = 0.0;
+        d->anchor_ox = 0.0;
+        d->anchor_oy = 0.0;
         d->vel_sx = 0.0; d->vel_sy = 0.0;
         d->vel_tx = 0.0; d->vel_ty = 0.0;
         d->tick_id = 0;
@@ -309,8 +314,12 @@ static gboolean on_wc_hold_timeout(gpointer user_data) {
     d->hold_timer_id = 0;
     if (d->is_dragging) {
         d->is_holding = TRUE;
-        d->cur_sx = 1.18;
-        d->cur_sy = 1.18;
+        d->cur_sx = 1.15;
+        d->cur_sy = 1.15;
+        d->cur_tx = 0.0;
+        d->cur_ty = 0.0;
+        d->anchor_ox = 0.0;
+        d->anchor_oy = 0.0;
         if (d->gesture) {
             gtk_gesture_set_state(d->gesture, GTK_EVENT_SEQUENCE_CLAIMED);
         }
@@ -346,8 +355,12 @@ static void on_wc_drag_begin(GtkGestureDrag *gesture, double start_x, double sta
     d->cur_sy = 1.0;
     d->cur_tx = 0;
     d->cur_ty = 0;
+    d->anchor_ox = 0;
+    d->anchor_oy = 0;
     d->vel_sx = 0; d->vel_sy = 0;
     d->vel_tx = 0; d->vel_ty = 0;
+    d->button_radius_x = 8.0;
+    d->button_radius_y = 8.0;
 
     /* Do NOT claim sequence on begin; allow standard click events to reach child GtkButtons */
     gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_NONE);
@@ -382,6 +395,19 @@ static void on_wc_drag_begin(GtkGestureDrag *gesture, double start_x, double sta
         else d->target_button_idx = 2;
     }
 
+    /* Compute button radius for anchor calculations */
+    b_idx = 0;
+    for (GtkWidget *child = gtk_widget_get_first_child(wc); child != NULL; child = gtk_widget_get_next_sibling(child), b_idx++) {
+        if (b_idx == d->target_button_idx) {
+            graphene_rect_t b;
+            if (gtk_widget_compute_bounds(child, wc, &b)) {
+                if (b.size.width > 4.0f) d->button_radius_x = (double)b.size.width * 0.5;
+                if (b.size.height > 4.0f) d->button_radius_y = (double)b.size.height * 0.5;
+            }
+            break;
+        }
+    }
+
     /* Start hold timer (280ms): only activate jelly if held! */
     d->hold_timer_id = g_timeout_add(280, on_wc_hold_timeout, d);
 }
@@ -410,24 +436,34 @@ static void on_wc_drag_update(GtkGestureDrag *gesture, double offset_x, double o
 
     if (dist > 0.5) {
         /* Smooth elastic stretch and volume-preserving compression */
-        double stretch = 1.15 + fmin(dist * 0.025, 0.45); /* Max stretch ~1.60 */
-        double compress = fmax(0.70, 1.15 / sqrt(stretch / 1.15));
+        double stretch = 1.12 + fmin(dist * 0.022, 0.40); /* Max stretch ~1.52 */
+        double compress = fmax(0.72, 1.12 / sqrt(stretch / 1.12));
 
         /* Smooth continuous interpolation between horizontal and vertical axes (ZERO abrupt snap!) */
         double t_axis = (dist > 0.001) ? (offset_x * offset_x) / (dist * dist) : 0.5;
         d->cur_sx = compress + (stretch - compress) * t_axis;
         d->cur_sy = stretch - (stretch - compress) * t_axis;
 
-        /* Damped elastic translation tracking cursor with smooth limits */
-        double max_tx = 36.0;
-        double max_ty = 24.0;
-        d->cur_tx = CLAMP(offset_x * 0.35, -max_tx, max_tx);
-        d->cur_ty = CLAMP(offset_y * 0.35, -max_ty, max_ty);
+        double u_x = (dist > 0.001) ? (offset_x / dist) : 0.0;
+        double u_y = (dist > 0.001) ? (offset_y / dist) : 0.0;
+        double blend = CLAMP(dist / 5.0, 0.0, 1.0);
+
+        /* Anchor point on the OPPOSITE side of drag direction:
+         * When pulling right (u_x > 0), anchor is at the left edge (-radius_x), so the left edge stays pinned and right edge stretches.
+         * The button does NOT slide or travel ("не їде").
+         */
+        d->anchor_ox = -d->button_radius_x * u_x * blend;
+        d->anchor_oy = -d->button_radius_y * u_y * blend;
+
+        d->cur_tx = 0.0;
+        d->cur_ty = 0.0;
     } else {
         d->cur_sx = 1.15;
         d->cur_sy = 1.15;
         d->cur_tx = 0.0;
         d->cur_ty = 0.0;
+        d->anchor_ox = 0.0;
+        d->anchor_oy = 0.0;
     }
 
     gtk_widget_queue_draw(wc);
@@ -450,6 +486,8 @@ static void on_wc_drag_end(GtkGestureDrag *gesture, double offset_x, double offs
         d->cur_sy = 1.0;
         d->cur_tx = 0.0;
         d->cur_ty = 0.0;
+        d->anchor_ox = 0.0;
+        d->anchor_oy = 0.0;
         gtk_widget_queue_draw(wc);
         gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_DENIED);
         return;
@@ -472,7 +510,7 @@ static void on_wc_drag_end(GtkGestureDrag *gesture, double offset_x, double offs
 
 static void mac_wc_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
     MacWcDragData *d = get_wc_drag_data(widget);
-    if (!d || (!d->is_holding && fabs(d->cur_sx - 1.0) < 0.001 && fabs(d->cur_sy - 1.0) < 0.001 && fabs(d->cur_tx) < 0.01 && fabs(d->cur_ty) < 0.01)) {
+    if (!d || (!d->is_holding && fabs(d->cur_sx - 1.0) < 0.001 && fabs(d->cur_sy - 1.0) < 0.001 && fabs(d->anchor_ox) < 0.01 && fabs(d->anchor_oy) < 0.01)) {
         if (orig_wc_snapshot) orig_wc_snapshot(widget, snapshot);
         return;
     }
@@ -490,7 +528,7 @@ static void mac_wc_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
         }
     }
 
-    /* Step 2: Draw the target (jelly) button last so it renders on top around ITS OWN center */
+    /* Step 2: Draw the target (jelly) button last so it renders on top pinned at its anchor edge */
     if (target_child) {
         graphene_rect_t bounds;
         float cx, cy;
@@ -500,13 +538,19 @@ static void mac_wc_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
         } else {
             float cw = (float)gtk_widget_get_width(target_child);
             float ch = (float)gtk_widget_get_height(target_child);
+            if (cw < 4.0f) cw = 16.0f;
+            if (ch < 4.0f) ch = 16.0f;
             cx = (float)d->target_button_idx * 21.0f + cw * 0.5f;
             cy = ch * 0.5f;
         }
 
+        /* Anchor point where the button is pinned */
+        float ax = cx + (float)d->anchor_ox;
+        float ay = cy + (float)d->anchor_oy;
+
         graphene_point_t p1, p2;
-        graphene_point_init(&p1, cx + (float)d->cur_tx, cy + (float)d->cur_ty);
-        graphene_point_init(&p2, -cx, -cy);
+        graphene_point_init(&p1, ax, ay);
+        graphene_point_init(&p2, -ax, -ay);
 
         GskTransform *t = gsk_transform_translate(NULL, &p1);
         t = gsk_transform_scale(t, (float)d->cur_sx, (float)d->cur_sy);

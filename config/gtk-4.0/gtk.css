@@ -10108,7 +10108,7 @@ window.mac-settings-window .mac-settings-sidebar-headerbar {
 
 window.mac-settings-window navigation-split-view headerbar windowcontrols.start:dir(ltr),
 window.mac-settings-window .mac-settings-sidebar-headerbar windowcontrols.start:dir(ltr) {
-    margin-top: -3px;
+    margin-top: 6px;
     margin-left: 5px;
 }
 
@@ -12101,6 +12101,7 @@ window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {
     border-bottom: 1px solid var(--mac-card-sep, rgba(255, 255, 255, 0.08));
     box-shadow: none;
 }
+
 
 
 
