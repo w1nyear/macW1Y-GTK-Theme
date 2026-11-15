@@ -1,0 +1,551 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+macW1Y macOS Tahoe Icon Normalizer & Squircle Generator
+Scans all installed applications (.desktop files), identifies icons with transparent
+cutouts or incorrect/sharp rectangular corners, and generates standardized macOS
+squircle icons (light and dark themes) with authentic macOS corner radii, padding,
+and subtle drop shadows.
+"""
+
+import os
+import sys
+import glob
+import base64
+import io
+import shutil
+import subprocess
+import numpy as np
+from PIL import Image, ImageOps, ImageDraw, ImageFilter
+
+HOME = os.path.expanduser("~")
+USER_ICONS_DIR = os.path.join(HOME, ".local/share/icons")
+SYS_ICONS_DIR = "/usr/share/icons"
+
+MACTAHOE_DIR = os.path.join(USER_ICONS_DIR, "MacTahoe")
+MACTAHOE_DARK_DIR = os.path.join(USER_ICONS_DIR, "MacTahoe-dark")
+
+SYS_MACTAHOE_DIR = os.path.join(SYS_ICONS_DIR, "MacTahoe")
+SYS_MACTAHOE_DARK_DIR = os.path.join(SYS_ICONS_DIR, "MacTahoe-dark")
+
+LOCAL_APPS_DIR = os.path.join(HOME, ".local/share/applications")
+SYS_APPS_DIR = "/usr/share/applications"
+
+# Reference drop shadow base64 from MacTahoe template
+SHADOW_B64 = (
+    "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"
+)
+
+# Marker comment to identify auto-generated squircle SVGs
+NORMALIZED_MARKER = "<!-- macW1Y-normalized-squircle -->"
+
+def resolve_icon_path(icon_name):
+    """Resolves an icon name or path to a real image file on disk."""
+    if not icon_name:
+        return None
+    if os.path.isabs(icon_name) and os.path.exists(icon_name):
+        return icon_name
+
+    search_dirs = [
+        os.path.join(HOME, ".local/share/icons/hicolor/scalable/apps"),
+        os.path.join(HOME, ".local/share/icons/hicolor/256x256/apps"),
+        os.path.join(HOME, ".local/share/icons/hicolor/128x128/apps"),
+        os.path.join(HOME, ".local/share/icons/hicolor/48x48/apps"),
+        "/usr/share/icons/hicolor/scalable/apps",
+        "/usr/share/icons/hicolor/256x256/apps",
+        "/usr/share/icons/hicolor/128x128/apps",
+        "/usr/share/icons/hicolor/48x48/apps",
+        "/usr/share/pixmaps",
+        os.path.join(HOME, ".local/share/Steam/steam/games"),
+        os.path.join(HOME, ".steam/steam/games"),
+    ]
+    for d in search_dirs:
+        for ext in [".svg", ".png", ".xpm", ".ico"]:
+            p = os.path.join(d, f"{icon_name}{ext}")
+            if os.path.exists(p):
+                return p
+
+    try:
+        import gi
+        gi.require_version("Gtk", "3.0")
+        from gi.repository import Gtk
+        theme = Gtk.IconTheme.get_default()
+        info = theme.lookup_icon(icon_name, 256, 0)
+        if info:
+            fn = info.get_filename()
+            if fn and os.path.exists(fn):
+                return fn
+    except Exception:
+        pass
+
+    return None
+
+def is_native_mactahoe_icon(icon_name):
+    """Checks if the icon is an official handcrafted MacTahoe icon (not autogenerated)."""
+    if not icon_name:
+        return False
+    svg_path = os.path.join(MACTAHOE_DIR, "apps/scalable", f"{icon_name}.svg")
+    if os.path.exists(svg_path):
+        try:
+            with open(svg_path, "r", errors="ignore") as f:
+                content = f.read(500)
+                if NORMALIZED_MARKER in content:
+                    return False
+            return True
+        except Exception:
+            return True
+    return False
+
+def render_image_to_pil(src_path, target_size=512):
+    """Loads an image (SVG, PNG, XPM, etc.) into a PIL RGBA Image."""
+    if not src_path or not os.path.exists(src_path):
+        return None
+
+    ext = os.path.splitext(src_path)[1].lower()
+    if ext == ".svg":
+        try:
+            import gi
+            gi.require_version("GdkPixbuf", "2.0")
+            from gi.repository import GdkPixbuf
+            pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(src_path, target_size, target_size, True)
+            if pb:
+                buf = pb.save_to_bufferv("png", [], [])
+                return Image.open(io.BytesIO(buf[1])).convert("RGBA")
+        except Exception:
+            pass
+
+    try:
+        return Image.open(src_path).convert("RGBA")
+    except Exception:
+        return None
+
+def analyze_icon_geometry(im):
+    """
+    Analyzes whether an icon has an opaque full-bleed background (needs corner rounding)
+    or is a transparent glyph/cutout (needs an opaque background squircle tile).
+    """
+    arr = np.array(im)
+    alpha = arr[:, :, 3]
+    h, w = alpha.shape
+    bbox = im.getbbox()
+    if not bbox:
+        return False
+
+    bx0, by0, bx1, by1 = bbox
+    bw = bx1 - bx0
+    bh = by1 - by0
+
+    top_pt = alpha[by0 + max(1, int(bh * 0.1)), bx0 + bw // 2]
+    bot_pt = alpha[by1 - max(1, int(bh * 0.1)), bx0 + bw // 2]
+    left_pt = alpha[by0 + bh // 2, bx0 + max(1, int(bw * 0.1))]
+    right_pt = alpha[by0 + bh // 2, bx1 - max(1, int(bw * 0.1))]
+
+    c1 = alpha[by0 + max(1, int(bh * 0.1)), bx0 + max(1, int(bw * 0.1))]
+    c2 = alpha[by0 + max(1, int(bh * 0.1)), bx1 - max(1, int(bw * 0.1))]
+    c3 = alpha[by1 - max(1, int(bh * 0.1)), bx0 + max(1, int(bw * 0.1))]
+    c4 = alpha[by1 - max(1, int(bh * 0.1)), bx1 - max(1, int(bw * 0.1))]
+
+    # Full-bleed square/rect if all 4 edges and corners within the content area are solid opaque
+    is_full_bleed = (top_pt > 200 and bot_pt > 200 and left_pt > 200 and right_pt > 200) and \
+                    (c1 > 200 and c2 > 200 and c3 > 200 and c4 > 200)
+    return is_full_bleed
+
+def generate_squircle_svg(src_im, is_dark=False):
+    """
+    Generates a standardized macOS squircle SVG adhering to the exact MacTahoe geometry:
+    Canvas: 64x64, Tile: 56.002x56.002, rx: 13.002, ry: 13.002.
+    """
+    is_full_bleed = analyze_icon_geometry(src_im)
+
+    if is_dark:
+        bg_stop0 = "#28282a"
+        bg_stop1 = "#1c1c1e"
+        stroke_color = "#ffffff"
+        stroke_opacity = "0.12"
+    else:
+        bg_stop0 = "#ffffff"
+        bg_stop1 = "#f4f4f6"
+        stroke_color = "#000000"
+        stroke_opacity = "0.08"
+
+    if is_full_bleed:
+        # Full-bleed: fit image into 56x56 and clip with squircle
+        buf = io.BytesIO()
+        src_im.save(buf, format="PNG")
+        b64_data = base64.b64encode(buf.getvalue()).decode("ascii")
+
+        content = f"""<clipPath id="tile-clip"><rect width="56.002" height="56.002" x="4" y="3.969" rx="13.002" ry="13.002"/></clipPath>
+<rect width="56.002" height="56.002" x="4" y="3.969" rx="13.002" ry="13.002" fill="url(#bg)" stroke="{stroke_color}" stroke-width="0.5" stroke-opacity="{stroke_opacity}"/>
+<image xlink:href="data:image/png;base64,{b64_data}" width="56.002" height="56.002" x="4" y="3.969" preserveAspectRatio="xMidYMid slice" clip-path="url(#tile-clip)"/>"""
+    else:
+        # Transparent cutout: crop bounding box, center glyph inside tile with proper padding (~68%)
+        bbox = src_im.getbbox()
+        cropped = src_im.crop(bbox) if bbox else src_im
+
+        # If dark mode and glyph is monochrome black, invert to white for legibility
+        if is_dark:
+            g_arr = np.array(cropped)
+            g_alpha = g_arr[:, :, 3]
+            if np.count_nonzero(g_alpha > 50) > 0:
+                vis_rgb = g_arr[g_alpha > 50][:, :3]
+                avg_lum = np.mean(0.299 * vis_rgb[:, 0] + 0.587 * vis_rgb[:, 1] + 0.114 * vis_rgb[:, 2])
+                max_sat = np.max(np.abs(vis_rgb[:, 0] - vis_rgb[:, 1]))
+                if avg_lum < 40 and max_sat < 20:
+                    r_ch, g_ch, b_ch, a_ch = cropped.split()
+                    inv_rgb = ImageOps.invert(Image.merge("RGB", (r_ch, g_ch, b_ch)))
+                    cropped = Image.merge("RGBA", (*inv_rgb.split(), a_ch))
+
+        cw, ch = cropped.size
+        target_size = 38.0  # safe interior: 38/56 ~ 68%
+        aspect = cw / float(max(1, ch))
+        if aspect >= 1.0:
+            gw = target_size
+            gh = target_size / aspect
+        else:
+            gh = target_size
+            gw = target_size * aspect
+
+        gx = 4.0 + (56.002 - gw) / 2.0
+        gy = 3.969 + (56.002 - gh) / 2.0
+
+        buf = io.BytesIO()
+        cropped.save(buf, format="PNG")
+        b64_data = base64.b64encode(buf.getvalue()).decode("ascii")
+
+        content = f"""<rect width="56.002" height="56.002" x="4" y="3.969" rx="13.002" ry="13.002" fill="url(#bg)" stroke="{stroke_color}" stroke-width="0.5" stroke-opacity="{stroke_opacity}"/>
+<image xlink:href="data:image/png;base64,{b64_data}" width="{gw:.2f}" height="{gh:.2f}" x="{gx:.2f}" y="{gy:.2f}" preserveAspectRatio="xMidYMid meet"/>"""
+
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="64" height="64" viewBox="0 0 64 64">
+{NORMALIZED_MARKER}
+<defs>
+  <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" stop-color="{bg_stop0}"/>
+    <stop offset="100%" stop-color="{bg_stop1}"/>
+  </linearGradient>
+</defs>
+<image xlink:href="data:image/png;base64,{SHADOW_B64}" width="60.882" height="62.001" x="1.559" y="2" preserveAspectRatio="none"/>
+{content}
+</svg>"""
+    return svg
+
+def generate_squircle_png(src_im, is_dark=False, size=256):
+    """Generates a high-resolution pre-rendered PNG version of the squircle icon."""
+    scale = 2
+    canvas_w = size * scale
+    canvas_h = size * scale
+    tile_w = int(size * 0.875 * scale)
+    tile_h = int(size * 0.875 * scale)
+    ox = (canvas_w - tile_w) // 2
+    oy = (canvas_h - tile_h) // 2
+    radius = int(tile_w * 0.23217)
+
+    # 1. Drop Shadow
+    shadow_img = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
+    s_draw = ImageDraw.Draw(shadow_img)
+    s_oy = oy + 10 * scale
+    s_draw.rounded_rectangle([ox, s_oy, ox + tile_w, s_oy + tile_h], radius=radius, fill=(0, 0, 0, 80))
+    shadow_img = shadow_img.filter(ImageFilter.GaussianBlur(14 * scale))
+
+    key_shadow = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
+    k_draw = ImageDraw.Draw(key_shadow)
+    k_oy = oy + 4 * scale
+    k_draw.rounded_rectangle([ox, k_oy, ox + tile_w, k_oy + tile_h], radius=radius, fill=(0, 0, 0, 50))
+    key_shadow = key_shadow.filter(ImageFilter.GaussianBlur(6 * scale))
+
+    base = Image.alpha_composite(shadow_img, key_shadow)
+
+    # 2. Tile fill
+    mask_img = Image.new("L", (tile_w, tile_h), 0)
+    m_draw = ImageDraw.Draw(mask_img)
+    m_draw.rounded_rectangle([0, 0, tile_w, tile_h], radius=radius, fill=255)
+
+    if is_dark:
+        top_c, bot_c = (40, 40, 42, 255), (28, 28, 30, 255)
+        stroke_c = (255, 255, 255, 30)
+    else:
+        top_c, bot_c = (255, 255, 255, 255), (244, 244, 246, 255)
+        stroke_c = (0, 0, 0, 22)
+
+    grad = Image.new("RGBA", (tile_w, tile_h))
+    for y in range(tile_h):
+        t = y / float(tile_h)
+        r = int(top_c[0] * (1 - t) + bot_c[0] * t)
+        g = int(top_c[1] * (1 - t) + bot_c[1] * t)
+        b = int(top_c[2] * (1 - t) + bot_c[2] * t)
+        for x in range(tile_w):
+            grad.putpixel((x, y), (r, g, b, 255))
+
+    tile_layer = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
+    tile_layer.paste(grad, (ox, oy), mask=mask_img)
+
+    t_draw = ImageDraw.Draw(tile_layer)
+    t_draw.rounded_rectangle([ox, oy, ox + tile_w, oy + tile_h], radius=radius, outline=stroke_c, width=1 * scale)
+
+    base = Image.alpha_composite(base, tile_layer)
+
+    # 3. Content
+    is_full_bleed = analyze_icon_geometry(src_im)
+    if is_full_bleed:
+        scaled = ImageOps.fit(src_im, (tile_w, tile_h), Image.Resampling.LANCZOS)
+        content_layer = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
+        content_layer.paste(scaled, (ox, oy), mask=mask_img)
+        base = Image.alpha_composite(base, content_layer)
+    else:
+        bbox = src_im.getbbox()
+        cropped = src_im.crop(bbox) if bbox else src_im
+
+        if is_dark:
+            g_arr = np.array(cropped)
+            g_alpha = g_arr[:, :, 3]
+            if np.count_nonzero(g_alpha > 50) > 0:
+                vis_rgb = g_arr[g_alpha > 50][:, :3]
+                avg_lum = np.mean(0.299 * vis_rgb[:, 0] + 0.587 * vis_rgb[:, 1] + 0.114 * vis_rgb[:, 2])
+                max_sat = np.max(np.abs(vis_rgb[:, 0] - vis_rgb[:, 1]))
+                if avg_lum < 40 and max_sat < 20:
+                    r_ch, g_ch, b_ch, a_ch = cropped.split()
+                    inv_rgb = ImageOps.invert(Image.merge("RGB", (r_ch, g_ch, b_ch)))
+                    cropped = Image.merge("RGBA", (*inv_rgb.split(), a_ch))
+
+        target_max = int(tile_w * 0.68)
+        cw, ch = cropped.size
+        scale_f = min(target_max / float(cw), target_max / float(ch))
+        nw = max(1, int(cw * scale_f))
+        nh = max(1, int(ch * scale_f))
+        scaled_glyph = cropped.resize((nw, nh), Image.Resampling.LANCZOS)
+
+        gx = (canvas_w - nw) // 2
+        gy = (canvas_h - nh) // 2
+        content_layer = Image.new("RGBA", (canvas_w, canvas_h), (0, 0, 0, 0))
+        content_layer.paste(scaled_glyph, (gx, gy), mask=scaled_glyph)
+        base = Image.alpha_composite(base, content_layer)
+
+    return base.resize((size, size), Image.Resampling.LANCZOS)
+
+def install_normalized_icon(icon_name, src_im):
+    """
+    Saves the generated light and dark icons into MacTahoe and MacTahoe-dark themes.
+    """
+    svg_light = generate_squircle_svg(src_im, is_dark=False)
+    svg_dark = generate_squircle_svg(src_im, is_dark=True)
+
+    png_light = generate_squircle_png(src_im, is_dark=False, size=256)
+    png_dark = generate_squircle_png(src_im, is_dark=True, size=256)
+
+    dirs = [
+        (MACTAHOE_DIR, svg_light, png_light),
+        (MACTAHOE_DARK_DIR, svg_dark, png_dark),
+    ]
+
+    for base_d, svg_content, png_obj in dirs:
+        scalable_dir = os.path.join(base_d, "apps/scalable")
+        p256_dir = os.path.join(base_d, "apps/256")
+        try:
+            os.makedirs(scalable_dir, exist_ok=True)
+            os.makedirs(p256_dir, exist_ok=True)
+
+            svg_out = os.path.join(scalable_dir, f"{icon_name}.svg")
+            with open(svg_out, "w", encoding="utf-8") as f:
+                f.write(svg_content)
+
+            png_out = os.path.join(p256_dir, f"{icon_name}.png")
+            png_obj.save(png_out, format="PNG")
+        except Exception:
+            pass
+
+    # Synchronize to system directories if possible
+    try:
+        for theme_name, svg_content, png_obj in [("MacTahoe", svg_light, png_light), ("MacTahoe-dark", svg_dark, png_dark)]:
+            sys_scalable = f"/usr/share/icons/{theme_name}/apps/scalable"
+            if os.path.exists(sys_scalable):
+                tmp_svg = f"/tmp/{theme_name}_{icon_name}.svg"
+                with open(tmp_svg, "w", encoding="utf-8") as f:
+                    f.write(svg_content)
+                subprocess.run(["sudo", "cp", tmp_svg, os.path.join(sys_scalable, f"{icon_name}.svg")],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                try:
+                    os.remove(tmp_svg)
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+def update_icon_caches():
+    """Refreshes GTK icon caches for all modified themes."""
+    cache_dirs = [
+        MACTAHOE_DIR,
+        MACTAHOE_DARK_DIR,
+        os.path.join(USER_ICONS_DIR, "hicolor"),
+    ]
+    for d in cache_dirs:
+        if os.path.exists(d):
+            try:
+                subprocess.run(["gtk-update-icon-cache", "-q", "-f", d],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            except Exception:
+                pass
+
+    try:
+        subprocess.run(["sudo", "gtk-update-icon-cache", "-q", "-f", "/usr/share/icons/MacTahoe"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["sudo", "gtk-update-icon-cache", "-q", "-f", "/usr/share/icons/MacTahoe-dark"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+def process_desktop_file(df_path):
+    """Inspects a single .desktop file and normalizes its icon if non-squircle or missing."""
+    if not os.path.exists(df_path):
+        return None
+
+    icon_val = None
+    no_display = False
+    try:
+        with open(df_path, "r", errors="ignore") as f:
+            for line in f:
+                if line.startswith("Icon="):
+                    icon_val = line.strip().split("=", 1)[1].strip()
+                elif line.startswith("NoDisplay=true"):
+                    no_display = True
+    except Exception:
+        return None
+
+    if no_display or not icon_val:
+        return None
+
+    base_name = os.path.splitext(os.path.basename(df_path))[0]
+
+    is_abs_path = os.path.isabs(icon_val)
+    if is_abs_path and os.path.exists(icon_val):
+        target_icon_name = base_name.lower().replace(" ", "-")
+        src_path = icon_val
+    else:
+        target_icon_name = icon_val
+        if is_native_mactahoe_icon(target_icon_name):
+            return None
+        src_path = resolve_icon_path(target_icon_name)
+
+    if not src_path or not os.path.exists(src_path):
+        return None
+
+    pil_im = render_image_to_pil(src_path)
+    if not pil_im:
+        return None
+
+    install_normalized_icon(target_icon_name, pil_im)
+
+    if is_abs_path:
+        local_df = os.path.join(LOCAL_APPS_DIR, os.path.basename(df_path))
+        try:
+            os.makedirs(LOCAL_APPS_DIR, exist_ok=True)
+            if not os.path.exists(local_df):
+                shutil.copy2(df_path, local_df)
+            with open(local_df, "r", errors="ignore") as f:
+                lines = f.readlines()
+            new_lines = []
+            for l in lines:
+                if l.startswith("Icon="):
+                    new_lines.append(f"Icon={target_icon_name}\n")
+                else:
+                    new_lines.append(l)
+            with open(local_df, "w", encoding="utf-8") as f:
+                f.writelines(new_lines)
+        except Exception:
+            pass
+
+    return target_icon_name
+
+def normalize_all_icons(verbose=False):
+    """Scans all installed applications and normalizes all non-squircle icons."""
+    processed = []
+    seen_icons = set()
+
+    all_dfs = set(glob.glob(os.path.join(LOCAL_APPS_DIR, "*.desktop")) +
+                  glob.glob(os.path.join(SYS_APPS_DIR, "*.desktop")))
+
+    for df in sorted(all_dfs):
+        res = process_desktop_file(df)
+        if res and res not in seen_icons:
+            seen_icons.add(res)
+            processed.append((os.path.basename(df), res))
+            if verbose:
+                print(f"  ✓ Normalized {os.path.basename(df)} -> {res}")
+
+    if processed:
+        update_icon_caches()
+
+    return processed
+
+if __name__ == "__main__":
+    verbose = "-v" in sys.argv or "--verbose" in sys.argv
+    args = [a for a in sys.argv[1:] if not a.startswith("-")]
+
+    if len(args) == 1 and args[0].endswith(".desktop"):
+        df_target = args[0]
+        res = process_desktop_file(df_target)
+        if res:
+            update_icon_caches()
+            print(f"✓ Normalized {df_target} -> {res}")
+        else:
+            print(f"No normalization needed for {df_target}")
+    elif len(args) >= 2:
+        icon_name = args[0]
+        src_path = args[1]
+        im = render_image_to_pil(src_path)
+        if im:
+            install_normalized_icon(icon_name, im)
+            update_icon_caches()
+            print(f"✓ Normalized custom icon {icon_name} from {src_path}")
+        else:
+            print(f"Failed to load image from {src_path}")
+    else:
+        print("===================================================================")
+        print("      macW1Y macOS Tahoe Icon Normalizer & Squircle Engine         ")
+        print("===================================================================")
+        items = normalize_all_icons(verbose=True)
+        print(f"\n🎉 Successfully processed and normalized {len(items)} application icon(s).")
+        print("Icon caches refreshed for MacTahoe (Light) and MacTahoe-dark (Dark).")

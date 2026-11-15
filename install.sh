@@ -473,6 +473,10 @@ EOF_NAUT
         sudo cp -f "$SCRIPT_DIR/bin/mac-sync-applications" /usr/local/bin/mac-sync-applications
         sudo chmod 755 /usr/local/bin/mac-sync-applications
     fi
+    if [ -f "$SCRIPT_DIR/bin/mac-icon-normalizer" ]; then
+        sudo cp -f "$SCRIPT_DIR/bin/mac-icon-normalizer" /usr/local/bin/mac-icon-normalizer
+        sudo chmod 755 /usr/local/bin/mac-icon-normalizer
+    fi
     if [ -f "$SCRIPT_DIR/bin/mac-uninstall-app" ]; then
         sudo cp -f "$SCRIPT_DIR/bin/mac-uninstall-app" /usr/local/bin/mac-uninstall-app
         sudo chmod 755 /usr/local/bin/mac-uninstall-app
@@ -605,6 +609,7 @@ EOF_CUR_THEME
     gtk-update-icon-cache -f -t "$ICONS_DIR/hicolor" 2>/dev/null || true
     
     run_as_user gsettings set org.gnome.desktop.interface icon-theme "MacTahoe-dark"
+    run_as_user /usr/local/bin/mac-icon-normalizer 2>/dev/null || true
     run_as_user /usr/local/bin/mac-sync-applications 2>/dev/null || true
     log_success "macOS icon theme activated!"
 }
@@ -2285,6 +2290,10 @@ EOF_NAUT
     if [ -f "$SCRIPT_DIR/bin/mac-sync-applications" ]; then
         sync_or_update_file "$SCRIPT_DIR/bin/mac-sync-applications" "/usr/local/bin/mac-sync-applications" true
         sudo chmod 755 /usr/local/bin/mac-sync-applications
+    fi
+    if [ -f "$SCRIPT_DIR/bin/mac-icon-normalizer" ]; then
+        sync_or_update_file "$SCRIPT_DIR/bin/mac-icon-normalizer" "/usr/local/bin/mac-icon-normalizer" true
+        sudo chmod 755 /usr/local/bin/mac-icon-normalizer
     fi
     if [ -f "$SCRIPT_DIR/bin/mac-uninstall-app" ]; then
         sync_or_update_file "$SCRIPT_DIR/bin/mac-uninstall-app" "/usr/local/bin/mac-uninstall-app" true

@@ -352,6 +352,17 @@ def install_icon_file(src_icon_path, icon_name):
         except Exception:
             pass
 
+    # Normalize icon into macOS squircle format (Task 786)
+    try:
+        norm_cmd = "/usr/local/bin/mac-icon-normalizer"
+        if not os.path.exists(norm_cmd):
+            norm_cmd = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mac-icon-normalizer")
+        if os.path.exists(norm_cmd):
+            subprocess.run([sys.executable, norm_cmd, icon_name, primary_path],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
     return primary_path
 
 def update_icon_caches():
@@ -850,6 +861,16 @@ def _sync_internal():
                     f.write("\n".join(new_lines) + "\n")
             except Exception:
                 pass
+
+    # Normalize application icons into macOS squircle format (Task 786)
+    try:
+        norm_cmd = "/usr/local/bin/mac-icon-normalizer"
+        if not os.path.exists(norm_cmd):
+            norm_cmd = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mac-icon-normalizer")
+        if os.path.exists(norm_cmd):
+            subprocess.run([sys.executable, norm_cmd], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
 
 
 def extract_app_name(filename):
