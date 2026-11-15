@@ -308,3 +308,23 @@
      2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
 
 
+785. Зменшення ширини (товщини) прогрес-бару OSD-меню вдвічі за референсом macOS Tahoe:
+   - Запит користувача: Прогрес бар зроби вдвічі менше шириною. Референс на фото 2.
+   - Реалізовані зміни:
+     1) Зменшення товщини прогрес-бару у 2 рази (з 10px до 5px):
+        * У extensions/kiwi@kemma/apps/tahoeOSD.js та tahoeOnScreenDisplay.js у класі TahoeSegSlider параметр barH зменшено з 10px до 5px (const barH = 5).
+        * Радіус скруглення країв r = barH / 2 скориговано до 2.5px для забезпечення гладких півкруглих закінчень смуги прогресу.
+        * Завдяки barY = Math.round((h - barH) / 2) прогрес-бар залишається ідеально відцентрованим по вертикалі відносно іконки ліворуч.
+        * Збережено 16 сегментів із розділювачами завширшки 2px (cr.setOperator CAIRO_OPERATOR_CLEAR).
+     2) Оновлено замок розширень:
+        * Оновлено контрольний хеш цілісності kiwi@kemma у config/extensions.lock.json (fccd2886...).
+        * Синхронізовано оновлені файли у ~/.local/share/gnome-shell/extensions/kiwi@kemma/apps/.
+        * Модуль перезавантажено у сесії GNOME Shell без перезапуску оболонки.
+   - Верифікація:
+     1) Попіксельне тестування наживо через PIL (osd_thinner_progressbar_verified.png):
+        * Висота/товщина сегментів прогрес-бару зменшилася рівно до 5px (y від 40 до 44).
+        * 16 рівномірних сегментів із чіткими проміжками 2px, що повністю відповідає референсу macOS Tahoe на фото 2.
+     2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
+
+
+

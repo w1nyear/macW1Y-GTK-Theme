@@ -141,7 +141,7 @@ const TahoeSegSlider = GObject.registerClass({
 
             const n = 16;
             const gap = 2.0;
-            const barH = 10;
+            const barH = 5;
             const barY = Math.round((h - barH) / 2);
             const r = barH / 2;
 
