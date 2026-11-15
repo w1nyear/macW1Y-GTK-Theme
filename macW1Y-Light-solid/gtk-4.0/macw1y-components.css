@@ -437,7 +437,7 @@ image.sidebar-neutral-icon {
   -gtk-icon-size: 18px;
   margin-right: 8px;
   margin-left: 3px;
-  color: rgba(255, 255, 255, 0.90);
+  color: rgba(0, 0, 0, 0.78);
 }
 
 placessidebar .navigation-sidebar > row button.sidebar-button,
@@ -2574,6 +2574,35 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:sel
   box-shadow: none;
 }
 
+window.mac-settings-window list.mac-settings-sidebar-list row:not(.mac-settings-account-row) image,
+window.mac-settings-window list.mac-settings-sidebar-list row:not(.mac-settings-account-row) icon,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not(.mac-settings-account-row) image,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not(.mac-settings-account-row) icon {
+  min-width: 18px;
+  min-height: 18px;
+  -gtk-icon-size: 18px;
+  color: rgba(0, 0, 0, 0.78);
+  -gtk-icon-palette: default;
+  background-color: transparent;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  margin-right: 0px;
+  margin-left: 0px;
+  padding: 0;
+}
+
+window.mac-settings-window list.mac-settings-sidebar-list row:selected:not(.mac-settings-account-row) image,
+window.mac-settings-window list.mac-settings-sidebar-list row:selected:not(.mac-settings-account-row) icon,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:not(.mac-settings-account-row) image,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:not(.mac-settings-account-row) icon {
+  color: @accent_bg_color;
+  background-color: transparent;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
 window.mac-settings-window .mac-settings-account-row {
   min-height: 48px;
   padding: 6px 10px;
@@ -2590,6 +2619,21 @@ window.mac-settings-window .mac-settings-sidebar searchbar {
   border: none;
   box-shadow: none;
   padding: 4px 26px 4px 10px;
+}
+
+window.mac-settings-window .mac-settings-sidebar searchbar entry {
+  min-height: 28px;
+  border-radius: 9999px;
+  background-color: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: rgba(0, 0, 0, 0.85);
+  font-size: 13px;
+  padding: 2px 12px;
+}
+
+window.mac-settings-window .mac-settings-sidebar searchbar entry:focus-within {
+  background-color: rgba(0, 0, 0, 0.09);
+  border-color: rgba(0, 0, 0, 0.18);
 }
 
 toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,

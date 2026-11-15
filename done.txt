@@ -77,4 +77,19 @@
    - Оновлено extensions/appmenu@ChathurangaBW.github.io/workspaceIndicator.js, синхронізовано в ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/ та оновлено контрольний хеш цілісності в config/extensions.lock.json.
    - Повний аудит підтверджено: mac-audit-sync check, mac-extension-guard verify, mac-i18n-verify (100% PASS).
 
+773. Адаптивні кольори іконок бічної панелі у світлій темі та виправлення попереднього перегляду теми у Параметрах (Light Theme Sidebar Icons & Style Preview Fix):
+   - Виявлено першопричину знебарвлення іконок лівої панелі Параметрів у світлій темі: у bin/mac-build-theme для рядків списку навігації (navigationview.sidebar list row image, .sidebar-pane list row image) було жорстко зашито білий колір rgba(255, 255, 255, 0.90) незалежно від режиму теми, а в правилах libmac_settings.c та config/gtk-4.0/gtk-Light.css властивість color для row:not(.mac-settings-account-row) image була відсутня, через що всі невибрані пункти бічної панелі успадковували білий колір і ставали невидимими на світлому тлі.
+   - Реалізовано адаптивне забарвлення іконок: встановлено колір var(--mac-text-primary, @window_fg_color) (або rgba(0, 0, 0, 0.78) для світлої теми) для звичайних рядків та @accent_bg_color для вибраних. Селектори розширено для підтримки image та icon з -gtk-icon-palette: default.
+   - Виправлено кольори поля пошуку та інформації акаунта у світлій темі: текстові мітки account-title, account-subtitle та поле searchbar entry переведено з жорсткого білого кольору на адаптивні контрастні тони var(--mac-text-primary, @window_fg_color) та темний напівпрозорий фон.
+   - Адаптовано кольори підсвічування рядків row:hover та row:selected для коректної контрастності у світлій та темній темах через color-mix(in srgb, @window_fg_color ...).
+   - Виправлено відображення карток вибору стилю ("Стиль" / Appearance previews):
+     1) Усунено дефект картки "Світла": фонове вікно CcBackgroundPreview (.window.back.dark) у світлому режимі тепер рендериться як світле напівпрозоре матове скло (rgba(240, 240, 246, 0.84)), а переднє вікно — як біле матове скло (rgba(255, 255, 255, 0.90)) із контрастною лінією заголовка border-bottom.
+     2) На заголовки обох карток попереднього перегляду (.header-bar) додано автентичні кольорові кнопки-світлофори macOS (червона #ff5f57, жовта #febc2e, зелена #28c840) за допомогою багатоточкових радіальних градієнтів, усуваючи плаский вигляд вікна.
+     3) Очищено непідтримувані у GTK4 CSS директиви !important у preview.css, які викликали відхилення правил парсером.
+     4) Додано рекурсивне маркування віджетів CcBackgroundPreview у polish_background_panel() з присвоєнням CSS-класів (.mac-light-preview, .mac-dark-preview) та імен віджетів (#default_preview, #dark_preview, #default_toggle, #dark_toggle), а також оновлено визначення у файлах cc-background-panel.ui (базових та локалізованих).
+   - Скомпільовано libmac_settings.so, синхронізовано у всі системні та локальні каталоги (/usr/lib/x86_64-linux-gnu/, /usr/local/lib/, /usr/share/mactheme/, ~/.local/lib/, gnome-control-center-overlay/, lib/).
+   - Перекомпільовано таблиці тем через bin/mac-build-theme та синхронізовано бінарний файл у /usr/local/bin/.
+   - Повний аудит підтверджено: mac-audit-sync check, mac-extension-guard verify, mac-i18n-verify (100% PASS).
+
+
 

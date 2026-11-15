@@ -8483,8 +8483,8 @@ static void init_mac_settings_css(void) {
         "  margin: 6px 0px 6px 6px; "
         "  border: none; "
         "  border-radius: 14px; "
-        "  background-color: var(--mac-sidebar-bg, #18181a); "
-        "  background: #18181a; "
+        "  background-color: var(--mac-sidebar-bg, alpha(@window_bg_color, 0.95)); "
+        "  background: var(--mac-sidebar-bg, alpha(@window_bg_color, 0.95)); "
         "  background-clip: padding-box; "
         "  box-shadow: none; "
         "} "
@@ -8526,12 +8526,12 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window list.mac-settings-sidebar-list row:hover, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:hover { "
         "  border-radius: 7px; "
-        "  background-color: rgba(255, 255, 255, 0.06); "
+        "  background-color: var(--mac-row-hover, color-mix(in srgb, @window_fg_color 6%, transparent)); "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:selected, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected { "
         "  border-radius: 7px; "
-        "  background-color: rgba(255, 255, 255, 0.10); "
+        "  background-color: var(--mac-row-active, color-mix(in srgb, @window_fg_color 10%, transparent)); "
         "  color: @accent_bg_color; "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:selected *, "
@@ -8543,7 +8543,7 @@ static void init_mac_settings_css(void) {
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:selected:hover, "
         "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:hover { "
-        "  background-color: rgba(255, 255, 255, 0.14); "
+        "  background-color: var(--mac-row-active-hover, color-mix(in srgb, @window_fg_color 14%, transparent)); "
         "  color: @accent_bg_color; "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row.mac-sidebar-group-start, "
@@ -8561,10 +8561,14 @@ static void init_mac_settings_css(void) {
         "  opacity: 0; "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:not(.mac-settings-account-row) image, "
-        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not(.mac-settings-account-row) image { "
+        "window.mac-settings-window list.mac-settings-sidebar-list row:not(.mac-settings-account-row) icon, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not(.mac-settings-account-row) image, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not(.mac-settings-account-row) icon { "
         "  min-width: 18px; "
         "  min-height: 18px; "
         "  -gtk-icon-size: 18px; "
+        "  color: var(--mac-text-primary, @window_fg_color); "
+        "  -gtk-icon-palette: default; "
         "  background-color: transparent; "
         "  background: transparent; "
         "  border: none; "
@@ -8574,7 +8578,9 @@ static void init_mac_settings_css(void) {
         "  padding: 0; "
         "} "
         "window.mac-settings-window list.mac-settings-sidebar-list row:selected:not(.mac-settings-account-row) image, "
-        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:not(.mac-settings-account-row) image { "
+        "window.mac-settings-window list.mac-settings-sidebar-list row:selected:not(.mac-settings-account-row) icon, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:not(.mac-settings-account-row) image, "
+        "window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:not(.mac-settings-account-row) icon { "
         "  color: @accent_bg_color; "
         "  background-color: transparent; "
         "  background: transparent; "
@@ -10303,45 +10309,113 @@ static void init_mac_settings_css(void) {
         "  border-radius: 12px; "
         "} "
         "background-preview .window { "
-        "  border-radius: 8px; "
+        "  border-radius: 6px; "
+        "  --window-bg-color: #fafafa; "
+        "  --headerbar-bg-color: white; "
+        "  --headerbar-shade-color: rgb(0 0 0 / 12%); "
+        "  --sidebar-bg-color: #ebebeb; "
+        "  --sidebar-backdrop-color: #f2f2f2; "
+        "  --sidebar-border-color: rgb(0 0 0 / 7%); "
         "} "
+        ".mac-light-preview .window, "
+        ".mac-light-toggle .window, "
         "#default_preview .window, "
-        "background-preview .window.front.light, "
-        "background-preview .window.back { "
-        "  background-color: rgba(255, 255, 255, 0.85); "
-        "  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 240, 245, 0.80) 100%); "
-        "  border: 1px solid rgba(255, 255, 255, 0.85); "
-        "  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95); "
+        "#default_toggle .window, "
+        "background-preview.mac-light-preview .window, "
+        "button.mac-light-toggle background-preview .window { "
+        "  background-color: rgba(255, 255, 255, 0.90); "
+        "  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(242, 242, 247, 0.88) 100%); "
+        "  border: 1px solid rgba(255, 255, 255, 0.90); "
+        "  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95); "
         "} "
+        ".mac-light-preview .window.back, "
+        ".mac-light-preview .window.dark, "
+        ".mac-light-preview .window.back.dark, "
+        ".mac-light-toggle .window.back, "
+        ".mac-light-toggle .window.dark, "
+        "#default_preview .window.back, "
+        "#default_preview .window.dark, "
+        "#default_toggle .window.back, "
+        "#default_toggle .window.dark, "
+        "background-preview.mac-light-preview .window.back, "
+        "background-preview.mac-light-preview .window.dark { "
+        "  background-color: rgba(240, 240, 246, 0.84); "
+        "  background-image: linear-gradient(180deg, rgba(248, 248, 252, 0.94) 0%, rgba(232, 232, 238, 0.80) 100%); "
+        "  border: 1px solid rgba(255, 255, 255, 0.75); "
+        "  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14), 0 1px 3px rgba(0, 0, 0, 0.08); "
+        "} "
+        ".mac-light-preview .window .header-bar, "
+        ".mac-light-toggle .window .header-bar, "
         "#default_preview .window .header-bar, "
-        "background-preview .window.front.light .header-bar { "
-        "  background-color: rgba(255, 255, 255, 0.94); "
-        "  border-bottom: 1px solid rgba(0, 0, 0, 0.08); "
+        "#default_toggle .window .header-bar, "
+        "background-preview.mac-light-preview .window .header-bar { "
+        "  background-color: rgba(255, 255, 255, 0.96); "
+        "  border-bottom: 1px solid rgba(0, 0, 0, 0.10); "
         "  min-height: 15px; "
+        "  background-image: "
+        "    radial-gradient(circle at 6px 7.5px, #ff5f57 2.2px, transparent 2.7px), "
+        "    radial-gradient(circle at 13px 7.5px, #febc2e 2.2px, transparent 2.7px), "
+        "    radial-gradient(circle at 20px 7.5px, #28c840 2.2px, transparent 2.7px); "
+        "  background-repeat: no-repeat; "
         "} "
+        ".mac-light-preview .window .sidebar, "
+        ".mac-light-toggle .window .sidebar, "
         "#default_preview .window .sidebar, "
-        "background-preview .window.front.light .sidebar { "
-        "  background-color: rgba(235, 235, 242, 0.80); "
+        "#default_toggle .window .sidebar, "
+        "background-preview.mac-light-preview .window .sidebar { "
+        "  background-color: rgba(232, 232, 240, 0.90); "
         "  border-right: 1px solid rgba(0, 0, 0, 0.08); "
         "  min-width: 30px; "
         "} "
+        ".mac-dark-preview .window, "
+        ".mac-dark-toggle .window, "
         "#dark_preview .window, "
-        "background-preview .window.dark, "
+        "#dark_toggle .window, "
+        "background-preview.mac-dark-preview .window, "
         "background-preview .window.front.dark { "
-        "  background-color: rgba(34, 34, 38, 0.86); "
+        "  --window-bg-color: #242424; "
+        "  --headerbar-bg-color: #303030; "
+        "  --headerbar-shade-color: rgba(0, 0, 0, 0.36); "
+        "  --sidebar-bg-color: #303030; "
+        "  --sidebar-backdrop-color: #2a2a2a; "
+        "  --sidebar-border-color: rgba(0, 0, 0, 0.36); "
+        "  background-color: rgba(36, 36, 40, 0.88); "
         "  background-image: linear-gradient(180deg, rgba(50, 50, 56, 0.92) 0%, rgba(28, 28, 32, 0.82) 100%); "
         "  border: 1px solid rgba(255, 255, 255, 0.15); "
         "  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.18); "
         "} "
-        "#dark_preview .window .header-bar, "
-        "background-preview .window.dark .header-bar { "
-        "  background-color: rgba(52, 52, 58, 0.94); "
-        "  border-bottom: 1px solid rgba(0, 0, 0, 0.40); "
-        "  min-height: 15px; "
+        ".mac-dark-preview .window.back, "
+        ".mac-dark-toggle .window.back, "
+        "#dark_preview .window.back, "
+        "#dark_toggle .window.back, "
+        "background-preview.mac-dark-preview .window.back { "
+        "  background-color: rgba(24, 24, 28, 0.82); "
+        "  background-image: linear-gradient(180deg, rgba(38, 38, 44, 0.88) 0%, rgba(20, 20, 24, 0.78) 100%); "
+        "  border: 1px solid rgba(255, 255, 255, 0.10); "
+        "  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.25); "
         "} "
+        ".mac-dark-preview .window .header-bar, "
+        ".mac-dark-toggle .window .header-bar, "
+        "#dark_preview .window .header-bar, "
+        "#dark_toggle .window .header-bar, "
+        "background-preview.mac-dark-preview .window .header-bar, "
+        "background-preview .window.front.dark .header-bar { "
+        "  background-color: rgba(52, 52, 58, 0.95); "
+        "  border-bottom: 1px solid rgba(0, 0, 0, 0.45); "
+        "  min-height: 15px; "
+        "  background-image: "
+        "    radial-gradient(circle at 6px 7.5px, #ff5f57 2.2px, transparent 2.7px), "
+        "    radial-gradient(circle at 13px 7.5px, #febc2e 2.2px, transparent 2.7px), "
+        "    radial-gradient(circle at 20px 7.5px, #28c840 2.2px, transparent 2.7px); "
+        "  background-repeat: no-repeat; "
+        "} "
+        ".mac-dark-preview .window .sidebar, "
+        ".mac-dark-toggle .window .sidebar, "
         "#dark_preview .window .sidebar, "
-        "background-preview .window.dark .sidebar { "
-        "  background-color: rgba(28, 28, 32, 0.82); "
+        "#dark_toggle .window .sidebar, "
+        "background-preview.mac-dark-preview .window .sidebar, "
+        "background-preview .window.front.dark .sidebar { "
+        "  background-color: rgba(28, 28, 32, 0.85); "
         "  border-right: 1px solid rgba(0, 0, 0, 0.40); "
         "  min-width: 30px; "
         "}"
@@ -10939,6 +11013,37 @@ static void on_color_scheme_toggle_toggled(GtkToggleButton *btn, gpointer user_d
 static void polish_background_panel(GtkWidget *widget) {
     if (!widget) return;
 
+    /* 0. Tag CcBackgroundPreview widgets with explicit IDs and CSS classes */
+    const char *type_name = G_OBJECT_TYPE_NAME(widget);
+    if (type_name && g_strcmp0(type_name, "CcBackgroundPreview") == 0) {
+        gboolean is_dark = FALSE;
+        GParamSpec *pspec = g_object_class_find_property(G_OBJECT_GET_CLASS(widget), "is-dark");
+        if (pspec && G_PARAM_SPEC_VALUE_TYPE(pspec) == G_TYPE_BOOLEAN) {
+            g_object_get(widget, "is-dark", &is_dark, NULL);
+        }
+        if (is_dark) {
+            gtk_widget_set_name(widget, "dark_preview");
+            gtk_widget_add_css_class(widget, "mac-dark-preview");
+            gtk_widget_remove_css_class(widget, "mac-light-preview");
+            GtkWidget *parent = gtk_widget_get_parent(widget);
+            if (parent && GTK_IS_TOGGLE_BUTTON(parent)) {
+                gtk_widget_set_name(parent, "dark_toggle");
+                gtk_widget_add_css_class(parent, "mac-dark-toggle");
+                gtk_widget_remove_css_class(parent, "mac-light-toggle");
+            }
+        } else {
+            gtk_widget_set_name(widget, "default_preview");
+            gtk_widget_add_css_class(widget, "mac-light-preview");
+            gtk_widget_remove_css_class(widget, "mac-dark-preview");
+            GtkWidget *parent = gtk_widget_get_parent(widget);
+            if (parent && GTK_IS_TOGGLE_BUTTON(parent)) {
+                gtk_widget_set_name(parent, "default_toggle");
+                gtk_widget_add_css_class(parent, "mac-light-toggle");
+                gtk_widget_remove_css_class(parent, "mac-dark-toggle");
+            }
+        }
+    }
+
     /* 1. Find default_label and rename to 'Світла' (or 'Light') */
     const char *bid = GTK_IS_BUILDABLE(widget) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(widget)) : NULL;
     if (g_strcmp0(bid, "default_label") == 0 && GTK_IS_LABEL(widget)) {
@@ -10962,12 +11067,16 @@ static void polish_background_panel(GtkWidget *widget) {
 
     /* 2. Wire default_toggle and dark_toggle to trigger mac-theme-sync */
     if (g_strcmp0(bid, "default_toggle") == 0 && GTK_IS_TOGGLE_BUTTON(widget)) {
+        gtk_widget_set_name(widget, "default_toggle");
+        gtk_widget_add_css_class(widget, "mac-light-toggle");
         if (!g_object_get_data(G_OBJECT(widget), "mac_theme_sync_hooked")) {
             g_object_set_data(G_OBJECT(widget), "mac_theme_sync_hooked", GINT_TO_POINTER(1));
             g_signal_connect(widget, "toggled", G_CALLBACK(on_color_scheme_toggle_toggled), (gpointer)"light");
         }
     }
     if (g_strcmp0(bid, "dark_toggle") == 0 && GTK_IS_TOGGLE_BUTTON(widget)) {
+        gtk_widget_set_name(widget, "dark_toggle");
+        gtk_widget_add_css_class(widget, "mac-dark-toggle");
         if (!g_object_get_data(G_OBJECT(widget), "mac_theme_sync_hooked")) {
             g_object_set_data(G_OBJECT(widget), "mac_theme_sync_hooked", GINT_TO_POINTER(1));
             g_signal_connect(widget, "toggled", G_CALLBACK(on_color_scheme_toggle_toggled), (gpointer)"dark");

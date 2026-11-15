@@ -10632,10 +10632,14 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:sel
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:not(.mac-settings-account-row) image,
-window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not(.mac-settings-account-row) image {
+window.mac-settings-window list.mac-settings-sidebar-list row:not(.mac-settings-account-row) icon,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not(.mac-settings-account-row) image,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not(.mac-settings-account-row) icon {
     min-width: 18px;
     min-height: 18px;
     -gtk-icon-size: 18px;
+    color: rgba(0, 0, 0, 0.78);
+    -gtk-icon-palette: default;
     background-color: transparent;
     background: transparent;
     border: none;
@@ -10646,7 +10650,9 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:selected:not(.mac-settings-account-row) image,
-window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:not(.mac-settings-account-row) image {
+window.mac-settings-window list.mac-settings-sidebar-list row:selected:not(.mac-settings-account-row) icon,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:not(.mac-settings-account-row) image,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:not(.mac-settings-account-row) icon {
     color: @accent_bg_color;
     background-color: transparent;
     background: transparent;
@@ -10711,12 +10717,12 @@ window.mac-settings-window .mac-settings-account-row avatar image {
 window.mac-settings-window .mac-settings-account-row .account-title {
     font-weight: 600;
     font-size: 13.5px;
-    color: #ffffff;
+    color: rgba(0, 0, 0, 0.88);
 }
 
 window.mac-settings-window .mac-settings-account-row .account-subtitle {
     font-size: 11px;
-    color: rgba(255, 255, 255, 0.55);
+    color: rgba(0, 0, 0, 0.55);
 }
 
 window.mac-settings-window .mac-settings-sidebar searchbar {
@@ -10735,16 +10741,16 @@ window.mac-settings-window .mac-settings-sidebar searchbar > revealer > box {
 window.mac-settings-window .mac-settings-sidebar searchbar entry {
     min-height: 28px;
     border-radius: 9999px;
-    background-color: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #ffffff;
+    background-color: rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    color: rgba(0, 0, 0, 0.88);
     font-size: 13px;
     padding: 2px 12px;
 }
 
 window.mac-settings-window .mac-settings-sidebar searchbar entry:focus-within {
-    background-color: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.20);
+    background-color: rgba(0, 0, 0, 0.09);
+    border-color: rgba(0, 0, 0, 0.18);
 }
 
 .mac-panel-header-banner,
@@ -11757,6 +11763,7 @@ window.mac-settings-window button.suggested-action.circular:active {
   color: #ffffff;
   border-radius: 9999px;
 }
+
 
 
 

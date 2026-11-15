@@ -1,11 +1,9 @@
 background-preview {
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 background-preview .window {
   border-radius: 6px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.20), 0 1px 3px rgba(0, 0, 0, 0.12);
-
   --window-bg-color: #fafafa;
   --headerbar-bg-color: white;
   --headerbar-shade-color: rgb(0 0 0 / 12%);
@@ -14,66 +12,115 @@ background-preview .window {
   --sidebar-border-color: rgb(0 0 0 / 7%);
 }
 
-/* Light Preview Card Windows (Засвітлення / Bright Frosted Glass) */
-background-preview .window,
-background-preview .window.front.light,
-background-preview .window.back,
+/* =========================================================================
+   LIGHT PREVIEW WINDOWS (Світла тема: обидва вікна світлі)
+   ========================================================================= */
+.mac-light-preview .window,
+.mac-light-toggle .window,
 #default_preview .window,
-#default_preview .window.front,
-#default_preview .window.back {
-  background-color: rgba(255, 255, 255, 0.82);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(240, 240, 245, 0.80) 100%);
+#default_toggle .window,
+background-preview.mac-light-preview .window,
+button.mac-light-toggle background-preview .window {
+  background-color: rgba(255, 255, 255, 0.90);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(242, 242, 247, 0.88) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.90);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.mac-light-preview .window.back,
+.mac-light-preview .window.dark,
+.mac-light-toggle .window.back,
+.mac-light-toggle .window.dark,
+#default_preview .window.back,
+#default_preview .window.dark,
+#default_toggle .window.back,
+#default_toggle .window.dark,
+background-preview.mac-light-preview .window.back,
+background-preview.mac-light-preview .window.dark {
+  background-color: rgba(240, 240, 246, 0.84);
+  background-image: linear-gradient(180deg, rgba(248, 248, 252, 0.94) 0%, rgba(232, 232, 238, 0.80) 100%);
   border: 1px solid rgba(255, 255, 255, 0.75);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16), 0 1px 3px rgba(0, 0, 0, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.90);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14), 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-background-preview .window .header-bar,
-background-preview .window.front.light .header-bar,
-#default_preview .window .header-bar {
-  background-color: rgba(255, 255, 255, 0.92);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+.mac-light-preview .window .header-bar,
+.mac-light-toggle .window .header-bar,
+#default_preview .window .header-bar,
+#default_toggle .window .header-bar,
+background-preview.mac-light-preview .window .header-bar {
+  background-color: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.10);
   min-height: 15px;
+  background-image:
+    radial-gradient(circle at 6px 7.5px, #ff5f57 2.2px, transparent 2.7px),
+    radial-gradient(circle at 13px 7.5px, #febc2e 2.2px, transparent 2.7px),
+    radial-gradient(circle at 20px 7.5px, #28c840 2.2px, transparent 2.7px);
+  background-repeat: no-repeat;
 }
 
-background-preview .window .sidebar,
-background-preview .window.front.light .sidebar,
-#default_preview .window .sidebar {
-  background-color: rgba(235, 235, 242, 0.75);
+.mac-light-preview .window .sidebar,
+.mac-light-toggle .window .sidebar,
+#default_preview .window .sidebar,
+#default_toggle .window .sidebar,
+background-preview.mac-light-preview .window .sidebar {
+  background-color: rgba(232, 232, 240, 0.90);
   border-right: 1px solid rgba(0, 0, 0, 0.08);
   min-width: 30px;
 }
 
-/* Dark Preview Card Windows (Затемнення / Dark Smoked Glass) */
-background-preview .window.dark,
-background-preview .window.front.dark,
+/* =========================================================================
+   DARK PREVIEW WINDOWS (Темна тема: темні вікна)
+   ========================================================================= */
+.mac-dark-preview .window,
+.mac-dark-toggle .window,
 #dark_preview .window,
-#dark_preview .window.front,
-#dark_preview .window.back {
+#dark_toggle .window,
+background-preview .window.dark,
+background-preview .window.front.dark {
   --window-bg-color: #242424;
   --headerbar-bg-color: #303030;
-  --headerbar-shade-color: rgb(0 0 0 / 36%);
+  --headerbar-shade-color: rgba(0, 0, 0, 0.36);
   --sidebar-bg-color: #303030;
   --sidebar-backdrop-color: #2a2a2a;
-  --sidebar-border-color: rgb(0 0 0 / 36%);
+  --sidebar-border-color: rgba(0, 0, 0, 0.36);
 
-  background-color: rgba(34, 34, 38, 0.84);
-  background-image: linear-gradient(180deg, rgba(48, 48, 54, 0.90) 0%, rgba(28, 28, 32, 0.80) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  background-color: rgba(36, 36, 40, 0.88);
+  background-image: linear-gradient(180deg, rgba(50, 50, 56, 0.92) 0%, rgba(28, 28, 32, 0.82) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
-background-preview .window.dark .header-bar,
-background-preview .window.front.dark .header-bar,
-#dark_preview .window .header-bar {
-  background-color: rgba(50, 50, 56, 0.92);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.40);
+.mac-dark-preview .window.back,
+.mac-dark-toggle .window.back,
+#dark_preview .window.back,
+#dark_toggle .window.back {
+  background-color: rgba(24, 24, 28, 0.82);
+  background-image: linear-gradient(180deg, rgba(38, 38, 44, 0.88) 0%, rgba(20, 20, 24, 0.78) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.mac-dark-preview .window .header-bar,
+.mac-dark-toggle .window .header-bar,
+#dark_preview .window .header-bar,
+#dark_toggle .window .header-bar,
+background-preview .window.dark .header-bar {
+  background-color: rgba(52, 52, 58, 0.95);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.45);
   min-height: 15px;
+  background-image:
+    radial-gradient(circle at 6px 7.5px, #ff5f57 2.2px, transparent 2.7px),
+    radial-gradient(circle at 13px 7.5px, #febc2e 2.2px, transparent 2.7px),
+    radial-gradient(circle at 20px 7.5px, #28c840 2.2px, transparent 2.7px);
+  background-repeat: no-repeat;
 }
 
-background-preview .window.dark .sidebar,
-background-preview .window.front.dark .sidebar,
-#dark_preview .window .sidebar {
-  background-color: rgba(28, 28, 32, 0.78);
+.mac-dark-preview .window .sidebar,
+.mac-dark-toggle .window .sidebar,
+#dark_preview .window .sidebar,
+#dark_toggle .window .sidebar,
+background-preview .window.dark .sidebar {
+  background-color: rgba(28, 28, 32, 0.85);
   border-right: 1px solid rgba(0, 0, 0, 0.40);
   min-width: 30px;
 }
@@ -87,7 +134,7 @@ background-preview .window.sidebar:dir(rtl) {
   box-shadow: inset 1px 0 var(--sidebar-border-color);
 }
 
-/* Authentic Rounded Rectangle Selection Outline - NOT a pill! */
+/* Authentic Rounded Rectangle Selection Outline */
 .background-preview-button {
   background: none;
   border-radius: 14px;
@@ -99,22 +146,22 @@ background-preview .window.sidebar:dir(rtl) {
 }
 
 .background-preview-button:hover {
-  box-shadow: 0 0 0 2px rgba(128, 128, 128, 0.25);
+  box-shadow: 0 0 0 2px color-mix(in srgb, @window_fg_color 25%, transparent);
   border-radius: 14px;
 }
 
 .background-preview-button:checked {
-  box-shadow: 0 0 0 3px var(--accent-bg-color);
+  box-shadow: 0 0 0 3px @accent_bg_color;
   border-radius: 14px;
 }
 
 .background-preview-button:focus:focus-visible {
-  box-shadow: 0 0 0 3px var(--accent-bg-color), 0 0 0 5px color-mix(in srgb, var(--accent-color) 30%, transparent);
+  box-shadow: 0 0 0 3px @accent_bg_color, 0 0 0 5px color-mix(in srgb, @accent_bg_color 30%, transparent);
   border-radius: 14px;
 }
 
 .background-preview-button:checked:focus:focus-visible {
-  box-shadow: 0 0 0 3px var(--accent-color), 0 0 0 5px color-mix(in srgb, var(--accent-color) 30%, transparent);
+  box-shadow: 0 0 0 3px @accent_bg_color, 0 0 0 5px color-mix(in srgb, @accent_bg_color 30%, transparent);
   border-radius: 14px;
 }
 
@@ -224,9 +271,8 @@ flowboxchild.active-item .selected-check {
 
 #default_label,
 #dark_label {
-  color: var(--mac-text-primary, #ffffff);
+  color: var(--mac-text-primary, @window_fg_color);
   font-weight: 500;
   font-size: 13px;
   margin-top: 4px;
 }
-
