@@ -340,21 +340,21 @@ install_dependencies() {
 }
 
 # ------------------------------------------------------------------------------
-# 2. Apple San Francisco Pro Fonts
+# 2. Inter & Open Runde Fonts
 # ------------------------------------------------------------------------------
 install_fonts() {
-    log_step "Stage 2/13: Installing Apple SF Pro Display/Text fonts"
-    local USER_FONT_DIR="$TARGET_HOME/.local/share/fonts/SF_Pro"
-    local SYS_FONT_DIR="/usr/local/share/fonts/SF_Pro"
+    log_step "Stage 2/13: Installing Inter and Open Runde fonts"
+    local USER_FONT_DIR="$TARGET_HOME/.local/share/fonts/Inter"
+    local SYS_FONT_DIR="/usr/local/share/fonts/Inter"
     
     mkdir -p "$USER_FONT_DIR"
-    if [ -d "$SCRIPT_DIR/fonts/SF_Pro" ]; then
-        cp -r "$SCRIPT_DIR/fonts/SF_Pro/"* "$USER_FONT_DIR/" 2>/dev/null || true
+    if [ -d "$SCRIPT_DIR/fonts/Inter" ]; then
+        cp -r "$SCRIPT_DIR/fonts/Inter/"* "$USER_FONT_DIR/" 2>/dev/null || true
         chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.local/share/fonts"
         
         require_root
         sudo mkdir -p "$SYS_FONT_DIR"
-        sudo cp -r "$SCRIPT_DIR/fonts/SF_Pro/"* "$SYS_FONT_DIR/" 2>/dev/null || true
+        sudo cp -r "$SCRIPT_DIR/fonts/Inter/"* "$SYS_FONT_DIR/" 2>/dev/null || true
     fi
 
     if [ -d "$SCRIPT_DIR/fonts/Open_Runde" ]; then
@@ -368,7 +368,7 @@ install_fonts() {
 
     sudo fc-cache -f >/dev/null 2>&1 || true
     run_as_user fc-cache -f >/dev/null 2>&1 || true
-    log_success "Apple SF Pro and Open Runde fonts deployed and font cache updated successfully!"
+    log_success "Inter and Open Runde fonts deployed and font cache updated successfully!"
 }
 
 # ------------------------------------------------------------------------------

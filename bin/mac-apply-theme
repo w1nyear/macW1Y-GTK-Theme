@@ -162,9 +162,9 @@ def main():
     if gsettings_set("org.gnome.desktop.interface", "gtk-theme", cur_gtk_theme): changes_count += 1
     if gsettings_set("org.gnome.desktop.interface", "icon-theme", cur_icon_theme): changes_count += 1
     if gsettings_set("org.gnome.desktop.interface", "cursor-theme", th.get("cursor_theme", "macOS")): changes_count += 1
-    if gsettings_set("org.gnome.desktop.interface", "font-name", th.get("font_name", "SF Pro Text 11")): changes_count += 1
-    if gsettings_set("org.gnome.desktop.interface", "document-font-name", th.get("document_font_name", "SF Pro Text 11")): changes_count += 1
-    if gsettings_set("org.gnome.desktop.interface", "monospace-font-name", th.get("monospace_font_name", "SF Mono 11")): changes_count += 1
+    if gsettings_set("org.gnome.desktop.interface", "font-name", th.get("font_name", "Inter 11")): changes_count += 1
+    if gsettings_set("org.gnome.desktop.interface", "document-font-name", th.get("document_font_name", "Inter 11")): changes_count += 1
+    if gsettings_set("org.gnome.desktop.interface", "monospace-font-name", th.get("monospace_font_name", "Ubuntu Sans Mono 11")): changes_count += 1
     if gsettings_set("org.gnome.desktop.interface", "font-antialiasing", "grayscale"): changes_count += 1
     if gsettings_set("org.gnome.desktop.interface", "color-scheme", cur_color_scheme): changes_count += 1
 
@@ -184,7 +184,7 @@ def main():
     ini_dict = {
         "gtk-theme-name": cur_gtk_theme,
         "gtk-icon-theme-name": cur_icon_theme,
-        "gtk-font-name": th.get("font_name", "SF Pro Text 11"),
+        "gtk-font-name": th.get("font_name", "Inter 11"),
         "gtk-cursor-theme-name": th.get("cursor_theme", "macOS"),
         "gtk-decoration-layout": th.get("button_layout", "close,minimize,maximize:"),
         "gtk-application-prefer-dark-theme": "0" if is_light else "1"

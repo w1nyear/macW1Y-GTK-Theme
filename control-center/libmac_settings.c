@@ -2556,7 +2556,7 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     char badge_text[128];
     g_snprintf(badge_text, sizeof(badge_text), "Liquid Glass • %s", shape_names[shape_idx]);
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.0);
     cairo_text_extents_t ext;
     cairo_text_extents(cr, badge_text, &ext);
@@ -2676,12 +2676,12 @@ static void menubar_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_fill(cr);
 
     // Menus
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.5);
     cairo_move_to(cr, 30.0, 17.5);
     cairo_show_text(cr, "Finder");
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.85);
     cairo_move_to(cr, 76.0, 17.5);
     cairo_show_text(cr, "Файл");
@@ -3055,7 +3055,7 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_stroke(cr);
 
     // 5. Label text: "Telegram"
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 12.0);
     cairo_text_extents_t te;
     cairo_text_extents(cr, "Telegram", &te);
@@ -3174,7 +3174,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_fill(cr);
 
     // Exclamation mark inside warning triangle
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 13.0);
     cairo_set_source_rgb(cr, 0.10, 0.10, 0.10);
     cairo_text_extents_t ex_w;
@@ -3191,7 +3191,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_show_text(cr, title_txt);
 
     // Subtitle
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.65);
     const char *sub_txt = "Цю дію неможливо скасувати.";
@@ -3225,7 +3225,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     draw_rounded_rect_path(cr, b2_x, btn_y, btn_w, btn_h, btn_r);
     cairo_set_source_rgb(cr, 0.88, 0.22, 0.20);
     cairo_fill(cr);
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
     cairo_text_extents(cr, "Спорожнити", &ex_w);
@@ -3304,25 +3304,25 @@ static void notifications_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, i
     cairo_fill(cr);
 
     // Text content
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
     cairo_move_to(cr, nx + 58.0, ny + 22.0);
     cairo_show_text(cr, "Повідомлення");
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.55);
     cairo_move_to(cr, nx + 150.0, ny + 22.0);
     cairo_show_text(cr, "•  щойно");
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.92);
     cairo_move_to(cr, nx + 58.0, ny + 38.0);
     cairo_show_text(cr, "Олександр");
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.80);
     cairo_move_to(cr, nx + 58.0, ny + 51.0);
@@ -3701,7 +3701,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
     double text_x = sx + 38.0 + p * 8.0;
     double text_y = sy + 27.5 + p * 3.5;
     double font_sz = 12.0 + p * 4.0;
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, font_sz);
 
     if (spotlight_input_active) {
@@ -3748,7 +3748,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.18 * badge_alpha);
             cairo_set_line_width(cr, 0.8);
             cairo_stroke(cr);
-            cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+            cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
             cairo_set_font_size(cr, 9.5);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88 * badge_alpha);
             cairo_move_to(cr, bx + 7.5, by + 14.5);
@@ -3766,7 +3766,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
             draw_rounded_rect_path(cr, esc_x, esc_y, esc_w, esc_h, 6.0);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12 * esc_alpha);
             cairo_fill(cr);
-            cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+            cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
             cairo_set_font_size(cr, 9.5);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.70 * esc_alpha);
             cairo_move_to(cr, esc_x + 11.5, esc_y + 13.5);
@@ -3797,13 +3797,13 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
             // Safari header row
             draw_safari_compass_icon(cr, sx + 34.0, sy + 76.0, 15.0);
 
-            cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+            cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
             cairo_set_font_size(cr, 13.0);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95 * content_alpha);
             cairo_move_to(cr, sx + 58.0, sy + 73.0);
             cairo_show_text(cr, "Результати у інтернеті");
 
-            cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+            cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
             cairo_set_font_size(cr, 10.5);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.52 * content_alpha);
             cairo_move_to(cr, sx + 58.0, sy + 87.0);
@@ -3828,7 +3828,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
                 pango_layout_set_width(layout, (int)((card_w - 24.0) * PANGO_SCALE));
                 pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
                 pango_layout_set_spacing(layout, (int)(4.0 * PANGO_SCALE));
-                PangoFontDescription *desc = pango_font_description_from_string("SF Pro Text 11.5");
+                PangoFontDescription *desc = pango_font_description_from_string("Inter 11.5");
                 pango_layout_set_font_description(layout, desc);
                 pango_font_description_free(desc);
 
@@ -3919,13 +3919,13 @@ static void blur_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
 
     draw_frosted_glass_card(cr, blurred_bg, bx, by, bw, bh, br, tint_a, 0.70, 0.16);
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
     cairo_move_to(cr, bx + 18.0, by + 28.0);
     cairo_show_text(cr, "Глобальне розмиття (Blur)");
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.72);
     cairo_move_to(cr, bx + 18.0, by + 46.0);
@@ -3939,7 +3939,7 @@ static void blur_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
     const char *tint_word = is_light ? (is_uk ? "Засвітлення" : "Lightening") : (is_uk ? "Затемнення" : "Darkening");
     char val_txt[64];
     g_snprintf(val_txt, sizeof(val_txt), "Sigma: %d • %s: %d%%", state.blur_sigma, tint_word, state.blur_tint);
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 9.0);
     cairo_text_extents_t ex_v;
     cairo_text_extents(cr, val_txt, &ex_v);
@@ -4070,7 +4070,7 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     cairo_set_source_rgba(cr, ar, ag, ab, 0.20);
     cairo_fill(cr);
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
     cairo_move_to(cr, mx + 14.0, r1_y + 18.0);
@@ -4100,7 +4100,7 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     cairo_stroke(cr);
 
     // Row 2: "Додати віджети..."
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88);
     cairo_move_to(cr, mx + 14.0, my + 92.0);
@@ -4109,14 +4109,14 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     // Row 3: "Упорядкувати віджети" + chevron ›
     cairo_move_to(cr, mx + 14.0, my + 116.0);
     cairo_show_text(cr, "Упорядкувати віджети");
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.45);
     cairo_move_to(cr, mx + mw - 20.0, my + 116.0);
     cairo_show_text(cr, "›");
 
     // Row 4: "Змінити шпалери..."
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88);
     cairo_move_to(cr, mx + 14.0, my + 138.0);
@@ -4271,7 +4271,7 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_fill(cr);
 
     // Typography (Apple Cupertino World Clock)
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
     cairo_text_extents_t ex_t;
@@ -4279,7 +4279,7 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_move_to(cr, cx - ex_t.width / 2.0, wy + 106.0);
     cairo_show_text(cr, "КИЇВ");
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.55);
     cairo_text_extents(cr, "+0 ГОД", &ex_t);

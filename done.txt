@@ -541,3 +541,38 @@
         - bin/mac-audit-sync check (100% PASS)
         - bin/mac-extension-guard verify (100% PASS)
         - bin/mac-i18n-verify (100% SUCCESS).
+
+794. Повна міграція шрифтів з пропрієтарних Apple SF Pro на вільні метрично сумісні Inter (FOSS Font Transition & DMCA Immunity):
+   - Проблема:
+     У репозиторії проекту містилися оригінальні бінарні файли шрифтів Apple (SF Pro, SF Compact, SF Mono, New York), розповсюдження яких прямо заборонено Apple Font License і загрожує блокуванням репозиторію на GitHub через DMCA Takedown.
+   - Вирішення:
+     1) Встановлено пакет шрифтів fonts-inter та fonts-inter-variable (версія 4.1, ліцензія SIL Open Font License).
+     2) Видалено всі пропрієтарні шрифти Apple з репозиторію:
+        fonts/SF_Pro, fonts/SF_Pro_Display, fonts/SF_Pro_Text, fonts/SF_Pro_Rounded,
+        fonts/SF_Compact_Display, fonts/SF_Compact_Text, fonts/SF_Compact_Rounded,
+        fonts/SF_Mono, fonts/New_York.
+     3) Додано відкриті файли Inter-*.otf та InterDisplay-*.otf до fonts/Inter/. Залишено вільний шрифт Open Runde (fonts/Open_Runde/).
+     4) Оновлено системну конфігурацію fontconfig (config/fonts.conf, ~/.config/fontconfig/fonts.conf, /etc/fonts/local.conf):
+        - Створено аліаси для SF Pro, SF Pro Text, San Francisco, -apple-system, BlinkMacSystemFont, system-ui -> Inter.
+        - SF Pro Display -> Inter Display.
+        - SF Pro Rounded -> Open Runde.
+        - SF Mono -> Ubuntu Sans Mono.
+        - New York -> Noto Serif.
+        - Налаштовано пріоритет sans-serif та system-ui: Inter, Inter Display, Open Runde, Noto Sans.
+     5) Переналаштовано gsettings GNOME на використання Inter 11 (font-name, document-font-name, titlebar-font).
+     6) Оновлено конфігураційні файли проекту:
+        - config/gtk-3.0/settings.ini та config/gtk-4.0/settings.ini (gtk-font-name=Inter 11).
+        - config/macw1y-tokens.json (font_family_interface: Inter, font_family_heading: Inter Display).
+        - config/macw1y-manifest.json та bin/mac-apply-theme.
+        - install.sh: оновлено Stage 2/13 на розгортання Inter та Open Runde (суворе дотримання English-only).
+        - control-center/libmac_settings.c: замінено виклики SF Pro Text на Inter, перекомпільовано та синхронізовано libmac_settings.so.
+        - Перекомпільовано стилі через bin/mac-build-theme.
+     7) Очищено призначені для користувача та системні шляхи шрифтів (~/.local/share/fonts/, /usr/local/share/fonts/, /usr/share/fonts/opentype/macfonts), розгорнуто Inter та оновлено fc-cache.
+   - Верифікація:
+     1) fc-match 'SF Pro Text' повертає Inter-Regular.otf: 'Inter' 'Regular'.
+     2) fc-match 'SF Pro Display' повертає InterDisplay-Regular.otf: 'Inter Display' 'Regular'.
+     3) gsettings interface font-name підтверджено: 'Inter 11'.
+     4) Успішно пройдено повну трійку системних аудитів:
+        - bin/mac-audit-sync check (100% PASS)
+        - bin/mac-extension-guard verify (100% PASS)
+        - bin/mac-i18n-verify (100% SUCCESS).

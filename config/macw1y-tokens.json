@@ -101,9 +101,9 @@
     "sidebar_row_margin_right": 15
   },
   "typography": {
-    "font_family_interface": "SF Pro Text",
-    "font_family_heading": "SF Pro Display",
-    "font_family_monospace": "SF Mono",
+    "font_family_interface": "Inter",
+    "font_family_heading": "Inter Display",
+    "font_family_monospace": "Ubuntu Sans Mono",
     "font_size_base": "11pt",
     "font_size_row_title": "13.5px",
     "font_weight_row_title": 500,
