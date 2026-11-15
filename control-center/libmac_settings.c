@@ -50,6 +50,9 @@ typedef struct {
     int dock_tint;      /* 0 - 100 % */
     int dock_blur;      /* 0 - 50 px */
     int dock_shadow;    /* 0 - 100 % */
+    int dock_size;      /* 0 - 24 px, vertical padding (default 12) */
+    int dock_icon_size; /* 24 - 96 px, app icon size (default 54) */
+    int dock_spacing;   /* 0 - 24 px, icon spacing (default 4) */
 
     /* Group: Alerts / Dialogs */
     int alert_tint;     /* 0 - 100 % */
@@ -125,6 +128,9 @@ static MacStylingData state = {
     .dock_tint = 0,
     .dock_blur = 1,
     .dock_shadow = 0,
+    .dock_size = 12,
+    .dock_icon_size = 54,
+    .dock_spacing = 0,
 
     .label_blur = 30,
     .label_tint = 28,
@@ -362,6 +368,21 @@ static void load_config(void) {
                 state.dock_shadow = 0;
             }
 
+            if (json_object_has_member(obj, "dock_size"))
+                state.dock_size = (int)json_object_get_int_member(obj, "dock_size");
+            else
+                state.dock_size = 12;
+
+            if (json_object_has_member(obj, "dock_icon_size"))
+                state.dock_icon_size = (int)json_object_get_int_member(obj, "dock_icon_size");
+            else
+                state.dock_icon_size = 54;
+
+            if (json_object_has_member(obj, "dock_spacing"))
+                state.dock_spacing = (int)json_object_get_int_member(obj, "dock_spacing");
+            else
+                state.dock_spacing = 0;
+
             /* Group: Labels (Бірки) */
             if (json_object_has_member(obj, "label_blur"))
                 state.label_blur = (int)json_object_get_int_member(obj, "label_blur");
@@ -475,6 +496,9 @@ static void save_styling_json(void) {
         "  \"dock_tint\": %d,\n"
         "  \"dock_blur\": %d,\n"
         "  \"dock_shadow\": %d,\n"
+        "  \"dock_size\": %d,\n"
+        "  \"dock_icon_size\": %d,\n"
+        "  \"dock_spacing\": %d,\n"
         "  \"label_blur\": %d,\n"
         "  \"label_tint\": %d,\n"
         "  \"label_shadow\": %d,\n"
@@ -521,6 +545,9 @@ static void save_styling_json(void) {
         state.dock_tint,
         state.dock_blur,
         state.dock_shadow,
+        state.dock_size,
+        state.dock_icon_size,
+        state.dock_spacing,
         state.label_blur,
         state.label_tint,
         state.label_shadow,
@@ -992,6 +1019,51 @@ static void apply_dock_settings(void) {
             if (schema) g_settings_schema_unref(schema);
             g_object_unref(bms);
         }
+    }
+
+    /* 3. Apply icon size to dash2dock-motion and dash-to-dock */
+    const char *motion_schema = "org.gnome.shell.extensions.dash2dock-motion";
+    if (g_settings_schema_source_lookup(src, motion_schema, TRUE)) {
+        GSettings *ds = g_settings_new(motion_schema);
+        if (ds) {
+            GSettingsSchema *schema = NULL;
+            g_object_get(ds, "settings-schema", &schema, NULL);
+            int sz = state.dock_icon_size;
+            if (sz < 24) sz = 24;
+            if (sz > 96) sz = 96;
+            safe_set_int(ds, schema, "dash-max-icon-size", sz);
+            if (schema) g_settings_schema_unref(schema);
+            g_object_unref(ds);
+        }
+    }
+    const char *d2d_schema = "org.gnome.shell.extensions.dash-to-dock";
+    if (g_settings_schema_source_lookup(src, d2d_schema, TRUE)) {
+        GSettings *ds = g_settings_new(d2d_schema);
+        if (ds) {
+            GSettingsSchema *schema = NULL;
+            g_object_get(ds, "settings-schema", &schema, NULL);
+            int sz = state.dock_icon_size;
+            if (sz < 24) sz = 24;
+            if (sz > 96) sz = 96;
+            safe_set_int(ds, schema, "dash-max-icon-size", sz);
+            if (schema) g_settings_schema_unref(schema);
+            g_object_unref(ds);
+        }
+    }
+
+    /* 4. Trigger live DBus sync for EvalHelper */
+    GError *dbus_err = NULL;
+    GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &dbus_err);
+    if (bus) {
+        g_dbus_connection_call(bus,
+            "org.gnome.Shell",
+            "/org/gnome/Shell/Extensions/EvalHelper",
+            "org.gnome.Shell.Extensions.EvalHelper",
+            "SyncDockStyling",
+            NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+        g_object_unref(bus);
+    } else if (dbus_err) {
+        g_error_free(dbus_err);
     }
 }
 
@@ -2657,9 +2729,24 @@ static void dock_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
         cairo_paint(cr);
     }
 
-    double dw = 264.0, dh = 56.0, dr = 18.0;
+    double icon_sz = 34.0 * ((double)state.dock_icon_size / 54.0);
+    if (icon_sz < 18.0) icon_sz = 18.0;
+    if (icon_sz > 54.0) icon_sz = 54.0;
+    double gap = 11.0 + ((double)state.dock_spacing) * 1.2;
+    if (gap < 2.0) gap = 2.0;
+    double pad_v = 11.0 + ((double)state.dock_size - 12.0) * 0.8;
+    if (pad_v < 4.0) pad_v = 4.0;
+
+    double dh = icon_sz + pad_v * 2.0;
+    double dr = dh * 0.32;
+    if (dr < 8.0) dr = 8.0;
+    if (dr > 26.0) dr = 26.0;
+
+    double sep_gap = (gap > 4.0 ? (gap * 0.7) : 4.0);
+    double shelf_inner = 5 * icon_sz + 3 * gap + sep_gap * 2.0;
+    double dw = shelf_inner + 28.0;
     double dx = (width - dw) / 2.0;
-    double dy = height - dh - 12.0;
+    double dy = height - dh - 10.0;
 
     int blur_r = CLAMP(state.dock_blur, 6, 50);
     cairo_surface_t *blurred_bg = get_cached_blurred_wallpaper_surface(width, height, blur_r);
@@ -2676,18 +2763,17 @@ static void dock_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
     cairo_line_to(cr, dx + dw - dr, dy + 0.5);
     cairo_stroke(cr);
 
-    double icon_sz = 34.0;
-    double icon_y = dy + (dh - icon_sz) / 2.0 - 2.0;
+    double icon_y = dy + (dh - icon_sz) / 2.0 - 1.0;
     double start_x = dx + 14.0;
-    double gap = 11.0;
+    double icon_r = icon_sz * (8.0 / 34.0);
 
     /* 1. Finder */
     double ix1 = start_x;
-    draw_rounded_rect_path(cr, ix1, icon_y, icon_sz, icon_sz, 8.0);
+    draw_rounded_rect_path(cr, ix1, icon_y, icon_sz, icon_sz, icon_r);
     cairo_set_source_rgb(cr, 0.14, 0.55, 0.94);
     cairo_fill(cr);
     cairo_save(cr);
-    draw_rounded_rect_path(cr, ix1, icon_y, icon_sz, icon_sz, 8.0);
+    draw_rounded_rect_path(cr, ix1, icon_y, icon_sz, icon_sz, icon_r);
     cairo_clip(cr);
     cairo_move_to(cr, ix1 + icon_sz, icon_y);
     cairo_line_to(cr, ix1 + 16.0, icon_y);
@@ -2710,7 +2796,7 @@ static void dock_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
 
     /* 2. Launchpad */
     double ix2 = ix1 + icon_sz + gap;
-    draw_rounded_rect_path(cr, ix2, icon_y, icon_sz, icon_sz, 8.0);
+    draw_rounded_rect_path(cr, ix2, icon_y, icon_sz, icon_sz, icon_r);
     cairo_set_source_rgb(cr, 0.25, 0.27, 0.32);
     cairo_fill(cr);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.90);
@@ -2723,7 +2809,7 @@ static void dock_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
 
     /* 3. Safari */
     double ix3 = ix2 + icon_sz + gap;
-    draw_rounded_rect_path(cr, ix3, icon_y, icon_sz, icon_sz, 8.0);
+    draw_rounded_rect_path(cr, ix3, icon_y, icon_sz, icon_sz, icon_r);
     cairo_set_source_rgb(cr, 0.98, 0.98, 0.99);
     cairo_fill(cr);
     cairo_arc(cr, ix3 + icon_sz / 2.0, icon_y + icon_sz / 2.0, 13.0, 0, 2 * G_PI);
@@ -2748,7 +2834,7 @@ static void dock_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
 
     /* 4. Settings */
     double ix4 = ix3 + icon_sz + gap;
-    draw_rounded_rect_path(cr, ix4, icon_y, icon_sz, icon_sz, 8.0);
+    draw_rounded_rect_path(cr, ix4, icon_y, icon_sz, icon_sz, icon_r);
     cairo_set_source_rgb(cr, 0.48, 0.50, 0.54);
     cairo_fill(cr);
     double cx_g = ix4 + icon_sz / 2.0;
@@ -2764,7 +2850,7 @@ static void dock_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
     cairo_fill(cr);
 
     /* Separator groove */
-    double sx_d = ix4 + icon_sz + 8.0;
+    double sx_d = ix4 + icon_sz + sep_gap;
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.16);
     cairo_set_line_width(cr, 1.0);
     cairo_move_to(cr, sx_d, icon_y + 4.0);
@@ -2772,8 +2858,8 @@ static void dock_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
     cairo_stroke(cr);
 
     /* 5. Trash */
-    double ix5 = sx_d + 8.0;
-    draw_rounded_rect_path(cr, ix5, icon_y, icon_sz, icon_sz, 8.0);
+    double ix5 = sx_d + sep_gap;
+    draw_rounded_rect_path(cr, ix5, icon_y, icon_sz, icon_sz, icon_r);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.14);
     cairo_fill(cr);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.90);
@@ -4643,6 +4729,63 @@ void on_dock_shadow_changed(void *widget, gpointer data) {
     (void)data;
     if (in_init) return;
     state.dock_shadow = (int)lround(gtk_range_get_value(widget));
+    redraw_dock_preview();
+    schedule_dock_apply();
+    schedule_json_save();
+}
+
+void init_dock_icon_size(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.dock_icon_size);
+    in_init = 0;
+}
+
+void on_dock_icon_size_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.dock_icon_size = (int)lround(gtk_range_get_value(widget));
+    redraw_dock_preview();
+    schedule_dock_apply();
+    schedule_json_save();
+}
+
+void init_dock_size(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.dock_size);
+    in_init = 0;
+}
+
+void on_dock_size_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.dock_size = (int)lround(gtk_range_get_value(widget));
+    redraw_dock_preview();
+    schedule_dock_apply();
+    schedule_json_save();
+}
+
+void init_dock_spacing(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.dock_spacing);
+    in_init = 0;
+}
+
+void on_dock_spacing_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.dock_spacing = (int)lround(gtk_range_get_value(widget));
     redraw_dock_preview();
     schedule_dock_apply();
     schedule_json_save();

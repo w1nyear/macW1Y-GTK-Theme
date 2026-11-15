@@ -77,7 +77,11 @@ def make_lang(
         # Styling
         "styling_title": "Mac Styling", "dock_title": "Dock", "dock_desc": "Glass shader and tint of the dock",
         "glass_strength": "Glass Strength", "glass_strength_desc": "Refraction and blur intensity",
-        "dock_tint": "Dock Tint", "menubar_title": "Top Bar", "menubar_desc": "Menubar gradient and blur",
+        "dock_tint": "Dock Tint",
+        "dock_icon_size": "Icon Size", "dock_icon_size_desc": "Application icon size in dock (px)",
+        "dock_size": "Dock Size", "dock_size_desc": "Vertical padding and dock plate size (px)",
+        "dock_spacing": "Icon Spacing", "dock_spacing_desc": "Distance between adjacent app icons (px)",
+        "menubar_title": "Top Bar", "menubar_desc": "Menubar gradient and blur",
         "menubar_tint": "Menubar Tint", "context_menu_title": "Context Menus", "context_menu_desc": "Glass context menus",
         "context_menu_tint": "Menu Tint", "osd_title": "OSD", "osd_desc": "Glass OSD pills",
         "osd_tint": "OSD Tint", "notif_title": "Notifications", "notif_desc": "Glass notification cards",

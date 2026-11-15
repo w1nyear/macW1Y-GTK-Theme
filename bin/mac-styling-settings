@@ -134,6 +134,18 @@ class MacStylingWindow(Adw.ApplicationWindow):
         self.dock_tint_combo, self.dock_tint_scale = self._create_tint_controls(
             dock_group, t("dock_tint", "Тінт доку"), self.dock_tint_mode, int(self.dock_tint_strength * 100)
         )
+        self.dock_icon_size_scale = self._create_slider_row(
+            dock_group, t("dock_icon_size", "Розмір іконок"), t("dock_icon_size_desc", "Розмір значків програм у доці (px)"),
+            24, 96, int(getattr(self, "dock_icon_size", 54))
+        )
+        self.dock_size_scale = self._create_slider_row(
+            dock_group, t("dock_size", "Розмір доку"), t("dock_size_desc", "Вертикальний відступ та розмір скляної плашки доку (px)"),
+            0, 24, int(getattr(self, "dock_size", 12))
+        )
+        self.dock_spacing_scale = self._create_slider_row(
+            dock_group, t("dock_spacing", "Відстань між іконками"), t("dock_spacing_desc", "Відстань між сусідніми значками програм (px)"),
+            0, 24, int(getattr(self, "dock_spacing", 0))
+        )
 
         # 1.5. Labels Group
         labels_group = Adw.PreferencesGroup()
@@ -473,6 +485,10 @@ class MacStylingWindow(Adw.ApplicationWindow):
         self.label_tint = 28
         self.label_shadow = 25
 
+        self.dock_size = 12
+        self.dock_icon_size = 54
+        self.dock_spacing = 0
+
         styling_conf = os.path.expanduser("~/.config/mac-styling/styling.json")
         if os.path.exists(styling_conf):
             try:
@@ -481,6 +497,9 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 self.dock_glass_strength = sdata.get("dock_glass_strength", self.dock_glass_strength)
                 self.dock_tint_strength = sdata.get("dock_tint_strength", self.dock_tint_strength)
                 self.dock_tint_mode = sdata.get("dock_tint_mode", self.dock_tint_mode)
+                self.dock_size = sdata.get("dock_size", self.dock_size)
+                self.dock_icon_size = sdata.get("dock_icon_size", self.dock_icon_size)
+                self.dock_spacing = sdata.get("dock_spacing", self.dock_spacing)
 
                 self.menubar_glass_strength = sdata.get("menubar_glass_strength", self.menubar_glass_strength)
                 self.menubar_tint_strength = sdata.get("menubar_tint_strength", self.menubar_tint_strength)
@@ -585,6 +604,9 @@ class MacStylingWindow(Adw.ApplicationWindow):
         d_mode = self._mode_from_idx(self.dock_tint_combo.get_selected())
         d_tint = (self.dock_tint_scale.get_value() / 100.0) if d_mode != "disabled" else 0.0
         d_col = "#ffffff" if d_mode == "light" else "#000000"
+        d_icon_size = int(self.dock_icon_size_scale.get_value())
+        d_size = int(self.dock_size_scale.get_value())
+        d_spacing = int(self.dock_spacing_scale.get_value())
 
         # 2. Menubar
         p_glass = self.menubar_glass_scale.get_value() / 100.0
@@ -620,6 +642,9 @@ class MacStylingWindow(Adw.ApplicationWindow):
         set_gsetting(LIQUID_SCHEMA, "dock-blur-radius", max(1, int(d_glass * 30)))
         set_gsetting(LIQUID_SCHEMA, "dock-tint-strength", d_tint)
         set_gsetting(LIQUID_SCHEMA, "dock-tint-color", d_col)
+
+        set_gsetting("org.gnome.shell.extensions.dash2dock-motion", "dash-max-icon-size", d_icon_size)
+        set_gsetting("org.gnome.shell.extensions.dash-to-dock", "dash-max-icon-size", d_icon_size)
 
         set_gsetting(LIQUID_SCHEMA, "panel-menu-blur-radius", max(1, int(p_glass * 30)))
         set_gsetting(LIQUID_SCHEMA, "panel-menu-tint-strength", p_tint)
@@ -672,6 +697,9 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 "dock_glass_strength": d_glass,
                 "dock_tint_strength": d_tint,
                 "dock_tint_mode": d_mode,
+                "dock_size": d_size,
+                "dock_icon_size": d_icon_size,
+                "dock_spacing": d_spacing,
                 "menubar_glass_strength": p_glass,
                 "menubar_tint_strength": p_tint,
                 "menubar_tint_mode": p_mode,
@@ -696,6 +724,10 @@ class MacStylingWindow(Adw.ApplicationWindow):
             })
             with open(json_file, "w") as f:
                 json.dump(existing_data, f, indent=2)
+            try:
+                run_cmd("gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell/Extensions/EvalHelper --method org.gnome.Shell.Extensions.EvalHelper.SyncDockStyling")
+            except Exception:
+                pass
         except Exception as e:
             print("Error writing styling.json:", e)
 

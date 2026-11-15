@@ -374,6 +374,30 @@
      3) Згенеровано тестовий колаж перевірки scratch_verification_montage.png.
      4) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
 
+788. Додавання налаштувань розміру доку, розміру іконок та відстані між ними у "Mac стилізація":
+   - Контекст та вимоги:
+     * Користувач запросив можливість власноруч регулювати параметри док-панелі macOS: розмір доку (висоту плашки / вертикальний відступ), розмір іконок у доці (px) та відстань між ними.
+     * Початковий вигляд доку повністю збережено у базових еталонних значеннях (розмір іконок 54px, вертикальний відступ 12px, базова відстань 0px).
+   - Виконані роботи:
+     1) Інтерфейс Центру керування (GNOME Control Center) та панель "Mac стилізація":
+        * В control-center/cc-mac-styling-panel.ui та gnome-control-center-overlay/cc-mac-styling-panel.ui (разом з локалями locales/en/ та locales/uk/) у блок "Док" додано 3 повзунки:
+          - "Розмір іконок" (24..96 px, за замовчуванням 54 px).
+          - "Розмір доку" (0..24 px, за замовчуванням 12 px).
+          - "Відстань між іконками" (0..24 px, за замовчуванням 0 px).
+        * У control-center/libmac_settings.c реалізовано обробники сигналів init_dock_icon_size, on_dock_icon_size_changed, init_dock_size, on_dock_size_changed, init_dock_spacing, on_dock_spacing_changed.
+        * Оновлено функцію живого попереднього перегляду dock_preview_draw_func: пропорційно масштабує іконки, висоту скляної плашки та проміжки між значками наживо під час переміщення повзунків.
+        * Скомпільовано та синхронізовано libmac_settings.so для всіх системних шляхів.
+     2) Автономний додаток стилізації (bin/mac-styling-settings):
+        * Додано відповідні повзунки для розміру іконок, розміру доку та відстані між ними з підтримкою читання/збереження у ~/.config/mac-styling/styling.json.
+     3) Реалізація реалтайм синхронізації у GNOME Shell (EvalHelper):
+        * У extensions/eval-helper@mactheme/extension.js додано функцію syncDockStyling() та виклик D-Bus методу SyncDockStyling.
+        * Налаштовано динамічне керування dash._box.layout_manager.spacing, #dashtodockDashContainer та відступами іконок, прив'язано до файлового монітора styling.json та сигналу child-added.
+        * Оновлено config/extensions.lock.json із новим хешем розширення.
+     4) Система інтернаціоналізації та аудити:
+        * Оновлено ключі локалізації в config/i18n/generate_translations_data.py та config/i18n/generate_full_dictionaries.py.
+        * Всі аудити виконано на 100%: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
+
+
 
 
 

@@ -52,8 +52,8 @@ def audit_dock():
     if not motion_dump:
         issues.append("dash2dock-motion dconf schema is missing or empty in live system")
     else:
-        if "dash-max-icon-size=54" not in motion_dump:
-            issues.append("dash2dock-motion: dash-max-icon-size is not 54 in live system")
+        if not re.search(r'dash-max-icon-size=\d+', motion_dump):
+            issues.append("dash2dock-motion: dash-max-icon-size is missing in live system")
         if "dock-fixed=true" not in motion_dump:
             issues.append("dash2dock-motion: dock-fixed is false (dock should be fixed at bottom)")
         if "autohide=false" not in motion_dump:

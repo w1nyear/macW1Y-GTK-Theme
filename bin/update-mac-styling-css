@@ -2,6 +2,7 @@
 import sys
 import os
 import re
+import json
 import subprocess
 import time
 
@@ -18,6 +19,22 @@ def main():
 
     p_tint = max(0.0, min(1.0, p_val / 100.0))
     b_tint = max(0.0, min(1.0, b_val / 100.0))
+
+    styling_file = os.path.expanduser("~/.config/mac-styling/styling.json")
+    dock_size = 12
+    dock_spacing = 4
+    if os.path.exists(styling_file):
+        try:
+            with open(styling_file, "r") as sf:
+                sdata = json.load(sf)
+                dock_size = sdata.get("dock_size", 12)
+                dock_spacing = sdata.get("dock_spacing", 4)
+        except Exception:
+            pass
+
+    half_spacing = int(dock_spacing / 2)
+    top_pad = max(0, dock_size + 3)
+    bot_pad = max(0, dock_size - 5)
 
     paths = [
         (os.path.expanduser("~/.themes/macW1Y-Dark/gnome-shell/gnome-shell.css"), False),
@@ -58,6 +75,20 @@ def main():
                     rf'\g<1>36, 36, 36, {b_tint:.2f}\g<3>',
                     c
                 )
+
+            # Dock container padding
+            c = re.sub(
+                r'(#dashtodockContainer\.bottom\s+#dash\s+#dashtodockDashContainer,\s*#dashtodockDashContainer\s*\{[^}]*?padding:\s*0\s+)[0-9]+px(\s*!important;)',
+                rf'\g<1>{dock_size}px\g<2>',
+                c
+            )
+
+            # App items vertical padding & margin
+            c = re.sub(
+                r'(\.dash-item-container\s+\.overview-tile\s*\{[^}]*?padding-top:\s*)[0-9]+px(\s*!important;[^}]*?padding-bottom:\s*)[0-9]+px(\s*!important;[^}]*?margin:\s*0\s*)[0-9]*px?(\s*!important;)',
+                rf'\g<1>{top_pad}px\g<2>{bot_pad}px\g<3>{half_spacing}px\g<4>',
+                c
+            )
 
             with open(css_path, "w", encoding="utf-8") as f:
                 f.write(c)

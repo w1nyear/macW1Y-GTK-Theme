@@ -405,6 +405,84 @@
                         </child>
                       </object>
                     </child>
+                    <child>
+                      <object class="AdwActionRow" id="dock_icon_size_row">
+                        <property name="title">Розмір іконок</property>
+                        <property name="subtitle">Розмір значків програм у доці (px)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dock_icon_size_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">24</property>
+                                <property name="upper">96</property>
+                                <property name="step-increment">2</property>
+                                <property name="page-increment">8</property>
+                                <property name="value">54</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dock_icon_size"/>
+                            <signal name="value-changed" handler="on_dock_icon_size_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="dock_size_row">
+                        <property name="title">Розмір доку</property>
+                        <property name="subtitle">Вертикальний відступ та розмір скляної плашки доку (px)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dock_size_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">24</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">4</property>
+                                <property name="value">12</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dock_size"/>
+                            <signal name="value-changed" handler="on_dock_size_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="dock_spacing_row">
+                        <property name="title">Відстань між іконками</property>
+                        <property name="subtitle">Відстань між сусідніми значками програм (px)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dock_spacing_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">24</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">4</property>
+                                <property name="value">0</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dock_spacing"/>
+                            <signal name="value-changed" handler="on_dock_spacing_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
                   </object>
                 </child>
 

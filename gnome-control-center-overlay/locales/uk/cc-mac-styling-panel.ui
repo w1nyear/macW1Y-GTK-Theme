@@ -1,6 +1,6 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <requires lib="gtk" version="4.0" />
+  <requires lib="gtk" version="4.0"/>
       <object class="AdwNavigationPage" id="mac_styling_page">
         <property name="title">Mac стилізація</property>
         <property name="tag">mac-styling</property>
@@ -12,14 +12,14 @@
             <child type="top">
               <object class="AdwHeaderBar">
                 <style>
-                  <class name="flat" />
+                  <class name="flat"/>
                 </style>
               </object>
             </child>
             <property name="content">
               <object class="AdwPreferencesPage">
 
-                
+                <!-- 1. Liquid Glass -->
                 <child>
                   <object class="AdwPreferencesGroup" id="liquid_glass_group">
                     <property name="title">Liquid Glass</property>
@@ -35,7 +35,7 @@
                           <object class="GtkDrawingArea" id="liquid_glass_preview_area">
                             <property name="height-request">210</property>
                             <property name="hexpand">true</property>
-                            <signal name="realize" handler="init_liquid_preview" />
+                            <signal name="realize" handler="init_liquid_preview"/>
                           </object>
                         </child>
                       </object>
@@ -53,8 +53,8 @@
                             </items>
                           </object>
                         </property>
-                        <signal name="realize" handler="init_liquid_shape" />
-                        <signal name="notify::selected" handler="on_liquid_shape_changed" />
+                        <signal name="realize" handler="init_liquid_shape"/>
+                        <signal name="notify::selected" handler="on_liquid_shape_changed"/>
                       </object>
                     </child>
                     <child>
@@ -76,8 +76,8 @@
                                 <property name="value">60</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_liquid_refraction" />
-                            <signal name="value-changed" handler="on_liquid_refraction_changed" />
+                            <signal name="realize" handler="init_liquid_refraction"/>
+                            <signal name="value-changed" handler="on_liquid_refraction_changed"/>
                           </object>
                         </child>
                       </object>
@@ -101,8 +101,8 @@
                                 <property name="value">20</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_liquid_blur" />
-                            <signal name="value-changed" handler="on_liquid_blur_changed" />
+                            <signal name="realize" handler="init_liquid_blur"/>
+                            <signal name="value-changed" handler="on_liquid_blur_changed"/>
                           </object>
                         </child>
                       </object>
@@ -126,8 +126,8 @@
                                 <property name="value">12</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_liquid_tint" />
-                            <signal name="value-changed" handler="on_liquid_tint_changed" />
+                            <signal name="realize" handler="init_liquid_tint"/>
+                            <signal name="value-changed" handler="on_liquid_tint_changed"/>
                           </object>
                         </child>
                       </object>
@@ -151,8 +151,8 @@
                                 <property name="value">20</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_liquid_chroma" />
-                            <signal name="value-changed" handler="on_liquid_chroma_changed" />
+                            <signal name="realize" handler="init_liquid_chroma"/>
+                            <signal name="value-changed" handler="on_liquid_chroma_changed"/>
                           </object>
                         </child>
                       </object>
@@ -176,8 +176,8 @@
                                 <property name="value">45</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_liquid_rim" />
-                            <signal name="value-changed" handler="on_liquid_rim_changed" />
+                            <signal name="realize" handler="init_liquid_rim"/>
+                            <signal name="value-changed" handler="on_liquid_rim_changed"/>
                           </object>
                         </child>
                       </object>
@@ -201,8 +201,8 @@
                                 <property name="value">25</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_liquid_specular" />
-                            <signal name="value-changed" handler="on_liquid_specular_changed" />
+                            <signal name="realize" handler="init_liquid_specular"/>
+                            <signal name="value-changed" handler="on_liquid_specular_changed"/>
                           </object>
                         </child>
                       </object>
@@ -226,8 +226,8 @@
                                 <property name="value">35</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_liquid_shadow" />
-                            <signal name="value-changed" handler="on_liquid_shadow_changed" />
+                            <signal name="realize" handler="init_liquid_shadow"/>
+                            <signal name="value-changed" handler="on_liquid_shadow_changed"/>
                           </object>
                         </child>
                       </object>
@@ -235,7 +235,7 @@
                   </object>
                 </child>
 
-                
+                <!-- 2. Меню-бар -->
                 <child>
                   <object class="AdwPreferencesGroup" id="menubar_group">
                     <property name="title">Меню-бар</property>
@@ -251,7 +251,7 @@
                           <object class="GtkDrawingArea" id="menubar_preview_area">
                             <property name="height-request">140</property>
                             <property name="hexpand">true</property>
-                            <signal name="realize" handler="init_menubar_preview" />
+                            <signal name="realize" handler="init_menubar_preview"/>
                           </object>
                         </child>
                       </object>
@@ -275,8 +275,8 @@
                                 <property name="value">35</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_menubar_tint" />
-                            <signal name="value-changed" handler="on_menubar_tint_changed" />
+                            <signal name="realize" handler="init_menubar_tint"/>
+                            <signal name="value-changed" handler="on_menubar_tint_changed"/>
                           </object>
                         </child>
                       </object>
@@ -300,8 +300,8 @@
                                 <property name="value">10</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_menubar_blur" />
-                            <signal name="value-changed" handler="on_menubar_blur_changed" />
+                            <signal name="realize" handler="init_menubar_blur"/>
+                            <signal name="value-changed" handler="on_menubar_blur_changed"/>
                           </object>
                         </child>
                       </object>
@@ -309,7 +309,7 @@
                   </object>
                 </child>
 
-                
+                <!-- 3. Док -->
                 <child>
                   <object class="AdwPreferencesGroup" id="dock_group">
                     <property name="title">Док</property>
@@ -325,7 +325,7 @@
                           <object class="GtkDrawingArea" id="dock_preview_area">
                             <property name="height-request">150</property>
                             <property name="hexpand">true</property>
-                            <signal name="realize" handler="init_dock_preview" />
+                            <signal name="realize" handler="init_dock_preview"/>
                           </object>
                         </child>
                       </object>
@@ -349,8 +349,8 @@
                                 <property name="value">15</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_dock_tint" />
-                            <signal name="value-changed" handler="on_dock_tint_changed" />
+                            <signal name="realize" handler="init_dock_tint"/>
+                            <signal name="value-changed" handler="on_dock_tint_changed"/>
                           </object>
                         </child>
                       </object>
@@ -374,8 +374,8 @@
                                 <property name="value">9</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_dock_blur" />
-                            <signal name="value-changed" handler="on_dock_blur_changed" />
+                            <signal name="realize" handler="init_dock_blur"/>
+                            <signal name="value-changed" handler="on_dock_blur_changed"/>
                           </object>
                         </child>
                       </object>
@@ -399,8 +399,86 @@
                                 <property name="value">30</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_dock_shadow" />
-                            <signal name="value-changed" handler="on_dock_shadow_changed" />
+                            <signal name="realize" handler="init_dock_shadow"/>
+                            <signal name="value-changed" handler="on_dock_shadow_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="dock_icon_size_row">
+                        <property name="title">Розмір іконок</property>
+                        <property name="subtitle">Розмір значків програм у доці (px)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dock_icon_size_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">24</property>
+                                <property name="upper">96</property>
+                                <property name="step-increment">2</property>
+                                <property name="page-increment">8</property>
+                                <property name="value">54</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dock_icon_size"/>
+                            <signal name="value-changed" handler="on_dock_icon_size_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="dock_size_row">
+                        <property name="title">Розмір доку</property>
+                        <property name="subtitle">Вертикальний відступ та розмір скляної плашки доку (px)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dock_size_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">24</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">4</property>
+                                <property name="value">12</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dock_size"/>
+                            <signal name="value-changed" handler="on_dock_size_changed"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="dock_spacing_row">
+                        <property name="title">Відстань між іконками</property>
+                        <property name="subtitle">Відстань між сусідніми значками програм (px)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dock_spacing_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">24</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">4</property>
+                                <property name="value">0</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dock_spacing"/>
+                            <signal name="value-changed" handler="on_dock_spacing_changed"/>
                           </object>
                         </child>
                       </object>
@@ -408,7 +486,7 @@
                   </object>
                 </child>
 
-                
+                <!-- 3.5. Бірки док-панелі -->
                 <child>
                   <object class="AdwPreferencesGroup" id="labels_group">
                     <property name="title">Бірки</property>
@@ -424,7 +502,7 @@
                           <object class="GtkDrawingArea" id="labels_preview_area">
                             <property name="height-request">170</property>
                             <property name="hexpand">true</property>
-                            <signal name="realize" handler="init_labels_preview" />
+                            <signal name="realize" handler="init_labels_preview"/>
                           </object>
                         </child>
                       </object>
@@ -448,8 +526,8 @@
                                 <property name="value">30</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_label_blur" />
-                            <signal name="value-changed" handler="on_label_blur_changed" />
+                            <signal name="realize" handler="init_label_blur"/>
+                            <signal name="value-changed" handler="on_label_blur_changed"/>
                           </object>
                         </child>
                       </object>
@@ -473,8 +551,8 @@
                                 <property name="value">28</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_label_tint" />
-                            <signal name="value-changed" handler="on_label_tint_changed" />
+                            <signal name="realize" handler="init_label_tint"/>
+                            <signal name="value-changed" handler="on_label_tint_changed"/>
                           </object>
                         </child>
                       </object>
@@ -498,8 +576,8 @@
                                 <property name="value">25</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_label_shadow" />
-                            <signal name="value-changed" handler="on_label_shadow_changed" />
+                            <signal name="realize" handler="init_label_shadow"/>
+                            <signal name="value-changed" handler="on_label_shadow_changed"/>
                           </object>
                         </child>
                       </object>
@@ -507,7 +585,7 @@
                   </object>
                 </child>
 
-                
+                <!-- 4. Попередження -->
                 <child>
                   <object class="AdwPreferencesGroup" id="alerts_group">
                     <property name="title">Попередження</property>
@@ -523,7 +601,7 @@
                           <object class="GtkDrawingArea" id="alerts_preview_area">
                             <property name="height-request">175</property>
                             <property name="hexpand">true</property>
-                            <signal name="realize" handler="init_alerts_preview" />
+                            <signal name="realize" handler="init_alerts_preview"/>
                           </object>
                         </child>
                       </object>
@@ -547,8 +625,8 @@
                                 <property name="value">20</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_alert_tint" />
-                            <signal name="value-changed" handler="on_alert_tint_changed" />
+                            <signal name="realize" handler="init_alert_tint"/>
+                            <signal name="value-changed" handler="on_alert_tint_changed"/>
                           </object>
                         </child>
                       </object>
@@ -572,8 +650,8 @@
                                 <property name="value">15</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_alert_blur" />
-                            <signal name="value-changed" handler="on_alert_blur_changed" />
+                            <signal name="realize" handler="init_alert_blur"/>
+                            <signal name="value-changed" handler="on_alert_blur_changed"/>
                           </object>
                         </child>
                       </object>
@@ -597,8 +675,8 @@
                                 <property name="value">35</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_alert_shadow" />
-                            <signal name="value-changed" handler="on_alert_shadow_changed" />
+                            <signal name="realize" handler="init_alert_shadow"/>
+                            <signal name="value-changed" handler="on_alert_shadow_changed"/>
                           </object>
                         </child>
                       </object>
@@ -606,7 +684,7 @@
                   </object>
                 </child>
 
-                
+                <!-- 5. Повідомлення -->
                 <child>
                   <object class="AdwPreferencesGroup" id="notifications_group">
                     <property name="title">Повідомлення</property>
@@ -622,7 +700,7 @@
                           <object class="GtkDrawingArea" id="notifications_preview_area">
                             <property name="height-request">150</property>
                             <property name="hexpand">true</property>
-                            <signal name="realize" handler="init_notifications_preview" />
+                            <signal name="realize" handler="init_notifications_preview"/>
                           </object>
                         </child>
                       </object>
@@ -646,8 +724,8 @@
                                 <property name="value">15</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_notification_blur" />
-                            <signal name="value-changed" handler="on_notification_blur_changed" />
+                            <signal name="realize" handler="init_notification_blur"/>
+                            <signal name="value-changed" handler="on_notification_blur_changed"/>
                           </object>
                         </child>
                       </object>
@@ -671,8 +749,8 @@
                                 <property name="value">20</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_notification_tint" />
-                            <signal name="value-changed" handler="on_notification_tint_changed" />
+                            <signal name="realize" handler="init_notification_tint"/>
+                            <signal name="value-changed" handler="on_notification_tint_changed"/>
                           </object>
                         </child>
                       </object>
@@ -696,8 +774,8 @@
                                 <property name="value">35</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_notification_shadow" />
-                            <signal name="value-changed" handler="on_notification_shadow_changed" />
+                            <signal name="realize" handler="init_notification_shadow"/>
+                            <signal name="value-changed" handler="on_notification_shadow_changed"/>
                           </object>
                         </child>
                       </object>
@@ -705,7 +783,7 @@
                   </object>
                 </child>
 
-                
+                <!-- 6. Spotlight -->
                 <child>
                   <object class="AdwPreferencesGroup" id="spotlight_group">
                     <property name="title">Spotlight</property>
@@ -721,7 +799,7 @@
                           <object class="GtkDrawingArea" id="spotlight_preview_area">
                             <property name="height-request">150</property>
                             <property name="hexpand">true</property>
-                            <signal name="realize" handler="init_spotlight_preview" />
+                            <signal name="realize" handler="init_spotlight_preview"/>
                           </object>
                         </child>
                       </object>
@@ -745,8 +823,8 @@
                                 <property name="value">18</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_spotlight_blur" />
-                            <signal name="value-changed" handler="on_spotlight_blur_changed" />
+                            <signal name="realize" handler="init_spotlight_blur"/>
+                            <signal name="value-changed" handler="on_spotlight_blur_changed"/>
                           </object>
                         </child>
                       </object>
@@ -770,8 +848,8 @@
                                 <property name="value">15</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_spotlight_tint" />
-                            <signal name="value-changed" handler="on_spotlight_tint_changed" />
+                            <signal name="realize" handler="init_spotlight_tint"/>
+                            <signal name="value-changed" handler="on_spotlight_tint_changed"/>
                           </object>
                         </child>
                       </object>
@@ -795,8 +873,8 @@
                                 <property name="value">35</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_spotlight_shadow" />
-                            <signal name="value-changed" handler="on_spotlight_shadow_changed" />
+                            <signal name="realize" handler="init_spotlight_shadow"/>
+                            <signal name="value-changed" handler="on_spotlight_shadow_changed"/>
                           </object>
                         </child>
                       </object>
@@ -804,7 +882,7 @@
                   </object>
                 </child>
 
-                
+                <!-- 3. Blur -->
                 <child>
                   <object class="AdwPreferencesGroup" id="blur_group">
                     <property name="title">Blur</property>
@@ -820,7 +898,7 @@
                           <object class="GtkDrawingArea" id="blur_preview_area">
                             <property name="height-request">150</property>
                             <property name="hexpand">true</property>
-                            <signal name="realize" handler="init_blur_preview" />
+                            <signal name="realize" handler="init_blur_preview"/>
                           </object>
                         </child>
                       </object>
@@ -844,8 +922,8 @@
                                 <property name="value">30</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_blur_sigma" />
-                            <signal name="value-changed" handler="on_blur_sigma_changed" />
+                            <signal name="realize" handler="init_blur_sigma"/>
+                            <signal name="value-changed" handler="on_blur_sigma_changed"/>
                           </object>
                         </child>
                       </object>
@@ -869,8 +947,8 @@
                                 <property name="value">36</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_blur_tint" />
-                            <signal name="value-changed" handler="on_blur_tint_changed" />
+                            <signal name="realize" handler="init_blur_tint"/>
+                            <signal name="value-changed" handler="on_blur_tint_changed"/>
                           </object>
                         </child>
                       </object>
@@ -878,7 +956,7 @@
                   </object>
                 </child>
 
-                
+                <!-- 4. Контекст меню -->
                 <child>
                   <object class="AdwPreferencesGroup" id="context_menu_group">
                     <property name="title">Контекст меню</property>
@@ -894,7 +972,7 @@
                           <object class="GtkDrawingArea" id="context_menu_preview_area">
                             <property name="height-request">180</property>
                             <property name="hexpand">true</property>
-                            <signal name="realize" handler="init_context_menu_preview" />
+                            <signal name="realize" handler="init_context_menu_preview"/>
                           </object>
                         </child>
                       </object>
@@ -918,8 +996,8 @@
                                 <property name="value">35</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_menu_tint" />
-                            <signal name="value-changed" handler="on_menu_tint_changed" />
+                            <signal name="realize" handler="init_menu_tint"/>
+                            <signal name="value-changed" handler="on_menu_tint_changed"/>
                           </object>
                         </child>
                       </object>
@@ -943,8 +1021,8 @@
                                 <property name="value">30</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_menu_blur" />
-                            <signal name="value-changed" handler="on_menu_blur_changed" />
+                            <signal name="realize" handler="init_menu_blur"/>
+                            <signal name="value-changed" handler="on_menu_blur_changed"/>
                           </object>
                         </child>
                       </object>
@@ -973,8 +1051,8 @@
                                     <property name="value">30</property>
                                   </object>
                                 </property>
-                                <signal name="realize" handler="init_menu_shadow_blur" />
-                                <signal name="value-changed" handler="on_menu_shadow_blur_changed" />
+                                <signal name="realize" handler="init_menu_shadow_blur"/>
+                                <signal name="value-changed" handler="on_menu_shadow_blur_changed"/>
                               </object>
                             </child>
                           </object>
@@ -998,8 +1076,8 @@
                                     <property name="value">55</property>
                                   </object>
                                 </property>
-                                <signal name="realize" handler="init_menu_shadow_strength" />
-                                <signal name="value-changed" handler="on_menu_shadow_strength_changed" />
+                                <signal name="realize" handler="init_menu_shadow_strength"/>
+                                <signal name="value-changed" handler="on_menu_shadow_strength_changed"/>
                               </object>
                             </child>
                           </object>
@@ -1009,7 +1087,7 @@
                   </object>
                 </child>
 
-                
+                <!-- 5. Віджети -->
                 <child>
                   <object class="AdwPreferencesGroup" id="widgets_group">
                     <property name="title">Віджети</property>
@@ -1025,7 +1103,7 @@
                           <object class="GtkDrawingArea" id="widgets_preview_area">
                             <property name="height-request">170</property>
                             <property name="hexpand">true</property>
-                            <signal name="realize" handler="init_widgets_preview" />
+                            <signal name="realize" handler="init_widgets_preview"/>
                           </object>
                         </child>
                       </object>
@@ -1049,8 +1127,8 @@
                                 <property name="value">1</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_widget_blur" />
-                            <signal name="value-changed" handler="on_widget_blur_changed" />
+                            <signal name="realize" handler="init_widget_blur"/>
+                            <signal name="value-changed" handler="on_widget_blur_changed"/>
                           </object>
                         </child>
                       </object>
@@ -1074,8 +1152,8 @@
                                 <property name="value">20</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_widget_tint" />
-                            <signal name="value-changed" handler="on_widget_tint_changed" />
+                            <signal name="realize" handler="init_widget_tint"/>
+                            <signal name="value-changed" handler="on_widget_tint_changed"/>
                           </object>
                         </child>
                       </object>
@@ -1099,8 +1177,8 @@
                                 <property name="value">30</property>
                               </object>
                             </property>
-                            <signal name="realize" handler="init_widget_shadow" />
-                            <signal name="value-changed" handler="on_widget_shadow_changed" />
+                            <signal name="realize" handler="init_widget_shadow"/>
+                            <signal name="value-changed" handler="on_widget_shadow_changed"/>
                           </object>
                         </child>
                       </object>
@@ -1108,7 +1186,7 @@
                   </object>
                 </child>
 
-                
+                <!-- 6. Завантажувач (Bootloader) -->
                 <child>
                   <object class="AdwPreferencesGroup">
                     <property name="title">Завантажувач (Bootloader)</property>
@@ -1117,22 +1195,22 @@
                       <object class="AdwSwitchRow" id="boot_verbose_switch">
                         <property name="title">Режим verbose</property>
                         <property name="subtitle">Текстовий лог завантаження термінала позаду логотипу Apple</property>
-                        <signal name="realize" handler="init_boot_verbose" />
-                        <signal name="notify::active" handler="on_boot_verbose_changed" />
+                        <signal name="realize" handler="init_boot_verbose"/>
+                        <signal name="notify::active" handler="on_boot_verbose_changed"/>
                       </object>
                     </child>
                     <child>
                       <object class="AdwSwitchRow" id="boot_grub_switch">
                         <property name="title">Меню GRUB</property>
                         <property name="subtitle">Графічне меню вибору системи у стилі macOS під час старту</property>
-                        <signal name="realize" handler="init_boot_grub" />
-                        <signal name="notify::active" handler="on_boot_grub_changed" />
+                        <signal name="realize" handler="init_boot_grub"/>
+                        <signal name="notify::active" handler="on_boot_grub_changed"/>
                       </object>
                     </child>
                   </object>
                 </child>
 
-                
+                <!-- 6. Цілісність та діагностика -->
                 <child>
                   <object class="AdwPreferencesGroup">
                     <property name="title">Цілісність та діагностика</property>
@@ -1156,7 +1234,7 @@
                           <object class="GtkButton" id="btn_run_diagnostics">
                             <property name="label">Запустити діагностику</property>
                             <property name="valign">center</property>
-                            <signal name="clicked" handler="on_run_diagnostics_clicked" />
+                            <signal name="clicked" handler="on_run_diagnostics_clicked"/>
                           </object>
                         </child>
                         <child type="suffix">
@@ -1164,9 +1242,9 @@
                             <property name="label">Відновити оформлення</property>
                             <property name="valign">center</property>
                             <style>
-                              <class name="suggested-action" />
+                              <class name="suggested-action"/>
                             </style>
-                            <signal name="clicked" handler="on_restore_theme_clicked" />
+                            <signal name="clicked" handler="on_restore_theme_clicked"/>
                           </object>
                         </child>
                       </object>

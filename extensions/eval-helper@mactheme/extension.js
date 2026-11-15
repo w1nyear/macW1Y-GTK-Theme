@@ -36,6 +36,9 @@ const EvalIface = `
     <method name="SyncSpotlightStyling">
       <arg type="b" direction="out" name="success"/>
     </method>
+    <method name="SyncDockStyling">
+      <arg type="b" direction="out" name="success"/>
+    </method>
     <method name="ShowSetupWizard">
       <arg type="b" direction="in" name="force"/>
       <arg type="b" direction="out" name="success"/>
@@ -517,6 +520,18 @@ export default class EvalHelper extends Extension {
                         return false;
                     } catch (e) {
                         console.error(`[EvalHelper] SyncSpotlightStyling error: ${e}`);
+                        return false;
+                    }
+                },
+                SyncDockStyling: () => {
+                    try {
+                        if (typeof globalThis._macSyncDockStyling === 'function') {
+                            globalThis._macSyncDockStyling();
+                            return true;
+                        }
+                        return false;
+                    } catch (e) {
+                        console.error(`[EvalHelper] SyncDockStyling error: ${e}`);
                         return false;
                     }
                 },
@@ -2352,6 +2367,9 @@ export default class EvalHelper extends Extension {
                 if (typeof globalThis._macSyncLabelStyling === 'function') {
                     globalThis._macSyncLabelStyling();
                 }
+                if (typeof globalThis._macSyncDockStyling === 'function') {
+                    globalThis._macSyncDockStyling();
+                }
             });
         } catch (_) {}
 
@@ -2405,6 +2423,90 @@ export default class EvalHelper extends Extension {
         };
         globalThis._macSyncLabelStyling = syncAllLabels;
         syncAllLabels();
+
+        // Dock size, icon size & spacing real-time synchronization
+        const syncDockStyling = () => {
+            try {
+                const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+                let conf = {};
+                if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+                    const [ok, bytes] = GLib.file_get_contents(confPath);
+                    if (ok) conf = JSON.parse(new TextDecoder().decode(bytes));
+                }
+                const iconSize = (typeof conf.dock_icon_size === 'number') ? conf.dock_icon_size : 54;
+                const dockSize = (typeof conf.dock_size === 'number') ? conf.dock_size : 12;
+                const spacing = (typeof conf.dock_spacing === 'number') ? conf.dock_spacing : 0;
+
+                const d2d = Main.uiGroup?.get_children?.()?.find(c => c.name === 'dashtodockContainer');
+                const dash = d2d?.dash;
+                if (!dash) return;
+
+                // 1. Spacing between icons
+                if (dash._box?.layout_manager) {
+                    dash._box.layout_manager.spacing = spacing;
+                }
+
+                // 2. Dock plate horizontal/vertical padding
+                if (dash._dashContainer) {
+                    dash._dashContainer.set_style(`padding: 0 ${dockSize}px !important;`);
+                }
+
+                // 3. App icons vertical padding & margins
+                const halfSpacing = 3 + Math.round(spacing / 2);
+                const topPad = Math.max(0, dockSize + 3);
+                const botPad = Math.max(0, dockSize - 5);
+                const itemMarginStyle = `margin: 0 ${halfSpacing}px !important;`;
+                const appPaddingStyle = `padding-top: ${topPad}px !important; padding-bottom: ${botPad}px !important; margin: 0 ${halfSpacing}px !important;`;
+
+                if (dash._box) {
+                    for (const item of dash._box.get_children()) {
+                        item.set_style(itemMarginStyle);
+                        if (item.get_first_child) {
+                            const iconChild = item.get_first_child();
+                            if (iconChild && iconChild.set_style) {
+                                iconChild.set_style(appPaddingStyle);
+                            }
+                        }
+                    }
+
+                    if (!this._macDockChildAddedConnected) {
+                        this._macDockChildAddedConnected = true;
+                        dash._box.connect('child-added', () => {
+                            GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                                syncDockStyling();
+                                return GLib.SOURCE_REMOVE;
+                            });
+                        });
+                    }
+                }
+
+                // 4. Update GSettings for dash-max-icon-size if needed
+                try {
+                    const schemaMotion = 'org.gnome.shell.extensions.dash2dock-motion';
+                    const schemaD2d = 'org.gnome.shell.extensions.dash-to-dock';
+                    const source = Gio.SettingsSchemaSource.get_default();
+                    if (source.lookup(schemaMotion, true)) {
+                        const s = new Gio.Settings({ schema_id: schemaMotion });
+                        if (s.get_int('dash-max-icon-size') !== iconSize) {
+                            s.set_int('dash-max-icon-size', iconSize);
+                        }
+                    }
+                    if (source.lookup(schemaD2d, true)) {
+                        const s2 = new Gio.Settings({ schema_id: schemaD2d });
+                        if (s2.get_int('dash-max-icon-size') !== iconSize) {
+                            s2.set_int('dash-max-icon-size', iconSize);
+                        }
+                    }
+                } catch (_) {}
+
+                dash._box?.queue_relayout?.();
+                d2d.queue_relayout?.();
+            } catch (e) {
+                console.error('[EvalHelper] syncDockStyling error: ' + e);
+            }
+        };
+        globalThis._macSyncDockStyling = syncDockStyling;
+        syncDockStyling();
 
         // Notification Center and Notification Banners are natively handled by blur-my-shell (menubar_v29 & notifications_v4)
 
