@@ -633,3 +633,24 @@
         - bin/mac-audit-sync check (100% PASS)
         - bin/mac-extension-guard verify (100% PASS)
         - bin/mac-i18n-verify (100% SUCCESS).
+
+797. Виправлення виходу елементів OSD за межі скляної капсули (OSD Geometry, Strict Insets & Capsule Boundary Confinement):
+   - Проблема: Через відсутність інлайн-відступів у St.BoxLayout контейнера _box та властивість x_expand повзунка, іконка динаміка притискалася впритул до лівого краю (x=0), а правий край повзунка заходив далеко у зону радіусного заокруглення капсули (до x=267 при ширині капсули 280px).
+   - Реалізовано:
+     1) У extensions/kiwi@kemma/apps/tahoeOSD.js та tahoeOnScreenDisplay.js встановлено суворі інлайн-відступи:
+        - Контейнер _box: `padding-left: 20px !important; padding-right: 32px !important; padding-top: 14px !important; padding-bottom: 14px !important;`.
+        - Іконка _iconL: розмір 28px, `margin-right: 14px !important;`.
+        - Повзунок _slider: ширина автоматично становить рівно 186px, початок на x=62px, завершення на x=248px, `margin-right: 0px !important;`.
+     2) У extensions/kiwi@kemma/stylesheet.css синхронізовано правила для .tahoe-osd та .tahoe-osd-icon.
+     3) Геометрія OSD:
+        - Лівий відступ: 20px (іконка ідеально сидить у лівому круглому ковпаку R=32px).
+        - Правий відступ: точно 32px (кінець повзунка знаходиться на межі x=248px перед початком правого радіусного заокруглення).
+        - Жоден елемент не перетинає кривизну капсули і не виходить за межі скляної плашки.
+     4) Оновлено config/extensions.lock.json для kiwi@kemma та синхронізовано всі 21 розширення.
+   - Верифікація:
+     1) Live allocation підтверджує ідеальне позиціювання: icon: [20, 18, 48, 46], slider: [62, 16, 248, 48].
+     2) Оновлено скріншот scratch_osd_new4_crop.png.
+     3) 100% успішне проходження аудитів:
+        - bin/mac-audit-sync check (100% PASS)
+        - bin/mac-extension-guard verify (100% PASS)
+        - bin/mac-i18n-verify (100% SUCCESS).

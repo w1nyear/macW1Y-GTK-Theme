@@ -1265,13 +1265,15 @@ export function enable() {
             visible: false,
             opacity: 0,
             reactive: false,
+            style: 'padding-left: 20px !important; padding-right: 32px !important; padding-top: 14px !important; padding-bottom: 14px !important; box-shadow: none !important;',
         });
         _box.set_width(OSD_W);
         _box.set_height(OSD_H);
 
         _iconL = new St.Icon({
             style_class: 'tahoe-osd-icon',
-            icon_size: 34,
+            icon_size: 28,
+            style: 'margin-right: 14px !important;',
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.CENTER,
         });
@@ -1279,6 +1281,7 @@ export function enable() {
         _slider = new TahoeSegSlider();
         _slider.x_expand = true;
         _slider.y_align = Clutter.ActorAlign.CENTER;
+        _slider.set_style('margin-right: 0px !important;');
         try {
             _slider.reactive = false;
             _slider.can_focus = false;
