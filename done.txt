@@ -460,3 +460,33 @@
      2) Перевірено лінійність відступу: при spacing = 6 gap між іконками становить рівно 6px (scratch_dock_verified_6_8.png).
      3) Знято повний скріншот робочого столу (scratch_desktop_dock_restored.png): док стабільно відображається, не ховається при взаємодії з параметрами.
      4) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
+
+791. Центрування іконок Dock по висоті посередині скляної плашки (Liquid Glass Vertical Centering & Equal Clearance):
+   - Проблема:
+     На скріншоті користувача (media_1794772051516_2f13491e.jpg) іконки дока були помітно зміщені донизу скляної плашки Liquid Glass: зверху залишався надлишковий відступ ~28px, тоді як знизу іконки майже торкалися краю плашки (~8px).
+     Причиною була асиметрія:
+     1) В extensions/eval-helper@mactheme/extension.js відступи всередині контейнера іконки задавалися асиметрично: topPad = Math.round(dockSize * 1.25) (~15px) проти botPad = Math.round(dockSize * 0.6) (~7px).
+     2) В extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js висота плашки pillH = 74 була жорстко закодована константою (ігноруючи фактичну висоту доку slH та розмір іконок), а координата плашки absY = slY + 2 не враховувала фактичний вертикальний центр іконок.
+   - Вирішення:
+     1) В extensions/eval-helper@mactheme/extension.js реалізовано симетричні вертикальні відступи контейнера іконок:
+        const padV = dockSize;
+        padding-top: ${padV}px !important;
+        padding-bottom: ${padV}px !important; margin: 0px !important;
+     2) В extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js:
+        * Додано точне обчислення вертикальних меж іконок iconBounds (minY, maxY, centerY, h) шляхом обходу дерева акторів walkIcons() для всіх St_Icon, BaseIcon, overview-icon та app-icon.
+        * Замінено жорстко закодоване pillH = 74 на адаптивне: (slH && slH > 30) ? slH : (iconBounds ? (iconBounds.h + 20) : 74).
+        * Забезпечено центрування плашки строго по геометричному центру іконок: pillY = iconBounds ? Math.round(iconBounds.centerY - (pillH * 0.5)) : slY.
+        * Синхронізовано обидві гілки (hasSlabBounds та fallback hasIconBounds), що математично гарантує clearanceTop === clearanceBottom для будь-яких користувацьких значень dock_size (0..24px) та dock_icon_size (24..96px).
+     3) Оновлено живі файли розширень у ~/.local/share/gnome-shell/extensions/.
+     4) Оновлено config/extensions.lock.json з актуальними контрольними сумами sha256 для eval-helper@mactheme та liquid-glass@thinkingcoding1231.gmail.com (включно з dist/dockManager.js).
+   - Верифікація:
+     1) Живі вимірювання у GNOME Shell через DBus EvalHelper:
+        iconMinY = 991, iconMaxY = 1054, iconH = 63, centerY = 1022.5, pillY = 976, pillH = 93.
+        Верхній просвіт: 991 - 976 = 15 px.
+        Нижній просвіт: (976 + 93) - 1054 = 15 px.
+        100% симетрія (15 px зверху, 15 px знизу).
+     2) Знято та перевірено скріншот scratch_dock_vertical_centered_crop.png: іконки ідеально збалансовані по центру скляної плашки.
+     3) Успішно пройдено повну трійку обов'язкових системних аудитів:
+        - bin/mac-audit-sync check (100% PASS)
+        - bin/mac-extension-guard verify (100% PASS)
+        - bin/mac-i18n-verify (100% PASS).

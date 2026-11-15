@@ -2453,10 +2453,10 @@ export default class EvalHelper extends Extension {
                 }
 
                 // 3. App icons vertical padding & margins (true 0 at dockSize=0 & spacing=0)
-                const topPad = (dockSize === 0) ? 0 : Math.round(dockSize * 1.25);
-                const botPad = (dockSize === 0) ? 0 : Math.round(dockSize * 0.6);
+                // Equal padding on top and bottom so icons are perfectly centered vertically in dock
+                const padV = dockSize;
                 const itemMarginStyle = 'margin: 0px !important;';
-                const appPaddingStyle = `padding-top: ${topPad}px !important; padding-bottom: ${botPad}px !important; margin: 0px !important;`;
+                const appPaddingStyle = `padding-top: ${padV}px !important; padding-bottom: ${padV}px !important; margin: 0px !important;`;
 
                 if (dash._box) {
                     for (const item of dash._box.get_children()) {

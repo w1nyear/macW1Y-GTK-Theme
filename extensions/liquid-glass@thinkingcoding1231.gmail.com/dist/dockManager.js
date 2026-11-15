@@ -817,6 +817,44 @@ export class DashManager {
         if (Number.isNaN(absX) || Number.isNaN(absY))
             return false;
 
+        // Collect authoritative icon bounds first so dock background is always vertically centered on icons
+        let icons = [];
+        const walkIcons = (a) => {
+            if (!a) return;
+            const name = a.constructor?.name || '';
+            const cls = a.has_style_class_name ? a.get_style_class_name() : '';
+            if ((name === 'St_Icon' || name === 'BaseIcon' || cls?.includes('overview-icon')) && a.visible) {
+                let [ix, iy] = a.get_transformed_position();
+                let [iw, ih] = a.get_transformed_size();
+                if (Number.isFinite(ix) && Number.isFinite(iy) && iw > 0 && ih > 0) {
+                    icons.push({ x: ix, y: iy, w: iw, h: ih });
+                }
+            }
+            for (const ch of (a.get_children ? a.get_children() : [])) {
+                walkIcons(ch);
+            }
+        };
+        walkIcons(this.targetActor);
+
+        let iconBounds = null;
+        if (icons.length > 0) {
+            icons.sort((a, b) => a.x - b.x);
+            let minX = icons[0].x;
+            let maxX = icons[icons.length - 1].x + icons[icons.length - 1].w;
+            let minY = Infinity, maxY = -Infinity;
+            for (const ic of icons) {
+                if (ic.y < minY) minY = ic.y;
+                if (ic.y + ic.h > maxY) maxY = ic.y + ic.h;
+            }
+            if (minY < maxY) {
+                iconBounds = {
+                    minX, maxX, minY, maxY,
+                    h: maxY - minY,
+                    centerY: (minY + maxY) * 0.5
+                };
+            }
+        }
+
         // macOS Dock: authoritative geometry directly from dash2dock-motion background slab
         let hasSlabBounds = false;
         const slab = this._findDashBackground(this.targetActor.get_parent() || this.targetActor);
@@ -845,10 +883,11 @@ export class DashManager {
 
                 let pillW = slW - 8;
                 let pillX = slX + 4;
-                let pillH = 74; // 74px (+2px dock height calibrated)
-                // Follow vertical translation/sliding with slab
+                let pillH = (slH && slH > 30) ? slH : (iconBounds ? (iconBounds.h + 20) : 74);
+                let pillY = iconBounds ? Math.round(iconBounds.centerY - (pillH * 0.5)) : slY;
+
                 absX = pillX - 4;
-                absY = slY + 2;
+                absY = pillY - 4;
                 baseW = pillW + 8;
                 baseH = pillH + 8;
                 hasSlabBounds = true;
@@ -856,68 +895,35 @@ export class DashManager {
         }
 
         let hasIconBounds = false;
-        if (!hasSlabBounds && !isD2DTransitioning) {
-            let icons = [];
-            const walkIcons = (a) => {
-                if (!a) return;
-                if ((a.constructor?.name === 'St_Icon' || a.has_style_class_name?.('overview-icon')) && a.visible) {
-                    let [ix, iy] = a.get_transformed_position();
-                    let [iw, ih] = a.get_transformed_size();
-                    if (Number.isFinite(ix) && Number.isFinite(iy) && iw > 0 && ih > 0) {
-                        icons.push({ x: ix, y: iy, w: iw, h: ih });
-                    }
-                }
-                for (const ch of (a.get_children ? a.get_children() : [])) {
-                    walkIcons(ch);
-                }
-            };
-            walkIcons(this.targetActor);
-
-            if (icons.length > 0) {
-                icons.sort((a, b) => a.x - b.x);
-                let minX = icons[0].x;
-                let maxX = icons[icons.length - 1].x + icons[icons.length - 1].w;
-                let minY = Infinity, maxY = -Infinity;
-                let baseIconW = 0, baseIconH = 0;
-                for (const ic of icons) {
-                    if (ic.y < minY) minY = ic.y;
-                    if (ic.y + ic.h > maxY) maxY = ic.y + ic.h;
-                    if (baseIconW === 0 || ic.w < baseIconW) baseIconW = ic.w;
-                    if (baseIconH === 0 || ic.h < baseIconH) baseIconH = ic.h;
-                }
-                const screenBottom = monitor ? (monitor.y + monitor.height) : 1080;
-                if (!isD2DTransitioning && minY >= screenBottom) {
-                    this.bgActor.hide();
-                    this.bgActor.opacity = 0;
-                    return false;
-                }
-
-                let isHorizontal = (maxX - minX) >= (maxY - minY);
-                let pillX, pillY, pillW, pillH;
-                let sidePad = 6; // authentic dock side padding (6px to match slab pillX = slX + 4)
-                if (isHorizontal) {
-                    pillH = 74; // 74px fixed height (+2px dock height calibrated)
-                    let isTop = monitor && (minY - monitor.y < (monitor.y + monitor.height) - maxY);
-                    pillY = isTop ? (monitor.y + 4) : (minY - Math.round((pillH - (maxY - minY)) * 0.5));
-                    let sidePadL = sidePad;
-                    let sidePadR = sidePad;
-                    pillX = minX - sidePadL;
-                    pillW = (maxX - minX) + sidePadL + sidePadR;
-                } else {
-                    pillW = (baseIconW || 54) + 20;
-                    let isLeft = monitor && (minX - monitor.x < (monitor.x + monitor.width) - maxX);
-                    pillX = isLeft ? (monitor.x + 4) : (monitor ? (monitor.x + monitor.width - 4 - pillW) : (minX - 11));
-                    let sidePadT = sidePad + Math.max(0, (icons[0]?.h || baseIconH) / (baseIconH || 54) - 1) * 10;
-                    let sidePadB = sidePad + Math.max(0, (icons[icons.length - 1]?.h || baseIconH) / (baseIconH || 54) - 1) * 10;
-                    pillY = minY - sidePadT;
-                    pillH = (maxY - minY) + sidePadT + sidePadB;
-                }
-                absX = pillX - 4;
-                absY = pillY - 4;
-                baseW = pillW + 8;
-                baseH = pillH + 8;
-                hasIconBounds = true;
+        if (!hasSlabBounds && !isD2DTransitioning && iconBounds) {
+            const screenBottom = monitor ? (monitor.y + monitor.height) : 1080;
+            if (iconBounds.minY >= screenBottom) {
+                this.bgActor.hide();
+                this.bgActor.opacity = 0;
+                return false;
             }
+
+            let isHorizontal = (iconBounds.maxX - iconBounds.minX) >= iconBounds.h;
+            let pillX, pillY, pillW, pillH;
+            let sidePad = 12;
+            if (isHorizontal) {
+                pillH = (this._lastSlabH && this._lastSlabH > 30) ? this._lastSlabH : (iconBounds.h + 20);
+                pillY = Math.round(iconBounds.centerY - (pillH * 0.5));
+                pillX = iconBounds.minX - sidePad;
+                pillW = (iconBounds.maxX - iconBounds.minX) + sidePad * 2;
+            } else {
+                pillW = iconBounds.h + 20;
+                let isLeft = monitor && (iconBounds.minX - monitor.x < (monitor.x + monitor.width) - iconBounds.maxX);
+                pillX = isLeft ? (monitor.x + 4) : (monitor ? (monitor.x + monitor.width - 4 - pillW) : (iconBounds.minX - 11));
+                pillY = iconBounds.minY - sidePad;
+                pillH = iconBounds.h + sidePad * 2;
+            }
+            absX = pillX - 4;
+            absY = pillY - 4;
+            baseW = pillW + 8;
+            baseH = pillH + 8;
+            hasIconBounds = true;
+        }
         }
 
         // Freeze geometry to resting coordinates during transitions so shader does not jitter or compound translation
