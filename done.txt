@@ -348,6 +348,32 @@
      3) Створено артефакт звіту icon_squircle_normalizer_verification.md з попіксельним аналізом.
      4) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
 
+787. Виправлення іконок Prism Launcher (додано squircle-фон для світлої та темної тем), видалення подвійного фону у ChatGPT та усунення дублікатів програм у меню:
+   - Запит користувача: не всі програми зараз мають фон. наприклад prism lfucnher. і видали кастомний фон у чата гпт (фото: 1) Prism Launcher без фону та дублікати програм Prism Launcher, Plume Impactor, Serein у лаунчері; 2) подвійний фон у ChatGPT у доці).
+   - Реалізовані зміни:
+     1) Видалення кастомного/подвійного фону для ChatGPT:
+        * Оригінальна іконка /usr/share/pixmaps/chatgpt.png вже має автентичну білу macOS squircle-плитку з тінню.
+        * Видалено всі згенеровані штучні обгортки chatgpt.svg та chatgpt.png із MacTahoe та MacTahoe-dark; GTK напряму резолвить нативну іконку.
+        * У bin/mac-icon-normalizer додано EXCLUDED_ICONS = {"chatgpt"} та функцію is_already_squircle(), яка автоматично розпізнає іконки, що вже відповідають стандарту macOS squircle, і захищає їх від накладання другого фону.
+     2) Додавання автентичного macOS squircle фону для Prism Launcher:
+        * Створено векторні та растрові іконки 256x256 для світлої та темної тем:
+          - MacTahoe (світла тема): біла squircle-підкладка (#FFFFFF -> #F4F4F6) з витонченим контуром rgba(0,0,0,0.08) та тінню.
+          - MacTahoe-dark (темна тема): темна squircle-підкладка (#28282A -> #1C1C1E) з контуром rgba(255,255,255,0.12) та тінню.
+        * Створено симетричні аліаси org.prismlauncher.PrismLauncher.
+        * Видалено конфліктні сирі файли .png з apps/scalable/, які перекривали векторну тему.
+     3) Запобігання дублюванню іконок AppImage у меню програм:
+        * Оновлено bin/mac-sync-applications: коли створюються reverse-DNS аліаси для AppImage (org.prismlauncher.PrismLauncher.desktop, dev.khcrysalis.PlumeImpactor.desktop, cz.viceverse.serein.desktop тощо), вихідні загальні файли appimage-*.desktop автоматично позначаються як NoDisplay=true.
+        * Завдяки цьому у сітці програм GNOME Shell кожна програма (Prism Launcher, Plume Impactor, Serein, Liner, Bionic) відображається рівно один раз.
+     4) Захист від засмічення тем сирими растровими файлами:
+        * У install_icon_file() заборонено копіювання сирих .png у каталог apps/scalable/ теми MacTahoe, щоб не ламати пріоритет GTK Icon Theme.
+   - Верифікація:
+     1) Резолв GTK Icon Theme перевірено наживо:
+        * chatgpt -> /usr/share/pixmaps/chatgpt.png (оригінальний нативний білий squircle без підкладок).
+        * org.prismlauncher.PrismLauncher -> MacTahoe-dark/apps/256/ (темний squircle) та MacTahoe/apps/256/ (світлий squircle).
+     2) Усі 5 файлів appimage-*.desktop мають NoDisplay=true, дублікати в інтерфейсі відсутні.
+     3) Згенеровано тестовий колаж перевірки scratch_verification_montage.png.
+     4) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
+
 
 
 
