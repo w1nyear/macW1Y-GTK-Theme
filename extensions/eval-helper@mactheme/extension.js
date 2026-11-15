@@ -2442,22 +2442,21 @@ export default class EvalHelper extends Extension {
                 const dash = d2d?.dash;
                 if (!dash) return;
 
-                // 1. Spacing between icons
+                // 1. Spacing between icons (linear 1:1, true 0 at spacing=0)
                 if (dash._box?.layout_manager) {
                     dash._box.layout_manager.spacing = spacing;
                 }
 
-                // 2. Dock plate horizontal/vertical padding
+                // 2. Dock plate horizontal padding (true 0 at dockSize=0)
                 if (dash._dashContainer) {
                     dash._dashContainer.set_style(`padding: 0 ${dockSize}px !important;`);
                 }
 
-                // 3. App icons vertical padding & margins
-                const halfSpacing = 3 + Math.round(spacing / 2);
-                const topPad = Math.max(0, dockSize + 3);
-                const botPad = Math.max(0, dockSize - 5);
-                const itemMarginStyle = `margin: 0 ${halfSpacing}px !important;`;
-                const appPaddingStyle = `padding-top: ${topPad}px !important; padding-bottom: ${botPad}px !important; margin: 0 ${halfSpacing}px !important;`;
+                // 3. App icons vertical padding & margins (true 0 at dockSize=0 & spacing=0)
+                const topPad = (dockSize === 0) ? 0 : Math.round(dockSize * 1.25);
+                const botPad = (dockSize === 0) ? 0 : Math.round(dockSize * 0.6);
+                const itemMarginStyle = 'margin: 0px !important;';
+                const appPaddingStyle = `padding-top: ${topPad}px !important; padding-bottom: ${botPad}px !important; margin: 0px !important;`;
 
                 if (dash._box) {
                     for (const item of dash._box.get_children()) {
@@ -2481,12 +2480,13 @@ export default class EvalHelper extends Extension {
                     }
                 }
 
-                // 4. Update GSettings for dash-max-icon-size and edge-distance if needed
+                // 4. Update GSettings for dash-max-icon-size, edge-distance, and liquid-glass
+                const motionEd = Math.min(8, Math.max(0, edgeDistance));
                 try {
                     const schemaMotion = 'org.gnome.shell.extensions.dash2dock-motion';
                     const schemaD2d = 'org.gnome.shell.extensions.dash-to-dock';
+                    const schemaLg = 'org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com';
                     const source = Gio.SettingsSchemaSource.get_default();
-                    const motionEd = Math.min(8, Math.max(0, edgeDistance));
                     if (source.lookup(schemaMotion, true)) {
                         const s = new Gio.Settings({ schema_id: schemaMotion });
                         if (s.get_int('dash-max-icon-size') !== iconSize) {
@@ -2501,18 +2501,44 @@ export default class EvalHelper extends Extension {
                         if (s2.get_int('dash-max-icon-size') !== iconSize) {
                             s2.set_int('dash-max-icon-size', iconSize);
                         }
+                        if (s2.get_int('edge-distance') !== motionEd) {
+                            s2.set_int('edge-distance', motionEd);
+                        }
+                    }
+                    if (source.lookup(schemaLg, true)) {
+                        const s3 = new Gio.Settings({ schema_id: schemaLg });
+                        if (s3.get_int('dock-margin-bottom') !== motionEd) {
+                            s3.set_int('dock-margin-bottom', motionEd);
+                        }
                     }
                 } catch (_) {}
 
-                // 5. If edgeDistance > 8, translate container upwards smoothly
-                if (edgeDistance > 8) {
-                    d2d.translation_y = -(edgeDistance - 8);
-                } else {
-                    d2d.translation_y = 0;
+                // 5. Position dock container correctly:
+                // NEVER set d2d.translation_y = 0 because d2d.y = 1080 (screen bottom),
+                // which completely pushes the dock below the screen!
+                // Normal position is translation_y = -dockHeight.
+                const extraEdge = Math.max(0, edgeDistance - 8);
+                d2d._macExtraEdge = extraEdge;
+                const dockHeight = d2d.height > 0 ? d2d.height : (d2d._box?.height > 0 ? d2d._box.height : 80);
+                d2d.translation_y = -(dockHeight + extraEdge);
+
+                if (!d2d._macEdgeHeightConnected) {
+                    d2d._macEdgeHeightConnected = true;
+                    d2d.connect('notify::height', () => {
+                        const extra = d2d._macExtraEdge || 0;
+                        if (d2d.height > 0) {
+                            d2d.translation_y = -(d2d.height + extra);
+                        }
+                    });
                 }
 
                 dash._box?.queue_relayout?.();
                 d2d.queue_relayout?.();
+
+                // 6. Notify liquid-glass to synchronize glass geometry
+                if (typeof global._liquidGlassDockSync === 'function') {
+                    global._liquidGlassDockSync();
+                }
             } catch (e) {
                 console.error('[EvalHelper] syncDockStyling error: ' + e);
             }

@@ -1002,6 +1002,11 @@ static void apply_dock_settings(void) {
             if (shadow_val > 1.0) shadow_val = 1.0;
             safe_set_double(lg, schema, "shadow-intensity", shadow_val);
 
+            int ed = state.dock_edge_distance;
+            if (ed < 0) ed = 0;
+            if (ed > 8) ed = 8;
+            safe_set_int(lg, schema, "dock-margin-bottom", ed);
+
             if (schema) g_settings_schema_unref(schema);
             g_object_unref(lg);
         }
@@ -1069,6 +1074,7 @@ static void apply_dock_settings(void) {
     }
 
     /* 4. Trigger live DBus sync for EvalHelper */
+    save_styling_json();
     GError *dbus_err = NULL;
     GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &dbus_err);
     if (bus) {
@@ -1078,6 +1084,12 @@ static void apply_dock_settings(void) {
             "org.gnome.Shell.Extensions.EvalHelper",
             "SyncDockStyling",
             NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+        g_dbus_connection_call(bus,
+            "org.gnome.Shell",
+            "/org/gnome/Shell/Extensions/EvalHelper",
+            "org.gnome.Shell.Extensions.EvalHelper",
+            "Eval",
+            g_variant_new("(s)", "globalThis._macSyncDockStyling?.()"), NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
         g_object_unref(bus);
     } else if (dbus_err) {
         g_error_free(dbus_err);
