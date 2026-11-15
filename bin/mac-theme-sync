@@ -109,7 +109,7 @@ def apply_theme_mode(is_light):
     icon_theme = "MacTahoe" if is_light else "MacTahoe-dark"
     color_scheme = "prefer-light" if is_light else "prefer-dark"
     wm_theme = "macW1Y-Light" if is_light else "macW1Y-Dark"
-    shell_theme = "macW1Y-Light" if is_light else "macW1Y-Dark"
+    shell_theme = "macW1Y-Dark"
 
     gsettings_set("org.gnome.desktop.interface", "color-scheme", color_scheme)
     gsettings_set("org.gnome.desktop.interface", "gtk-theme", gtk_theme)
@@ -199,7 +199,7 @@ def apply_theme_mode(is_light):
         app_br = 1.05 if is_light else 1.0
 
         gsettings_set(lg_schema, "dock-tint-color", dock_col)
-        gsettings_set(lg_schema, "panel-menu-tint-color", tint_col)
+        gsettings_set(lg_schema, "panel-menu-tint-color", "#000000")
         gsettings_set(lg_schema, "desktop-menu-tint-color", tint_col)
         gsettings_set(lg_schema, "menu-tint-color", tint_col)
         gsettings_set(lg_schema, "quick-settings-tint-color", tint_col)
@@ -208,7 +208,7 @@ def apply_theme_mode(is_light):
         gsettings_set(lg_schema, "notification-tint-color", tint_col)
 
         gsettings_set(lg_schema, "dock-brightness", dock_br, "float")
-        gsettings_set(lg_schema, "panel-menu-brightness", menu_br, "float")
+        gsettings_set(lg_schema, "panel-menu-brightness", 0.925, "float")
         gsettings_set(lg_schema, "desktop-menu-brightness", menu_br, "float")
         gsettings_set(lg_schema, "menu-brightness", menu_br, "float")
         gsettings_set(lg_schema, "application-brightness", app_br, "float")
@@ -232,7 +232,7 @@ def apply_theme_mode(is_light):
             th["shell_theme"] = shell_theme
 
             lg = manifest.setdefault("liquid_glass", {})
-            lg["panel_menu_tint_color"] = "#ffffff" if is_light else "#000000"
+            lg["panel_menu_tint_color"] = "#000000"
             lg["menu_tint_color"] = "#ffffff" if is_light else "#000000"
             lg["desktop_menu_tint_color"] = "#ffffff" if is_light else "#000000"
 

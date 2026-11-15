@@ -6232,7 +6232,7 @@ StWidget.focused .app-grid-running-dot {
 #panel.gradient-panel,
 #panel.transparent-panel {
   font-weight: 500;
-  color: white;
+  color: white !important;
   transition-duration: 250ms;
   height: 34px !important;
   background-color: transparent !important;
@@ -6241,6 +6241,21 @@ StWidget.focused .app-grid-running-dot {
   background-gradient-end: rgba(0, 0, 0, 0.0) !important;
   border-bottom: none !important;
   box-shadow: none !important;
+}
+
+#panel,
+#panel StLabel,
+#panel StIcon,
+#panel .panel-button,
+#panel .panel-button StLabel,
+#panel .panel-button StIcon,
+#panel .desktop-name-label,
+#panel .appmenu-app-name-button,
+#panel .appmenu-menu-item-button,
+#panel .system-status-icon,
+#panel .appindicator-icon,
+#panel .status-notifier-icon {
+  color: white !important;
 }
 
 #panel:overview {

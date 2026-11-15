@@ -1905,7 +1905,7 @@ typedef struct {
 
 static const TintRowInfo s_tint_rows[] = {
     { "liquid_tint_row", "Затемнення (тінт)", "Засвітлення (тінт)", "Darkening (tint)", "Lightening (tint)" },
-    { "menubar_tint_row", "Затемнення градієнтне", "Засвітлення градієнтне", "Gradient darkening", "Gradient lightening" },
+    { "menubar_tint_row", "Затемнення градієнтне", "Затемнення градієнтне", "Gradient darkening", "Gradient darkening" },
     { "dock_tint_row", "Затемнення", "Засвітлення", "Darkening", "Lightening" },
     { "label_tint_row", "Затемнення", "Засвітлення", "Darkening", "Lightening" },
     { "alert_tint_row", "Затемнення", "Засвітлення", "Darkening", "Lightening" },
@@ -1927,7 +1927,7 @@ typedef struct {
 
 static const TintGroupInfo s_tint_groups[] = {
     { "liquid_group", "Налаштування параметрів Liquid Glass (розмиття, затінення, насиченість)", "Налаштування параметрів Liquid Glass (розмиття, засвітлення, насиченість)", "Settings for Liquid Glass (blur, darkening, saturation)", "Settings for Liquid Glass (blur, lightening, saturation)" },
-    { "menubar_group", "Налаштування затемнення та розмиття верхньої панелі", "Налаштування засвітлення та розмиття верхньої панелі", "Upper menubar darkening and blur settings", "Upper menubar lightening and blur settings" },
+    { "menubar_group", "Налаштування затемнення та розмиття верхньої панелі", "Налаштування затемнення та розмиття верхньої панелі", "Upper menubar darkening and blur settings", "Upper menubar darkening and blur settings" },
     { "dock_group", "Параметри затемнення, розмиття та тіні нижньої панелі Док", "Параметри засвітлення, розмиття та тіні нижньої панелі Док", "Dock darkening, blur and shadow settings", "Dock lightening, blur and shadow settings" },
     { "label_group", "Параметри розмиття, затемнення та тіні бірок програм док-панелі", "Параметри розмиття, засвітлення та тіні бірок програм док-панелі", "Dock label blur, darkening and shadow settings", "Dock label blur, lightening and shadow settings" },
     { "alert_group", "Параметри затемнення, розмиття та тіні діалогових вікон попереджень", "Параметри засвітлення, розмиття та тіні діалогових вікон попереджень", "Alert dialog darkening, blur and shadow settings", "Alert dialog lightening, blur and shadow settings" },

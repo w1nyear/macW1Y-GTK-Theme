@@ -91,5 +91,18 @@
    - Перекомпільовано таблиці тем через bin/mac-build-theme та синхронізовано бінарний файл у /usr/local/bin/.
    - Повний аудит підтверджено: mac-audit-sync check, mac-extension-guard verify, mac-i18n-verify (100% PASS).
 
+774. Збереження незмінного стилю верхньої панелі (Menubar): світлі іконки, білі написи та темний напівпрозорий градієнт незалежно від теми оформлення:
+   - Виявлено причину зміни кольорів верхнього меню бару: при перемиканні на світлу тему (через bin/mac-theme-sync або Параметри) параметр shell_theme автоматично перемикався на macW1Y-Light, де для #panel та його кнопок було прописано color: rgba(0, 0, 0, 0.88) !important та background-gradient-start: rgba(255, 255, 255, 0.65) !important, а утиліта bin/update-mac-styling-css перезаписувала градієнт верхньої панелі білим відтінком 255, 255, 255.
+   - Зафіксовано постійний стиль верхнього меню бару в GNOME Shell (#panel) для всіх тем оформлення (macW1Y-Light, macW1Y-Dark, macW1Y-Light-solid, macW1Y-Dark-solid):
+     1) Текст та іконки меню бару (#panel, #panel StLabel, #panel StIcon, #panel .panel-button, .desktop-name-label, .appmenu-app-name-button, .appmenu-menu-item-button, .system-status-icon, .appindicator-icon) тепер жорстко зафіксовані білим кольором: color: white !important.
+     2) Тло меню бару встановлено в автентичний темний матовий напівпрозорий градієнт: background-gradient-start: rgba(0, 0, 0, 0.20) !important; background-gradient-end: rgba(0, 0, 0, 0.0) !important;.
+     3) Ефект наведення на пункти меню бару (#panel .panel-button:hover) зафіксовано на біле напівпрозоре підсвічування: box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.15) !important.
+   - Оновлено утиліту bin/update-mac-styling-css: генерацію градієнта для #panel переведено на стабільне затемнення 0, 0, 0, {p_tint:.2f} для всіх файлів стилів незалежно від прапорця is_light; синхронізовано з ~/.local/bin/ та /usr/local/bin/.
+   - Оновлено bin/mac-theme-sync: параметр shell_theme зафіксовано на macW1Y-Dark, а параметри liquid-glass для меню бару panel-menu-tint-color зафіксовано на затемнення #000000; синхронізовано з ~/.local/bin/ та /usr/local/bin/.
+   - Оновлено описи та заголовки параметрів затемнення меню бару в control-center/libmac_settings.c (s_tint_rows, s_tint_groups): рядки "Затемнення градієнтне" та "Налаштування затемнення та розмиття верхньої панелі" залишаються незмінними при зміні теми.
+   - Скомпільовано libmac_settings.so та розгорнуто в усі 7 системних/локальних локацій.
+   - Повний аудит підтверджено: mac-audit-sync check, mac-extension-guard verify, mac-i18n-verify (100% PASS).
+
+
 
 

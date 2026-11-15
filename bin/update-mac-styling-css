@@ -33,24 +33,26 @@ def main():
             with open(css_path, "r", encoding="utf-8") as f:
                 c = f.read()
 
-            # Menubar gradient darkness/lightness
+            # Menubar gradient darkness (always dark gradient for #panel across light and dark themes)
+            c = re.sub(
+                r'(#panel\s*\{[^}]*?background-gradient-start:\s*rgba\()([0-9.,\s]+)(\)\s*!important;)',
+                rf'\g<1>0, 0, 0, {p_tint:.2f}\g<3>',
+                c
+            )
+            c = re.sub(
+                r'(#panel,\s*#panel\.gradient-panel,\s*#panel\.transparent-panel\s*\{[^}]*?background-gradient-start:\s*rgba\()([0-9.,\s]+)(\)\s*!important;)',
+                rf'\g<1>0, 0, 0, {p_tint:.2f}\g<3>',
+                c
+            )
+
+            # Dash background
             if is_light:
-                c = re.sub(
-                    r'(#panel\s*\{[^}]*?background-gradient-start:\s*rgba\()([0-9.,\s]+)(\)\s*!important;)',
-                    rf'\g<1>255, 255, 255, {p_tint:.2f}\g<3>',
-                    c
-                )
                 c = re.sub(
                     r'(#dash\s+\.dash-background\s*\{[^}]*?background-color:\s*rgba\()([0-9.,\s]+)(\)\s*!important;)',
                     rf'\g<1>255, 255, 255, {b_tint:.2f}\g<3>',
                     c
                 )
             else:
-                c = re.sub(
-                    r'(#panel\s*\{[^}]*?background-gradient-start:\s*rgba\()([0-9.,\s]+)(\)\s*!important;)',
-                    rf'\g<1>0, 0, 0, {p_tint:.2f}\g<3>',
-                    c
-                )
                 c = re.sub(
                     r'(#dash\s+\.dash-background\s*\{[^}]*?background-color:\s*rgba\()([0-9.,\s]+)(\)\s*!important;)',
                     rf'\g<1>36, 36, 36, {b_tint:.2f}\g<3>',
