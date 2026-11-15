@@ -405,6 +405,110 @@
                         </child>
                       </object>
                     </child>
+                    <child>
+                      <object class="AdwActionRow" id="dock_edge_distance_row">
+                        <property name="title">Distanza dal bordo</property>
+                        <property name="subtitle">Distanza tra il dock e il bordo inferiore dello schermo (px)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dock_edge_distance_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">24</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">4</property>
+                                <property name="value">0</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dock_edge_distance" />
+                            <signal name="value-changed" handler="on_dock_edge_distance_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="dock_icon_size_row">
+                        <property name="title">Dimensione icone</property>
+                        <property name="subtitle">Dimensione delle icone delle app nel dock (px)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dock_icon_size_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">24</property>
+                                <property name="upper">96</property>
+                                <property name="step-increment">2</property>
+                                <property name="page-increment">8</property>
+                                <property name="value">54</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dock_icon_size" />
+                            <signal name="value-changed" handler="on_dock_icon_size_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="dock_size_row">
+                        <property name="title">Dimensione dock</property>
+                        <property name="subtitle">Spaziatura verticale e dimensione della barra del dock (px)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dock_size_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">24</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">4</property>
+                                <property name="value">12</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dock_size" />
+                            <signal name="value-changed" handler="on_dock_size_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow" id="dock_spacing_row">
+                        <property name="title">Spaziatura icone</property>
+                        <property name="subtitle">Distanza tra le icone delle app adiacenti (px)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dock_spacing_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">24</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">4</property>
+                                <property name="value">0</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dock_spacing" />
+                            <signal name="value-changed" handler="on_dock_spacing_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
                   </object>
                 </child>
 

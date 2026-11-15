@@ -212,7 +212,11 @@ def tf(key, params=None, fallback=None, override_locale=None):
         "bookmark_applications", "bookmark_desktop", "bookmark_documents", "bookmark_downloads",
         "bookmark_pictures", "bookmark_movies", "bookmark_trash",
         "widgets", "mac_styling", "apple_account", "storage_alert",
-        "software_update_alert", "search", "ssot_restored_notification"
+        "software_update_alert", "search", "ssot_restored_notification",
+        "dock_edge_distance", "dock_edge_distance_desc",
+        "dock_icon_size", "dock_icon_size_desc",
+        "dock_size", "dock_size_desc",
+        "dock_spacing", "dock_spacing_desc"
     ]
     
     c_header = '''/* SPDX-License-Identifier: GPL-3.0-or-later */

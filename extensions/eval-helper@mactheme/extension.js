@@ -2436,6 +2436,7 @@ export default class EvalHelper extends Extension {
                 const iconSize = (typeof conf.dock_icon_size === 'number') ? conf.dock_icon_size : 54;
                 const dockSize = (typeof conf.dock_size === 'number') ? conf.dock_size : 12;
                 const spacing = (typeof conf.dock_spacing === 'number') ? conf.dock_spacing : 0;
+                const edgeDistance = (typeof conf.dock_edge_distance === 'number') ? conf.dock_edge_distance : 0;
 
                 const d2d = Main.uiGroup?.get_children?.()?.find(c => c.name === 'dashtodockContainer');
                 const dash = d2d?.dash;
@@ -2480,15 +2481,19 @@ export default class EvalHelper extends Extension {
                     }
                 }
 
-                // 4. Update GSettings for dash-max-icon-size if needed
+                // 4. Update GSettings for dash-max-icon-size and edge-distance if needed
                 try {
                     const schemaMotion = 'org.gnome.shell.extensions.dash2dock-motion';
                     const schemaD2d = 'org.gnome.shell.extensions.dash-to-dock';
                     const source = Gio.SettingsSchemaSource.get_default();
+                    const motionEd = Math.min(8, Math.max(0, edgeDistance));
                     if (source.lookup(schemaMotion, true)) {
                         const s = new Gio.Settings({ schema_id: schemaMotion });
                         if (s.get_int('dash-max-icon-size') !== iconSize) {
                             s.set_int('dash-max-icon-size', iconSize);
+                        }
+                        if (s.get_int('edge-distance') !== motionEd) {
+                            s.set_int('edge-distance', motionEd);
                         }
                     }
                     if (source.lookup(schemaD2d, true)) {
@@ -2498,6 +2503,13 @@ export default class EvalHelper extends Extension {
                         }
                     }
                 } catch (_) {}
+
+                // 5. If edgeDistance > 8, translate container upwards smoothly
+                if (edgeDistance > 8) {
+                    d2d.translation_y = -(edgeDistance - 8);
+                } else {
+                    d2d.translation_y = 0;
+                }
 
                 dash._box?.queue_relayout?.();
                 d2d.queue_relayout?.();

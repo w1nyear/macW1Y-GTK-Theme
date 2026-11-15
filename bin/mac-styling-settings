@@ -134,6 +134,10 @@ class MacStylingWindow(Adw.ApplicationWindow):
         self.dock_tint_combo, self.dock_tint_scale = self._create_tint_controls(
             dock_group, t("dock_tint", "Тінт доку"), self.dock_tint_mode, int(self.dock_tint_strength * 100)
         )
+        self.dock_edge_distance_scale = self._create_slider_row(
+            dock_group, t("dock_edge_distance", "Відступ від краю"), t("dock_edge_distance_desc", "Відстань між доком та нижнім краєм екрану (px)"),
+            0, 24, int(getattr(self, "dock_edge_distance", 0))
+        )
         self.dock_icon_size_scale = self._create_slider_row(
             dock_group, t("dock_icon_size", "Розмір іконок"), t("dock_icon_size_desc", "Розмір значків програм у доці (px)"),
             24, 96, int(getattr(self, "dock_icon_size", 54))
@@ -488,6 +492,7 @@ class MacStylingWindow(Adw.ApplicationWindow):
         self.dock_size = 12
         self.dock_icon_size = 54
         self.dock_spacing = 0
+        self.dock_edge_distance = 0
 
         styling_conf = os.path.expanduser("~/.config/mac-styling/styling.json")
         if os.path.exists(styling_conf):
@@ -497,6 +502,7 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 self.dock_glass_strength = sdata.get("dock_glass_strength", self.dock_glass_strength)
                 self.dock_tint_strength = sdata.get("dock_tint_strength", self.dock_tint_strength)
                 self.dock_tint_mode = sdata.get("dock_tint_mode", self.dock_tint_mode)
+                self.dock_edge_distance = sdata.get("dock_edge_distance", self.dock_edge_distance)
                 self.dock_size = sdata.get("dock_size", self.dock_size)
                 self.dock_icon_size = sdata.get("dock_icon_size", self.dock_icon_size)
                 self.dock_spacing = sdata.get("dock_spacing", self.dock_spacing)
@@ -604,6 +610,7 @@ class MacStylingWindow(Adw.ApplicationWindow):
         d_mode = self._mode_from_idx(self.dock_tint_combo.get_selected())
         d_tint = (self.dock_tint_scale.get_value() / 100.0) if d_mode != "disabled" else 0.0
         d_col = "#ffffff" if d_mode == "light" else "#000000"
+        d_edge_distance = int(self.dock_edge_distance_scale.get_value())
         d_icon_size = int(self.dock_icon_size_scale.get_value())
         d_size = int(self.dock_size_scale.get_value())
         d_spacing = int(self.dock_spacing_scale.get_value())
@@ -697,6 +704,7 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 "dock_glass_strength": d_glass,
                 "dock_tint_strength": d_tint,
                 "dock_tint_mode": d_mode,
+                "dock_edge_distance": d_edge_distance,
                 "dock_size": d_size,
                 "dock_icon_size": d_icon_size,
                 "dock_spacing": d_spacing,

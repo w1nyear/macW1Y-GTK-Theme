@@ -406,6 +406,32 @@
                       </object>
                     </child>
                     <child>
+                      <object class="AdwActionRow" id="dock_edge_distance_row">
+                        <property name="title">Distance from Edge</property>
+                        <property name="subtitle">Distance between dock and bottom of screen (px)</property>
+                        <child type="suffix">
+                          <object class="GtkScale" id="dock_edge_distance_scale">
+                            <property name="orientation">0</property>
+                            <property name="draw-value">true</property>
+                            <property name="digits">0</property>
+                            <property name="round-digits">0</property>
+                            <property name="width-request">200</property>
+                            <property name="adjustment">
+                              <object class="GtkAdjustment">
+                                <property name="lower">0</property>
+                                <property name="upper">24</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">4</property>
+                                <property name="value">0</property>
+                              </object>
+                            </property>
+                            <signal name="realize" handler="init_dock_edge_distance" />
+                            <signal name="value-changed" handler="on_dock_edge_distance_changed" />
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
                       <object class="AdwActionRow" id="dock_icon_size_row">
                         <property name="title">Icon Size</property>
                         <property name="subtitle">Application icon size in dock (px)</property>

@@ -75,9 +75,11 @@ def make_lang(
         "panel_keyboard": "Keyboard", "panel_printers": "Printers", "panel_accessibility": "Accessibility",
         "panel_datetime": "Date & Time", "panel_about": "About",
         # Styling
+        "mac_styling": "Mac Styling",
         "styling_title": "Mac Styling", "dock_title": "Dock", "dock_desc": "Glass shader and tint of the dock",
         "glass_strength": "Glass Strength", "glass_strength_desc": "Refraction and blur intensity",
         "dock_tint": "Dock Tint",
+        "dock_edge_distance": "Distance from Edge", "dock_edge_distance_desc": "Distance between dock and bottom of screen (px)",
         "dock_icon_size": "Icon Size", "dock_icon_size_desc": "Application icon size in dock (px)",
         "dock_size": "Dock Size", "dock_size_desc": "Vertical padding and dock plate size (px)",
         "dock_spacing": "Icon Spacing", "dock_spacing_desc": "Distance between adjacent app icons (px)",
@@ -481,6 +483,33 @@ for lang in remaining_languages:
         TRANSLATIONS[lang]["control_center"] = "مرکز کنترل"
         TRANSLATIONS[lang]["applications"] = "برنامه‌ها"
         TRANSLATIONS[lang]["clipboard"] = "کلیپ‌بورد"
+
+# Specific styling overrides for major European languages
+if "pl" in TRANSLATIONS:
+    TRANSLATIONS["pl"]["mac_styling"] = "Stylizacja Mac"
+    TRANSLATIONS["pl"]["styling_title"] = "Stylizacja Mac"
+    TRANSLATIONS["pl"]["dock_edge_distance"] = "Odległość od krawędzi"
+    TRANSLATIONS["pl"]["dock_edge_distance_desc"] = "Odległość doku od dolnej krawędzi ekranu (px)"
+if "de" in TRANSLATIONS:
+    TRANSLATIONS["de"]["mac_styling"] = "Mac-Stil"
+    TRANSLATIONS["de"]["styling_title"] = "Mac-Stil"
+    TRANSLATIONS["de"]["dock_edge_distance"] = "Randabstand"
+    TRANSLATIONS["de"]["dock_edge_distance_desc"] = "Abstand zwischen Dock und unterem Bildschirmrand (px)"
+if "fr" in TRANSLATIONS:
+    TRANSLATIONS["fr"]["mac_styling"] = "Style Mac"
+    TRANSLATIONS["fr"]["styling_title"] = "Style Mac"
+    TRANSLATIONS["fr"]["dock_edge_distance"] = "Distance du bord"
+    TRANSLATIONS["fr"]["dock_edge_distance_desc"] = "Distance entre le dock et le bas de l'écran (px)"
+if "es" in TRANSLATIONS:
+    TRANSLATIONS["es"]["mac_styling"] = "Estilo Mac"
+    TRANSLATIONS["es"]["styling_title"] = "Estilo Mac"
+    TRANSLATIONS["es"]["dock_edge_distance"] = "Distancia del borde"
+    TRANSLATIONS["es"]["dock_edge_distance_desc"] = "Distancia entre el dock y el borde inferior de la pantalla (px)"
+if "it" in TRANSLATIONS:
+    TRANSLATIONS["it"]["mac_styling"] = "Stile Mac"
+    TRANSLATIONS["it"]["styling_title"] = "Stile Mac"
+    TRANSLATIONS["it"]["dock_edge_distance"] = "Distanza dal bordo"
+    TRANSLATIONS["it"]["dock_edge_distance_desc"] = "Distanza tra il dock e il bordo inferiore dello schermo (px)"
 
 # Write translations_data.py
 out_file = os.path.join(os.path.dirname(__file__), "translations_data.py")

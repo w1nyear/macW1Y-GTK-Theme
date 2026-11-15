@@ -193,12 +193,15 @@ TRANSLATIONS["en"] = {
     "panel_about": "About",
 
     # Styling & Diagnostics
+    "mac_styling": "Mac Styling",
     "styling_title": "Mac Styling",
     "dock_title": "Dock",
     "dock_desc": "Glass shader and tint of the bottom dock",
     "glass_strength": "Glass Strength",
     "glass_strength_desc": "Refraction and blur intensity of the shader",
     "dock_tint": "Dock Tint",
+    "dock_edge_distance": "Distance from Edge",
+    "dock_edge_distance_desc": "Distance between dock and bottom of screen (px)",
     "dock_icon_size": "Icon Size",
     "dock_icon_size_desc": "Application icon size in dock (px)",
     "dock_size": "Dock Size",
@@ -423,12 +426,15 @@ TRANSLATIONS["uk"] = {
     "panel_about": "Про систему",
 
     # Styling & Diagnostics
+    "mac_styling": "Mac стилізація",
     "styling_title": "Mac стилізація",
     "dock_title": "Док-панель (Dock)",
     "dock_desc": "Скляний шейдер та тінт нижньої док-панелі",
     "glass_strength": "Сила скла",
     "glass_strength_desc": "Інтенсивність заломлення та розмиття шейдера",
     "dock_tint": "Тінт доку",
+    "dock_edge_distance": "Відступ від краю",
+    "dock_edge_distance_desc": "Відстань між доком та нижнім краєм екрану (px)",
     "dock_icon_size": "Розмір іконок",
     "dock_icon_size_desc": "Розмір значків програм у доці (px)",
     "dock_size": "Розмір доку",

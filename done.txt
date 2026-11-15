@@ -401,3 +401,35 @@
 
 
 
+
+789. Виправлення назви панелі "Mac стилізація" (усунення mac_styling) та додавання всіх регуляторів доку (відступ від краю, розмір іконок, розмір доку, відступ іконок):
+   - Запит користувача:
+     * В пункті mac стилізація немає пунктів відповідних док такі як відступ док від сторони екрану, розмір іконок, розмір док, відступ іконок.
+     * Параметр mac стилізація чомусь через _ називається тобто mac_styling (на фото GNOME Settings: заголовок і пункт меню mac_styling, відсутні 4 повзунки доку).
+   - Причина виникнення:
+     1) Ключ "mac_styling" був відсутній у translations_data.py, через що генератор mac_i18n.h створював фолбек-запис із сирим рядком "mac_styling" для всіх мов, і libmac_settings.c виводив саме його у сайдбарі та заголовку.
+     2) Каталоги локалей оверлею ~/.local/share/gnome-control-center-overlay/locales/ та /usr/share/mactheme/gnome-control-center-overlay/locales/ містили застарілі .ui файли, а системний каталог мав некоректні права без біта виконання (drw-r--r--).
+   - Виконані роботи:
+     1) Інтернаціоналізація та виправлення назви (усунення mac_styling):
+        * В config/i18n/generate_translations_data.py, config/i18n/generate_full_dictionaries.py та config/i18n/build_translations.py додано ключі "mac_styling", "dock_edge_distance", "dock_edge_distance_desc", "dock_icon_size", "dock_size", "dock_spacing".
+        * Локалізовані назви для 34 мов: українська — "Mac стилізація", англійська — "Mac Styling", польська — "Stylizacja Mac", німецька — "Mac-Stil", французька — "Style Mac", іспанська — "Estilo Mac", італійська — "Stile Mac".
+        * У control-center/libmac_settings.c оновлено get_active_sidebar_panel_title() та schedule_update_panel_headerbar(): виключено показ сирого id "mac_styling", заголовок завжди резолвиться через mac_tr(). На рівні AdwNavigationPage встановлено обов'язковий заголовок через adw_navigation_page_set_title().
+     2) Додавання 4 параметрів Доку в інтерфейс:
+        * У групу "dock_group" додано:
+          - "Відступ від краю" (dock_edge_distance_row, 0..24 px, крок 1) — відстань між доком та нижнім краєм екрану.
+          - "Розмір іконок" (dock_icon_size_row, 24..96 px, крок 2, типово 54 px) — розмір значків додатків у доці.
+          - "Розмір доку" (dock_size_row, 0..24 px, крок 1, типово 12 px) — висота плашки та вертикальний відступ.
+          - "Відстань між іконками" (dock_spacing_row, 0..24 px, крок 1, типово 0 px) — проміжок між сусідніми іконками.
+        * Оновлено всі файли cc-mac-styling-panel.ui: головний SSOT, а також окремі локалі uk, en, de, es, fr, it, pl.
+        * Виправлено права на /usr/share/mactheme/gnome-control-center-overlay/ (chmod -R a+rX) та виконано повну синхронізацію в ~/.local/share/gnome-control-center-overlay/.
+     3) Підтримка в C-бібліотеці libmac_settings.c:
+        * Додано dock_edge_distance до struct MacStylingData, збереження/завантаження у styling.json, обробники init_dock_edge_distance та on_dock_edge_distance_changed.
+        * Оновлено dock_preview_draw_func для динамічного відображення відступу від краю у живому попередньому перегляді.
+        * Скомпільовано та синхронізовано libmac_settings.so за всіма 6 системними шляхами.
+     4) Підтримка у GNOME Shell (EvalHelper) та mac-styling-settings:
+        * У extensions/eval-helper@mactheme/extension.js додано застосування dock_edge_distance до dash2dock-motion edge-distance та d2d.translation_y для значень > 8px.
+        * Оновлено хеш в config/extensions.lock.json.
+        * В автономній утиліті bin/mac-styling-settings додано повзунок відступу від краю.
+   - Верифікація:
+     1) Виконано запуск GNOME Control Center та знято тестові скріншоти (scratch_settings_styling_verified.png, scratch_settings_dock_section.png): підтверджено коректний заголовок "Mac Styling" / "Mac стилізація" без підкреслення та наявність усіх 4 повзунків у блоці Dock.
+     2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).

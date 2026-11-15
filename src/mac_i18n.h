@@ -101,12 +101,20 @@ static const MacCKeyEntry MAC_C_ENTRIES[] = {
     { "bookmark_movies", "Відеозаписи", "Movies", "Filme", "Vidéos", "Películas", "Wideo" },
     { "bookmark_trash", "Кошик", "Trash", "Papierkorb", "Corbeille", "Papelera", "Kosz" },
     { "widgets", "widgets", "widgets", "widgets", "widgets", "widgets", "widgets" },
-    { "mac_styling", "mac_styling", "mac_styling", "mac_styling", "mac_styling", "mac_styling", "mac_styling" },
+    { "mac_styling", "Mac стилізація", "Mac Styling", "Mac-Stil", "Style Mac", "Estilo Mac", "Stylizacja Mac" },
     { "apple_account", "apple_account", "apple_account", "apple_account", "apple_account", "apple_account", "apple_account" },
     { "storage_alert", "storage_alert", "storage_alert", "storage_alert", "storage_alert", "storage_alert", "storage_alert" },
     { "software_update_alert", "software_update_alert", "software_update_alert", "software_update_alert", "software_update_alert", "software_update_alert", "software_update_alert" },
     { "search", "search", "search", "search", "search", "search", "search" },
     { "ssot_restored_notification", "ssot_restored_notification", "ssot_restored_notification", "ssot_restored_notification", "ssot_restored_notification", "ssot_restored_notification", "ssot_restored_notification" },
+    { "dock_edge_distance", "Відступ від краю", "Distance from Edge", "Randabstand", "Distance du bord", "Distancia del borde", "Odległość od krawędzi" },
+    { "dock_edge_distance_desc", "Відстань між доком та нижнім краєм екрану (px)", "Distance between dock and bottom of screen (px)", "Abstand zwischen Dock und unterem Bildschirmrand (px)", "Distance entre le dock et le bas de l'écran (px)", "Distancia entre el dock y el borde inferior de la pantalla (px)", "Odległość doku od dolnej krawędzi ekranu (px)" },
+    { "dock_icon_size", "Розмір іконок", "Icon Size", "Icon Size", "Icon Size", "Icon Size", "Icon Size" },
+    { "dock_icon_size_desc", "Розмір значків програм у доці (px)", "Application icon size in dock (px)", "Application icon size in dock (px)", "Application icon size in dock (px)", "Application icon size in dock (px)", "Application icon size in dock (px)" },
+    { "dock_size", "Розмір доку", "Dock Size", "Dock Size", "Dock Size", "Dock Size", "Dock Size" },
+    { "dock_size_desc", "Вертикальний відступ та розмір скляної плашки доку (px)", "Vertical padding and dock plate size (px)", "Vertical padding and dock plate size (px)", "Vertical padding and dock plate size (px)", "Vertical padding and dock plate size (px)", "Vertical padding and dock plate size (px)" },
+    { "dock_spacing", "Відстань між іконками", "Icon Spacing", "Icon Spacing", "Icon Spacing", "Icon Spacing", "Icon Spacing" },
+    { "dock_spacing_desc", "Відстань між сусідніми значками програм (px)", "Distance between adjacent app icons (px)", "Distance between adjacent app icons (px)", "Distance between adjacent app icons (px)", "Distance between adjacent app icons (px)", "Distance between adjacent app icons (px)" },
     { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
 };
 

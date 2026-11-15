@@ -47,12 +47,13 @@ typedef struct {
     int widget_shadow;  /* 0 - 100 % */
 
     /* Group: Dock */
-    int dock_tint;      /* 0 - 100 % */
-    int dock_blur;      /* 0 - 50 px */
-    int dock_shadow;    /* 0 - 100 % */
-    int dock_size;      /* 0 - 24 px, vertical padding (default 12) */
-    int dock_icon_size; /* 24 - 96 px, app icon size (default 54) */
-    int dock_spacing;   /* 0 - 24 px, icon spacing (default 4) */
+    int dock_tint;          /* 0 - 100 % */
+    int dock_blur;          /* 0 - 50 px */
+    int dock_shadow;        /* 0 - 100 % */
+    int dock_edge_distance; /* 0 - 24 px, distance between dock and bottom of screen (default 0) */
+    int dock_size;          /* 0 - 24 px, vertical padding (default 12) */
+    int dock_icon_size;     /* 24 - 96 px, app icon size (default 54) */
+    int dock_spacing;       /* 0 - 24 px, icon spacing (default 4) */
 
     /* Group: Alerts / Dialogs */
     int alert_tint;     /* 0 - 100 % */
@@ -128,6 +129,7 @@ static MacStylingData state = {
     .dock_tint = 0,
     .dock_blur = 1,
     .dock_shadow = 0,
+    .dock_edge_distance = 0,
     .dock_size = 12,
     .dock_icon_size = 54,
     .dock_spacing = 0,
@@ -368,6 +370,11 @@ static void load_config(void) {
                 state.dock_shadow = 0;
             }
 
+            if (json_object_has_member(obj, "dock_edge_distance"))
+                state.dock_edge_distance = (int)json_object_get_int_member(obj, "dock_edge_distance");
+            else
+                state.dock_edge_distance = 0;
+
             if (json_object_has_member(obj, "dock_size"))
                 state.dock_size = (int)json_object_get_int_member(obj, "dock_size");
             else
@@ -496,6 +503,7 @@ static void save_styling_json(void) {
         "  \"dock_tint\": %d,\n"
         "  \"dock_blur\": %d,\n"
         "  \"dock_shadow\": %d,\n"
+        "  \"dock_edge_distance\": %d,\n"
         "  \"dock_size\": %d,\n"
         "  \"dock_icon_size\": %d,\n"
         "  \"dock_spacing\": %d,\n"
@@ -545,6 +553,7 @@ static void save_styling_json(void) {
         state.dock_tint,
         state.dock_blur,
         state.dock_shadow,
+        state.dock_edge_distance,
         state.dock_size,
         state.dock_icon_size,
         state.dock_spacing,
@@ -1032,6 +1041,10 @@ static void apply_dock_settings(void) {
             if (sz < 24) sz = 24;
             if (sz > 96) sz = 96;
             safe_set_int(ds, schema, "dash-max-icon-size", sz);
+            int ed = state.dock_edge_distance;
+            if (ed < 0) ed = 0;
+            if (ed > 8) ed = 8;
+            safe_set_int(ds, schema, "edge-distance", ed);
             if (schema) g_settings_schema_unref(schema);
             g_object_unref(ds);
         }
@@ -1046,6 +1059,10 @@ static void apply_dock_settings(void) {
             if (sz < 24) sz = 24;
             if (sz > 96) sz = 96;
             safe_set_int(ds, schema, "dash-max-icon-size", sz);
+            int ed = state.dock_edge_distance;
+            if (ed < 0) ed = 0;
+            if (ed > 8) ed = 8;
+            safe_set_int(ds, schema, "edge-distance", ed);
             if (schema) g_settings_schema_unref(schema);
             g_object_unref(ds);
         }
@@ -2746,7 +2763,7 @@ static void dock_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
     double shelf_inner = 5 * icon_sz + 3 * gap + sep_gap * 2.0;
     double dw = shelf_inner + 28.0;
     double dx = (width - dw) / 2.0;
-    double dy = height - dh - 10.0;
+    double dy = height - dh - 10.0 - ((double)state.dock_edge_distance) * 0.7;
 
     int blur_r = CLAMP(state.dock_blur, 6, 50);
     cairo_surface_t *blurred_bg = get_cached_blurred_wallpaper_surface(width, height, blur_r);
@@ -4729,6 +4746,25 @@ void on_dock_shadow_changed(void *widget, gpointer data) {
     (void)data;
     if (in_init) return;
     state.dock_shadow = (int)lround(gtk_range_get_value(widget));
+    redraw_dock_preview();
+    schedule_dock_apply();
+    schedule_json_save();
+}
+
+void init_dock_edge_distance(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.dock_edge_distance);
+    in_init = 0;
+}
+
+void on_dock_edge_distance_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.dock_edge_distance = (int)lround(gtk_range_get_value(widget));
     redraw_dock_preview();
     schedule_dock_apply();
     schedule_json_save();
@@ -8072,6 +8108,9 @@ static GtkWidget *get_mac_styling_page(void)
         mac_styling_page = GTK_WIDGET(gtk_builder_get_object(builder, "mac_styling_page"));
         if (mac_styling_page) {
             g_object_ref(mac_styling_page);
+            if (ADW_IS_NAVIGATION_PAGE(mac_styling_page)) {
+                adw_navigation_page_set_title(ADW_NAVIGATION_PAGE(mac_styling_page), mac_tr("mac_styling", "Mac стилізація"));
+            }
             reorder_group_previews_to_top(mac_styling_page);
             update_mac_styling_tint_labels(mac_styling_page, mac_is_light_mode());
             g_signal_connect(mac_styling_page, "map", G_CALLBACK(on_mac_styling_page_map), NULL);
@@ -11566,6 +11605,9 @@ static const char *get_active_sidebar_panel_title(AdwNavigationSplitView *split_
         }
     }
     g_list_free(labels);
+    if (found_text && (g_strcmp0(found_text, "mac_styling") == 0 || g_strcmp0(found_text, "mac-styling") == 0)) {
+        return mac_tr("mac_styling", "Mac стилізація");
+    }
     return found_text;
 }
 
@@ -11918,6 +11960,14 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
         }
         if (!header_title || !header_title[0]) {
             header_title = adw_navigation_page_get_title(content_page);
+        }
+        const char *cur_tag = content_page ? adw_navigation_page_get_tag(content_page) : NULL;
+        const char *cur_pid = g_object_get_data(G_OBJECT(split_view), "mac_current_panel_id");
+        if ((cur_tag && (g_strcmp0(cur_tag, "mac-styling") == 0 || g_strcmp0(cur_tag, "mac_styling_page") == 0)) ||
+            (cur_pid && g_strcmp0(cur_pid, "mac-styling") == 0) ||
+            (content_page && GTK_WIDGET(content_page) == get_mac_styling_page()) ||
+            (header_title && (g_strcmp0(header_title, "mac_styling") == 0 || g_strcmp0(header_title, "mac-styling") == 0))) {
+            header_title = mac_tr("mac_styling", "Mac стилізація");
         }
         gtk_label_set_text(GTK_LABEL(title_label), (header_title && header_title[0]) ? header_title : "Параметри");
 
