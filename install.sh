@@ -503,6 +503,19 @@ EOF_NAUT
     rm -f "$TARGET_HOME/.config/autostart/mac-sync-applications.desktop" 2>/dev/null || true
     rm -f "$TARGET_HOME/.config/autostart/mac-ensure-extensions.desktop" 2>/dev/null || true
 
+    # Suppress xdg-user-dirs-gtk prompt on locale change (macOS directory structure preservation)
+    mkdir -p "$TARGET_HOME/.config/autostart"
+    cat << 'EOF_UDIRS' > "$TARGET_HOME/.config/autostart/user-dirs-update-gtk.desktop"
+[Desktop Entry]
+Type=Application
+Name=User folders update
+Exec=true
+Hidden=true
+X-GNOME-Autostart-enabled=false
+EOF_UDIRS
+    echo "enabled=False" > "$TARGET_HOME/.config/user-dirs.conf"
+    chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/autostart/user-dirs-update-gtk.desktop" "$TARGET_HOME/.config/user-dirs.conf" 2>/dev/null || true
+
     run_as_user gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark"
     run_as_user gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
     run_as_user gsettings set org.gnome.desktop.wm.preferences theme "macW1Y-Dark"
@@ -2305,6 +2318,19 @@ EOF_NAUT
     # Clean up redundant legacy autostart entries (handled by systemd user services & /etc/xdg/autostart)
     rm -f "$TARGET_HOME/.config/autostart/mac-sync-applications.desktop" 2>/dev/null || true
     rm -f "$TARGET_HOME/.config/autostart/mac-ensure-extensions.desktop" 2>/dev/null || true
+
+    # Suppress xdg-user-dirs-gtk prompt on locale change (macOS directory structure preservation)
+    mkdir -p "$TARGET_HOME/.config/autostart"
+    cat << 'EOF_UDIRS' > "$TARGET_HOME/.config/autostart/user-dirs-update-gtk.desktop"
+[Desktop Entry]
+Type=Application
+Name=User folders update
+Exec=true
+Hidden=true
+X-GNOME-Autostart-enabled=false
+EOF_UDIRS
+    echo "enabled=False" > "$TARGET_HOME/.config/user-dirs.conf"
+    chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/autostart/user-dirs-update-gtk.desktop" "$TARGET_HOME/.config/user-dirs.conf" 2>/dev/null || true
     run_as_user /usr/local/bin/mac-sync-applications 2>/dev/null || true
 
     log_info "9/10 Checking Plymouth and GDM transition..."

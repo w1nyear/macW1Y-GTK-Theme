@@ -405,6 +405,25 @@ fi
             except Exception:
                 pass
 
+    # 5. Prevent xdg-user-dirs-gtk prompt on locale change (macOS style: preserve directory structure)
+    try:
+        user_dirs_conf = os.path.join(home, ".config/user-dirs.conf")
+        with open(user_dirs_conf, "w", encoding="utf-8") as f:
+            f.write("enabled=False\n")
+
+        user_dirs_locale = os.path.join(home, ".config/user-dirs.locale")
+        loc_base = posix.split(".")[0]
+        with open(user_dirs_locale, "w", encoding="utf-8") as f:
+            f.write(f"{loc_base}\n")
+
+        autostart_dir = os.path.join(home, ".config/autostart")
+        os.makedirs(autostart_dir, exist_ok=True)
+        autostart_desktop = os.path.join(autostart_dir, "user-dirs-update-gtk.desktop")
+        with open(autostart_desktop, "w", encoding="utf-8") as f:
+            f.write("[Desktop Entry]\nType=Application\nName=User folders update\nExec=true\nHidden=true\nX-GNOME-Autostart-enabled=false\n")
+    except Exception:
+        pass
+
 def apply_keyboard_layout(xkb_code):
     if not xkb_code:
         return

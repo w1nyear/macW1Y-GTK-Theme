@@ -227,3 +227,20 @@
         * Не повноекранний режим: x = 1572, y = 46, w = 320, h = 64 — OSD розташоване праворуч прямо під пунктом Центру керування.
         * Повноекранний режим: x = 800, y = 46, w = 320, h = 64 — OSD розташоване по центру екрана.
      2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
+
+
+781. Блокування діалогу оновлення стандартних папок xdg-user-dirs-gtk при зміні мови системи:
+   - Запит користувача: Після зміни мови через mac wizard та перезавантаження з'явилося системне вікно "Update standard folders to current language?".
+   - Пояснення та вирішення:
+     1) У macOS назви папок на диску ніколи не перейменовуються фізично при зміні мови інтерфейсу — структура каталогів залишається стабільною. В Ubuntu за замовчуванням служба xdg-user-dirs-gtk-update пропонує перейменувати домашні папки.
+     2) Усунуто появу діалогу:
+        * У ~/.config/user-dirs.conf встановлено enabled=False для запобігання автоматичним змінам XDG-папок.
+        * Синхронізовано ~/.config/user-dirs.locale із поточною локаллю системи (en_US).
+        * Створено перевизначення ~/.config/autostart/user-dirs-update-gtk.desktop із Hidden=true та X-GNOME-Autostart-enabled=false.
+        * У bin/mac-apply-locale додано автоматичну конфігурацію цих параметрів при будь-якій зміні локалі.
+        * У install.sh інтегровано автоматичне приглушення xdg-user-dirs-gtk при встановленні теми.
+        * Синхронізовано оновлений скрипт у /usr/local/bin/mac-apply-locale.
+        * Закрито активний процес діалогу xdg-user-dirs-gtk-update.
+   - Верифікація:
+     1) Процес xdg-user-dirs-gtk-update закрито, вікно зникло з екрана.
+     2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
