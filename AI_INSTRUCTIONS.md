@@ -1,3 +1,16 @@
+# SILVERHAWK FORK SAFETY OVERRIDE — READ FIRST
+
+> [!CAUTION]
+> This file is an **archived upstream agent handbook**, preserved for reference. Its machine-specific paths, language conventions, mandatory one-turn deployment, all-system synchronization, and automatic installation/repair instructions **do not apply to this fork**.
+>
+> **Governing instructions: [AGENTS.md](AGENTS.md).** Review [COMPATIBILITY.md](COMPATIBILITY.md) and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) before any edits. Codex/Claude manages and reviews; Gemini implements scoped tasks. All CI is local/independent ci-farm: **no GitHub Actions**.
+>
+> The upstream install.sh, uninstall.sh, update, clean-update, apply_plymouth.sh and automated repair/deploy routines are **blocked** on the live workstation. No deployment, sudo, D-Bus Eval helper, GNOME Shell/nautilus replacement, sudoers install, global dconf import, or GDM/GRUB/Plymouth modification without separate explicit user authorization.
+>
+> This override is intentional. Where the preserved upstream handbook conflicts with AGENTS.md, **follow AGENTS.md**.
+
+---
+
 # macOS Tahoe / Sequoia Transformation Pack for Ubuntu (GNOME Shell 50 на Wayland)
 ## Головний маніфест, технічна архітектура та керівництво розробника для ШІ / AI Master Handbook
 

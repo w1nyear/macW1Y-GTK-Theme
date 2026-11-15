@@ -1,3 +1,10 @@
+> [!CAUTION]
+> **Silverhawk Ubuntu compatibility fork — do NOT run the upstream installer.** The commands in the upstream Installation / Uninstallation sections below are preserved as historical documentation only. Current install.sh / uninstall.sh can modify GNOME Shell, Nautilus, GDM, GRUB, sudoers, global settings, and system services. No live deployment is authorized.
+>
+> Before making changes, read [AGENTS.md](AGENTS.md), [COMPATIBILITY.md](COMPATIBILITY.md), and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Claude manages; Codex reviews; Gemini is the implementation worker. CI must run only on the independent local ci-farm, **not GitHub Actions**.
+
+---
+
 # macW1Y - macOS Experience on GNOME
 
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://ubuntu.com/)
