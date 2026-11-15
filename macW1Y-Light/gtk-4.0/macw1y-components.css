@@ -12,7 +12,7 @@ preferenceswindow,
 preferenceswindow.background,
 preferencespage,
 .preferences-page {
-  background-color: var(--mac-window-bg, #f6f6f6);
+  background-color: var(--mac-window-bg, #ebebf0);
   color: var(--mac-window-fg, rgba(0, 0, 0, 0.88));
   background-image: none;
 }
@@ -41,7 +41,7 @@ window.desktopwindow decoration {
 
 navigation-split-view,
 overlay-split-view {
-  background-color: var(--mac-window-bg, #f6f6f6);
+  background-color: var(--mac-window-bg, #ebebf0);
   background-image: none;
 }
 
@@ -53,7 +53,7 @@ overlay-split-view > widget.sidebar-pane,
 overlay-split-view .sidebar-pane,
 .sidebar-pane,
 .navigation-sidebar-pane {
-  background-color: var(--mac-sidebar-bg, #ebebf0);
+  background-color: var(--mac-sidebar-bg, #ffffff);
   background-image: none;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -2464,9 +2464,9 @@ navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane scrolledwindow undershoot.top {
   min-height: 38px;
   background: linear-gradient(to bottom,
-    var(--mac-window-bg, #f6f6f6) 0%,
-    alpha(var(--mac-window-bg, #f6f6f6), 0.90) 12px,
-    alpha(var(--mac-window-bg, #f6f6f6), 0.40) 24px,
+    var(--mac-window-bg, #ebebf0) 0%,
+    alpha(var(--mac-window-bg, #ebebf0), 0.90) 12px,
+    alpha(var(--mac-window-bg, #ebebf0), 0.40) 24px,
     transparent 38px);
   border: none;
   box-shadow: none;
@@ -2527,8 +2527,8 @@ window.mac-settings-window > dialog-host,
 window.mac-settings-window navigation-split-view,
 window.mac-settings-window .content-pane,
 window.mac-settings-window .mac-settings-content {
-  background: #ffffff;
-  background-color: #ffffff;
+  background: #ebebf0;
+  background-color: #ebebf0;
   color: rgba(0, 0, 0, 0.88);
 }
 
@@ -2542,8 +2542,8 @@ window.mac-settings-window navigation-split-view > widget:first-child,
 window.mac-settings-window navigation-split-view > widget:first-child toolbarview,
 window.mac-settings-window navigation-split-view > widget:first-child toolbarview > .top-bar,
 window.mac-settings-window navigation-split-view > widget:first-child headerbar {
-  background: #ebebf0;
-  background-color: #ebebf0;
+  background: #ffffff;
+  background-color: #ffffff;
   border: none;
   border-bottom: none;
   box-shadow: none;
@@ -2658,9 +2658,9 @@ navigation-view-page toolbarview.undershoot-bottom scrolledwindow > undershoot.b
 .content-pane scrolledwindow undershoot.bottom {
   min-height: 28px;
   background: linear-gradient(to top,
-    var(--mac-window-bg, #f6f6f6) 0%,
-    alpha(var(--mac-window-bg, #f6f6f6), 0.90) 10px,
-    alpha(var(--mac-window-bg, #f6f6f6), 0.40) 18px,
+    var(--mac-window-bg, #ebebf0) 0%,
+    alpha(var(--mac-window-bg, #ebebf0), 0.90) 10px,
+    alpha(var(--mac-window-bg, #ebebf0), 0.40) 18px,
     transparent 28px);
   border: none;
   box-shadow: none;
@@ -2681,10 +2681,10 @@ navigation-split-view > .sidebar-pane scrolledwindow.undershoot-top > undershoot
 navigation-split-view > .sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top {
   min-height: 34px;
   background: linear-gradient(to bottom,
-    var(--mac-window-bg, #f6f6f6) 0%,
-    alpha(var(--mac-window-bg, #f6f6f6), 0.85) 8px,
-    alpha(var(--mac-window-bg, #f6f6f6), 0.50) 18px,
-    alpha(var(--mac-window-bg, #f6f6f6), 0.15) 28px,
+    var(--mac-window-bg, #ebebf0) 0%,
+    alpha(var(--mac-window-bg, #ebebf0), 0.85) 8px,
+    alpha(var(--mac-window-bg, #ebebf0), 0.50) 18px,
+    alpha(var(--mac-window-bg, #ebebf0), 0.15) 28px,
     transparent 34px);
   border: none;
   box-shadow: none;
@@ -2706,10 +2706,10 @@ navigation-split-view > .sidebar-pane scrolledwindow.undershoot-bottom > undersh
 navigation-split-view > .sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom {
   min-height: 24px;
   background: linear-gradient(to top,
-    var(--mac-window-bg, #f6f6f6) 0%,
-    alpha(var(--mac-window-bg, #f6f6f6), 0.85) 6px,
-    alpha(var(--mac-window-bg, #f6f6f6), 0.50) 14px,
-    alpha(var(--mac-window-bg, #f6f6f6), 0.15) 20px,
+    var(--mac-window-bg, #ebebf0) 0%,
+    alpha(var(--mac-window-bg, #ebebf0), 0.85) 6px,
+    alpha(var(--mac-window-bg, #ebebf0), 0.50) 14px,
+    alpha(var(--mac-window-bg, #ebebf0), 0.15) 20px,
     transparent 24px);
   border: none;
   box-shadow: none;

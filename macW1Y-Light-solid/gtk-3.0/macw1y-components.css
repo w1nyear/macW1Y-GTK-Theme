@@ -4,7 +4,7 @@
 /* Window Background */
 window:not(.desktopwindow),
 .background:not(.desktopwindow) {
-  background-color: #f6f6f6;
+  background-color: #ebebf0;
   color: rgba(0, 0, 0, 0.88);
 }
 

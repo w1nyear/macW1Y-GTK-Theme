@@ -143,3 +143,30 @@
         * Світла тема: верхній хедербар контенту (x=500, y=20) = RGB [255, 255, 255] (#ffffff), тіло сайдбара (x=100, y=200) = RGB [235, 235, 240] (#ebebf0), відступи навколо сайдбара (x=12, y=50) = RGB [255, 255, 255] (#ffffff). Темний сайдбар повністю зник!
         * Темна тема: верхній хедербар контенту = RGB [32, 32, 34] (#202022), тіло сайдбара = RGB [24, 24, 26] (#18181a), відступи = RGB [24, 24, 27]. Жодних білих витоків!
      2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
+
+
+777. Інверсія кольорів світлої теми скрізь у системі (чисто білий сайдбар #ffffff та м'який сірий фон програми #ebebf0):
+   - Запит користувача: У світлій темі поміняти місцями колір тла вікна/програми та сайдбара (left bar). Зробити сайдбар чисто білим (#ffffff), а фон самої програми — сірим (#ebebf0) замість білого, і застосувати цю зміну скрізь у системі.
+   - Реалізовані зміни:
+     1) У конфігурації SSOT config/macw1y-tokens.json:
+        * window_bg встановлено в "#ebebf0" (м'яке сіре тло програми).
+        * sidebar_bg встановлено в "#ffffff" (чисто білий сайдбар).
+        * sidebar_bg_translucent встановлено в "rgba(255, 255, 255, 0.85)".
+     2) У bin/mac-build-theme:
+        * Уніфіковано генерацію GTK4, GTK3 та Libadwaita компонентів: вікна та контентні зони отримують c["window_bg"] (#ebebf0), сайдбари (navigation-split-view, overlay-split-view, .sidebar-pane, .mac-settings-sidebar) отримують c["sidebar_bg"] (#ffffff).
+     3) У bin/mac-theme-sync:
+        * Оновлено генерацію токенів для GTK3: theme_base_color та theme_bg_color встановлено в #ebebf0.
+     4) У control-center/libmac_settings.c та бібліотеках libmac_settings.so:
+        * .mac-theme-light вікно/діалог/split-view/content-pane/mac-settings-content отримали #ebebf0.
+        * .mac-theme-light сайдбар/toolbarview/headerbar отримали чисто білий #ffffff.
+        * Мініатюрні прев'ю теми ("Світла") оновлено: вікно #ebebeb, сайдбар #ffffff.
+        * Перекомпільовано libmac_settings.so та синхронізовано в усі 7 цільових шляхів.
+     5) У стилях тем macW1Y-Light, macW1Y-Light-solid, config/gtk-4.0/gtk-Light.css:
+        * Синхронізовано білий сайдбар #ffffff та сірий фон вікна #ebebf0.
+        * Виконано bin/mac-build-theme для повної генерації та синхронізації стилів у ~/.config/gtk-4.0/, ~/.themes/ та /usr/share/themes/.
+     6) Синхронізовано оновлені виконувані скрипти у /usr/local/bin/.
+   - Верифікація:
+     1) Попіксельне тестування наживо через PIL (verify_theme_swap.py):
+        * Світла тема: сайдбар (100, 200) = RGB [255, 255, 255] (#ffffff, чисто білий), хедербар/фон програми (450, 25) = RGB [235, 235, 240] (#ebebf0, м'який сірий).
+        * Темна тема: сайдбар (100, 200) = RGB [24, 24, 26] (#18181a), хедербар/фон програми (450, 25) = RGB [32, 32, 34] (#202022).
+     2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).

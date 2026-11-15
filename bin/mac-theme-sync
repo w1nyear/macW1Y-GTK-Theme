@@ -160,12 +160,12 @@ def apply_theme_mode(is_light):
 
     if is_light:
         gtk3_tok_str = (
-            "/* macW1Y 0.6 — Master Design Tokens for GTK 3 (Light) */\n"
+            "/* macW1Y 0.7 — Master Design Tokens for GTK 3 (Light) */\n"
             f"@define-color accent_bg_color {accent_col};\n"
             "@define-color accent_fg_color #ffffff;\n"
-            "@define-color theme_base_color #f6f6f6;\n"
+            "@define-color theme_base_color #ebebf0;\n"
             "@define-color theme_text_color rgba(0, 0, 0, 0.88);\n"
-            "@define-color theme_bg_color #f6f6f6;\n"
+            "@define-color theme_bg_color #ebebf0;\n"
             "@define-color theme_fg_color rgba(0, 0, 0, 0.88);\n"
             f"@define-color theme_selected_bg_color {accent_col};\n"
             "@define-color theme_selected_fg_color #ffffff;\n"

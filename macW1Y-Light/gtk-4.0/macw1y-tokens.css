@@ -4,9 +4,9 @@
 @define-color accent_bg_color #ff6a00;
 @define-color accent_fg_color #ffffff;
 @define-color accent_color #ff6a00;
-@define-color window_bg_color #f6f6f6;
+@define-color window_bg_color #ebebf0;
 @define-color window_fg_color rgba(0, 0, 0, 0.88);
-@define-color view_bg_color #f6f6f6;
+@define-color view_bg_color #ebebf0;
 @define-color view_fg_color rgba(0, 0, 0, 0.88);
 @define-color headerbar_bg_color transparent;
 @define-color headerbar_fg_color rgba(0, 0, 0, 0.88);
@@ -25,10 +25,10 @@
 @define-color warning_bg_color #f5c211;
 
 :root {
-  --mac-window-bg: #f6f6f6;
+  --mac-window-bg: #ebebf0;
   --mac-window-fg: rgba(0, 0, 0, 0.88);
-  --mac-sidebar-bg: #ebebf0;
-  --mac-sidebar-bg-translucent: rgba(240, 240, 245, 0.85);
+  --mac-sidebar-bg: #ffffff;
+  --mac-sidebar-bg-translucent: rgba(255, 255, 255, 0.85);
   --mac-card-bg: #ffffff;
   --mac-card-border: rgba(0, 0, 0, 0.08);
   --mac-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);

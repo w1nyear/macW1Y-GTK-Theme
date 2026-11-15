@@ -9655,7 +9655,7 @@ navigation-split-view .sidebar-pane {
     margin: 6px 0px 6px 6px;
     border: none;
     border-radius: 20px;
-    background-color: var(--mac-sidebar-bg, #ebebf0);
+    background-color: var(--mac-sidebar-bg, #ffffff);
     background-clip: padding-box;
     box-shadow: none;
 }
@@ -11794,8 +11794,8 @@ window.mac-settings-window > dialog-host,
 window.mac-settings-window navigation-split-view,
 window.mac-settings-window .content-pane,
 window.mac-settings-window .mac-settings-content {
-    background-color: #ffffff;
-    background: #ffffff;
+    background-color: var(--mac-window-bg, #ebebf0);
+    background: var(--mac-window-bg, #ebebf0);
     background-image: none;
     color: var(--mac-text-primary, rgba(0, 0, 0, 0.88));
 }
@@ -11811,8 +11811,8 @@ window.mac-settings-window navigation-view-page.mac-settings-sidebar {
     margin: 6px 0px 6px 6px;
     border: none;
     border-radius: 14px;
-    background-color: var(--mac-sidebar-bg, #ebebf0);
-    background: var(--mac-sidebar-bg, #ebebf0);
+    background-color: var(--mac-sidebar-bg, #ffffff);
+    background: var(--mac-sidebar-bg, #ffffff);
     background-clip: padding-box;
     box-shadow: none;
 }
@@ -11820,8 +11820,8 @@ window.mac-settings-window navigation-view-page.mac-settings-sidebar {
 window.mac-settings-window .mac-settings-sidebar toolbarview,
 window.mac-settings-window .sidebar-pane toolbarview,
 window.mac-settings-window navigation-split-view > widget:first-child toolbarview {
-    background-color: var(--mac-sidebar-bg, #ebebf0);
-    background: var(--mac-sidebar-bg, #ebebf0);
+    background-color: var(--mac-sidebar-bg, #ffffff);
+    background: var(--mac-sidebar-bg, #ffffff);
     border: none;
     box-shadow: none;
 }
@@ -11832,8 +11832,8 @@ window.mac-settings-window navigation-split-view > widget:first-child headerbar,
 window.mac-settings-window .sidebar-pane toolbarview > .top-bar,
 window.mac-settings-window .sidebar-pane toolbarview > .top-bar headerbar {
     min-height: 48px;
-    background-color: var(--mac-sidebar-bg, #ebebf0);
-    background: var(--mac-sidebar-bg, #ebebf0);
+    background-color: var(--mac-sidebar-bg, #ffffff);
+    background: var(--mac-sidebar-bg, #ffffff);
     background-image: none;
     border: none;
     border-bottom: none;
@@ -11853,13 +11853,15 @@ window.mac-settings-window .mac-settings-content-headerbar.has-view-switcher,
 window.mac-settings-window .mac-settings-switcher-headerbar,
 window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {
     min-height: 48px;
-    background-color: #ffffff;
-    background: #ffffff;
+    background-color: var(--mac-window-bg, #ebebf0);
+    background: var(--mac-window-bg, #ebebf0);
     background-image: none;
     border: none;
     border-bottom: 1px solid var(--mac-card-sep, rgba(0, 0, 0, 0.08));
     box-shadow: none;
 }
+
+
 
 
 
