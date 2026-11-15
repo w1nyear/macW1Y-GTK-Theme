@@ -576,3 +576,36 @@
         - bin/mac-audit-sync check (100% PASS)
         - bin/mac-extension-guard verify (100% PASS)
         - bin/mac-i18n-verify (100% SUCCESS).
+
+795. Оновлення OSD-меню (геометрія капсули, позиціювання повзунка, очищення символьних дужок звуку) та інтеграція секції OSD у Mac стилізацію:
+   - Відповідно до вимог користувача та референсу Photo 1 реалізовано:
+     1) Оновлення геометрії Tahoe OSD (extensions/kiwi@kemma/apps/tahoeOSD.js, tahoeOnScreenDisplay.js, stylesheet.css):
+        - Зменшено ширину OSD капсули: OSD_W зменшено з 320 до 280px (MAX_TITLE_W = 248px).
+        - Збільшено розмір іконки динаміка та яскравості: розмір піднято з 28px до 34px.
+        - Виправлено довжину повзунка: додано правильний margin_right та скориговано розміри TahoeSegSlider, завдяки чому правий край 16-сегментного індикатора завершується чітко на межі перед початком правого радіуса заокруглення плашки OSD.
+        - Динамічне розмиття та затемнення OSD: підключено зчитування ~/.config/mac-styling/styling.json (osd_blur, osd_tint) у _osdSurf() та _osdBlur().
+     2) Повне вичищення зайвих/напівпрозорих дужок у символьних іконках гучності:
+        - Усунено всі контури з opacity=".35" у audio-volume-low* та audio-volume-medium* для всіх варіантів тем (icons/MacTahoe, icons/MacTahoe-dark, icons/MacTahoe-light, ~/.local/share/icons/, /usr/share/icons/).
+        - Для 1/3 гучності тепер чітко відображається рівно одна біла дужка праворуч іконки звуку (нуль тьмяних/сірих дужок). Для 2/3 — дві білі дужки.
+        - Оновлено кеші іконок gtk-update-icon-cache.
+     3) Інтеграція секції «OSD» у сторінку «Mac стилізація» (GNOME Settings / gnome-control-center):
+        - Додано групу AdwPreferencesGroup (id="osd_group") з інтерактивним попереднім переглядом (osd_preview_area, 150px) та 3 повзунками налаштувань:
+          * Розмиття (osd_blur_row, osd_blur_scale, діапазон 0-50, значення за замовчуванням 25px).
+          * Затемнення (osd_tint_row, osd_tint_scale, діапазон 0-100%, значення за замовчуванням 15%).
+          * Тінь (osd_shadow_row, osd_shadow_scale, діапазон 0-100%, значення за замовчуванням 25%).
+        - Оновлено всі 16 UI файлів панелі cc-mac-styling-panel.ui (control-center/, gnome-control-center-overlay/ та локалі de, en, es, fr, it, pl, uk, а також системні шляхи /usr/share/mactheme/).
+        - У control-center/libmac_settings.c реалізовано:
+          * Поля osd_blur, osd_tint, osd_shadow у структурі MacStylingData та збереження/завантаження в styling.json.
+          * Функцію osd_preview_draw_func() на Cairo: малювання шпалер стільниці, матової скляної капсули OSD з тінню та верхнім відблиском, векторної іконки динаміка без тьмяних дужок та 16-сегментного прогрес-бару, що закінчується точно перед заокругленням.
+          * Колбеки init_osd_preview, init_osd_blur, on_osd_blur_changed, init_osd_tint, on_osd_tint_changed, init_osd_shadow, on_osd_shadow_changed.
+          * Функцію apply_osd_settings(), що синхронізує параметри з GSettings розширення liquid-glass (osd-blur-radius, osd-tint-strength).
+          * Інтеграцію в s_tint_rows, s_tint_groups для автоматичної адаптації назв рядка (Затемнення / Засвітлення) при зміні теми оформлення.
+          * Перекомпільовано libmac_settings.so та синхронізовано в усі 7 системних і локальних розташувань.
+     4) Оновлено config/extensions.lock.json для kiwi@kemma та верифіковано всі 21 розширення.
+   - Верифікація:
+     1) Live OSD Screenshot (scratch_osd_new4_crop.png) підтверджує: зменшену ширину капсули, збільшену іконку динаміка, 1 чисту білу дужку без напівпрозорих артефактів та ідеальне завершення прогрес-бару перед радіусом.
+     2) Mac Styling Preview Snapshot (scratch_osd_group_preview_top.png) підтверджує правильне відображення превʼю OSD вгорі групи над повзунками розмиття, затемнення та тіні.
+     3) 100% проходження системних аудитів:
+        - bin/mac-audit-sync check (100% PASS)
+        - bin/mac-extension-guard verify (100% PASS)
+        - bin/mac-i18n-verify (100% SUCCESS).

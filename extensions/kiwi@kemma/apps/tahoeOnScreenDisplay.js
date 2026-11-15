@@ -32,7 +32,7 @@ import('file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/l
         syncGlassCaptureClip = m.syncGlassCaptureClip;
 }).catch(e => console.warn(`[tahoe-osd] liquid-glass utils unavailable: ${e}`));
 
-const OSD_W = 320;
+const OSD_W = 280;
 const OSD_H = 64;
 const MAX_TITLE_W = OSD_W - 32;
 const HIDE_MS = 1800;
@@ -577,12 +577,43 @@ function _handleOsdCall(monitorIndex, icon, label, level, maxLevel) {
 }
 
 function _osdSurf() {
+    let tintStrength = 0.15;
+    let tintColor = [0.05, 0.05, 0.07];
+    try {
+        const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+        if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+            const [ok, bytes] = GLib.file_get_contents(confPath);
+            if (ok && bytes) {
+                const data = JSON.parse(new TextDecoder().decode(bytes));
+                if (typeof data.osd_tint === 'number')
+                    tintStrength = Math.max(0.0, Math.min(1.0, data.osd_tint / 100.0));
+            }
+        }
+    } catch (_) {}
     try {
         const iface = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
         if (iface.get_string('color-scheme') === 'prefer-dark')
-            return {c: [0.05, 0.05, 0.07], a: 0.10};
+            tintColor = [0.05, 0.05, 0.07];
+        else
+            tintColor = [0.88, 0.88, 0.90];
     } catch (_) {}
-    return {c: [0.78, 0.78, 0.80], a: 0.10};
+    return {c: tintColor, a: tintStrength};
+}
+
+function _osdBlur() {
+    let blur = 25;
+    try {
+        const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+        if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+            const [ok, bytes] = GLib.file_get_contents(confPath);
+            if (ok && bytes) {
+                const data = JSON.parse(new TextDecoder().decode(bytes));
+                if (typeof data.osd_blur === 'number')
+                    blur = Math.max(1, Math.min(50, data.osd_blur));
+            }
+        }
+    } catch (_) {}
+    return blur;
 }
 
 function _ensureGlass() {
@@ -673,6 +704,10 @@ function _syncGlass() {
         const rx = (bx - monitor.x) - OSD_PAD;
         const ry = (by - monitor.y) - OSD_PAD;
         const surf = _osdSurf();
+        const blurRad = _osdBlur();
+        try {
+            s.effect.setBlurRadius(blurRad);
+        } catch (_) {}
 
         const radius = Math.round(bh / 2);
         if (typeof s.effect.setShapeType === 'function')
@@ -970,10 +1005,26 @@ function _show(kind, title, iconL, iconR, value) {
 
     const isOveramp = (kind === 'volume' && value > 1.0001);
 
+    const safeIconName = (ic) => {
+        if (!ic) return '';
+        if (typeof ic === 'string') return ic;
+        try {
+            if (typeof ic.get_names === 'function') {
+                let names = ic.get_names();
+                if (names && names.length) return String(names[0]);
+            }
+            if (ic.name) return String(ic.name);
+        } catch (_) {}
+        return '';
+    };
+
+    let nameL = safeIconName(iconL);
+    let nameR = safeIconName(iconR);
+
     // Compute dynamic icon based on level
     let dynamicIcon = 'audio-volume-high-symbolic';
     if (kind === 'volume') {
-        const isMuted = (value <= 0.001 || (iconL && iconL.includes('muted')) || (iconR && iconR.includes('muted')));
+        const isMuted = (value <= 0.001 || nameL.includes('muted') || nameR.includes('muted'));
         if (isMuted) {
             dynamicIcon = 'audio-volume-muted-symbolic';
         } else if (isOveramp) {
@@ -1220,7 +1271,7 @@ export function enable() {
 
         _iconL = new St.Icon({
             style_class: 'tahoe-osd-icon',
-            icon_size: 28,
+            icon_size: 34,
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.CENTER,
         });

@@ -43,5 +43,8 @@
   "notif_blur": true,
   "notif_sigma": 31,
   "notif_tint": 0.29,
-  "notif_radius": 18
+  "notif_radius": 18,
+  "osd_blur": 25,
+  "osd_tint": 15,
+  "osd_shadow": 25
 }

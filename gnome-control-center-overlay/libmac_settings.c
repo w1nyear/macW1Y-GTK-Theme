@@ -70,6 +70,11 @@ typedef struct {
     int label_tint;          /* 0 - 100 % */
     int label_shadow;        /* 0 - 100 % */
 
+    /* Group: OSD (Екранні індикатори) */
+    int osd_blur;            /* 0 - 50 px */
+    int osd_tint;            /* 0 - 100 % */
+    int osd_shadow;          /* 0 - 100 % */
+
     /* Legacy fields for backward compatibility */
     int dock_sigma;
     int dock_radius;
@@ -93,6 +98,8 @@ static void apply_alert_settings(void);
 static void schedule_alert_apply(void);
 static void apply_notification_settings(void);
 static void schedule_notification_apply(void);
+static void apply_osd_settings(void);
+static void schedule_osd_apply(void);
 
 static void redraw_menubar_preview(void);
 static void redraw_dock_preview(void);
@@ -100,6 +107,7 @@ static void redraw_labels_preview(void);
 static void redraw_alerts_preview(void);
 static void redraw_notifications_preview(void);
 static void redraw_spotlight_preview(void);
+static void redraw_osd_preview(void);
 static void redraw_blur_preview(void);
 static void redraw_context_menu_preview(void);
 static void redraw_widgets_preview(void);
@@ -149,6 +157,10 @@ static MacStylingData state = {
     .spotlight_blur = 25,
     .spotlight_tint = 15,
     .spotlight_shadow = 35,
+
+    .osd_blur = 25,
+    .osd_tint = 15,
+    .osd_shadow = 25,
 
     .blur_sigma = 31,
     .blur_tint = 29,
@@ -438,6 +450,22 @@ static void load_config(void) {
             else
                 state.notification_shadow = 35;
 
+            /* Group: OSD */
+            if (json_object_has_member(obj, "osd_blur"))
+                state.osd_blur = (int)json_object_get_int_member(obj, "osd_blur");
+            else
+                state.osd_blur = 25;
+
+            if (json_object_has_member(obj, "osd_tint"))
+                state.osd_tint = (int)json_object_get_int_member(obj, "osd_tint");
+            else
+                state.osd_tint = 15;
+
+            if (json_object_has_member(obj, "osd_shadow"))
+                state.osd_shadow = (int)json_object_get_int_member(obj, "osd_shadow");
+            else
+                state.osd_shadow = 25;
+
             /* Legacy */
             if (json_object_has_member(obj, "dock_sigma"))
                 state.dock_sigma = (int)json_object_get_int_member(obj, "dock_sigma");
@@ -519,6 +547,9 @@ static void save_styling_json(void) {
         "  \"spotlight_blur\": %d,\n"
         "  \"spotlight_tint\": %d,\n"
         "  \"spotlight_shadow\": %d,\n"
+        "  \"osd_blur\": %d,\n"
+        "  \"osd_tint\": %d,\n"
+        "  \"osd_shadow\": %d,\n"
         "  \"blur_sigma\": %d,\n"
         "  \"blur_tint\": %d,\n"
         "  \"menu_tint\": %d,\n"
@@ -569,6 +600,9 @@ static void save_styling_json(void) {
         state.spotlight_blur,
         state.spotlight_tint,
         state.spotlight_shadow,
+        state.osd_blur,
+        state.osd_tint,
+        state.osd_shadow,
         state.blur_sigma,
         state.blur_tint,
         state.menu_tint,
@@ -963,6 +997,50 @@ static void schedule_notification_apply(void) {
         notif_timer_id = 0;
     }
     notif_timer_id = g_timeout_add(50, (GSourceFunc)apply_notif_cb, NULL);
+}
+
+static guint osd_timer_id = 0;
+
+static void apply_osd_settings(void) {
+    GSettingsSchemaSource *src = g_settings_schema_source_get_default();
+    if (src) {
+        const char *lg_schema = "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com";
+        if (g_settings_schema_source_lookup(src, lg_schema, TRUE)) {
+            GSettings *lg = g_settings_new(lg_schema);
+            if (lg) {
+                GSettingsSchema *schema = NULL;
+                g_object_get(lg, "settings-schema", &schema, NULL);
+
+                int blur_rad = state.osd_blur;
+                if (blur_rad < 0) blur_rad = 0;
+                if (blur_rad > 50) blur_rad = 50;
+                safe_set_int(lg, schema, "osd-blur-radius", blur_rad);
+
+                double tint_val = (double)state.osd_tint / 100.0;
+                if (tint_val < 0.0) tint_val = 0.0;
+                if (tint_val > 1.0) tint_val = 1.0;
+                safe_set_double(lg, schema, "osd-tint-strength", tint_val);
+
+                if (schema) g_settings_schema_unref(schema);
+                g_object_unref(lg);
+            }
+        }
+    }
+}
+
+static gboolean apply_osd_cb(gpointer user_data) {
+    (void)user_data;
+    osd_timer_id = 0;
+    apply_osd_settings();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_osd_apply(void) {
+    if (osd_timer_id != 0) {
+        g_source_remove(osd_timer_id);
+        osd_timer_id = 0;
+    }
+    osd_timer_id = g_timeout_add(50, (GSourceFunc)apply_osd_cb, NULL);
 }
 
 static void apply_dock_settings(void) {
@@ -2016,6 +2094,7 @@ static const TintRowInfo s_tint_rows[] = {
     { "alert_tint_row", "Затемнення", "Засвітлення", "Darkening", "Lightening" },
     { "notification_tint_row", "Затемнення", "Засвітлення", "Darkening", "Lightening" },
     { "spotlight_tint_row", "Затемнення", "Засвітлення", "Darkening", "Lightening" },
+    { "osd_tint_row", "Затемнення", "Засвітлення", "Darkening", "Lightening" },
     { "blur_tint_row", "Затемнення", "Засвітлення", "Darkening", "Lightening" },
     { "menu_tint_row", "Затемнення", "Засвітлення", "Darkening", "Lightening" },
     { "widget_tint_row", "Затемнення фону", "Засвітлення фону", "Darkening background", "Lightening background" },
@@ -2038,6 +2117,7 @@ static const TintGroupInfo s_tint_groups[] = {
     { "alert_group", "Параметри затемнення, розмиття та тіні діалогових вікон попереджень", "Параметри засвітлення, розмиття та тіні діалогових вікон попереджень", "Alert dialog darkening, blur and shadow settings", "Alert dialog lightening, blur and shadow settings" },
     { "notification_group", "Параметри розмиття, затемнення та тіні для сповіщень та Центру повідомлень", "Параметри розмиття, засвітлення та тіні для сповіщень та Центру повідомлень", "Notification blur, darkening and shadow settings", "Notification blur, lightening and shadow settings" },
     { "spotlight_group", "Параметри розмиття, затемнення та тіні Spotlight і Spotlight меню", "Параметри розмиття, засвітлення та тіні Spotlight і Spotlight меню", "Spotlight blur, darkening and shadow settings", "Spotlight blur, lightening and shadow settings" },
+    { "osd_group", "Параметри розмиття, затемнення та тіні скла екранних індикаторів", "Параметри розмиття, засвітлення та тіні скла екранних індикаторів", "Screen indicator (OSD) blur, darkening and shadow settings", "Screen indicator (OSD) blur, lightening and shadow settings" },
     { "blur_group", "Глобальні параметри фонового розмиття та затемнення", "Глобальні параметри фонового розмиття та засвітлення", "Global background blur and darkening settings", "Global background blur and lightening settings" },
     { "menu_group", "Глобальні параметри затемнення та розмиття контекстних меню", "Глобальні параметри засвітлення та розмиття контекстних меню", "Context menu darkening and blur settings", "Context menu lightening and blur settings" },
     { "widget_group", "Параметри заокруглення, тіні, розмиття та затемнення фону віджетів стільниці", "Параметри заокруглення, тіні, розмиття та засвітлення фону віджетів стільниці", "Desktop widget radius, shadow, blur and darkening settings", "Desktop widget radius, shadow, blur and lightening settings" },
@@ -2052,6 +2132,7 @@ static void redraw_all_mac_styling_previews(void) {
     redraw_alerts_preview();
     redraw_notifications_preview();
     redraw_spotlight_preview();
+    redraw_osd_preview();
     redraw_blur_preview();
     redraw_context_menu_preview();
     redraw_widgets_preview();
@@ -2556,7 +2637,7 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     char badge_text[128];
     g_snprintf(badge_text, sizeof(badge_text), "Liquid Glass • %s", shape_names[shape_idx]);
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.0);
     cairo_text_extents_t ext;
     cairo_text_extents(cr, badge_text, &ext);
@@ -2676,12 +2757,12 @@ static void menubar_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_fill(cr);
 
     // Menus
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.5);
     cairo_move_to(cr, 30.0, 17.5);
     cairo_show_text(cr, "Finder");
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.85);
     cairo_move_to(cr, 76.0, 17.5);
     cairo_show_text(cr, "Файл");
@@ -3055,7 +3136,7 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_stroke(cr);
 
     // 5. Label text: "Telegram"
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 12.0);
     cairo_text_extents_t te;
     cairo_text_extents(cr, "Telegram", &te);
@@ -3174,7 +3255,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_fill(cr);
 
     // Exclamation mark inside warning triangle
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 13.0);
     cairo_set_source_rgb(cr, 0.10, 0.10, 0.10);
     cairo_text_extents_t ex_w;
@@ -3191,7 +3272,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_show_text(cr, title_txt);
 
     // Subtitle
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.65);
     const char *sub_txt = "Цю дію неможливо скасувати.";
@@ -3225,7 +3306,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     draw_rounded_rect_path(cr, b2_x, btn_y, btn_w, btn_h, btn_r);
     cairo_set_source_rgb(cr, 0.88, 0.22, 0.20);
     cairo_fill(cr);
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
     cairo_text_extents(cr, "Спорожнити", &ex_w);
@@ -3304,25 +3385,25 @@ static void notifications_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, i
     cairo_fill(cr);
 
     // Text content
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
     cairo_move_to(cr, nx + 58.0, ny + 22.0);
     cairo_show_text(cr, "Повідомлення");
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.55);
     cairo_move_to(cr, nx + 150.0, ny + 22.0);
     cairo_show_text(cr, "•  щойно");
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.92);
     cairo_move_to(cr, nx + 58.0, ny + 38.0);
     cairo_show_text(cr, "Олександр");
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.80);
     cairo_move_to(cr, nx + 58.0, ny + 51.0);
@@ -3701,7 +3782,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
     double text_x = sx + 38.0 + p * 8.0;
     double text_y = sy + 27.5 + p * 3.5;
     double font_sz = 12.0 + p * 4.0;
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, font_sz);
 
     if (spotlight_input_active) {
@@ -3748,7 +3829,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.18 * badge_alpha);
             cairo_set_line_width(cr, 0.8);
             cairo_stroke(cr);
-            cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+            cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
             cairo_set_font_size(cr, 9.5);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88 * badge_alpha);
             cairo_move_to(cr, bx + 7.5, by + 14.5);
@@ -3766,7 +3847,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
             draw_rounded_rect_path(cr, esc_x, esc_y, esc_w, esc_h, 6.0);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12 * esc_alpha);
             cairo_fill(cr);
-            cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+            cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
             cairo_set_font_size(cr, 9.5);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.70 * esc_alpha);
             cairo_move_to(cr, esc_x + 11.5, esc_y + 13.5);
@@ -3797,13 +3878,13 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
             // Safari header row
             draw_safari_compass_icon(cr, sx + 34.0, sy + 76.0, 15.0);
 
-            cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+            cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
             cairo_set_font_size(cr, 13.0);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95 * content_alpha);
             cairo_move_to(cr, sx + 58.0, sy + 73.0);
             cairo_show_text(cr, "Результати у інтернеті");
 
-            cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+            cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
             cairo_set_font_size(cr, 10.5);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.52 * content_alpha);
             cairo_move_to(cr, sx + 58.0, sy + 87.0);
@@ -3828,7 +3909,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
                 pango_layout_set_width(layout, (int)((card_w - 24.0) * PANGO_SCALE));
                 pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
                 pango_layout_set_spacing(layout, (int)(4.0 * PANGO_SCALE));
-                PangoFontDescription *desc = pango_font_description_from_string("SF Pro Text 11.5");
+                PangoFontDescription *desc = pango_font_description_from_string("Inter 11.5");
                 pango_layout_set_font_description(layout, desc);
                 pango_font_description_free(desc);
 
@@ -3881,6 +3962,122 @@ void init_spotlight_preview(void *widget, gpointer data) {
 }
 
 /* ========================================================================= */
+/* Live Preview: OSD (On-Screen Display) Preview                             */
+/* ========================================================================= */
+
+static GtkWidget *g_osd_preview_w = NULL;
+static void redraw_osd_preview(void) {
+    if (g_osd_preview_w && GTK_IS_WIDGET(g_osd_preview_w)) {
+        gtk_widget_queue_draw(g_osd_preview_w);
+    }
+}
+
+static void osd_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer user_data) {
+    (void)area; (void)user_data;
+    if (width <= 0 || height <= 0) return;
+
+    cairo_save(cr);
+    draw_rounded_rect_path(cr, 0, 0, width, height, 14.0);
+    cairo_clip(cr);
+
+    // 1. Wallpaper background
+    cairo_surface_t *bg = get_cached_wallpaper_surface(width, height);
+    if (bg) {
+        cairo_set_source_surface(cr, bg, 0, 0);
+        cairo_paint(cr);
+    } else {
+        cairo_set_source_rgb(cr, 0.12, 0.15, 0.22);
+        cairo_paint(cr);
+    }
+
+    // 2. Frosted glass OSD pill capsule (matching Photo 1 reference)
+    double cw = 250.0;
+    double ch = 46.0;
+    double cr_r = ch / 2.0; // 23.0px capsule radius
+    double cx = (width - cw) / 2.0;
+    double cy = (height - ch) / 2.0;
+
+    int blur_r = CLAMP(state.osd_blur, 0, 50);
+    cairo_surface_t *blurred_bg = get_cached_blurred_wallpaper_surface(width, height, blur_r);
+
+    double tint_val = (double)state.osd_tint / 100.0;
+    double shadow_a = ((double)state.osd_shadow / 100.0) * 0.90;
+    double card_tint_a = 0.22 + tint_val * 0.55;
+
+    draw_frosted_glass_card(cr, blurred_bg, cx, cy, cw, ch, cr_r, card_tint_a, shadow_a, 0.16);
+
+    // Specular top highlight line for glass capsule
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.20);
+    cairo_set_line_width(cr, 1.0);
+    cairo_move_to(cr, cx + cr_r, cy + 0.5);
+    cairo_line_to(cr, cx + cw - cr_r, cy + 0.5);
+    cairo_stroke(cr);
+
+    // 3. Speaker icon (crisp vector rendering, enlarged, NO ghost arches)
+    double spk_cx = cx + 22.0;
+    double spk_cy = cy + ch / 2.0;
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
+
+    // Speaker base box
+    cairo_rectangle(cr, spk_cx - 8.0, spk_cy - 4.5, 4.0, 9.0);
+    cairo_fill(cr);
+
+    // Speaker cone (trapezoid)
+    cairo_move_to(cr, spk_cx - 4.0, spk_cy - 4.5);
+    cairo_line_to(cr, spk_cx + 1.0, spk_cy - 9.0);
+    cairo_line_to(cr, spk_cx + 1.0, spk_cy + 9.0);
+    cairo_line_to(cr, spk_cx - 4.0, spk_cy + 4.5);
+    cairo_close_path(cr);
+    cairo_fill(cr);
+
+    // Sound arch 1 (medium volume: 1st arch active)
+    cairo_set_line_width(cr, 2.0);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+    cairo_arc(cr, spk_cx - 1.0, spk_cy, 6.5, -0.68, 0.68);
+    cairo_stroke(cr);
+
+    // Sound arch 2 (2nd arch active)
+    cairo_arc(cr, spk_cx - 1.0, spk_cy, 11.0, -0.72, 0.72);
+    cairo_stroke(cr);
+
+    // 4. Segmented progress bar (16 segments, stops right before right cap curvature)
+    double bar_start_x = cx + 46.0;
+    double bar_end_x = cx + cw - cr_r - 2.0; // Exactly right before circular cap curve
+    double total_bar_w = bar_end_x - bar_start_x;
+    int num_segs = 16;
+    double seg_gap = 2.0;
+    double seg_w = (total_bar_w - (num_segs - 1) * seg_gap) / (double)num_segs;
+    double seg_h = 4.5;
+    double seg_y = cy + (ch - seg_h) / 2.0;
+    int active_segs = 7; // ~44% volume matching Photo 1
+
+    for (int i = 0; i < num_segs; i++) {
+        double sx = bar_start_x + i * (seg_w + seg_gap);
+        draw_rounded_rect_path(cr, sx, seg_y, seg_w, seg_h, 1.5);
+        if (i < active_segs) {
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
+        } else {
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.22);
+        }
+        cairo_fill(cr);
+    }
+
+    cairo_restore(cr);
+
+    // Border around preview card
+    draw_rounded_rect_path(cr, 0.5, 0.5, width - 1.0, height - 1.0, 14.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+}
+
+void init_osd_preview(void *widget, gpointer data) {
+    (void)data;
+    g_osd_preview_w = GTK_WIDGET(widget);
+    gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), osd_preview_draw_func, NULL, NULL);
+}
+
+/* ========================================================================= */
 /* Live Preview: Blur Preview                                                */
 /* ========================================================================= */
 
@@ -3919,13 +4116,13 @@ static void blur_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
 
     draw_frosted_glass_card(cr, blurred_bg, bx, by, bw, bh, br, tint_a, 0.70, 0.16);
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
     cairo_move_to(cr, bx + 18.0, by + 28.0);
     cairo_show_text(cr, "Глобальне розмиття (Blur)");
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.72);
     cairo_move_to(cr, bx + 18.0, by + 46.0);
@@ -3939,7 +4136,7 @@ static void blur_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
     const char *tint_word = is_light ? (is_uk ? "Засвітлення" : "Lightening") : (is_uk ? "Затемнення" : "Darkening");
     char val_txt[64];
     g_snprintf(val_txt, sizeof(val_txt), "Sigma: %d • %s: %d%%", state.blur_sigma, tint_word, state.blur_tint);
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 9.0);
     cairo_text_extents_t ex_v;
     cairo_text_extents(cr, val_txt, &ex_v);
@@ -4070,7 +4267,7 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     cairo_set_source_rgba(cr, ar, ag, ab, 0.20);
     cairo_fill(cr);
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
     cairo_move_to(cr, mx + 14.0, r1_y + 18.0);
@@ -4100,7 +4297,7 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     cairo_stroke(cr);
 
     // Row 2: "Додати віджети..."
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88);
     cairo_move_to(cr, mx + 14.0, my + 92.0);
@@ -4109,14 +4306,14 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     // Row 3: "Упорядкувати віджети" + chevron ›
     cairo_move_to(cr, mx + 14.0, my + 116.0);
     cairo_show_text(cr, "Упорядкувати віджети");
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.45);
     cairo_move_to(cr, mx + mw - 20.0, my + 116.0);
     cairo_show_text(cr, "›");
 
     // Row 4: "Змінити шпалери..."
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88);
     cairo_move_to(cr, mx + 14.0, my + 138.0);
@@ -4271,7 +4468,7 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_fill(cr);
 
     // Typography (Apple Cupertino World Clock)
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
     cairo_text_extents_t ex_t;
@@ -4279,7 +4476,7 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_move_to(cr, cx - ex_t.width / 2.0, wy + 106.0);
     cairo_show_text(cr, "КИЇВ");
 
-    cairo_select_font_face(cr, "SF Pro Text", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.55);
     cairo_text_extents(cr, "+0 ГОД", &ex_t);
@@ -4508,6 +4705,64 @@ void on_spotlight_shadow_changed(void *widget, gpointer data) {
     state.spotlight_shadow = (int)lround(gtk_range_get_value(widget));
     redraw_spotlight_preview();
     schedule_spotlight_apply();
+    schedule_json_save();
+}
+
+/* Group: OSD Callbacks */
+void init_osd_blur(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.osd_blur);
+    in_init = 0;
+}
+
+void on_osd_blur_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.osd_blur = (int)lround(gtk_range_get_value(widget));
+    redraw_osd_preview();
+    schedule_osd_apply();
+    schedule_json_save();
+}
+
+void init_osd_tint(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.osd_tint);
+    in_init = 0;
+}
+
+void on_osd_tint_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.osd_tint = (int)lround(gtk_range_get_value(widget));
+    redraw_osd_preview();
+    schedule_osd_apply();
+    schedule_json_save();
+}
+
+void init_osd_shadow(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.osd_shadow);
+    in_init = 0;
+}
+
+void on_osd_shadow_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.osd_shadow = (int)lround(gtk_range_get_value(widget));
+    redraw_osd_preview();
+    schedule_osd_apply();
     schedule_json_save();
 }
 

@@ -1233,13 +1233,13 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     background-color: transparent;
     border-radius: 9999px !important;
     border: 1px solid rgba(255, 255, 255, 0.18) !important;
-    padding: 14px 22px 14px 18px;
-    spacing: 16px;
+    padding: 14px 32px 14px 18px;
+    spacing: 14px;
     box-shadow: none !important;
 }
 .tahoe-osd-icon {
     color: #ffffff;
-    icon-size: 28px;
+    icon-size: 34px;
 }
 .tahoe-osd-head {
     spacing: 0;

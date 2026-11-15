@@ -261,7 +261,7 @@
         "50",
         "51"
       ],
-      "sha256": "fccd2886caf0685164fec75d9e704842f052dfb7b902ffd0994b72cbee2e4618",
+      "sha256": "b5e728dbff094adacccdceec8f4f1e25f7dc15bf193b373aeceab66bafea49d9",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -276,7 +276,8 @@
       "last_verified": "2026-11-09",
       "integrity_hash": "408cf0e45df8c5eaefa45c0f36cc0125c669d4bcc42bfa86de8b1cace9e0c94f",
       "pinned_sha256": "7041e6f9efeb55e7f574bf8b08a591e7dd335546de8f9be488556431e356dfaf",
-      "expected_hash": "3986c471"
+      "expected_hash": "3986c471",
+      "dir_hash": "fca3be407637d6569aeb389d4b73808833814a4404048b3c7ee85c7d977e366b"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {
       "uuid": "liquid-glass@thinkingcoding1231.gmail.com",
@@ -286,7 +287,7 @@
         "49",
         "50"
       ],
-      "sha256": "da124f57fc8940a746879d5aae58d5bb79bbca9960f92d6d423f1b5eba225c37",
+      "sha256": "8a80dd7591d9ccb73a9bdad09fa8bf5569a03eae6be93aec36bda5038daf377c",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
