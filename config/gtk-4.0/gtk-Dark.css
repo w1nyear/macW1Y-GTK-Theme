@@ -12011,6 +12011,15 @@ window.mac-settings-window navigation-view-page.mac-settings-sidebar {
     box-shadow: none;
 }
 
+window.mac-settings-window .mac-settings-sidebar toolbarview,
+window.mac-settings-window .sidebar-pane toolbarview,
+window.mac-settings-window navigation-split-view > widget:first-child toolbarview {
+    background-color: var(--mac-sidebar-bg, #18181a);
+    background: #18181a;
+    border: none;
+    box-shadow: none;
+}
+
 window.mac-settings-window .mac-settings-sidebar-headerbar,
 window.mac-settings-window .sidebar-pane headerbar,
 window.mac-settings-window navigation-split-view > widget:first-child headerbar,
@@ -12045,6 +12054,7 @@ window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {
     border-bottom: 1px solid var(--mac-card-sep, rgba(255, 255, 255, 0.08));
     box-shadow: none;
 }
+
 
 
 

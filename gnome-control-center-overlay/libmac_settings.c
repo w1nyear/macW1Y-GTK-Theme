@@ -8487,8 +8487,8 @@ static void init_mac_settings_css(void) {
         "  margin: 6px 0px 6px 6px; "
         "  border: none; "
         "  border-radius: 14px; "
-        "  background-color: #18181a; "
-        "  background: #18181a; "
+        "  background-color: var(--mac-sidebar-bg, #18181a); "
+        "  background: var(--mac-sidebar-bg, #18181a); "
         "  background-clip: padding-box; "
         "  box-shadow: none; "
         "} "
@@ -8510,6 +8510,7 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window.mac-theme-light navigation-view-page.mac-settings-sidebar { "
         "  background-color: #ebebf0; "
         "  background: #ebebf0; "
+        "  color: rgba(0, 0, 0, 0.88); "
         "} "
         "window.mac-settings-window.mac-theme-dark, "
         "window.mac-settings-window.mac-theme-dark.background, "
@@ -8529,6 +8530,7 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window.mac-theme-dark navigation-view-page.mac-settings-sidebar { "
         "  background-color: #18181a; "
         "  background: #18181a; "
+        "  color: #ffffff; "
         "} "
         "window.mac-settings-window preferencesgroup > box > box.header, "
         "window.mac-settings-window preferencesgroup box.header, "
@@ -9696,13 +9698,20 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window .sidebar-pane toolbarview > .top-bar, "
         "window.mac-settings-window .sidebar-pane toolbarview > .top-bar headerbar { "
         "  min-height: 48px; "
-        "  background: #18181a; "
-        "  background-color: #18181a; "
+        "  background: var(--mac-sidebar-bg, #18181a); "
+        "  background-color: var(--mac-sidebar-bg, #18181a); "
         "  background-image: none; "
         "  border: none; "
         "  border-bottom: none; "
         "  box-shadow: none; "
         "  margin-top: -7px; "
+        "} "
+        "window.mac-settings-window .mac-settings-sidebar scrolledwindow, "
+        "window.mac-settings-window .mac-settings-sidebar scrolledwindow > viewport, "
+        "window.mac-settings-window .sidebar-pane scrolledwindow, "
+        "window.mac-settings-window .sidebar-pane scrolledwindow > viewport { "
+        "  background: transparent; "
+        "  background-color: transparent; "
         "} "
         "window.mac-settings-window.mac-theme-light toolbarview > .top-bar, "
         "window.mac-settings-window.mac-theme-light toolbarview > .top-bar.flat, "
@@ -9712,13 +9721,33 @@ static void init_mac_settings_css(void) {
         "  background: #ffffff; "
         "  border-bottom: 1px solid var(--mac-card-sep, rgba(0, 0, 0, 0.08)); "
         "} "
+        "window.mac-settings-window.mac-theme-light .mac-settings-sidebar, "
+        "window.mac-settings-window.mac-theme-light .mac-settings-sidebar toolbarview, "
+        "window.mac-settings-window.mac-theme-light .mac-settings-sidebar toolbarview > .top-bar, "
+        "window.mac-settings-window.mac-theme-light .mac-settings-sidebar toolbarview > .top-bar headerbar, "
+        "window.mac-settings-window.mac-theme-light .mac-settings-sidebar headerbar, "
         "window.mac-settings-window.mac-theme-light .mac-settings-sidebar-headerbar, "
-        "window.mac-settings-window.mac-theme-light .sidebar-pane headerbar, "
+        "window.mac-settings-window.mac-theme-light navigation-split-view > widget:first-child, "
+        "window.mac-settings-window.mac-theme-light navigation-split-view > widget:first-child toolbarview, "
+        "window.mac-settings-window.mac-theme-light navigation-split-view > widget:first-child toolbarview > .top-bar, "
         "window.mac-settings-window.mac-theme-light navigation-split-view > widget:first-child headerbar, "
+        "window.mac-settings-window.mac-theme-light .sidebar-pane, "
+        "window.mac-settings-window.mac-theme-light .sidebar-pane headerbar, "
+        "window.mac-settings-window.mac-theme-light .sidebar-pane toolbarview, "
         "window.mac-settings-window.mac-theme-light .sidebar-pane toolbarview > .top-bar, "
-        "window.mac-settings-window.mac-theme-light .sidebar-pane toolbarview > .top-bar headerbar { "
+        "window.mac-settings-window.mac-theme-light .sidebar-pane toolbarview > .top-bar headerbar, "
+        "navigation-split-view.mac-theme-light .mac-settings-sidebar, "
+        "navigation-split-view.mac-theme-light .mac-settings-sidebar toolbarview, "
+        ".mac-settings-sidebar.mac-theme-light, "
+        ".mac-settings-sidebar.mac-theme-light toolbarview { "
         "  background-color: #ebebf0; "
         "  background: #ebebf0; "
+        "  color: rgba(0, 0, 0, 0.88); "
+        "} "
+        "window.mac-settings-window.mac-theme-light #app_search_entry { "
+        "  background-color: rgba(0, 0, 0, 0.06); "
+        "  border: 1px solid rgba(0, 0, 0, 0.08); "
+        "  color: rgba(0, 0, 0, 0.88); "
         "} "
         "window.mac-settings-window.mac-theme-dark toolbarview > .top-bar, "
         "window.mac-settings-window.mac-theme-dark toolbarview > .top-bar.flat, "
@@ -9728,13 +9757,33 @@ static void init_mac_settings_css(void) {
         "  background: #202022; "
         "  border-bottom: none; "
         "} "
+        "window.mac-settings-window.mac-theme-dark .mac-settings-sidebar, "
+        "window.mac-settings-window.mac-theme-dark .mac-settings-sidebar toolbarview, "
+        "window.mac-settings-window.mac-theme-dark .mac-settings-sidebar toolbarview > .top-bar, "
+        "window.mac-settings-window.mac-theme-dark .mac-settings-sidebar toolbarview > .top-bar headerbar, "
+        "window.mac-settings-window.mac-theme-dark .mac-settings-sidebar headerbar, "
         "window.mac-settings-window.mac-theme-dark .mac-settings-sidebar-headerbar, "
-        "window.mac-settings-window.mac-theme-dark .sidebar-pane headerbar, "
+        "window.mac-settings-window.mac-theme-dark navigation-split-view > widget:first-child, "
+        "window.mac-settings-window.mac-theme-dark navigation-split-view > widget:first-child toolbarview, "
+        "window.mac-settings-window.mac-theme-dark navigation-split-view > widget:first-child toolbarview > .top-bar, "
         "window.mac-settings-window.mac-theme-dark navigation-split-view > widget:first-child headerbar, "
+        "window.mac-settings-window.mac-theme-dark .sidebar-pane, "
+        "window.mac-settings-window.mac-theme-dark .sidebar-pane headerbar, "
+        "window.mac-settings-window.mac-theme-dark .sidebar-pane toolbarview, "
         "window.mac-settings-window.mac-theme-dark .sidebar-pane toolbarview > .top-bar, "
-        "window.mac-settings-window.mac-theme-dark .sidebar-pane toolbarview > .top-bar headerbar { "
+        "window.mac-settings-window.mac-theme-dark .sidebar-pane toolbarview > .top-bar headerbar, "
+        "navigation-split-view.mac-theme-dark .mac-settings-sidebar, "
+        "navigation-split-view.mac-theme-dark .mac-settings-sidebar toolbarview, "
+        ".mac-settings-sidebar.mac-theme-dark, "
+        ".mac-settings-sidebar.mac-theme-dark toolbarview { "
         "  background-color: #18181a; "
         "  background: #18181a; "
+        "  color: #ffffff; "
+        "} "
+        "window.mac-settings-window.mac-theme-dark #app_search_entry { "
+        "  background-color: rgba(255, 255, 255, 0.08); "
+        "  border: 1px solid rgba(255, 255, 255, 0.08); "
+        "  color: #ffffff; "
         "} "
         "window.mac-settings-window windowcontrols, "
         "window.mac-settings-window windowcontrols.start, "
@@ -11923,6 +11972,14 @@ static void on_style_manager_notify_dark(GObject *gobject, GParamSpec *pspec, gp
     }
     if (split_view && GTK_IS_WIDGET(split_view)) {
         update_window_theme_class(GTK_WIDGET(split_view));
+        AdwNavigationPage *sidebar = adw_navigation_split_view_get_sidebar(split_view);
+        if (sidebar) {
+            update_window_theme_class(GTK_WIDGET(sidebar));
+        }
+        AdwNavigationPage *content = adw_navigation_split_view_get_content(split_view);
+        if (content) {
+            update_window_theme_class(GTK_WIDGET(content));
+        }
         schedule_update_panel_headerbar(split_view);
     }
     redraw_all_mac_styling_previews();
@@ -11947,6 +12004,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
     AdwNavigationSplitView *split_view = NULL;
     find_navigation_split_view(GTK_WIDGET(window), &split_view);
     if (!split_view) return G_SOURCE_REMOVE;
+    update_window_theme_class(GTK_WIDGET(split_view));
 
     AdwStyleManager *sm = adw_style_manager_get_default();
     if (sm && !g_object_get_data(G_OBJECT(sm), "mac_dark_notify_connected")) {
@@ -11967,6 +12025,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
     if (!sidebar) return G_SOURCE_REMOVE;
 
     gtk_widget_add_css_class(GTK_WIDGET(sidebar), "mac-settings-sidebar");
+    update_window_theme_class(GTK_WIDGET(sidebar));
 
     /* Lock empty title on sidebar page */
     if (ADW_IS_NAVIGATION_PAGE(sidebar)) {
@@ -12037,6 +12096,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
     AdwNavigationPage *content_page = adw_navigation_split_view_get_content(split_view);
     if (content_page) {
         gtk_widget_add_css_class(GTK_WIDGET(content_page), "mac-settings-content");
+        update_window_theme_class(GTK_WIDGET(content_page));
         configure_toolbar_views_recursive(GTK_WIDGET(content_page), FALSE);
     }
     schedule_update_panel_headerbar(split_view);

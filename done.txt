@@ -127,3 +127,19 @@
 
 
 
+
+776. Виправлення темного сайдбара (left bar) у світлій темі в Параметрах (GNOME Control Center):
+   - Першопричина: У control-center/libmac_settings.c селектор .mac-settings-sidebar toolbarview жорстко встановлював background: #18181a без префіксу теми на пріоритеті GTK_STYLE_PROVIDER_PRIORITY_APPLICATION + 800, через що у світлій темі віджет AdwToolbarView сайдбара зафарбовувався чорним кольором (#18181a).
+   - Виправлення:
+     1) У control-center/libmac_settings.c та config/gtk-4.0/gtk-Light.css / gtk-Dark.css чітко розмежовано стилі сайдбара:
+        * Для світлої теми (.mac-theme-light): .mac-settings-sidebar, toolbarview, .sidebar-pane, headerbar, navigation-split-view > widget:first-child отримують фірмове світле тло macOS #ebebf0 (RGB [235, 235, 240]), а поле пошуку #app_search_entry — світле напівпрозоре тло rgba(0, 0, 0, 0.06).
+        * Для темної теми (.mac-theme-dark): сайдбар отримує темне тло #18181a (RGB [24, 24, 26]), а хедербар контенту — #202022 (RGB [32, 32, 34]).
+        * Всі вкладені scrolledwindow та viewport у сайдбарі отримали background: transparent.
+     2) Оновлено update_window_theme_class() та mac_fix_settings_window(), щоб класи теми (.mac-theme-light / .mac-theme-dark) синхронно додавалися до головного вікна, split_view, сторінки сайдбара (sidebar) та контенту (content_page).
+     3) Перекомпільовано libmac_settings.so та синхронізовано в усі 7 системних цілей.
+     4) Оновлено стилі через bin/mac-build-theme.
+   - Верифікація:
+     1) Наживо захоплено вікна Параметрів та проведено попіксельний аналіз через PIL у світлій та темній темах:
+        * Світла тема: верхній хедербар контенту (x=500, y=20) = RGB [255, 255, 255] (#ffffff), тіло сайдбара (x=100, y=200) = RGB [235, 235, 240] (#ebebf0), відступи навколо сайдбара (x=12, y=50) = RGB [255, 255, 255] (#ffffff). Темний сайдбар повністю зник!
+        * Темна тема: верхній хедербар контенту = RGB [32, 32, 34] (#202022), тіло сайдбара = RGB [24, 24, 26] (#18181a), відступи = RGB [24, 24, 27]. Жодних білих витоків!
+     2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
