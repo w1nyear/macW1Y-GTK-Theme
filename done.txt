@@ -490,3 +490,22 @@
         - bin/mac-audit-sync check (100% PASS)
         - bin/mac-extension-guard verify (100% PASS)
         - bin/mac-i18n-verify (100% PASS).
+
+792. Відновлення скла Liquid Glass у Dock після перезапуску (виправлення синтаксичної помилки в dockManager.js):
+   - Проблема:
+     Після перезапуску системи скляна плашка навколо іконок Dock зникла (media_1794773097363_3f6911c9.jpg).
+     Аналіз стану розширення у GNOME Shell показав: state = 3 (ERROR) з помилкою:
+     'SyntaxError: missing ) after formal parameters @ dist/dockManager.js:930:32'.
+     Через випадкову зайву закриваючу фігурну дужку '}' на рядку 930 модуль dockManager.js не міг розпарситися під час ініціалізації оболонки, через що liquid-glass аварійно вимикалося.
+   - Вирішення:
+     1) Видалено зайву закриваючу дужку '}' у extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js.
+     2) Перевірено синтаксичну коректність через gjs -m extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js (0 синтаксичних помилок).
+     3) Скопійовано виправлений файл до ~/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js.
+     4) Оновлено config/extensions.lock.json актуальними хешами sha256 (6602332d для liquid-glass, 3bf4acfd для dist/dockManager.js).
+     5) Перезавантажено розширення в живому сеансі через Main.extensionManager.reloadExtension(): стан відновлено до state = 1 (ACTIVE), glass bgActor відновлено (visible = true, opacity = 255).
+   - Верифікація:
+     1) Знято та перевірено скріншот scratch_dock_glass_restored_crop.png: скляна плашка Liquid Glass повністю активна, іконки ідеально відцентровані всередині скла.
+     2) Повний набір з 3 обов'язкових системних аудитів пройдено на 100%:
+        - bin/mac-audit-sync check (100% PASS)
+        - bin/mac-extension-guard verify (100% PASS)
+        - bin/mac-i18n-verify (100% SUCCESS).

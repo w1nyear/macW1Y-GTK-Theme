@@ -286,7 +286,7 @@
         "49",
         "50"
       ],
-      "sha256": "505c4cd57f02ebcde25d64e654eb60e3572e14db988010a9cc508c22ad0e7b34",
+      "sha256": "6602332d2567be5405d444643935ef5c7ac70ad7c3a878faf8c5cbbdb8326742",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -325,7 +325,7 @@
         "dist/applicationManager_v2.js": "15f84a22c7995625d6c98b251cde13abebe9827f34d91b7ce66cecea0b21f454",
         "dist/liquidEffect_v2.js": "1c6eaef2b3ae0dfc03f6d7403073037cb9c79abea3afc680e2b9325241f92833",
         "dist/applicationManager.js": "1d6f55fa44d55c639e7d9cfa9e9ed2de392f632eed58a3ddf0874a9c24bee8df",
-        "dist/dockManager.js": "6d40364450c6e8b70a4cfcf5e2cb9f9e7387a8db585f5bca79e732be31582638",
+        "dist/dockManager.js": "3bf4acfd99e79e75aefc6dbe88489a08b269fcfa5d8797d5f79f4bd80510c6b5",
         "dist/notificationManager.js": "f702fa83c0b94caf418033520dc1696b2efdd4c67d1eb267797034b319187bde",
         "dist/logger.js": "d470b0b44a9e1a7c063f23809a6e71bd1baf7c08dfff57b276a23fd93af9a089",
         "dist/quickSettingsManager.js": "b5f9b8635b55e4d2132d910b28a4db0550904ed6267c20f92b8cc11b26b13f74",
@@ -351,7 +351,7 @@
         "icons/audio-volume-medium-symbolic.svg": "1e4a7b31ae69bd89d9428d998b44e340bbbb1a54085f4b62a87cd31ffb24068b",
         "icons/shapes-large-symbolic.svg": "713fe56bf2d550a9c99600a1ce8cd87b993b40101f9d5fa7b007907efc9cdd11"
       },
-      "pinned_sha256": "505c4cd57f02ebcde25d64e654eb60e3572e14db988010a9cc508c22ad0e7b34"
+      "pinned_sha256": "6602332d2567be5405d444643935ef5c7ac70ad7c3a878faf8c5cbbdb8326742"
     },
     "macos-touchpad-gestures@mactheme": {
       "uuid": "macos-touchpad-gestures@mactheme",

@@ -924,7 +924,6 @@ export class DashManager {
             baseH = pillH + 8;
             hasIconBounds = true;
         }
-        }
 
         // Freeze geometry to resting coordinates during transitions so shader does not jitter or compound translation
         if (isD2DTransitioning && this._lastRestingAbsY !== undefined) {
