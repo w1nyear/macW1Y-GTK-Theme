@@ -18,7 +18,7 @@
         "49",
         "50"
       ],
-      "sha256": "8f7164a639f00ceb1bfe590f6b79a281aad634a03d668395a2722ba23869e79d",
+      "sha256": "b349e7f6da46cd8b15b022e1c1a91bae424e83f1008467a04b7d90e8e9308466",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -30,7 +30,7 @@
       "has_custom_patches": true,
       "patch_description": "macOS Monterey style spotlight, apple menu, finder naming, wine exclusions; clipboard dialog copy-and-close & click-to-paste injection",
       "last_verified": "2026-11-04",
-      "pinned_sha256": "a82221655333b5bc4956d99ec9c40bf010a74bcca08a1aafbf4185b843a7b2a9"
+      "pinned_sha256": "b349e7f6da46cd8b15b022e1c1a91bae424e83f1008467a04b7d90e8e9308466"
     },
     "blur-my-shell@aunetx": {
       "uuid": "blur-my-shell@aunetx",
@@ -44,7 +44,7 @@
         "50",
         "51"
       ],
-      "sha256": "30ee8887e1f1a8f04fdeb51077abb11bd227d94384dcfb9c776d2fd886998fd1",
+      "sha256": "5ae218eb0eff236be0d91d4ef5bfd20db50ba9d456ca98892b4718a892941c4d",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -56,8 +56,8 @@
       "has_custom_patches": true,
       "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macOS horizontal Cairo battery indicator",
       "last_verified": "2026-11-08",
-      "pinned_sha256": "408e54d0f8146e7c6e23acc2f37b41ad6a3b68985fcb97db131cb17b46cabc00",
-      "dir_hash": "30ee8887"
+      "pinned_sha256": "5ae218eb0eff236be0d91d4ef5bfd20db50ba9d456ca98892b4718a892941c4d",
+      "dir_hash": "5ae218eb"
     },
     "compiz-alike-magic-lamp-effect@hermes83.github.com": {
       "uuid": "compiz-alike-magic-lamp-effect@hermes83.github.com",
@@ -286,7 +286,7 @@
         "49",
         "50"
       ],
-      "sha256": "cf70f88717620587c28884d5b0dc0713222c842bfd3b194b2ccb89287a443073",
+      "sha256": "1e72f8277e3ea58f662ce4314c1afb361c43f392a9c7e9a598b26087010e4242",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -351,7 +351,7 @@
         "icons/audio-volume-medium-symbolic.svg": "1e4a7b31ae69bd89d9428d998b44e340bbbb1a54085f4b62a87cd31ffb24068b",
         "icons/shapes-large-symbolic.svg": "713fe56bf2d550a9c99600a1ce8cd87b993b40101f9d5fa7b007907efc9cdd11"
       },
-      "pinned_sha256": "cf70f88717620587c28884d5b0dc0713222c842bfd3b194b2ccb89287a443073"
+      "pinned_sha256": "1e72f8277e3ea58f662ce4314c1afb361c43f392a9c7e9a598b26087010e4242"
     },
     "macos-touchpad-gestures@mactheme": {
       "uuid": "macos-touchpad-gestures@mactheme",
@@ -578,7 +578,7 @@
         "50",
         "51"
       ],
-      "sha256": "33ba55c28ed6745a21ce0fb38edd26ac8db1f0ae03190e05ce158effeb573bdc",
+      "sha256": "f2dd503d55f4846e4400bebdc8ecd08bab1ba5166ba566498fd92b5b5346e4a7",
       "status": "locked",
       "source": "github",
       "macw1y_components": [
@@ -589,7 +589,7 @@
       "has_custom_patches": true,
       "patch_description": "Liquid Glass GLSL shader scalar uniform binding fix, frosted card styling, and safe snippet support for GNOME 50",
       "last_verified": "2026-11-10",
-      "pinned_sha256": "f9e4ce9d3a1b0fe88d3d9aba57944036de477d70cb8068ee305e22e1d1fd0c26"
+      "pinned_sha256": "f2dd503d55f4846e4400bebdc8ecd08bab1ba5166ba566498fd92b5b5346e4a7"
     },
     "ubuntu-appindicators@ubuntu.com": {
       "uuid": "ubuntu-appindicators@ubuntu.com",

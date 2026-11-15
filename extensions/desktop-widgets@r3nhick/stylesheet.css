@@ -244,10 +244,11 @@
 }
 
 .desktop-widgets-context-menu .popup-menu-content {
-    background-color: rgba(30, 30, 34, 0.78) !important;
-    background: rgba(30, 30, 34, 0.78) !important;
-    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    background-color: transparent !important;
+    background: transparent !important;
+    border: none !important;
     border-radius: 20px !important;
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35) !important;
+    box-shadow: none !important;
     padding: 6px !important;
+    min-width: 250px !important;
 }

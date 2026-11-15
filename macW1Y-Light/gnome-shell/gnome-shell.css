@@ -2560,7 +2560,7 @@ StEntry StLabel.hint-text {
 }
 
 .popup-menu {
-  min-width: 12em;
+  min-width: 250px !important;
   color: #afafaf;
 }
 
@@ -2583,12 +2583,13 @@ StEntry StLabel.hint-text {
 
 .popup-menu-content {
   padding: 5px;
-  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: none !important;
   margin: 4px 12px 17px 12px;
   background-color: transparent !important;
   background: transparent !important;
   border-radius: 24px !important;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: none !important;
+  min-width: 250px !important;
 }
 
 .popup-menu-item {
@@ -6293,14 +6294,17 @@ StWidget.focused .app-grid-running-dot {
 .popup-menu-content {
   background-color: transparent !important;
   background: transparent !important;
-  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  border: none !important;
   box-shadow: none !important;
   border-radius: 24px !important;
   padding: 6px !important;
+  min-width: 250px !important;
 }
 
 .popup-menu-boxpointer .popup-menu-content {
   border-radius: 24px !important;
+  border: none !important;
+  min-width: 250px !important;
 }
 
 .popup-sub-menu {
@@ -6339,10 +6343,11 @@ StWidget.focused .app-grid-running-dot {
 .appmenu-popup-menu.popup-menu-boxpointer .popup-menu-content {
   border-radius: 24px !important;
   padding: 6px !important;
-  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  border: none !important;
   background-color: transparent !important;
   background: transparent !important;
   box-shadow: none !important;
+  min-width: 250px !important;
 }
 
 .appmenu-popup-menu .popup-sub-menu {

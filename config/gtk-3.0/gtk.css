@@ -149,7 +149,10 @@ popover.menu contents,
 popover.context-menu > contents,
 popover.background > contents,
 popover.menu.background > contents,
-popover > contents {
+popover > contents,
+.context-menu > contents,
+menu,
+.menu {
   border-radius: 20px;
   background-color: transparent;
   background: transparent;
@@ -158,6 +161,7 @@ popover > contents {
   border: none;
   box-shadow: none;
   padding: 6px 4px;
+  min-width: 250px;
 }
 
 popover.menu modelbutton {
@@ -765,6 +769,7 @@ scale slider:disabled {
   border-bottom-right-radius: 9999px;
   border-left: none;
 }
+
 
 
 

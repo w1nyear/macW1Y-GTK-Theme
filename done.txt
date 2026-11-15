@@ -170,3 +170,24 @@
         * Світла тема: сайдбар (100, 200) = RGB [255, 255, 255] (#ffffff, чисто білий), хедербар/фон програми (450, 25) = RGB [235, 235, 240] (#ebebf0, м'який сірий).
         * Темна тема: сайдбар (100, 200) = RGB [24, 24, 26] (#18181a), хедербар/фон програми (450, 25) = RGB [32, 32, 34] (#202022).
      2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
+
+
+778. Усунення подвійного скла та уніфікація ширини контекстних і спливаючих меню:
+   - Запит користувача: Після зміни мови системи для тесту ширина ПКМ / спливаючого меню змінилася. Видалити подвійні скла, що накладаються одне на одне, та зробити єдиний стандартизований розмір меню.
+   - Реалізовані зміни:
+     1) Усунено внутрішню дублюючу рамку скла (border: 1px solid rgba(255, 255, 255, 0.18)), яка конфліктувала із зовнішнім шейдером Liquid Glass, створюючи друге скло всередині:
+        * extensions/blur-my-shell@aunetx/components/menubar_v29.js (_updatePopupRealtime) переведено на border: none !important; box-shadow: none !important; min-width: 250px !important;.
+        * extensions/liquid-glass@thinkingcoding1231.gmail.com/stylesheet.css (.popup-menu-content, .popup-sub-menu) переведено на border: none !important; min-width: 250px !important;.
+        * extensions/desktop-widgets@r3nhick/stylesheet.css (.desktop-widgets-context-menu .popup-menu-content) переведено на background-color: transparent !important; border: none !important; box-shadow: none !important; min-width: 250px !important;.
+        * extensions/appmenu@ChathurangaBW.github.io/stylesheet.css переведено на border: none !important; min-width: 250px !important;.
+        * Теми GNOME Shell (macW1Y-Dark, macW1Y-Light, macW1Y-Dark-solid, macW1Y-Light-solid, gnome-shell-theme): .popup-menu, .popup-menu-content, .popup-menu-boxpointer .popup-menu-content отримали border: none !important; min-width: 250px !important;.
+     2) Уніфіковано ширину меню скрізь у системі до 250px (min-width: 250px !important;):
+        * При зміні мови (англійська, українська тощо) ширина контекстних меню та меню панелі залишається однаковою та не стрибає.
+        * У bin/mac-build-theme оновлено секцію 11 (Menus, Popovers & Context Menus), додано min-width: 250px для popover > contents, .popover-menu > contents, popover.menu > contents, popover.context-menu > contents, .context-menu > contents, menu.
+        * Синхронізовано конфігурації config/gtk-4.0/ (gtk.css, gtk-Dark.css, macw1y-components.css) та config/gtk-3.0/gtk.css.
+     3) Оновлено config/extensions.lock.json із новими sha256 хешами для 4 модифікованих розширень, синхронізовано в /usr/local/bin/mac-build-theme та ~/.local/share/gnome-shell/extensions/.
+   - Верифікація:
+     1) Попіксельне тестування наживо через PIL (keyboard_menu_verified.png):
+        * Рамка-артефакт на x=94 зникла (яскравий пік RGB [106, 130, 152] замінено на плавний монолітний фон RGB [71, 101, 129]). Меню має одне чисте скло Liquid Glass.
+        * Ширина меню строго зафіксована на min-width: 250px (box_w = 262px, actor_w = 274px).
+     2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).

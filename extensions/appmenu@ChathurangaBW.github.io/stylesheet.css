@@ -267,8 +267,9 @@
     padding: 6px 0 !important;
     background-color: transparent !important;
     background: transparent !important;
-    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border: none !important;
     box-shadow: none !important;
+    min-width: 250px !important;
 }
 
 .appmenu-popup-menu .popup-sub-menu {

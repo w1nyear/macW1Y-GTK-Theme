@@ -9752,6 +9752,7 @@ popover > contents,
 .context-menu > contents {
   border-radius: 20px;
   padding: 14px 6px 12px 6px;
+  min-width: 250px;
 }
 
 popover.menu modelbutton:first-child,
@@ -12101,6 +12102,7 @@ window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {
     border-bottom: 1px solid var(--mac-card-sep, rgba(255, 255, 255, 0.08));
     box-shadow: none;
 }
+
 
 
 

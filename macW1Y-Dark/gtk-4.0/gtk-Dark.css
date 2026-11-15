@@ -9716,6 +9716,7 @@ popover > contents,
 .context-menu > contents {
   border-radius: 20px;
   padding: 14px 6px 12px 6px;
+  min-width: 250px;
 }
 
 popover.menu modelbutton:first-child,
