@@ -509,3 +509,35 @@
         - bin/mac-audit-sync check (100% PASS)
         - bin/mac-extension-guard verify (100% PASS)
         - bin/mac-i18n-verify (100% SUCCESS).
+
+793. Фіксація скла Liquid Glass під час ефекту збільшення іконок (Magnification Stability & Baseline Anchoring):
+   - Проблема:
+     При наведенні курсора на іконки Dock та активації ефекту збільшення (magnify) скляна плашка зміщувалася вгору (media_1794773499821_6122fff5.jpg).
+     Аналіз геометрії показав:
+     1) У dist/dockManager.js вертикальна позиція плашки pillY розраховувалася через Math.round(iconBounds.centerY - (pillH * 0.5)).
+     2) Обхід walkIcons() враховував усі іконки поспіль, включно зі збільшеною. Коли активувався magnify/rise, координата y збільшеної іконки зменшувалася (іконка піднімалася), що тягнуло вгору весь iconBounds.centerY (на ~32-35px).
+     3) В результаті вся скляна плашка підстрибувала вгору слідом за курсором, а незбільшені іконки опинялися на самому нижньому краю скла.
+   - Вирішення:
+     1) У extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js:
+        * Авторитарна прив'язка до фонової плашки slab (.dash-background):
+          let pillY = (Number.isFinite(slY) && slY > 0) ? slY : (iconBounds ? Math.round(iconBounds.centerY - (pillH * 0.5)) : slY);
+          Оскільки dash2dock-motion під час magnification змінює лише горизонтальні координати (scale_x, translation_x) і ніколи не чіпає вертикальні (translation_y = 0, scale_y = 1), slY та slH залишаються абсолютно нерухомими у вертикальній площині.
+        * Для резервної гілки (iconBounds) додано фільтрацію іконок спокою (restingIcons): іконки з висотою <= minH + 6, що повністю відсікає збільшені значки від розрахунку вертикального центру iconBounds.centerY.
+        * Ширина скла (pillW) та зсув по X (pillX) продовжують плавно розширюватися для охоплення збільшених значків.
+     2) У extensions/liquid-glass@thinkingcoding1231.gmail.com/extension.js:
+        * Оновлено рядок імпорту на dist/dockManager.js?v=fix5 для інвалідації кешу ESM-модулів у GJS.
+     3) Синхронізовано файли з ~/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/.
+     4) Оновлено config/extensions.lock.json актуальними контрольними сумами sha256.
+     5) Застосовано оновлену логіку _syncGeometry в живому сеансі GNOME Shell.
+   - Верифікація:
+     1) Інструментальне тестування під час magnification (mag.setDebugState(900, 1030, 1)):
+        - До збільшення: bgY = 972, bgH = 121, slabY = 996, slabH = 73, slabW = 834.
+        - Під час збільшення: bgY = 972, bgH = 121, slabY = 996, slabH = 73, slabW = 993.4.
+        - bgYDidNotMove: true (0px зсуву по вертикалі).
+        - bgHDidNotChange: true (0px розширення по висоті).
+        - slabWExpanded: true (плавне горизонтальне розширення під збільшені значки).
+     2) Знято та перевірено знімок scratch_dock_magnify_stable_crop.png: збільшені іконки елегантно піднімаються над скляною полицею, а сама скляна плашка залишається стабільно зафіксованою на базовій лінії.
+     3) Усі 3 обов'язкові системні аудити пройдено на 100%:
+        - bin/mac-audit-sync check (100% PASS)
+        - bin/mac-extension-guard verify (100% PASS)
+        - bin/mac-i18n-verify (100% SUCCESS).

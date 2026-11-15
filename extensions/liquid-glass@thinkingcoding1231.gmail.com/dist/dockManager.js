@@ -841,8 +841,15 @@ export class DashManager {
             icons.sort((a, b) => a.x - b.x);
             let minX = icons[0].x;
             let maxX = icons[icons.length - 1].x + icons[icons.length - 1].w;
+
+            // Filter for resting (unmagnified) icons to ensure magnification under pointer hover
+            // does not pull or slide the dock glass upward.
+            const minH = Math.min(...icons.map(ic => ic.h));
+            const restingIcons = icons.filter(ic => ic.h <= minH + 6);
+            const targetIcons = restingIcons.length > 0 ? restingIcons : icons;
+
             let minY = Infinity, maxY = -Infinity;
-            for (const ic of icons) {
+            for (const ic of targetIcons) {
                 if (ic.y < minY) minY = ic.y;
                 if (ic.y + ic.h > maxY) maxY = ic.y + ic.h;
             }
@@ -884,7 +891,8 @@ export class DashManager {
                 let pillW = slW - 8;
                 let pillX = slX + 4;
                 let pillH = (slH && slH > 30) ? slH : (iconBounds ? (iconBounds.h + 20) : 74);
-                let pillY = iconBounds ? Math.round(iconBounds.centerY - (pillH * 0.5)) : slY;
+                // slY is the authoritative dock shelf position which never jumps during icon magnification
+                let pillY = (Number.isFinite(slY) && slY > 0) ? slY : (iconBounds ? Math.round(iconBounds.centerY - (pillH * 0.5)) : slY);
 
                 absX = pillX - 4;
                 absY = pillY - 4;
