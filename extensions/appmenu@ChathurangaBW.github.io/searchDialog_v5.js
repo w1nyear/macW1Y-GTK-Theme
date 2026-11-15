@@ -231,6 +231,27 @@ function createSmoothAppIcon(app, targetSize = 32) {
     return icon;
 }
 
+function getSystemAccentColor() {
+    try {
+        const settings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+        const name = settings.get_string('accent-color');
+        const map = {
+            'blue': '#3584e4',
+            'teal': '#2190a4',
+            'green': '#3a944c',
+            'yellow': '#e5a50a',
+            'orange': '#ed5b00',
+            'red': '#e01b24',
+            'pink': '#d56199',
+            'purple': '#9141ac',
+            'slate': '#6f8396',
+        };
+        return map[name] || '#ed5b00';
+    } catch (_) {
+        return '#ed5b00';
+    }
+}
+
 function _isActorValid(actor) {
     if (!actor) return false;
     try {
@@ -422,6 +443,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._selectedIndex = -1;
         this._appsGridButtons = [];
         this._selectedAppIndex = -1;
+        this._firstRecommendedApp = null;
         this._mouseMoved = false;
         this._initialPointerX = 0;
         this._initialPointerY = 0;
@@ -538,6 +560,11 @@ export const MacSpotlightDialog = GObject.registerClass({
             y_align: Clutter.ActorAlign.CENTER,
             width: COLLAPSED_PILL_WIDTH,
             style: PILL_COLLAPSED_STYLE,
+            reactive: true,
+        });
+        this._searchPill.connect('button-press-event', () => {
+            this._entry.grab_key_focus();
+            return Clutter.EVENT_PROPAGATE;
         });
         this._searchPill.connect('notify::width', reqSync);
         this._topRow.add_child(this._searchPill);
@@ -578,9 +605,30 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
         this._searchPill.add_child(this._searchIcon);
 
+        // Entry Pill Box (wraps ghost text and entry)
+        this._entryPillBox = new St.Widget({
+            layout_manager: new Clutter.BinLayout(),
+            x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER,
+            clip_to_allocation: false,
+        });
+
+        this._ghostLabel = new St.Label({
+            style_class: 'mac-spotlight-ghost-label',
+            style: 'font-size: 19px !important; font-weight: 500 !important; font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif !important; ' +
+                   'color: #ffffff !important; padding: 0px !important; margin: 0px !important; background: none !important; border: none !important;',
+            y_align: Clutter.ActorAlign.CENTER,
+            x_align: Clutter.ActorAlign.START,
+            visible: false,
+            reactive: false,
+        });
+        this._ghostLabel.clutter_text.set_use_markup(true);
+        this._entryPillBox.add_child(this._ghostLabel);
+
         this._entry = new St.Entry({
             style_class: 'mac-spotlight-entry',
-            style: 'font-size: 19px !important; font-weight: 500 !important; color: #ffffff !important; ' +
+            style: 'font-size: 19px !important; font-weight: 500 !important; font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif !important; ' +
+                   'color: #ffffff !important; ' +
                    'hint-text-color: #ffffff !important; ' +
                    'text-shadow: 0 1px 1px rgba(0, 0, 0, 0.10) !important; ' +
                    'caret-color: #ffffff !important; ' +
@@ -606,7 +654,36 @@ export const MacSpotlightDialog = GObject.registerClass({
                 }
             } catch (_) {}
         }
-        this._searchPill.add_child(this._entry);
+        this._entryPillBox.add_child(this._entry);
+        this._searchPill.add_child(this._entryPillBox);
+
+        // Spacer between entry pill and right buttons
+        this._searchSpacer = new St.Widget({
+            x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER,
+            visible: false,
+        });
+        this._searchPill.add_child(this._searchSpacer);
+
+        // Mini app icon button on right of search pill (left of `···`), visible when query matches an app in apps mode
+        this._firstAppMiniBtn = new St.Button({
+            style: 'width: 26px; height: 26px; border-radius: 6px; background-color: transparent; margin-right: 6px; padding: 0px;',
+            y_align: Clutter.ActorAlign.CENTER,
+            visible: false,
+            reactive: true,
+            can_focus: true,
+            track_hover: true,
+        });
+        this._firstAppMiniBtn.connect('clicked', () => {
+            if (this._firstRecommendedApp) {
+                this.close();
+                this._firstRecommendedApp.activate();
+            }
+        });
+        this._firstAppMiniBtn.connect('notify::hover', () => {
+            this._firstAppMiniBtn.opacity = this._firstAppMiniBtn.hover ? 190 : 255;
+        });
+        this._searchPill.add_child(this._firstAppMiniBtn);
 
         // Options Button `...` (more options button on right of search pill, visible in 'files' mode)
         this._optionsBtn = new St.Button({
@@ -645,6 +722,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._searchIcon.translation_y = 0;
             this._entry.translation_y = 0;
             this._optionsBtn.translation_y = 0;
+            if (this._firstAppMiniBtn) this._firstAppMiniBtn.translation_y = 0;
         } catch (_) {}
 
         // 3B. Buttons Container: Holds the 3 Circular Buttons on the right
@@ -1137,6 +1215,10 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 } else if (!hasText && this._buttonsCollapsed) {
                     this._uncollapseButtonsAndContractPill();
                 }
+            } else if (this._mode === 'apps') {
+                if (!hasText) {
+                    this._updateAppsAutocomplete([], '');
+                }
             }
             this._scheduleSearch();
         });
@@ -1207,6 +1289,18 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                     return Clutter.EVENT_STOP;
                 }
             } else if (this._mode === 'apps') {
+                // Tab or Right arrow at end of entry autocompletes recommendation
+                if (symbol === Clutter.KEY_Tab || (symbol === Clutter.KEY_Right && ct.get_cursor_position() >= this._entry.text.length)) {
+                    if (this._firstRecommendedApp) {
+                        const appName = this._firstRecommendedApp.get_name() || '';
+                        if (appName && appName.toLowerCase() !== this._entry.text.toLowerCase()) {
+                            this._entry.text = appName;
+                            ct.set_cursor_position(appName.length);
+                            return Clutter.EVENT_STOP;
+                        }
+                    }
+                }
+
                 const total = this._appsGridButtons ? this._appsGridButtons.length : 0;
                 if (total > 0) {
                     let handled = false;
@@ -1229,12 +1323,21 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                         if (btn?._app) {
                             this.close();
                             btn._app.activate();
+                        } else if (this._firstRecommendedApp) {
+                            this.close();
+                            this._firstRecommendedApp.activate();
                         }
                         return Clutter.EVENT_STOP;
                     }
                     if (handled) {
                         this._resetPointerTracking();
                         this._setSelectedAppIndex(next);
+                        return Clutter.EVENT_STOP;
+                    }
+                } else if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter) {
+                    if (this._firstRecommendedApp) {
+                        this.close();
+                        this._firstRecommendedApp.activate();
                         return Clutter.EVENT_STOP;
                     }
                 }
@@ -1570,7 +1673,15 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 if (!matchesQuery) return false;
                 if (category && this._getAppCategory(app) !== category) return false;
                 return true;
-            }).sort((a, b) => a.get_name().localeCompare(b.get_name()));
+            }).sort((a, b) => {
+                const aName = (a.get_name() || '').toLowerCase();
+                const bName = (b.get_name() || '').toLowerCase();
+                const aStarts = aName.startsWith(q);
+                const bStarts = bName.startsWith(q);
+                if (aStarts && !bStarts) return -1;
+                if (!aStarts && bStarts) return 1;
+                return a.get_name().localeCompare(b.get_name());
+            });
         }
 
         if (category) {
@@ -2198,6 +2309,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         this._mode = newMode;
         this._resetPointerTracking();
         this._entry.text = '';
+        this._updateAppsAutocomplete([], '');
 
         if (newMode === 'search') {
             this._searchIcon.set_gicon(null);
@@ -2472,6 +2584,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             this._clipboardView.visible = false;
 
             this._entry.text = '';
+        this._updateAppsAutocomplete([], '');
             this._entry.hint_text = t('spotlight_search', 'Пошук Spotlight');
             this._lastQuery = '';
             this._resultsBox.destroy_all_children();
@@ -2664,6 +2777,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             this.visible = false;
             this._backdrop.visible = false;
             this._entry.text = '';
+        this._updateAppsAutocomplete([], '');
             this._resultsWrapper.visible = false;
             this._resultsBox.destroy_all_children();
             this._resultButtons = [];
@@ -2733,6 +2847,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 hideGlass();
                 this.visible = false;
                 this._entry.text = '';
+        this._updateAppsAutocomplete([], '');
                 this._resultsWrapper.visible = false;
                 this._resultsWrapper.opacity = 0;
                 this._resultsBox.destroy_all_children();
@@ -3488,6 +3603,78 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         return btn;
     }
 
+    _updateAppsAutocomplete(apps = [], query = '') {
+        const q = (query || '').trim();
+        if (this._mode !== 'apps' || !q || !apps || apps.length === 0) {
+            this._firstRecommendedApp = null;
+            if (this._ghostLabel) {
+                this._ghostLabel.clutter_text.set_text('');
+                this._ghostLabel.visible = false;
+            }
+            if (this._entryPillBox) {
+                this._entryPillBox.set_style('background-color: transparent !important; background: none !important; border: none !important; padding: 0px !important;');
+                this._entryPillBox.x_expand = true;
+            }
+            if (this._searchSpacer) {
+                this._searchSpacer.visible = false;
+            }
+            if (this._firstAppMiniBtn) {
+                this._firstAppMiniBtn.visible = false;
+            }
+            return;
+        }
+
+        const firstApp = apps[0];
+        this._firstRecommendedApp = firstApp;
+        const appName = firstApp.get_name() || '';
+        const typedText = this._entry.get_text() || '';
+
+        let ghostSuffix = '';
+        if (appName.toLowerCase().startsWith(typedText.toLowerCase())) {
+            ghostSuffix = appName.slice(typedText.length) + ' — ' + t('action_open', 'Відкрити');
+        } else {
+            ghostSuffix = ' — ' + appName + ' — ' + t('action_open', 'Відкрити');
+        }
+
+        const escapePango = (str) => {
+            return (str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&apos;');
+        };
+
+        if (this._ghostLabel) {
+            const markup = `<span foreground="#ffffff00">${escapePango(typedText)}</span><span foreground="#ffffff88">${escapePango(ghostSuffix)}</span>`;
+            try {
+                this._ghostLabel.clutter_text.set_markup(markup);
+                this._ghostLabel.visible = true;
+            } catch (_) {}
+        }
+
+        if (this._entryPillBox) {
+            this._entryPillBox.set_style(
+                'background-color: rgba(255, 255, 255, 0.20) !important; ' +
+                'border-radius: 8px !important; ' +
+                'padding: 2px 10px !important;'
+            );
+            this._entryPillBox.x_expand = false;
+        }
+
+        if (this._searchSpacer) {
+            this._searchSpacer.visible = true;
+        }
+
+        if (this._firstAppMiniBtn) {
+            try {
+                const miniIcon = createSmoothAppIcon(firstApp, 22);
+                this._firstAppMiniBtn.set_child(miniIcon);
+                this._firstAppMiniBtn.visible = true;
+            } catch (_) {}
+        }
+    }
+
     // -------------------------------------------------------------------------
     // APPS VIEW (Dock Applications Menu Authenticity - Photo 1)
     // -------------------------------------------------------------------------
@@ -3511,10 +3698,12 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         this._appsContentBox.destroy_all_children();
         this._appsGridButtons = [];
         this._selectedAppIndex = -1;
+        this._firstRecommendedApp = null;
 
         const apps = this._filterApps(q);
 
         if (apps.length === 0) {
+            this._updateAppsAutocomplete([], q);
             const emptyLbl = new St.Label({
                 text: t('no_apps_found', 'Немає програм'),
                 style: 'font-size: 14px; color: rgba(255, 255, 255, 0.45); margin: 40px auto;',
@@ -3524,6 +3713,8 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             if (!hasFilter) this._appsDefaultLoaded = true;
             return;
         }
+
+        this._updateAppsAutocomplete(apps, q);
 
         let currentRow = null;
         for (let i = 0; i < apps.length; i++) {
@@ -3572,18 +3763,22 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
     }
 
     _setSelectedAppIndex(index) {
-        const baseStyle = `width: ${APPS_COLUMN_WIDTH}px; min-width: ${APPS_COLUMN_WIDTH}px; max-width: ${APPS_COLUMN_WIDTH}px; height: 74px; min-height: 74px; max-height: 74px; margin: 0 1px; padding: 4px 2px 4px 2px; border-radius: 11px;`;
         if (this._selectedAppIndex >= 0 && this._appsGridButtons[this._selectedAppIndex]) {
             const prev = this._appsGridButtons[this._selectedAppIndex];
             prev.remove_style_class_name('selected');
-            prev.set_style(`${baseStyle} background-color: transparent;`);
+            if (prev._iconBox) {
+                prev._iconBox.set_style('border: 2.5px solid transparent; border-radius: 14px; padding: 2px; margin-bottom: 4px;');
+            }
         }
 
         this._selectedAppIndex = index;
         if (this._selectedAppIndex >= 0 && this._appsGridButtons[this._selectedAppIndex]) {
             const curr = this._appsGridButtons[this._selectedAppIndex];
             curr.add_style_class_name('selected');
-            curr.set_style(`${baseStyle} background-color: rgba(255, 255, 255, 0.16);`);
+            const accent = getSystemAccentColor();
+            if (curr._iconBox) {
+                curr._iconBox.set_style(`border: 2.5px solid ${accent}; border-radius: 14px; padding: 2px; margin-bottom: 4px;`);
+            }
             try { Util.ensureActorVisibleInScrollView?.(this._appsScrollView, curr); } catch (_) {}
         }
     }
@@ -3600,8 +3795,8 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
 
         item.set_width(APPS_COLUMN_WIDTH);
         item.width = APPS_COLUMN_WIDTH;
-        const baseStyle = `width: ${APPS_COLUMN_WIDTH}px; min-width: ${APPS_COLUMN_WIDTH}px; max-width: ${APPS_COLUMN_WIDTH}px; height: 74px; min-height: 74px; max-height: 74px; margin: 0 1px; padding: 4px 2px 4px 2px; border-radius: 11px;`;
-        item.set_style(`${baseStyle} background-color: transparent;`);
+        const baseStyle = `width: ${APPS_COLUMN_WIDTH}px; min-width: ${APPS_COLUMN_WIDTH}px; max-width: ${APPS_COLUMN_WIDTH}px; height: 78px; min-height: 78px; max-height: 78px; margin: 0 1px; padding: 2px 2px 4px 2px; border-radius: 11px; background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; outline: none !important;`;
+        item.set_style(baseStyle);
 
         const box = new St.BoxLayout({
             vertical: true,
@@ -3611,9 +3806,16 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         });
         item.set_child(box);
 
+        const iconBox = new St.BoxLayout({
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+            style: 'border: 2.5px solid transparent; border-radius: 14px; padding: 2px; margin-bottom: 4px;',
+        });
         const iconActor = createSmoothAppIcon(app, APPS_ICON_SIZE);
-        iconActor.set_style('margin-bottom: 4px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);');
-        box.add_child(iconActor);
+        iconActor.set_style('icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);');
+        iconBox.add_child(iconActor);
+        box.add_child(iconBox);
+        item._iconBox = iconBox;
 
         const label = new St.Label({
             text: app.get_name() || '',
@@ -3634,8 +3836,6 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         item.connect('notify::hover', () => {
             if (item.hover && this._mouseMoved) {
                 this._setSelectedAppIndex(index);
-            } else if (!item.hover && this._selectedAppIndex !== index) {
-                item.set_style(`${baseStyle} background-color: transparent;`);
             }
         });
 
@@ -3646,7 +3846,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                     this._mouseMoved = true;
                 }
             }
-            if (this._mouseMoved) {
+            if (this._mouseMoved && this._selectedAppIndex !== index) {
                 this._setSelectedAppIndex(index);
             }
             return Clutter.EVENT_PROPAGATE;

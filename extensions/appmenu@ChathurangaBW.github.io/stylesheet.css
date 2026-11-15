@@ -381,6 +381,13 @@
 }
 
 /* Spotlight & Modal Search Entries */
+.mac-spotlight-ghost-label,
+.mac-spotlight-ghost-label ClutterText {
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+    margin-left: 0px !important;
+}
+
 .mac-spotlight-entry,
 #mac-applications-search,
 .mac-applications-search,
