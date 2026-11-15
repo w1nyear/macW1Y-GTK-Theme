@@ -2635,6 +2635,17 @@ window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {
   box-shadow: none;
 }}
 
+window.mac-settings-window,
+window.mac-settings-window.background,
+window.mac-settings-window > dialog-host,
+window.mac-settings-window navigation-split-view,
+window.mac-settings-window .content-pane,
+window.mac-settings-window .mac-settings-content {{
+  background: {c["window_bg"] if is_dark else "#ffffff"};
+  background-color: {c["window_bg"] if is_dark else "#ffffff"};
+  color: {"#ffffff" if is_dark else "rgba(0, 0, 0, 0.88)"};
+}}
+
 window.mac-settings-window .mac-settings-sidebar,
 window.mac-settings-window .mac-settings-sidebar toolbarview,
 window.mac-settings-window .mac-settings-sidebar toolbarview > .top-bar,

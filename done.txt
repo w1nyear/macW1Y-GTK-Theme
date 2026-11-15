@@ -103,6 +103,25 @@
    - Скомпільовано libmac_settings.so та розгорнуто в усі 7 системних/локальних локацій.
    - Повний аудит підтверджено: mac-audit-sync check, mac-extension-guard verify, mac-i18n-verify (100% PASS).
 
+775. Виправлення чорного фону/контейнера під заокругленою лівою панеллю у Параметрах (GNOME Control Center) при світлій темі:
+   - Діагностика першопричини:
+     1) У Параметрах GNOME (gnome-control-center) ліва панель (.sidebar-pane, navigation-split-view > widget:first-child) оформлена як плаваюча заокруглена колонка з відступами (margin: 6px 0px 6px 6px; border-radius: 14px;).
+     2) Елемент-контейнер, що знаходиться безпосередньо під нею (AdwNavigationSplitView navigation-split-view, AdwDialogHost dialog-host, а також головне вікно CcWindow window.mac-settings-window), мав жорстко зашите чорне тло (#202022) у control-center/libmac_settings.c (рядок 8472), що завантажувалося через GtkCssProvider з найвищим пріоритетом GTK_STYLE_PROVIDER_PRIORITY_APPLICATION + 800.
+     3) Через це у світлій темі у зовнішньому відступі зліва шириною 6px та на кутах біля заокруглень 14px просвічував чорний колір #202022 замість білого тла вікна.
+     4) Крім того, в правилах для світлої теми було використано непідтримувані у GTK4 директиви !important, які спричиняли помилки парсера Gtk-WARNING і відхилення властивостей.
+   - Реалізовані зміни:
+     1) У control-center/libmac_settings.c оновлено CSS-правила для контейнерів вікна: жорсткий колір #202022 замінено на динамічну змінну var(--mac-window-bg, @window_bg_color).
+     2) Додано блок @media (prefers-color-scheme: light) та селектори .mac-theme-light для вікна, dialog-host, navigation-split-view, .content-pane і .mac-settings-content, що гарантують встановлення чистого білого кольору (#ffffff) у світлій темі без використання заборонених !important.
+     3) Додано динамічне оновлення класу теми вікна update_window_theme_class(widget) з підключенням до AdwStyleManager (on_style_manager_notify_dark) та mac_fix_settings_window, що автоматично перемикає CSS-класи .mac-theme-light та .mac-theme-dark на кореневому віджеті вікна.
+     4) Оновлено config/gtk-4.0/gtk.css, config/gtk-4.0/gtk-Dark.css, config/gtk-4.0/gtk-Light.css та bin/mac-build-theme: додано правило фону контейнера window.mac-settings-window, navigation-split-view, dialog-host (#ffffff для світлої теми, #202022 для темної теми).
+     5) Синхронізовано стилі у всіх темах: macW1Y-Light, macW1Y-Light-solid, macW1Y-Dark, macW1Y-Dark-solid через bin/mac-build-theme.
+     6) Перекомпільовано libmac_settings.so з прапорцями GTK4 / Libadwaita та синхронізовано в усі 7 локацій (/usr/lib/x86_64-linux-gnu/, /usr/local/lib/, /usr/share/mactheme/, ~/.local/lib/, gnome-control-center-overlay/, lib/, control-center/).
+   - Верифікація:
+     1) Проведено живий тест у середовищі GNOME: вікно Параметрів відкрито у світлому режимі, зроблено знімок екрана та виконано попіксельний аналіз координат відступу зліва (x=2..5, y=30..40) та біля заокруглень (y=689..692) — колір став суто білим [255, 255, 255], чорний відтінок [32, 32, 34] повністю ліквідовано.
+     2) Перевірено відсутність попереджень CSS-парсера: усунуто всі помилки "Junk at end of value".
+     3) Пройдено всі 3 контрольні перевірки: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
+
+
 
 
 

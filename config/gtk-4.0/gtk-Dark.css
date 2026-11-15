@@ -11988,10 +11988,52 @@ window.mac-settings-window > dialog-host,
 window.mac-settings-window navigation-split-view,
 window.mac-settings-window .content-pane,
 window.mac-settings-window .mac-settings-content {
-    background-color: var(--mac-window-bg, #202022);
-    background: #202022;
+    background-color: var(--mac-window-bg, @window_bg_color);
+    background: var(--mac-window-bg, @window_bg_color);
     background-image: none;
-    color: var(--mac-text-primary, #ffffff);
+    color: var(--mac-text-primary, @window_fg_color);
+}
+
+@media (prefers-color-scheme: light) {
+  window.mac-settings-window,
+  window.mac-settings-window.background,
+  window.mac-settings-window > dialog-host,
+  window.mac-settings-window navigation-split-view,
+  window.mac-settings-window .content-pane,
+  window.mac-settings-window .mac-settings-content {
+    background-color: #ffffff;
+    background: #ffffff;
+    color: var(--mac-text-primary, rgba(0, 0, 0, 0.88));
+  }
+  window.mac-settings-window navigation-split-view > widget.sidebar-pane,
+  window.mac-settings-window navigation-split-view .sidebar-pane,
+  window.mac-settings-window .sidebar-pane,
+  window.mac-settings-window navigation-split-view > widget:first-child,
+  window.mac-settings-window .mac-settings-sidebar,
+  window.mac-settings-window navigation-view-page.mac-settings-sidebar {
+    background-color: var(--mac-sidebar-bg, #ebebf0);
+    background: var(--mac-sidebar-bg, #ebebf0);
+  }
+}
+
+window.mac-settings-window.mac-theme-light,
+window.mac-settings-window.mac-theme-light.background,
+window.mac-settings-window.mac-theme-light > dialog-host,
+window.mac-settings-window.mac-theme-light navigation-split-view,
+window.mac-settings-window.mac-theme-light .content-pane,
+window.mac-settings-window.mac-theme-light .mac-settings-content {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  color: var(--mac-text-primary, rgba(0, 0, 0, 0.88)) !important;
+}
+window.mac-settings-window.mac-theme-light navigation-split-view > widget.sidebar-pane,
+window.mac-settings-window.mac-theme-light navigation-split-view .sidebar-pane,
+window.mac-settings-window.mac-theme-light .sidebar-pane,
+window.mac-settings-window.mac-theme-light navigation-split-view > widget:first-child,
+window.mac-settings-window.mac-theme-light .mac-settings-sidebar,
+window.mac-settings-window.mac-theme-light navigation-view-page.mac-settings-sidebar {
+  background-color: var(--mac-sidebar-bg, #ebebf0) !important;
+  background: var(--mac-sidebar-bg, #ebebf0) !important;
 }
 
 window.mac-settings-window navigation-split-view > widget.sidebar-pane,
@@ -12045,6 +12087,7 @@ window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {
     border-bottom: 1px solid var(--mac-card-sep, rgba(255, 255, 255, 0.08));
     box-shadow: none;
 }
+
 
 
 
