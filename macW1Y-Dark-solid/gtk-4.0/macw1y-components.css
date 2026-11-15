@@ -1599,15 +1599,20 @@ preferencespage row box.suffixes button:not(.text-button),
 preferencesgroup row box.suffixes button.image-button,
 preferencesgroup row box.suffixes button.circular,
 preferencesgroup row box.suffixes button:not(.text-button),
+ccwificonnectionrow button,
+ccwificonnectionrow button.flat,
+ccwificonnectionrow button.image-button,
+ccwificonnectionrow button.circular,
+ccwificonnectionrow box.suffixes button,
 row.property button.image-button,
 row button.image-button,
 row button.circular {
-  min-width: 28px;
-  min-height: 28px;
+  min-width: 24px;
+  min-height: 24px;
   border-radius: 9999px;
   padding: 0;
-  margin-top: 10px;
-  margin-bottom: 10px;
+  margin-top: 0px;
+  margin-bottom: 0px;
   margin-left: 3px;
   margin-right: 3px;
   background: transparent;
@@ -1643,6 +1648,11 @@ preferencespage row box.suffixes button:not(.text-button):hover,
 preferencesgroup row box.suffixes button.image-button:hover,
 preferencesgroup row box.suffixes button.circular:hover,
 preferencesgroup row box.suffixes button:not(.text-button):hover,
+ccwificonnectionrow button:hover,
+ccwificonnectionrow button.flat:hover,
+ccwificonnectionrow button.image-button:hover,
+ccwificonnectionrow button.circular:hover,
+ccwificonnectionrow box.suffixes button:hover,
 row.property button.image-button:hover,
 row button.image-button:hover,
 row button.circular:hover {
@@ -1677,6 +1687,11 @@ preferencespage row box.suffixes button:not(.text-button):active,
 preferencesgroup row box.suffixes button.image-button:active,
 preferencesgroup row box.suffixes button.circular:active,
 preferencesgroup row box.suffixes button:not(.text-button):active,
+ccwificonnectionrow button:active,
+ccwificonnectionrow button.flat:active,
+ccwificonnectionrow button.image-button:active,
+ccwificonnectionrow button.circular:active,
+ccwificonnectionrow box.suffixes button:active,
 row.property button.image-button:active,
 row button.image-button:active,
 row button.circular:active {

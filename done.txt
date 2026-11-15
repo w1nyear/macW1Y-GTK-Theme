@@ -48,3 +48,14 @@
    - Видалено непідтримувану властивість align-items: center; у правилах бічної панелі Nautilus (config/gtk-4.0/gtk-Dark.css, gtk-Light.css, gtk.css), яка призводила до попереджень парсера тем GTK.
    - Перекомпільовано libmac_nautilus.so, встановлено у /usr/lib/x86_64-linux-gnu/ та оновлено системні стилі через bin/mac-build-theme.
    - Повний аудит підтверджено: mac-audit-sync check, mac-extension-guard verify, mac-i18n-verify (100% PASS).
+
+770. Уніфікація висоти рядків у Параметрах (Wi-Fi та boxed-list) та ліквідація виходу hover за межі картки:
+   - Виявлено причину різної висоти рядків у списку мереж Wi-Fi (51px проти 36px): кнопки дій у правому блоці суфіксів (QR-код, налаштування, забути мережу) мали вертикальні відступи margin-top: 10px; margin-bottom: 10px;, що разом із min-height: 28px штучно роздувало висоту рядків із кнопками до 51px.
+   - Обнулено вертикальні відступи суфіксних кнопок (margin-top: 0px; margin-bottom: 0px;) та встановлено компактний розмір min-width: 24px; min-height: 24px; з радіусом 9999px. Усі рядки у списку мереж (із кнопками та без кнопок) тепер мають стабільну однакову висоту 35px.
+   - Виявлено першопричину виходу hover-підсвічування за межі нижнього лівого кута картки (гострий прямий кут замість заокруглення 14px): у списку мереж Wi-Fi (CcWifiConnectionList) через gtk_list_box_set_placeholder() останнім дочірнім віджетом списку завжди є placeholder-мітка (dim-label). Через це останній видимий рядок мережі не був :last-child (бо його next_sibling != NULL), а GTK CSS правило для середніх рядків :not(:first-child):not(:last-child) скидало border-radius у 0px як у звичайному стані, так і при :hover.
+   - Реалізовано C-перехоплення gtk_list_box_set_placeholder() у libmac_settings.c з динамічним додаванням CSS-класу .has-placeholder до віджета GtkListBox.
+   - Додано селектори для останнього рядка списку з placeholder: ccwificonnectionrow:nth-last-child(2), list.has-placeholder > row:nth-last-child(2) для базового стану, :hover та :active, що забезпечує точне заокруглення нижніх кутів (border-bottom-left-radius: 14px; border-bottom-right-radius: 14px;), унеможливлюючи вихід hover за межі картки.
+   - Синхронізовано стилі у bin/mac-build-theme, config/gtk-4.0/macw1y-components.css, config/gtk-4.0/gtk.css, gtk-Dark.css, gtk-Light.css.
+   - Скомпільовано libmac_settings.so, синхронізовано у всі 6 системних і локальних розташувань, перекомпільовано теми через bin/mac-build-theme.
+   - Повний аудит підтверджено: mac-audit-sync check, mac-extension-guard verify, mac-i18n-verify (100% PASS).
+

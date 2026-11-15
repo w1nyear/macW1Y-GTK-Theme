@@ -11187,10 +11187,14 @@ window.mac-settings-window cclistrow image:dir(ltr):last-child {
 }
 
 window.mac-settings-window list.boxed-list row > box.header > box.suffixes,
+window.mac-settings-window adwactionrow > box.header > box.suffixes,
+window.mac-settings-window ccwificonnectionrow > box.header > box.suffixes,
 window.mac-settings-window list.boxed-list row > box.header > button:last-child,
 window.mac-settings-window list.boxed-list row > box.header > switch:last-child,
 window.mac-settings-window list.boxed-list row > box.header > image:last-child {
     margin-right: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 window.mac-settings-window list.boxed-list row button,
@@ -12035,6 +12039,7 @@ window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {
     border-bottom: 1px solid var(--mac-card-sep, rgba(255, 255, 255, 0.08));
     box-shadow: none;
 }
+
 
 
 
