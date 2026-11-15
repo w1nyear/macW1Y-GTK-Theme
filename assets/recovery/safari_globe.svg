@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="saf_bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fdfdfd"/>
+      <stop offset="100%" stop-color="#e3e5e8"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="26" ry="26" fill="url(#saf_bg)" filter="url(#shadow)"/>
+  <!-- Blue Globe Wireframe -->
+  <g transform="translate(64,64)" fill="none" stroke="#0080ff" stroke-width="4.5">
+    <circle cx="0" cy="0" r="30"/>
+    <ellipse cx="0" cy="0" rx="14" ry="30"/>
+    <line x1="-30" y1="0" x2="30" y2="0"/>
+    <path d="M -26 -15 Q 0 -10 26 -15" stroke-dasharray="none"/>
+    <path d="M -26 15 Q 0 10 26 15" stroke-dasharray="none"/>
+  </g>
+</svg>

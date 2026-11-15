@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="shackle" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e6eaed"/>
+      <stop offset="100%" stop-color="#9da3a8"/>
+    </linearGradient>
+    <linearGradient id="gold_body" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffd54f"/>
+      <stop offset="50%" stop-color="#ffb300"/>
+      <stop offset="100%" stop-color="#f57c00"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <!-- Steel Shackle -->
+  <path d="M 40 54 L 40 34 C 40 20 88 20 88 34 L 88 54" fill="none" stroke="url(#shackle)" stroke-width="14" stroke-linecap="round"/>
+  <!-- Gold Lock Body -->
+  <rect x="22" y="48" width="84" height="66" rx="16" ry="16" fill="url(#gold_body)" filter="url(#shadow)" stroke="#c67600" stroke-width="2"/>
+  <!-- Keyhole -->
+  <circle cx="64" cy="74" r="8" fill="#3e2723"/>
+  <path d="M 60 74 L 68 74 L 66 94 L 62 94 Z" fill="#3e2723"/>
+</svg>

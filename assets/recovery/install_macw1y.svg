@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="inst_bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ece7de"/>
+      <stop offset="50%" stop-color="#d4cdc3"/>
+      <stop offset="100%" stop-color="#b8af9f"/>
+    </linearGradient>
+    <linearGradient id="inst_box" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#807261"/>
+      <stop offset="100%" stop-color="#554b3e"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="26" ry="26" fill="url(#inst_bg)" filter="url(#shadow)"/>
+  <!-- Down Arrow and Box/Tray -->
+  <g transform="translate(64,64)">
+    <!-- Tray -->
+    <path d="M -30 2 L -20 22 L 20 22 L 30 2" fill="none" stroke="url(#inst_box)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Down Arrow -->
+    <path d="M 0 -28 L 0 6 M -12 -6 L 0 6 L 12 -6" fill="none" stroke="url(#inst_box)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

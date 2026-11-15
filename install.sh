@@ -40,6 +40,24 @@ if [ ! -d "$SCRIPT_DIR/extensions" ]; then
     fi
 fi
 
+# GUI Installer Dispatcher
+GUI_WORKER="false"
+if [ "$1" = "--gui-worker" ]; then
+    GUI_WORKER="true"
+    shift
+elif [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    : # Let help option be handled below
+elif [ "$1" = "--cli" ] || [ "$1" = "-cli" ]; then
+    shift
+    MAC_INSTALLER_CLI="1"
+elif [ -z "$MAC_INSTALLER_CLI" ]; then
+    if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
+        if [ -x "$SCRIPT_DIR/bin/mac-installer-gui" ] && command -v python3 >/dev/null 2>&1; then
+            exec "$SCRIPT_DIR/bin/mac-installer-gui" "$@"
+        fi
+    fi
+fi
+
 print_banner() {
     clear 2>/dev/null || true
     echo -e "${C_CYAN}"
@@ -73,6 +91,25 @@ log_step() {
     echo -e "\n${C_BLUE}═══════════════════════════════════════════════════════════════════════${C_RESET}"
     echo -e " ${C_BOLD}${C_MAGENTA}▶ $1${C_RESET}"
     echo -e "${C_BLUE}═══════════════════════════════════════════════════════════════════════${C_RESET}"
+    if [ "$GUI_WORKER" = "true" ]; then
+        case "$1" in
+            *"Stage 1/"*) echo "PROGRESS:10:stage1";;
+            *"Stage 2/"*) echo "PROGRESS:20:stage2";;
+            *"Stage 3/"*) echo "PROGRESS:35:stage3";;
+            *"Stage 4/"*) echo "PROGRESS:45:stage4";;
+            *"Stage 5/"*) echo "PROGRESS:55:stage5";;
+            *"Stage 6/"*) echo "PROGRESS:65:stage6";;
+            *"Stage 7/"*) echo "PROGRESS:75:stage7";;
+            *"Stage 8/"*) echo "PROGRESS:82:stage8";;
+            *"Stage 9/"*) echo "PROGRESS:88:stage9";;
+            *"Stage 10/"*) echo "PROGRESS:92:stage10";;
+            *"Stage 11/"*) echo "PROGRESS:95:stage11";;
+            *"Stage 12/"*) echo "PROGRESS:97:stage12";;
+            *"Stage 13/"*) echo "PROGRESS:98:stage13";;
+            *"Finalizing"*) echo "PROGRESS:99:finalizing";;
+            *) echo "PROGRESS:50:$1";;
+        esac
+    fi
 }
 
 run_as_user() {

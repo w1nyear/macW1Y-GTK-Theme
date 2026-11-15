@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="tm_bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00dac1"/>
+      <stop offset="100%" stop-color="#00a896"/>
+    </linearGradient>
+    <linearGradient id="tm_glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="26" ry="26" fill="url(#tm_bg)" filter="url(#shadow)"/>
+  <rect x="8" y="8" width="112" height="112" rx="26" ry="26" fill="url(#tm_glow)"/>
+  <!-- Clock Circle with Counter-Clockwise Arrow -->
+  <g transform="translate(64,64)" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 0 -34 A 34 34 0 1 0 34 0" />
+    <!-- Arrowhead at top -->
+    <path d="M -10 -34 L 2 -42 L 2 -26 Z" fill="#ffffff" stroke="none"/>
+    <!-- Clock Hands -->
+    <line x1="0" y1="0" x2="0" y2="-18" stroke-width="6"/>
+    <line x1="0" y1="0" x2="14" y2="0" stroke-width="6"/>
+    <circle cx="0" cy="0" r="3.5" fill="#ffffff" stroke="none"/>
+  </g>
+</svg>

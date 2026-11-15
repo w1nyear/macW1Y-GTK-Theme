@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="hd_body" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8f9fa"/>
+      <stop offset="50%" stop-color="#dcdfe3"/>
+      <stop offset="100%" stop-color="#b0b5bc"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect x="14" y="24" width="100" height="80" rx="14" ry="14" fill="url(#hd_body)" filter="url(#shadow)" stroke="#8e949d" stroke-width="2"/>
+  <!-- Front Slot / LED -->
+  <rect x="26" y="76" width="60" height="8" rx="4" fill="#2d3137"/>
+  <circle cx="98" cy="80" r="4" fill="#00d084"/>
+  <!-- Apple / OS subtle logo in center -->
+  <path d="M 64 42 C 57 42 52 47 52 54 C 52 63 64 70 64 70 C 64 70 76 63 76 54 C 76 47 71 42 64 42 Z" fill="#848b94" opacity="0.4"/>
+</svg>

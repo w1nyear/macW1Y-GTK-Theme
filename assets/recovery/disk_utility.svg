@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="disk_bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#d9dee3"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="26" ry="26" fill="url(#disk_bg)" filter="url(#shadow)"/>
+  <!-- Silver Drive and Wrench -->
+  <g transform="translate(64,64)">
+    <!-- Drive body -->
+    <rect x="-26" y="-28" width="52" height="56" rx="6" fill="#8e9aa8" stroke="#606c79" stroke-width="3"/>
+    <circle cx="0" cy="-6" r="14" fill="#bcc7d4" stroke="#606c79" stroke-width="2.5"/>
+    <circle cx="0" cy="-6" r="4" fill="#3b434d"/>
+    <!-- Diagonal Wrench -->
+    <g transform="rotate(-30)">
+      <rect x="-6" y="-34" width="12" height="68" rx="4" fill="#e8edf2" stroke="#485361" stroke-width="3"/>
+      <!-- Wrench head -->
+      <path d="M -14 -32 C -14 -42 14 -42 14 -32 L 6 -32 L 6 -24 L -6 -24 L -6 -32 Z" fill="#e8edf2" stroke="#485361" stroke-width="2.5"/>
+    </g>
+  </g>
+</svg>
