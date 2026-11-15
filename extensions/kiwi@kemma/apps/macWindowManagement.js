@@ -893,6 +893,21 @@ function _recomputeFullscreen() {
         // Ensure dock is hidden when entering fullscreen
         _hideDockAnimated();
 
+        // Ensure menubar is hidden in fullscreen unless overview is open, a menu is open, or panel was revealed
+        if (!Main.overview?.visible && !_isAnyPanelMenuOpen() && !_panelRevealed) {
+            _cancelPanelHide();
+            _panelHiding = false;
+            _setPanelSolidDarkStyle(false);
+            const panelBox = _getPanelBox();
+            if (panelBox) {
+                panelBox.remove_all_transitions();
+                panelBox.translation_y = 0;
+                panelBox.visible = false;
+            }
+            _setPanelTrackFullscreen(true);
+            try { Main.layoutManager?._updateVisibility?.(); } catch (_) {}
+        }
+
         // Clean up any tracked shrunk actors that are no longer fullscreen
         for (const actor of _shrunkActors) {
             try {
@@ -974,6 +989,22 @@ export function enable() {
                 panelBox.translation_y = 0;
             }
             _setPanelTrackFullscreen(false);
+        })]);
+        _signals.push([Main.overview, Main.overview.connect('hiding', () => {
+            if (_hasFullscreen && !_isAnyPanelMenuOpen()) {
+                _cancelPanelHide();
+                _panelRevealed = false;
+                _panelHiding = false;
+                _setPanelSolidDarkStyle(false);
+                const panelBox = _getPanelBox();
+                if (panelBox) {
+                    panelBox.remove_all_transitions();
+                    panelBox.translation_y = 0;
+                    panelBox.visible = false;
+                }
+                _setPanelTrackFullscreen(true);
+                try { Main.layoutManager?._updateVisibility?.(); } catch (_) {}
+            }
         })]);
         _signals.push([Main.overview, Main.overview.connect('hidden', () => _queueRecomputeFullscreen())]);
         _signals.push([Main.layoutManager, Main.layoutManager.connect('monitors-changed', () => {

@@ -244,3 +244,21 @@
    - Верифікація:
      1) Процес xdg-user-dirs-gtk-update закрито, вікно зникло з екрана.
      2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
+
+
+782. Автоматичне приховування менюбару при виході з огляду в повноекранному режимі:
+   - Запит користувача: Якщо при повноекранному режимі (наприклад, у грі) відкрити та закрити огляд, менюбар не приховується і залишається висіти прозорим над грою. Користувачу доводиться вести курсор угору, щоб менюбар отримав фон і нарешті закрився.
+   - Реалізовані зміни:
+     1) Виявлено першопричину в extensions/kiwi@kemma/apps/macWindowManagement.js:
+        * Під час відкриття огляду (Main.overview 'showing') викликався _setPanelTrackFullscreen(false), щоб показати панель в огляді.
+        * При закритті огляду функція _recomputeFullscreen() у гілці if (hasFS) не відновлювала trackFullscreen = true та не приховувала panelBox (відновлення було лише в гілці else без повноекрану). Через це менюбар залишався видимим і прозорим.
+     2) Додано обробник сигналу Main.overview 'hiding' та синхронізацію в if (hasFS):
+        * Якщо активне повноекранне вікно, при закритті огляду panelBox.visible автоматично переводиться у false, скидаються стани відкриття, відновлюється trackFullscreen = true, і викликається Main.layoutManager._updateVisibility().
+        * Панель миттєво зникає разом з оглядом і більше не зависає над грою.
+     3) Оновлено config/extensions.lock.json із новим sha256 хешем kiwi@kemma (e8ba8867...), синхронізовано у ~/.local/share/gnome-shell/extensions/kiwi@kemma/.
+   - Верифікація:
+     1) Тестування наживо через EvalHelper у повноекранному режимі:
+        * До огляду: pbVisible: false, trackFullscreen: true.
+        * Під час огляду: pbVisible: true, trackFullscreen: false.
+        * Після виходу з огляду: pbVisible: false, trackFullscreen: true — панель миттєво прихована без потреби рухати курсор.
+     2) Аудити: mac-audit-sync check (100% PASS), mac-extension-guard verify (100% PASS), mac-i18n-verify (100% PASS).
