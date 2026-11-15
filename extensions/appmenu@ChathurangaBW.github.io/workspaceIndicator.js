@@ -839,6 +839,11 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         });
     }
 
+    _getWorkspacesDisplay() {
+        const controls = Main.overview?._overview?.controls ?? Main.overview?._overview?._controls ?? Main.overview?._controls;
+        return controls?._workspacesDisplay ?? null;
+    }
+
     _expand() {
         if (this._isHiding || !Main.overview.visible || Main.overview._hiding) return;
         if (this._isExpanded) return;
@@ -866,6 +871,24 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             duration: 220,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
         });
+
+        const wsDisplay = this._getWorkspacesDisplay();
+        if (wsDisplay) {
+            wsDisplay.set_pivot_point(0.5, 1.0);
+            const mon = Main.layoutManager.primaryMonitor;
+            const monH = mon ? mon.height : 1080;
+            const h = (wsDisplay.height && wsDisplay.height > 200) ? wsDisplay.height : (monH - 180);
+            const deltaH = (PANEL_EXPANDED_HEIGHT - PANEL_NORMAL_HEIGHT) + 8;
+            const targetScale = Math.max(0.70, (h - deltaH) / h);
+            wsDisplay.remove_transition('scale-x');
+            wsDisplay.remove_transition('scale-y');
+            wsDisplay.ease({
+                scale_x: targetScale,
+                scale_y: targetScale,
+                duration: 220,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
 
         this._startStageMotionTracking();
     }
@@ -910,6 +933,29 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             });
         }
+
+        const wsDisplay = this._getWorkspacesDisplay();
+        if (wsDisplay) {
+            wsDisplay.remove_transition('scale-x');
+            wsDisplay.remove_transition('scale-y');
+            if (instant || this._isHiding || !Main.overview.visible || Main.overview._hiding) {
+                wsDisplay.scale_x = 1.0;
+                wsDisplay.scale_y = 1.0;
+                wsDisplay.set_pivot_point(0.0, 0.0);
+            } else {
+                wsDisplay.ease({
+                    scale_x: 1.0,
+                    scale_y: 1.0,
+                    duration: 200,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                    onComplete: () => {
+                        if (!this._isExpanded) {
+                            wsDisplay.set_pivot_point(0.0, 0.0);
+                        }
+                    },
+                });
+            }
+        }
     }
 
     onOverviewHiding() {
@@ -929,6 +975,14 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         }
         this._isRenaming = false;
         this._collapse(true);
+        const wsDisplay = this._getWorkspacesDisplay();
+        if (wsDisplay) {
+            wsDisplay.remove_transition('scale-x');
+            wsDisplay.remove_transition('scale-y');
+            wsDisplay.scale_x = 1.0;
+            wsDisplay.scale_y = 1.0;
+            wsDisplay.set_pivot_point(0.0, 0.0);
+        }
     }
 
     destroy() {
@@ -951,6 +1005,14 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             this._pillAllocId = 0;
         }
         this._collapse(true);
+        const wsDisplay = this._getWorkspacesDisplay();
+        if (wsDisplay) {
+            wsDisplay.remove_transition('scale-x');
+            wsDisplay.remove_transition('scale-y');
+            wsDisplay.scale_x = 1.0;
+            wsDisplay.scale_y = 1.0;
+            wsDisplay.set_pivot_point(0.0, 0.0);
+        }
         super.destroy();
     }
 });

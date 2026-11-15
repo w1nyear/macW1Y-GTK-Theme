@@ -68,4 +68,13 @@
    - Перекомпільовано всі таблиці тем через bin/mac-build-theme.
    - Повний аудит підтверджено: mac-audit-sync check, mac-extension-guard verify, mac-i18n-verify (100% PASS).
 
+772. Автоматичне зменшення та опускання робочих столів в Огляді (GNOME Shell Overview) при розгортанні індикатора WorkspaceIndicator:
+   - Виявлено першопричину накладання елементів в Огляді: коли індикатор робочих столів у верхній панелі (MacMissionControlSpacesBar) розгортається з висоти 34px до 114px (_expand()), верхня панель збільшується вниз на 80px, але контейнер робочих столів (_workspacesDisplay у Main.overview._overview.controls) залишався у фіксованому положенні через приховані нативні мініатюри GNOME (thumbnailsBox.expandFraction = 0.0), що призводило до накладання назви та мініатюри столу на верхні вікна.
+   - Реалізовано інтелектуальне динамічне масштабування _workspacesDisplay з фіксацією нижнього краю (set_pivot_point(0.5, 1.0)): нижній край робочих столів залишається строго нерухомим над Dock, унеможливлюючи будь-яке зіткнення з панеллю додатків.
+   - Розраховано точний коефіцієнт стиснення targetScale = Math.max(0.70, (h - deltaH) / h), де deltaH = 88px: при розгортанні верхньої панелі верхня межа робочих столів плавно опускається рівно на 88px, вивільняючи достатній простір під розгорнутий блок столів у стилі macOS Mission Control.
+   - Синхронізовано анімаційні криві Clutter.AnimationMode.EASE_OUT_CUBIC: при розгортанні тривалість становить 220ms, при згортанні (_collapse()) — 200ms з плавним поверненням масштабів scale_x = 1.0, scale_y = 1.0 та скиданням точки обертання.
+   - Забезпечено захист від зависання масштабу при швидкому виході з Огляду: у onOverviewHiding(), _onOverviewHidden(), _onOverviewShowing() та destroy() усі переходи скасовуються і масштаби миттєво повертаються до 1.0.
+   - Оновлено extensions/appmenu@ChathurangaBW.github.io/workspaceIndicator.js, синхронізовано в ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/ та оновлено контрольний хеш цілісності в config/extensions.lock.json.
+   - Повний аудит підтверджено: mac-audit-sync check, mac-extension-guard verify, mac-i18n-verify (100% PASS).
+
 
