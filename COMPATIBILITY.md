@@ -4,11 +4,24 @@
 
 **Review target:** silverhawk-tech/macW1Y-GTK-Theme, baseline main tree 84a8bdd25c19a640acf210168d67085e9dc05941. The GitHub tree contains 55,765 entries (approximately 48,432 under icons). Examined the full root installer/uninstaller, AI instructions, package manifest, and representative scripts, system services, extensions, and metadata. This was not a line-by-line security audit of all source files, binaries, or assets; no execution or live compatibility testing occurred.
 
-## Target environment to verify before deployment
+## Target environment — confirmed read-only snapshot, 2026-11-15
 
-The user reports a BOSGAME mini-PC development workstation running Ubuntu 26.04.1 LTS with GNOME/Wayland, gnome-remote-desktop/RDP (Thincast), AnyDesk, Tailscale, SSH, a development toolchain, and an existing independent local ci-farm. Treat all versions, account paths, available physical recovery, and installed extension versions as **unverified on this audit session** until captured read-only on the target.
+Captured directly on the target (`dev-bosgame`) with the read-only commands below; no writes made.
 
-Ubuntu 26.04 / GNOME Shell 50 is the intended adaptation target, not a blanket compatibility certification. Bundled GNOME extension metadata frequently lists version 50; that alone does not verify extension safety, actual ABI/API compatibility, or compatibility with the workstation's package versions.
+| Item | Value |
+| --- | --- |
+| OS | Ubuntu 26.04.1 LTS (Resolute Raccoon) |
+| GNOME Shell | 50.1, session type `wayland`, `ubuntu:GNOME` |
+| GTK/icon theme | `Yaru-dark` (stock; macOS theme not currently applied) |
+| Enabled extensions | `just-perfection-desktop@just-perfection`, `codexbar@inled.es`, `blur-my-shell@aunetx`, `kiwi@kemma`, `snapd-prompting@canonical.com`, `snapd-search-provider@canonical.com`, `tiling-assistant@ubuntu.com`, `ubuntu-appindicators@ubuntu.com`, `ubuntu-dock@ubuntu.com`, `web-search-provider@ubuntu.com` |
+| AnyDesk | **Not installed** (corrects the earlier assumption — only Tailscale/SSH/GNOME Remote Desktop are present) |
+| Tailscale | Installed (`/usr/bin/tailscale`) |
+| SSH | Installed (`/usr/bin/ssh`) |
+| GNOME Remote Desktop | Active, RDP server running (Thincast-compatible) |
+
+**Extension-name collision, new finding:** `blur-my-shell@aunetx` and `kiwi@kemma` are already enabled, but `diff` against this repo's `extensions/blur-my-shell@aunetx` and `extensions/kiwi@kemma` shows the installed copies are the stock, unmodified upstream versions (`SweetTooth`-generated), not this fork's "mac_"-prefixed patched variants. No fork code is currently live. Any future install of this fork's versions of these two extensions would **replace an already-enabled, independently-used extension**, not install cleanly alongside it — treat this as a Work Package 2 collision to plan for explicitly (back up the user's current config/version of each before swapping).
+
+Ubuntu 26.04 / GNOME Shell 50 is the confirmed adaptation target. Bundled GNOME extension metadata frequently lists version 50; that alone does not verify extension safety, actual ABI/API compatibility, or compatibility with the workstation's package versions.
 
 ## Findings (repo evidence)
 
