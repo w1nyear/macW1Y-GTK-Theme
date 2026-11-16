@@ -820,4 +820,27 @@
        - bin/mac-extension-guard verify (21/21 pinned lock hashes verified)
        - bin/mac-i18n-verify (100% SUCCESS, install.sh contains 0 Cyrillic characters).
 
+804. Точне калібрування розмірів меню вибору macOS Recovery (1:1 за референсом):
+   - Опис завдання:
+     1) Зменшити висоту та ширину картки діалогу меню вибору відповідно до пропорцій MacBook Air (досягти строгого 1:1 за референсним фото).
+     2) Зменшити ширину кнопок-рядків, встановити мінімальні відступи між кнопками та гранями меню.
+     3) Забезпечити абсолютно однакові відступи зверху, зліва та справа між кнопками та гранями картки (9px).
+     4) Привести типографіку, розміри іконок (36px), скруглення (14px) та компактну пігулку кнопки «Продовжити» (висота 22px, шрифт 11.5px) до автентичного вигляду macOS.
+   - Внесені зміни:
+     - bin/mac-installer-gui:
+       * Додано селектор `.mac-recovery-card.mac-card-options` з `padding: 9px 9px 11px 9px` (строго однакові 9px відступи зверху, зліва та справа) та `border-radius: 14px`.
+       * Увімкнено `set_hhomogeneous(False)` та `set_vhomogeneous(False)` на `Gtk.Stack`, що дозволяє картці автоматично облягати екран опцій без примусового розтягування розмірів інших екранів.
+       * Оновлено стилізацію `.mac-option-row` (`padding: 5px 8px; border-radius: 8px; vertical spacing: 2px`).
+       * Введено `.mac-option-title` (12.5px, 600) та `.mac-option-desc` (10.5px, 46 max-width-chars для збалансованого дворядкового тексту).
+       * Додано `.mac-btn-options-continue` з точним референсним розміром (padding 4px 14px, border-radius 6px, font 11.5px).
+   - Верифікація:
+     * Зафіксовано артефакти:
+       - installer_menu_options_card.png: чіткий знімок компактної картки вибору.
+       - installer_menu_options_overview.png: огляд повного екрана з менюбаром та новою компактною карткою.
+       - installer_menu_options_comparison.png: пряме порівняння поруч (зліва фото референсу, справа наша реалізація 1:1).
+     * 100% проходження системних валідацій:
+       - bin/mac-audit-sync check (100% PASS)
+       - bin/mac-extension-guard verify (21/21 pinned lock hashes verified)
+       - bin/mac-i18n-verify (100% SUCCESS, install.sh contains 0 Cyrillic characters).
+
 

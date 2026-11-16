@@ -487,12 +487,19 @@ button.mac-link-btn:hover,
     box-shadow: none;
 }
 
-/* Recovery Option Cards */
+/* Recovery Option Cards & Screen */
+.mac-recovery-card.mac-card-options {
+    padding: 9px 9px 11px 9px;
+    border-radius: 14px;
+    min-width: 0px;
+    min-height: 0px;
+}
+
 .mac-option-row {
     background-color: transparent;
-    border-radius: 12px;
+    border-radius: 8px;
     border: 1px solid transparent;
-    padding: 8px 14px;
+    padding: 5px 8px;
     transition: all 0.15s ease;
 }
 
@@ -502,9 +509,40 @@ button.mac-link-btn:hover,
 }
 
 .mac-option-row.selected {
-    background-color: rgba(255, 255, 255, 0.22);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+    background-color: rgba(255, 255, 255, 0.20);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+}
+
+.mac-option-title {
+    color: #ffffff;
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+.mac-option-desc {
+    color: #a8a8ad;
+    font-size: 10.5px;
+    font-weight: 400;
+    line-height: 1.25;
+}
+
+.mac-btn-options-continue {
+    background-color: rgba(255, 255, 255, 0.18);
+    background-image: none;
+    color: #ffffff;
+    font-size: 11.5px;
+    font-weight: 500;
+    border-radius: 6px;
+    padding: 4px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    min-height: 22px;
+}
+
+.mac-btn-options-continue:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+    background-image: none;
+    border-color: rgba(255, 255, 255, 0.22);
 }
 
 /* Disk Card */
@@ -590,6 +628,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         if self.preview_screen:
             self.switch_to_screen(self.preview_screen)
+        else:
+            self.switch_to_screen("screen_user")
 
         if self.preview_modal:
             GLib.timeout_add(200, self._trigger_preview_modal)
@@ -657,6 +697,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.stack = Gtk.Stack()
         self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
         self.stack.set_transition_duration(250)
+        self.stack.set_hhomogeneous(False)
+        self.stack.set_vhomogeneous(False)
         self.card.append(self.stack)
 
         # Modal sheet container in overlay
@@ -794,6 +836,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.hide_modal()
         target = screen_name if screen_name.startswith("screen_") else f"screen_{screen_name}"
         self.stack.set_visible_child_name(target)
+        if target == "screen_options":
+            self.card.add_css_class("mac-card-options")
+        else:
+            self.card.remove_css_class("mac-card-options")
 
     # --------------------------------------------------------------------------
     # Screen 1: User Account Selection (Photo 1)
@@ -997,12 +1043,11 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     # Screen 3: Recovery Options Grid (Photo 3 - 4 Cards)
     # --------------------------------------------------------------------------
     def _build_screen_options(self):
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        box.set_vexpand(True)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        box.set_vexpand(False)
 
-        cards_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        cards_box.set_vexpand(True)
-        cards_box.set_valign(Gtk.Align.CENTER)
+        cards_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        cards_box.set_vexpand(False)
         box.append(cards_box)
 
         self.option_widgets = {}
@@ -1040,22 +1085,22 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             if act_id == self.selected_action:
                 row_btn.add_css_class("selected")
 
-            r_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
+            r_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
             img = Gtk.Image.new_from_file(icon_p)
-            img.set_pixel_size(44)
+            img.set_pixel_size(36)
             r_box.append(img)
 
-            t_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+            t_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1)
             lbl_t = Gtk.Label(label=title)
-            lbl_t.add_css_class("mac-title-medium")
+            lbl_t.add_css_class("mac-option-title")
             lbl_t.set_halign(Gtk.Align.START)
             t_box.append(lbl_t)
 
             lbl_d = Gtk.Label(label=desc)
-            lbl_d.add_css_class("mac-subtitle")
+            lbl_d.add_css_class("mac-option-desc")
             lbl_d.set_halign(Gtk.Align.START)
             lbl_d.set_wrap(True)
-            lbl_d.set_max_width_chars(52)
+            lbl_d.set_max_width_chars(46)
             t_box.append(lbl_d)
 
             r_box.append(t_box)
@@ -1065,12 +1110,13 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             cards_box.append(row_btn)
             self.option_widgets[act_id] = row_btn
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         btn_row.set_halign(Gtk.Align.END)
-        btn_row.set_margin_top(12)
+        btn_row.set_margin_top(10)
+        btn_row.set_margin_bottom(0)
 
         btn_cont = Gtk.Button(label="Продовжити")
-        btn_cont.add_css_class("mac-btn-secondary")
+        btn_cont.add_css_class("mac-btn-options-continue")
         btn_cont.connect("clicked", self._on_options_continue)
         btn_row.append(btn_cont)
         box.append(btn_row)
