@@ -26,6 +26,93 @@ SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSETS_DIR = os.path.join(SCRIPT_DIR, "assets", "recovery")
 VERSION_FILE = os.path.join(SCRIPT_DIR, "version")
 
+SUPPORTED_LANGUAGES = [
+    {"code": "uk", "native": "Українська", "name": "Ukrainian"},
+    {"code": "en", "native": "English", "name": "English"},
+    {"code": "pl", "native": "Polski", "name": "Polish"},
+    {"code": "de", "native": "Deutsch", "name": "German"},
+    {"code": "fr", "native": "Français", "name": "French"},
+    {"code": "es", "native": "Español", "name": "Spanish"},
+    {"code": "it", "native": "Italiano", "name": "Italian"},
+    {"code": "pt", "native": "Português", "name": "Portuguese"},
+    {"code": "cs", "native": "Čeština", "name": "Czech"},
+    {"code": "sk", "native": "Slovenčina", "name": "Slovak"},
+    {"code": "nl", "native": "Nederlands", "name": "Dutch"},
+    {"code": "ro", "native": "Română", "name": "Romanian"},
+    {"code": "hu", "native": "Magyar", "name": "Hungarian"},
+    {"code": "bg", "native": "Български", "name": "Bulgarian"},
+    {"code": "hr", "native": "Hrvatski", "name": "Croatian"},
+    {"code": "sr", "native": "Српски", "name": "Serbian"},
+    {"code": "sl", "native": "Slovenščina", "name": "Slovenian"},
+    {"code": "lt", "native": "Lietuvių", "name": "Lithuanian"},
+    {"code": "lv", "native": "Latviešu", "name": "Latvian"},
+    {"code": "et", "native": "Eesti", "name": "Estonian"},
+    {"code": "be", "native": "Беларуская", "name": "Belarusian"},
+    {"code": "ru", "native": "Русский", "name": "Russian"},
+    {"code": "tr", "native": "Türkçe", "name": "Turkish"},
+    {"code": "ja", "native": "日本語", "name": "Japanese"},
+    {"code": "ko", "native": "한국어", "name": "Korean"},
+    {"code": "zh", "native": "简体中文", "name": "Chinese Simplified"},
+    {"code": "zh_tw", "native": "繁體中文", "name": "Chinese Traditional"},
+    {"code": "hi", "native": "हिन्दी", "name": "Hindi"},
+    {"code": "bn", "native": "বাংলা", "name": "Bengali"},
+    {"code": "th", "native": "ไทย", "name": "Thai"},
+    {"code": "vi", "native": "Tiếng Việt", "name": "Vietnamese"},
+    {"code": "ar", "native": "العربية", "name": "Arabic"},
+    {"code": "he", "native": "עברית", "name": "Hebrew"},
+    {"code": "fa", "native": "فارسی", "name": "Persian"},
+]
+
+LANGUAGE_I18N = {
+    "uk": {"title": "Виберіть мову", "subtitle": "Виберіть основну мову для інтерфейсу системи.", "continue": "Продовжити", "restart": "Перезавантажити"},
+    "en": {"title": "Select Language", "subtitle": "Select your primary language for the system interface.", "continue": "Continue", "restart": "Restart"},
+    "pl": {"title": "Wybierz język", "subtitle": "Wybierz główny język interfejsu systemu.", "continue": "Kontynuuj", "restart": "Uruchom ponownie"},
+    "de": {"title": "Sprache auswählen", "subtitle": "Wählen Sie die Hauptsprache für das System.", "continue": "Fortfahren", "restart": "Neustart"},
+    "fr": {"title": "Choisir la langue", "subtitle": "Sélectionnez la langue principale du système.", "continue": "Continuer", "restart": "Redémarrer"},
+    "es": {"title": "Seleccionar idioma", "subtitle": "Seleccione el idioma principal de la interfaz.", "continue": "Continuar", "restart": "Reiniciar"},
+    "it": {"title": "Seleziona lingua", "subtitle": "Seleziona la lingua principale per il sistema.", "continue": "Continua", "restart": "Riavvia"},
+    "pt": {"title": "Selecionar idioma", "subtitle": "Selecione o idioma principal da interface.", "continue": "Continuar", "restart": "Reiniciar"},
+    "cs": {"title": "Vyberte jazyk", "subtitle": "Vyberte hlavní jazyk rozhraní systému.", "continue": "Pokračovat", "restart": "Restartovat"},
+    "sk": {"title": "Vyberte jazyk", "subtitle": "Vyberte hlavný jazyk rozhrania systému.", "continue": "Pokračovať", "restart": "Reštartovať"},
+    "nl": {"title": "Selecteer taal", "subtitle": "Selecteer de primaire taal voor het systeem.", "continue": "Doorgaan", "restart": "Herstarten"},
+    "ro": {"title": "Selectați limba", "subtitle": "Selectați limba principală pentru sistem.", "continue": "Continuare", "restart": "Repornire"},
+    "hu": {"title": "Nyelv kiválasztása", "subtitle": "Válassza ki a rendszer elsődleges nyelvét.", "continue": "Folytatás", "restart": "Újraindítás"},
+    "bg": {"title": "Изберете език", "subtitle": "Изберете основния език за интерфейса на системата.", "continue": "Продължи", "restart": "Рестартиране"},
+    "hr": {"title": "Odaberite jezik", "subtitle": "Odaberite primarni jezik za sučelje sustava.", "continue": "Nastavi", "restart": "Ponovno pokreni"},
+    "sr": {"title": "Изаберите језик", "subtitle": "Изаберите главни језик за интерфејс система.", "continue": "Настави", "restart": "Поново покрени"},
+    "sl": {"title": "Izberite jezik", "subtitle": "Izberite glavni jezik za vmesnik sistema.", "continue": "Nadaljuj", "restart": "Ponovni zagon"},
+    "lt": {"title": "Pasirinkite kalbą", "subtitle": "Pasirinkite pagrindinę sistemos sąsajos kalbą.", "continue": "Tęsti", "restart": "Paleisti iš naujo"},
+    "lv": {"title": "Izvēlieties valodu", "subtitle": "Izvēlieties galveno sistēmas saskarnes valodu.", "continue": "Turpināt", "restart": "Restartēt"},
+    "et": {"title": "Valige keel", "subtitle": "Valige süsteemi liidese põhikeel.", "continue": "Jätka", "restart": "Taaskäivita"},
+    "be": {"title": "Выберыце мову", "subtitle": "Выберыце асноўную мову для інтэрфейсу сістэмы.", "continue": "Працягнуць", "restart": "Перазагрузіць"},
+    "ru": {"title": "Выберите язык", "subtitle": "Выберите основной язык для интерфейса системы.", "continue": "Продолжить", "restart": "Перезагрузить"},
+    "tr": {"title": "Dil Seçin", "subtitle": "Sistem arayüzü için birincil dili seçin.", "continue": "Sürdür", "restart": "Yeniden Başlat"},
+    "ja": {"title": "言語を選択", "subtitle": "システムインターフェイスの主言語を選択してください。", "continue": "続ける", "restart": "再起動"},
+    "ko": {"title": "언어 선택", "subtitle": "시스템 인터페이스에 사용할 기본 언어를 선택하십시오.", "continue": "계속", "restart": "재시동"},
+    "zh": {"title": "选择语言", "subtitle": "选择系统界面的主要语言。", "continue": "继续", "restart": "重新启动"},
+    "zh_tw": {"title": "選擇語言", "subtitle": "選擇系統介面的主要語言。", "continue": "繼續", "restart": "重新開機"},
+    "hi": {"title": "भाषा चुनें", "subtitle": "सिस्टम इंटरफ़ेस के लिए प्राथमिक भाषा चुनें।", "continue": "जारी रखें", "restart": "पुनरारंभ करें"},
+    "bn": {"title": "ভাষা নির্বাচন করুন", "subtitle": "সিস্টেম ইন্টারফেসের জন্য প্রাথমিক भाषा নির্বাচন করুন।", "continue": "চালিয়ে যান", "restart": "পুনরায় শুরু করুন"},
+    "th": {"title": "เลือกภาษา", "subtitle": "เลือกภาษาหลักสำหรับส่วนต่อประสานระบบ", "continue": "ดำเนินการต่อ", "restart": "เริ่มการทำงานใหม่"},
+    "vi": {"title": "Chọn ngôn ngữ", "subtitle": "Chọn ngôn ngữ chính cho giao diện hệ thống.", "continue": "Tiếp tục", "restart": "Khởi động lại"},
+    "ar": {"title": "اختر اللغة", "subtitle": "اختر اللغة الأساسية لواجهة النظام.", "continue": "متابعة", "restart": "إعادة التشغيل"},
+    "he": {"title": "בחר שפה", "subtitle": "בחר את השפה הראשית עבור ממשק המערכת.", "continue": "המשך", "restart": "הפעל מחדש"},
+    "fa": {"title": "انتخاب زبان", "subtitle": "زبان اصلی رابط کاربری سیستم را انتخاب کنید.", "continue": "ادامه", "restart": "راه‌اندازی مجدد"},
+}
+
+def get_sorted_languages(selected_locale="uk"):
+    base = (selected_locale or "uk").split(".")[0].replace("-", "_").lower().split("_")[0]
+    sys_lang = None
+    for l in SUPPORTED_LANGUAGES:
+        if l["code"] == selected_locale or l["code"] == base:
+            sys_lang = l
+            break
+    if not sys_lang:
+        sys_lang = SUPPORTED_LANGUAGES[0]
+    others = [l for l in SUPPORTED_LANGUAGES if l["code"] != sys_lang["code"]]
+    others.sort(key=lambda x: x["native"])
+    return [sys_lang] + others
+
 def get_target_username():
     sudo_user = os.environ.get("SUDO_USER")
     if sudo_user:
@@ -888,6 +975,70 @@ progressbar.mac-progress > trough > progress {
     border: none;
     box-shadow: 0 0 6px rgba(0, 122, 255, 0.6);
 }
+
+/* Language Selection Screen */
+.mac-lang-card {
+    background-color: rgba(0, 0, 0, 0.25);
+    border: 1.5px solid rgba(0, 122, 255, 0.45);
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    min-width: 380px;
+    min-height: 264px;
+    padding: 4px;
+}
+
+.mac-lang-card scrolledwindow,
+.mac-lang-card viewport {
+    background-color: transparent;
+}
+
+button.mac-lang-item,
+.mac-lang-item {
+    background-color: transparent;
+    background-image: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    margin: 1px 2px;
+    border: none;
+    box-shadow: none;
+    min-height: 28px;
+    transition: background-color 0.15s ease;
+}
+
+button.mac-lang-item:hover,
+.mac-lang-item:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    background-image: none;
+}
+
+button.mac-lang-item label,
+.mac-lang-item label {
+    color: #e0e0e0;
+    font-size: 13px;
+    font-weight: 400;
+}
+
+button.mac-lang-item:hover label,
+.mac-lang-item:hover label {
+    color: #ffffff;
+}
+
+button.mac-lang-item.selected,
+.mac-lang-item.selected,
+button.mac-lang-item.selected:hover,
+.mac-lang-item.selected:hover {
+    background-color: #007aff;
+    background-image: none;
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.35);
+}
+
+button.mac-lang-item.selected label,
+.mac-lang-item.selected label,
+button.mac-lang-item.selected:hover label,
+.mac-lang-item.selected:hover label {
+    color: #ffffff;
+    font-weight: 600;
+}
 """
 
 # ------------------------------------------------------------------------------
@@ -1102,7 +1253,7 @@ class MacMenuPopover(Gtk.Popover):
 # Main Application Window
 # ------------------------------------------------------------------------------
 class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
-    def __init__(self, app, action_override=None, preview_screen=None, preview_modal=None, cached_password=None):
+    def __init__(self, app, action_override=None, preview_screen=None, preview_modal=None, cached_password=None, initial_lang=None):
         super().__init__(application=app)
         self.set_title("Встановлення macW1Y")
         self.set_decorated(False)
@@ -1113,6 +1264,26 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.avatar_path = get_user_avatar_path(self.username)
         self.version = get_modpack_version()
         self.disk_info = get_disk_capacity_info()
+
+        self.selected_language = "uk"
+        if initial_lang:
+            self.selected_language = initial_lang
+        else:
+            try:
+                loc_file = os.path.expanduser("~/.config/mac-styling/locale")
+                if os.path.exists(loc_file):
+                    with open(loc_file, "r", encoding="utf-8") as f:
+                        v = f.read().strip()
+                        if v:
+                            self.selected_language = v
+                else:
+                    sys_lang = os.environ.get("LANG", "uk_UA.UTF-8").split(".")[0].replace("-", "_").lower().split("_")[0]
+                    for l in SUPPORTED_LANGUAGES:
+                        if l["code"] == sys_lang:
+                            self.selected_language = l["code"]
+                            break
+            except Exception:
+                self.selected_language = "uk"
 
         self.cached_password = cached_password or ""
         self.selected_action = action_override or "install"
@@ -1129,7 +1300,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         if self.preview_screen:
             self.switch_to_screen(self.preview_screen)
         else:
-            self.switch_to_screen("screen_user")
+            self.switch_to_screen("screen_language")
 
         if self.preview_modal:
             GLib.timeout_add(200, self._trigger_preview_modal)
@@ -1272,6 +1443,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.modal_dim.append(self.modal_sheet_box)
 
         # Build individual screens
+        self.stack.add_named(self._build_screen_language(), "screen_language")
         self.stack.add_named(self._build_screen_user(), "screen_user")
         self.stack.add_named(self._build_screen_options(), "screen_options")
         self.stack.add_named(self._build_screen_welcome(), "screen_welcome")
@@ -1280,7 +1452,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.stack.add_named(self._build_screen_progress(), "screen_progress")
         self.stack.add_named(self._build_screen_reboot(), "screen_reboot")
 
-        self.stack.set_visible_child_name("screen_user")
+        self.stack.set_visible_child_name("screen_language")
 
     def _setup_keybindings(self):
         controller = Gtk.EventControllerKey()
@@ -1472,11 +1644,138 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     def switch_to_screen(self, screen_name):
         self.hide_modal()
         target = screen_name if screen_name.startswith("screen_") else f"screen_{screen_name}"
+        if target in ["screen_lang", "screen_language"]:
+            target = "screen_language"
         self.stack.set_visible_child_name(target)
         if target == "screen_options":
             self.card.add_css_class("mac-card-options")
         else:
             self.card.remove_css_class("mac-card-options")
+
+    # --------------------------------------------------------------------------
+    # Screen 0: Language Selection (macOS Setup Wizard style)
+    # --------------------------------------------------------------------------
+    def _build_screen_language(self):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        box.set_vexpand(True)
+        box.set_valign(Gtk.Align.CENTER)
+        box.set_halign(Gtk.Align.CENTER)
+
+        # 1. Header Globe Icon
+        globe_svg = os.path.join(ASSETS_DIR, "globe_blue.svg")
+        if not os.path.exists(globe_svg):
+            globe_svg = os.path.join(ASSETS_DIR, "safari_globe.svg")
+        img_globe = Gtk.Image.new_from_file(globe_svg)
+        img_globe.set_pixel_size(56)
+        img_globe.set_halign(Gtk.Align.CENTER)
+        img_globe.set_margin_bottom(12)
+        box.append(img_globe)
+
+        # 2. Header Title & Subtitle
+        cur_lang = getattr(self, "selected_language", "uk")
+        info = LANGUAGE_I18N.get(cur_lang, LANGUAGE_I18N["en"])
+
+        self.lbl_lang_title = Gtk.Label(label=info["title"])
+        self.lbl_lang_title.add_css_class("mac-title-large")
+        self.lbl_lang_title.set_halign(Gtk.Align.CENTER)
+        box.append(self.lbl_lang_title)
+
+        self.lbl_lang_sub = Gtk.Label(label=info["subtitle"])
+        self.lbl_lang_sub.add_css_class("mac-subtitle")
+        self.lbl_lang_sub.set_halign(Gtk.Align.CENTER)
+        self.lbl_lang_sub.set_margin_top(6)
+        self.lbl_lang_sub.set_margin_bottom(18)
+        box.append(self.lbl_lang_sub)
+
+        # 3. Outer Language List Card
+        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        card.add_css_class("mac-lang-card")
+        card.set_halign(Gtk.Align.CENTER)
+
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_propagate_natural_height(False)
+        scroll.set_min_content_width(372)
+        scroll.set_min_content_height(256)
+        scroll.set_max_content_height(256)
+        card.append(scroll)
+
+        items_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        items_box.set_margin_start(4)
+        items_box.set_margin_end(4)
+        items_box.set_margin_top(4)
+        items_box.set_margin_bottom(4)
+        scroll.set_child(items_box)
+
+        self.lang_buttons = {}
+        sorted_langs = get_sorted_languages(cur_lang)
+
+        for lang in sorted_langs:
+            code = lang["code"]
+            btn = Gtk.Button()
+            btn.add_css_class("mac-lang-item")
+            btn.set_has_frame(False)
+            btn.set_cursor_from_name("pointer")
+
+            lbl = Gtk.Label(label=lang["native"])
+            lbl.set_halign(Gtk.Align.START)
+            lbl.set_hexpand(True)
+            btn.set_child(lbl)
+
+            if code == cur_lang:
+                btn.add_css_class("selected")
+
+            btn.connect("clicked", lambda b, c=code: self._on_language_selected(c))
+            self.lang_buttons[code] = (btn, lbl)
+            items_box.append(btn)
+
+        box.append(card)
+
+        # 4. Bottom Action Buttons
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
+        btn_row.set_halign(Gtk.Align.CENTER)
+        btn_row.set_margin_top(22)
+
+        self.btn_lang_restart = Gtk.Button(label=info["restart"])
+        self.btn_lang_restart.add_css_class("mac-btn-pill")
+        self.btn_lang_restart.connect("clicked", lambda b: self._on_system_reboot())
+        btn_row.append(self.btn_lang_restart)
+
+        self.btn_lang_continue = Gtk.Button(label=info["continue"])
+        self.btn_lang_continue.add_css_class("mac-btn-pill-primary")
+        self.btn_lang_continue.connect("clicked", lambda b: self._on_language_continue())
+        btn_row.append(self.btn_lang_continue)
+
+        box.append(btn_row)
+        return box
+
+    def _on_language_selected(self, lang_code):
+        self.selected_language = lang_code
+        info = LANGUAGE_I18N.get(lang_code, LANGUAGE_I18N.get("en", {}))
+        if hasattr(self, "lbl_lang_title") and self.lbl_lang_title:
+            self.lbl_lang_title.set_label(info.get("title", "Select Language"))
+        if hasattr(self, "lbl_lang_sub") and self.lbl_lang_sub:
+            self.lbl_lang_sub.set_label(info.get("subtitle", "Select primary language"))
+        if hasattr(self, "btn_lang_continue") and self.btn_lang_continue:
+            self.btn_lang_continue.set_label(info.get("continue", "Continue"))
+        if hasattr(self, "btn_lang_restart") and self.btn_lang_restart:
+            self.btn_lang_restart.set_label(info.get("restart", "Restart"))
+
+        for c, (btn, lbl) in getattr(self, "lang_buttons", {}).items():
+            if c == lang_code:
+                btn.add_css_class("selected")
+            else:
+                btn.remove_css_class("selected")
+
+    def _on_language_continue(self):
+        try:
+            loc_dir = os.path.expanduser("~/.config/mac-styling")
+            os.makedirs(loc_dir, exist_ok=True)
+            with open(os.path.join(loc_dir, "locale"), "w", encoding="utf-8") as f:
+                f.write(f"{self.selected_language}\n")
+        except Exception:
+            pass
+        self.switch_to_screen("screen_user")
 
     # --------------------------------------------------------------------------
     # Screen 1: User Account Selection (Photo 1)
@@ -2543,7 +2842,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 # Application Entry Point
 # ------------------------------------------------------------------------------
 class MacRecoveryApp(Gtk.Application):
-    def __init__(self, action_override=None, preview_screen=None, preview_modal=None, cached_password=None):
+    def __init__(self, action_override=None, preview_screen=None, preview_modal=None, cached_password=None, initial_lang=None):
         super().__init__(
             application_id="org.mactheme.installer.gui",
             flags=Gio.ApplicationFlags.NON_UNIQUE
@@ -2552,6 +2851,7 @@ class MacRecoveryApp(Gtk.Application):
         self.preview_screen = preview_screen
         self.preview_modal = preview_modal
         self.cached_password = cached_password
+        self.initial_lang = initial_lang
 
     def do_activate(self):
         accent_hex = get_system_accent_color()
@@ -2613,7 +2913,8 @@ class MacRecoveryApp(Gtk.Application):
             action_override=self.action_override,
             preview_screen=self.preview_screen,
             preview_modal=self.preview_modal,
-            cached_password=self.cached_password
+            cached_password=self.cached_password,
+            initial_lang=self.initial_lang
         )
         self.win.present()
 
@@ -2622,6 +2923,7 @@ def main():
     preview_screen = None
     preview_modal = None
     cached_password = None
+    initial_lang = None
 
     for arg in sys.argv[1:]:
         if arg.startswith("--screen="):
@@ -2632,6 +2934,8 @@ def main():
             preview_modal = arg.split("=")[1]
         elif arg.startswith("--password="):
             cached_password = arg.split("=")[1]
+        elif arg.startswith("--lang="):
+            initial_lang = arg.split("=")[1]
 
     def sig_handler(sig, frame):
         kiosk_guard.leave()
@@ -2644,7 +2948,8 @@ def main():
         action_override=action_override,
         preview_screen=preview_screen,
         preview_modal=preview_modal,
-        cached_password=cached_password
+        cached_password=cached_password,
+        initial_lang=initial_lang
     )
     return app.run([])
 

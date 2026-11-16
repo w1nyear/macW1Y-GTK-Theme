@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="globeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2997ff"/>
+      <stop offset="100%" stop-color="#0071e3"/>
+    </linearGradient>
+  </defs>
+  <!-- Outer circle -->
+  <circle cx="32" cy="32" r="27" fill="none" stroke="url(#globeGrad)" stroke-width="2.6"/>
+  <!-- Central meridian -->
+  <line x1="32" y1="5" x2="32" y2="59" fill="none" stroke="url(#globeGrad)" stroke-width="2.4"/>
+  <!-- Equator -->
+  <line x1="5" y1="32" x2="59" y2="32" fill="none" stroke="url(#globeGrad)" stroke-width="2.4"/>
+  <!-- Outer Meridians (Ellipses) -->
+  <ellipse cx="32" cy="32" rx="14" ry="27" fill="none" stroke="url(#globeGrad)" stroke-width="2.2"/>
+  <!-- Latitude parallels -->
+  <path d="M 9.5 19 C 16.5 24 47.5 24 54.5 19" fill="none" stroke="url(#globeGrad)" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M 9.5 45 C 16.5 40 47.5 40 54.5 45" fill="none" stroke="url(#globeGrad)" stroke-width="2.2" stroke-linecap="round"/>
+</svg>

@@ -954,3 +954,35 @@
        - bin/mac-audit-sync check (100% PASS)
        - bin/mac-extension-guard verify (21/21 pinned extensions verified)
        - bin/mac-i18n-verify (100% SUCCESS, install.sh 0 Cyrillic characters).
+
+809. Додано екран вибору мови (Language Selection Screen) як початковий крок запуску інсталятора macW1Y:
+   - Відповідність запиту:
+     1) При відкритті установщика першим екраном за замовчуванням відображається меню вибору мови (`screen_language`).
+     2) UI меню повністю відтворено з `mac-setup-wizard` (`extensions/eval-helper@mactheme/macSetupWizard.js`):
+        * Центрована векторна іконка глобуса macOS (`assets/recovery/globe_blue.svg`, 56x56 px, блакитний колір Apple #007aff).
+        * Заголовок екрана («Виберіть мову» / «Select Language», `.mac-title-large`, font-size: 22px, font-weight: 700).
+        * Текст опису під заголовком («Виберіть основну мову для інтерфейсу системи.» / «Select your primary language for the system interface.», `.mac-subtitle`, font-size: 13px, font-weight: 400).
+        * Внутрішня картка-контейнер списку мов (`.mac-lang-card`, min-width: 380px, min-height: 264px, border-radius: 10px, фон `rgba(0, 0, 0, 0.25)`, синя рамка `1.5px solid rgba(0, 122, 255, 0.45)`, тінь `0 4px 16px rgba(0, 0, 0, 0.25)`).
+        * Прокручуваний список 34 підтримуваних мов (`SUPPORTED_LANGUAGES`), відсортованих за системною локаллю користувача (українська нагорі).
+        * Активний елемент списку підсвічений синьою капсулою (`.mac-lang-item.selected`, фон `#007aff`, білий жирний шрифт, заокруглення 6px).
+        * Інтерактивна зміна: при натисканні на будь-яку мову динамічно оновлюється вибрана локаль, активне підсвічування рядка та перекладаються в реальному часі заголовок, опис, кнопки «Продовжити» та «Перезавантажити».
+        * Нижні круглі кнопки-пігулки: вторинна «Перезавантажити» (`.mac-btn-pill`) та акцентна первинна кнопка «Продовжити» (`.mac-btn-pill-primary`), яка зберігає вибір мови та здійснює плавний перехід до екрана вибору облікового запису (`screen_user`).
+   - Внесені зміни:
+     - assets/recovery/globe_blue.svg:
+       * Створено векторний Apple Wireframe Globe у фірмовому градієнті Apple #007aff.
+     - bin/mac-installer-gui:
+       * Додано константи `SUPPORTED_LANGUAGES`, `LANGUAGE_I18N` та функцію `get_sorted_languages()`.
+       * Додано CSS-стилі для `.mac-lang-card`, `.mac-lang-item`, `.mac-lang-item:hover`, `.mac-lang-item.selected`.
+       * Реалізовано метод побудови `_build_screen_language(self)` та обробники `_on_language_selected(self, lang_code)` і `_on_language_continue(self)`.
+       * Оновлено порядок реєстрації екранів у стеку та встановлено `screen_language` як перший активний екран при запуску.
+       * Додано параметри `--screen=lang`, `--screen=language` та `--lang=<code_or_locale>`.
+   - Верифікація:
+     * Згенеровано графічні артефакти:
+       - `installer_screen_language.png`: повний діалоговий екран вибору мови (українська за замовчуванням).
+       - `installer_screen_language_en.png`: динамічно оновлений екран вибору мови при перемиканні на англійську.
+       - `installer_screen_language_card.png`: детальний зум списку мов та капсул вибору.
+     * Автоматизоване тестування перемикання екранів та перекладів (100% PASS).
+     * 100% проходження системних перевірок:
+       - bin/mac-audit-sync check (100% PASS)
+       - bin/mac-extension-guard verify (21/21 pinned extensions verified)
+       - bin/mac-i18n-verify (100% SUCCESS, install.sh 0 Cyrillic characters).
