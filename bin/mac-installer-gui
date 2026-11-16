@@ -14,6 +14,7 @@ import time
 import json
 import threading
 import glob
+import math
 
 import gi
 gi.require_version('Gtk', '4.0')
@@ -1343,6 +1344,118 @@ class MacMenuPopover(Gtk.Popover):
         GLib.timeout_add(110, _finish)
 
 # ------------------------------------------------------------------------------
+# Modal Sheet Host with Spring Entrance & Smooth Ease-in Exit
+# ------------------------------------------------------------------------------
+class MacModalSheetHost(Gtk.Box):
+    """
+    Host container for Alert Modals supporting authentic macOS spring pop entrance
+    and smooth ease-in scale down exit without spring.
+    """
+    def __init__(self):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.set_halign(Gtk.Align.CENTER)
+        self.set_valign(Gtk.Align.CENTER)
+        self.set_vexpand(True)
+        self.set_hexpand(True)
+        self.scale_val = 1.0
+        self.opacity_val = 1.0
+        self._anim_tick_id = 0
+        self._anim_state = "idle"
+        self._start_time = 0
+        self._duration = 0.32
+        self._on_finish_cb = None
+
+    def set_content(self, widget):
+        while child := self.get_first_child():
+            self.remove(child)
+        if widget:
+            self.append(widget)
+
+    def do_snapshot(self, snapshot):
+        w = self.get_width()
+        h = self.get_height()
+        need_transform = (self.scale_val != 1.0 or self.opacity_val < 1.0)
+        if need_transform:
+            snapshot.save()
+            if self.opacity_val < 1.0:
+                snapshot.push_opacity(max(0.0, min(1.0, self.opacity_val)))
+            if self.scale_val != 1.0:
+                cx = w / 2.0
+                cy = h / 2.0
+                snapshot.translate(Graphene.Point().init(cx, cy))
+                snapshot.scale(self.scale_val, self.scale_val)
+                snapshot.translate(Graphene.Point().init(-cx, -cy))
+            child = self.get_first_child()
+            while child:
+                self.snapshot_child(child, snapshot)
+                child = child.get_next_sibling()
+            if self.opacity_val < 1.0:
+                snapshot.pop()
+            snapshot.restore()
+        else:
+            child = self.get_first_child()
+            while child:
+                self.snapshot_child(child, snapshot)
+                child = child.get_next_sibling()
+
+    def start_open_animation(self):
+        if self._anim_tick_id:
+            self.remove_tick_callback(self._anim_tick_id)
+            self._anim_tick_id = 0
+        self._anim_state = "opening"
+        self._start_time = time.time()
+        self._duration = 0.32
+        self.scale_val = 0.78
+        self.opacity_val = 0.0
+        self.queue_draw()
+        self._anim_tick_id = self.add_tick_callback(self._on_tick)
+
+    def start_close_animation(self, on_finish=None):
+        if self._anim_tick_id:
+            self.remove_tick_callback(self._anim_tick_id)
+            self._anim_tick_id = 0
+        self._on_finish_cb = on_finish
+        self._anim_state = "closing"
+        self._start_time = time.time()
+        self._duration = 0.16
+        self.queue_draw()
+        self._anim_tick_id = self.add_tick_callback(self._on_tick)
+
+    def _on_tick(self, widget, frame_clock):
+        elapsed = time.time() - self._start_time
+        tau = min(1.0, elapsed / self._duration)
+
+        if self._anim_state == "opening":
+            # Spring formula with damped bounce:
+            self.scale_val = 1.0 - 0.22 * math.exp(-5.2 * tau) * math.cos(6.8 * tau)
+            self.opacity_val = min(1.0, tau / 0.40)
+            if tau >= 1.0:
+                self.scale_val = 1.0
+                self.opacity_val = 1.0
+                self._anim_state = "idle"
+                self._anim_tick_id = 0
+                self.queue_draw()
+                return False
+        elif self._anim_state == "closing":
+            p = tau * tau * (3.0 - 2.0 * tau)
+            self.scale_val = 1.0 - 0.18 * p
+            self.opacity_val = 1.0 - p
+            if tau >= 1.0:
+                self.scale_val = 0.82
+                self.opacity_val = 0.0
+                self._anim_state = "idle"
+                self._anim_tick_id = 0
+                self.queue_draw()
+                if self._on_finish_cb:
+                    cb = self._on_finish_cb
+                    self._on_finish_cb = None
+                    cb()
+                return False
+
+        self.queue_draw()
+        return True
+
+# ------------------------------------------------------------------------------
 # Main Application Window
 # ------------------------------------------------------------------------------
 class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
@@ -1407,6 +1520,9 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         if self.preview_modal:
             GLib.timeout_add(200, self._trigger_preview_modal)
+
+        if "--morph-test" in sys.argv:
+            GLib.timeout_add(1000, lambda: self._on_wizard_action_clicked(None))
 
         for arg in sys.argv:
             if arg.startswith("--open-menu="):
@@ -1524,8 +1640,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         # Stack for screens
         self.stack = Gtk.Stack()
-        self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
-        self.stack.set_transition_duration(250)
+        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
+        self.stack.set_transition_duration(280)
         self.stack.set_hhomogeneous(False)
         self.stack.set_vhomogeneous(False)
         self.card.append(self.stack)
@@ -1538,19 +1654,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.modal_dim.set_visible(False)
         self.card_overlay.add_overlay(self.modal_dim)
 
-        self.modal_sheet_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        self.modal_sheet_box.set_halign(Gtk.Align.CENTER)
-        self.modal_sheet_box.set_valign(Gtk.Align.CENTER)
-        self.modal_sheet_box.set_vexpand(True)
-        self.modal_sheet_box.set_hexpand(True)
-        self.modal_dim.append(self.modal_sheet_box)
+        self.modal_sheet_host = MacModalSheetHost()
+        self.modal_dim.append(self.modal_sheet_host)
 
         # Build individual screens
         self.stack.add_named(self._build_screen_language(), "screen_language")
         self.stack.add_named(self._build_screen_user(), "screen_user")
         self.stack.add_named(self._build_screen_options(), "screen_options")
-        self.stack.add_named(self._build_screen_welcome(), "screen_welcome")
-        self.stack.add_named(self._build_screen_terms(), "screen_terms")
+        self.stack.add_named(self._build_screen_wizard(), "screen_welcome")
         self.stack.add_named(self._build_screen_disk(), "screen_disk")
         self.stack.add_named(self._build_screen_progress(), "screen_progress")
         self.stack.add_named(self._build_screen_reboot(), "screen_reboot")
@@ -1731,29 +1842,65 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         return btn
 
     # --------------------------------------------------------------------------
-    # Modal Sheet Management
+    # Modal Sheet Management (Spring pop entrance & smooth ease-in exit)
     # --------------------------------------------------------------------------
     def show_modal(self, widget):
-        while child := self.modal_sheet_box.get_first_child():
-            self.modal_sheet_box.remove(child)
-        self.modal_sheet_box.append(widget)
+        self.modal_sheet_host.set_content(widget)
         self.modal_dim.set_visible(True)
+        self.modal_sheet_host.start_open_animation()
 
     def hide_modal(self):
-        self.modal_dim.set_visible(False)
-        while child := self.modal_sheet_box.get_first_child():
-            self.modal_sheet_box.remove(child)
+        if not self.modal_dim.get_visible():
+            return
+        def _on_closed():
+            self.modal_dim.set_visible(False)
+            self.modal_sheet_host.set_content(None)
+        self.modal_sheet_host.start_close_animation(on_finish=_on_closed)
 
     def switch_to_screen(self, screen_name):
         self.hide_modal()
         target = screen_name if screen_name.startswith("screen_") else f"screen_{screen_name}"
         if target in ["screen_lang", "screen_language"]:
             target = "screen_language"
+
+        if target in ["screen_welcome", "welcome"]:
+            self._set_stack_slide_direction("screen_welcome")
+            self.stack.set_visible_child_name("screen_welcome")
+            self.morph_terms_to_welcome(animated=False)
+            self.card.remove_css_class("mac-card-options")
+            return
+        elif target in ["screen_terms", "terms"]:
+            self._set_stack_slide_direction("screen_welcome")
+            self.stack.set_visible_child_name("screen_welcome")
+            self.morph_welcome_to_terms(animated=False)
+            self.card.remove_css_class("mac-card-options")
+            return
+
+        self._set_stack_slide_direction(target)
         self.stack.set_visible_child_name(target)
         if target == "screen_options":
             self.card.add_css_class("mac-card-options")
         else:
             self.card.remove_css_class("mac-card-options")
+
+    def _set_stack_slide_direction(self, target):
+        SCREEN_ORDER = [
+            "screen_language",
+            "screen_user",
+            "screen_options",
+            "screen_welcome",
+            "screen_disk",
+            "screen_progress",
+            "screen_reboot"
+        ]
+        curr = self.stack.get_visible_child_name()
+        if curr in SCREEN_ORDER and target in SCREEN_ORDER:
+            c_idx = SCREEN_ORDER.index(curr)
+            t_idx = SCREEN_ORDER.index(target)
+            if t_idx > c_idx:
+                self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
+            elif t_idx < c_idx:
+                self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_RIGHT)
 
     # --------------------------------------------------------------------------
     # Screen 0: Language Selection (macOS Setup Wizard style)
@@ -1841,15 +1988,22 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         box.append(spacer)
 
         # 4. Bottom Action Buttons
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         btn_row.set_halign(Gtk.Align.CENTER)
         btn_row.set_valign(Gtk.Align.END)
         btn_row.set_margin_bottom(6)
 
+        self.rev_lang_restart = Gtk.Revealer()
+        self.rev_lang_restart.set_transition_type(Gtk.RevealerTransitionType.SLIDE_RIGHT)
+        self.rev_lang_restart.set_transition_duration(320)
+        self.rev_lang_restart.set_reveal_child(True)
+
         self.btn_lang_restart = Gtk.Button(label=info["restart"])
         self.btn_lang_restart.add_css_class("mac-btn-pill")
+        self.btn_lang_restart.set_margin_end(14)
         self.btn_lang_restart.connect("clicked", lambda b: self._on_system_reboot())
-        btn_row.append(self.btn_lang_restart)
+        self.rev_lang_restart.set_child(self.btn_lang_restart)
+        btn_row.append(self.rev_lang_restart)
 
         self.btn_lang_continue = Gtk.Button(label=info["continue"])
         self.btn_lang_continue.add_css_class("mac-btn-pill-primary")
@@ -1885,6 +2039,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
                 f.write(f"{self.selected_language}\n")
         except Exception:
             pass
+        if hasattr(self, "rev_lang_restart"):
+            self.rev_lang_restart.set_reveal_child(False)
         self.switch_to_screen("screen_user")
 
     # --------------------------------------------------------------------------
@@ -2233,103 +2389,41 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     # --------------------------------------------------------------------------
     # Screen 4: Installation Welcome (Photo 4)
     # --------------------------------------------------------------------------
-    def _build_screen_welcome(self):
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
-        box.set_vexpand(True)
-        box.set_valign(Gtk.Align.FILL)
-
-        img_circle = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "golden_gate_circle.png"))
-        img_circle.set_pixel_size(210)
-        img_circle.set_halign(Gtk.Align.CENTER)
-        img_circle.set_margin_top(6)
-        box.append(img_circle)
-
-        ver = get_modpack_version()
-        lbl_t = Gtk.Label(label=f"macW1Y {ver}")
-        lbl_t.add_css_class("mac-title-large")
-        lbl_t.set_margin_top(8)
-        box.append(lbl_t)
-
-        lbl_s = Gtk.Label(label=f"Для налаштування параметрів інсталяції macW1Y {ver} натисніть кнопку «Продовжити».")
-        lbl_s.add_css_class("mac-subtitle")
-        lbl_s.set_wrap(True)
-        lbl_s.set_halign(Gtk.Align.CENTER)
-        lbl_s.set_margin_top(4)
-        box.append(lbl_s)
-
-        spacer = Gtk.Box()
-        spacer.set_vexpand(True)
-        box.append(spacer)
-
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        btn_row.set_halign(Gtk.Align.CENTER)
-        btn_row.set_valign(Gtk.Align.END)
-        btn_row.set_margin_bottom(6)
-
-        btn_cont = Gtk.Button(label="Продовжити")
-        btn_cont.add_css_class("mac-btn-pill-primary")
-        btn_cont.connect("clicked", self._on_welcome_continue)
-        btn_row.append(btn_cont)
-        box.append(btn_row)
-
-        return box
-
-    def _on_welcome_continue(self, btn):
-        self._show_modal_loading_info()
-
     # --------------------------------------------------------------------------
-    # Screen 5: Loading Installer Info Modal (Photo 5)
+    # Screen 4 & 6: Interactive Installation Wizard (Welcome <-> Terms Morph)
     # --------------------------------------------------------------------------
-    def _show_modal_loading_info(self):
-        sheet = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
-        sheet.add_css_class("mac-modal-sheet")
-        sheet.set_halign(Gtk.Align.CENTER)
-
-        spinner = Gtk.Spinner()
-        spinner.set_size_request(24, 24)
-        spinner.start()
-        sheet.append(spinner)
-
-        lbl = Gtk.Label(label="Завантаження інформації про інсталяцію...")
-        lbl.add_css_class("mac-modal-title")
-        sheet.append(lbl)
-
-        self.show_modal(sheet)
-
-        if not ("--preview" in sys.argv and "--modal" in sys.argv):
-            GLib.timeout_add(1200, self._finish_loading_info)
-
-    def _finish_loading_info(self):
-        self.hide_modal()
-        self.switch_to_screen("screen_terms")
-        return GLib.SOURCE_REMOVE
-
-    # --------------------------------------------------------------------------
-    # Screen 6: Terms Agreement Document (Photo 6)
-    # --------------------------------------------------------------------------
-    def _build_screen_terms(self):
+    def _build_screen_wizard(self):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         box.set_vexpand(True)
         box.set_valign(Gtk.Align.FILL)
 
-        img_circle = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "golden_gate_circle.png"))
-        img_circle.set_pixel_size(130)
-        img_circle.set_halign(Gtk.Align.CENTER)
-        img_circle.set_margin_top(6)
-        box.append(img_circle)
+        self.img_wizard_icon = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "golden_gate_circle.png"))
+        self.img_wizard_icon.set_pixel_size(210)
+        self.img_wizard_icon.set_halign(Gtk.Align.CENTER)
+        self.img_wizard_icon.set_margin_top(6)
+        box.append(self.img_wizard_icon)
 
         ver = get_modpack_version()
-        lbl_t = Gtk.Label(label=f"macW1Y {ver}")
-        lbl_t.add_css_class("mac-title-large")
-        lbl_t.set_margin_top(4)
-        box.append(lbl_t)
+        self.lbl_wizard_title = Gtk.Label(label=f"macW1Y {ver}")
+        self.lbl_wizard_title.add_css_class("mac-title-large")
+        self.lbl_wizard_title.set_margin_top(6)
+        box.append(self.lbl_wizard_title)
 
-        lbl_s = Gtk.Label(label="Для продовження установки ПЗ необхідно прийняти умови ліцензійного погодження.")
-        lbl_s.add_css_class("mac-subtitle")
-        lbl_s.set_wrap(True)
-        lbl_s.set_halign(Gtk.Align.CENTER)
-        lbl_s.set_margin_top(2)
-        box.append(lbl_s)
+        self.lbl_wizard_sub = Gtk.Label(label=f"Для налаштування параметрів інсталяції macW1Y {ver} натисніть кнопку «Продовжити».")
+        self.lbl_wizard_sub.add_css_class("mac-subtitle")
+        self.lbl_wizard_sub.set_wrap(True)
+        self.lbl_wizard_sub.set_halign(Gtk.Align.CENTER)
+        self.lbl_wizard_sub.set_margin_top(4)
+        box.append(self.lbl_wizard_sub)
+
+        # Revealer for Terms Documentation + Footer
+        self.rev_terms = Gtk.Revealer()
+        self.rev_terms.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
+        self.rev_terms.set_transition_duration(350)
+        self.rev_terms.set_reveal_child(False)
+
+        terms_inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        terms_inner.set_halign(Gtk.Align.CENTER)
 
         scroll = Gtk.ScrolledWindow()
         scroll.add_css_class("mac-terms-box")
@@ -2356,7 +2450,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_content.set_valign(Gtk.Align.START)
         lbl_content.set_max_width_chars(56)
         scroll.set_child(lbl_content)
-        box.append(scroll)
+        terms_inner.append(scroll)
 
         lbl_footer = Gtk.Label(label="Після установки копія ліцензійної угоди буде збережена в системі та доступна в меню «Про цей macW1Y».\nЛіцензійну угоду також можна знайти на GitHub: https://github.com/w1nyear/macW1Y-GTK-Theme")
         lbl_footer.add_css_class("mac-subtitle")
@@ -2365,37 +2459,132 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_footer.set_halign(Gtk.Align.CENTER)
         lbl_footer.set_max_width_chars(56)
         lbl_footer.set_margin_top(6)
-        box.append(lbl_footer)
+        terms_inner.append(lbl_footer)
+
+        self.rev_terms.set_child(terms_inner)
+        box.append(self.rev_terms)
 
         spacer = Gtk.Box()
         spacer.set_vexpand(True)
         box.append(spacer)
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
+        # Button Row (Centered, transforming between 1 and 2 buttons)
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         btn_row.set_halign(Gtk.Align.CENTER)
         btn_row.set_valign(Gtk.Align.END)
         btn_row.set_margin_bottom(6)
 
-        btn_decline = Gtk.Button(label="Не приймаю")
-        btn_decline.add_css_class("mac-btn-pill")
-        btn_decline.connect("clicked", lambda b: self.switch_to_screen("screen_options"))
-        btn_row.append(btn_decline)
+        self.rev_left_btn = Gtk.Revealer()
+        self.rev_left_btn.set_transition_type(Gtk.RevealerTransitionType.SLIDE_RIGHT)
+        self.rev_left_btn.set_transition_duration(320)
+        self.rev_left_btn.set_reveal_child(False)
 
-        btn_agree = Gtk.Button(label="Приймаю")
-        btn_agree.add_css_class("mac-btn-pill-primary")
+        self.btn_decline = Gtk.Button(label="Не приймаю")
+        self.btn_decline.add_css_class("mac-btn-pill")
+        self.btn_decline.set_margin_end(14)
+        self.btn_decline.connect("clicked", lambda b: self.switch_to_screen("screen_options"))
+        self.rev_left_btn.set_child(self.btn_decline)
+        btn_row.append(self.rev_left_btn)
 
-        def on_agree():
+        self.btn_wizard_action = Gtk.Button(label="Продовжити")
+        self.btn_wizard_action.add_css_class("mac-btn-pill-primary")
+        self.btn_wizard_action.connect("clicked", self._on_wizard_action_clicked)
+        btn_row.append(self.btn_wizard_action)
+
+        box.append(btn_row)
+
+        self.wizard_mode = "welcome"
+        self._icon_anim_tick = 0
+        return box
+
+    def _animate_icon_size(self, start_size, target_size, duration=0.35):
+        if hasattr(self, "_icon_anim_tick") and self._icon_anim_tick:
+            self.remove_tick_callback(self._icon_anim_tick)
+            self._icon_anim_tick = 0
+
+        start_time = time.time()
+
+        def on_tick(widget, frame_clock):
+            elapsed = time.time() - start_time
+            tau = min(1.0, elapsed / duration)
+            p = 1.0 - math.pow(1.0 - tau, 3)
+            cur_size = int(start_size + (target_size - start_size) * p)
+            self.img_wizard_icon.set_pixel_size(cur_size)
+            if tau >= 1.0:
+                self.img_wizard_icon.set_pixel_size(target_size)
+                self._icon_anim_tick = 0
+                return False
+            return True
+
+        self._icon_anim_tick = self.add_tick_callback(on_tick)
+
+    def morph_welcome_to_terms(self, animated=True):
+        self.wizard_mode = "terms"
+        self.lbl_wizard_sub.set_label("Для продовження установки ПЗ необхідно прийняти умови ліцензійного погодження.")
+        self.btn_wizard_action.set_label("Приймаю")
+
+        if not animated:
+            self.img_wizard_icon.set_pixel_size(130)
+            self.rev_terms.set_reveal_child(True)
+            self.rev_left_btn.set_reveal_child(True)
+            return
+
+        self._animate_icon_size(210, 130, duration=0.35)
+        self.rev_terms.set_reveal_child(True)
+        self.rev_left_btn.set_reveal_child(True)
+
+    def morph_terms_to_welcome(self, animated=True):
+        ver = get_modpack_version()
+        self.wizard_mode = "welcome"
+        self.lbl_wizard_sub.set_label(f"Для налаштування параметрів інсталяції macW1Y {ver} натисніть кнопку «Продовжити».")
+        self.btn_wizard_action.set_label("Продовжити")
+
+        if not animated:
+            self.img_wizard_icon.set_pixel_size(210)
+            self.rev_terms.set_reveal_child(False)
+            self.rev_left_btn.set_reveal_child(False)
+            return
+
+        self._animate_icon_size(130, 210, duration=0.35)
+        self.rev_terms.set_reveal_child(False)
+        self.rev_left_btn.set_reveal_child(False)
+
+    def _on_wizard_action_clicked(self, btn):
+        if self.wizard_mode == "welcome":
+            self._show_modal_loading_info()
+        elif self.wizard_mode == "terms":
             if self.cached_password or "--preview" in sys.argv or "--mock-installer" in sys.argv or os.environ.get("MAC_INSTALLER_SCRIPT"):
                 self.switch_to_screen("screen_progress")
                 self._start_worker_execution()
             else:
                 self._show_modal_admin_padlock()
 
-        btn_agree.connect("clicked", lambda b: on_agree())
-        btn_row.append(btn_agree)
-        box.append(btn_row)
+    # --------------------------------------------------------------------------
+    # Screen 5: Loading Installer Info Modal (Photo 5)
+    # --------------------------------------------------------------------------
+    def _show_modal_loading_info(self):
+        sheet = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
+        sheet.add_css_class("mac-modal-sheet")
+        sheet.set_halign(Gtk.Align.CENTER)
 
-        return box
+        spinner = Gtk.Spinner()
+        spinner.set_size_request(24, 24)
+        spinner.start()
+        sheet.append(spinner)
+
+        lbl = Gtk.Label(label="Завантаження інформації про інсталяцію...")
+        lbl.add_css_class("mac-modal-title")
+        sheet.append(lbl)
+
+        self.show_modal(sheet)
+
+        if not ("--preview" in sys.argv and "--modal" in sys.argv):
+            GLib.timeout_add(1000, self._finish_loading_info)
+
+    def _finish_loading_info(self):
+        self.hide_modal()
+        self.morph_welcome_to_terms(animated=True)
+        return GLib.SOURCE_REMOVE
 
     # --------------------------------------------------------------------------
     # Screen 7: Terms Confirmation Modal (Photo 7)
