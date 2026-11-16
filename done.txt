@@ -955,6 +955,25 @@
        - bin/mac-extension-guard verify (21/21 pinned extensions verified)
        - bin/mac-i18n-verify (100% SUCCESS, install.sh 0 Cyrillic characters).
 
+810. Відкалібровано меню попереджень та модальні діалоги інсталятора macW1Y строго 1:1 з референсом macOS:
+   - Відповідність запиту:
+     1) Додано реальне апаратне розмиття (Frosted Glass Blur) підкладки під меню попереджень: при відкритті будь-якого модального діалогу (`show_modal`) основний вміст екрана (`self.stack`) динамічно отримує клас `.mac-blurred-backdrop` із `filter: blur(20px); opacity: 0.85;`, створюючи глибоке матове розмиття фону. При закритті (`hide_modal`) розмиття автоматично знімається.
+     2) Збільшено заокруглення кутів вікна попереджень: `border-radius` для `.mac-modal-sheet` та `.mac-alert-sheet` збільшено з 16px до 26px, що 1:1 відповідає плавним скругленням вікон macOS Recovery з наданого фото-референсу.
+     3) Оптимізовано прозорість та відтінок скла (`rgba(48, 50, 58, 0.76)`), світлий контур (`1px solid rgba(255, 255, 255, 0.24)`) та світлопроникність затемнення `self.modal_dim` (`rgba(0, 0, 0, 0.32)`), завдяки чому розмите тло (іконки диска, аватар, текстові поля) проглядається крізь вікно як автентичне скло Liquid Glass.
+   - Внесені зміни:
+     - bin/mac-installer-gui:
+       * Оновлено стилі RECOVERY_CSS для `.mac-modal-dim`, `.mac-blurred-backdrop`, `.mac-modal-sheet`, `.mac-alert-sheet`.
+       * Впроваджено додавання та зняття класу `.mac-blurred-backdrop` у методах `show_modal` та `hide_modal`.
+   - Верифікація:
+     * Згенеровано графічні артефакти:
+       - `installer_modal_reboot_comparison.png`: оновлене порівняння 1:1 з оригінальним фото-референсом macOS.
+       - `installer_modal_reboot.png`: крупний план діалогу перезавантаження з 26px кутами та розмитим фоном диска.
+       - `installer_modal_password.png`: діалог вводу пароля з 26px кутами та розмитим фоном аватара.
+     * 100% проходження системних перевірок:
+       - bin/mac-audit-sync check (100% PASS)
+       - bin/mac-extension-guard verify (21/21 pinned extensions verified)
+       - bin/mac-i18n-verify (100% SUCCESS, install.sh 0 Cyrillic characters).
+
 809. Додано екран вибору мови (Language Selection Screen) як початковий крок запуску інсталятора macW1Y:
    - Відповідність запиту:
      1) При відкритті установщика першим екраном за замовчуванням відображається меню вибору мови (`screen_language`).
@@ -982,6 +1001,25 @@
        - `installer_screen_language_en.png`: динамічно оновлений екран вибору мови при перемиканні на англійську.
        - `installer_screen_language_card.png`: детальний зум списку мов та капсул вибору.
      * Автоматизоване тестування перемикання екранів та перекладів (100% PASS).
+     * 100% проходження системних перевірок:
+       - bin/mac-audit-sync check (100% PASS)
+       - bin/mac-extension-guard verify (21/21 pinned extensions verified)
+       - bin/mac-i18n-verify (100% SUCCESS, install.sh 0 Cyrillic characters).
+
+810. Відкалібровано меню попереджень та модальні діалоги інсталятора macW1Y строго 1:1 з референсом macOS:
+   - Відповідність запиту:
+     1) Додано реальне апаратне розмиття (Frosted Glass Blur) підкладки під меню попереджень: при відкритті будь-якого модального діалогу (`show_modal`) основний вміст екрана (`self.stack`) динамічно отримує клас `.mac-blurred-backdrop` із `filter: blur(20px); opacity: 0.85;`, створюючи глибоке матове розмиття фону. При закритті (`hide_modal`) розмиття автоматично знімається.
+     2) Збільшено заокруглення кутів вікна попереджень: `border-radius` для `.mac-modal-sheet` та `.mac-alert-sheet` збільшено з 16px до 26px, що 1:1 відповідає плавним скругленням вікон macOS Recovery з наданого фото-референсу.
+     3) Оптимізовано прозорість та відтінок скла (`rgba(48, 50, 58, 0.76)`), світлий контур (`1px solid rgba(255, 255, 255, 0.24)`) та світлопроникність затемнення `self.modal_dim` (`rgba(0, 0, 0, 0.32)`), завдяки чому розмите тло (іконки диска, аватар, текстові поля) проглядається крізь вікно як автентичне скло Liquid Glass.
+   - Внесені зміни:
+     - bin/mac-installer-gui:
+       * Оновлено стилі RECOVERY_CSS для `.mac-modal-dim`, `.mac-blurred-backdrop`, `.mac-modal-sheet`, `.mac-alert-sheet`.
+       * Впроваджено додавання та зняття класу `.mac-blurred-backdrop` у методах `show_modal` та `hide_modal`.
+   - Верифікація:
+     * Згенеровано графічні артефакти:
+       - `installer_modal_reboot_comparison.png`: оновлене порівняння 1:1 з оригінальним фото-референсом macOS.
+       - `installer_modal_reboot.png`: крупний план діалогу перезавантаження з 26px кутами та розмитим фоном диска.
+       - `installer_modal_password.png`: діалог вводу пароля з 26px кутами та розмитим фоном аватара.
      * 100% проходження системних перевірок:
        - bin/mac-audit-sync check (100% PASS)
        - bin/mac-extension-guard verify (21/21 pinned extensions verified)

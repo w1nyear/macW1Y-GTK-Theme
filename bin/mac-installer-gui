@@ -588,22 +588,28 @@ button.mac-btn-pill-primary:active,
 
 /* Modal Sheet (Frosted glass with dark tint, light borders, deep shadow) */
 .mac-modal-dim {
-    background-color: rgba(0, 0, 0, 0.40);
+    background-color: rgba(0, 0, 0, 0.32);
     border-radius: 20px;
 }
 
+.mac-blurred-backdrop {
+    filter: blur(20px);
+    opacity: 0.85;
+}
+
 .mac-modal-sheet {
-    background-color: rgba(45, 47, 54, 0.88);
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.22);
+    background-color: rgba(48, 50, 58, 0.76);
+    border-radius: 26px;
+    border: 1px solid rgba(255, 255, 255, 0.24);
     box-shadow: 0 24px 65px rgba(0, 0, 0, 0.85);
-    padding: 22px 24px;
+    padding: 24px 28px;
     min-width: 420px;
 }
 
 .mac-alert-sheet {
     min-width: 360px;
-    padding: 22px 24px;
+    padding: 24px 28px;
+    border-radius: 26px;
 }
 
 .mac-modal-sheet image,
@@ -1634,10 +1640,12 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         while child := self.modal_sheet_box.get_first_child():
             self.modal_sheet_box.remove(child)
         self.modal_sheet_box.append(widget)
+        self.stack.add_css_class("mac-blurred-backdrop")
         self.modal_dim.set_visible(True)
 
     def hide_modal(self):
         self.modal_dim.set_visible(False)
+        self.stack.remove_css_class("mac-blurred-backdrop")
         while child := self.modal_sheet_box.get_first_child():
             self.modal_sheet_box.remove(child)
 
