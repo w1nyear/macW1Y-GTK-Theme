@@ -1062,3 +1062,28 @@
        * `bin/mac-audit-sync check` (100% PASS)
        * `bin/mac-extension-guard verify` (21/21 pinned extensions verified)
        * `bin/mac-i18n-verify` (100% SUCCESS, install.sh 0 Cyrillic characters).
+
+812. Збільшено радіус заокруглення контекстних меню та повністю видалено світлі borders менюбара в інсталяторі macW1Y:
+   - Відповідність запиту:
+     1) Збільшено радіус заокруглення меню («Збільш радіус заокруглення контекст меню»):
+        - У `bin/mac-installer-gui` для `popover.mac-popover-menu > contents` та `popover.menu > contents` збільшено `border-radius` з 14px до 24px (padding оптимізовано до 5px).
+        - Тепер картка меню має плавні, глибокі заокруглення кутів, які гармонійно та симетрично обрамляють внутрішні капсульні кнопки (pill buttons) з ковзним індикатором виділення, строго відповідаючи естетиці macOS Sequoia / Tahoe.
+     2) Видалено світлі borders менюбара («І видали світлі borders менюбара»):
+        - Повністю видалено світлу горизонтальну смугу `border-bottom: 1px solid rgba(255, 255, 255, 0.08)` під менюбаром `.mac-recovery-menubar`.
+        - Встановлено `border: none; border-bottom: none; box-shadow: none;` — менюбар зливається з градієнтним темним тлом робочого столу без жодних сторонніх роздільних ліній, точно як у реальному macOS Recovery.
+     3) Оптимізовано режим попереднього перегляду (`--preview`, `--no-kiosk`):
+        - Вікно більше не блокує Wayland popup surfaces при тестуванні, забезпечуючи стабільне відкриття меню.
+   - Внесені зміни:
+     - `bin/mac-installer-gui`:
+       * Оновлено стилі `.mac-recovery-menubar` (видалено `border-bottom`).
+       * Оновлено стилі `popover.mac-popover-menu > contents`, `popover.menu > contents` (`border-radius: 24px; padding: 5px;`).
+       * Оновлено створення вікна для `--preview` та `--no-kiosk` і виклик `pop.popup()`.
+   - Верифікація:
+     - Створено графічні артефакти:
+       * `installer_menu_apple_comparison.png`: наочне порівняння «ДО» (скріншот користувача з радіусом 14px та смугою) і «ПІСЛЯ» (радіус 24px, без border).
+       * `installer_menu_apple_new.png`: чистий крупний план меню Apple з радіусом 24px та активним слайдером.
+       * `installer_menu_pkm_new.png`: контекстне меню ПКМ з радіусом 24px.
+     - 100% проходження перевірок:
+       * `bin/mac-audit-sync check` (100% PASS)
+       * `bin/mac-extension-guard verify` (21/21 verified)
+       * `bin/mac-i18n-verify` (100% SUCCESS, install.sh 0 Cyrillic characters).

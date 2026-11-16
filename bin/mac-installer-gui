@@ -341,7 +341,9 @@ window.mac-recovery-root {
 /* Top Menubar */
 .mac-recovery-menubar {
     background-color: rgba(30, 31, 38, 0.94);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border: none;
+    border-bottom: none;
+    box-shadow: none;
     min-height: 28px;
     padding: 0 14px;
 }
@@ -425,9 +427,9 @@ popover.mac-popover-menu > contents,
 popover.menu > contents {
     background-color: rgba(36, 38, 44, 0.88);
     border: 1px solid rgba(255, 255, 255, 0.20);
-    border-radius: 14px;
+    border-radius: 24px;
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.70);
-    padding: 4px;
+    padding: 5px;
     color: #ffffff;
     min-width: 220px;
     animation: macMenuOpen 140ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -1055,7 +1057,7 @@ class MacMenuPopover(Gtk.Popover):
     Authentic macW1Y Menubar Popover:
     - Frosted glass backdrop (dark tint + subtle light edge + deep drop shadow)
     - System accent color for the sliding selection indicator
-    - Rounded menu container (14px) and pill-shaped menu items (border-radius: 9999px)
+    - Rounded menu container (24px) and pill-shaped menu items (border-radius: 9999px)
     - Sliding hover pill indicator that smoothly glides from item to item on cursor movement
     - Subtle fade & scale entrance and exit animations
     """
@@ -1263,7 +1265,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         super().__init__(application=app)
         self.set_title("Встановлення macW1Y")
         self.set_decorated(False)
-        self.fullscreen()
+        if "--preview" in sys.argv or "--no-kiosk" in sys.argv:
+            self.set_default_size(1920, 1080)
+        else:
+            self.fullscreen()
 
         self.username = get_target_username()
         self.display_name = get_user_display_name(self.username)
@@ -1314,7 +1319,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         for arg in sys.argv:
             if arg.startswith("--open-menu="):
                 m_name = arg.split("=")[1]
-                GLib.timeout_add(600, lambda name=m_name: self._popup_menu_by_name(name))
+                GLib.timeout_add(1400, lambda name=m_name: self._popup_menu_by_name(name))
 
     def _popup_menu_by_name(self, name):
         if name in ["context", "pkm"]:
@@ -1347,9 +1352,9 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         }
         btn = mapping.get(name)
         if btn:
-            btn.set_active(True)
             pop = btn.get_popover()
             if pop:
+                pop.popup()
                 for arg in sys.argv:
                     if arg.startswith("--hover-item="):
                         try:
