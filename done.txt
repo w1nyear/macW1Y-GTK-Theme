@@ -1164,3 +1164,20 @@
        * `bin/mac-audit-sync check` (100% PASS)
        * `bin/mac-extension-guard verify` (21/21 verified)
        * `bin/mac-i18n-verify` (100% SUCCESS, install.sh 0 Cyrillic characters).
+
+816. Виправлено запуск термінала в меню інсталятора macW1Y (усунено FileNotFoundError для gnome-terminal):
+   - Опис проблеми:
+     При виклику пункту меню «Термінал...» (менюбар «Утиліти» або контекстне меню ПКМ) програма завершувалася з винятком `FileNotFoundError: [Errno 2] Немає такого файла або каталогу: 'gnome-terminal'`.
+     У системі Ubuntu 24.04 штатно встановлений сучасний емулятор `ptyxis` (та системний псевдонім `x-terminal-emulator`), тоді як застарілий пакет `gnome-terminal` був відсутній.
+   - Реалізовані зміни:
+     1) У `bin/mac-installer-gui` додано функцію `launch_terminal()` з динамічним пошуком встановленого в системі термінала через `shutil.which`:
+        `ptyxis` -> `x-terminal-emulator` -> `gnome-terminal` -> `kgx` -> `alacritty` -> `kitty` -> `konsole` -> `xterm`.
+     2) Додано безпечний перехоплювач `try / except` для запобігання падінню інтерфейсу інсталятора при відсутності чи помилці запуску зовнішнього процесу.
+     3) Додано функцію `launch_disk_utility()` (`gnome-disks` / `gparted`) та прив'язано дію `app.disk_utility` до пункту меню «Дискова утиліта...».
+     4) Оновлено дію `app.terminal` у `MacRecoveryApp` для виклику `launch_terminal()`.
+   - Верифікація:
+     - Проведено мок-тест та пряму перевірку: `launch_terminal()` коректно знаходить `/home/vitaliy/.local/bin/ptyxis`, а `launch_disk_utility()` знаходить `/usr/bin/gnome-disks`.
+     - 100% проходження перевірок:
+       * `bin/mac-audit-sync check` (100% PASS)
+       * `bin/mac-extension-guard verify` (21/21 verified)
+       * `bin/mac-i18n-verify` (100% SUCCESS, install.sh 0 Cyrillic characters).

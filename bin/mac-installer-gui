@@ -242,6 +242,42 @@ def get_modpack_version():
                 pass
     return "0.7"
 
+def launch_terminal():
+    candidates = [
+        "ptyxis",
+        "x-terminal-emulator",
+        "gnome-terminal",
+        "kgx",
+        "alacritty",
+        "kitty",
+        "konsole",
+        "xterm",
+    ]
+    for term in candidates:
+        path = shutil.which(term)
+        if path:
+            try:
+                subprocess.Popen([path])
+                return True
+            except Exception:
+                continue
+    return False
+
+def launch_disk_utility():
+    candidates = [
+        "gnome-disks",
+        "gparted",
+    ]
+    for disk in candidates:
+        path = shutil.which(disk)
+        if path:
+            try:
+                subprocess.Popen([path])
+                return True
+            except Exception:
+                continue
+    return False
+
 # ------------------------------------------------------------------------------
 # GNOME Shell & Kiosk Coordination
 # ------------------------------------------------------------------------------
@@ -1405,7 +1441,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             ("Про macW1Y", "app.about"),
             None,
             ("Термінал...", "app.terminal"),
-            ("Дискова утиліта...", "app.noop"),
+            ("Дискова утиліта...", "app.disk_utility"),
             None,
             ("Перезавантажити...", "app.reboot"),
             ("Вимкнути комп'ютер...", "app.poweroff"),
@@ -1554,7 +1590,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         items_utils = [
             ("Термінал...", "app.terminal"),
-            ("Дискова утиліта...", "app.noop"),
+            ("Дискова утиліта...", "app.disk_utility"),
             ("Інформація про систему...", "app.sysinfo"),
         ]
         self.btn_utils = self._make_menu_btn("Утиліти", items_utils)
@@ -2946,8 +2982,12 @@ class MacRecoveryApp(Gtk.Application):
         self.add_action(act_poweroff)
 
         act_term = Gio.SimpleAction.new("terminal", None)
-        act_term.connect("activate", lambda a, p: subprocess.Popen(["gnome-terminal"]))
+        act_term.connect("activate", lambda a, p: launch_terminal())
         self.add_action(act_term)
+
+        act_disk = Gio.SimpleAction.new("disk_utility", None)
+        act_disk.connect("activate", lambda a, p: launch_disk_utility())
+        self.add_action(act_disk)
 
         act_sysinfo = Gio.SimpleAction.new("sysinfo", None)
         act_sysinfo.connect("activate", lambda a, p: self.win._show_simple_alert("Інформація про систему", f"ОС: Ubuntu 24.04 LTS\nВерсія macW1Y: v{get_modpack_version()}\nДиск: {get_disk_capacity_info()}"))
