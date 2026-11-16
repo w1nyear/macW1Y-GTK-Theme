@@ -749,3 +749,24 @@
        - bin/mac-audit-sync check (100% PASS)
        - bin/mac-extension-guard verify (21/21 pinned lock hashes verified)
        - bin/mac-i18n-verify (100% SUCCESS, install.sh contains 0 Cyrillic characters).
+
+801. Центрування іконок результатів пошуку Spotlight та щільна обводка hover навколо іконок програм Launchpad (Spotlight Search Result Icons Centering & Launchpad Tight Squircle Hover):
+   - Опис завдання:
+     1) Виправити спотлайт: відцентрувати всі іконки результатів пошуку у Spotlight. Раніше іконки додатків, системних налаштувань, файлів і фалбеків (Nautilus, Safari/веб, Gemini) мали різний розмір (24px проти 32px), а контейнер St.Widget не мав менеджера компонування (layout_manager), через що іконки зсувалися в лівий верхній кут (0, 0) і не були відцентровані ні по вертикалі, ні по горизонталі.
+     2) Виправити обводку hover у лаунчпаді / режимі «Програми»: замість зайвого зовнішнього відступу (gap/padding ~6-8px навколо іконки через St.BoxLayout) зробити так, щоб акцентна обводка лягала безпосередньо по контуру іконки-сквіркла без проміжку («прямо під іконкою так огортати, а не з відступом огортати»).
+   - Внесені зміни:
+     - extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js:
+       * У _renderResults(items): додано layout_manager: new Clutter.BinLayout() до iconSlot, фіксовані розміри 36x36px з центруванням Clutter.ActorAlign.CENTER по осях X та Y, та style: "margin-right: 12px;" для ідеального інтервалу перед текстовим блоком.
+       * Стандартизовано всі типи іконок (програми createSmoothAppIcon, системні налаштування preferences-system-symbolic, файли text-x-generic, папки folder, Nautilus system-file-manager, веб web-browser, Gemini star-new-symbolic) до єдиного розміру 32x32px з вирівнюванням по центру, завдяки чому іконка розташовується рівно в координатах (2, 2) відносно 36x36 слоту (центр на 18, 18).
+       * У _createAppGridItem(app, index): видалено зайвий border: 2.5px; border-radius: 14px; padding: 2px; із зовнішнього iconBox. Обводку hover перенесено безпосередньо на iconActor (сквіркл іконки 52px) з початковим стилем border: 2px solid transparent; border-radius: 12px; і збережено посилання item._iconActor = iconActor;.
+       * У _setSelectedAppIndex(index): оновлено перемикання стилю — попередній елемент скидає border: 2px solid transparent; border-radius: 12px;, а активний отримує border: 2px solid ${accent}; border-radius: 12px;, що забезпечує ідеальне облягання скругленого контуру іконки без відступів і без тремтіння геометрії.
+     - ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js та mac_i18n.js: синхронізовано з репозиторієм.
+     - config/extensions.lock.json: оновлено контрольний хеш цілісності розширення appmenu@ChathurangaBW.github.io.
+   - Верифікація:
+     * Перевірено та зафіксовано скріншоти:
+       - verify_search_f.png та crop_verify_search_f.png: усі іконки результатів пошуку (Оновлювач, Firefox, Zoom, Calc, Ресурси, MS Office, фалбеки) мають строге вертикальне та горизонтальне центрування по єдиній осі з відступом 12px.
+       - verify_apps_antigravity.png та crop_verify_apps_antigravity.png: акцентна помаранчева обводка ідеально огортає сквіркл іконки Antigravity без зазору та без відступу.
+     * Успішно пройдено повний набір системних аудитів:
+       - bin/mac-audit-sync check (100% PASS, System and repository are in sync)
+       - bin/mac-extension-guard verify (VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes)
+       - bin/mac-i18n-verify (100% SUCCESS, 0 Cyrillic characters in install.sh).

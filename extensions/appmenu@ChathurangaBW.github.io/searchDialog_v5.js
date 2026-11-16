@@ -3153,10 +3153,12 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             // Icon slot
             const iconSlot = new St.Widget({
                 style_class: 'mac-spotlight-icon-slot',
+                layout_manager: new Clutter.BinLayout(),
                 width: 36,
                 height: 36,
                 x_align: Clutter.ActorAlign.CENTER,
                 y_align: Clutter.ActorAlign.CENTER,
+                style: 'margin-right: 12px;',
             });
 
             let iconActor;
@@ -3165,22 +3167,25 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             } else if (item.iconName) {
                 iconActor = new St.Icon({
                     icon_name: item.iconName,
-                    icon_size: 48,
+                    icon_size: 32,
                     style: item.type === 'fallback-gemini' ? 'color: #388bfd;' : 'color: rgba(255, 255, 255, 0.90);',
                     x_align: Clutter.ActorAlign.CENTER,
                     y_align: Clutter.ActorAlign.CENTER,
                 });
-                iconActor.set_size(24, 24);
+                iconActor.set_size(32, 32);
                 applyActorSmoothing(iconActor);
             } else {
                 iconActor = new St.Icon({
                     icon_name: 'text-x-generic',
-                    icon_size: 24,
+                    icon_size: 32,
                     style: 'color: rgba(255, 255, 255, 0.90);',
                     x_align: Clutter.ActorAlign.CENTER,
                     y_align: Clutter.ActorAlign.CENTER,
                 });
+                iconActor.set_size(32, 32);
             }
+            iconActor.x_align = Clutter.ActorAlign.CENTER;
+            iconActor.y_align = Clutter.ActorAlign.CENTER;
             iconSlot.add_child(iconActor);
             row.add_child(iconSlot);
 
@@ -3766,8 +3771,12 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         if (this._selectedAppIndex >= 0 && this._appsGridButtons[this._selectedAppIndex]) {
             const prev = this._appsGridButtons[this._selectedAppIndex];
             prev.remove_style_class_name('selected');
+            const icon = prev._iconActor || (prev._iconBox ? prev._iconBox.get_first_child() : null);
             if (prev._iconBox) {
-                prev._iconBox.set_style('border: 2.5px solid transparent; border-radius: 14px; padding: 2px; margin-bottom: 4px;');
+                prev._iconBox.set_style('margin-bottom: 4px;');
+            }
+            if (icon) {
+                icon.set_style('border: 2px solid transparent; border-radius: 12px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);');
             }
         }
 
@@ -3776,8 +3785,12 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             const curr = this._appsGridButtons[this._selectedAppIndex];
             curr.add_style_class_name('selected');
             const accent = getSystemAccentColor();
+            const icon = curr._iconActor || (curr._iconBox ? curr._iconBox.get_first_child() : null);
             if (curr._iconBox) {
-                curr._iconBox.set_style(`border: 2.5px solid ${accent}; border-radius: 14px; padding: 2px; margin-bottom: 4px;`);
+                curr._iconBox.set_style('margin-bottom: 4px;');
+            }
+            if (icon) {
+                icon.set_style(`border: 2px solid ${accent}; border-radius: 12px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);`);
             }
             try { Util.ensureActorVisibleInScrollView?.(this._appsScrollView, curr); } catch (_) {}
         }
@@ -3809,13 +3822,14 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         const iconBox = new St.BoxLayout({
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
-            style: 'border: 2.5px solid transparent; border-radius: 14px; padding: 2px; margin-bottom: 4px;',
+            style: 'margin-bottom: 4px;',
         });
         const iconActor = createSmoothAppIcon(app, APPS_ICON_SIZE);
-        iconActor.set_style('icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);');
+        iconActor.set_style('border: 2px solid transparent; border-radius: 12px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);');
         iconBox.add_child(iconActor);
         box.add_child(iconBox);
         item._iconBox = iconBox;
+        item._iconActor = iconActor;
 
         const label = new St.Label({
             text: app.get_name() || '',
