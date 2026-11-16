@@ -626,20 +626,20 @@ button.mac-btn-pill-primary:active,
 
 /* Modal Sheet (Frosted glass with 10% tint, 28px radius, slim compact width matching Photos 2-4) */
 .mac-modal-dim {
-    background-color: rgba(0, 0, 0, 0.06);
+    background-color: transparent;
     border-radius: 20px;
 }
 
 .mac-blurred-backdrop {
-    filter: blur(2px);
-    opacity: 0.96;
+    filter: none;
+    opacity: 1.0;
 }
 
 .mac-modal-sheet,
 .mac-alert-sheet {
-    background-color: rgba(45, 48, 56, 0.22);
-    border-radius: 28px;
-    border: 1px solid rgba(255, 255, 255, 0.22);
+    background-color: rgba(65, 70, 82, 0.35);
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
     box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45);
     padding: 14px 16px;
     width: 260px;
@@ -668,6 +668,16 @@ button.mac-btn-pill-primary:active,
     line-height: 1.25;
 }
 
+.mac-modal-user-pill {
+    background-color: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 9999px;
+    padding: 3px 10px;
+    color: #ffffff;
+    font-size: 11.5px;
+    font-weight: 500;
+}
+
 .mac-field-label {
     color: #ffffff;
     font-size: 12px;
@@ -680,11 +690,11 @@ button.mac-modal-btn-secondary,
     background-color: rgba(255, 255, 255, 0.20);
     background-image: none;
     color: #ffffff;
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 500;
     border-radius: 9999px;
-    padding: 3px 10px;
-    min-height: 22px;
+    padding: 2px 8px;
+    min-height: 20px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: none;
     transition: all 0.15s ease;
@@ -714,11 +724,11 @@ button.mac-modal-btn-primary,
     background-color: #007aff;
     background-image: none;
     color: #ffffff;
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 600;
     border-radius: 9999px;
-    padding: 3px 12px;
-    min-height: 22px;
+    padding: 2px 10px;
+    min-height: 20px;
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: 0 1px 6px rgba(0, 122, 255, 0.35);
     transition: all 0.15s ease;
@@ -746,15 +756,15 @@ button.mac-modal-btn-primary:focus,
 .mac-alert-sheet button.mac-modal-btn-secondary,
 .mac-alert-sheet .mac-modal-btn-secondary {
     border-radius: 9999px;
-    padding: 3px 10px;
-    min-height: 22px;
+    padding: 2px 8px;
+    min-height: 20px;
 }
 
 .mac-alert-sheet button.mac-modal-btn-primary,
 .mac-alert-sheet .mac-modal-btn-primary {
     border-radius: 9999px;
-    padding: 3px 12px;
-    min-height: 22px;
+    padding: 2px 10px;
+    min-height: 20px;
 }
 
 /* Typography */
@@ -1727,12 +1737,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         while child := self.modal_sheet_box.get_first_child():
             self.modal_sheet_box.remove(child)
         self.modal_sheet_box.append(widget)
-        self.stack.add_css_class("mac-blurred-backdrop")
         self.modal_dim.set_visible(True)
 
     def hide_modal(self):
         self.modal_dim.set_visible(False)
-        self.stack.remove_css_class("mac-blurred-backdrop")
         while child := self.modal_sheet_box.get_first_child():
             self.modal_sheet_box.remove(child)
 
@@ -2497,12 +2505,12 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     # Screen 9 & 11: Admin Privilege Escalation Modal (Photos 9 & 11)
     # --------------------------------------------------------------------------
     def _show_modal_admin_padlock(self):
-        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=7)
         sheet.add_css_class("mac-modal-sheet")
         sheet.add_css_class("mac-alert-sheet")
 
         img_lock = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "padlock.svg"))
-        img_lock.set_pixel_size(44)
+        img_lock.set_pixel_size(42)
         img_lock.set_halign(Gtk.Align.CENTER)
         img_lock.add_css_class("mac-rounded-icon")
         sheet.append(img_lock)
@@ -2515,7 +2523,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_t.set_xalign(0.0)
         sheet.append(lbl_t)
 
-        lbl_s = Gtk.Label(label="Щоб дозволити цю дію, введіть пароль адміністратора:")
+        lbl_s = Gtk.Label(label="Щоб дозволити цю дію, введіть ім'я та пароль адміністратора:")
         lbl_s.add_css_class("mac-modal-desc")
         lbl_s.set_halign(Gtk.Align.START)
         lbl_s.set_xalign(0.0)
@@ -2523,24 +2531,37 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_s.set_max_width_chars(30)
         sheet.append(lbl_s)
 
-        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        row.set_margin_top(2)
-        lbl_p = Gtk.Label(label="Пароль:")
-        lbl_p.add_css_class("mac-field-label")
-        lbl_p.set_halign(Gtk.Align.START)
-        lbl_p.set_valign(Gtk.Align.CENTER)
-        row.append(lbl_p)
+        # User selector pill (Photo 3)
+        user_pill = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        user_pill.add_css_class("mac-modal-user-pill")
+        user_pill.set_hexpand(True)
+        user_pill.set_halign(Gtk.Align.FILL)
+        user_pill.set_margin_top(2)
 
+        lbl_u = Gtk.Label(label=self.display_name)
+        lbl_u.set_hexpand(True)
+        lbl_u.set_halign(Gtk.Align.START)
+        lbl_u.set_xalign(0.0)
+        user_pill.append(lbl_u)
+
+        lbl_chev = Gtk.Label(label="⇕")
+        lbl_chev.set_halign(Gtk.Align.END)
+        lbl_chev.set_opacity(0.7)
+        user_pill.append(lbl_chev)
+        sheet.append(user_pill)
+
+        # Password Entry full-width (Photo 3)
         entry = Gtk.PasswordEntry()
         entry.add_css_class("mac-entry")
         entry.set_show_peek_icon(False)
         entry.set_hexpand(True)
+        entry.set_halign(Gtk.Align.FILL)
+        entry.set_margin_top(1)
 
         if self.cached_password:
             entry.set_text(self.cached_password)
 
-        row.append(entry)
-        sheet.append(row)
+        sheet.append(entry)
 
         lbl_err = Gtk.Label()
         lbl_err.add_css_class("mac-modal-desc")
@@ -2562,7 +2583,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_cancel.connect("clicked", lambda b: self.hide_modal())
         btn_row.append(btn_cancel)
 
-        btn_allow = Gtk.Button(label="Дозволити")
+        btn_allow = Gtk.Button(label="OK")
         btn_allow.add_css_class("mac-modal-btn-primary")
         btn_allow.set_hexpand(True)
         btn_allow.set_halign(Gtk.Align.FILL)
