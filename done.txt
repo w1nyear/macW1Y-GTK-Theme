@@ -924,3 +924,33 @@
        - bin/mac-audit-sync check (100% PASS)
        - bin/mac-extension-guard verify (21/21 pinned lock hashes verified)
        - bin/mac-i18n-verify (100% SUCCESS, install.sh contains 0 Cyrillic characters).
+
+808. Перенесення автентичного вигляду ПКМ та випадаючих меню менюбара macW1Y до інсталятора (Frosted Glass, ковзаюча плашка, системний акцентний колір):
+   - Опис завдання:
+     1) Перенести автентичний вигляд випадаючих меню менюбара та контекстного меню ПКМ із встановленої системи macW1Y в інтерфейс інсталятора (bin/mac-installer-gui).
+     2) Ефект матового скла (frosted glass) з темним тінтом: rgba(36, 38, 44, 0.88), витончені світлі краї 1px solid rgba(255, 255, 255, 0.20), глибока м'яка тінь box-shadow: 0 16px 40px rgba(0, 0, 0, 0.70) та закруглені кути контейнера border-radius: 14px.
+     3) Круглі кнопки-капсули меню border-radius: 9999px з відступами padding: 4px 14px, мінімальною висотою 26px, прозорим фоном для видимості ковзаючої плашки та чітким білим шрифтом.
+     4) Динамічний системний акцентний колір інтерфейсу (через org.gnome.desktop.interface accent-color, наразі 'orange' #ff6a00).
+     5) Анімація ковзання кнопки на кнопку (Sliding hover pill indicator .mac-menu-hover-pill): акцентна капсула плавно переїжджає по вертикалі між кнопками при русі курсора hover з фізичним згладжуванням (add_tick_callback, демпфування 0.38 per frame), а при виході курсора за межі меню плавно зникає.
+     6) Анімації відкриття та закриття меню: @keyframes macMenuOpen (140ms cubic-bezier) та .mac-popover-closing (120ms fade & slide).
+     7) Повноцінна підтримка контекстного меню правої кнопки миші (ПКМ) як для рядка менюбара, так і для фону вікна інсталятора.
+   - Внесені зміни:
+     - bin/mac-installer-gui:
+       * Додано функцію get_system_accent_color() для автоматичного вилучення кольору акценту GNOME Interface та підстановки @mac_accent_color у CSS.
+       * Оновлено стилі RECOVERY_CSS для popover.mac-popover-menu, @keyframes macMenuOpen, .mac-popover-closing, .mac-menu-hover-pill, button.mac-menu-item-btn, .mac-menu-separator, .mac-menu-header-item.
+       * Реалізовано кастомний клас MacMenuPopover(Gtk.Popover) на базі Gtk.Overlay із плаваючим індикатором self.pill та оптимізованим алгоритмом ковзання glide_to.
+       * Додано підтримку виклику меню через --open-menu= та вибору елемента підсвічування --hover-item=.
+       * Додано жест ПКМ (Gtk.GestureClick SECONDARY) на menubar та фоні вікна з викликом self.context_popover.
+   - Верифікація:
+     * Згенеровано повну серію еталонних скріншотів меню із помаранчевим акцентним індикатором ковзання:
+       - installer_menu_apple.png: меню Apple з підсвіченим пунктом «Про macW1Y».
+       - installer_menu_file.png: меню Файл із гарячими клавішами та підсвічуванням «Новий образ...».
+       - installer_menu_edit.png: меню Правка з підсвічуванням «Повторити» та символами macOS (⇧⌘Z).
+       - installer_menu_utils.png: меню Утиліти з підсвічуванням «Термінал...».
+       - installer_menu_battery.png: статусний поповер батареї з відсотками та підсвічуванням «Джерело живлення: Адаптер».
+       - installer_menu_pkm.png: контекстне меню ПКМ з підсвічуванням «Про macW1Y».
+       - installer_menu_tahoe_showcase.png: зведена вітрина 2x2 з усіма варіантами меню.
+     * 100% проходження системних перевірок:
+       - bin/mac-audit-sync check (100% PASS)
+       - bin/mac-extension-guard verify (21/21 pinned extensions verified)
+       - bin/mac-i18n-verify (100% SUCCESS, install.sh 0 Cyrillic characters).
