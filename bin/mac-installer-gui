@@ -224,23 +224,53 @@ window.mac-recovery-root {
     padding: 0 14px;
 }
 
-.mac-menubar-item {
-    color: #e5e5ea;
-    font-size: 13px;
-    font-weight: 500;
+.mac-recovery-menubar button,
+.mac-recovery-menubar menubutton {
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    outline: none;
+    padding: 0;
+    margin: 0;
+}
+
+.mac-recovery-menubar menubutton > button {
+    background: transparent;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    outline: none;
     padding: 3px 8px;
     border-radius: 4px;
 }
 
-.mac-menubar-item:hover {
-    background-color: rgba(255, 255, 255, 0.09);
+.mac-recovery-menubar menubutton > button:hover,
+.mac-recovery-menubar menubutton > button:checked {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.mac-recovery-menubar arrow,
+.mac-recovery-menubar image.arrow {
+    opacity: 0;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    -gtk-icon-size: 0;
+}
+
+.mac-menubar-item {
+    color: #e5e5ea;
+    font-size: 13px;
+    font-weight: 500;
 }
 
 .mac-menubar-title {
     color: #ffffff;
     font-size: 13px;
     font-weight: 700;
-    padding: 3px 8px;
+    padding: 3px 6px;
 }
 
 /* Center Dialog Card */
@@ -619,18 +649,15 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         return False
 
     def _create_menubar(self):
-        bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
         bar.add_css_class("mac-recovery-menubar")
 
         # Apple Icon
-        btn_apple = Gtk.MenuButton()
-        btn_apple.set_label("")
-        btn_apple.add_css_class("mac-menubar-title")
         menu_apple = Gio.Menu()
         menu_apple.append("Про macW1Y", "app.about")
         menu_apple.append("Перезавантажити...", "app.reboot")
         menu_apple.append("Вимкнути комп'ютер...", "app.poweroff")
-        btn_apple.set_menu_model(menu_apple)
+        btn_apple = self._make_menu_btn("", menu_apple, is_bold=True)
         bar.append(btn_apple)
 
         # App Title
@@ -639,35 +666,24 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         bar.append(lbl_app)
 
         # Menus: Файл, Правка, Утиліти, Вікно
-        btn_file = Gtk.MenuButton(label="Файл")
-        btn_file.add_css_class("mac-menubar-item")
         menu_file = Gio.Menu()
         menu_file.append("Закрити вікно", "app.noop")
-        btn_file.set_menu_model(menu_file)
-        bar.append(btn_file)
+        bar.append(self._make_menu_btn("Файл", menu_file))
 
-        btn_edit = Gtk.MenuButton(label="Правка")
-        btn_edit.add_css_class("mac-menubar-item")
         menu_edit = Gio.Menu()
         menu_edit.append("Відмінити", "app.noop")
         menu_edit.append("Повторити", "app.noop")
-        btn_edit.set_menu_model(menu_edit)
-        bar.append(btn_edit)
+        bar.append(self._make_menu_btn("Правка", menu_edit))
 
-        btn_utils = Gtk.MenuButton(label="Утиліти")
-        btn_utils.add_css_class("mac-menubar-item")
         menu_utils = Gio.Menu()
         menu_utils.append("Термінал...", "app.terminal")
         menu_utils.append("Інформація про систему...", "app.sysinfo")
-        btn_utils.set_menu_model(menu_utils)
-        bar.append(btn_utils)
+        self.btn_utils = self._make_menu_btn("Утиліти", menu_utils)
+        bar.append(self.btn_utils)
 
-        btn_win = Gtk.MenuButton(label="Вікно")
-        btn_win.add_css_class("mac-menubar-item")
         menu_win = Gio.Menu()
         menu_win.append("Мінімізувати", "app.noop")
-        btn_win.set_menu_model(menu_win)
-        bar.append(btn_win)
+        bar.append(self._make_menu_btn("Вікно", menu_win))
 
         spacer = Gtk.Box()
         spacer.set_hexpand(True)
@@ -679,6 +695,22 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         bar.append(lbl_clock)
 
         return bar
+
+    def _make_menu_btn(self, label_text, menu_model, is_bold=False):
+        btn = Gtk.MenuButton()
+        btn.set_has_frame(False)
+        if hasattr(btn, "set_always_show_arrow"):
+            btn.set_always_show_arrow(False)
+        lbl = Gtk.Label(label=label_text)
+        if is_bold:
+            lbl.add_css_class("mac-menubar-title")
+        else:
+            lbl.add_css_class("mac-menubar-item")
+        btn.set_child(lbl)
+        if menu_model:
+            btn.set_menu_model(menu_model)
+        btn.add_css_class("mac-menubar-button")
+        return btn
 
     # --------------------------------------------------------------------------
     # Modal Sheet Management
