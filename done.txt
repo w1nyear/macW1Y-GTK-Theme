@@ -799,3 +799,25 @@
        - bin/mac-extension-guard verify (21/21 pinned lock hashes verified)
        - bin/mac-i18n-verify (100% SUCCESS, install.sh contains 0 Cyrillic characters).
 
+803. macOS Recovery Installer — меню вибору опцій відновлення та інсталяції macW1Y (Recovery Options Grid):
+   - Опис завдання:
+     1) Показати екран установщика macW1Y з кнопками вибору: інсталяція macW1Y, (чисте) оновлення модпаку, GitHub репозиторій та видалення macW1Y / вихід.
+     2) Забезпечити 100% відповідність референсу macOS Recovery (фото 3):
+        * Видалено зайвий текстовий заголовок всередині картки діалогу (у macOS назва процесу знаходиться лише в менюбарі, а картка починається одразу зі списку опцій).
+        * Оновлено стилізацію рядків: неактивні опції мають прозорий фон без обводок, а активна обрана опція підсвічується м'якою напівпрозорою плашкою (rgba(255, 255, 255, 0.22)) без синіх рамок.
+        * Кнопку «Продовжити» у правому нижньому кутку переведено у напівпрозорий стиль пігулки macOS (mac-btn-secondary), як на референсному фото.
+     3) Зняти скріншоти картки опцій та повного екрана разом із менюбаром.
+   - Внесені зміни:
+     - bin/mac-installer-gui:
+       * У `_build_screen_options`: видалено заголовок `lbl_head`, оптимізовано вертикальний інтервал карток (`spacing=6`), кнопку підтвердження переведено на стиль `mac-btn-secondary`.
+       * У CSS `RECOVERY_CSS`: оновлено селектори `.mac-option-row`, `.mac-option-row:hover`, `.mac-option-row.selected` для точного відтворення рідного списку вибору macOS Recovery.
+   - Верифікація:
+     * Зафіксовано скріншоти:
+       - installer_menu_options_card.png: збільшений чіткий знімок картки з 4 опціями («(Чисте) оновлення модпаку», «Інсталяція macW1Y», «GitHub репозиторій macW1Y», «Видалити macW1Y») та кнопкою «Продовжити».
+       - installer_menu_options_overview.png: огляд повного екрана установщика з менюбаром та центральною карткою.
+     * 100% проходження системних валідацій:
+       - bin/mac-audit-sync check (100% PASS)
+       - bin/mac-extension-guard verify (21/21 pinned lock hashes verified)
+       - bin/mac-i18n-verify (100% SUCCESS, install.sh contains 0 Cyrillic characters).
+
+
