@@ -604,13 +604,13 @@ button.mac-btn-pill-primary:active,
     border-radius: 26px;
     border: 1px solid rgba(255, 255, 255, 0.24);
     box-shadow: 0 24px 65px rgba(0, 0, 0, 0.85);
-    padding: 24px 28px;
-    min-width: 420px;
+    padding: 16px 18px;
+    min-width: 340px;
 }
 
 .mac-alert-sheet {
-    min-width: 360px;
-    padding: 24px 28px;
+    min-width: 320px;
+    padding: 16px 18px;
     border-radius: 26px;
 }
 
@@ -1883,8 +1883,9 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     # Screen 2: Password Modal Sheet (Photo 2)
     # --------------------------------------------------------------------------
     def _show_modal_password(self):
-        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         sheet.add_css_class("mac-modal-sheet")
+        sheet.add_css_class("mac-alert-sheet")
 
         lbl_prompt = Gtk.Label(label=f"Введіть пароль для «{self.display_name}», щоб продовжити:")
         lbl_prompt.add_css_class("mac-modal-title")
@@ -1923,17 +1924,23 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_error.set_visible(False)
         sheet.append(lbl_error)
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        btn_row.set_halign(Gtk.Align.END)
-        btn_row.set_margin_top(6)
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_row.set_homogeneous(True)
+        btn_row.set_hexpand(True)
+        btn_row.set_halign(Gtk.Align.FILL)
+        btn_row.set_margin_top(8)
 
         btn_cancel = Gtk.Button(label="Скасувати")
         btn_cancel.add_css_class("mac-modal-btn-secondary")
+        btn_cancel.set_hexpand(True)
+        btn_cancel.set_halign(Gtk.Align.FILL)
         btn_cancel.connect("clicked", lambda b: self.hide_modal())
         btn_row.append(btn_cancel)
 
         btn_cont = Gtk.Button(label="Продовжити")
         btn_cont.add_css_class("mac-modal-btn-primary")
+        btn_cont.set_hexpand(True)
+        btn_cont.set_halign(Gtk.Align.FILL)
 
         def on_submit():
             pwd = entry_pass.get_text()
@@ -2075,7 +2082,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             self._show_modal_uninstall_confirm()
 
     def _show_modal_uninstall_confirm(self):
-        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         sheet.add_css_class("mac-modal-sheet")
         sheet.add_css_class("mac-alert-sheet")
 
@@ -2094,17 +2101,23 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_sub.set_margin_top(2)
         sheet.append(lbl_sub)
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        btn_row.set_halign(Gtk.Align.END)
-        btn_row.set_margin_top(14)
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_row.set_homogeneous(True)
+        btn_row.set_hexpand(True)
+        btn_row.set_halign(Gtk.Align.FILL)
+        btn_row.set_margin_top(12)
 
         btn_cancel = Gtk.Button(label="Скасувати")
         btn_cancel.add_css_class("mac-modal-btn-secondary")
+        btn_cancel.set_hexpand(True)
+        btn_cancel.set_halign(Gtk.Align.FILL)
         btn_cancel.connect("clicked", lambda b: self.hide_modal())
         btn_row.append(btn_cancel)
 
         btn_del = Gtk.Button(label="Видалити")
         btn_del.add_css_class("mac-modal-btn-primary")
+        btn_del.set_hexpand(True)
+        btn_del.set_halign(Gtk.Align.FILL)
         btn_del.connect("clicked", self._on_confirm_uninstall)
         btn_row.append(btn_del)
         sheet.append(btn_row)
@@ -2268,7 +2281,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     # Screen 7: Terms Confirmation Modal (Photo 7)
     # --------------------------------------------------------------------------
     def _show_modal_terms_confirm(self):
-        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         sheet.add_css_class("mac-modal-sheet")
         sheet.add_css_class("mac-alert-sheet")
 
@@ -2287,17 +2300,23 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_s.set_margin_top(2)
         sheet.append(lbl_s)
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        btn_row.set_halign(Gtk.Align.END)
-        btn_row.set_margin_top(14)
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_row.set_homogeneous(True)
+        btn_row.set_hexpand(True)
+        btn_row.set_halign(Gtk.Align.FILL)
+        btn_row.set_margin_top(12)
 
         btn_no = Gtk.Button(label="Не приймаю")
         btn_no.add_css_class("mac-modal-btn-secondary")
+        btn_no.set_hexpand(True)
+        btn_no.set_halign(Gtk.Align.FILL)
         btn_no.connect("clicked", lambda b: self.hide_modal())
         btn_row.append(btn_no)
 
         btn_yes = Gtk.Button(label="Приймаю")
         btn_yes.add_css_class("mac-modal-btn-primary")
+        btn_yes.set_hexpand(True)
+        btn_yes.set_halign(Gtk.Align.FILL)
         btn_yes.connect("clicked", self._on_terms_confirmed)
         btn_row.append(btn_yes)
         sheet.append(btn_row)
@@ -2421,17 +2440,23 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_err.set_visible(False)
         sheet.append(lbl_err)
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        btn_row.set_halign(Gtk.Align.END)
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_row.set_homogeneous(True)
+        btn_row.set_hexpand(True)
+        btn_row.set_halign(Gtk.Align.FILL)
         btn_row.set_margin_top(8)
 
         btn_cancel = Gtk.Button(label="Скасувати")
         btn_cancel.add_css_class("mac-modal-btn-secondary")
+        btn_cancel.set_hexpand(True)
+        btn_cancel.set_halign(Gtk.Align.FILL)
         btn_cancel.connect("clicked", lambda b: self.hide_modal())
         btn_row.append(btn_cancel)
 
         btn_allow = Gtk.Button(label="Дозволити")
         btn_allow.add_css_class("mac-modal-btn-primary")
+        btn_allow.set_hexpand(True)
+        btn_allow.set_halign(Gtk.Align.FILL)
 
         def on_allow():
             pwd = entry.get_text()
@@ -2534,7 +2559,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     # Screen 13: Cancel Confirmation Modal (Photo 13)
     # --------------------------------------------------------------------------
     def _show_modal_cancel_confirm(self):
-        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         sheet.add_css_class("mac-modal-sheet")
         sheet.add_css_class("mac-alert-sheet")
 
@@ -2553,17 +2578,23 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_s.set_margin_top(2)
         sheet.append(lbl_s)
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        btn_row.set_halign(Gtk.Align.END)
-        btn_row.set_margin_top(14)
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_row.set_homogeneous(True)
+        btn_row.set_hexpand(True)
+        btn_row.set_halign(Gtk.Align.FILL)
+        btn_row.set_margin_top(12)
 
-        btn_cont = Gtk.Button(label="Продовжити встановлення")
+        btn_cont = Gtk.Button(label="Продовжити")
         btn_cont.add_css_class("mac-modal-btn-secondary")
+        btn_cont.set_hexpand(True)
+        btn_cont.set_halign(Gtk.Align.FILL)
         btn_cont.connect("clicked", lambda b: self.hide_modal())
         btn_row.append(btn_cont)
 
         btn_quit = Gtk.Button(label="Завершити")
         btn_quit.add_css_class("mac-modal-btn-primary")
+        btn_quit.set_hexpand(True)
+        btn_quit.set_halign(Gtk.Align.FILL)
         btn_quit.connect("clicked", self._on_abort_installation)
         btn_row.append(btn_quit)
 
@@ -2572,7 +2603,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         GLib.idle_add(btn_cont.grab_focus)
 
     def _show_modal_reboot_confirm(self):
-        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         sheet.add_css_class("mac-modal-sheet")
         sheet.add_css_class("mac-alert-sheet")
 
@@ -2591,17 +2622,23 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_s.set_margin_top(2)
         sheet.append(lbl_s)
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        btn_row.set_halign(Gtk.Align.END)
-        btn_row.set_margin_top(14)
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_row.set_homogeneous(True)
+        btn_row.set_hexpand(True)
+        btn_row.set_halign(Gtk.Align.FILL)
+        btn_row.set_margin_top(12)
 
         btn_cancel = Gtk.Button(label="Скасувати")
         btn_cancel.add_css_class("mac-modal-btn-secondary")
+        btn_cancel.set_hexpand(True)
+        btn_cancel.set_halign(Gtk.Align.FILL)
         btn_cancel.connect("clicked", lambda b: self.hide_modal())
         btn_row.append(btn_cancel)
 
         btn_reboot = Gtk.Button(label="Перезавантажити")
         btn_reboot.add_css_class("mac-modal-btn-primary")
+        btn_reboot.set_hexpand(True)
+        btn_reboot.set_halign(Gtk.Align.FILL)
         btn_reboot.connect("clicked", lambda b: self._execute_reboot())
         btn_row.append(btn_reboot)
 
@@ -2819,7 +2856,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         threading.Thread(target=run_demo, daemon=True).start()
 
     def _show_simple_alert(self, title, text):
-        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         sheet.add_css_class("mac-modal-sheet")
         sheet.add_css_class("mac-alert-sheet")
 
@@ -2838,12 +2875,15 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_s.set_margin_top(2)
         sheet.append(lbl_s)
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        btn_row.set_halign(Gtk.Align.END)
-        btn_row.set_margin_top(14)
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_row.set_halign(Gtk.Align.FILL)
+        btn_row.set_hexpand(True)
+        btn_row.set_margin_top(12)
 
         btn_ok = Gtk.Button(label="OK")
         btn_ok.add_css_class("mac-modal-btn-primary")
+        btn_ok.set_hexpand(True)
+        btn_ok.set_halign(Gtk.Align.FILL)
         btn_ok.connect("clicked", lambda b: self.hide_modal())
         btn_row.append(btn_ok)
         sheet.append(btn_row)

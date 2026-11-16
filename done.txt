@@ -1087,3 +1087,28 @@
        * `bin/mac-audit-sync check` (100% PASS)
        * `bin/mac-extension-guard verify` (21/21 verified)
        * `bin/mac-i18n-verify` (100% SUCCESS, install.sh 0 Cyrillic characters).
+
+813. Відкалібровано меню попереджень (Alert & Modal Sheets) в інсталяторі macW1Y строго 1:1 з референсом macOS:
+   - Відповідність запиту:
+     1) Зменшено відступи від усіх країв у 1.5 раза («зменш відступи від всіх країв на півтора разів менше»):
+        - У `bin/mac-installer-gui` для класів `.mac-modal-sheet` та `.mac-alert-sheet` внутрішні відступи `padding` зменшено з 24px 28px до 16px 18px (24px / 1.5 = 16px зверху/знизу, 28px / 1.5 = ~18px зліва/справа).
+        - Зменшено вертикальні проміжки між текстом та елементами (spacing=8px, margin-top для кнопок 12px, min-width 320–340px) для компактного та щільного розміщення контенту без зайвого порожнього простору.
+     2) Розтягнуто кнопки від краю до краю на всю вільну ширину («Кнопки має бути від сторони в сторону а не дві кнопки справа. Одна зліва і друга справа що заповнює все вільне місце»):
+        - Усунуто правостороннє групування кнопок (`set_halign(Gtk.Align.END)`).
+        - Для контейнера кнопок `btn_row` активовано `set_homogeneous(True)`, `set_hexpand(True)` та `set_halign(Gtk.Align.FILL)`.
+        - Кожна кнопка (`btn_cancel` та `btn_confirm`) отримала `set_hexpand(True)` та `set_halign(Gtk.Align.FILL)`. Ліва кнопка («Скасувати» / темна з акцентним фокусним кільцем) симетрично заповнює ліву половину картки, а права («Перезавантажити» / «Продовжити» / акцентна синя) заповнює праву половину з мінікнопковим зазором 10px, утворюючи безшовний ряд від лівого до правого поля.
+     3) Уніфіковано для всіх діалогів системи:
+        - Оновлено `_show_modal_reboot_confirm`, `_show_modal_password`, `_show_modal_cancel_confirm`, `_show_modal_uninstall_confirm`, `_show_modal_terms_confirm`, `_show_modal_admin_padlock` та `_show_simple_alert`.
+   - Внесені зміни:
+     - `bin/mac-installer-gui`:
+       * Оновлено CSS-правила для `.mac-modal-sheet` та `.mac-alert-sheet` (`padding: 16px 18px; min-width: 320px;`).
+       * Оновлено створення `btn_row` та кнопок у всіх функціях модальних діалогів.
+   - Верифікація:
+     - Створено та оновлено графічні артефакти:
+       * `installer_modal_reboot_comparison.png`: актуальне порівняння 1:1 з фото-референсом macOS.
+       * `installer_modal_reboot.png`: крупний план оновленого діалогу перезавантаження з кнопками від краю до краю.
+       * `installer_modal_password.png`: крупний план діалогу введення пароля.
+     - 100% проходження перевірок:
+       * `bin/mac-audit-sync check` (100% PASS)
+       * `bin/mac-extension-guard verify` (21/21 verified)
+       * `bin/mac-i18n-verify` (100% SUCCESS, install.sh 0 Cyrillic characters).
