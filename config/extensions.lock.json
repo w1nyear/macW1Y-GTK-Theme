@@ -138,7 +138,7 @@
       "shell_compatibility": [
         "50"
       ],
-      "sha256": "f0b76dce6bf36294e88b1c8d3185e36d5397e16ccb5fcc716e0db3c5a71f009b",
+      "sha256": "931d89521eb4a7671117dd3d3b1f898604e0fc91bd98e1b2c72ca51def811ead",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -156,7 +156,7 @@
         "tahoeClockIcon.js": "cbf04baf035a7c9dd419d8657d7a11dc538d25bd9fc14350de289eae4818863d",
         "locations.js": "ec66ffd58943e5be72eecd77224104c048fd115ecf465b38aaa79ffa48698d05",
         "dbusmenuUtils.js": "21409665e15d1ef310516f39dc9d492d61d1a7b4fecc1a105405489bf4b7291e",
-        "stylesheet.css": "e8c76e640168e6008c20d47877ff2c1f40cc11cd464a1e880a9a5ec7008bd6db",
+        "stylesheet.css": "8e93fdcaac6f73aba68a21c36e485e312b3346678fc622912e3df6b3d1980062",
         "dragOutToRemove.js": "b62ee7174c5f7f885e828c9d917bcbf7ffc6aa5a078e30947f870217311fdc34",
         "extension.js": "6943580f458ecb499d8583ec44af4909fe340b428a234d8f755c6d43ea0d9171",
         "launcherAPI.js": "1c3506bc72c6fc980bf3a45f25e914c2529399164511ff23df6fc7c99608027e",
@@ -225,7 +225,7 @@
         "locale/nl/LC_MESSAGES/dash2dock-motion.mo": "ba7e144e0ee6edcb4f84f5ffbd0727eb3104c1b1bd2c1e520cc3af49affd5d39",
         "locale/ro/LC_MESSAGES/dash2dock-motion.mo": "3c44204f5671296cb522d7ee5769b18e0506870f8a413f79a23983ebc04bd3fe"
       },
-      "pinned_sha256": "f0b76dce6bf36294e88b1c8d3185e36d5397e16ccb5fcc716e0db3c5a71f009b"
+      "pinned_sha256": "931d89521eb4a7671117dd3d3b1f898604e0fc91bd98e1b2c72ca51def811ead"
     },
     "eval-helper@mactheme": {
       "uuid": "eval-helper@mactheme",

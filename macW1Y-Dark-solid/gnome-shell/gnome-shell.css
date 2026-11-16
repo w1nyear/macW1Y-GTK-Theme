@@ -5660,8 +5660,8 @@ StWidget.focused .app-grid-running-dot {
 .dash-item-container .show-apps,
 .dash-item-container .overview-tile {
   padding: 0 !important;
-  padding-top: 15px !important;
-  padding-bottom: 7px !important;
+  padding-top: 11px !important;
+  padding-bottom: 11px !important;
   margin: 0 !important;
 }
 

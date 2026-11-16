@@ -692,3 +692,35 @@
         - bin/mac-audit-sync check (100% PASS)
         - bin/mac-extension-guard verify (100% PASS)
         - bin/mac-i18n-verify (100% SUCCESS).
+
+799. Вертикальне центрування іконок дока у скляній плашці (macOS Dock Icon Vertical Centering & Symmetric Breathing Gaps):
+   - Проблема:
+     - У Dock іконки просідали донизу (topGap=14px, bottomGap=6px, різниця 8px, зміщення від центру донизу на 4.0px).
+     - Крапка активності (running dot) притискалася впритул до нижнього краю дока (1px від нижньої межі скляної плашки).
+     - Причина полягала в асиметричних відступах елементів дока (.app-well-app, .show-apps, .overview-tile): padding-top: 15px !important; padding-bottom: 7px !important;.
+   - Реалізовано:
+     1) Встановлено ідеально симетричні вертикальні відступи `padding-top: 11px !important; padding-bottom: 11px !important;` у:
+        - extensions/dash2dock-motion@unmade.space/stylesheet.css (рядки 54, 1573)
+        - ~/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/stylesheet.css
+        - macW1Y-Dark/gnome-shell/gnome-shell.css
+        - gnome-shell-theme/gnome-shell.css
+        - macW1Y-Light/gnome-shell/gnome-shell.css
+        - macW1Y-Dark-solid/gnome-shell/gnome-shell.css
+        - macW1Y-Light-solid/gnome-shell/gnome-shell.css
+        - та синхронізовано з темами у ~/.themes та /usr/share/themes.
+     2) Оновлено config/extensions.lock.json з перерахунком SHA256 хешів файлу stylesheet.css та директорії розширення dash2dock-motion@unmade.space.
+     3) Динамічно оновлено стилі оболонки GNOME Shell без перезавантаження та без виходу із сесії.
+   - Результати вимірювання (EvalHelper live metrics):
+     - Плашка дока (dash-background): y=1002, h=72, bottom=1074 (вертикальний центр Y=1038.0).
+     - Іконки застосунків (St_Icon): y=1012..1064, h=52 (вертикальний центр Y=1038.0).
+     - Верхній відступ (topGap): рівно 10px.
+     - Нижній відступ (bottomGap): рівно 10px.
+     - Різниця (topGap - bottomGap): 0px.
+     - Зміщення від центру: 0.0px (ідеальне вертикальне центрування за канонами macOS).
+     - Крапка активного застосунку (running dot): y=1060..1065, h=5px, відступ до нижнього краю скла збільшився з 1px до 9px.
+   - Верифікація:
+     1) Згенеровано скріншот дока з центрованими іконками: dock_centered_area.png.
+     2) 100% успішне проходження аудитів:
+        - bin/mac-audit-sync check (100% PASS)
+        - bin/mac-extension-guard verify (100% PASS)
+        - bin/mac-i18n-verify (100% SUCCESS).
