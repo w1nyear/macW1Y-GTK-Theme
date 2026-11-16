@@ -949,7 +949,8 @@ button.mac-link-btn:hover,
 }
 
 /* Input entry */
-entry.mac-entry {
+entry.mac-entry,
+passwordentry.mac-entry {
     background-color: rgba(0, 0, 0, 0.45);
     color: #ffffff;
     caret-color: #00a2ff;
@@ -963,7 +964,9 @@ entry.mac-entry {
 }
 
 entry.mac-entry:focus,
-entry.mac-entry:focus-within {
+entry.mac-entry:focus-within,
+passwordentry.mac-entry:focus,
+passwordentry.mac-entry:focus-within {
     border: 2px solid #00a2ff;
     box-shadow: 0 0 0 1px #00a2ff, 0 0 8px rgba(0, 162, 255, 0.45);
 }
@@ -1304,6 +1307,13 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.worker_thread = None
         self.worker_cancelled = False
         self.worker_process = None
+
+        settings = Gtk.Settings.get_default()
+        if settings and hasattr(settings.props, "gtk_entry_select_on_focus"):
+            try:
+                settings.set_property("gtk-entry-select-on-focus", False)
+            except Exception:
+                pass
 
         self._build_ui()
         self._setup_keybindings()
@@ -1824,6 +1834,9 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_name = Gtk.Label(label=self.display_name)
         lbl_name.add_css_class("mac-title-medium")
         lbl_name.set_margin_top(2)
+        click_name = Gtk.GestureClick()
+        click_name.connect("released", lambda g, n, x, y: self._show_modal_password())
+        lbl_name.add_controller(click_name)
         user_area.append(lbl_name)
 
         btn_forgot = Gtk.Button(label="Забули всі паролі?")
@@ -1902,17 +1915,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_pass.set_valign(Gtk.Align.CENTER)
         row.append(lbl_pass)
 
-        entry_pass = Gtk.Entry()
+        entry_pass = Gtk.PasswordEntry()
         entry_pass.add_css_class("mac-entry")
-        entry_pass.set_visibility(False)
-        entry_pass.set_invisible_char("•")
-        entry_pass.set_input_purpose(Gtk.InputPurpose.FREE_FORM)
+        entry_pass.set_show_peek_icon(False)
         entry_pass.set_hexpand(True)
 
         if self.cached_password:
             entry_pass.set_text(self.cached_password)
 
-        entry_pass.connect("notify::has-focus", lambda e, p: GLib.idle_add(lambda: (e.set_position(-1), e.select_region(-1, -1))))
         row.append(entry_pass)
         sheet.append(row)
 
@@ -1973,9 +1983,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
                     else:
                         lbl_error.set_markup("<span color='#ff453a'>Невірний пароль. Спробуйте ще раз.</span>")
                         lbl_error.set_visible(True)
+                        entry_pass.set_text("")
                         entry_pass.grab_focus()
-                        entry_pass.set_position(-1)
-                        entry_pass.select_region(-1, -1)
 
                 GLib.idle_add(finish)
 
@@ -2419,17 +2428,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_p.set_valign(Gtk.Align.CENTER)
         row.append(lbl_p)
 
-        entry = Gtk.Entry()
+        entry = Gtk.PasswordEntry()
         entry.add_css_class("mac-entry")
-        entry.set_visibility(False)
-        entry.set_invisible_char("•")
-        entry.set_input_purpose(Gtk.InputPurpose.FREE_FORM)
+        entry.set_show_peek_icon(False)
         entry.set_hexpand(True)
 
         if self.cached_password:
             entry.set_text(self.cached_password)
 
-        entry.connect("notify::has-focus", lambda e, p: GLib.idle_add(lambda: e.select_region(-1, -1)))
         row.append(entry)
         sheet.append(row)
 
@@ -2490,9 +2496,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
                     else:
                         lbl_err.set_markup("<span color='#ff453a'>Невірний пароль. Спробуйте ще раз.</span>")
                         lbl_err.set_visible(True)
+                        entry.set_text("")
                         entry.grab_focus()
-                        entry.set_position(-1)
-                        entry.select_region(-1, -1)
 
                 GLib.idle_add(finish)
 
@@ -2504,7 +2509,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         sheet.append(btn_row)
 
         self.show_modal(sheet)
-        GLib.timeout_add(100, lambda: (entry.grab_focus(), entry.set_position(-1), entry.select_region(-1, -1), False)[-1])
+        GLib.idle_add(entry.grab_focus)
 
     # --------------------------------------------------------------------------
     # Screen 12: Installation Progress Screen (Photo 12)
@@ -2916,6 +2921,13 @@ class MacRecoveryApp(Gtk.Application):
             css_provider,
             Gtk.STYLE_PROVIDER_PRIORITY_USER
         )
+
+        settings = Gtk.Settings.get_default()
+        if settings and hasattr(settings.props, "gtk_entry_select_on_focus"):
+            try:
+                settings.set_property("gtk-entry-select-on-focus", False)
+            except Exception:
+                pass
 
         if not ("--no-kiosk" in sys.argv or "--preview" in sys.argv):
             setup_installer_session()
