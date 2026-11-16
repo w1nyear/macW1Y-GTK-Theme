@@ -46,5 +46,9 @@
   "notif_radius": 18,
   "osd_blur": 25,
   "osd_tint": 15,
-  "osd_shadow": 25
+  "osd_shadow": 25,
+  "alttab_icon_size": 64,
+  "alttab_padding": 18,
+  "alttab_spacing": 12,
+  "alttab_radius": 28
 }

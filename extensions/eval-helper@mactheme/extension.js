@@ -39,6 +39,9 @@ const EvalIface = `
     <method name="SyncDockStyling">
       <arg type="b" direction="out" name="success"/>
     </method>
+    <method name="SyncAltTabStyling">
+      <arg type="b" direction="out" name="success"/>
+    </method>
     <method name="ShowSetupWizard">
       <arg type="b" direction="in" name="force"/>
       <arg type="b" direction="out" name="success"/>
@@ -532,6 +535,18 @@ export default class EvalHelper extends Extension {
                         return false;
                     } catch (e) {
                         console.error(`[EvalHelper] SyncDockStyling error: ${e}`);
+                        return false;
+                    }
+                },
+                SyncAltTabStyling: () => {
+                    try {
+                        if (typeof globalThis._macSyncAltTabStyling === 'function') {
+                            globalThis._macSyncAltTabStyling();
+                            return true;
+                        }
+                        return false;
+                    } catch (e) {
+                        console.error(`[EvalHelper] SyncAltTabStyling error: ${e}`);
                         return false;
                     }
                 },
@@ -1278,6 +1293,25 @@ export default class EvalHelper extends Extension {
                 const SwitcherList = SwitcherPopupMod.SwitcherList;
                 if (!SwitcherPopup || !SwitcherList) return;
 
+                const _macGetAltTabConfig = () => {
+                    let iconSize = 64, padding = 18, spacing = 12, radius = 28;
+                    try {
+                        const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+                        if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+                            const [ok, bytes] = GLib.file_get_contents(confPath);
+                            if (ok) {
+                                const conf = JSON.parse(new TextDecoder().decode(bytes));
+                                if (typeof conf.alttab_icon_size === 'number') iconSize = conf.alttab_icon_size;
+                                if (typeof conf.alttab_padding === 'number') padding = conf.alttab_padding;
+                                if (typeof conf.alttab_spacing === 'number') spacing = conf.alttab_spacing;
+                                if (typeof conf.alttab_radius === 'number') radius = conf.alttab_radius;
+                            }
+                        }
+                    } catch (_) {}
+                    globalThis._macAltTabConfig = { iconSize, padding, spacing, radius };
+                    return globalThis._macAltTabConfig;
+                };
+
                 // 1. Helper to update visual outline for an item in SwitcherList
                 SwitcherList.prototype._macUpdateItemVisual = function(i) {
                     if (!Array.isArray(this._items) || i < 0 || i >= this._items.length) return;
@@ -1289,17 +1323,22 @@ export default class EvalHelper extends Extension {
                     const isSelected = (i === this._highlighted);
                     const isHovered = item.hover && !isSelected;
 
+                    const cfg = _macGetAltTabConfig();
+                    const tilePad = Math.max(6, Math.round(cfg.iconSize * 0.12));
+                    const tileW = this._itemTileSize || (cfg.iconSize + tilePad * 2);
+                    const tileRad = Math.max(10, Math.round(tileW * 0.26));
+
                     if (iconActor) {
                         if (isSelected) {
-                            iconActor.style = 'padding: 7px !important; border-radius: 18px !important; border: 2px solid rgba(255, 255, 255, 0.45) !important; background-color: rgba(255, 255, 255, 0.14) !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important; transition-duration: 150ms !important;';
+                            iconActor.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid rgba(255, 255, 255, 0.40) !important; background-color: rgba(255, 255, 255, 0.16) !important; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.30) !important; transition-duration: 150ms !important;`;
                             if (typeof iconActor.add_style_pseudo_class === 'function') iconActor.add_style_pseudo_class('selected');
                             if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('selected');
                         } else if (isHovered) {
-                            iconActor.style = 'padding: 7px !important; border-radius: 18px !important; border: 2px solid rgba(255, 255, 255, 0.30) !important; background-color: rgba(255, 255, 255, 0.08) !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important; transition-duration: 150ms !important;';
+                            iconActor.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid rgba(255, 255, 255, 0.25) !important; background-color: rgba(255, 255, 255, 0.08) !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important; transition-duration: 150ms !important;`;
                             if (typeof iconActor.remove_style_pseudo_class === 'function') iconActor.remove_style_pseudo_class('selected');
                             if (typeof iconActor.remove_style_class_name === 'function') iconActor.remove_style_class_name('selected');
                         } else {
-                            iconActor.style = 'padding: 7px !important; border-radius: 18px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;';
+                            iconActor.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                             if (typeof iconActor.remove_style_pseudo_class === 'function') iconActor.remove_style_pseudo_class('selected');
                             if (typeof iconActor.remove_style_class_name === 'function') iconActor.remove_style_class_name('selected');
                         }
@@ -1311,36 +1350,93 @@ export default class EvalHelper extends Extension {
                     }
                 };
 
-                // 2. Patch SwitcherList.prototype.vfunc_allocate so the shared dock title label is dynamically allocated
-                // directly centered underneath the active/hovered icon with zero text clipping.
-                if (!SwitcherList.prototype._macAllocPatchedV11) {
-                    SwitcherList.prototype._macAllocPatchedV11 = true;
+                // 2. Patch SwitcherList.prototype.vfunc_get_preferred_height & vfunc_allocate
+                // for 100% strict vertical centering ("Головне завжди центруватись по висоті").
+                if (!SwitcherList.prototype._macHeightPatchedV12) {
+                    SwitcherList.prototype._macHeightPatchedV12 = true;
+                    SwitcherList.prototype.vfunc_get_preferred_height = function(_forWidth) {
+                        const cfg = _macGetAltTabConfig();
+                        if (!this._iconSize && typeof this._setIconSize === 'function') {
+                            this._setIconSize();
+                        }
+                        const tilePad = Math.max(6, Math.round(cfg.iconSize * 0.12));
+                        const tileH = this._itemTileSize || (cfg.iconSize + tilePad * 2);
+                        const labelH = 16;
+                        const labelGap = 6;
+                        const vPad = cfg.padding;
+
+                        const totalH = tileH + labelGap + labelH + vPad * 2;
+                        return [totalH, totalH];
+                    };
+                }
+
+                if (!SwitcherList.prototype._macAllocPatchedV12) {
+                    SwitcherList.prototype._macAllocPatchedV12 = true;
                     const origVfuncAllocate = SwitcherList.prototype._macOrigVfuncAllocate || SwitcherList.prototype.vfunc_allocate;
                     SwitcherList.prototype._macOrigVfuncAllocate = origVfuncAllocate;
                     SwitcherList.prototype.vfunc_allocate = function(box) {
-                        origVfuncAllocate.call(this, box);
-                        if (this._activeAppLabel && this._activeAppLabel.visible && this._highlighted >= 0 && Array.isArray(this._items) && this._items[this._highlighted]) {
-                            const item = this._items[this._highlighted];
-                            const [minW, natW] = this._activeAppLabel.get_preferred_width(-1);
-                            const [minH, natH] = this._activeAppLabel.get_preferred_height(natW);
+                        this.set_allocation(box);
+                        const cfg = _macGetAltTabConfig();
+                        const W = box.x2 - box.x1;
+                        const H = box.y2 - box.y1;
 
-                            const [absX] = item.get_transformed_position();
-                            const [thisX] = this.get_transformed_position();
-                            const relX = (absX != null && thisX != null) ? Math.round(absX - thisX) : Math.round(item.allocation.x1);
+                        const tilePad = Math.max(6, Math.round(cfg.iconSize * 0.12));
+                        const tileH = this._itemTileSize || (cfg.iconSize + tilePad * 2);
+                        const labelH = 16;
+                        const labelGap = 6;
 
-                            const lBox = new Clutter.ActorBox();
-                            lBox.x1 = Math.round(relX + (item.width - natW) / 2);
-                            lBox.x2 = lBox.x1 + natW;
-                            lBox.y2 = this.height - 4;
-                            lBox.y1 = lBox.y2 - natH;
-                            this._activeAppLabel.allocate(lBox);
+                        // Perfect vertical centering:
+                        // The entire block consisting of icon tile, label gap, and label has height:
+                        const contentH = tileH + labelGap + labelH;
+                        // Equal top and bottom margins guarantee 100% vertical centering:
+                        const topMargin = Math.max(0, Math.floor((H - contentH) / 2));
+
+                        // Allocate _scrollView for the horizontal icon list
+                        const scrollBox = new Clutter.ActorBox();
+                        scrollBox.x1 = 0;
+                        scrollBox.x2 = W;
+                        scrollBox.y1 = topMargin;
+                        scrollBox.y2 = topMargin + tileH;
+                        this._scrollView.allocate(scrollBox);
+
+                        if (this._leftArrow) this._leftArrow.opacity = 0;
+                        if (this._rightArrow) this._rightArrow.opacity = 0;
+
+                        // Allocate active app label centered under the highlighted item
+                        if (this._activeAppLabel) {
+                            if (this._activeAppLabel.visible && this._highlighted >= 0 && Array.isArray(this._items) && this._items[this._highlighted]) {
+                                const item = this._items[this._highlighted];
+                                const [minW, natW] = this._activeAppLabel.get_preferred_width(-1);
+                                const [minH, natH] = this._activeAppLabel.get_preferred_height(natW);
+
+                                const [absX] = item.get_transformed_position();
+                                const [thisX] = this.get_transformed_position();
+                                const relX = (absX != null && thisX != null) ? Math.round(absX - thisX) : Math.round(item.allocation.x1);
+
+                                const lBox = new Clutter.ActorBox();
+                                let lx1 = Math.round(relX + (item.width - natW) / 2);
+                                let lx2 = lx1 + natW;
+                                if (lx1 < 12) {
+                                    lx2 += (12 - lx1);
+                                    lx1 = 12;
+                                }
+                                if (lx2 > W - 12) {
+                                    lx1 -= (lx2 - (W - 12));
+                                    lx2 = W - 12;
+                                }
+                                lBox.x1 = Math.max(6, lx1);
+                                lBox.x2 = Math.min(W - 6, lx2);
+                                lBox.y1 = topMargin + tileH + labelGap;
+                                lBox.y2 = Math.min(H, lBox.y1 + Math.max(natH, labelH));
+                                this._activeAppLabel.allocate(lBox);
+                            }
                         }
                     };
                 }
 
                 // 3. Patch SwitcherList.prototype.highlight to update item outlines and center the shared active app title
-                if (!SwitcherList.prototype._macHighlightPatchedV11) {
-                    SwitcherList.prototype._macHighlightPatchedV11 = true;
+                if (!SwitcherList.prototype._macHighlightPatchedV12) {
+                    SwitcherList.prototype._macHighlightPatchedV12 = true;
                     const origHighlight = SwitcherList.prototype._macOrigHighlight || SwitcherList.prototype.highlight;
                     SwitcherList.prototype._macOrigHighlight = origHighlight;
                     SwitcherList.prototype.highlight = function(index, justOutline) {
@@ -1352,10 +1448,11 @@ export default class EvalHelper extends Extension {
                             this._activeAppLabel = new St.Label({
                                 style_class: 'alt-tab-app-label',
                             });
-                            this._activeAppLabel.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important;';
+                            this._activeAppLabel.style = 'font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Cantarell, sans-serif !important; font-size: 12px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9) !important; text-align: center !important;';
                             if (this._activeAppLabel.clutter_text) {
                                 this._activeAppLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this._activeAppLabel.clutter_text.line_wrap = false;
+                                this._activeAppLabel.clutter_text.x_align = Clutter.ActorAlign.CENTER;
                             }
                             this.add_child(this._activeAppLabel);
                         }
@@ -1385,14 +1482,21 @@ export default class EvalHelper extends Extension {
                 }
 
                 // 4. Patch SwitcherList.prototype.addItem to enforce dock-like item width, hide scroll arrows, and connect hover
-                if (!SwitcherList.prototype._macAddItemPatchedV11) {
-                    SwitcherList.prototype._macAddItemPatchedV11 = true;
+                if (!SwitcherList.prototype._macAddItemPatchedV12) {
+                    SwitcherList.prototype._macAddItemPatchedV12 = true;
                     const origAddItem = SwitcherList.prototype._macOrigAddItem || SwitcherList.prototype.addItem;
                     SwitcherList.prototype._macOrigAddItem = origAddItem;
                     SwitcherList.prototype.addItem = function(item, label) {
                         const bbox = origAddItem.call(this, item, label);
+                        const cfg = _macGetAltTabConfig();
+                        const tilePad = Math.max(6, Math.round(cfg.iconSize * 0.12));
+                        const tileW = this._itemTileSize || (cfg.iconSize + tilePad * 2);
+                        const tileRad = Math.max(10, Math.round(tileW * 0.26));
+
                         bbox._square = false;
-                        if (typeof bbox.set_width === 'function') bbox.set_width(74);
+                        bbox.x_align = Clutter.ActorAlign.CENTER;
+                        bbox.y_align = Clutter.ActorAlign.CENTER;
+                        if (typeof bbox.set_width === 'function') bbox.set_width(tileW);
                         bbox.style = 'padding: 0px !important; margin: 0px !important; background-color: transparent !important; border: none !important; box-shadow: none !important;';
                         if (label) {
                             label.opacity = 0;
@@ -1408,8 +1512,8 @@ export default class EvalHelper extends Extension {
                             if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('alt-tab-icon-bin');
                             iconActor.x_align = Clutter.ActorAlign.CENTER;
                             iconActor.y_align = Clutter.ActorAlign.CENTER;
-                            if (typeof iconActor.set_size === 'function') iconActor.set_size(66, 66);
-                            iconActor.style = 'padding: 7px !important; border-radius: 18px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;';
+                            if (typeof iconActor.set_size === 'function') iconActor.set_size(tileW, tileW);
+                            iconActor.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                         }
                         if (this._leftArrow) this._leftArrow.opacity = 0;
                         if (this._rightArrow) this._rightArrow.opacity = 0;
@@ -1436,25 +1540,29 @@ export default class EvalHelper extends Extension {
                 }
 
                 // 5. Patch AppIcon to format label, add squircle class to iconBin, and hide label by default
-                if (AltTabMod.AppIcon && !AltTabMod.AppIcon.prototype._macPatchedV11) {
-                    AltTabMod.AppIcon.prototype._macPatchedV11 = true;
+                if (AltTabMod.AppIcon && !AltTabMod.AppIcon.prototype._macPatchedV12) {
+                    AltTabMod.AppIcon.prototype._macPatchedV12 = true;
                     const origAppIconInit = AltTabMod.AppIcon.prototype._macOrigInit || AltTabMod.AppIcon.prototype._init;
                     AltTabMod.AppIcon.prototype._macOrigInit = origAppIconInit;
                     AltTabMod.AppIcon.prototype._init = function(app) {
                         origAppIconInit.call(this, app);
+                        const cfg = _macGetAltTabConfig();
+                        const tilePad = Math.max(6, Math.round(cfg.iconSize * 0.12));
+                        const tileW = cfg.iconSize + tilePad * 2;
+                        const tileRad = Math.max(10, Math.round(tileW * 0.26));
                         if (this._iconBin) {
                             this._iconBin.add_style_class_name('alt-tab-icon-bin');
                             this._iconBin.x_align = Clutter.ActorAlign.CENTER;
                             this._iconBin.y_align = Clutter.ActorAlign.CENTER;
-                            if (typeof this._iconBin.set_size === 'function') this._iconBin.set_size(66, 66);
-                            this._iconBin.style = 'padding: 7px !important; border-radius: 18px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;';
+                            if (typeof this._iconBin.set_size === 'function') this._iconBin.set_size(tileW, tileW);
+                            this._iconBin.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                         }
                         if (this.label) {
                             this.label.add_style_class_name('alt-tab-app-label');
                             this.label.opacity = 0;
                             if (typeof this.label.set_height === 'function') this.label.set_height(0);
                             this.label.x_align = Clutter.ActorAlign.CENTER;
-                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 4px !important;';
+                            this.label.style = 'font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 4px !important;';
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this.label.clutter_text.line_wrap = false;
@@ -1465,22 +1573,26 @@ export default class EvalHelper extends Extension {
                 }
 
                 // 6. Patch WindowIcon & WindowSwitcher for touchpad gestures & fallback switcher
-                if (AltTabMod.WindowIcon && !AltTabMod.WindowIcon.prototype._macPatchedV11) {
-                    AltTabMod.WindowIcon.prototype._macPatchedV11 = true;
+                if (AltTabMod.WindowIcon && !AltTabMod.WindowIcon.prototype._macPatchedV12) {
+                    AltTabMod.WindowIcon.prototype._macPatchedV12 = true;
                     const origWindowIconInit = AltTabMod.WindowIcon.prototype._macOrigInit || AltTabMod.WindowIcon.prototype._init;
                     AltTabMod.WindowIcon.prototype._macOrigInit = origWindowIconInit;
                     AltTabMod.WindowIcon.prototype._init = function(window, mode) {
                         origWindowIconInit.call(this, window, mode);
+                        const cfg = _macGetAltTabConfig();
+                        const tilePad = Math.max(6, Math.round(cfg.iconSize * 0.12));
+                        const tileW = cfg.iconSize + tilePad * 2;
+                        const tileRad = Math.max(10, Math.round(tileW * 0.26));
                         if (typeof this.set_size === 'function') {
-                            try { this.set_size(52); } catch (_) {}
+                            try { this.set_size(cfg.iconSize); } catch (_) {}
                         }
                         const iconActor = this._iconBin || this._icon || (this.get_children ? this.get_children()[0] : null);
                         if (iconActor) {
                             if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('alt-tab-icon-bin');
                             iconActor.x_align = Clutter.ActorAlign.CENTER;
                             iconActor.y_align = Clutter.ActorAlign.CENTER;
-                            if (typeof iconActor.set_size === 'function') iconActor.set_size(66, 66);
-                            iconActor.style = 'padding: 7px !important; border-radius: 18px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;';
+                            if (typeof iconActor.set_size === 'function') iconActor.set_size(tileW, tileW);
+                            iconActor.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                         }
                         if (this.label) {
                             try {
@@ -1493,7 +1605,7 @@ export default class EvalHelper extends Extension {
                             this.label.x_align = Clutter.ActorAlign.CENTER;
                             this.label.opacity = 0;
                             if (typeof this.label.set_height === 'function') this.label.set_height(0);
-                            this.label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 4px !important;';
+                            this.label.style = 'font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 4px !important;';
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this.label.clutter_text.line_wrap = false;
@@ -1510,8 +1622,8 @@ export default class EvalHelper extends Extension {
                 try {
                     const dummyPopup = new AltTabMod.AppSwitcherPopup();
                     const AppSwitcherProto = dummyPopup._switcherList ? Object.getPrototypeOf(dummyPopup._switcherList) : null;
-                    if (AppSwitcherProto && !AppSwitcherProto._macPatchedV11) {
-                        AppSwitcherProto._macPatchedV11 = true;
+                    if (AppSwitcherProto && !AppSwitcherProto._macPatchedV12) {
+                        AppSwitcherProto._macPatchedV12 = true;
                         const origAddIcon = AppSwitcherProto._macOrigAddIcon || AppSwitcherProto._addIcon;
                         AppSwitcherProto._macOrigAddIcon = origAddIcon;
                         AppSwitcherProto._addIcon = function(appIcon) {
@@ -1521,7 +1633,10 @@ export default class EvalHelper extends Extension {
                                 const lastItem = this._items[this._items.length - 1];
                                 if (lastItem) {
                                     lastItem._square = false;
-                                    if (typeof lastItem.set_width === 'function') lastItem.set_width(74);
+                                    const cfg = _macGetAltTabConfig();
+                                    const tilePad = Math.max(6, Math.round(cfg.iconSize * 0.12));
+                                    const tileW = this._itemTileSize || (cfg.iconSize + tilePad * 2);
+                                    if (typeof lastItem.set_width === 'function') lastItem.set_width(tileW);
                                     lastItem.style = 'padding: 0px !important; margin: 0px !important; background-color: transparent !important; border: none !important; box-shadow: none !important;';
                                 }
                             }
@@ -1540,44 +1655,51 @@ export default class EvalHelper extends Extension {
                             }
                         };
                         AppSwitcherProto._setIconSize = function() {
+                            const cfg = _macGetAltTabConfig();
                             const primary = Main.layoutManager.primaryMonitor;
                             const availWidth = primary ? primary.width - 160 : 1600;
-                            let iconSize = 52;
-                            let tileW = 66;
-                            let itemW = 74;
-                            let radius = 18;
-                            let pad = 7;
-                            if (this._items.length * 74 > availWidth) {
-                                iconSize = 44;
-                                tileW = 56;
-                                itemW = 62;
-                                radius = 15;
-                                pad = 6;
+
+                            let baseIconSize = cfg.iconSize;
+                            let spacing = cfg.spacing;
+                            let tilePad = Math.max(6, Math.round(baseIconSize * 0.12));
+                            let tileW = baseIconSize + tilePad * 2;
+                            let itemW = tileW;
+
+                            const totalNeeded = this._items.length * (itemW + spacing) + 80;
+                            if (totalNeeded > availWidth && this._items.length > 0) {
+                                const scale = Math.max(0.4, (availWidth - 80) / (this._items.length * (itemW + spacing)));
+                                baseIconSize = Math.max(24, Math.round(baseIconSize * scale));
+                                spacing = Math.max(2, Math.round(spacing * scale));
+                                tilePad = Math.max(4, Math.round(baseIconSize * 0.12));
+                                tileW = baseIconSize + tilePad * 2;
+                                itemW = tileW;
                             }
-                            if (this._items.length * 62 > availWidth) {
-                                iconSize = 36;
-                                tileW = 46;
-                                itemW = 50;
-                                radius = 12;
-                                pad = 5;
-                            }
-                            if (this._items.length * 50 > availWidth) {
-                                iconSize = 28;
-                                tileW = 36;
-                                itemW = 40;
-                                radius = 10;
-                                pad = 4;
-                            }
-                            this._iconSize = iconSize;
+
+                            const tileRad = Math.max(10, Math.round(tileW * 0.26));
+                            this._iconSize = baseIconSize;
                             this._squareItems = false;
+                            this._itemTileSize = tileW;
+                            this._itemSpacing = spacing;
+
+                            if (this._list) {
+                                this._list.spacing = spacing;
+                                this._list.style = `spacing: ${spacing}px !important;`;
+                                this._list.y_align = Clutter.ActorAlign.CENTER;
+                                this._list.x_align = Clutter.ActorAlign.CENTER;
+                            }
+
                             for (let i = 0; i < this.icons.length; i++) {
                                 if (this._items[i]) {
                                     this._items[i]._square = false;
+                                    this._items[i].x_align = Clutter.ActorAlign.CENTER;
+                                    this._items[i].y_align = Clutter.ActorAlign.CENTER;
                                     if (typeof this._items[i].set_width === 'function') this._items[i].set_width(itemW);
                                     this._items[i].style = 'padding: 0px !important; margin: 0px !important; background-color: transparent !important; border: none !important; box-shadow: none !important;';
                                 }
                                 if (this.icons[i]) {
-                                    this.icons[i].set_size(iconSize);
+                                    this.icons[i].set_size(baseIconSize);
+                                    this.icons[i].x_align = Clutter.ActorAlign.CENTER;
+                                    this.icons[i].y_align = Clutter.ActorAlign.CENTER;
                                     this.icons[i].style = 'padding: 0px !important; margin: 0px !important; spacing: 0px !important;';
                                     const iconActor = this.icons[i]._iconBin || this.icons[i]._icon || (this.icons[i].get_children ? this.icons[i].get_children()[0] : null);
                                     if (iconActor) {
@@ -1585,18 +1707,21 @@ export default class EvalHelper extends Extension {
                                         iconActor.x_align = Clutter.ActorAlign.CENTER;
                                         iconActor.y_align = Clutter.ActorAlign.CENTER;
                                         if (typeof iconActor.set_size === 'function') iconActor.set_size(tileW, tileW);
-                                        iconActor.style = `padding: ${pad}px !important; border-radius: ${radius}px !important;`;
+                                        const isSelected = (i === this._highlighted);
+                                        const isHovered = this._items[i]?.hover && !isSelected;
+                                        if (isSelected) {
+                                            iconActor.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid rgba(255, 255, 255, 0.40) !important; background-color: rgba(255, 255, 255, 0.16) !important; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.30) !important; transition-duration: 150ms !important;`;
+                                        } else if (isHovered) {
+                                            iconActor.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid rgba(255, 255, 255, 0.25) !important; background-color: rgba(255, 255, 255, 0.08) !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important; transition-duration: 150ms !important;`;
+                                        } else {
+                                            iconActor.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
+                                        }
                                     }
                                     if (this.icons[i].label) {
                                         this.icons[i].label.add_style_class_name('alt-tab-app-label');
                                         this.icons[i].label.opacity = 0;
+                                        if (typeof this.icons[i].label.set_height === 'function') this.icons[i].label.set_height(0);
                                         this.icons[i].label.x_align = Clutter.ActorAlign.CENTER;
-                                        this.icons[i].label.style = 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 4px !important;';
-                                        if (this.icons[i].label.clutter_text) {
-                                            this.icons[i].label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
-                                            this.icons[i].label.clutter_text.line_wrap = false;
-                                            this.icons[i].label.clutter_text.x_align = Clutter.ActorAlign.CENTER;
-                                        }
                                     }
                                 }
                             }
@@ -1640,7 +1765,8 @@ export default class EvalHelper extends Extension {
                         });
                         glass.setIsDock(false);
                         glass.setCornerSmoothingEnabled(0.0);
-                        glass.setCornerRadius(28.0);
+                        const cfg = _macGetAltTabConfig();
+                        glass.setCornerRadius(cfg.radius);
                         glass.setTintColor(0.0, 0.0, 0.0);
                         glass.setTintStrength(0.06);
                         glass.setBlurRadius(20.0);
@@ -1670,16 +1796,24 @@ export default class EvalHelper extends Extension {
                 // Preload glass asynchronously
                 getSwitcherGlass().catch(() => {});
 
-                if (!SwitcherPopup.prototype._macLQVisualPatchedV10) {
-                    SwitcherPopup.prototype._macLQVisualPatchedV10 = true;
+                if (!SwitcherPopup.prototype._macLQVisualPatchedV12) {
+                    SwitcherPopup.prototype._macLQVisualPatchedV12 = true;
                     const origShow = SwitcherPopup.prototype._macOrigShow || SwitcherPopup.prototype.show;
                     SwitcherPopup.prototype._macOrigShow = origShow;
                     SwitcherPopup.prototype.show = function(backward, binding, mask) {
+                        const cfg = _macGetAltTabConfig();
+                        const radius = cfg.radius;
+                        const vPad = cfg.padding;
+                        const hPad = Math.max(vPad + 12, Math.round(radius * 0.85));
+
                         if (this._switcherList) {
                             this._switcherList._squareItems = false;
-                            this._switcherList.style = 'background-color: rgba(22, 22, 22, 0.40) !important; border-radius: 28px !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important; padding: 14px 20px 14px 20px !important;';
+                            this._switcherList.style = `background-color: rgba(22, 22, 22, 0.40) !important; border-radius: ${radius}px !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important; padding: ${vPad}px ${hPad}px !important;`;
                             if (this._switcherList._list) {
-                                this._switcherList._list.style = 'spacing: 10px !important;';
+                                this._switcherList._list.style = `spacing: ${cfg.spacing}px !important;`;
+                                this._switcherList._list.spacing = cfg.spacing;
+                                this._switcherList._list.y_align = Clutter.ActorAlign.CENTER;
+                                this._switcherList._list.x_align = Clutter.ActorAlign.CENTER;
                             }
                         }
                         const res = origShow.call(this, backward, binding, mask);
@@ -2370,8 +2504,36 @@ export default class EvalHelper extends Extension {
                 if (typeof globalThis._macSyncDockStyling === 'function') {
                     globalThis._macSyncDockStyling();
                 }
+                if (typeof globalThis._macSyncAltTabStyling === 'function') {
+                    globalThis._macSyncAltTabStyling();
+                }
             });
         } catch (_) {}
+
+        // Alt+Tab (App Switcher) real-time styling synchronization
+        const syncAltTabStyling = () => {
+            try {
+                const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+                let conf = {};
+                if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+                    const [ok, bytes] = GLib.file_get_contents(confPath);
+                    if (ok) conf = JSON.parse(new TextDecoder().decode(bytes));
+                }
+                const iconSize = (typeof conf.alttab_icon_size === 'number') ? conf.alttab_icon_size : 64;
+                const padding = (typeof conf.alttab_padding === 'number') ? conf.alttab_padding : 18;
+                const spacing = (typeof conf.alttab_spacing === 'number') ? conf.alttab_spacing : 12;
+                const radius = (typeof conf.alttab_radius === 'number') ? conf.alttab_radius : 28;
+
+                globalThis._macAltTabConfig = { iconSize, padding, spacing, radius };
+                if (globalThis._macSwitcherGlass && typeof globalThis._macSwitcherGlass.setCornerRadius === 'function') {
+                    globalThis._macSwitcherGlass.setCornerRadius(radius);
+                }
+            } catch (e) {
+                console.error('[EvalHelper] syncAltTabStyling error: ' + e);
+            }
+        };
+        globalThis._macSyncAltTabStyling = syncAltTabStyling;
+        syncAltTabStyling();
 
         // Dock app labels real-time styling & hardware blur synchronization
         const syncAllLabels = () => {

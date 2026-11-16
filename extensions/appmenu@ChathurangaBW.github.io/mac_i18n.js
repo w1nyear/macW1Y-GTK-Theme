@@ -10,7 +10,7 @@ export function setDebugLocale(locale) {
     _debugLocale = locale;
 }
 
-export const RTL_LANGUAGES = new Set(["ar", "fa", "he"]);
+export const RTL_LANGUAGES = new Set(["he", "fa", "ar"]);
 
 export const TRANSLATIONS = {
     "en": {
@@ -214,7 +214,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "uk": {
         "wifi": "Wi-Fi",
@@ -417,7 +427,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Запустити діагностику",
         "restore_ssot": "Відновити оформлення",
         "close": "Закрити",
-        "ok": "Гаразд"
+        "ok": "Гаразд",
+        "alttab_group_title": "Перемикач програм (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Розмір іконок, відступи, заокруглення та висота панелі перемикання",
+        "alttab_icon_size": "Розмір іконок",
+        "alttab_icon_size_desc": "Розмір значків програм у перемикачі (px)",
+        "alttab_padding": "Розмір меню / відступ",
+        "alttab_padding_desc": "Вертикальний відступ та висота скляної плашки (px)",
+        "alttab_spacing": "Відстань між іконками",
+        "alttab_spacing_desc": "Відстань між сусідніми значками у списку (px)",
+        "alttab_radius": "Радіус заокруглення",
+        "alttab_radius_desc": "Радіус заокруглення кутів плашки перемикача (px)"
     },
     "pl": {
         "wifi": "Wi-Fi",
@@ -620,7 +640,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "Przełącznik aplikacji (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Rozmiar ikon, odstępy, zaokrąglenie i wysokość paska przełącznika",
+        "alttab_icon_size": "Rozmiar ikon",
+        "alttab_icon_size_desc": "Rozmiar ikon aplikacji w przełączniku (px)",
+        "alttab_padding": "Rozmiar menu / margines",
+        "alttab_padding_desc": "Pionowy margines i wysokość szklanego paska (px)",
+        "alttab_spacing": "Odstęp między ikonami",
+        "alttab_spacing_desc": "Odległość między sąsiednimi ikonami na liście (px)",
+        "alttab_radius": "Promień zaokrąglenia",
+        "alttab_radius_desc": "Promień zaokrąglenia rogów paska przełącznika (px)"
     },
     "de": {
         "wifi": "WLAN",
@@ -823,7 +853,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App-Umschalter (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Symbolgröße, Abstände, Rundung und Höhe der Umschaltleiste",
+        "alttab_icon_size": "Symbolgröße",
+        "alttab_icon_size_desc": "Symbolgröße der Anwendungen im Umschalter (px)",
+        "alttab_padding": "Menügröße / Abstand",
+        "alttab_padding_desc": "Vertikaler Abstand und Höhe der Glasleiste (px)",
+        "alttab_spacing": "Symbolabstand",
+        "alttab_spacing_desc": "Abstand zwischen benachbarten Symbolen in der Liste (px)",
+        "alttab_radius": "Eckenradius",
+        "alttab_radius_desc": "Eckenabrundungsradius der Umschaltleiste (px)"
     },
     "fr": {
         "wifi": "Wi-Fi",
@@ -1026,7 +1066,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "Sélecteur d'applications (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Taille des icônes, espacement, arrondi et hauteur de la barre",
+        "alttab_icon_size": "Taille des icônes",
+        "alttab_icon_size_desc": "Taille des icônes d'applications dans le sélecteur (px)",
+        "alttab_padding": "Taille du menu / marge",
+        "alttab_padding_desc": "Marge verticale et hauteur de la capsule de verre (px)",
+        "alttab_spacing": "Espacement des icônes",
+        "alttab_spacing_desc": "Distance entre les icônes adjacentes dans la liste (px)",
+        "alttab_radius": "Rayon d'arrondi",
+        "alttab_radius_desc": "Rayon d'arrondi des coins de la barre de commutation (px)"
     },
     "es": {
         "wifi": "Wi-Fi",
@@ -1229,7 +1279,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "Selector de aplicaciones (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Tamaño de iconos, espaciado, redondeo y altura de la barra",
+        "alttab_icon_size": "Tamaño de iconos",
+        "alttab_icon_size_desc": "Tamaño de los iconos de aplicaciones en el selector (px)",
+        "alttab_padding": "Tamaño del menú / margen",
+        "alttab_padding_desc": "Margen vertical y altura de la barra de cristal (px)",
+        "alttab_spacing": "Espaciado de iconos",
+        "alttab_spacing_desc": "Distancia entre iconos adyacentes en la lista (px)",
+        "alttab_radius": "Radio de redondeo",
+        "alttab_radius_desc": "Radio de redondeo de las esquinas de la barra (px)"
     },
     "pt": {
         "wifi": "Wi-Fi",
@@ -1432,7 +1492,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "it": {
         "wifi": "Wi-Fi",
@@ -1635,7 +1705,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "zh": {
         "wifi": "Wi-Fi",
@@ -1838,7 +1918,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "ja": {
         "wifi": "Wi-Fi",
@@ -2041,7 +2131,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "ko": {
         "wifi": "Wi-Fi",
@@ -2244,7 +2344,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "ar": {
         "wifi": "Wi-Fi",
@@ -2447,7 +2557,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "he": {
         "wifi": "Wi-Fi",
@@ -2650,7 +2770,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "ru": {
         "wifi": "Wi-Fi",
@@ -2853,7 +2983,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "Переключатель программ (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Размер иконок, отступы, скругление и высота панели переключения",
+        "alttab_icon_size": "Размер иконок",
+        "alttab_icon_size_desc": "Размер значков программ в переключателе (px)",
+        "alttab_padding": "Размер меню / отступ",
+        "alttab_padding_desc": "Вертикальный отступ и высота стеклянной плашки (px)",
+        "alttab_spacing": "Расстояние между иконками",
+        "alttab_spacing_desc": "Расстояние между соседними значками в списке (px)",
+        "alttab_radius": "Радиус скругления",
+        "alttab_radius_desc": "Радиус скругления углов плашки переключателя (px)"
     },
     "tr": {
         "wifi": "Wi-Fi",
@@ -3056,7 +3196,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "cs": {
         "wifi": "Wi-Fi",
@@ -3259,7 +3409,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "nl": {
         "wifi": "Wifi",
@@ -3462,7 +3622,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "sk": {
         "wifi": "Wi-Fi",
@@ -3665,7 +3835,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "ro": {
         "wifi": "Wi-Fi",
@@ -3868,7 +4048,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "hu": {
         "wifi": "Wi-Fi",
@@ -4071,7 +4261,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "bg": {
         "wifi": "Wi-Fi",
@@ -4274,7 +4474,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "sr": {
         "wifi": "Wi-Fi",
@@ -4477,7 +4687,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "hr": {
         "wifi": "Wi-Fi",
@@ -4680,7 +4900,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "sl": {
         "wifi": "Wi-Fi",
@@ -4883,7 +5113,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "lt": {
         "wifi": "Wi-Fi",
@@ -5086,7 +5326,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "lv": {
         "wifi": "Wi-Fi",
@@ -5289,7 +5539,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "et": {
         "wifi": "Wi-Fi",
@@ -5492,7 +5752,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "be": {
         "wifi": "Wi-Fi",
@@ -5695,7 +5965,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "hi": {
         "wifi": "Wi-Fi",
@@ -5898,7 +6178,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "bn": {
         "wifi": "Wi-Fi",
@@ -6101,7 +6391,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "zh_tw": {
         "wifi": "Wi-Fi",
@@ -6304,7 +6604,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "th": {
         "wifi": "Wi-Fi",
@@ -6507,7 +6817,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "vi": {
         "wifi": "Wi-Fi",
@@ -6710,7 +7030,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     },
     "fa": {
         "wifi": "وای‌فای",
@@ -6913,7 +7243,17 @@ export const TRANSLATIONS = {
         "run_diagnostics": "Run Diagnostics",
         "restore_ssot": "Restore SSOT Baseline",
         "close": "Close",
-        "ok": "OK"
+        "ok": "OK",
+        "alttab_group_title": "App Switcher (Alt+Tab / Cmd+Tab)",
+        "alttab_group_desc": "Icon size, padding, spacing, and corner radius of the switcher bar",
+        "alttab_icon_size": "Icon Size",
+        "alttab_icon_size_desc": "Application icon size in switcher (px)",
+        "alttab_padding": "Menu Size / Padding",
+        "alttab_padding_desc": "Vertical padding and capsule height (px)",
+        "alttab_spacing": "Icon Spacing",
+        "alttab_spacing_desc": "Distance between adjacent app icons (px)",
+        "alttab_radius": "Corner Radius",
+        "alttab_radius_desc": "Corner rounding radius of the switcher bar (px)"
     }
 };
 

@@ -1024,3 +1024,41 @@
        - bin/mac-audit-sync check (100% PASS)
        - bin/mac-extension-guard verify (21/21 pinned extensions verified)
        - bin/mac-i18n-verify (100% SUCCESS, install.sh 0 Cyrillic characters).
+
+811. Інтегровано меню перемикача програм (Alt+Tab / App Switcher) у «Mac стилізацію» з повним користувацьким налаштуванням та відтворенням 1:1 вигляду macOS:
+   - Відповідність запиту:
+     1) Додано 4 слайдери регулювання в утиліту «Mac стилізація» (`mac-styling-settings`):
+        - «Розмір іконок» (`alttab_icon_size`, діапазон 32–96 px, за замовчуванням 64 px);
+        - «Розмір меню / внутрішній відступ» (`alttab_padding`, діапазон 8–40 px, за замовчуванням 18 px);
+        - «Відстань між іконками» (`alttab_spacing`, діапазон 0–36 px, за замовчуванням 12 px);
+        - «Радіус заокруглення» (`alttab_radius`, діапазон 12–48 px, за замовчуванням 28 px).
+     2) Забезпечено строге центрування по висоті («Головне завжди центруватись по висоті»):
+        - Виправлено баг GNOME Shell з асиметрією відступів: повна висота капсули тепер точно розраховується з урахуванням підпису активної програми (`tileH + labelGap + labelH + vPad * 2`).
+        - Верхній відступ іконок обчислюється симетрично: `topMargin = Math.floor((H - (tileH + labelGap + labelH)) / 2)`. Відстань від верхнього краю капсули до сквиркла активної іконки строго дорівнює відстані від низу тексту підпису до нижнього краю меню перемикача.
+     3) 1:1 macOS App Switcher UI та візуальний стиль:
+        - Форма пігулки (капсули) з матовим розмиттям (Frosted Glass), тінтом затемнення (`rgba(30, 30, 30, 0.72)`), тонким світлим кантом (`rgba(255, 255, 255, 0.22)`) та м'якою тінню.
+        - Активна іконка виділяється сквирклом із напівпрозорим скляним підсвічуванням (`rgba(255, 255, 255, 0.16)`) та білим кантом (`1.5px solid rgba(255, 255, 255, 0.40)`).
+        - Назва поточної вибраної програми відображається виключно під активною іконкою шрифтом SF Pro Display / Cantarell 12px з чіткою тінню; підписи неактивних програм приховано 1:1 як у macOS.
+        - Реалізовано інтелектуальне пропорційне зменшення іконок при відкритті великої кількості вікон.
+     4) Миттєва синхронізація без перезавантаження:
+        - Будь-яка зміна повзунків у вікні «Mac стилізація» через D-Bus метод `SyncAltTabStyling` та FileMonitor у `eval-helper@mactheme` миттєво оновлює геометрію та візуальний стиль перемикача в GNOME Shell на льоту.
+   - Внесені зміни:
+     - `config/mac-styling/styling.json` та `~/.config/mac-styling/styling.json`: додано ключі `alttab_icon_size`, `alttab_padding`, `alttab_spacing`, `alttab_radius`.
+     - `config/i18n/translations_data.py`: додано 10 ключів локалізації для групи «Перемикач програм (Alt+Tab)» для всіх 34 мов.
+     - `bin/mac_i18n.py`, `config/i18n/translations.json` та файли локалізації розширень: згенеровано через `build_translations.py`.
+     - `bin/mac-styling-settings`: додано секцію «Перемикач програм (Alt+Tab)» з 4 повзунками, підтримкою `load_values()`, `apply_realtime()`, `save_values()` та викликом D-Bus `SyncAltTabStyling`. Синхронізовано з `/usr/local/bin` та `~/.local/bin`.
+     - `extensions/eval-helper@mactheme/extension.js`:
+       * Додано D-Bus інтерфейс `SyncAltTabStyling` та file monitor на `styling.json`.
+       * Впроваджено перехоплення та стилізацію `SwitcherList`, `SwitcherPopup` та `AppSwitcher`.
+       * Реалізовано математичне вертикальне центрування та підтримку динамічних параметрів.
+     - `config/extensions.lock.json`: оновлено контрольний хеш розширення `eval-helper@mactheme`.
+   - Верифікація:
+     - Створено та верифіковано графічні артефакти:
+       * `alttab_comparison.png`: порівняння 1:1 фото користувача та створеного перемикача macW1Y.
+       * `alttab_real_apps.png`: рендеринг реальних додатків з активним сквирклом та підписом.
+       * `alttab_custom_settings.png`: динамічне застосування налаштувань користувача (72px, 24px pad, 20px spacing, 36px radius).
+       * `styling_settings_alttab_uk.png`: вигляд вікна «Mac стилізація» з 4 новими повзунками.
+     - 100% проходження системних перевірок:
+       * `bin/mac-audit-sync check` (100% PASS)
+       * `bin/mac-extension-guard verify` (21/21 pinned extensions verified)
+       * `bin/mac-i18n-verify` (100% SUCCESS, install.sh 0 Cyrillic characters).

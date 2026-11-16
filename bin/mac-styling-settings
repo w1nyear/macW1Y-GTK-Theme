@@ -268,6 +268,29 @@ class MacStylingWindow(Adw.ApplicationWindow):
             0, 100, int(self.spotlight_shadow)
         )
 
+        # 6.8. Alt+Tab / App Switcher Group
+        alttab_group = Adw.PreferencesGroup()
+        alttab_group.set_title(t("alttab_group_title", "Перемикач програм (Alt+Tab / Cmd+Tab)"))
+        alttab_group.set_description(t("alttab_group_desc", "Розмір іконок, відступи, заокруглення та висота панелі перемикання"))
+        pref_page.add(alttab_group)
+
+        self.alttab_icon_size_scale = self._create_slider_row(
+            alttab_group, t("alttab_icon_size", "Розмір іконок"), t("alttab_icon_size_desc", "Розмір значків програм у перемикачі (px)"),
+            32, 96, int(getattr(self, "alttab_icon_size", 64))
+        )
+        self.alttab_padding_scale = self._create_slider_row(
+            alttab_group, t("alttab_padding", "Розмір меню / відступ"), t("alttab_padding_desc", "Вертикальний відступ та висота скляної плашки (px)"),
+            8, 40, int(getattr(self, "alttab_padding", 18))
+        )
+        self.alttab_spacing_scale = self._create_slider_row(
+            alttab_group, t("alttab_spacing", "Відстань між іконками"), t("alttab_spacing_desc", "Відстань між сусідніми значками у списку (px)"),
+            0, 36, int(getattr(self, "alttab_spacing", 12))
+        )
+        self.alttab_radius_scale = self._create_slider_row(
+            alttab_group, t("alttab_radius", "Радіус заокруглення"), t("alttab_radius_desc", "Радіус заокруглення кутів плашки перемикача (px)"),
+            12, 48, int(getattr(self, "alttab_radius", 28))
+        )
+
         # 7. Boot Group (Завантажувач)
         boot_group = Adw.PreferencesGroup()
         boot_group.set_title(t("bootloader_title", "Завантажувач (Bootloader)"))
@@ -489,6 +512,11 @@ class MacStylingWindow(Adw.ApplicationWindow):
         self.label_tint = 28
         self.label_shadow = 25
 
+        self.alttab_icon_size = 64
+        self.alttab_padding = 18
+        self.alttab_spacing = 12
+        self.alttab_radius = 28
+
         self.dock_size = 12
         self.dock_icon_size = 54
         self.dock_spacing = 0
@@ -534,6 +562,11 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 self.label_blur = sdata.get("label_blur", self.label_blur)
                 self.label_tint = sdata.get("label_tint", self.label_tint)
                 self.label_shadow = sdata.get("label_shadow", self.label_shadow)
+
+                self.alttab_icon_size = sdata.get("alttab_icon_size", self.alttab_icon_size)
+                self.alttab_padding = sdata.get("alttab_padding", self.alttab_padding)
+                self.alttab_spacing = sdata.get("alttab_spacing", self.alttab_spacing)
+                self.alttab_radius = sdata.get("alttab_radius", self.alttab_radius)
             except Exception as e:
                 print("Error reading styling.json:", e)
 
@@ -728,12 +761,20 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 "spotlight_shadow": int(self.spot_shadow_scale.get_value()),
                 "label_blur": int(self.label_blur_scale.get_value()),
                 "label_tint": int(self.label_tint_scale.get_value()),
-                "label_shadow": int(self.label_shadow_scale.get_value())
+                "label_shadow": int(self.label_shadow_scale.get_value()),
+                "alttab_icon_size": int(self.alttab_icon_size_scale.get_value()),
+                "alttab_padding": int(self.alttab_padding_scale.get_value()),
+                "alttab_spacing": int(self.alttab_spacing_scale.get_value()),
+                "alttab_radius": int(self.alttab_radius_scale.get_value())
             })
             with open(json_file, "w") as f:
                 json.dump(existing_data, f, indent=2)
             try:
                 run_cmd("gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell/Extensions/EvalHelper --method org.gnome.Shell.Extensions.EvalHelper.SyncDockStyling")
+            except Exception:
+                pass
+            try:
+                run_cmd("gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell/Extensions/EvalHelper --method org.gnome.Shell.Extensions.EvalHelper.SyncAltTabStyling")
             except Exception:
                 pass
         except Exception as e:
