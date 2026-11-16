@@ -2689,8 +2689,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
     def _execute_reboot(self):
         self.hide_modal()
-        if "--preview" in sys.argv:
-            print("Preview mode: reboot executed")
+        is_mock = "--preview" in sys.argv or "--mock-installer" in sys.argv or (os.environ.get("MAC_INSTALLER_SCRIPT") and "gui.sh" in os.environ.get("MAC_INSTALLER_SCRIPT", ""))
+        if is_mock:
+            print("Mock mode: reboot simulated")
+            self._show_simple_alert("Тестування завершено", "Встановлення macW1Y успішно протестовано в тестовому режимі!\nУ режимі муляжу перезавантаження комп'ютера не виконується.")
             return
         kiosk_guard.leave()
         try:
@@ -2760,11 +2762,22 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             return
 
         def run_thread():
-            install_script = os.path.join(SCRIPT_DIR, "install.sh")
+            custom_script = os.environ.get("MAC_INSTALLER_SCRIPT")
+            if not custom_script or not os.path.exists(custom_script):
+                if "--mock-installer" in sys.argv:
+                    custom_script = os.path.join(SCRIPT_DIR, "gui.sh")
+                else:
+                    custom_script = os.path.join(SCRIPT_DIR, "install.sh")
+
+            install_script = custom_script
             uninstall_script = os.path.join(SCRIPT_DIR, "uninstall.sh")
+            is_mock = "--mock-installer" in sys.argv or "gui.sh" in os.path.basename(install_script)
 
             if self.selected_action == "uninstall":
-                cmd = ["sudo", "-S", "bash", uninstall_script, "--yes"]
+                if is_mock:
+                    cmd = ["sudo", "-S", "bash", install_script, "--gui-worker", "--uninstall"]
+                else:
+                    cmd = ["sudo", "-S", "bash", uninstall_script, "--yes"]
             elif self.selected_action == "clean_update":
                 cmd = ["sudo", "-S", "bash", install_script, "--gui-worker", "--clean-update"]
             else:

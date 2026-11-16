@@ -121,24 +121,27 @@ def main():
         size = os.path.getsize(full_p) if exists else 0
         all_ok &= check(f"{rel} exists and populated ({size} bytes)", exists and size > 500)
 
-    # 4. Strict English-Only Verification for install.sh
-    print(f"\n{C_BOLD}4. Strict English-Only Enforcement for install.sh:{C_RESET}")
-    install_sh = os.path.join(REPO_ROOT, "install.sh")
-    with open(install_sh, "r", encoding="utf-8") as f:
-        install_lines = f.readlines()
-
+    # 4. Strict English-Only Verification for install.sh & gui.sh
+    print(f"\n{C_BOLD}4. Strict English-Only Enforcement for install.sh & gui.sh:{C_RESET}")
     cyrillic_re = re.compile(r"[\u0400-\u04FF]")
-    cyrillic_matches = []
-    for idx, l in enumerate(install_lines, 1):
-        if cyrillic_re.search(l):
-            cyrillic_matches.append((idx, l.strip()))
+    for sh_name in ["install.sh", "gui.sh"]:
+        sh_path = os.path.join(REPO_ROOT, sh_name)
+        if not os.path.exists(sh_path):
+            continue
+        with open(sh_path, "r", encoding="utf-8") as f:
+            sh_lines = f.readlines()
 
-    all_ok &= check(f"install.sh contains 0 Cyrillic characters (found {len(cyrillic_matches)})",
-                    len(cyrillic_matches) == 0,
-                    f"First match: line {cyrillic_matches[0][0]}: {cyrillic_matches[0][1]}" if cyrillic_matches else "")
+        cyrillic_matches = []
+        for idx, l in enumerate(sh_lines, 1):
+            if cyrillic_re.search(l):
+                cyrillic_matches.append((idx, l.strip()))
 
-    res_sh = subprocess.run(["bash", "-n", install_sh], capture_output=True, text=True)
-    all_ok &= check("install.sh passes bash syntax validation", res_sh.returncode == 0, res_sh.stderr)
+        all_ok &= check(f"{sh_name} contains 0 Cyrillic characters (found {len(cyrillic_matches)})",
+                        len(cyrillic_matches) == 0,
+                        f"First match: line {cyrillic_matches[0][0]}: {cyrillic_matches[0][1]}" if cyrillic_matches else "")
+
+        res_sh = subprocess.run(["bash", "-n", sh_path], capture_output=True, text=True)
+        all_ok &= check(f"{sh_name} passes bash syntax validation", res_sh.returncode == 0, res_sh.stderr)
 
     # 5. Extension Guard & Pinned Lock Hashes
     print(f"\n{C_BOLD}5. GNOME Extensions Integrity & Version Lock:{C_RESET}")
