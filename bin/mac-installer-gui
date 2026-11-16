@@ -619,35 +619,32 @@ button.mac-btn-pill-primary:active,
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: 0 25px 70px rgba(0, 0, 0, 0.7);
-    padding: 28px 36px 32px 36px;
+    padding: 28px 36px 28px 36px;
     min-width: 650px;
     min-height: 490px;
 }
 
-/* Modal Sheet (Frosted glass with dark tint, light borders, deep shadow) */
+/* Modal Sheet (Frosted glass with 10% tint, 28px radius, slim compact width matching Photos 2-4) */
 .mac-modal-dim {
-    background-color: rgba(0, 0, 0, 0.32);
+    background-color: rgba(0, 0, 0, 0.06);
     border-radius: 20px;
 }
 
 .mac-blurred-backdrop {
-    filter: blur(20px);
-    opacity: 0.85;
+    filter: blur(2px);
+    opacity: 0.96;
 }
 
-.mac-modal-sheet {
-    background-color: rgba(48, 50, 58, 0.76);
-    border-radius: 26px;
-    border: 1px solid rgba(255, 255, 255, 0.24);
-    box-shadow: 0 24px 65px rgba(0, 0, 0, 0.85);
-    padding: 16px 18px;
-    min-width: 340px;
-}
-
+.mac-modal-sheet,
 .mac-alert-sheet {
-    min-width: 320px;
-    padding: 16px 18px;
-    border-radius: 26px;
+    background-color: rgba(45, 48, 56, 0.22);
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45);
+    padding: 14px 16px;
+    width: 260px;
+    min-width: 260px;
+    max-width: 260px;
 }
 
 .mac-modal-sheet image,
@@ -659,56 +656,57 @@ button.mac-btn-pill-primary:active,
 /* Modal Typography */
 .mac-modal-title {
     color: #ffffff;
-    font-size: 14.5px;
+    font-size: 13px;
     font-weight: 700;
+    line-height: 1.25;
 }
 
 .mac-modal-desc {
     color: #dedee6;
-    font-size: 13px;
+    font-size: 11.5px;
     font-weight: 400;
-    line-height: 1.35;
+    line-height: 1.25;
 }
 
 .mac-field-label {
     color: #ffffff;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
 }
 
 /* Modal Action Buttons: Left = Dark/Gray, Right = Accent Blue */
 button.mac-modal-btn-secondary,
 .mac-modal-btn-secondary {
-    background-color: rgba(255, 255, 255, 0.22);
+    background-color: rgba(255, 255, 255, 0.20);
     background-image: none;
     color: #ffffff;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
-    border-radius: 7px;
-    padding: 5px 18px;
+    border-radius: 9999px;
+    padding: 3px 10px;
+    min-height: 22px;
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: none;
-    min-height: 28px;
     transition: all 0.15s ease;
 }
 
 button.mac-modal-btn-secondary:hover,
 .mac-modal-btn-secondary:hover {
-    background-color: rgba(255, 255, 255, 0.30);
+    background-color: rgba(255, 255, 255, 0.28);
     background-image: none;
     border-color: rgba(255, 255, 255, 0.18);
 }
 
 button.mac-modal-btn-secondary:active,
 .mac-modal-btn-secondary:active {
-    background-color: rgba(255, 255, 255, 0.16);
+    background-color: rgba(255, 255, 255, 0.15);
     background-image: none;
 }
 
 button.mac-modal-btn-secondary:focus,
 .mac-modal-btn-secondary:focus {
     border: 2px solid #00a2ff;
-    box-shadow: 0 0 0 1px #00a2ff, 0 0 6px rgba(0, 162, 255, 0.35);
+    box-shadow: 0 0 0 1px #00a2ff, 0 0 4px rgba(0, 162, 255, 0.35);
 }
 
 button.mac-modal-btn-primary,
@@ -716,13 +714,13 @@ button.mac-modal-btn-primary,
     background-color: #007aff;
     background-image: none;
     color: #ffffff;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
-    border-radius: 7px;
-    padding: 5px 20px;
+    border-radius: 9999px;
+    padding: 3px 12px;
+    min-height: 22px;
     border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.35);
-    min-height: 28px;
+    box-shadow: 0 1px 6px rgba(0, 122, 255, 0.35);
     transition: all 0.15s ease;
 }
 
@@ -741,20 +739,22 @@ button.mac-modal-btn-primary:active,
 button.mac-modal-btn-primary:focus,
 .mac-modal-btn-primary:focus {
     border: 2px solid #ffffff;
-    box-shadow: 0 0 0 2px #007aff, 0 0 8px rgba(0, 122, 255, 0.5);
+    box-shadow: 0 0 0 2px #007aff, 0 0 6px rgba(0, 122, 255, 0.5);
 }
 
 /* Alert dialog pill variant (matching Image 2) */
 .mac-alert-sheet button.mac-modal-btn-secondary,
 .mac-alert-sheet .mac-modal-btn-secondary {
     border-radius: 9999px;
-    padding: 5px 20px;
+    padding: 3px 10px;
+    min-height: 22px;
 }
 
 .mac-alert-sheet button.mac-modal-btn-primary,
 .mac-alert-sheet .mac-modal-btn-primary {
     border-radius: 9999px;
-    padding: 5px 22px;
+    padding: 3px 12px;
+    min-height: 22px;
 }
 
 /* Typography */
@@ -799,8 +799,8 @@ button.mac-btn-primary,
     color: #ffffff;
     font-size: 13px;
     font-weight: 600;
-    border-radius: 8px;
-    padding: 7px 22px;
+    border-radius: 9999px;
+    padding: 7px 24px;
     border: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: 0 2px 6px rgba(0, 122, 255, 0.35);
 }
@@ -824,8 +824,8 @@ button.mac-btn-secondary,
     color: #f2f2f7;
     font-size: 13px;
     font-weight: 500;
-    border-radius: 8px;
-    padding: 7px 20px;
+    border-radius: 9999px;
+    padding: 7px 22px;
     border: 1px solid rgba(255, 255, 255, 0.20);
 }
 
@@ -950,21 +950,27 @@ button.mac-link-btn:hover,
 }
 
 .mac-btn-options-continue {
-    background-color: rgba(255, 255, 255, 0.18);
+    background-color: #007aff;
     background-image: none;
     color: #ffffff;
-    font-size: 11.5px;
-    font-weight: 500;
-    border-radius: 6px;
-    padding: 4px 14px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    min-height: 22px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 9999px;
+    padding: 6px 22px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.35);
+    min-height: 28px;
+    transition: all 0.15s ease;
 }
 
 .mac-btn-options-continue:hover {
-    background-color: rgba(255, 255, 255, 0.25);
+    background-color: #0084ff;
     background-image: none;
-    border-color: rgba(255, 255, 255, 0.22);
+}
+
+.mac-btn-options-continue:active {
+    background-color: #006ce0;
+    background-image: none;
 }
 
 /* Disk Card */
@@ -982,6 +988,36 @@ button.mac-link-btn:hover,
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.12);
     padding: 10px 14px;
+}
+
+scrolledwindow.mac-terms-box undershoot,
+scrolledwindow.mac-terms-box > undershoot,
+scrolledwindow.mac-terms-box > undershoot.top,
+scrolledwindow.mac-terms-box > undershoot.bottom,
+scrolledwindow.mac-terms-box > undershoot.left,
+scrolledwindow.mac-terms-box > undershoot.right,
+scrolledwindow.mac-terms-box.undershoot-top > undershoot.top,
+scrolledwindow.mac-terms-box.undershoot-bottom > undershoot.bottom,
+scrolledwindow.mac-terms-box overshoot,
+scrolledwindow.mac-terms-box > overshoot,
+scrolledwindow.mac-terms-box > overshoot.top,
+scrolledwindow.mac-terms-box > overshoot.bottom,
+.mac-terms-box undershoot,
+.mac-terms-box undershoot.bottom,
+.mac-terms-box undershoot.top {
+    background: none;
+    background-image: none;
+    background-color: transparent;
+    box-shadow: none;
+    border: none;
+    min-height: 0px;
+    min-width: 0px;
+}
+
+scrolledwindow.mac-terms-box viewport {
+    background: transparent;
+    background-color: transparent;
+    background-image: none;
 }
 
 /* Input entry */
@@ -1717,7 +1753,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     def _build_screen_language(self):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         box.set_vexpand(True)
-        box.set_valign(Gtk.Align.CENTER)
+        box.set_valign(Gtk.Align.FILL)
         box.set_halign(Gtk.Align.CENTER)
 
         # 1. Header Globe Icon
@@ -1725,9 +1761,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         if not os.path.exists(globe_svg):
             globe_svg = os.path.join(ASSETS_DIR, "safari_globe.svg")
         img_globe = Gtk.Image.new_from_file(globe_svg)
-        img_globe.set_pixel_size(56)
+        img_globe.set_pixel_size(54)
         img_globe.set_halign(Gtk.Align.CENTER)
-        img_globe.set_margin_bottom(12)
+        img_globe.set_margin_top(6)
+        img_globe.set_margin_bottom(10)
         box.append(img_globe)
 
         # 2. Header Title & Subtitle
@@ -1742,8 +1779,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.lbl_lang_sub = Gtk.Label(label=info["subtitle"])
         self.lbl_lang_sub.add_css_class("mac-subtitle")
         self.lbl_lang_sub.set_halign(Gtk.Align.CENTER)
-        self.lbl_lang_sub.set_margin_top(6)
-        self.lbl_lang_sub.set_margin_bottom(18)
+        self.lbl_lang_sub.set_margin_top(4)
+        self.lbl_lang_sub.set_margin_bottom(12)
         box.append(self.lbl_lang_sub)
 
         # 3. Outer Language List Card
@@ -1755,8 +1792,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         scroll.set_propagate_natural_height(False)
         scroll.set_min_content_width(372)
-        scroll.set_min_content_height(256)
-        scroll.set_max_content_height(256)
+        scroll.set_min_content_height(240)
+        scroll.set_max_content_height(240)
         card.append(scroll)
 
         items_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
@@ -1790,10 +1827,16 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         box.append(card)
 
+        # Spacer to anchor buttons at bottom
+        spacer = Gtk.Box()
+        spacer.set_vexpand(True)
+        box.append(spacer)
+
         # 4. Bottom Action Buttons
         btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
         btn_row.set_halign(Gtk.Align.CENTER)
-        btn_row.set_margin_top(22)
+        btn_row.set_valign(Gtk.Align.END)
+        btn_row.set_margin_bottom(6)
 
         self.btn_lang_restart = Gtk.Button(label=info["restart"])
         self.btn_lang_restart.add_css_class("mac-btn-pill")
@@ -1932,7 +1975,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     # Screen 2: Password Modal Sheet (Photo 2)
     # --------------------------------------------------------------------------
     def _show_modal_password(self):
-        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         sheet.add_css_class("mac-modal-sheet")
         sheet.add_css_class("mac-alert-sheet")
 
@@ -1941,9 +1984,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_prompt.set_halign(Gtk.Align.START)
         lbl_prompt.set_xalign(0.0)
         lbl_prompt.set_wrap(True)
+        lbl_prompt.set_max_width_chars(28)
         sheet.append(lbl_prompt)
 
-        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         row.set_margin_top(2)
         lbl_pass = Gtk.Label(label="Пароль:")
         lbl_pass.add_css_class("mac-field-label")
@@ -1970,7 +2014,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_error.set_visible(False)
         sheet.append(lbl_error)
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         btn_row.set_homogeneous(True)
         btn_row.set_hexpand(True)
         btn_row.set_halign(Gtk.Align.FILL)
@@ -2127,7 +2171,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             self._show_modal_uninstall_confirm()
 
     def _show_modal_uninstall_confirm(self):
-        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         sheet.add_css_class("mac-modal-sheet")
         sheet.add_css_class("mac-alert-sheet")
 
@@ -2136,6 +2180,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_t.set_halign(Gtk.Align.START)
         lbl_t.set_xalign(0.0)
         lbl_t.set_wrap(True)
+        lbl_t.set_max_width_chars(28)
         sheet.append(lbl_t)
 
         lbl_sub = Gtk.Label(label="Всі теми оформлення, розширення, іконки та оптимізації macW1Y будуть видалені. Стандартний робочий стіл Ubuntu буде відновлено.")
@@ -2143,14 +2188,15 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_sub.set_halign(Gtk.Align.START)
         lbl_sub.set_xalign(0.0)
         lbl_sub.set_wrap(True)
+        lbl_sub.set_max_width_chars(30)
         lbl_sub.set_margin_top(2)
         sheet.append(lbl_sub)
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         btn_row.set_homogeneous(True)
         btn_row.set_hexpand(True)
         btn_row.set_halign(Gtk.Align.FILL)
-        btn_row.set_margin_top(12)
+        btn_row.set_margin_top(10)
 
         btn_cancel = Gtk.Button(label="Скасувати")
         btn_cancel.add_css_class("mac-modal-btn-secondary")
@@ -2180,31 +2226,37 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     # Screen 4: Installation Welcome (Photo 4)
     # --------------------------------------------------------------------------
     def _build_screen_welcome(self):
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         box.set_vexpand(True)
-        box.set_valign(Gtk.Align.CENTER)
+        box.set_valign(Gtk.Align.FILL)
 
         img_circle = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "golden_gate_circle.png"))
-        img_circle.set_pixel_size(230)
+        img_circle.set_pixel_size(210)
         img_circle.set_halign(Gtk.Align.CENTER)
-        img_circle.set_margin_top(8)
+        img_circle.set_margin_top(6)
         box.append(img_circle)
 
-        lbl_t = Gtk.Label(label="macOS 27 Golden Gate")
+        ver = get_modpack_version()
+        lbl_t = Gtk.Label(label=f"macW1Y {ver}")
         lbl_t.add_css_class("mac-title-large")
-        lbl_t.set_margin_top(10)
+        lbl_t.set_margin_top(8)
         box.append(lbl_t)
 
-        lbl_s = Gtk.Label(label="Для налаштування параметрів інсталяції macOS 27 Golden Gate натисніть кнопку «Продовжити».")
+        lbl_s = Gtk.Label(label=f"Для налаштування параметрів інсталяції macW1Y {ver} натисніть кнопку «Продовжити».")
         lbl_s.add_css_class("mac-subtitle")
         lbl_s.set_wrap(True)
         lbl_s.set_halign(Gtk.Align.CENTER)
         lbl_s.set_margin_top(4)
         box.append(lbl_s)
 
+        spacer = Gtk.Box()
+        spacer.set_vexpand(True)
+        box.append(spacer)
+
         btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         btn_row.set_halign(Gtk.Align.CENTER)
-        btn_row.set_margin_top(26)
+        btn_row.set_valign(Gtk.Align.END)
+        btn_row.set_margin_bottom(6)
 
         btn_cont = Gtk.Button(label="Продовжити")
         btn_cont.add_css_class("mac-btn-pill-primary")
@@ -2250,16 +2302,18 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     def _build_screen_terms(self):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         box.set_vexpand(True)
+        box.set_valign(Gtk.Align.FILL)
 
         img_circle = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "golden_gate_circle.png"))
-        img_circle.set_pixel_size(140)
+        img_circle.set_pixel_size(130)
         img_circle.set_halign(Gtk.Align.CENTER)
-        img_circle.set_margin_top(10)
+        img_circle.set_margin_top(6)
         box.append(img_circle)
 
-        lbl_t = Gtk.Label(label="macOS 27 Golden Gate")
+        ver = get_modpack_version()
+        lbl_t = Gtk.Label(label=f"macW1Y {ver}")
         lbl_t.add_css_class("mac-title-large")
-        lbl_t.set_margin_top(6)
+        lbl_t.set_margin_top(4)
         box.append(lbl_t)
 
         lbl_s = Gtk.Label(label="Для продовження установки ПЗ необхідно прийняти умови ліцензійного погодження.")
@@ -2272,9 +2326,9 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         scroll = Gtk.ScrolledWindow()
         scroll.add_css_class("mac-terms-box")
         scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scroll.set_size_request(470, 130)
+        scroll.set_size_request(490, 138)
         scroll.set_halign(Gtk.Align.CENTER)
-        scroll.set_margin_top(8)
+        scroll.set_margin_top(6)
 
         terms_text = (
             "УКРАЇНСЬКА\n\n"
@@ -2292,22 +2346,27 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_content.set_wrap(True)
         lbl_content.set_halign(Gtk.Align.START)
         lbl_content.set_valign(Gtk.Align.START)
-        lbl_content.set_max_width_chars(52)
+        lbl_content.set_max_width_chars(56)
         scroll.set_child(lbl_content)
         box.append(scroll)
 
-        lbl_footer = Gtk.Label(label="Після установки копія ліцензійної угоди буде збережена в системі та доступна в меню «Про цей Mac».\nЛіцензійну угоду також можна знайти за адресою https://www.apple.com/ru/legal/sla")
+        lbl_footer = Gtk.Label(label="Після установки копія ліцензійної угоди буде збережена в системі та доступна в меню «Про цей macW1Y».\nЛіцензійну угоду також можна знайти на GitHub: https://github.com/w1nyear/macW1Y-GTK-Theme")
         lbl_footer.add_css_class("mac-subtitle")
         lbl_footer.set_wrap(True)
         lbl_footer.set_justify(Gtk.Justification.CENTER)
         lbl_footer.set_halign(Gtk.Align.CENTER)
-        lbl_footer.set_max_width_chars(54)
+        lbl_footer.set_max_width_chars(56)
         lbl_footer.set_margin_top(6)
         box.append(lbl_footer)
 
+        spacer = Gtk.Box()
+        spacer.set_vexpand(True)
+        box.append(spacer)
+
         btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
         btn_row.set_halign(Gtk.Align.CENTER)
-        btn_row.set_margin_top(16)
+        btn_row.set_valign(Gtk.Align.END)
+        btn_row.set_margin_bottom(6)
 
         btn_decline = Gtk.Button(label="Не приймаю")
         btn_decline.add_css_class("mac-btn-pill")
@@ -2315,8 +2374,16 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_row.append(btn_decline)
 
         btn_agree = Gtk.Button(label="Приймаю")
-        btn_agree.add_css_class("mac-btn-pill")
-        btn_agree.connect("clicked", lambda b: self._show_modal_terms_confirm())
+        btn_agree.add_css_class("mac-btn-pill-primary")
+
+        def on_agree():
+            if self.cached_password or "--preview" in sys.argv or "--mock-installer" in sys.argv or os.environ.get("MAC_INSTALLER_SCRIPT"):
+                self.switch_to_screen("screen_progress")
+                self._start_worker_execution()
+            else:
+                self._show_modal_admin_padlock()
+
+        btn_agree.connect("clicked", lambda b: on_agree())
         btn_row.append(btn_agree)
         box.append(btn_row)
 
@@ -2430,34 +2497,34 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     # Screen 9 & 11: Admin Privilege Escalation Modal (Photos 9 & 11)
     # --------------------------------------------------------------------------
     def _show_modal_admin_padlock(self):
-        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         sheet.add_css_class("mac-modal-sheet")
+        sheet.add_css_class("mac-alert-sheet")
 
-        top_h = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
         img_lock = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "padlock.svg"))
-        img_lock.set_pixel_size(52)
+        img_lock.set_pixel_size(44)
+        img_lock.set_halign(Gtk.Align.CENTER)
         img_lock.add_css_class("mac-rounded-icon")
-        top_h.append(img_lock)
+        sheet.append(img_lock)
 
-        txt_v = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         lbl_t = Gtk.Label(label="При встановленні робиться спроба змінити системні налаштування.")
         lbl_t.add_css_class("mac-modal-title")
         lbl_t.set_wrap(True)
-        lbl_t.set_max_width_chars(38)
+        lbl_t.set_max_width_chars(28)
         lbl_t.set_halign(Gtk.Align.START)
         lbl_t.set_xalign(0.0)
-        txt_v.append(lbl_t)
+        sheet.append(lbl_t)
 
         lbl_s = Gtk.Label(label="Щоб дозволити цю дію, введіть пароль адміністратора:")
         lbl_s.add_css_class("mac-modal-desc")
         lbl_s.set_halign(Gtk.Align.START)
         lbl_s.set_xalign(0.0)
-        txt_v.append(lbl_s)
-        top_h.append(txt_v)
-        sheet.append(top_h)
+        lbl_s.set_wrap(True)
+        lbl_s.set_max_width_chars(30)
+        sheet.append(lbl_s)
 
-        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        row.set_margin_top(4)
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        row.set_margin_top(2)
         lbl_p = Gtk.Label(label="Пароль:")
         lbl_p.add_css_class("mac-field-label")
         lbl_p.set_halign(Gtk.Align.START)
@@ -2482,7 +2549,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_err.set_visible(False)
         sheet.append(lbl_err)
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         btn_row.set_homogeneous(True)
         btn_row.set_hexpand(True)
         btn_row.set_halign(Gtk.Align.FILL)
@@ -2644,7 +2711,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         GLib.idle_add(btn_cont.grab_focus)
 
     def _show_modal_reboot_confirm(self):
-        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         sheet.add_css_class("mac-modal-sheet")
         sheet.add_css_class("mac-alert-sheet")
 
@@ -2653,6 +2720,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_t.set_halign(Gtk.Align.START)
         lbl_t.set_xalign(0.0)
         lbl_t.set_wrap(True)
+        lbl_t.set_max_width_chars(28)
         sheet.append(lbl_t)
 
         lbl_s = Gtk.Label(label="Комп'ютер завантажиться з диска «Ubuntu System HD».")
@@ -2660,14 +2728,15 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_s.set_halign(Gtk.Align.START)
         lbl_s.set_xalign(0.0)
         lbl_s.set_wrap(True)
+        lbl_s.set_max_width_chars(30)
         lbl_s.set_margin_top(2)
         sheet.append(lbl_s)
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         btn_row.set_homogeneous(True)
         btn_row.set_hexpand(True)
         btn_row.set_halign(Gtk.Align.FILL)
-        btn_row.set_margin_top(12)
+        btn_row.set_margin_top(10)
 
         btn_cancel = Gtk.Button(label="Скасувати")
         btn_cancel.add_css_class("mac-modal-btn-secondary")
@@ -2715,13 +2784,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     # Screen 14: Reboot Screen (Final Screen)
     # --------------------------------------------------------------------------
     def _build_screen_reboot(self):
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         box.set_vexpand(True)
-        box.set_valign(Gtk.Align.CENTER)
+        box.set_valign(Gtk.Align.FILL)
 
         img_success = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "success_badge.svg"))
-        img_success.set_pixel_size(88)
+        img_success.set_pixel_size(92)
         img_success.set_halign(Gtk.Align.CENTER)
+        img_success.set_margin_top(6)
         box.append(img_success)
 
         lbl_t = Gtk.Label(label="Встановлення macW1Y успішно завершено!")
@@ -2736,12 +2806,17 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_s.set_max_width_chars(50)
         box.append(lbl_s)
 
+        spacer = Gtk.Box()
+        spacer.set_vexpand(True)
+        box.append(spacer)
+
         btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         btn_row.set_halign(Gtk.Align.CENTER)
-        btn_row.set_margin_top(26)
+        btn_row.set_valign(Gtk.Align.END)
+        btn_row.set_margin_bottom(6)
 
         btn_reboot = Gtk.Button(label="Перезавантажити систему")
-        btn_reboot.add_css_class("mac-btn-primary")
+        btn_reboot.add_css_class("mac-btn-pill-primary")
         btn_reboot.connect("clicked", lambda b: self._on_system_reboot())
         btn_row.append(btn_reboot)
         box.append(btn_row)
@@ -2910,7 +2985,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         threading.Thread(target=run_demo, daemon=True).start()
 
     def _show_simple_alert(self, title, text):
-        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         sheet.add_css_class("mac-modal-sheet")
         sheet.add_css_class("mac-alert-sheet")
 
@@ -2919,6 +2994,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_t.set_halign(Gtk.Align.START)
         lbl_t.set_xalign(0.0)
         lbl_t.set_wrap(True)
+        lbl_t.set_max_width_chars(28)
         sheet.append(lbl_t)
 
         lbl_s = Gtk.Label(label=text)
@@ -2926,13 +3002,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_s.set_halign(Gtk.Align.START)
         lbl_s.set_xalign(0.0)
         lbl_s.set_wrap(True)
+        lbl_s.set_max_width_chars(32)
         lbl_s.set_margin_top(2)
         sheet.append(lbl_s)
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         btn_row.set_halign(Gtk.Align.FILL)
         btn_row.set_hexpand(True)
-        btn_row.set_margin_top(12)
+        btn_row.set_margin_top(10)
 
         btn_ok = Gtk.Button(label="OK")
         btn_ok.add_css_class("mac-modal-btn-primary")
@@ -3043,13 +3120,19 @@ def main():
     cached_password = None
     initial_lang = None
 
-    for arg in sys.argv[1:]:
+    for i, arg in enumerate(sys.argv[1:], 1):
         if arg.startswith("--screen="):
             preview_screen = arg.split("=")[1]
+        elif arg == "--screen" and i < len(sys.argv) - 1:
+            preview_screen = sys.argv[i + 1]
         elif arg.startswith("--action="):
             action_override = arg.split("=")[1]
+        elif arg == "--action" and i < len(sys.argv) - 1:
+            action_override = sys.argv[i + 1]
         elif arg.startswith("--modal="):
             preview_modal = arg.split("=")[1]
+        elif arg == "--modal" and i < len(sys.argv) - 1:
+            preview_modal = sys.argv[i + 1]
         elif arg.startswith("--password="):
             cached_password = arg.split("=")[1]
         elif arg.startswith("--lang="):
