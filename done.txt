@@ -843,4 +843,28 @@
        - bin/mac-extension-guard verify (21/21 pinned lock hashes verified)
        - bin/mac-i18n-verify (100% SUCCESS, install.sh contains 0 Cyrillic characters).
 
+805. macOS Recovery Installer — статус-бар менюбару (тільки акумулятор з відсотками та Wi-Fi):
+   - Опис завдання:
+     1) У правому кутку менюбару установщика прибрати годинник і дату.
+     2) Залишити виключно: значок Wi-Fi та значок акумулятора з відсотками заряду (`Wi-Fi`, `100% [🔋]`).
+     3) Забезпечити використання векторних білих SVG-іконок `wifi_icon.svg` та `battery_icon.svg` і читання реального рівня заряду батареї через системний інтерфейс.
+     4) Забезпечити клікабельність та випадаючі меню деталей Wi-Fi та статусу батареї/джерела живлення.
+   - Внесені зміни:
+     - assets/recovery/wifi_icon.svg: додано векторну іконку Wi-Fi кольору `#ffffff`.
+     - assets/recovery/battery_icon.svg: додано векторну іконку акумулятора кольору `#ffffff`.
+     - bin/mac-installer-gui:
+       * Додано функцію `get_battery_info()` для зчитування рівня заряду батареї із `/sys/class/power_supply/`.
+       * У методі `_create_menubar`: повністю прибрано `lbl_clock`, додано `right_box` з кнопкою Wi-Fi та кнопкою акумулятора (текст відсотків + іконка батареї).
+       * Підключено меню для обох кнопок та зареєстровано `wifi` і `battery` у `_popup_menu_by_name`.
+   - Верифікація:
+     * Зафіксовано скріншоти:
+       - installer_menubar_right.png: крупний план правого кутка менюбару (тільки Wi-Fi та 100% з батареєю).
+       - installer_menu_wifi.png: випадаюче меню Wi-Fi («Wi-Fi: Увімкнено», «Мережа: macW1Y-Recovery»).
+       - installer_menu_battery.png: випадаюче меню батареї («Акумулятор: 100%», «Джерело живлення: Адаптер»).
+       - installer_menu_options_overview.png: огляд повного екрана з оновленим менюбаром та карткою опцій.
+     * 100% проходження системних валідацій:
+       - bin/mac-audit-sync check (100% PASS)
+       - bin/mac-extension-guard verify (21/21 pinned lock hashes verified)
+       - bin/mac-i18n-verify (100% SUCCESS, install.sh contains 0 Cyrillic characters).
+
 

@@ -13,6 +13,7 @@ import signal
 import time
 import json
 import threading
+import glob
 
 import gi
 gi.require_version('Gtk', '4.0')
@@ -102,6 +103,18 @@ def get_disk_capacity_info():
         return f"{total_gb} ГБ всього, {avail_gb} ГБ доступно"
     except Exception:
         return "128 ГБ всього, 64 ГБ доступно"
+
+def get_battery_info():
+    try:
+        cap_files = glob.glob("/sys/class/power_supply/BAT*/capacity")
+        if cap_files:
+            with open(cap_files[0], "r", encoding="utf-8") as f:
+                cap = f.read().strip()
+                if cap:
+                    return f"{cap}%"
+    except Exception:
+        pass
+    return "100%"
 
 def get_modpack_version():
     candidates = [
@@ -646,6 +659,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             "edit": getattr(self, "btn_edit", None),
             "utils": getattr(self, "btn_utils", None),
             "win": getattr(self, "btn_win", None),
+            "wifi": getattr(self, "btn_wifi", None),
+            "battery": getattr(self, "btn_bat", None),
         }
         btn = mapping.get(name)
         if btn:
@@ -792,10 +807,48 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         spacer.set_hexpand(True)
         bar.append(spacer)
 
-        now_str = time.strftime("%d %b  %H:%M")
-        lbl_clock = Gtk.Label(label=now_str)
-        lbl_clock.add_css_class("mac-menubar-item")
-        bar.append(lbl_clock)
+        # Right Status Area: Wi-Fi Icon and Battery with Percentage ONLY
+        right_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        right_box.set_valign(Gtk.Align.CENTER)
+
+        # Wi-Fi Menu Button
+        wifi_svg = os.path.join(ASSETS_DIR, "wifi_icon.svg")
+        if os.path.exists(wifi_svg):
+            img_wifi = Gtk.Image.new_from_file(wifi_svg)
+        else:
+            img_wifi = Gtk.Image.new_from_icon_name("network-wireless-signal-excellent-symbolic")
+        img_wifi.set_pixel_size(15)
+
+        menu_wifi = Gio.Menu()
+        menu_wifi.append("Wi-Fi: Увімкнено", "app.noop")
+        menu_wifi.append("Мережа: macW1Y-Recovery", "app.noop")
+        self.btn_wifi = self._make_menu_btn(None, menu_wifi, icon_widget=img_wifi)
+        right_box.append(self.btn_wifi)
+
+        # Battery Area: Percentage + Battery Icon
+        bat_pct = get_battery_info()
+        lbl_bat = Gtk.Label(label=bat_pct)
+        lbl_bat.add_css_class("mac-menubar-item")
+
+        bat_svg = os.path.join(ASSETS_DIR, "battery_icon.svg")
+        if os.path.exists(bat_svg):
+            img_bat = Gtk.Image.new_from_file(bat_svg)
+        else:
+            img_bat = Gtk.Image.new_from_icon_name("battery-level-100-symbolic")
+        img_bat.set_pixel_size(16)
+
+        bat_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        bat_box.set_valign(Gtk.Align.CENTER)
+        bat_box.append(lbl_bat)
+        bat_box.append(img_bat)
+
+        menu_bat = Gio.Menu()
+        menu_bat.append(f"Акумулятор: {bat_pct}", "app.noop")
+        menu_bat.append("Джерело живлення: Адаптер", "app.noop")
+        self.btn_bat = self._make_menu_btn(None, menu_bat, icon_widget=bat_box)
+        right_box.append(self.btn_bat)
+
+        bar.append(right_box)
 
         return bar
 
