@@ -317,15 +317,73 @@ popover.menu modelbutton:focus {
     color: #ffffff;
 }
 
+/* Rounded Pill Buttons (macOS Recovery style) */
+button.mac-btn-pill,
+.mac-btn-pill {
+    background-color: rgba(255, 255, 255, 0.22);
+    background-image: none;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 9999px;
+    padding: 5px 22px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: none;
+    min-height: 28px;
+    min-width: 100px;
+    transition: all 0.15s ease;
+}
+
+button.mac-btn-pill:hover,
+.mac-btn-pill:hover {
+    background-color: rgba(255, 255, 255, 0.30);
+    background-image: none;
+    border-color: rgba(255, 255, 255, 0.20);
+}
+
+button.mac-btn-pill:active,
+.mac-btn-pill:active {
+    background-color: rgba(255, 255, 255, 0.16);
+    background-image: none;
+}
+
+button.mac-btn-pill-primary,
+.mac-btn-pill-primary {
+    background-color: #007aff;
+    background-image: none;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 9999px;
+    padding: 5px 24px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.35);
+    min-height: 28px;
+    min-width: 100px;
+    transition: all 0.15s ease;
+}
+
+button.mac-btn-pill-primary:hover,
+.mac-btn-pill-primary:hover {
+    background-color: #0084ff;
+    background-image: none;
+}
+
+button.mac-btn-pill-primary:active,
+.mac-btn-pill-primary:active {
+    background-color: #006ce0;
+    background-image: none;
+}
+
 /* Center Dialog Card */
 .mac-recovery-card {
     background-color: rgba(36, 38, 44, 0.96);
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: 0 25px 70px rgba(0, 0, 0, 0.7);
-    padding: 32px 36px;
-    min-width: 660px;
-    min-height: 480px;
+    padding: 28px 36px 32px 36px;
+    min-width: 650px;
+    min-height: 490px;
 }
 
 /* Modal Sheet */
@@ -569,10 +627,10 @@ button.mac-link-btn:hover,
 
 /* Text Frame for Terms */
 .mac-terms-box {
-    background-color: rgba(18, 19, 22, 0.7);
-    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    padding: 14px;
+    padding: 10px 14px;
 }
 
 /* Input entry */
@@ -1225,24 +1283,26 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     # Screen 4: Installation Welcome (Photo 4)
     # --------------------------------------------------------------------------
     def _build_screen_welcome(self):
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         box.set_vexpand(True)
         box.set_valign(Gtk.Align.CENTER)
 
         img_circle = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "golden_gate_circle.png"))
-        img_circle.set_pixel_size(150)
+        img_circle.set_pixel_size(230)
         img_circle.set_halign(Gtk.Align.CENTER)
+        img_circle.set_margin_top(8)
         box.append(img_circle)
 
-        lbl_t = Gtk.Label(label="macW1Y")
+        lbl_t = Gtk.Label(label="macOS 27 Golden Gate")
         lbl_t.add_css_class("mac-title-large")
-        lbl_t.set_margin_top(8)
+        lbl_t.set_margin_top(10)
         box.append(lbl_t)
 
-        lbl_s = Gtk.Label(label="Для налаштування параметрів інсталяції macW1Y натисніть кнопку «Продовжити».")
+        lbl_s = Gtk.Label(label="Для налаштування параметрів інсталяції macOS 27 Golden Gate натисніть кнопку «Продовжити».")
         lbl_s.add_css_class("mac-subtitle")
         lbl_s.set_wrap(True)
         lbl_s.set_halign(Gtk.Align.CENTER)
+        lbl_s.set_margin_top(4)
         box.append(lbl_s)
 
         btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
@@ -1250,7 +1310,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_row.set_margin_top(26)
 
         btn_cont = Gtk.Button(label="Продовжити")
-        btn_cont.add_css_class("mac-btn-primary")
+        btn_cont.add_css_class("mac-btn-pill-primary")
         btn_cont.connect("clicked", self._on_welcome_continue)
         btn_row.append(btn_cont)
         box.append(btn_row)
@@ -1291,32 +1351,40 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     # Screen 6: Terms Agreement Document (Photo 6)
     # --------------------------------------------------------------------------
     def _build_screen_terms(self):
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         box.set_vexpand(True)
 
         img_circle = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "golden_gate_circle.png"))
-        img_circle.set_pixel_size(80)
+        img_circle.set_pixel_size(140)
         img_circle.set_halign(Gtk.Align.CENTER)
+        img_circle.set_margin_top(10)
         box.append(img_circle)
 
-        lbl_t = Gtk.Label(label="macW1Y")
+        lbl_t = Gtk.Label(label="macOS 27 Golden Gate")
         lbl_t.add_css_class("mac-title-large")
+        lbl_t.set_margin_top(6)
         box.append(lbl_t)
 
-        lbl_s = Gtk.Label(label="Для продовження установки ПЗ необхідно прийняти умови ліцензійної угоди.")
+        lbl_s = Gtk.Label(label="Для продовження установки ПЗ необхідно прийняти умови ліцензійного погодження.")
         lbl_s.add_css_class("mac-subtitle")
+        lbl_s.set_wrap(True)
+        lbl_s.set_halign(Gtk.Align.CENTER)
+        lbl_s.set_margin_top(2)
         box.append(lbl_s)
 
         scroll = Gtk.ScrolledWindow()
         scroll.add_css_class("mac-terms-box")
-        scroll.set_vexpand(True)
-        scroll.set_min_content_height(140)
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_size_request(470, 130)
+        scroll.set_halign(Gtk.Align.CENTER)
+        scroll.set_margin_top(8)
 
         terms_text = (
             "УКРАЇНСЬКА\n\n"
-            "macW1Y TEAM\n"
-            "ЛІЦЕНЗІЙНЕ ПОГОДЖЕННЯ ПРО ВИКОРИСТАННЯ ПРОГРАМНОГО ЗАБЕЗПЕЧЕННЯ macW1Y\n\n"
-            "Заглушка\n\n"
+            "КОРПОРАЦІЯ APPLE INC. / macW1Y\n"
+            "ЛІЦЕНЗІЙНА УГОДА ПРО ВИКОРИСТАННЯ ПРОГРАМНОГО ЗАБЕЗПЕЧЕННЯ macW1Y\n\n"
+            "Для використання в системах Linux / macOS\n\n"
+            "УВАЖНО ОЗНАЙОМТЕСЬ З ЦІЄЮ ЛІЦЕНЗІЙНОЮ УГОДОЮ\n\n"
             "Цей програмний комплекс розповсюджується під ліцензією MIT / GPLv3. "
             "macW1Y розроблено виключно для особистого використання та кастомізації середовища GNOME на платформі Ubuntu Linux. "
             "Всі торгові марки належать їх законним власникам."
@@ -1327,26 +1395,30 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_content.set_wrap(True)
         lbl_content.set_halign(Gtk.Align.START)
         lbl_content.set_valign(Gtk.Align.START)
+        lbl_content.set_max_width_chars(52)
         scroll.set_child(lbl_content)
         box.append(scroll)
 
-        lbl_footer = Gtk.Label(label="Після установки копія ліцензійного погодження буде збережена в системі та доступна в репозиторії.")
+        lbl_footer = Gtk.Label(label="Після установки копія ліцензійної угоди буде збережена в системі та доступна в меню «Про цей Mac».\nЛіцензійну угоду також можна знайти за адресою https://www.apple.com/ru/legal/sla")
         lbl_footer.add_css_class("mac-subtitle")
         lbl_footer.set_wrap(True)
-        lbl_footer.set_margin_top(4)
+        lbl_footer.set_justify(Gtk.Justification.CENTER)
+        lbl_footer.set_halign(Gtk.Align.CENTER)
+        lbl_footer.set_max_width_chars(54)
+        lbl_footer.set_margin_top(6)
         box.append(lbl_footer)
 
         btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
         btn_row.set_halign(Gtk.Align.CENTER)
-        btn_row.set_margin_top(14)
+        btn_row.set_margin_top(16)
 
         btn_decline = Gtk.Button(label="Не приймаю")
-        btn_decline.add_css_class("mac-btn-secondary")
+        btn_decline.add_css_class("mac-btn-pill")
         btn_decline.connect("clicked", lambda b: self.switch_to_screen("screen_options"))
         btn_row.append(btn_decline)
 
         btn_agree = Gtk.Button(label="Приймаю")
-        btn_agree.add_css_class("mac-btn-primary")
+        btn_agree.add_css_class("mac-btn-pill")
         btn_agree.connect("clicked", lambda b: self._show_modal_terms_confirm())
         btn_row.append(btn_agree)
         box.append(btn_row)
@@ -1380,12 +1452,12 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_row.set_margin_top(10)
 
         btn_no = Gtk.Button(label="Не приймаю")
-        btn_no.add_css_class("mac-btn-secondary")
+        btn_no.add_css_class("mac-btn-pill")
         btn_no.connect("clicked", lambda b: self.hide_modal())
         btn_row.append(btn_no)
 
         btn_yes = Gtk.Button(label="Приймаю")
-        btn_yes.add_css_class("mac-btn-primary")
+        btn_yes.add_css_class("mac-btn-pill")
         btn_yes.connect("clicked", self._on_terms_confirmed)
         btn_row.append(btn_yes)
         sheet.append(btn_row)
@@ -1437,12 +1509,12 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_row.set_margin_top(16)
 
         btn_back = Gtk.Button(label="Назад")
-        btn_back.add_css_class("mac-btn-secondary")
+        btn_back.add_css_class("mac-btn-pill")
         btn_back.connect("clicked", lambda b: self.switch_to_screen("screen_terms"))
         btn_row.append(btn_back)
 
-        btn_cont = Gtk.Button(label="Продовжити")
-        btn_cont.add_css_class("mac-btn-primary")
+        btn_cont = Gtk.Button(label="Встановити")
+        btn_cont.add_css_class("mac-btn-pill-primary")
         btn_cont.connect("clicked", lambda b: self._show_modal_admin_padlock())
         btn_row.append(btn_cont)
         box.append(btn_row)
