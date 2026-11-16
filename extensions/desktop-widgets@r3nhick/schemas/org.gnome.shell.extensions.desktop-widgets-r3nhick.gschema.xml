@@ -342,7 +342,7 @@
       <description>Display folder names below icons in the Folder Launcher widget.</description>
     </key>
     <key name="show-panel-icon" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>Show panel icon</summary>
       <description>Display the Desktop Widgets icon in the top panel for quick access to edit mode.</description>
     </key>

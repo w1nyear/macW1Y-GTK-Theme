@@ -4,10 +4,10 @@
 # info -f grub -n 'Simple configuration'
 
 GRUB_DEFAULT="Ubuntu"
-GRUB_TIMEOUT_STYLE=menu
-GRUB_TIMEOUT=5
+GRUB_TIMEOUT_STYLE=hidden
+GRUB_TIMEOUT=0
 GRUB_DISTRIBUTOR=`( . /etc/os-release && echo ${NAME} )`
-GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=3 rd.udev.log_level=3 udev.log_priority=3 vt.global_cursor_default=0 bgrt.disable=1 systemd.show_status=auto"
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash bgrt.disable=1 vt.global_cursor_default=0 loglevel=3"
 GRUB_CMDLINE_LINUX=""
 
 # If your computer has multiple operating systems installed, then you
@@ -41,7 +41,9 @@ GRUB_GFXMODE=3840x2160,2560x1440,1920x1080,auto
 
 GRUB_GFXPAYLOAD_LINUX=keep
 
-GRUB_THEME="/boot/grub/themes/apple-mac/theme.txt"
+#GRUB_THEME="/boot/grub/themes/apple-mac/theme.txt"
 
 GRUB_DISABLE_SUBMENU=y
 GRUB_DISABLE_MEMTEST=true
+
+GRUB_RECORDFAIL_TIMEOUT=0

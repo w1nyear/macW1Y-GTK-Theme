@@ -1273,3 +1273,20 @@
      * Збережено візуальні артефакти: launchpad_verified_hover.png, launchpad_verified_bottom.png, launchpad_verified_search.png, launchpad_verified_full.png.
      * Оновлено цілісний хеш у config/extensions.lock.json.
      * Усі аудити пройдено на 100%: mac-extension-guard verify (21/21), mac-audit-sync check (100% PASS), mac-i18n-verify (100% SUCCESS).
+
+822. Збереження конфігурації мак-стилізації, вимкнення за замовчуванням іконки віджетів на менюбарі та вимкнення GRUB і verbose:
+   - Збереження конфігурації мак-стилізації до проекту macW1Y:
+     * Синхронізовано персональні налаштування користувача з ~/.config/mac-styling/styling.json до config/mac-styling/styling.json та config/styling.json (включаючи menubar_tint: 20, liquid_chroma: 20, dock_edge_distance: 0, dock_size: 10, dock_icon_size: 52, osd_blur: 3, osd_tint: 5, osd_shadow: 15, panel_tint: 0.20).
+     * Збережено локаль користувача config/mac-styling/locale (uk) до репозиторію проекту.
+   - Вимкнення за замовчуванням показу іконки віджетів на менюбарі:
+     * У схемі extensions/desktop-widgets@r3nhick/schemas/org.gnome.shell.extensions.desktop-widgets-r3nhick.gschema.xml змінено значення за замовчуванням ключа show-panel-icon з true на false.
+     * Перекомпільовано бінарні схеми gschemas.compiled та синхронізовано з /usr/share/glib-2.0/schemas/ і каталогом розширення.
+     * Встановлено show-panel-icon=false у зліпку налаштувань dconf/gnome-all.dconf.
+     * В інсталяторі install.sh додано вимкнення іконки show-panel-icon false при встановленні macW1Y.
+   - Вимкнення GRUB та verbose за замовчуванням у користувача та проекті:
+     * У шаблоні grub/grub.default вимкнено показ меню (GRUB_TIMEOUT_STYLE=hidden, GRUB_TIMEOUT=0, GRUB_RECORDFAIL_TIMEOUT=0, закоментовано #GRUB_THEME=...), а параметри завантаження переведено на чистий графічний сплеш без логів: GRUB_CMDLINE_LINUX_DEFAULT="quiet splash bgrt.disable=1 vt.global_cursor_default=0 loglevel=3".
+     * В install.sh оновлено резервний блок конфігурації GRUB для автоматичного тихого запуску.
+     * На діючій системі користувача виконано sudo /usr/local/bin/mac-boot-config set-grub disable та sudo /usr/local/bin/mac-boot-config set-verbose disable: вимкнено службу plymouth-verbose-logger.service, оновлено /etc/default/grub та застосовано update-grub.
+   - Аудит та цілісність:
+     * Оновлено контрольний хеш у config/extensions.lock.json для desktop-widgets@r3nhick.
+     * Усі аудити пройдено на 100%: mac-extension-guard verify (21/21), mac-audit-sync check (100% PASS), mac-i18n-verify (100% SUCCESS, 0 кириличних символів у shell-скриптах).

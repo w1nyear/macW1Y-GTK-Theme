@@ -926,6 +926,7 @@ install_extensions() {
     run_as_user gsettings set org.gnome.shell.extensions.desktop-widgets-r3nhick blur-radius-px 1 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.desktop-widgets-r3nhick tint-alpha-pct 20 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.desktop-widgets-r3nhick style-shadow-size 30 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell.extensions.desktop-widgets-r3nhick show-panel-icon false 2>/dev/null || true
     # Dash2Dock Motion (Primary macW1Y Dock)
     run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion dash-max-icon-size 54 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.dash2dock-motion icon-size-fixed true 2>/dev/null || true
@@ -1765,7 +1766,7 @@ install_grub() {
     if [ -f "$SCRIPT_DIR/grub/grub.default" ]; then
         sudo cp "$SCRIPT_DIR/grub/grub.default" /etc/default/grub
     else
-        sudo sed -i "s/^GRUB_THEME=.*/GRUB_THEME=\"\/boot\/grub\/themes\/apple-mac\/theme.txt\"/" /etc/default/grub
+        sudo sed -i "s/^GRUB_THEME=.*/#GRUB_THEME=\"\/boot\/grub\/themes\/apple-mac\/theme.txt\"/" /etc/default/grub
     fi
     
     if [ -f "$SCRIPT_DIR/grub/06_mac_theme_select" ]; then
