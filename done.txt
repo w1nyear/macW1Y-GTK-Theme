@@ -770,3 +770,32 @@
        - bin/mac-audit-sync check (100% PASS, System and repository are in sync)
        - bin/mac-extension-guard verify (VERIFICATION SUCCESS: All 21 managed extensions match pinned lock hashes)
        - bin/mac-i18n-verify (100% SUCCESS, 0 Cyrillic characters in install.sh).
+
+802. macOS Recovery Installer Менюбар (векторне яблучко Apple, поповери випадаючих меню) та екран ліцензійної документації macW1Y:
+   - Опис завдання:
+     1) Виправити відображення логотипу Apple у менюбарі установщика macW1Y (раніше показувався гліф помилки/відсутності символу "(t)" через знаходження `` U+F8FF в Apple Private Use Area, якої немає у стандартних шрифтах Ubuntu/Linux).
+     2) Забезпечити надійне відкриття та коректну стилізацію всіх пунктів меню у менюбарі: логотип Apple (``), «Файл», «Правка», «Утиліти», «Вікно» з автентичним виглядом macOS Recovery (темне напівпрозоре скло, заокруглені кути, підсвічування виділення синім кольором `#007aff`, підтримка кліків та дій).
+     3) Реалізувати та зафіксувати екран перегляду документації / умов використання macW1Y (`screen_terms`) перед установкою з бейджем Golden Gate, текстом угоди «Заглушка» та кнопками «Не приймаю» і «Приймаю».
+     4) Зняти та надати детальні скріншоти всіх 5 випадаючих меню у менюбарі та скріншот екрану документації.
+   - Внесені зміни:
+     - assets/recovery/apple_logo.svg: додано векторну SVG-іконку Apple логотипу для бездоганного рендерингу на будь-якому масштабі екрану.
+     - bin/mac-installer-gui:
+       * У методі `_create_menubar`: гліф `` замінено на векторне зображення `apple_logo.svg` розміром 15px за допомогою `Gtk.Image.new_from_file(...)`, що виключає залежність від системних шрифтів.
+       * Оновлено CSS-стилізацію для `popover.menu`, `popover.menu contents`, `popover.menu modelbutton`: фон `rgba(36, 38, 44, 0.96)`, тонка напівпрозора границя, радіус контейнера 10px, радіус кнопок 6px, плавний hover з фоном `#007aff` та білим текстом.
+       * Підключено GActions для всіх дій меню: `close`, `undo`, `redo`, `minimize`, `noop`, `terminal`, `sysinfo`, `about`, `reboot`, `poweroff`.
+       * Доповнено меню «Файл» («Новий образ…», «Закрити вікно») та «Вікно» («Мінімізувати», «Збільшити») для повноти та відповідності референсу macOS.
+       * Оновлено метод `switch_to_screen` для коректного перемикання екранів (`terms` / `screen_terms`).
+       * Реалізовано обробник `--open-menu=<name>` через `btn.set_active(True)` для програмного відкриття меню при тестуванні та захопленні скріншотів.
+   - Верифікація:
+     * Зафіксовано та перевірено скріншоти:
+       - installer_menu_apple.png: випадаюче меню Apple (``) з пунктами «Про macW1Y», «Перезавантажити…», «Вимкнути комп'ютер…».
+       - installer_menu_file.png: випадаюче меню «Файл» з пунктами «Новий образ…», «Закрити вікно».
+       - installer_menu_edit.png: випадаюче меню «Правка» з пунктами «Відмінити», «Повторити».
+       - installer_menu_utils.png: випадаюче меню «Утиліти» з пунктами «Термінал…», «Інформація про систему…».
+       - installer_menu_win.png: випадаюче меню «Вікно» з пунктами «Мінімізувати», «Збільшити».
+       - installer_screen_terms_card.png / installer_screen_terms_overview.png: екран перегляду документації та умов використання macW1Y.
+     * Повний успіх системних валідацій:
+       - bin/mac-audit-sync check (100% PASS)
+       - bin/mac-extension-guard verify (21/21 pinned lock hashes verified)
+       - bin/mac-i18n-verify (100% SUCCESS, install.sh contains 0 Cyrillic characters).
+

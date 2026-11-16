@@ -273,6 +273,37 @@ window.mac-recovery-root {
     padding: 3px 6px;
 }
 
+/* Menubar Popover Menus (macOS Authenticity) */
+popover.menu {
+    background-color: rgba(36, 38, 44, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65);
+    padding: 5px;
+    color: #ffffff;
+}
+
+popover.menu contents {
+    background: transparent;
+    padding: 0;
+}
+
+popover.menu modelbutton {
+    color: #f0f0f5;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 14px;
+    border-radius: 6px;
+    min-height: 22px;
+}
+
+popover.menu modelbutton:hover,
+popover.menu modelbutton:selected,
+popover.menu modelbutton:focus {
+    background-color: #007aff;
+    color: #ffffff;
+}
+
 /* Center Dialog Card */
 .mac-recovery-card {
     background-color: rgba(36, 38, 44, 0.96);
@@ -563,6 +594,24 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         if self.preview_modal:
             GLib.timeout_add(200, self._trigger_preview_modal)
 
+        for arg in sys.argv:
+            if arg.startswith("--open-menu="):
+                m_name = arg.split("=")[1]
+                GLib.timeout_add(200, lambda name=m_name: self._popup_menu_by_name(name))
+
+    def _popup_menu_by_name(self, name):
+        mapping = {
+            "apple": getattr(self, "btn_apple", None),
+            "file": getattr(self, "btn_file", None),
+            "edit": getattr(self, "btn_edit", None),
+            "utils": getattr(self, "btn_utils", None),
+            "win": getattr(self, "btn_win", None),
+        }
+        btn = mapping.get(name)
+        if btn:
+            btn.set_active(True)
+        return GLib.SOURCE_REMOVE
+
     def _trigger_preview_modal(self):
         m = self.preview_modal
         if m in ["password", "screen2"]:
@@ -657,8 +706,15 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         menu_apple.append("Про macW1Y", "app.about")
         menu_apple.append("Перезавантажити...", "app.reboot")
         menu_apple.append("Вимкнути комп'ютер...", "app.poweroff")
-        btn_apple = self._make_menu_btn("", menu_apple, is_bold=True)
-        bar.append(btn_apple)
+
+        apple_svg = os.path.join(ASSETS_DIR, "apple_logo.svg")
+        if os.path.exists(apple_svg):
+            img_apple = Gtk.Image.new_from_file(apple_svg)
+            img_apple.set_pixel_size(15)
+            self.btn_apple = self._make_menu_btn(None, menu_apple, icon_widget=img_apple)
+        else:
+            self.btn_apple = self._make_menu_btn("", menu_apple, is_bold=True)
+        bar.append(self.btn_apple)
 
         # App Title
         lbl_app = Gtk.Label(label="Встановлення macW1Y")
@@ -667,13 +723,16 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         # Menus: Файл, Правка, Утиліти, Вікно
         menu_file = Gio.Menu()
-        menu_file.append("Закрити вікно", "app.noop")
-        bar.append(self._make_menu_btn("Файл", menu_file))
+        menu_file.append("Новий образ...", "app.noop")
+        menu_file.append("Закрити вікно", "app.close")
+        self.btn_file = self._make_menu_btn("Файл", menu_file)
+        bar.append(self.btn_file)
 
         menu_edit = Gio.Menu()
-        menu_edit.append("Відмінити", "app.noop")
-        menu_edit.append("Повторити", "app.noop")
-        bar.append(self._make_menu_btn("Правка", menu_edit))
+        menu_edit.append("Відмінити", "app.undo")
+        menu_edit.append("Повторити", "app.redo")
+        self.btn_edit = self._make_menu_btn("Правка", menu_edit)
+        bar.append(self.btn_edit)
 
         menu_utils = Gio.Menu()
         menu_utils.append("Термінал...", "app.terminal")
@@ -682,8 +741,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         bar.append(self.btn_utils)
 
         menu_win = Gio.Menu()
-        menu_win.append("Мінімізувати", "app.noop")
-        bar.append(self._make_menu_btn("Вікно", menu_win))
+        menu_win.append("Мінімізувати", "app.minimize")
+        menu_win.append("Збільшити", "app.noop")
+        self.btn_win = self._make_menu_btn("Вікно", menu_win)
+        bar.append(self.btn_win)
 
         spacer = Gtk.Box()
         spacer.set_hexpand(True)
@@ -696,17 +757,20 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         return bar
 
-    def _make_menu_btn(self, label_text, menu_model, is_bold=False):
+    def _make_menu_btn(self, label_text, menu_model, is_bold=False, icon_widget=None):
         btn = Gtk.MenuButton()
         btn.set_has_frame(False)
         if hasattr(btn, "set_always_show_arrow"):
             btn.set_always_show_arrow(False)
-        lbl = Gtk.Label(label=label_text)
-        if is_bold:
-            lbl.add_css_class("mac-menubar-title")
+        if icon_widget:
+            btn.set_child(icon_widget)
         else:
-            lbl.add_css_class("mac-menubar-item")
-        btn.set_child(lbl)
+            lbl = Gtk.Label(label=label_text)
+            if is_bold:
+                lbl.add_css_class("mac-menubar-title")
+            else:
+                lbl.add_css_class("mac-menubar-item")
+            btn.set_child(lbl)
         if menu_model:
             btn.set_menu_model(menu_model)
         btn.add_css_class("mac-menubar-button")
@@ -728,7 +792,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
     def switch_to_screen(self, screen_name):
         self.hide_modal()
-        self.stack.set_visible_child_name(screen_name)
+        target = screen_name if screen_name.startswith("screen_") else f"screen_{screen_name}"
+        self.stack.set_visible_child_name(target)
 
     # --------------------------------------------------------------------------
     # Screen 1: User Account Selection (Photo 1)
@@ -1789,7 +1854,24 @@ class MacRecoveryApp(Gtk.Application):
         act_sysinfo.connect("activate", lambda a, p: self.win._show_simple_alert("Інформація про систему", f"ОС: Ubuntu 24.04 LTS\nВерсія macW1Y: v{get_modpack_version()}\nДиск: {get_disk_capacity_info()}"))
         self.add_action(act_sysinfo)
 
+        act_close = Gio.SimpleAction.new("close", None)
+        act_close.connect("activate", lambda a, p: self.win._show_modal_cancel_confirm())
+        self.add_action(act_close)
+
+        act_undo = Gio.SimpleAction.new("undo", None)
+        act_undo.connect("activate", lambda a, p: None)
+        self.add_action(act_undo)
+
+        act_redo = Gio.SimpleAction.new("redo", None)
+        act_redo.connect("activate", lambda a, p: None)
+        self.add_action(act_redo)
+
+        act_min = Gio.SimpleAction.new("minimize", None)
+        act_min.connect("activate", lambda a, p: None)
+        self.add_action(act_min)
+
         act_noop = Gio.SimpleAction.new("noop", None)
+        act_noop.connect("activate", lambda a, p: None)
         self.add_action(act_noop)
 
         self.win = MacRecoveryInstallerWindow(
