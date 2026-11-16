@@ -42,6 +42,45 @@ def get_user_display_name(username):
         pass
     return username.capitalize()
 
+def setup_installer_session():
+    disable_exts = [
+        "ubuntu-dock@ubuntu.com",
+        "tiling-assistant@ubuntu.com",
+        "ding@rastersoft.com",
+        "dash-to-dock@micxgx.gmail.com",
+        "stage-manager@gnome-stage-manager",
+        "snapd-prompting@canonical.com",
+        "web-search-provider@ubuntu.com",
+    ]
+    enable_exts = [
+        "user-theme@gnome-shell-extensions.gcampax.github.com",
+        "eval-helper@mactheme",
+        "blur-my-shell@aunetx",
+        "dash2dock-motion@unmade.space",
+        "appmenu@ChathurangaBW.github.io",
+        "kiwi@kemma",
+        "desktop-widgets@r3nhick",
+        "macos-touchpad-gestures@mactheme",
+        "compiz-alike-magic-lamp-effect@hermes83.github.com",
+        "cupertino-dock-lite@rinzler69-wastaken.github.com",
+        "custom-command-toggle@storageb.github.com",
+        "liquid-glass@thinkingcoding1231.gmail.com",
+        "quick-settings-scroll@diskmth.fr",
+        "Rounded_Corners@lennart-k",
+        "volume-percentage-quick-settings@imdarktom",
+        "wack-lockscreen-clock@rinzler69-wastaken.github.com",
+        "wifi-hotspot-quick-settings@aryan10.github.io",
+    ]
+    for ext in disable_exts:
+        subprocess.run(["gnome-extensions", "disable", ext], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    for ext in enable_exts:
+        subprocess.run(["gnome-extensions", "enable", ext], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+
+    subprocess.run(["gsettings", "set", "org.gnome.shell.extensions.user-theme", "name", "macW1Y-Dark"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", "macW1Y-Dark"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", "MacTahoe-Dark"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "font-name", "Inter 10"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+
 def get_user_avatar_path(username):
     candidates = [
         os.path.join(ASSETS_DIR, "user_avatar.png"),
@@ -217,17 +256,22 @@ window.mac-recovery-root {
 
 /* Modal Sheet */
 .mac-modal-dim {
-    background-color: rgba(0, 0, 0, 0.60);
+    background-color: rgba(0, 0, 0, 0.65);
     border-radius: 20px;
 }
 
 .mac-modal-sheet {
-    background-color: rgba(46, 49, 58, 0.98);
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.85);
+    background-color: rgba(44, 46, 54, 0.96);
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.90);
     padding: 24px 28px;
     min-width: 440px;
+}
+
+.mac-alert-sheet {
+    min-width: 380px;
+    padding: 26px 26px;
 }
 
 /* Typography */
@@ -265,8 +309,10 @@ window.mac-recovery-root {
 }
 
 /* Buttons */
+button.mac-btn-primary,
 .mac-btn-primary {
     background-color: #007aff;
+    background-image: none;
     color: #ffffff;
     font-size: 13px;
     font-weight: 600;
@@ -276,37 +322,108 @@ window.mac-recovery-root {
     box-shadow: 0 2px 6px rgba(0, 122, 255, 0.35);
 }
 
+button.mac-btn-primary:hover,
 .mac-btn-primary:hover {
     background-color: #0084ff;
+    background-image: none;
 }
 
+button.mac-btn-primary:active,
 .mac-btn-primary:active {
     background-color: #006ce0;
+    background-image: none;
 }
 
+button.mac-btn-secondary,
 .mac-btn-secondary {
-    background-color: rgba(255, 255, 255, 0.12);
+    background-color: rgba(255, 255, 255, 0.16);
+    background-image: none;
     color: #f2f2f7;
     font-size: 13px;
     font-weight: 500;
     border-radius: 8px;
     padding: 7px 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.20);
 }
 
+button.mac-btn-secondary:hover,
 .mac-btn-secondary:hover {
-    background-color: rgba(255, 255, 255, 0.18);
+    background-color: rgba(255, 255, 255, 0.22);
+    background-image: none;
+    border-color: rgba(255, 255, 255, 0.30);
 }
 
+button.mac-circle-nav-btn,
 .mac-circle-nav-btn {
-    background: none;
+    min-width: 36px;
+    min-height: 36px;
+    border-radius: 18px;
+    background-color: transparent;
+    background-image: none;
     border: none;
     box-shadow: none;
-    padding: 4px;
+    padding: 0;
+    opacity: 0.85;
+    transition: all 0.15s ease;
 }
 
+button.mac-circle-nav-btn:hover,
 .mac-circle-nav-btn:hover {
-    opacity: 0.8;
+    opacity: 1.0;
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+    transform: scale(1.08);
+}
+
+button.mac-circle-nav-btn:active,
+.mac-circle-nav-btn:active {
+    opacity: 0.65;
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+    transform: scale(0.95);
+}
+
+button.mac-avatar-btn,
+.mac-avatar-btn {
+    border-radius: 46px;
+    padding: 2px;
+    background-color: transparent;
+    background-image: none;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.40);
+    transition: all 0.15s ease;
+}
+
+button.mac-avatar-btn:hover,
+.mac-avatar-btn:hover {
+    border-color: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+}
+
+button.mac-link-btn,
+.mac-link-btn {
+    color: #2997ff;
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+    font-size: 13px;
+    font-weight: 400;
+    padding: 4px 6px;
+}
+
+button.mac-link-btn:hover,
+.mac-link-btn:hover {
+    color: #58a6ff;
+    text-decoration: underline;
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    box-shadow: none;
 }
 
 /* Recovery Option Cards */
@@ -347,18 +464,22 @@ window.mac-recovery-root {
 }
 
 /* Input entry */
-.mac-entry {
-    background-color: rgba(0, 0, 0, 0.35);
+entry.mac-entry {
+    background-color: rgba(0, 0, 0, 0.45);
     color: #ffffff;
+    caret-color: #007aff;
     border-radius: 8px;
-    border: 1.5px solid rgba(255, 255, 255, 0.18);
-    padding: 6px 12px;
-    font-size: 13px;
+    border: 1.5px solid rgba(255, 255, 255, 0.22);
+    padding: 8px 14px;
+    font-size: 15px;
+    min-height: 38px;
+    min-width: 260px;
 }
 
-.mac-entry:focus {
+entry.mac-entry:focus,
+entry.mac-entry:focus-within {
     border-color: #007aff;
-    box-shadow: 0 0 8px rgba(0, 122, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.45);
 }
 
 /* Progress bar */
@@ -599,7 +720,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         box.append(user_area)
 
         btn_avatar = Gtk.Button()
-        btn_avatar.add_css_class("mac-circle-nav-btn")
+        btn_avatar.add_css_class("mac-avatar-btn")
         btn_avatar.set_halign(Gtk.Align.CENTER)
         btn_avatar.connect("clicked", lambda b: self._show_modal_password())
 
@@ -615,20 +736,26 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         btn_forgot = Gtk.Button(label="Забули всі паролі?")
         btn_forgot.add_css_class("mac-link-btn")
+        btn_forgot.set_has_frame(False)
         btn_forgot.set_halign(Gtk.Align.CENTER)
         btn_forgot.connect("clicked", self._on_forgot_password)
         user_area.append(btn_forgot)
 
         nav_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         nav_box.set_halign(Gtk.Align.CENTER)
-        nav_box.set_spacing(90)
-        nav_box.set_margin_top(20)
+        nav_box.set_spacing(100)
+        nav_box.set_margin_top(26)
         box.append(nav_box)
 
-        b_restart = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        b_restart = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        b_restart.set_halign(Gtk.Align.CENTER)
         btn_restart = Gtk.Button()
         btn_restart.add_css_class("mac-circle-nav-btn")
-        btn_restart.set_child(Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "btn_restart.svg")))
+        btn_restart.set_has_frame(False)
+        btn_restart.set_halign(Gtk.Align.CENTER)
+        img_rst = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "btn_restart.svg"))
+        img_rst.set_pixel_size(36)
+        btn_restart.set_child(img_rst)
         btn_restart.connect("clicked", lambda b: self._on_system_reboot())
         b_restart.append(btn_restart)
         lbl_rst = Gtk.Label(label="Перезавантажити")
@@ -636,10 +763,15 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         b_restart.append(lbl_rst)
         nav_box.append(b_restart)
 
-        b_next = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        b_next = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        b_next.set_halign(Gtk.Align.CENTER)
         btn_next = Gtk.Button()
         btn_next.add_css_class("mac-circle-nav-btn")
-        btn_next.set_child(Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "btn_next.svg")))
+        btn_next.set_has_frame(False)
+        btn_next.set_halign(Gtk.Align.CENTER)
+        img_nxt = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "btn_next.svg"))
+        img_nxt.set_pixel_size(36)
+        btn_next.set_child(img_nxt)
         btn_next.connect("clicked", lambda b: self._show_modal_password())
         b_next.append(btn_next)
         lbl_nxt = Gtk.Label(label="Далі")
@@ -672,12 +804,30 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_pass.add_css_class("mac-subtitle")
         row.append(lbl_pass)
 
-        entry_pass = Gtk.PasswordEntry()
+        entry_pass = Gtk.Entry()
         entry_pass.add_css_class("mac-entry")
+        entry_pass.set_visibility(False)
+        entry_pass.set_invisible_char("•")
+        entry_pass.set_input_purpose(Gtk.InputPurpose.FREE_FORM)
         entry_pass.set_hexpand(True)
-        entry_pass.set_show_peek_icon(True)
+        entry_pass.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, "view-reveal-symbolic")
+        entry_pass.set_icon_activatable(Gtk.EntryIconPosition.SECONDARY, True)
+
+        def on_toggle_reveal(e, pos):
+            if pos == Gtk.EntryIconPosition.SECONDARY:
+                v = not e.get_visibility()
+                e.set_visibility(v)
+                e.set_icon_from_icon_name(
+                    Gtk.EntryIconPosition.SECONDARY,
+                    "view-conceal-symbolic" if v else "view-reveal-symbolic"
+                )
+
+        entry_pass.connect("icon-press", on_toggle_reveal)
+
         if self.cached_password:
             entry_pass.set_text(self.cached_password)
+
+        entry_pass.connect("notify::has-focus", lambda e, p: GLib.idle_add(lambda: (e.set_position(-1), e.select_region(-1, -1))))
         row.append(entry_pass)
         sheet.append(row)
 
@@ -731,6 +881,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
                         lbl_error.set_markup("<span color='#ff453a'>Невірний пароль. Спробуйте ще раз.</span>")
                         lbl_error.set_visible(True)
                         entry_pass.grab_focus()
+                        entry_pass.set_position(-1)
+                        entry_pass.select_region(-1, -1)
 
                 GLib.idle_add(finish)
 
@@ -742,7 +894,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         sheet.append(btn_row)
 
         self.show_modal(sheet)
-        GLib.timeout_add(100, lambda: entry_pass.grab_focus() or False)
+        GLib.timeout_add(100, lambda: (entry_pass.grab_focus(), entry_pass.set_position(-1), entry_pass.select_region(-1, -1), False)[-1])
 
     # --------------------------------------------------------------------------
     # Screen 3: Recovery Options Grid (Photo 3 - 4 Cards)
@@ -1015,16 +1167,25 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     def _show_modal_terms_confirm(self):
         sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
         sheet.add_css_class("mac-modal-sheet")
+        sheet.add_css_class("mac-alert-sheet")
+        sheet.set_halign(Gtk.Align.CENTER)
+        sheet.set_valign(Gtk.Align.CENTER)
+
+        img_icon = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "install_macw1y.svg"))
+        img_icon.set_pixel_size(64)
+        img_icon.set_halign(Gtk.Align.CENTER)
+        sheet.append(img_icon)
 
         lbl_t = Gtk.Label(label="Умови ліцензійної угоди про використання ПЗ мною прочитані та прийняті.")
         lbl_t.add_css_class("mac-title-medium")
+        lbl_t.set_justify(Gtk.Justification.CENTER)
         lbl_t.set_wrap(True)
-        lbl_t.set_max_width_chars(42)
+        lbl_t.set_max_width_chars(36)
         sheet.append(lbl_t)
 
         btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        btn_row.set_halign(Gtk.Align.END)
-        btn_row.set_margin_top(8)
+        btn_row.set_halign(Gtk.Align.CENTER)
+        btn_row.set_margin_top(10)
 
         btn_no = Gtk.Button(label="Не приймаю")
         btn_no.add_css_class("mac-btn-secondary")
@@ -1129,12 +1290,29 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_p.add_css_class("mac-subtitle")
         row.append(lbl_p)
 
-        entry = Gtk.PasswordEntry()
+        entry = Gtk.Entry()
         entry.add_css_class("mac-entry")
+        entry.set_visibility(False)
+        entry.set_invisible_char("•")
+        entry.set_input_purpose(Gtk.InputPurpose.FREE_FORM)
         entry.set_hexpand(True)
-        entry.set_show_peek_icon(True)
+        entry.set_icon_from_icon_name(Gtk.EntryIconPosition.SECONDARY, "view-reveal-symbolic")
+        entry.set_icon_activatable(Gtk.EntryIconPosition.SECONDARY, True)
+
+        def on_padlock_reveal(e, pos):
+            if pos == Gtk.EntryIconPosition.SECONDARY:
+                v = not e.get_visibility()
+                e.set_visibility(v)
+                e.set_icon_from_icon_name(
+                    Gtk.EntryIconPosition.SECONDARY,
+                    "view-conceal-symbolic" if v else "view-reveal-symbolic"
+                )
+        entry.connect("icon-press", on_padlock_reveal)
+
         if self.cached_password:
             entry.set_text(self.cached_password)
+
+        entry.connect("notify::has-focus", lambda e, p: GLib.idle_add(lambda: e.select_region(-1, -1)))
         row.append(entry)
         sheet.append(row)
 
@@ -1188,6 +1366,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
                         lbl_err.set_markup("<span color='#ff453a'>Невірний пароль. Спробуйте ще раз.</span>")
                         lbl_err.set_visible(True)
                         entry.grab_focus()
+                        entry.set_position(-1)
+                        entry.select_region(-1, -1)
 
                 GLib.idle_add(finish)
 
@@ -1199,7 +1379,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         sheet.append(btn_row)
 
         self.show_modal(sheet)
-        GLib.timeout_add(100, lambda: entry.grab_focus() or False)
+        GLib.timeout_add(100, lambda: (entry.grab_focus(), entry.set_position(-1), entry.select_region(-1, -1), False)[-1])
 
     # --------------------------------------------------------------------------
     # Screen 12: Installation Progress Screen (Photo 12)
@@ -1256,32 +1436,46 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     def _show_modal_cancel_confirm(self):
         sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
         sheet.add_css_class("mac-modal-sheet")
+        sheet.add_css_class("mac-alert-sheet")
+        sheet.set_halign(Gtk.Align.CENTER)
+        sheet.set_valign(Gtk.Align.CENTER)
+
+        img_icon = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "install_macw1y.svg"))
+        img_icon.set_pixel_size(64)
+        img_icon.set_halign(Gtk.Align.CENTER)
+        sheet.append(img_icon)
 
         lbl_t = Gtk.Label(label="Ви дійсно хочете скасувати встановлення macW1Y?")
         lbl_t.add_css_class("mac-title-medium")
+        lbl_t.set_justify(Gtk.Justification.CENTER)
+        lbl_t.set_wrap(True)
+        lbl_t.set_max_width_chars(36)
         sheet.append(lbl_t)
 
-        lbl_s = Gtk.Label(label="Якщо Ви зупините процес зараз, деякі компоненти системи можуть залишитися ненастроєними.")
+        lbl_s = Gtk.Label(label="Коли будете готові до встановлення, виберіть «Встановлення macW1Y» у меню та повторно натисніть «Продовжити».")
         lbl_s.add_css_class("mac-subtitle")
+        lbl_s.set_justify(Gtk.Justification.CENTER)
         lbl_s.set_wrap(True)
-        lbl_s.set_max_width_chars(42)
+        lbl_s.set_max_width_chars(38)
         sheet.append(lbl_s)
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        btn_row.set_halign(Gtk.Align.END)
-        btn_row.set_margin_top(8)
+        btn_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        btn_col.set_hexpand(True)
+        btn_col.set_margin_top(12)
 
         btn_cont = Gtk.Button(label="Продовжити встановлення")
         btn_cont.add_css_class("mac-btn-primary")
+        btn_cont.set_hexpand(True)
         btn_cont.connect("clicked", lambda b: self.hide_modal())
-        btn_row.append(btn_cont)
+        btn_col.append(btn_cont)
 
         btn_quit = Gtk.Button(label="Завершити")
         btn_quit.add_css_class("mac-btn-secondary")
+        btn_quit.set_hexpand(True)
         btn_quit.connect("clicked", self._on_abort_installation)
-        btn_row.append(btn_quit)
-        sheet.append(btn_row)
+        btn_col.append(btn_quit)
 
+        sheet.append(btn_col)
         self.show_modal(sheet)
 
     def _on_abort_installation(self, btn):
@@ -1489,26 +1683,31 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     def _show_simple_alert(self, title, text):
         sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
         sheet.add_css_class("mac-modal-sheet")
+        sheet.add_css_class("mac-alert-sheet")
+        sheet.set_halign(Gtk.Align.CENTER)
 
         lbl_t = Gtk.Label(label=title)
         lbl_t.add_css_class("mac-title-medium")
+        lbl_t.set_justify(Gtk.Justification.CENTER)
         sheet.append(lbl_t)
 
         lbl_s = Gtk.Label(label=text)
         lbl_s.add_css_class("mac-subtitle")
+        lbl_s.set_justify(Gtk.Justification.CENTER)
         lbl_s.set_wrap(True)
-        lbl_s.set_max_width_chars(44)
+        lbl_s.set_max_width_chars(38)
         sheet.append(lbl_s)
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        btn_row.set_halign(Gtk.Align.END)
-        btn_row.set_margin_top(8)
+        btn_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        btn_col.set_hexpand(True)
+        btn_col.set_margin_top(10)
 
         btn_ok = Gtk.Button(label="OK")
         btn_ok.add_css_class("mac-btn-primary")
+        btn_ok.set_hexpand(True)
         btn_ok.connect("clicked", lambda b: self.hide_modal())
-        btn_row.append(btn_ok)
-        sheet.append(btn_row)
+        btn_col.append(btn_ok)
+        sheet.append(btn_col)
 
         self.show_modal(sheet)
 
@@ -1531,10 +1730,11 @@ class MacRecoveryApp(Gtk.Application):
         Gtk.StyleContext.add_provider_for_display(
             Gdk.Display.get_default(),
             css_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            Gtk.STYLE_PROVIDER_PRIORITY_USER
         )
 
         if not ("--no-kiosk" in sys.argv or "--preview" in sys.argv):
+            setup_installer_session()
             kiosk_guard.enter()
 
         act_about = Gio.SimpleAction.new("about", None)

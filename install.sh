@@ -53,6 +53,17 @@ elif [ "$1" = "--cli" ] || [ "$1" = "-cli" ]; then
 elif [ -z "$MAC_INSTALLER_CLI" ]; then
     if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
         if [ -x "$SCRIPT_DIR/bin/mac-installer-gui" ] && command -v python3 >/dev/null 2>&1; then
+            # Pre-activate macW1Y environment and disable legacy extensions
+            for ext in "ubuntu-dock@ubuntu.com" "tiling-assistant@ubuntu.com" "ding@rastersoft.com" "dash-to-dock@micxgx.gmail.com" "stage-manager@gnome-stage-manager" "snapd-prompting@canonical.com" "web-search-provider@ubuntu.com"; do
+                gnome-extensions disable "$ext" 2>/dev/null || true
+            done
+            for ext in "user-theme@gnome-shell-extensions.gcampax.github.com" "eval-helper@mactheme" "blur-my-shell@aunetx" "dash2dock-motion@unmade.space" "appmenu@ChathurangaBW.github.io" "kiwi@kemma" "desktop-widgets@r3nhick" "macos-touchpad-gestures@mactheme" "compiz-alike-magic-lamp-effect@hermes83.github.com" "cupertino-dock-lite@rinzler69-wastaken.github.com" "custom-command-toggle@storageb.github.com" "liquid-glass@thinkingcoding1231.gmail.com" "quick-settings-scroll@diskmth.fr" "Rounded_Corners@lennart-k" "volume-percentage-quick-settings@imdarktom" "wack-lockscreen-clock@rinzler69-wastaken.github.com" "wifi-hotspot-quick-settings@aryan10.github.io"; do
+                gnome-extensions enable "$ext" 2>/dev/null || true
+            done
+            gsettings set org.gnome.shell.extensions.user-theme name "macW1Y-Dark" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface icon-theme "MacTahoe-Dark" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface font-name "Inter 10" 2>/dev/null || true
             exec "$SCRIPT_DIR/bin/mac-installer-gui" "$@"
         fi
     fi
