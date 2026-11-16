@@ -1157,12 +1157,11 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         });
         this._appsScrollWrapper.add_child(this._appsScrollView);
         setupScrollbarConstraints(this._appsScrollView);
-        applyGradientBlurFade(this._appsScrollWrapper, 48.0, 76.0, this._appsScrollView);
 
         this._appsContentBox = new St.BoxLayout({
             vertical: true,
             x_expand: true,
-            style: 'padding: 3px 21px 21px 21px;',
+            style: 'padding: 3px 21px 6px 21px;',
         });
         this._appsScrollView.add_child(this._appsContentBox);
 
@@ -3614,6 +3613,12 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             this._firstRecommendedApp = null;
             if (this._ghostLabel) {
                 this._ghostLabel.clutter_text.set_text('');
+                this._ghostLabel.set_style(
+                    'font-size: 19px !important; font-weight: 500 !important; ' +
+                    'font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif !important; ' +
+                    'color: #ffffff !important; padding: 0px !important; margin: 0px !important; ' +
+                    'background: none !important; border: none !important;'
+                );
                 this._ghostLabel.visible = false;
             }
             if (this._entryPillBox) {
@@ -3650,10 +3655,22 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 .replace(/'/g, '&apos;');
         };
 
+        let textWidth = 0;
+        try {
+            const [w] = this._entry.clutter_text.get_layout().get_pixel_size();
+            textWidth = w;
+        } catch (_) {}
+
         if (this._ghostLabel) {
-            const markup = `<span foreground="#ffffff00">${escapePango(typedText)}</span><span foreground="#ffffff88">${escapePango(ghostSuffix)}</span>`;
+            const markup = `<span foreground="#ffffff88">${escapePango(ghostSuffix)}</span>`;
             try {
                 this._ghostLabel.clutter_text.set_markup(markup);
+                this._ghostLabel.set_style(
+                    'font-size: 19px !important; font-weight: 500 !important; ' +
+                    'font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif !important; ' +
+                    'color: #ffffff !important; padding: 0px !important; margin: 0px 0px 0px ' + textWidth + 'px !important; ' +
+                    'background: none !important; border: none !important;'
+                );
                 this._ghostLabel.visible = true;
             } catch (_) {}
         }
@@ -3771,12 +3788,13 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         if (this._selectedAppIndex >= 0 && this._appsGridButtons[this._selectedAppIndex]) {
             const prev = this._appsGridButtons[this._selectedAppIndex];
             prev.remove_style_class_name('selected');
-            const icon = prev._iconActor || (prev._iconBox ? prev._iconBox.get_first_child() : null);
-            if (prev._iconBox) {
-                prev._iconBox.set_style('margin-bottom: 4px;');
-            }
-            if (icon) {
-                icon.set_style('border: 2px solid transparent; border-radius: 12px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);');
+            if (prev._outlineActor) {
+                prev._outlineActor.set_style('width: 44px; height: 44px; min-width: 44px; min-height: 44px; max-width: 44px; max-height: 44px; border: 2px solid transparent; border-radius: 13.5px;');
+            } else {
+                const icon = prev._iconActor || (prev._iconBox ? prev._iconBox.get_first_child() : null);
+                if (icon) {
+                    icon.set_style('border: 2px solid transparent; border-radius: 13.5px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);');
+                }
             }
         }
 
@@ -3785,12 +3803,13 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             const curr = this._appsGridButtons[this._selectedAppIndex];
             curr.add_style_class_name('selected');
             const accent = getSystemAccentColor();
-            const icon = curr._iconActor || (curr._iconBox ? curr._iconBox.get_first_child() : null);
-            if (curr._iconBox) {
-                curr._iconBox.set_style('margin-bottom: 4px;');
-            }
-            if (icon) {
-                icon.set_style(`border: 2px solid ${accent}; border-radius: 12px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);`);
+            if (curr._outlineActor) {
+                curr._outlineActor.set_style(`width: 44px; height: 44px; min-width: 44px; min-height: 44px; max-width: 44px; max-height: 44px; border: 2px solid ${accent}; border-radius: 13.5px;`);
+            } else {
+                const icon = curr._iconActor || (curr._iconBox ? curr._iconBox.get_first_child() : null);
+                if (icon) {
+                    icon.set_style(`border: 2px solid ${accent}; border-radius: 13.5px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);`);
+                }
             }
             try { Util.ensureActorVisibleInScrollView?.(this._appsScrollView, curr); } catch (_) {}
         }
@@ -3819,17 +3838,30 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         });
         item.set_child(box);
 
-        const iconBox = new St.BoxLayout({
+        const iconBox = new St.Widget({
+            layout_manager: new Clutter.BinLayout(),
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
-            style: 'margin-bottom: 4px;',
+            style: 'margin-bottom: 4px; width: 52px; height: 52px;',
         });
         const iconActor = createSmoothAppIcon(app, APPS_ICON_SIZE);
-        iconActor.set_style('border: 2px solid transparent; border-radius: 12px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);');
+        iconActor.x_align = Clutter.ActorAlign.CENTER;
+        iconActor.y_align = Clutter.ActorAlign.CENTER;
+        iconActor.set_style('border: none !important; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);');
         iconBox.add_child(iconActor);
+
+        const outlineActor = new St.Widget({
+            style: 'width: 44px; height: 44px; min-width: 44px; min-height: 44px; max-width: 44px; max-height: 44px; border: 2px solid transparent; border-radius: 13.5px;',
+            reactive: false,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        iconBox.add_child(outlineActor);
+
         box.add_child(iconBox);
         item._iconBox = iconBox;
         item._iconActor = iconActor;
+        item._outlineActor = outlineActor;
 
         const label = new St.Label({
             text: app.get_name() || '',
