@@ -62,7 +62,7 @@ elif [ -z "$MAC_INSTALLER_CLI" ]; then
             done
             gsettings set org.gnome.shell.extensions.user-theme name "macW1Y-Dark" 2>/dev/null || true
             gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark" 2>/dev/null || true
-            gsettings set org.gnome.desktop.interface icon-theme "MacTahoe-Dark" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface icon-theme "MacTahoe-dark" 2>/dev/null || true
             gsettings set org.gnome.desktop.interface font-name "Inter 10" 2>/dev/null || true
             exec "$SCRIPT_DIR/bin/mac-installer-gui" "$@"
         fi
@@ -607,12 +607,16 @@ install_icons() {
         fi
     done
     
-    # Creating compatibility symlink macW1Y-dark -> MacTahoe-dark and macOS -> MacTahoe
+    # Creating compatibility symlinks macW1Y-dark -> MacTahoe-dark, MacTahoe-Dark -> MacTahoe-dark and macOS -> MacTahoe
     ln -sfn "MacTahoe-dark" "$ICONS_DIR/macW1Y-dark"
+    ln -sfn "MacTahoe-dark" "$ICONS_DIR/MacTahoe-Dark"
     ln -sfn "MacTahoe" "$ICONS_DIR/macOS"
     mkdir -p "$TARGET_HOME/.icons" "$ICONS_DIR/default" "$TARGET_HOME/.icons/default"
     ln -sfn "$ICONS_DIR/MacTahoe" "$TARGET_HOME/.icons/MacTahoe"
     ln -sfn "$ICONS_DIR/MacTahoe" "$TARGET_HOME/.icons/macOS"
+    ln -sfn "$ICONS_DIR/MacTahoe-dark" "$TARGET_HOME/.icons/MacTahoe-dark"
+    ln -sfn "$ICONS_DIR/MacTahoe-dark" "$TARGET_HOME/.icons/MacTahoe-Dark"
+    ln -sfn "$ICONS_DIR/macW1Y-dark" "$TARGET_HOME/.icons/macW1Y-dark"
 
     # User-level default cursor theme fallback
     cat << 'EOF_DEF_THEME' > "$ICONS_DIR/default/index.theme"
@@ -1528,6 +1532,7 @@ install_gdm_transition() {
     sudo chmod -R a+rX /usr/share/themes/macW1Y* /usr/share/themes/MacTahoe* 2>/dev/null || true
     
     [ -d "$TARGET_HOME/.local/share/icons/MacTahoe-dark" ] && sudo ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe-dark" /usr/share/icons/MacTahoe-dark
+    [ -d "$TARGET_HOME/.local/share/icons/MacTahoe-dark" ] && sudo ln -sfn MacTahoe-dark /usr/share/icons/MacTahoe-Dark
     sudo chmod -R a+rX /usr/share/icons/MacTahoe* 2>/dev/null || true
 
     # 4. Installing and compiling GSettings schemas (wack-lockscreen and 99_mactheme override)
@@ -1966,10 +1971,14 @@ run_incremental_update() {
         fi
     done
     ln -sfn "MacTahoe-dark" "$TARGET_HOME/.local/share/icons/macW1Y-dark"
+    ln -sfn "MacTahoe-dark" "$TARGET_HOME/.local/share/icons/MacTahoe-Dark"
     ln -sfn "MacTahoe" "$TARGET_HOME/.local/share/icons/macOS"
     mkdir -p "$TARGET_HOME/.icons" "$TARGET_HOME/.local/share/icons/default" "$TARGET_HOME/.icons/default"
     ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe" "$TARGET_HOME/.icons/MacTahoe"
     ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe" "$TARGET_HOME/.icons/macOS"
+    ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe-dark" "$TARGET_HOME/.icons/MacTahoe-dark"
+    ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe-dark" "$TARGET_HOME/.icons/MacTahoe-Dark"
+    ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y-dark" "$TARGET_HOME/.icons/macW1Y-dark"
 
     cat << 'EOF_DEF_THEME_UP' > "$TARGET_HOME/.local/share/icons/default/index.theme"
 [Icon Theme]

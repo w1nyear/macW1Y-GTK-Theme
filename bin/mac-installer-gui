@@ -188,7 +188,7 @@ def setup_installer_session():
 
     subprocess.run(["gsettings", "set", "org.gnome.shell.extensions.user-theme", "name", "macW1Y-Dark"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
     subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", "macW1Y-Dark"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
-    subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", "MacTahoe-Dark"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", "MacTahoe-dark"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
     subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "font-name", "Inter 10"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
 
 def get_user_avatar_path(username):
