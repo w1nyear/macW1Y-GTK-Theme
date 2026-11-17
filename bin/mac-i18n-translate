@@ -1,0 +1,141 @@
+#!/usr/bin/env python3
+import json
+import html
+import os
+import re
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+SOURCE = ROOT / "config/i18n/translations.json"
+MACHINE = ROOT / "config/i18n/translations_machine.json"
+
+class TranslationUnavailable(Exception):
+    pass
+
+class TranslationQuotaReached(Exception):
+    pass
+
+def translate_batch(lines, lang, contact):
+    query = "\n".join(lines)
+    target = {"zh_tw": "zh-TW"}.get(lang, lang)
+    params = {"q": query, "langpair": f"en|{target}"}
+    if contact:
+        params["de"] = contact
+    url = "https://api.mymemory.translated.net/get?" + urllib.parse.urlencode(params)
+    request = urllib.request.Request(url, headers={"User-Agent": "macW1Y-i18n/1.0"})
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(request, timeout=25) as response:
+                result = json.load(response)
+            break
+        except urllib.error.HTTPError as error:
+            body = error.read().decode("utf-8", "replace")
+            if error.code == 400 and "INVALID TARGET LANGUAGE" in body:
+                raise TranslationUnavailable("Цільовий код мови не підтримується сервісом")
+            if error.code != 429 or attempt == 3:
+                raise
+            delay = min(30, int(error.headers.get("Retry-After", 5 * (attempt + 1))))
+            time.sleep(max(1, delay))
+    if result.get("quotaFinished") or result.get("responseStatus") == 429:
+        raise TranslationQuotaReached(result.get("responseDetails") or "Перекладацьку квоту вичерпано")
+    if "INVALID TARGET LANGUAGE" in result.get("responseDetails", ""):
+        raise TranslationUnavailable("Цільовий код мови не підтримується сервісом")
+    if result.get("responseStatus") != 200:
+        raise RuntimeError(result.get("responseDetails") or "Перекладацьку квоту вичерпано")
+    translated = result.get("responseData", {}).get("translatedText", "")
+    if not isinstance(translated, str) or not translated:
+        raise TranslationUnavailable("Сервіс не повернув переклад для цієї мови")
+    translated = html.unescape(translated)
+    found = {int(key): value.strip() for key, value in re.findall(r"(?m)^\s*(\d+)\s*\|\s*(.*?)(?=\n\s*\d+\s*\||\Z)", translated, re.S)}
+    expected = {int(line.split("|", 1)[0]) for line in lines}
+    if set(found) != expected:
+        raise RuntimeError("Перекладач змінив розділювачі рядків")
+    return found
+
+def translate_language(lang, source, contact):
+    probe = translate_batch(["0|Settings", "1|Cancel", "2|Home"], lang, contact)
+    if sum(probe[index] != value for index, value in enumerate(("Settings", "Cancel", "Home"))) < 2:
+        raise TranslationUnavailable("Тестова фраза не перекладається цією парою мов")
+    entries = list(source.items())
+    batches = []
+    batch = []
+    size = 0
+    token_maps = {}
+    for index, (key, value) in enumerate(entries):
+        replacements = {}
+        def mask(match):
+            token = f"ZXPH{index}X{len(replacements)}XZ"
+            replacements[token] = match.group(0)
+            return token
+        text = re.sub(r"\{[A-Za-z0-9_]+\}", mask, value)
+        token_maps[index] = replacements
+        line = f"{index}|{text}"
+        encoded_size = len(line.encode("utf-8")) + 1
+        if batch and size + encoded_size > 470:
+            batches.append(batch)
+            batch = []
+            size = 0
+        batch.append(line)
+        size += encoded_size
+    if batch:
+        batches.append(batch)
+    output = {}
+    for batch in batches:
+        translated = translate_batch(batch, lang, contact)
+        for index_text, value in translated.items():
+            index = int(index_text)
+            for token, original in token_maps[index].items():
+                value = value.replace(token, original)
+            output[entries[index][0]] = value
+        time.sleep(0.15)
+    if set(output) != set(source):
+        raise RuntimeError("У результаті бракує ключів перекладу")
+    placeholder_pattern = re.compile(r"\{[A-Za-z0-9_]+\}")
+    mismatches = [key for key, text in source.items() if set(placeholder_pattern.findall(text)) != set(placeholder_pattern.findall(output[key]))]
+    if mismatches:
+        raise RuntimeError("Плейсхолдери пошкоджено: " + ", ".join(mismatches[:5]))
+    changed = sum(output[key] != text for key, text in source.items())
+    if changed < len(source) * 0.25:
+        raise TranslationUnavailable("Перекладач не підтримує цю мову або не зміг її перекласти")
+    return output
+
+def main():
+    if not os.environ.get("MACW1Y_I18N_EMAIL"):
+        print("Задайте MACW1Y_I18N_EMAIL для квоти перекладу.", file=sys.stderr)
+        return 2
+    with SOURCE.open(encoding="utf-8") as handle:
+        all_translations = json.load(handle)
+    source = all_translations["en"]
+    with MACHINE.open(encoding="utf-8") if MACHINE.exists() else open(os.devnull, "r") as handle:
+        machine = json.load(handle) if MACHINE.exists() else {}
+    catalog = json.loads((ROOT / "config/i18n/catalog.json").read_text(encoding="utf-8"))["catalog"]
+    wanted = sys.argv[1:] or [item["code"] for item in catalog if item.get("tier") == 4]
+    for lang in wanted:
+        if lang in all_translations or lang in machine:
+            print(f"Пропущено {lang}: словник уже є")
+            continue
+        try:
+            output = translate_language(lang, source, os.environ["MACW1Y_I18N_EMAIL"])
+        except TranslationUnavailable as error:
+            print(f"Пропущено {lang}: {error}")
+            continue
+        except TranslationQuotaReached as error:
+            print(f"Зупинено на {lang}: {error}")
+            return 1
+        except (RuntimeError, urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
+            print(f"Зупинено на {lang}: {error}")
+            return 1
+        machine[lang] = output
+        temporary = MACHINE.with_suffix(".json.tmp")
+        temporary.write_text(json.dumps(machine, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        temporary.replace(MACHINE)
+        print(f"Готовий центральний словник {lang}: {len(output)} рядків")
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())

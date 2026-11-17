@@ -536,6 +536,11 @@ if "it" in TRANSLATIONS:
     TRANSLATIONS["it"]["search"] = "Cerca"
     TRANSLATIONS["it"]["system_account"] = "Account"
 
+machine_path = os.path.join(os.path.dirname(__file__), "translations_machine.json")
+if os.path.exists(machine_path):
+    with open(machine_path, "r", encoding="utf-8") as f:
+        TRANSLATIONS.update(json.load(f))
+
 # Write translations_data.py
 out_file = os.path.join(os.path.dirname(__file__), "translations_data.py")
 with open(out_file, "w", encoding="utf-8") as f:

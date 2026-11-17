@@ -4374,6 +4374,8 @@ export {
     addGlassWakeListener,
     removeGlassWakeListener,
     notifyGlassWake,
+    installGlassSceneListeners,
+    removeGlassSceneListeners,
     hookWindowDamage,
     noteWindowContentDamaged,
     setGlassEventDriven,

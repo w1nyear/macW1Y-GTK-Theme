@@ -52,7 +52,7 @@ def main():
 
     catalog = catalog_data.get("catalog", [])
     total_langs = len(catalog)
-    all_ok &= check(f"Catalog contains 194 supported Ubuntu/BCP-47 languages (found {total_langs})", total_langs == 194)
+    all_ok &= check(f"Catalog contains 209 supported Ubuntu/BCP-47 languages (found {total_langs})", total_langs == 209)
 
     tiers = catalog_data.get("tiers", {})
     t1_cnt = tiers.get("tier_1", {}).get("count", 0)
@@ -70,7 +70,7 @@ def main():
     all_ok &= check(f"Tier 1 primary locales: {t1_cnt}", t1_cnt == 2)
     all_ok &= check(f"Tier 2 major locales: {t2_cnt}", t2_cnt == 29)
     all_ok &= check(f"Tier 3 RTL locales: {t3_cnt}", t3_cnt == 3)
-    all_ok &= check(f"Tier 4 English-fallback locales: {t4_cnt}", t4_cnt == 160)
+    all_ok &= check(f"Tier 4 additional locales: {t4_cnt}", t4_cnt == 175)
 
     # 2. Central Translations Dictionary Audit
     print(f"\n{C_BOLD}2. Central Translations Dictionary (config/i18n/translations.json):{C_RESET}")
@@ -101,12 +101,17 @@ def main():
     all_ok &= check(f"All shipped dictionaries have the same {len(en_keys)} keys and no empty values", not incomplete_dictionaries,
                     f"Problems: {incomplete_dictionaries[:5]}")
     declared_full = {item.get("code") for item in catalog if item.get("tier") in (1, 2, 3)}
-    actual_full = set(translations)
+    machine_codes = {item.get("code") for item in catalog if item.get("status") == "machine_translated_unreviewed"}
+    actual_full = set(translations) - machine_codes
     all_ok &= check(f"Full-dictionary locales match declared Tier 1–3 ({len(declared_full)})", declared_full == actual_full,
                     f"Missing dictionaries: {sorted(declared_full - actual_full)}; extra: {sorted(actual_full - declared_full)}")
-    fallback_codes = {item.get("code") for item in catalog if item.get("tier") == 4}
-    all_ok &= check(f"Catalog explicitly marks {len(fallback_codes)} Tier 4 locales as English fallback",
-                    len(fallback_codes) == t4_cnt and all(item.get("status") == "english_fallback" for item in catalog if item.get("tier") == 4))
+    catalog_machine = {item.get("code") for item in catalog if item.get("status") == "machine_translated_unreviewed"}
+    fallback_codes = {item.get("code") for item in catalog if item.get("status") == "english_fallback"}
+    all_ok &= check(f"Machine-translated dictionaries are marked for review ({len(machine_codes)})",
+                    machine_codes == set(translations) - declared_full and all(code in translations for code in machine_codes))
+    all_ok &= check(f"English fallback remains explicit ({len(fallback_codes)} locales)",
+                    len(fallback_codes) + len(catalog_machine) == t4_cnt and
+                    all(item.get("status") in {"english_fallback", "machine_translated_unreviewed"} for item in catalog if item.get("tier") == 4))
 
     # Placeholder checks ({query}, {time}, {rpm}, {size}, etc.)
     placeholder_re = re.compile(r"\{([a-zA-Z0-9_]+)\}")
@@ -152,7 +157,7 @@ def main():
     res_guard = subprocess.run([os.path.join(REPO_ROOT, "bin/mac-extension-guard"), "verify"], capture_output=True, text=True)
     all_ok &= check("All 21 managed extensions match pinned lock hashes", res_guard.returncode == 0, res_guard.stdout.strip())
 
-    print(f"\n{C_BOLD}6. Tier 4 English Fallback Behavior (not translated coverage):{C_RESET}")
+    print(f"\n{C_BOLD}6. English Fallback Behavior (not translated coverage):{C_RESET}")
     sys.path.insert(0, os.path.join(REPO_ROOT, "bin"))
     import mac_i18n
     fb_values = [mac_i18n.t("power_performance", override_locale=code) for code in sorted(fallback_codes)]

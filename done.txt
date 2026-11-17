@@ -1500,3 +1500,12 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
 - Порівняння показало два незалежні шари затемнення: 16% чорний `.mac-modal-dim` в інсталяторі та radial lightbox GNOME (fade factor 0,4, radial brightness 0,5) у системному ModalDialog.
 - Зроблено фон інсталятора прозорим; для кожного системного модального вікна перед відкриттям вимикається radial-ефект і виставляється нульова непрозорість lightbox. Модальне блокування вводу, фокус і скляна рефракція збережені.
 - Перевірено відповідність стилів у джерелі, темах Dark/Light та їхніх user/system копіях; синтаксис Python/GJS пройшов, системний аудит 100% PASS, 21/21 розширень PASS.
+
+2026-11-18 — Повна локалізація macW1Y та додавання 15 топ-мов:
+- Розширено мовний каталог macW1Y до 209 мов (194 базові + 15 найпоширеніших мов світу: yue, wuu, bho, nan, hak, cjy, hsn, awa, om, pcm, skr, gan, mwr, mag, hne за рейтингом Ethnologue 2024/2026).
+- Уніфіковано словник до 439 ключів на кожну мову із повною синхронізацією плейсхолдерів для всіх компонентів: GUI-інсталятора, menubar, контекстних меню, налаштувань, майстра налаштування, розширень та системних повідомлень.
+- Інсталятор bin/mac-installer-gui: додано всі 209 мов із нативними самоназвами, підтримку RTL (напрямок праворуч-наліво для ar, he, fa, skr тощо), динамічне перескладання всіх екранів і menubar при зміні мови; усі зашиті рядки винесено до runtime i18n.
+- GNOME-розширення та runtime: регенеровано bin/mac_i18n.py, JS-модулі для appmenu, blur-my-shell, kiwi, eval-helper (macSetupWizard.js розширено до 209 мов) та C-заголовки; перекомпільовано libmac_settings.so і синхронізовано всі 6 системних копій.
+- Оновлено bin/mac-apply-locale для підтримки всіх 209 мов каталогу.
+- Оновлено config/extensions.lock.json (21/21 LOCKED OK).
+- Обов'язкові перевірки пройшли на 100%: bin/test-macw1y-animations.py (12/12 PASS), bin/mac-audit-sync check (100% PASS), bin/mac-i18n-verify (100% PASS), python3 bin/mac-extension-guard verify (21/21 PASS).

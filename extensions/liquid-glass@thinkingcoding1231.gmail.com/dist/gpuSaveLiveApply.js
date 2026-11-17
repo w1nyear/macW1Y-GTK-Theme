@@ -21,7 +21,7 @@
 
 import { UILayerSampler, WindowCloneManager, reportFrameLoopError } from './utils.js?v=fix3';
 import { ApplicationManager } from './applicationManager.js';
-import * as Gate from './glassGate.js';
+import * as Gate from './glassGate.js?v=fix3';
 
 const _tag = '_gpuSaveGated';
 

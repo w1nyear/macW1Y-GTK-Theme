@@ -287,6 +287,33 @@ LOCALE_MAP = {
     }
 }
 
+def _load_catalog_locales():
+    try:
+        cat_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "i18n", "catalog.json")
+        if os.path.exists(cat_path):
+            with open(cat_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            for entry in data.get("catalog", []):
+                c = entry["code"]
+                if c not in LOCALE_MAP:
+                    locs = entry.get("locales", [])
+                    posix = locs[0] if locs else f"{c}.UTF-8"
+                    name = entry.get("name", c)
+                    native = entry.get("native", name)
+                    cap_native = native[0].upper() + native[1:] if len(native) > 1 else native
+                    LOCALE_MAP[c] = {
+                        "posix": posix,
+                        "lang_env": f"{c}:en",
+                        "xkb": "us",
+                        "name": cap_native,
+                        "notif_title": f"macW1Y: {cap_native}",
+                        "notif_body": f"System language updated to {name} ({cap_native})!"
+                    }
+    except Exception:
+        pass
+
+_load_catalog_locales()
+
 def normalize_lang(arg):
     if not arg:
         return "en"

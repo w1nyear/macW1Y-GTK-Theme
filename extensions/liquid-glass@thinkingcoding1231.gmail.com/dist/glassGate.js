@@ -33,6 +33,7 @@ export const GLASS_REFRESH_60FPS_INTERVAL_US = 16666;
 export const GLASS_REFRESH_HEARTBEAT_US = 1500000;
 
 let _backdropDamageVersion = 0;
+let _backdropSceneVersion = 1;
 let _backdropFailCounter = 0;
 let _backdropSurfaceCount = 0;
 let _backdropRefreshCount = 0;
@@ -41,6 +42,9 @@ let _eventDrivenDefault = true;
 const _backdropDamageHooked = new WeakSet();
 const _backdropPolls = new WeakMap();
 const _wakeListeners = new Set();
+let _sceneSignalIds = [];
+let _sceneInvalidationId = 0;
+let _pendingSceneReason = null;
 
 export function addGlassWakeListener(fn) {
     if (typeof fn === 'function')
@@ -51,12 +55,72 @@ export function removeGlassWakeListener(fn) {
     _wakeListeners.delete(fn);
 }
 
-export function notifyGlassWake(actor) {
+export function notifyGlassWake(actor, reason = null) {
     for (const fn of _wakeListeners) {
         try {
-            fn(actor);
+            fn(actor, reason);
         } catch (_) {}
     }
+}
+
+function _invalidateBackdropScene(reason) {
+    _backdropSceneVersion++;
+    _backdropDamageVersion++;
+    _stageScan = { at: -1e12, h: 0 };
+    notifyGlassWake(null, reason);
+}
+
+function _scheduleSceneInvalidation(reason) {
+    _pendingSceneReason = reason;
+    if (_sceneInvalidationId)
+        return;
+
+    _sceneInvalidationId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 90, () => {
+        _sceneInvalidationId = 0;
+        const pendingReason = _pendingSceneReason;
+        _pendingSceneReason = null;
+        _invalidateBackdropScene(pendingReason);
+        return GLib.SOURCE_REMOVE;
+    });
+}
+
+export function installGlassSceneListeners() {
+    if (_sceneSignalIds.length > 0)
+        return;
+
+    try {
+        for (const signal of ['restacked', 'in-fullscreen-changed']) {
+            const id = global.display.connect(signal, () => _scheduleSceneInvalidation(
+                signal === 'restacked' ? 'restacked' : 'fullscreen'));
+            _sceneSignalIds.push([global.display, id]);
+        }
+    } catch (_) {}
+
+    try {
+        for (const signal of ['showing', 'hiding']) {
+            const id = Main.overview.connect(signal, () => _scheduleSceneInvalidation('overview'));
+            _sceneSignalIds.push([Main.overview, id]);
+        }
+    } catch (_) {}
+
+    try {
+        for (const signal of ['monitors-changed', 'workareas-changed']) {
+            const id = Main.layoutManager.connect(signal, () => _scheduleSceneInvalidation('layout'));
+            _sceneSignalIds.push([Main.layoutManager, id]);
+        }
+    } catch (_) {}
+}
+
+export function removeGlassSceneListeners() {
+    if (_sceneInvalidationId) {
+        GLib.source_remove(_sceneInvalidationId);
+        _sceneInvalidationId = 0;
+    }
+    _pendingSceneReason = null;
+    for (const [object, id] of _sceneSignalIds) {
+        try { object.disconnect(id); } catch (_) {}
+    }
+    _sceneSignalIds = [];
 }
 
 function _isActorValid(actor) {
@@ -253,6 +317,7 @@ function _newPollState() {
         lastOwnH: -1,
         dirty: true,
         lastFull: 0,
+        lastSceneVersion: _backdropSceneVersion,
         settleUntilUs: nowUs + 800000
     };
 }
@@ -283,6 +348,7 @@ export function glassRefreshDue(glassActor, extraHash) {
         const scanChanged = (st.lastScanH !== scanH);
         const ownChanged = (st.lastOwnH !== ownH);
         const dmgChanged = (st.lastDamage !== dmg);
+        const sceneChanged = st.lastSceneVersion !== _backdropSceneVersion;
 
 
         const isSettling = (nowUs < (st.settleUntilUs || 0));
@@ -306,10 +372,11 @@ export function glassRefreshDue(glassActor, extraHash) {
             }
         }
 
-        if (scanChanged || ownChanged || isNearDamaged || isSettling) {
+        if (scanChanged || ownChanged || isNearDamaged || isSettling || sceneChanged) {
             st.lastScanH = scanH;
             st.lastDamage = dmg;
             st.lastOwnH = ownH;
+            st.lastSceneVersion = _backdropSceneVersion;
             st.dirty = true;
         }
 
@@ -352,6 +419,7 @@ export function glassRefreshDone(glassActor, extraHash) {
         st.lastScanH = _stageBackdropHash(nowUs);
         st.lastDamage = _backdropDamageVersion;
         st.lastOwnH = _hmix(_ownGlassHash(glassActor), extraHash);
+        st.lastSceneVersion = _backdropSceneVersion;
     } catch (_) {}
 }
 
@@ -423,7 +491,8 @@ export function isBackdropDirtyOrChanged(glassActor) {
         let st = _backdropPolls.get(glassActor);
         if (!st) return true;
         const nowUs = GLib.get_monotonic_time();
-        if (st.dirty || (st.settleUntilUs && nowUs < st.settleUntilUs)) return true;
+        if (st.dirty || st.lastSceneVersion !== _backdropSceneVersion ||
+            (st.settleUntilUs && nowUs < st.settleUntilUs)) return true;
         const scanH = _stageBackdropHash(nowUs);
         if (st.lastScanH !== scanH) return true;
         const dmg = _backdropDamageVersion;

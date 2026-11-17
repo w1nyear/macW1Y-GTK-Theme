@@ -200,9 +200,9 @@ def tf(key, params=None, fallback=None, override_locale=None):
         f.write(py_module)
     print(f"-> Generated {py_dest}")
 
-    # 4. Generate C Header for libmac_settings and nautilus
-    # We output an efficient static lookup table for C
     c_keys = [
+        "about", "apps", "back", "datetime", "forward", "multitasking", "region",
+        "remote_desktop", "screenshot", "users", "settings",
         "power_mode", "power_performance", "power_performance_desc",
         "power_balanced", "power_balanced_desc", "power_saver", "power_saver_desc",
         "power_settings", "fan_speed", "fan_cpu", "fan_gpu", "fan_auto",
@@ -210,116 +210,87 @@ def tf(key, params=None, fallback=None, override_locale=None):
         "show_original", "show_original_desc", "uninstall_app", "uninstall_app_desc",
         "bookmarks_favorites", "bookmarks_locations", "bookmark_recent", "bookmark_home",
         "bookmark_applications", "bookmark_desktop", "bookmark_documents", "bookmark_downloads",
-        "bookmark_pictures", "bookmark_movies", "bookmark_trash",
-        "widgets", "mac_styling", "system_account", "storage_alert",
-        "software_update_alert", "search", "ssot_restored_notification",
-        "dock_edge_distance", "dock_edge_distance_desc",
-        "dock_icon_size", "dock_icon_size_desc",
-        "dock_size", "dock_size_desc",
+        "bookmark_pictures", "bookmark_movies", "bookmark_trash", "widgets", "mac_styling",
+        "system_account", "storage_alert", "software_update_alert", "search",
+        "ssot_restored_notification", "dock_edge_distance", "dock_edge_distance_desc",
+        "dock_icon_size", "dock_icon_size_desc", "dock_size", "dock_size_desc",
         "dock_spacing", "dock_spacing_desc"
     ]
-    
+    c_languages = sorted(TRANSLATIONS, key=lambda code: (-len(code), code))
+
+    def c_string(value):
+        return '"' + value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\t", "\\t") + '"'
+
     c_header = '''/* SPDX-License-Identifier: GPL-3.0-or-later */
-/* macW1Y 0.6 C Localization Header */
 #ifndef MAC_I18N_H
 #define MAC_I18N_H
-
 #include <glib.h>
 #include <string.h>
-
+#define MAC_I18N_COUNT LOCALE_COUNT
+static const char *MAC_I18N_LANGUAGES[] = { LANGUAGE_CODES };
+static inline const char *mac_normalize_locale(const char *value) {
+    if (!value) return NULL;
+    gchar *normalized = g_ascii_strdown(value, -1);
+    for (gchar *p = normalized; *p; p++) {
+        if (*p == '-') *p = '_';
+        if (*p == '.' || *p == '@') { *p = '\\0'; break; }
+    }
+    for (int i = 0; MAC_I18N_LANGUAGES[i] != NULL; i++) {
+        const char *code = MAC_I18N_LANGUAGES[i];
+        gsize length = strlen(code);
+        if (g_str_has_prefix(normalized, code) && (normalized[length] == '\\0' || normalized[length] == '_')) {
+            g_free(normalized);
+            return code;
+        }
+    }
+    g_free(normalized);
+    return NULL;
+}
 static inline const char *mac_get_locale(void) {
     gchar *loc_path = g_build_filename(g_get_home_dir(), ".config", "mac-styling", "locale", NULL);
     if (g_file_test(loc_path, G_FILE_TEST_EXISTS)) {
         gchar *contents = NULL;
         if (g_file_get_contents(loc_path, &contents, NULL, NULL) && contents) {
             g_strstrip(contents);
-            if (g_str_has_prefix(contents, "pl")) { g_free(contents); g_free(loc_path); return "pl"; }
-            if (g_str_has_prefix(contents, "uk")) { g_free(contents); g_free(loc_path); return "uk"; }
-            if (g_str_has_prefix(contents, "en")) { g_free(contents); g_free(loc_path); return "en"; }
-            if (g_str_has_prefix(contents, "de")) { g_free(contents); g_free(loc_path); return "de"; }
-            if (g_str_has_prefix(contents, "fr")) { g_free(contents); g_free(loc_path); return "fr"; }
-            if (g_str_has_prefix(contents, "es")) { g_free(contents); g_free(loc_path); return "es"; }
-            if (g_str_has_prefix(contents, "it")) { g_free(contents); g_free(loc_path); return "it"; }
+            const char *locale = mac_normalize_locale(contents);
             g_free(contents);
+            g_free(loc_path);
+            if (locale) return locale;
         }
     }
     g_free(loc_path);
-    const gchar * const *langs = g_get_language_names();
-    if (!langs) return "en";
-    for (int i = 0; langs[i] != NULL; i++) {
-        const char *l = langs[i];
-        if (!l || strcmp(l, "C") == 0 || strcmp(l, "POSIX") == 0) continue;
-        if (g_str_has_prefix(l, "uk")) return "uk";
-        if (g_str_has_prefix(l, "pl")) return "pl";
-        if (g_str_has_prefix(l, "de")) return "de";
-        if (g_str_has_prefix(l, "fr")) return "fr";
-        if (g_str_has_prefix(l, "es")) return "es";
-        if (g_str_has_prefix(l, "it")) return "it";
-        if (g_str_has_prefix(l, "pt")) return "pt";
-        if (g_str_has_prefix(l, "cs")) return "cs";
-        if (g_str_has_prefix(l, "tr")) return "tr";
-        if (g_str_has_prefix(l, "zh")) return "zh";
-        if (g_str_has_prefix(l, "ja")) return "ja";
-        if (g_str_has_prefix(l, "ko")) return "ko";
-        if (g_str_has_prefix(l, "ru")) return "ru";
-        if (g_str_has_prefix(l, "be")) return "be";
-        if (g_str_has_prefix(l, "nl")) return "nl";
-        if (g_str_has_prefix(l, "sk")) return "sk";
-        if (g_str_has_prefix(l, "ro")) return "ro";
-        if (g_str_has_prefix(l, "hu")) return "hu";
-        if (g_str_has_prefix(l, "bg")) return "bg";
-        if (g_str_has_prefix(l, "sr")) return "sr";
-        if (g_str_has_prefix(l, "hr")) return "hr";
-        if (g_str_has_prefix(l, "sl")) return "sl";
-        if (g_str_has_prefix(l, "ar")) return "ar";
-        if (g_str_has_prefix(l, "he")) return "he";
-        if (g_str_has_prefix(l, "fa")) return "fa";
-        if (g_str_has_prefix(l, "en")) return "en";
+    const gchar * const *languages = g_get_language_names();
+    if (languages) {
+        for (int i = 0; languages[i] != NULL; i++) {
+            if (!languages[i] || strcmp(languages[i], "C") == 0 || strcmp(languages[i], "POSIX") == 0) continue;
+            const char *locale = mac_normalize_locale(languages[i]);
+            if (locale) return locale;
+        }
     }
     return "en";
 }
-
-typedef struct {
-    const char *key;
-    const char *uk;
-    const char *en;
-    const char *de;
-    const char *fr;
-    const char *es;
-    const char *pl;
-} MacCKeyEntry;
-
+typedef struct { const char *key; const char *values[MAC_I18N_COUNT]; } MacCKeyEntry;
 static const MacCKeyEntry MAC_C_ENTRIES[] = {
 '''
-    for k in c_keys:
-        uk_val = TRANSLATIONS.get("uk", {}).get(k, k).replace('"', '\\"')
-        en_val = TRANSLATIONS.get("en", {}).get(k, k).replace('"', '\\"')
-        de_val = TRANSLATIONS.get("de", {}).get(k, en_val).replace('"', '\\"')
-        fr_val = TRANSLATIONS.get("fr", {}).get(k, en_val).replace('"', '\\"')
-        es_val = TRANSLATIONS.get("es", {}).get(k, en_val).replace('"', '\\"')
-        pl_val = TRANSLATIONS.get("pl", {}).get(k, en_val).replace('"', '\\"')
-        c_header += f'    {{ "{k}", "{uk_val}", "{en_val}", "{de_val}", "{fr_val}", "{es_val}", "{pl_val}" }},\n'
-    c_header += '''    { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
-};
-
-static inline const char *mac_tr(const char *key, const char *fallback) {
-    const char *loc = mac_get_locale();
+    for key in c_keys:
+        values = [c_string(TRANSLATIONS.get(language, {}).get(key, TRANSLATIONS["en"].get(key, key))) for language in c_languages]
+        c_header += f'    {{ {c_string(key)}, {{ {", ".join(values)} }} }},\n'
+    c_header += f'    {{ NULL, {{ {", ".join(["NULL"] * len(c_languages))} }} }}\n}};\n'
+    c_header += '''static inline const char *mac_tr(const char *key, const char *fallback) {
+    const char *locale = mac_get_locale();
     for (int i = 0; MAC_C_ENTRIES[i].key != NULL; i++) {
-        if (strcmp(MAC_C_ENTRIES[i].key, key) == 0) {
-            if (strcmp(loc, "uk") == 0 && MAC_C_ENTRIES[i].uk) return MAC_C_ENTRIES[i].uk;
-            if (strcmp(loc, "de") == 0 && MAC_C_ENTRIES[i].de) return MAC_C_ENTRIES[i].de;
-            if (strcmp(loc, "fr") == 0 && MAC_C_ENTRIES[i].fr) return MAC_C_ENTRIES[i].fr;
-            if (strcmp(loc, "es") == 0 && MAC_C_ENTRIES[i].es) return MAC_C_ENTRIES[i].es;
-            if (strcmp(loc, "pl") == 0 && MAC_C_ENTRIES[i].pl) return MAC_C_ENTRIES[i].pl;
-            if (MAC_C_ENTRIES[i].en) return MAC_C_ENTRIES[i].en;
-            break;
+        if (strcmp(MAC_C_ENTRIES[i].key, key) != 0) continue;
+        for (int j = 0; j < MAC_I18N_COUNT; j++) {
+            if (strcmp(locale, MAC_I18N_LANGUAGES[j]) == 0 && MAC_C_ENTRIES[i].values[j]) return MAC_C_ENTRIES[i].values[j];
         }
+        break;
     }
     return fallback ? fallback : key;
 }
-
-#endif /* MAC_I18N_H */
+#endif
 '''
+    c_header = c_header.replace("LOCALE_COUNT", str(len(c_languages)))
+    c_header = c_header.replace("LANGUAGE_CODES", ", ".join(c_string(language) for language in c_languages) + ", NULL")
     c_dest1 = os.path.join(REPO_ROOT, "control-center/mac_i18n.h")
     c_dest2 = os.path.join(REPO_ROOT, "src/mac_i18n.h")
     c_dest3 = os.path.join(REPO_ROOT, "gnome-control-center-overlay/mac_i18n.h")

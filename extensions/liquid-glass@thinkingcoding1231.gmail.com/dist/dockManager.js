@@ -486,8 +486,15 @@ export class DashManager {
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
         };
-        this._wakeUnsub = (damagedActor) => {
+        this._wakeUnsub = (damagedActor, reason) => {
             if (this._torndown || !this.bgActor || !this.targetActor?.mapped) return;
+            if (['restacked', 'fullscreen', 'overview', 'layout'].includes(reason)) {
+                glassForceRefresh?.(this.bgActor);
+                try { this._windowCloneManager?.rebuildClones?.(); } catch (_) {}
+                try { this._uiSampler?.rebindSelf?.(); } catch (_) {}
+                try { this._uiSampler?.refresh?.(); } catch (_) {}
+                try { this.effect?.markBackdropDirty?.(); } catch (_) {}
+            }
             if (!damagedActor || isActorNearGlass(damagedActor, this.bgActor)) {
                 this.wakeFrameSync();
             }

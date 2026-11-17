@@ -10,7 +10,8 @@ import { ApplicationManager } from './dist/applicationManager.js?v=fix6';
 import { WindowListService } from './dist/windowListService.js?v=fix2';
 import { Logger } from './dist/logger.js?v=fix2';
 import { setUtilsLogger, adaptiveColorTweener, destroySharedBackgroundSource,
-  releaseAllClonedWindowActors } from './dist/utils.js?v=fix3';
+  releaseAllClonedWindowActors, installGlassSceneListeners,
+  removeGlassSceneListeners } from './dist/utils.js?v=fix3';
 import { startGlassRingSampler, flushGlassRing } from './dist/liquidEffect.js?v=fix2';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
@@ -47,6 +48,10 @@ export default class LiquidGlassExtension extends Extension {
       return;
     }
     this._active = true;
+
+    try { installGlassSceneListeners(); } catch (e) {
+      console.error(`[Liquid Glass] Could not monitor scene transitions: ${e}`);
+    }
 
     try {
       this._installDumpLoopKeybinding();
@@ -374,6 +379,8 @@ export default class LiquidGlassExtension extends Extension {
 
   disable() {
     this._active = false;
+
+    try { removeGlassSceneListeners(); } catch (_) {}
 
     try { this._removeDumpLoopKeybinding(); } catch (e) { }
 

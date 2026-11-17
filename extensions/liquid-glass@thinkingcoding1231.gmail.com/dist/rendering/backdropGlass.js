@@ -205,8 +205,15 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
             }
         } catch (_) {}
 
-        this._wakeUnsub = (damagedActor) => {
+        this._wakeUnsub = (damagedActor, reason) => {
             if (this._cleanedUp || !this.visible) return;
+            if (['restacked', 'fullscreen', 'overview', 'layout'].includes(reason)) {
+                glassForceRefresh?.(this);
+                try { this._windowClones?.rebuildClones?.(); } catch (_) {}
+                try { this._uiSampler?.rebindSelf?.(); } catch (_) {}
+                try { this._uiSampler?.refresh?.(); } catch (_) {}
+                try { this._effect?.markBackdropDirty?.(); } catch (_) {}
+            }
             if (!damagedActor || isActorNearGlass(damagedActor, this)) {
                 this.wakeFrameSync?.();
             }

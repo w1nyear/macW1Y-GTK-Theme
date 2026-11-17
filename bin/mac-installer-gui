@@ -28,42 +28,34 @@ SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSETS_DIR = os.path.join(SCRIPT_DIR, "assets", "recovery")
 VERSION_FILE = os.path.join(SCRIPT_DIR, "version")
 
-SUPPORTED_LANGUAGES = [
-    {"code": "uk", "native": "Українська", "name": "Ukrainian"},
-    {"code": "en", "native": "English", "name": "English"},
-    {"code": "pl", "native": "Polski", "name": "Polish"},
-    {"code": "de", "native": "Deutsch", "name": "German"},
-    {"code": "fr", "native": "Français", "name": "French"},
-    {"code": "es", "native": "Español", "name": "Spanish"},
-    {"code": "it", "native": "Italiano", "name": "Italian"},
-    {"code": "pt", "native": "Português", "name": "Portuguese"},
-    {"code": "cs", "native": "Čeština", "name": "Czech"},
-    {"code": "sk", "native": "Slovenčina", "name": "Slovak"},
-    {"code": "nl", "native": "Nederlands", "name": "Dutch"},
-    {"code": "ro", "native": "Română", "name": "Romanian"},
-    {"code": "hu", "native": "Magyar", "name": "Hungarian"},
-    {"code": "bg", "native": "Български", "name": "Bulgarian"},
-    {"code": "hr", "native": "Hrvatski", "name": "Croatian"},
-    {"code": "sr", "native": "Српски", "name": "Serbian"},
-    {"code": "sl", "native": "Slovenščina", "name": "Slovenian"},
-    {"code": "lt", "native": "Lietuvių", "name": "Lithuanian"},
-    {"code": "lv", "native": "Latviešu", "name": "Latvian"},
-    {"code": "et", "native": "Eesti", "name": "Estonian"},
-    {"code": "be", "native": "Беларуская", "name": "Belarusian"},
-    {"code": "ru", "native": "Русский", "name": "Russian"},
-    {"code": "tr", "native": "Türkçe", "name": "Turkish"},
-    {"code": "ja", "native": "日本語", "name": "Japanese"},
-    {"code": "ko", "native": "한국어", "name": "Korean"},
-    {"code": "zh", "native": "简体中文", "name": "Chinese Simplified"},
-    {"code": "zh_tw", "native": "繁體中文", "name": "Chinese Traditional"},
-    {"code": "hi", "native": "हिन्दी", "name": "Hindi"},
-    {"code": "bn", "native": "বাংলা", "name": "Bengali"},
-    {"code": "th", "native": "ไทย", "name": "Thai"},
-    {"code": "vi", "native": "Tiếng Việt", "name": "Vietnamese"},
-    {"code": "ar", "native": "العربية", "name": "Arabic"},
-    {"code": "he", "native": "עברית", "name": "Hebrew"},
-    {"code": "fa", "native": "فارسی", "name": "Persian"},
-]
+sys.path.insert(0, os.path.join(SCRIPT_DIR, "bin"))
+import mac_i18n
+
+def _load_supported_languages():
+    cat_path = os.path.join(SCRIPT_DIR, "config", "i18n", "catalog.json")
+    if os.path.exists(cat_path):
+        try:
+            with open(cat_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            langs = []
+            for item in data.get("catalog", []):
+                native = item.get("native") or item.get("name")
+                cap_native = native[0].upper() + native[1:] if len(native) > 1 else native
+                langs.append({
+                    "code": item["code"],
+                    "native": cap_native,
+                    "name": item.get("name"),
+                    "rtl": item.get("rtl", False)
+                })
+            return langs
+        except Exception:
+            pass
+    return [
+        {"code": "uk", "native": "Українська", "name": "Ukrainian"},
+        {"code": "en", "native": "English", "name": "English"},
+    ]
+
+SUPPORTED_LANGUAGES = _load_supported_languages()
 
 LANGUAGE_I18N = {
     "uk": {"title": "Виберіть мову", "subtitle": "Виберіть основну мову для інтерфейсу системи.", "continue": "Продовжити", "restart": "Перезавантажити"},
@@ -206,12 +198,13 @@ def get_user_avatar_path(username):
             return c
     return os.path.join(SCRIPT_DIR, "icons", "default-avatar.png")
 
-def get_disk_capacity_info():
+def get_disk_capacity_info(lang_code="uk"):
     try:
         total, used, free = shutil.disk_usage("/")
         total_gb = int(total / (1024**3))
         avail_gb = int(free / (1024**3))
-        return f"{total_gb} ГБ всього, {avail_gb} ГБ доступно"
+        template = mac_i18n.t("installer_disk_info", override_locale=lang_code)
+        return template.format(total_gb=total_gb, avail_gb=avail_gb)
     except Exception:
         return "128 ГБ всього, 64 ГБ доступно"
 
@@ -1564,6 +1557,15 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         else:
             self.fullscreen()
 
+    def tr(self, key, fallback="", **kwargs):
+        res = mac_i18n.t(key, fallback=fallback, override_locale=getattr(self, "selected_language", "uk"))
+        if kwargs:
+            try:
+                return res.format(**kwargs)
+            except Exception:
+                pass
+        return res
+
         self.username = get_target_username()
         self.display_name = get_user_display_name(self.username)
         self.avatar_path = get_user_avatar_path(self.username)
@@ -1708,8 +1710,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.context_popover.set_parent(self)
 
         # 1. Top Menubar
-        menubar = self._create_menubar()
-        root_box.append(menubar)
+        self.menubar_box = self._create_menubar()
+        root_box.append(self.menubar_box)
 
         # Right-click context menu gesture on window root
         gesture_root = Gtk.GestureClick()
@@ -1741,6 +1743,11 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.stack.set_hhomogeneous(False)
         self.stack.set_vhomogeneous(False)
         self.card.append(self.stack)
+
+        is_rtl = mac_i18n.is_rtl(self.selected_language)
+        self.set_direction(Gtk.TextDirection.RTL if is_rtl else Gtk.TextDirection.LTR)
+        self.set_title(self.tr("installer_app_title", "macW1Y Installation"))
+        self.root_box = root_box
 
         # Modal sheet container in overlay
         self.modal_dim = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -1801,10 +1808,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         # macW1Y Icon
         items_main = [
-            ("Про macW1Y", "app.about"),
+            (self.tr("menu_about", "About macW1Y"), "app.about"),
             None,
-            ("Перезавантажити...", "app.reboot"),
-            ("Вимкнути комп'ютер...", "app.poweroff"),
+            (self.tr("menu_reboot", "Restart…"), "app.reboot"),
+            (self.tr("menu_poweroff", "Shut Down…"), "app.poweroff"),
         ]
 
         system_svg = os.path.join(ASSETS_DIR, "system_logo.svg")
@@ -1817,43 +1824,43 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         bar.append(self.btn_main)
 
         # App Title
-        lbl_app = Gtk.Label(label="Встановлення macW1Y")
+        lbl_app = Gtk.Label(label=self.tr("installer_app_title", "macW1Y Installation"))
         lbl_app.add_css_class("mac-menubar-title")
         bar.append(lbl_app)
 
-        # Menus: Файл, Правка, Утиліти, Вікно
+        # Menus: File, Edit, Utilities, Window
         items_file = [
-            ("Новий образ...", "app.noop", "⌘N"),
+            (self.tr("menu_new_image", "New Image…"), "app.noop", "⌘N"),
             None,
-            ("Закрити вікно", "app.close", "⌘W"),
+            (self.tr("menu_close_window", "Close Window"), "app.close", "⌘W"),
         ]
-        self.btn_file = self._make_menu_btn("Файл", items_file)
+        self.btn_file = self._make_menu_btn(self.tr("menu_file", "File"), items_file)
         bar.append(self.btn_file)
 
         items_edit = [
-            ("Відмінити", "app.undo", "⌘Z"),
-            ("Повторити", "app.redo", "⇧⌘Z"),
+            (self.tr("menu_undo", "Undo"), "app.undo", "⌘Z"),
+            (self.tr("menu_redo", "Redo"), "app.redo", "⇧⌘Z"),
             None,
-            ("Вирізати", "app.noop", "⌘X"),
-            ("Скопіювати", "app.noop", "⌘C"),
-            ("Вставити", "app.noop", "⌘V"),
+            (self.tr("menu_cut", "Cut"), "app.noop", "⌘X"),
+            (self.tr("menu_copy", "Copy"), "app.noop", "⌘C"),
+            (self.tr("menu_paste", "Paste"), "app.noop", "⌘V"),
         ]
-        self.btn_edit = self._make_menu_btn("Правка", items_edit)
+        self.btn_edit = self._make_menu_btn(self.tr("menu_edit", "Edit"), items_edit)
         bar.append(self.btn_edit)
 
         items_utils = [
-            ("Термінал...", "app.terminal"),
-            ("Дискова утиліта...", "app.disk_utility"),
-            ("Інформація про систему...", "app.sysinfo"),
+            (self.tr("menu_terminal", "Terminal…"), "app.terminal"),
+            (self.tr("menu_disk_utility", "Disk Utility…"), "app.disk_utility"),
+            (self.tr("menu_sysinfo", "System Information…"), "app.sysinfo"),
         ]
-        self.btn_utils = self._make_menu_btn("Утиліти", items_utils)
+        self.btn_utils = self._make_menu_btn(self.tr("menu_utilities", "Utilities"), items_utils)
         bar.append(self.btn_utils)
 
         items_win = [
-            ("Мінімізувати", "app.minimize", "⌘M"),
-            ("Збільшити", "app.noop"),
+            (self.tr("menu_minimize", "Minimize"), "app.minimize", "⌘M"),
+            (self.tr("menu_zoom", "Zoom"), "app.noop"),
         ]
-        self.btn_win = self._make_menu_btn("Вікно", items_win)
+        self.btn_win = self._make_menu_btn(self.tr("menu_window", "Window"), items_win)
         bar.append(self.btn_win)
 
         spacer = Gtk.Box()
@@ -1874,10 +1881,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         img_wifi.set_pixel_size(15)
 
         items_wifi = [
-            ("Wi-Fi: Увімкнено", None, None, True),
-            ("Мережа: macW1Y-Recovery", None, "✓"),
+            (self.tr("menu_wifi_on", "Wi-Fi: On"), None, None, True),
+            (self.tr("menu_wifi_network", "Network: macW1Y-Recovery"), None, "✓"),
             None,
-            ("Параметри мережі...", "app.noop"),
+            (self.tr("menu_network_settings", "Network Settings…"), "app.noop"),
         ]
         self.btn_wifi = self._make_menu_btn(None, items_wifi, icon_widget=img_wifi)
         right_box.append(self.btn_wifi)
@@ -1899,11 +1906,12 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         bat_box.append(lbl_bat)
         bat_box.append(img_bat)
 
+        bat_txt = self.tr("menu_battery_pct", "Battery: {bat_pct}", bat_pct=bat_pct)
         items_bat = [
-            (f"Акумулятор: {bat_pct}", None, None, True),
-            ("Джерело живлення: Адаптер", None),
+            (bat_txt, None, None, True),
+            (self.tr("power_source_adapter", "Power Source: Power Adapter"), None),
             None,
-            ("Параметри акумулятора...", "app.noop"),
+            (self.tr("battery_settings", "Battery Settings…"), "app.noop"),
         ]
         self.btn_bat = self._make_menu_btn(None, items_bat, icon_widget=bat_box)
         right_box.append(self.btn_bat)
@@ -2114,23 +2122,57 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         box.append(btn_row)
         return box
 
+    def _rebuild_subsequent_screens(self):
+        # Recreate menubar in newly selected language
+        if hasattr(self, "menubar_box") and self.menubar_box and hasattr(self, "root_box") and self.root_box:
+            self.root_box.remove(self.menubar_box)
+            self.menubar_box = self._create_menubar()
+            self.root_box.prepend(self.menubar_box)
+
+        # Update disk capacity string
+        self.disk_info = get_disk_capacity_info(self.selected_language)
+
+        # Rebuild all subsequent stack screens
+        screens = [
+            ("screen_user", self._build_screen_user),
+            ("screen_options", self._build_screen_options),
+            ("screen_welcome", self._build_screen_wizard),
+            ("screen_disk", self._build_screen_disk),
+            ("screen_progress", self._build_screen_progress),
+            ("screen_reboot", self._build_screen_reboot),
+        ]
+        cur_vis = self.stack.get_visible_child_name()
+        for name, builder in screens:
+            old_child = self.stack.get_child_by_name(name)
+            if old_child:
+                self.stack.remove(old_child)
+            self.stack.add_named(builder(), name)
+        if cur_vis and self.stack.get_child_by_name(cur_vis):
+            self.stack.set_visible_child_name(cur_vis)
+
     def _on_language_selected(self, lang_code):
         self.selected_language = lang_code
-        info = LANGUAGE_I18N.get(lang_code, LANGUAGE_I18N.get("en", {}))
+        is_rtl = mac_i18n.is_rtl(lang_code)
+        self.set_direction(Gtk.TextDirection.RTL if is_rtl else Gtk.TextDirection.LTR)
+
+        # Update language selection screen labels
         if hasattr(self, "lbl_lang_title") and self.lbl_lang_title:
-            self.lbl_lang_title.set_label(info.get("title", "Select Language"))
+            self.lbl_lang_title.set_label(self.tr("select_language", "Select Language"))
         if hasattr(self, "lbl_lang_sub") and self.lbl_lang_sub:
-            self.lbl_lang_sub.set_label(info.get("subtitle", "Select primary language"))
+            self.lbl_lang_sub.set_label(self.tr("select_language_sub", "Select the main language for the system interface."))
         if hasattr(self, "btn_lang_continue") and self.btn_lang_continue:
-            self.btn_lang_continue.set_label(info.get("continue", "Continue"))
+            self.btn_lang_continue.set_label(self.tr("installer_continue_btn", "Continue"))
         if hasattr(self, "btn_lang_restart") and self.btn_lang_restart:
-            self.btn_lang_restart.set_label(info.get("restart", "Restart"))
+            self.btn_lang_restart.set_label(self.tr("menu_reboot", "Restart…"))
 
         for c, (btn, lbl) in getattr(self, "lang_buttons", {}).items():
             if c == lang_code:
                 btn.add_css_class("selected")
             else:
                 btn.remove_css_class("selected")
+
+        # Dynamically rebuild all screens in selected language
+        self._rebuild_subsequent_screens()
 
     def _on_language_continue(self):
         try:
@@ -2151,11 +2193,11 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         box.set_vexpand(True)
 
-        lbl_title = Gtk.Label(label="Встановлення macW1Y")
+        lbl_title = Gtk.Label(label=self.tr("installer_user_title", "macW1Y Installation"))
         lbl_title.add_css_class("mac-title-large")
         box.append(lbl_title)
 
-        lbl_sub = Gtk.Label(label="Оберіть користувача, пароль якого Ви знаєте:")
+        lbl_sub = Gtk.Label(label=self.tr("installer_user_sub", "Select a user whose password you know:"))
         lbl_sub.add_css_class("mac-subtitle")
         lbl_sub.set_margin_top(8)
         box.append(lbl_sub)
@@ -2183,7 +2225,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_name.add_controller(click_name)
         user_area.append(lbl_name)
 
-        btn_forgot = Gtk.Button(label="Забули всі паролі?")
+        btn_forgot = Gtk.Button(label=self.tr("installer_user_forgot", "Forgot password?"))
         btn_forgot.add_css_class("mac-link-btn")
         btn_forgot.set_has_frame(False)
         btn_forgot.set_halign(Gtk.Align.CENTER)
@@ -2207,7 +2249,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_restart.set_child(img_rst)
         btn_restart.connect("clicked", lambda b: self._on_system_reboot())
         b_restart.append(btn_restart)
-        lbl_rst = Gtk.Label(label="Перезавантажити")
+        lbl_rst = Gtk.Label(label=self.tr("restart", "Restart"))
         lbl_rst.add_css_class("mac-subtitle")
         b_restart.append(lbl_rst)
         nav_box.append(b_restart)
@@ -2223,7 +2265,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_next.set_child(img_nxt)
         btn_next.connect("clicked", lambda b: self._show_modal_password())
         b_next.append(btn_next)
-        lbl_nxt = Gtk.Label(label="Далі")
+        lbl_nxt = Gtk.Label(label=self.tr("wizard_continue", "Next"))
         lbl_nxt.add_css_class("mac-subtitle")
         b_next.append(lbl_nxt)
         nav_box.append(b_next)
@@ -2244,7 +2286,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         sheet.add_css_class("mac-modal-sheet")
         sheet.add_css_class("mac-alert-sheet")
 
-        lbl_prompt = Gtk.Label(label=f"Введіть пароль для «{self.display_name}», щоб продовжити:")
+        pwd_msg = self.tr("installer_pwd_title", 'Enter password for "{username}"', username=self.display_name)
+        lbl_prompt = Gtk.Label(label=pwd_msg)
         lbl_prompt.add_css_class("mac-modal-title")
         lbl_prompt.set_halign(Gtk.Align.START)
         lbl_prompt.set_xalign(0.0)
@@ -2254,7 +2297,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         row.set_margin_top(2)
-        lbl_pass = Gtk.Label(label="Пароль:")
+        lbl_pass = Gtk.Label(label=self.tr("password", "Password") + ":")
         lbl_pass.add_css_class("mac-field-label")
         lbl_pass.set_halign(Gtk.Align.START)
         lbl_pass.set_valign(Gtk.Align.CENTER)
@@ -2285,14 +2328,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_row.set_halign(Gtk.Align.FILL)
         btn_row.set_margin_top(8)
 
-        btn_cancel = Gtk.Button(label="Скасувати")
+        btn_cancel = Gtk.Button(label=self.tr("btn_cancel", "Cancel"))
         btn_cancel.add_css_class("mac-modal-btn-secondary")
         btn_cancel.set_hexpand(True)
         btn_cancel.set_halign(Gtk.Align.FILL)
         btn_cancel.connect("clicked", lambda b: self.hide_modal())
         btn_row.append(btn_cancel)
 
-        btn_cont = Gtk.Button(label="Продовжити")
+        btn_cont = Gtk.Button(label=self.tr("installer_continue_btn", "Continue"))
         btn_cont.add_css_class("mac-modal-btn-primary")
         btn_cont.set_hexpand(True)
         btn_cont.set_halign(Gtk.Align.FILL)
@@ -2300,12 +2343,13 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         def on_submit():
             pwd = entry_pass.get_text()
             if not pwd:
-                lbl_error.set_markup("<span color='#ff453a'>Будь ласка, введіть пароль.</span>")
+                msg_empty = self.tr("installer_pwd_empty_err", "Please enter password.")
+                lbl_error.set_markup(f"<span color='#ff453a'>{msg_empty}</span>")
                 lbl_error.set_visible(True)
                 return
 
             btn_cont.set_sensitive(False)
-            btn_cont.set_label("Перевірка...")
+            btn_cont.set_label(self.tr("checking", "Checking…"))
 
             def check_thread():
                 try:
@@ -2320,13 +2364,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
                 def finish():
                     btn_cont.set_sensitive(True)
-                    btn_cont.set_label("Продовжити")
+                    btn_cont.set_label(self.tr("installer_continue_btn", "Continue"))
                     if ok or "--preview" in sys.argv:
                         self.cached_password = pwd
                         self.hide_modal()
                         self.switch_to_screen("screen_options")
                     else:
-                        lbl_error.set_markup("<span color='#ff453a'>Невірний пароль. Спробуйте ще раз.</span>")
+                        msg_err = self.tr("installer_pwd_incorrect_err", "Incorrect password, please try again.")
+                        lbl_error.set_markup(f"<span color='#ff453a'>{msg_err}</span>")
                         lbl_error.set_visible(True)
                         entry_pass.set_text("")
                         entry_pass.grab_focus()
@@ -2359,20 +2404,20 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         options_data = [
             ("clean_update",
              os.path.join(ASSETS_DIR, "time_machine.svg"),
-             "(Чисте) оновлення модпаку",
-             "Оновити всі компоненти macW1Y або виконати чисте перевстановлення зі збереженням налаштувань."),
+             "(Чисте) оновлення модпаку" if getattr(self, "selected_language", "uk") == "uk" else "Clean Modpack Update",
+             "Оновити всі компоненти macW1Y або виконати чисте перевстановлення зі збереженням налаштувань." if getattr(self, "selected_language", "uk") == "uk" else "Update all macW1Y components or clean reinstall preserving settings."),
             ("install",
              os.path.join(ASSETS_DIR, "install_macw1y.svg"),
-             "Інсталяція macW1Y",
-             "Встановити або оновити macW1Y на цей комп'ютер."),
+             self.tr("installer_opt_install_title", "Install macW1Y"),
+             self.tr("installer_opt_install_desc", "Full environment deployment with Wayland and glass effects")),
             ("repo",
              os.path.join(ASSETS_DIR, "safari_globe.svg"),
-             "GitHub репозиторій macW1Y",
-             "Відвідати офіційну сторінку репозиторію macW1Y для отримання детальної інформації."),
+             "GitHub репозиторій macW1Y" if getattr(self, "selected_language", "uk") == "uk" else "GitHub macW1Y Repository",
+             "Відвідати офіційну сторінку репозиторію macW1Y для отримання детальної інформації." if getattr(self, "selected_language", "uk") == "uk" else "Visit the official macW1Y repository page for details."),
             ("uninstall",
              os.path.join(ASSETS_DIR, "disk_utility.svg"),
-             "Видалити macW1Y",
-             "Повне видалення macW1Y та повернення до стандартного GNOME.")
+             self.tr("installer_opt_uninstall_title", "Uninstall macW1Y"),
+             self.tr("installer_opt_uninstall_desc", "Complete removal of theme, extensions, and restoration of Ubuntu defaults"))
         ]
 
         def select_opt(action_id):
@@ -2419,7 +2464,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_row.set_margin_top(10)
         btn_row.set_margin_bottom(0)
 
-        btn_cont = Gtk.Button(label="Продовжити")
+        btn_cont = Gtk.Button(label=self.tr("installer_continue_btn", "Continue"))
         btn_cont.add_css_class("mac-btn-options-continue")
         btn_cont.connect("clicked", self._on_options_continue)
         btn_row.append(btn_cont)
@@ -2440,7 +2485,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         sheet.add_css_class("mac-modal-sheet")
         sheet.add_css_class("mac-alert-sheet")
 
-        lbl_t = Gtk.Label(label="Ви дійсно хочете видалити macW1Y?")
+        lbl_t = Gtk.Label(label=self.tr("installer_uninst_confirm_title", "Do you really want to uninstall macW1Y?"))
         lbl_t.add_css_class("mac-modal-title")
         lbl_t.set_halign(Gtk.Align.START)
         lbl_t.set_xalign(0.0)
@@ -2448,7 +2493,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_t.set_max_width_chars(28)
         sheet.append(lbl_t)
 
-        lbl_sub = Gtk.Label(label="Всі теми оформлення, розширення, іконки та оптимізації macW1Y будуть видалені. Стандартний робочий стіл Ubuntu буде відновлено.")
+        lbl_sub = Gtk.Label(label=self.tr("installer_uninst_confirm_desc", "All macW1Y themes, extensions, icons, and optimizations will be removed. Default Ubuntu desktop will be restored."))
         lbl_sub.add_css_class("mac-modal-desc")
         lbl_sub.set_halign(Gtk.Align.START)
         lbl_sub.set_xalign(0.0)
@@ -2463,14 +2508,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_row.set_halign(Gtk.Align.FILL)
         btn_row.set_margin_top(10)
 
-        btn_cancel = Gtk.Button(label="Скасувати")
+        btn_cancel = Gtk.Button(label=self.tr("btn_cancel", "Cancel"))
         btn_cancel.add_css_class("mac-modal-btn-secondary")
         btn_cancel.set_hexpand(True)
         btn_cancel.set_halign(Gtk.Align.FILL)
         btn_cancel.connect("clicked", lambda b: self.hide_modal())
         btn_row.append(btn_cancel)
 
-        btn_del = Gtk.Button(label="Видалити")
+        btn_del = Gtk.Button(label=self.tr("installer_uninst_btn", "Uninstall"))
         btn_del.add_css_class("mac-modal-btn-primary")
         btn_del.set_hexpand(True)
         btn_del.set_halign(Gtk.Align.FILL)
@@ -2510,7 +2555,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.lbl_wizard_title.set_margin_top(6)
         box.append(self.lbl_wizard_title)
 
-        self.lbl_wizard_sub = Gtk.Label(label=f"Для налаштування параметрів інсталяції macW1Y {ver} натисніть кнопку «Продовжити».")
+        self.lbl_wizard_sub = Gtk.Label(label=self.tr("installer_wizard_sub", "To configure macW1Y installation, click Continue."))
         self.lbl_wizard_sub.add_css_class("mac-subtitle")
         self.lbl_wizard_sub.set_wrap(True)
         self.lbl_wizard_sub.set_halign(Gtk.Align.CENTER)
@@ -2580,14 +2625,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.rev_left_btn.set_transition_duration(320)
         self.rev_left_btn.set_reveal_child(False)
 
-        self.btn_decline = Gtk.Button(label="Не приймаю")
+        self.btn_decline = Gtk.Button(label=self.tr("installer_disagree", "Disagree"))
         self.btn_decline.add_css_class("mac-btn-pill")
         self.btn_decline.set_margin_end(14)
         self.btn_decline.connect("clicked", lambda b: self.switch_to_screen("screen_options"))
         self.rev_left_btn.set_child(self.btn_decline)
         btn_row.append(self.rev_left_btn)
 
-        self.btn_wizard_action = Gtk.Button(label="Продовжити")
+        self.btn_wizard_action = Gtk.Button(label=self.tr("installer_continue_btn", "Continue"))
         self.btn_wizard_action.add_css_class("mac-btn-pill-primary")
         self.btn_wizard_action.connect("clicked", self._on_wizard_action_clicked)
         btn_row.append(self.btn_wizard_action)
@@ -2621,8 +2666,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
     def morph_welcome_to_terms(self, animated=True):
         self.wizard_mode = "terms"
-        self.lbl_wizard_sub.set_label("Для продовження установки ПЗ необхідно прийняти умови ліцензійного погодження.")
-        self.btn_wizard_action.set_label("Приймаю")
+        self.lbl_wizard_sub.set_label(self.tr("installer_terms_title", "License Agreement"))
+        self.btn_wizard_action.set_label(self.tr("installer_agree", "Agree"))
 
         if not animated:
             self.img_wizard_icon.set_pixel_size(130)
@@ -2635,10 +2680,9 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.rev_left_btn.set_reveal_child(True)
 
     def morph_terms_to_welcome(self, animated=True):
-        ver = get_modpack_version()
         self.wizard_mode = "welcome"
-        self.lbl_wizard_sub.set_label(f"Для налаштування параметрів інсталяції macW1Y {ver} натисніть кнопку «Продовжити».")
-        self.btn_wizard_action.set_label("Продовжити")
+        self.lbl_wizard_sub.set_label(self.tr("installer_wizard_sub", "To configure macW1Y installation, click Continue."))
+        self.btn_wizard_action.set_label(self.tr("installer_continue_btn", "Continue"))
 
         if not animated:
             self.img_wizard_icon.set_pixel_size(210)
@@ -2708,14 +2752,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         sheet.add_css_class("mac-modal-sheet")
         sheet.add_css_class("mac-alert-sheet")
 
-        lbl_t = Gtk.Label(label="Умови ліцензійної угоди про використання ПЗ")
+        lbl_t = Gtk.Label(label=self.tr("installer_terms_modal_title", "Terms of License Agreement"))
         lbl_t.add_css_class("mac-modal-title")
         lbl_t.set_halign(Gtk.Align.START)
         lbl_t.set_xalign(0.0)
         lbl_t.set_wrap(True)
         sheet.append(lbl_t)
 
-        lbl_s = Gtk.Label(label="Умови ліцензійної угоди мною прочитані та прийняті для використання на цьому комп'ютері.")
+        lbl_s = Gtk.Label(label=self.tr("installer_terms_modal_desc", "I have read and agree to the terms of the software license agreement."))
         lbl_s.add_css_class("mac-modal-desc")
         lbl_s.set_halign(Gtk.Align.START)
         lbl_s.set_xalign(0.0)
@@ -2729,14 +2773,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_row.set_halign(Gtk.Align.FILL)
         btn_row.set_margin_top(12)
 
-        btn_no = Gtk.Button(label="Не приймаю")
+        btn_no = Gtk.Button(label=self.tr("installer_disagree", "Disagree"))
         btn_no.add_css_class("mac-modal-btn-secondary")
         btn_no.set_hexpand(True)
         btn_no.set_halign(Gtk.Align.FILL)
         btn_no.connect("clicked", lambda b: self.hide_modal())
         btn_row.append(btn_no)
 
-        btn_yes = Gtk.Button(label="Приймаю")
+        btn_yes = Gtk.Button(label=self.tr("installer_agree", "Agree"))
         btn_yes.add_css_class("mac-modal-btn-primary")
         btn_yes.set_hexpand(True)
         btn_yes.set_halign(Gtk.Align.FILL)
@@ -2758,7 +2802,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
         box.set_vexpand(True)
 
-        lbl_sub = Gtk.Label(label="Операційна система macW1Y буде встановлена на диск «Ubuntu System HD».")
+        lbl_sub = Gtk.Label(label=self.tr("installer_disk_sub", "macW1Y will be installed onto the Ubuntu system disk."))
         lbl_sub.add_css_class("mac-subtitle")
         box.append(lbl_sub)
 
@@ -2791,12 +2835,12 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_row.set_halign(Gtk.Align.CENTER)
         btn_row.set_margin_top(16)
 
-        btn_back = Gtk.Button(label="Назад")
+        btn_back = Gtk.Button(label=self.tr("btn_back", "Back"))
         btn_back.add_css_class("mac-btn-pill")
         btn_back.connect("clicked", lambda b: self.switch_to_screen("screen_terms"))
         btn_row.append(btn_back)
 
-        btn_cont = Gtk.Button(label="Встановити")
+        btn_cont = Gtk.Button(label=self.tr("installer_install_btn", "Install"))
         btn_cont.add_css_class("mac-btn-pill-primary")
         btn_cont.connect("clicked", lambda b: self._show_modal_admin_padlock())
         btn_row.append(btn_cont)
@@ -2818,7 +2862,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         img_lock.add_css_class("mac-rounded-icon")
         sheet.append(img_lock)
 
-        lbl_t = Gtk.Label(label="При встановленні робиться спроба змінити системні налаштування.")
+        lbl_t = Gtk.Label(label=self.tr("installer_admin_title", "macW1Y Installer requests permission"))
         lbl_t.add_css_class("mac-modal-title")
         lbl_t.set_wrap(True)
         lbl_t.set_max_width_chars(28)
@@ -2826,7 +2870,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_t.set_xalign(0.0)
         sheet.append(lbl_t)
 
-        lbl_s = Gtk.Label(label="Щоб дозволити цю дію, введіть ім'я та пароль адміністратора:")
+        lbl_s = Gtk.Label(label=self.tr("installer_admin_desc", "Enter administrator password to make changes to the system."))
         lbl_s.add_css_class("mac-modal-desc")
         lbl_s.set_halign(Gtk.Align.START)
         lbl_s.set_xalign(0.0)
@@ -2879,14 +2923,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_row.set_halign(Gtk.Align.FILL)
         btn_row.set_margin_top(8)
 
-        btn_cancel = Gtk.Button(label="Скасувати")
+        btn_cancel = Gtk.Button(label=self.tr("btn_cancel", "Cancel"))
         btn_cancel.add_css_class("mac-modal-btn-secondary")
         btn_cancel.set_hexpand(True)
         btn_cancel.set_halign(Gtk.Align.FILL)
         btn_cancel.connect("clicked", lambda b: self.hide_modal())
         btn_row.append(btn_cancel)
 
-        btn_allow = Gtk.Button(label="OK")
+        btn_allow = Gtk.Button(label=self.tr("installer_allow_btn", "Allow"))
         btn_allow.add_css_class("mac-modal-btn-primary")
         btn_allow.set_hexpand(True)
         btn_allow.set_halign(Gtk.Align.FILL)
@@ -2979,7 +3023,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_row.set_halign(Gtk.Align.CENTER)
         btn_row.set_margin_top(24)
 
-        self.btn_cancel_install = Gtk.Button(label="Скасувати")
+        self.btn_cancel_install = Gtk.Button(label=self.tr("installer_cancel_btn", "Cancel"))
         self.btn_cancel_install.add_css_class("mac-btn-secondary")
         self.btn_cancel_install.connect("clicked", lambda b: self._show_modal_cancel_confirm())
         btn_row.append(self.btn_cancel_install)
@@ -2995,14 +3039,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         sheet.add_css_class("mac-modal-sheet")
         sheet.add_css_class("mac-alert-sheet")
 
-        lbl_t = Gtk.Label(label="Ви дійсно хочете скасувати встановлення macW1Y?")
+        lbl_t = Gtk.Label(label=self.tr("installer_cancel_confirm_title", "Cancel macW1Y Installation?"))
         lbl_t.add_css_class("mac-modal-title")
         lbl_t.set_halign(Gtk.Align.START)
         lbl_t.set_xalign(0.0)
         lbl_t.set_wrap(True)
         sheet.append(lbl_t)
 
-        lbl_s = Gtk.Label(label="Коли будете готові до встановлення, виберіть «Встановлення macW1Y» у меню та повторно натисніть «Продовжити».")
+        lbl_s = Gtk.Label(label=self.tr("installer_cancel_confirm_desc", "If you cancel installation now, system changes may be incomplete."))
         lbl_s.add_css_class("mac-modal-desc")
         lbl_s.set_halign(Gtk.Align.START)
         lbl_s.set_xalign(0.0)
@@ -3016,14 +3060,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_row.set_halign(Gtk.Align.FILL)
         btn_row.set_margin_top(12)
 
-        btn_cont = Gtk.Button(label="Продовжити")
+        btn_cont = Gtk.Button(label=self.tr("installer_continue_btn", "Continue"))
         btn_cont.add_css_class("mac-modal-btn-secondary")
         btn_cont.set_hexpand(True)
         btn_cont.set_halign(Gtk.Align.FILL)
         btn_cont.connect("clicked", lambda b: self.hide_modal())
         btn_row.append(btn_cont)
 
-        btn_quit = Gtk.Button(label="Завершити")
+        btn_quit = Gtk.Button(label=self.tr("btn_cancel", "Quit"))
         btn_quit.add_css_class("mac-modal-btn-primary")
         btn_quit.set_hexpand(True)
         btn_quit.set_halign(Gtk.Align.FILL)
@@ -3039,7 +3083,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         sheet.add_css_class("mac-modal-sheet")
         sheet.add_css_class("mac-alert-sheet")
 
-        lbl_t = Gtk.Label(label="Ви дійсно хочете перезавантажити комп'ютер?")
+        lbl_t = Gtk.Label(label=self.tr("menu_reboot", "Restart…"))
         lbl_t.add_css_class("mac-modal-title")
         lbl_t.set_halign(Gtk.Align.START)
         lbl_t.set_xalign(0.0)
@@ -3047,7 +3091,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_t.set_max_width_chars(28)
         sheet.append(lbl_t)
 
-        lbl_s = Gtk.Label(label="Комп'ютер завантажиться з диска «Ubuntu System HD».")
+        lbl_s = Gtk.Label(label=self.tr("installer_disk_sub", "macW1Y will boot from the system disk."))
         lbl_s.add_css_class("mac-modal-desc")
         lbl_s.set_halign(Gtk.Align.START)
         lbl_s.set_xalign(0.0)
@@ -3062,14 +3106,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_row.set_halign(Gtk.Align.FILL)
         btn_row.set_margin_top(10)
 
-        btn_cancel = Gtk.Button(label="Скасувати")
+        btn_cancel = Gtk.Button(label=self.tr("btn_cancel", "Cancel"))
         btn_cancel.add_css_class("mac-modal-btn-secondary")
         btn_cancel.set_hexpand(True)
         btn_cancel.set_halign(Gtk.Align.FILL)
         btn_cancel.connect("clicked", lambda b: self.hide_modal())
         btn_row.append(btn_cancel)
 
-        btn_reboot = Gtk.Button(label="Перезавантажити")
+        btn_reboot = Gtk.Button(label=self.tr("menu_reboot", "Restart"))
         btn_reboot.add_css_class("mac-modal-btn-primary")
         btn_reboot.set_hexpand(True)
         btn_reboot.set_halign(Gtk.Align.FILL)
@@ -3118,12 +3162,12 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         img_success.set_margin_top(6)
         box.append(img_success)
 
-        lbl_t = Gtk.Label(label="Встановлення macW1Y успішно завершено!")
+        lbl_t = Gtk.Label(label=self.tr("installer_reboot_title", "Installation Complete!"))
         lbl_t.add_css_class("mac-title-large")
         lbl_t.set_margin_top(6)
         box.append(lbl_t)
 
-        lbl_s = Gtk.Label(label="Для застосування всіх змін та активації середовища необхідно перезавантажити систему.")
+        lbl_s = Gtk.Label(label=self.tr("installer_reboot_sub", "macW1Y has been successfully installed on your computer. Restart to apply all changes."))
         lbl_s.add_css_class("mac-subtitle")
         lbl_s.set_wrap(True)
         lbl_s.set_halign(Gtk.Align.CENTER)
@@ -3139,7 +3183,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         btn_row.set_valign(Gtk.Align.END)
         btn_row.set_margin_bottom(6)
 
-        btn_reboot = Gtk.Button(label="Перезавантажити систему")
+        btn_reboot = Gtk.Button(label=self.tr("installer_reboot_now", "Restart Now"))
         btn_reboot.add_css_class("mac-btn-pill-primary")
         btn_reboot.connect("clicked", lambda b: self._on_system_reboot())
         btn_row.append(btn_reboot)
@@ -3237,32 +3281,32 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
     def _update_progress(self, pct, msg):
         stage_names = {
-            "stage1": "Встановлення системних залежностей...",
-            "stage2": "Встановлення шрифтів за замовчуванням...",
-            "stage3": "Встановлення тем macW1Y (GTK3, GTK4, Shell)...",
-            "stage4": "Встановлення macW1Y іконок та панелей...",
-            "stage5": "Встановлення звукової теми macW1Y...",
-            "stage6": "Встановлення шпалер Golden Gate...",
-            "stage7": "Налаштування розширень GNOME Shell...",
-            "stage8": "Інтеграція в меню Налаштування (Settings)...",
-            "stage9": "Налаштування жестів та тачпада...",
-            "stage10": "Конфігурація апаратного прискорення...",
-            "stage11": "Налаштування екрана блокування GDM...",
-            "stage12": "Встановлення Plymouth boot splash...",
-            "stage13": "Налаштування завантажувача GRUB...",
-            "finalizing": "Завершення налаштування системи...",
+            "stage1": self.tr("installer_stage1", "Installing system dependencies…"),
+            "stage2": self.tr("installer_stage2", "Installing default fonts…"),
+            "stage3": self.tr("installer_stage3", "Installing macW1Y themes (GTK3, GTK4, Shell)…"),
+            "stage4": self.tr("installer_stage4", "Installing macW1Y icons and panels…"),
+            "stage5": self.tr("installer_stage5", "Installing macW1Y sound theme…"),
+            "stage6": self.tr("installer_stage6", "Setting Golden Gate wallpaper…"),
+            "stage7": self.tr("installer_stage7", "Configuring GNOME Shell extensions…"),
+            "stage8": self.tr("installer_stage8", "Integrating settings menu…"),
+            "stage9": self.tr("installer_stage9", "Configuring touchpad gestures…"),
+            "stage10": self.tr("installer_stage10", "Configuring hardware acceleration…"),
+            "stage11": self.tr("installer_stage11", "Configuring GDM lockscreen…"),
+            "stage12": self.tr("installer_stage12", "Installing Plymouth boot splash…"),
+            "stage13": self.tr("installer_stage13", "Configuring GRUB bootloader…"),
+            "finalizing": self.tr("installer_stage_final", "Finalizing system setup…"),
         }
         display_msg = stage_names.get(msg, msg)
         self.prog_bar.set_fraction(pct)
         self.lbl_prog_status.set_text(display_msg)
         if pct < 0.2:
-            rem = "Залишилось приблизно 2 хв."
+            rem = self.tr("installer_time_2m", "About 2 minutes remaining…")
         elif pct < 0.5:
-            rem = "Залишилось приблизно 1 хв."
+            rem = self.tr("installer_time_1m", "About 1 minute remaining…")
         elif pct < 0.8:
-            rem = "Залишилось менше хвилини..."
+            rem = self.tr("installer_time_less_1m", "Less than a minute remaining…")
         else:
-            rem = "Майже завершено..."
+            rem = self.tr("installer_time_almost", "Almost finished…")
         self.lbl_prog_time.set_text(rem)
 
     def _parse_stage_line(self, line):
