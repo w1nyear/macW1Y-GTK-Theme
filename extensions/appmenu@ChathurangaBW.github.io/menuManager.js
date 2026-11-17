@@ -534,9 +534,13 @@ const TopLevelMenuButton = GObject.registerClass(
             this._titleWidget.opacity = 0;
         }
 
-        if (label === 'macW1Y' || label === 'system-logo' || label === 'system-logo' || label === 'system-logo' || false) {
-            const logoFile = Gio.File.new_for_path(
-                GLib.build_filenamev([EXTENSION_ICONS_DIR, 'system-logo.svg']));
+        if (label === 'apple-logo' || label === 'apple' || label === 'macW1Y' || label === 'system-logo') {
+            let logoFile = Gio.File.new_for_path(
+                GLib.build_filenamev([EXTENSION_ICONS_DIR, 'apple-logo.svg']));
+            if (!logoFile.query_exists(null)) {
+                logoFile = Gio.File.new_for_path(
+                    GLib.build_filenamev([EXTENSION_ICONS_DIR, 'system-logo.svg']));
+            }
             if (logoFile.query_exists(null)) {
                 this._titleWidget.set_icon_name(null);
                 this._titleWidget.set_gicon(Gio.FileIcon.new(logoFile));

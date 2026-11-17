@@ -10278,17 +10278,21 @@ window.mac-settings-window .sidebar-pane undershoot.top,
 window.mac-settings-window .sidebar-pane scrolledwindow undershoot.top,
 window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.top,
 window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow undershoot.top,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow > undershoot.top,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .mac-settings-sidebar toolbarview.undershoot-top scrolledwindow > undershoot.top,
+window.mac-settings-window .mac-settings-sidebar-list undershoot.top,
 window.nautilus-window .sidebar-pane undershoot.top,
 window.nautilus-window .sidebar-pane scrolledwindow undershoot.top,
 window.nautilus-window .sidebar-pane scrolledwindow > undershoot.top {
-    min-height: 38px;
+    min-height: 42px;
     background: linear-gradient(to bottom,
-        alpha(@window_bg_color, 0.88) 0%,
-        alpha(@window_bg_color, 0.70) 25%,
+        alpha(@window_bg_color, 0.90) 0%,
+        alpha(@window_bg_color, 0.75) 25%,
         alpha(@window_bg_color, 0.45) 50%,
-        alpha(@window_bg_color, 0.20) 75%,
+        alpha(@window_bg_color, 0.15) 75%,
         transparent 100%);
-    backdrop-filter: blur(10px);
     border: none;
     box-shadow: none;
 }
@@ -10306,6 +10310,11 @@ window.mac-settings-window .sidebar-pane undershoot.bottom,
 window.mac-settings-window .sidebar-pane scrolledwindow undershoot.bottom,
 window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.bottom,
 window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow > undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar-list undershoot.bottom,
 window.nautilus-window .sidebar-pane undershoot.bottom,
 window.nautilus-window .sidebar-pane scrolledwindow undershoot.bottom,
 window.nautilus-window .sidebar-pane scrolledwindow > undershoot.bottom {

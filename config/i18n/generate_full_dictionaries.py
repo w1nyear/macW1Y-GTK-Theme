@@ -94,7 +94,10 @@ def make_lang(
         "grub_menu_desc": "macW1Y-style boot menu", "diagnostics_title": "Integrity & Diagnostics",
         "diagnostics_desc": "System diagnostics", "diagnostics_status_ok": "All components OK",
         "maintenance_actions": "Maintenance Actions", "maintenance_desc": "Check or restore styling",
-        "run_diagnostics": "Run Diagnostics", "restore_ssot": "Restore SSOT", "close": "Close", "ok": "OK"
+        "run_diagnostics": "Run Diagnostics", "restore_ssot": "Restore SSOT", "close": "Close", "ok": "OK",
+        "widgets": "Widgets", "search": "Search", "system_account": "Account",
+        "storage_alert": "Storage Alert", "software_update_alert": "Software Update",
+        "ssot_restored_notification": "SSOT styling restored successfully"
     }
 
 # 1. Polish (pl)
@@ -485,31 +488,53 @@ for lang in remaining_languages:
         TRANSLATIONS[lang]["clipboard"] = "کلیپ‌بورد"
 
 # Specific styling overrides for major European languages
+if "uk" in TRANSLATIONS:
+    TRANSLATIONS["uk"]["widgets"] = "Віджети"
+    TRANSLATIONS["uk"]["search"] = "Пошук"
+    TRANSLATIONS["uk"]["system_account"] = "Акаунт"
+    TRANSLATIONS["uk"]["storage_alert"] = "Сповіщення про сховище"
+    TRANSLATIONS["uk"]["software_update_alert"] = "Оновлення ПЗ"
+    TRANSLATIONS["uk"]["ssot_restored_notification"] = "Оформлення успішно відновлено до еталону SSOT!"
 if "pl" in TRANSLATIONS:
     TRANSLATIONS["pl"]["mac_styling"] = "Stylizacja Mac"
     TRANSLATIONS["pl"]["styling_title"] = "Stylizacja Mac"
     TRANSLATIONS["pl"]["dock_edge_distance"] = "Odległość od krawędzi"
     TRANSLATIONS["pl"]["dock_edge_distance_desc"] = "Odległość doku od dolnej krawędzi ekranu (px)"
+    TRANSLATIONS["pl"]["widgets"] = "Widżety"
+    TRANSLATIONS["pl"]["search"] = "Szukaj"
+    TRANSLATIONS["pl"]["system_account"] = "Konto"
 if "de" in TRANSLATIONS:
     TRANSLATIONS["de"]["mac_styling"] = "Mac-Stil"
     TRANSLATIONS["de"]["styling_title"] = "Mac-Stil"
     TRANSLATIONS["de"]["dock_edge_distance"] = "Randabstand"
     TRANSLATIONS["de"]["dock_edge_distance_desc"] = "Abstand zwischen Dock und unterem Bildschirmrand (px)"
+    TRANSLATIONS["de"]["widgets"] = "Widgets"
+    TRANSLATIONS["de"]["search"] = "Suchen"
+    TRANSLATIONS["de"]["system_account"] = "Konto"
 if "fr" in TRANSLATIONS:
     TRANSLATIONS["fr"]["mac_styling"] = "Style Mac"
     TRANSLATIONS["fr"]["styling_title"] = "Style Mac"
     TRANSLATIONS["fr"]["dock_edge_distance"] = "Distance du bord"
     TRANSLATIONS["fr"]["dock_edge_distance_desc"] = "Distance entre le dock et le bas de l'écran (px)"
+    TRANSLATIONS["fr"]["widgets"] = "Widgets"
+    TRANSLATIONS["fr"]["search"] = "Recherche"
+    TRANSLATIONS["fr"]["system_account"] = "Compte"
 if "es" in TRANSLATIONS:
     TRANSLATIONS["es"]["mac_styling"] = "Estilo Mac"
     TRANSLATIONS["es"]["styling_title"] = "Estilo Mac"
     TRANSLATIONS["es"]["dock_edge_distance"] = "Distancia del borde"
     TRANSLATIONS["es"]["dock_edge_distance_desc"] = "Distancia entre el dock y el borde inferior de la pantalla (px)"
+    TRANSLATIONS["es"]["widgets"] = "Widgets"
+    TRANSLATIONS["es"]["search"] = "Buscar"
+    TRANSLATIONS["es"]["system_account"] = "Cuenta"
 if "it" in TRANSLATIONS:
     TRANSLATIONS["it"]["mac_styling"] = "Stile Mac"
     TRANSLATIONS["it"]["styling_title"] = "Stile Mac"
     TRANSLATIONS["it"]["dock_edge_distance"] = "Distanza dal bordo"
     TRANSLATIONS["it"]["dock_edge_distance_desc"] = "Distanza tra il dock e il bordo inferiore dello schermo (px)"
+    TRANSLATIONS["it"]["widgets"] = "Widgets"
+    TRANSLATIONS["it"]["search"] = "Cerca"
+    TRANSLATIONS["it"]["system_account"] = "Account"
 
 # Write translations_data.py
 out_file = os.path.join(os.path.dirname(__file__), "translations_data.py")

@@ -240,7 +240,13 @@ TRANSLATIONS["en"] = {
     "run_diagnostics": "Run Diagnostics",
     "restore_ssot": "Restore SSOT Baseline",
     "close": "Close",
-    "ok": "OK"
+    "ok": "OK",
+    "widgets": "Widgets",
+    "search": "Search",
+    "system_account": "Account",
+    "storage_alert": "Storage Alert",
+    "software_update_alert": "Software Update",
+    "ssot_restored_notification": "SSOT styling restored successfully"
 }
 
 TRANSLATIONS["uk"] = {
@@ -473,7 +479,13 @@ TRANSLATIONS["uk"] = {
     "run_diagnostics": "Запустити діагностику",
     "restore_ssot": "Відновити оформлення",
     "close": "Закрити",
-    "ok": "Гаразд"
+    "ok": "Гаразд",
+    "widgets": "Віджети",
+    "search": "Пошук",
+    "system_account": "Акаунт",
+    "storage_alert": "Сповіщення про сховище",
+    "software_update_alert": "Оновлення ПЗ",
+    "ssot_restored_notification": "Оформлення успішно відновлено до еталону SSOT!"
 }
 
 RTL_LANGUAGES = {"ar", "he", "fa"}
