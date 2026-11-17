@@ -532,14 +532,18 @@ export const MacSpotlightDialog = GObject.registerClass({
             this._onDestroy();
         });
 
-        this._setupStylingMonitor();
-
         this._glass = null;
+        this._glassResolutionKey = null;
+        this._cachedStyling = undefined;
+        this._cachedThemeParams = null;
+        this._interfaceSettings = null;
         this._initializingGlass = false;
         this._stageSignalId = 0;
         this._lastGeometryKey = null;
         this._cachedRecentFiles = null;
         this._cachedRecentFilesTime = 0;
+
+        this._setupStylingMonitor();
 
         try {
             this._systemModalSignalId = Main.layoutManager.connect('system-modal-opened', () => {
@@ -1808,15 +1812,46 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         }
     }
 
+    _invalidateGlassStyleCache() {
+        this._cachedThemeParams = null;
+        this._lastGeometryKey = null;
+        if (this._isOpen || this._isClosing)
+            this._requestGlassSync();
+    }
+
+    _setGlassResolution(mon) {
+        if (!_isGlassAlive(this._glass) || typeof this._glass.setResolution !== 'function' || !mon)
+            return;
+
+        const width = Math.max(1, Math.round(mon.width || 1));
+        const height = Math.max(1, Math.round(mon.height || 1));
+        const key = `${width}x${height}`;
+        if (this._glassResolutionKey === key)
+            return;
+
+        this._glass.setResolution(width, height);
+        this._glassResolutionKey = key;
+    }
+
     _getThemeParams() {
+        if (this._cachedThemeParams)
+            return this._cachedThemeParams;
+
         let isDark = true;
         try {
-            const iface = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
-            const scheme = iface.get_string('color-scheme');
+            if (!this._interfaceSettings) {
+                this._interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+                this._interfaceSettings.connectObject(
+                    'changed::color-scheme', () => this._invalidateGlassStyleCache(),
+                    'changed::gtk-theme', () => this._invalidateGlassStyleCache(),
+                    this
+                );
+            }
+            const scheme = this._interfaceSettings.get_string('color-scheme');
             if (scheme === 'prefer-dark') isDark = true;
             else if (scheme === 'prefer-light') isDark = false;
             else {
-                const gtk = iface.get_string('gtk-theme') || '';
+                const gtk = this._interfaceSettings.get_string('gtk-theme') || '';
                 isDark = gtk.toLowerCase().includes('dark');
             }
         } catch (_) {
@@ -1827,20 +1862,32 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         const tintB = isDark ? 0.18 : 1.0;
         const tintVal = isDark ? 0.16 : 1.0;
         const tintStrength = isDark ? 0.12 : 0.08;
-        return { isDark, tintR, tintG, tintB, tintVal, tintStrength };
+        this._cachedThemeParams = { isDark, tintR, tintG, tintB, tintVal, tintStrength };
+        return this._cachedThemeParams;
     }
 
     _readStyling() {
+        if (this._cachedStyling !== undefined)
+            return this._cachedStyling;
+
         try {
             const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
             const confFile = Gio.File.new_for_path(confPath);
-            if (!confFile.query_exists(null)) return null;
+            if (!confFile.query_exists(null)) {
+                this._cachedStyling = null;
+                return this._cachedStyling;
+            }
             const [ok, bytes] = confFile.load_contents(null);
-            if (!ok) return null;
+            if (!ok) {
+                this._cachedStyling = null;
+                return this._cachedStyling;
+            }
             let text = new TextDecoder('utf-8').decode(bytes);
-            return JSON.parse(text);
+            this._cachedStyling = JSON.parse(text);
+            return this._cachedStyling;
         } catch (_) {
-            return null;
+            this._cachedStyling = null;
+            return this._cachedStyling;
         }
     }
 
@@ -1852,7 +1899,10 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             this._stylingMonitor.connect('changed', (_m, _f, _of, eventType) => {
                 if (eventType === Gio.FileMonitorEvent.CHANGES_DONE_HINT ||
                     eventType === Gio.FileMonitorEvent.CHANGED ||
-                    eventType === Gio.FileMonitorEvent.CREATED) {
+                    eventType === Gio.FileMonitorEvent.CREATED ||
+                    eventType === Gio.FileMonitorEvent.DELETED ||
+                    eventType === Gio.FileMonitorEvent.MOVED_OUT) {
+                    this._cachedStyling = undefined;
                     this._lastGeometryKey = null;
                     if (this._glass) {
                         this._applyGlassUniforms();
@@ -1890,9 +1940,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         const specular = (typeof styling.liquid_specular === 'number') ? (styling.liquid_specular / 100.0 * 0.40) : 0.15;
 
         const mon = Main.layoutManager.primaryMonitor;
-        if (mon && typeof this._glass.setResolution === 'function') {
-            this._glass.setResolution(mon.width, mon.height);
-        }
+        this._setGlassResolution(mon);
 
         this._glass.setIsDock(false);
         this._glass.setCornerSmoothingEnabled(0.0);
@@ -1957,11 +2005,12 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 owner: 'spotlight',
                 excludeActors: [this, this._box, this._backdrop],
             });
+            this._glassResolutionKey = null;
             const mon = Main.layoutManager.primaryMonitor;
             if (mon) {
                 this._glass.set_position(mon.x, mon.y);
                 this._glass.set_size(mon.width, mon.height);
-                this._glass.setResolution(mon.width, mon.height);
+                this._setGlassResolution(mon);
             }
             this._glass.addExclusion(this);
             this._glass.addExclusion(this._box);
@@ -2212,7 +2261,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             if (this._glass.width !== mon.width || this._glass.height !== mon.height) {
                 this._glass.set_size(mon.width, mon.height);
             }
-            this._glass.setResolution(mon.width, mon.height);
+            this._setGlassResolution(mon);
 
             if (this._box && this._box._isUsingFallback) {
                 this._box.set_style(SPOTLIGHT_GLASS_STYLE);
@@ -2431,6 +2480,12 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         }
         if (isSpotlightBlocked()) return;
         if (Main.overview?.visible) return;
+        try {
+            const component = initialMode === 'apps'
+                ? 'launchpad'
+                : (initialMode === 'search' ? 'spotlight' : `spotlight-${initialMode}`);
+            globalThis.MacAnimationCache?.beginUiCapture?.(component);
+        } catch (_) {}
         if (typeof globalThis._macCloseAllCenters === 'function') {
             globalThis._macCloseAllCenters('spotlight');
         } else {
@@ -2626,18 +2681,20 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 this._glass.opacity = 0;
                 this._glass.set_position(mon.x, mon.y);
                 this._glass.set_size(mon.width, mon.height);
-                this._glass.setResolution(mon.width, mon.height);
+                this._setGlassResolution(mon);
                 this._applyGlassUniforms();
                 this._lastGeometryKey = null;
                 this._syncGlass();
                 this._glass._backdropLocked = false;
             } catch (err) {
                 this._glass = null;
+                this._glassResolutionKey = null;
                 this._initGlassPromise = this._initGlass();
                 Main.layoutManager.uiGroup.set_child_above_sibling(this, null);
             }
         } else {
             this._glass = null;
+            this._glassResolutionKey = null;
             this._initGlassPromise = this._initGlass();
             Main.layoutManager.uiGroup.set_child_above_sibling(this, null);
             if (this._initGlassPromise) {
@@ -2651,7 +2708,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                     this._glass.show();
                     this._glass.set_position(mon.x, mon.y);
                     this._glass.set_size(mon.width, mon.height);
-                    this._glass.setResolution(mon.width, mon.height);
+                    this._setGlassResolution(mon);
                     this._applyGlassUniforms();
                     this._lastGeometryKey = null;
                     this._syncGlass();
@@ -2716,6 +2773,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
 
     close(immediate = false) {
         if (!this._isOpen && !this._isClosing) return;
+        try { globalThis.MacAnimationCache?.beginUiCapture?.('spotlight-close'); } catch (_) {}
         this._isOpen = false;
 
         _saveMorphFrom('spotlight', this);
@@ -4198,6 +4256,10 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
 
     _onDestroy() {
         this._cancelSyncLoop();
+        try { this._interfaceSettings?.disconnectObject(this); } catch (_) {}
+        this._interfaceSettings = null;
+        this._cachedStyling = undefined;
+        this._cachedThemeParams = null;
         if (Main.overview) {
             try { Main.overview.disconnectObject(this); } catch (_) {}
         }
@@ -4224,6 +4286,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         if (this._glass) {
             try { this._glass.destroy(); } catch (_) {}
             this._glass = null;
+            this._glassResolutionKey = null;
         }
         if (global.display) {
             try { global.display.disconnectObject(this); } catch (_) {}

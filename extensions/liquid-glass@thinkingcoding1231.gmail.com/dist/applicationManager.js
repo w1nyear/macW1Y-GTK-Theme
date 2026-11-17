@@ -247,6 +247,9 @@ export class ApplicationManager {
         this._states = new Map();
         this._settingsSignals = [];
         this._frameSyncId = 0;
+        this._frameHeartbeatId = 0;
+        this._idleFrameCount = 0;
+        this._frameTicking = false;
         this._windowCreatedId = 0;
         this._mapId = 0;
         this._restackedId = 0;
@@ -666,6 +669,10 @@ export class ApplicationManager {
         this._startFrameSync();
     }
     _removeAllEffects() {
+        if (this._frameHeartbeatId) {
+            GLib.source_remove(this._frameHeartbeatId);
+            this._frameHeartbeatId = 0;
+        }
         if (this._frameSyncId) {
             if (global.compositor?.get_laters) {
                 global.compositor.get_laters().remove(this._frameSyncId);
@@ -814,8 +821,22 @@ export class ApplicationManager {
 
 
     _startFrameSync() {
+        this._idleFrameCount = 0;
         if (this._frameSyncId === 0)
             this._frameTick();
+    }
+    _scheduleFrameHeartbeat() {
+        if (this._frameHeartbeatId || this._torndown)
+            return;
+
+        this._frameHeartbeatId = GLib.timeout_add(GLib.PRIORITY_LOW, 1500, () => {
+            this._frameHeartbeatId = 0;
+            if (!this._torndown && this._states.size > 0) {
+                this._startFrameSync();
+                this._scheduleFrameHeartbeat();
+            }
+            return GLib.SOURCE_REMOVE;
+        });
     }
     _rebuildAllClones() {
         if (this._rebuildQueued)
@@ -1128,12 +1149,16 @@ export class ApplicationManager {
         };
         this._states.set(windowActor, state);
         this._startFrameSync();
+        this._scheduleFrameHeartbeat();
         this._rebuildWindowClones(state);
         this._syncState(state);
 
         state.signals.push({
             obj: windowActor,
-            id: windowActor.connect('notify::allocation', () => { state.isDirty = true; })
+            id: windowActor.connect('notify::allocation', () => {
+                state.isDirty = true;
+                this._startFrameSync();
+            })
         });
 
 
@@ -1169,6 +1194,7 @@ export class ApplicationManager {
             id: windowActor.connect('notify::mapped', () => {
                 if (!isActorValid(windowActor) || !windowActor.mapped)
                     return;
+                this._startFrameSync();
                 this._forceGlassReallocation(state);
             })
         });
@@ -1183,6 +1209,7 @@ export class ApplicationManager {
                     this._rebuildWindowClones(state);
 
                     state.isDirty = true;
+                    this._startFrameSync();
                 })
             });
             state.signals.push({
@@ -1190,6 +1217,7 @@ export class ApplicationManager {
                 id: metaWin.connect('position-changed', () => {
 
                     state.isDirty = true;
+                    this._startFrameSync();
                 })
             });
         }
@@ -1927,10 +1955,13 @@ export class ApplicationManager {
                 continue;
             try {
                 const id = src.connect('damaged', () => {
+                    state.isDirty = true;
                     state.effect?.markBackdropDirty?.();
                     const bg = state.bgActor;
-                    if (bg && isActorValid(bg) && bg.mapped && bg.visible)
+                    if (bg && isActorValid(bg) && bg.mapped && bg.visible) {
                         bg.queue_redraw();
+                        this._startFrameSync();
+                    }
                 });
                 hooks.set(src, id);
             }
@@ -2128,10 +2159,18 @@ export class ApplicationManager {
         return !rectsIntersect(x - m, y - m, w + m * 2, h + m * 2, cullRect);
     }
     _frameTick() {
+        if (this._frameTicking)
+            return;
 
-
-
-
+        this._frameTicking = true;
+        try {
+            this._runFrameTick();
+        } finally {
+            this._frameTicking = false;
+        }
+    }
+    _runFrameTick() {
+        let needsAnotherFrame = false;
         if (this._torndown)
             return;
         if (!this._states || this._states.size === 0) {
@@ -2141,7 +2180,8 @@ export class ApplicationManager {
 
 
         if (isFrameSyncFrozen()) {
-            this._frameSyncId = global.compositor.get_laters().add(Meta.LaterType.BEFORE_REDRAW, () => { this._frameTick(); return false; });
+            this._frameSyncId = 0;
+            this._scheduleFrameHeartbeat();
             return;
         }
         for (let state of this._states.values()) {
@@ -2235,7 +2275,9 @@ export class ApplicationManager {
 
 
 
-                if (glassRefreshDue(state.bgActor) || state.isDirty) {
+                const refreshDue = glassRefreshDue(state.bgActor);
+                if (refreshDue || state.isDirty) {
+                    needsAnotherFrame = true;
                     state.isDirty = false;
                     this._syncState(state);
                     glassRefreshDone(state.bgActor);
@@ -2249,10 +2291,15 @@ export class ApplicationManager {
         }
         if (this._debugFocusLogFrames > 0)
             this._debugFocusLogFrames--;
-        this._frameSyncId = global.compositor.get_laters().add(Meta.LaterType.BEFORE_REDRAW, () => {
-            this._frameTick();
-            return false;
-        });
+        this._idleFrameCount = needsAnotherFrame ? 0 : this._idleFrameCount + 1;
+        if (this._idleFrameCount < 8 && this._states.size > 0) {
+            this._frameSyncId = global.compositor.get_laters().add(Meta.LaterType.BEFORE_REDRAW, () => {
+                this._frameTick();
+                return false;
+            });
+        } else {
+            this._frameSyncId = 0;
+        }
     }
 
 

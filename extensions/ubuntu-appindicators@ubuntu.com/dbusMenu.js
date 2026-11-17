@@ -954,34 +954,36 @@ export class Client extends Signals.EventEmitter {
     }
 
     _onRootChildAdded(dbusItem, child, position) {
+        const pendingItems = this._itemsBeingAdded;
+        const rootMenu = this._rootMenu;
+        if (!pendingItems || !rootMenu)
+            return;
 
         const basePriority = this.isOpen ? GLib.PRIORITY_DEFAULT : GLib.PRIORITY_LOW;
         const idlePromise = new PromiseUtils.IdlePromise(
-            basePriority + this._itemsBeingAdded.size, this.cancellable);
-        this._itemsBeingAdded.add(child);
+            basePriority + pendingItems.size, this.cancellable);
+        pendingItems.add(child);
 
         idlePromise.then(() => {
-            if (!this._itemsBeingAdded.has(child))
+            if (!pendingItems.has(child) || this._rootMenu !== rootMenu)
                 return;
 
-            this._rootMenu.addMenuItem(
-                MenuItemFactory.createItem(this, child), position);
+            rootMenu.addMenuItem(MenuItemFactory.createItem(this, child), position);
         }).catch(e => {
             if (!e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
                 logError(e);
-        }).finally(() => this._itemsBeingAdded.delete(child));
+        }).finally(() => pendingItems.delete(child));
     }
 
     _onRootChildRemoved(dbusItem, child) {
-
-
-        const item = this._rootMenu._getMenuItems().find(it =>
+        const rootMenu = this._rootMenu;
+        const item = rootMenu?._getMenuItems?.().find(it =>
             it._dbusItem === child);
 
         if (item)
             item.destroy();
         else
-            this._itemsBeingAdded.delete(child);
+            this._itemsBeingAdded?.delete(child);
     }
 
     _onRootChildMoved(dbusItem, child, oldpos, newpos) {
