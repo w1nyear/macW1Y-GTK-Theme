@@ -119,6 +119,7 @@ import Cogl from 'gi://Cogl';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import { getSharedGlassEngine, rectsIntersect, bucketSize } from './rendering/sharedGlassEngine.js';
 import { setBmsMode, BMS_MODE, computeCaptureLayout, setFrameSyncFrozen, isFrameSyncFrozen, setDiffWritesEnabled, isDiffWritesEnabled, setCaptureClipEnabled, isCaptureClipEnabled, setCloneCullEnabled, isCloneCullEnabled, setCullSiteEnabled, isCullSiteEnabled, setAdaptiveColorMode, getAdaptiveColorMode, setNestedGlassFix, getNestedGlassFix, setFocusDebugEnabled, isFocusDebugEnabled, setBackgroundMirrorEnabled, isBackgroundMirrorEnabled, setCullOptOutEnabled, isCullOptOutEnabled, setWindowActorRescueMode, getWindowActorRescueMode } from './utils.js?v=fix1';
 // ─── Looking Glass diagnostics ───────────────────────────────────────────────
 //
@@ -901,6 +902,9 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
         this._upTextures = [];
         this._upFbos = [];
         this._blurResultTex = null;
+        this._isDragging = false;
+        this.useFallbackTint = false;
+        this._fallbackTintPipeline = null;
         this._downsamplePipeline = null;
         this._upsamplePipeline = null;
         this._gaussianHPipeline = null;
@@ -1128,49 +1132,26 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
      * objects. Call only once.
      */
     _initPipelines(ctx) {
-        // ── Downsample pipeline ──────────────────────────────────────────────────
-        this._downsamplePipeline = Cogl.Pipeline.new(ctx);
-        this._configureSamplerLayer(this._downsamplePipeline, 0);
+        const engine = getSharedGlassEngine();
+        this._fallbackTintPipeline = engine.pipelines.getFallbackTintPipeline(ctx);
+
         if (this._downsampleSource) {
-            const downSnippet = this._splitShader(this._downsampleSource);
-            const s = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, downSnippet.decl, null);
-            s.set_replace(downSnippet.body);
-            this._downsamplePipeline.add_snippet(s);
+            this._downsamplePipeline = engine.pipelines.getDownsamplePipeline(ctx, this._downsampleSource);
+        } else {
+            this._downsamplePipeline = Cogl.Pipeline.new(ctx);
+            this._configureSamplerLayer(this._downsamplePipeline, 0);
         }
-        // ── Upsample pipeline ────────────────────────────────────────────────────
-        this._upsamplePipeline = Cogl.Pipeline.new(ctx);
-        this._configureSamplerLayer(this._upsamplePipeline, 0);
+
         if (this._upsampleSource) {
-            const upSnippet = this._splitShader(this._upsampleSource);
-            const s = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, upSnippet.decl, null);
-            s.set_replace(upSnippet.body);
-            this._upsamplePipeline.add_snippet(s);
+            this._upsamplePipeline = engine.pipelines.getUpsamplePipeline(ctx, this._upsampleSource);
+        } else {
+            this._upsamplePipeline = Cogl.Pipeline.new(ctx);
+            this._configureSamplerLayer(this._upsamplePipeline, 0);
         }
-        // ── Passthrough pipeline ─────────────────────────────────────────────────
-        // Deliberately has NO fragment snippet: Cogl's default processing for a
-        // pipeline with one layer is a single texture fetch modulated by the
-        // pipeline color (opaque white by default), i.e. exactly a 1-tap copy.
-        // Used by the crop pass and the Gaussian pre-pass; see the field comment.
+
         this._passthroughPipeline = Cogl.Pipeline.new(ctx);
         this._configureSamplerLayer(this._passthroughPipeline, 0);
-        // ── 4x4 box downsample pipeline ─────────────────────────────────────────
-        // [PERF] The correct minification filter for a 4x reduction, used as the
-        // first blur pass when glass-blur-downscale is 4.
-        //
-        // Why not the passthrough (which IS correct at 2x): a destination texel
-        // covers a 4x4 source block, and one bilinear fetch at its centre averages
-        // only the inner 2x2 — it point-samples one texel in four and aliases hard
-        // on text and on anything moving.
-        //
-        // Why not downsample.frag: its kernel is centre*4 + four corners, all /8,
-        // which leaves the inner 2x2 weighted five times as heavily as the outer
-        // ring — better than one tap, still not flat.
-        //
-        // These four taps land exactly on source texel corners (the destination
-        // texel centre maps to source position 4i+2, and +-1 from there is 4i+1 /
-        // 4i+3), so each bilinear fetch averages one 2x2 quadrant and the four
-        // quadrants tile the 4x4 block with equal weight — a true box filter, in
-        // four fetches instead of five.
+
         this._boxDownPipeline = Cogl.Pipeline.new(ctx);
         this._configureSamplerLayer(this._boxDownPipeline, 0);
         {
@@ -1183,22 +1164,17 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
                 'cogl_color_out = c * 0.25;\n');
             this._boxDownPipeline.add_snippet(boxSnip);
         }
-        // ── Gaussian H/V pipelines ───────────────────────────────────────────────
-        // Not precompiled here: the separable Gaussian blur builds its shader
-        // source dynamically from the kernel computed in setBlurRadius(), and
-        // _compileGaussianPipelines() compiles it lazily inside
-        // vfunc_paint_target (see _computeGaussianKernel / _buildGaussianSnippet).
-        // ── Composite pipeline (glass.frag) ──────────────────────────────────────
-        this._compositePipeline = Cogl.Pipeline.new(ctx);
-        this._configureSamplerLayer(this._compositePipeline, 0);
-        // Standard premultiplied-alpha blending, equivalent to ShaderEffect's default:
-        // "src.rgb + dst.rgb * (1 - src.a)"
-        this._compositePipeline.set_blend('RGBA = ADD(SRC_COLOR, DST_COLOR * (1 - SRC_COLOR[A]))');
-        this._loadCompositeShader();
-        // Apply any uniforms that were buffered before the pipeline existed.
-        // The pipeline is brand new, so nothing has been written to it yet — drop
-        // the "already applied" bookkeeping so _applyUniform() cannot skip a
-        // value on the belief that it is still in there.
+
+        if (this._glassSource) {
+            this._compositePipeline = engine.pipelines.getCompositePipeline(ctx, this._glassSource, (src) => this._splitShader(src));
+        }
+        if (!this._compositePipeline) {
+            this._compositePipeline = Cogl.Pipeline.new(ctx);
+            this._configureSamplerLayer(this._compositePipeline, 0);
+            this._compositePipeline.set_blend('RGBA = ADD(SRC_COLOR, DST_COLOR * (1 - SRC_COLOR[A]))');
+            this._loadCompositeShader();
+        }
+
         this._appliedUniforms.clear();
         this._appliedUniformArrays.clear();
         this._applyPendingUniforms();
@@ -1337,45 +1313,51 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
      * pipeline reference (we never call run_dispose(), see _destroyTexturePool).
      */
     _compileGaussianPipelines(ctx, kernel) {
-        this._gaussianHPipeline = Cogl.Pipeline.new(ctx);
-        this._configureSamplerLayer(this._gaussianHPipeline, 0);
-        const hSnippet = this._buildGaussianSnippet(kernel, 'h');
-        const hSnip = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, hSnippet.decl, null);
-        hSnip.set_replace(hSnippet.body);
-        this._gaussianHPipeline.add_snippet(hSnip);
-        this._gaussianVPipeline = Cogl.Pipeline.new(ctx);
-        this._configureSamplerLayer(this._gaussianVPipeline, 0);
-        const vSnippet = this._buildGaussianSnippet(kernel, 'v');
-        const vSnip = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, vSnippet.decl, null);
-        vSnip.set_replace(vSnippet.body);
-        this._gaussianVPipeline.add_snippet(vSnip);
-        this._gaussianKernel = kernel;
+        const engine = getSharedGlassEngine();
+        const pipelines = engine.pipelines.getGaussianPipelines(
+            ctx,
+            this._gaussianFetchPairs,
+            (k, dir) => this._buildGaussianSnippet(k, dir),
+            (sigma, pairs) => this._computeGaussianKernel(sigma, pairs)
+        );
+        if (pipelines) {
+            this._gaussianHPipeline = pipelines.h;
+            this._gaussianVPipeline = pipelines.v;
+            this._gaussianKernel = pipelines.kernel;
+        } else {
+            this._gaussianHPipeline = Cogl.Pipeline.new(ctx);
+            this._configureSamplerLayer(this._gaussianHPipeline, 0);
+            const hSnippet = this._buildGaussianSnippet(kernel, 'h');
+            const hSnip = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, hSnippet.decl, null);
+            hSnip.set_replace(hSnippet.body);
+            this._gaussianHPipeline.add_snippet(hSnip);
+            this._gaussianVPipeline = Cogl.Pipeline.new(ctx);
+            this._configureSamplerLayer(this._gaussianVPipeline, 0);
+            const vSnippet = this._buildGaussianSnippet(kernel, 'v');
+            const vSnip = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, vSnippet.decl, null);
+            vSnip.set_replace(vSnippet.body);
+            this._gaussianVPipeline.add_snippet(vSnip);
+            this._gaussianKernel = kernel;
+        }
         this._gaussianPipelineDirty = false;
         this._pendingGaussianKernel = null;
     }
     // ─── Texture pool management ─────────────────────────────────────────────────
     /**
      * Allocates the blur texture + FBO pairs for resolution (w, h).
-     *
-     * Index-to-resolution mapping (with glass-blur-downscale at its default 2):
-     *   [0]: w>>1 × h>>1  (= w/2)
-     *   [1]: w>>2 × h>>2  (= w/4)
-     *   ...
-     *   [PASS_COUNT-1]: w >> PASS_COUNT
-     *
-     * [PERF] glass-blur-downscale = 4 shifts the whole ladder down one more
-     * step, so level 0 is w/4 × h/4 — a quarter of the fill and a quarter of
-     * the texture memory of the default, at the cost of a visibly coarser
-     * blur. See _setGaussianBlurRadius(), which converts the radius into the
-     * matching texel space, and _runGaussianBlur()'s pre-pass, which switches
-     * filter to keep a 4x downsample from aliasing.
+     * Quantized with bucketSize to prevent redundant allocations during movement/resize.
      */
     _buildTexturePool(ctx, w, h) {
+        const bw = bucketSize(w, 32);
+        const bh = bucketSize(h, 32);
+        if (this._poolWidth === bw && this._poolHeight === bh && this._blurTextures.length === this.PASS_COUNT) {
+            return;
+        }
         this._destroyTexturePool();
         this._destroyCropTarget();
         const shift = this._blurDownscale >= 4 ? 2 : (this._blurDownscale === 2 ? 1 : 0);
-        let pw = Math.max(w >> shift, 1);
-        let ph = Math.max(h >> shift, 1);
+        let pw = Math.max(bw >> shift, 1);
+        let ph = Math.max(bh >> shift, 1);
         for (let i = 0; i < this.PASS_COUNT; i++) {
             try {
                 // Main buffer, shared by Dual Kawase and Gaussian.
@@ -1402,8 +1384,8 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
             pw = Math.max(pw >> 1, 1);
             ph = Math.max(ph >> 1, 1);
         }
-        this._poolWidth = w;
-        this._poolHeight = h;
+        this._poolWidth = bw;
+        this._poolHeight = bh;
     }
     /**
      * Runs the Dual Kawase blur.
@@ -1735,6 +1717,24 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
             if (Number.isFinite(ah) && ah > 0)
                 allocH = Math.round(ah);
         }
+        const engine = getSharedGlassEngine();
+        const isTopFs = (this._owner === 'osd' || this._owner === 'dialog' || this._owner === 'modal-dialog') &&
+                        engine.damageTracker.isTopWindowFullscreen();
+        if (this.useFallbackTint || isTopFs) {
+            const compFb = paintContext.get_framebuffer();
+            const fallbackP = this._fallbackTintPipeline || engine.pipelines.getFallbackTintPipeline(this._getCoglContext());
+            if (fallbackP && compFb) {
+                compFb.draw_rectangle(fallbackP, 0, 0, allocW, allocH);
+                engine.diagnostics.recordPaint({
+                    isBlur: false,
+                    durationMs: 0.1,
+                    cacheHit: true,
+                    isDirty: false,
+                    skipped: true
+                });
+                return;
+            }
+        }
         // ── Handle the capture's padding ────────────────────────────────────────
         //
         // get_texture() is sized to the actor's PAINT BOX, not its allocation, so
@@ -1812,17 +1812,22 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
         const timeSinceLastBlur = now - (this._lastBlurTimeUs || 0);
         const isActivelyTransforming = (now - (this._lastGeometryChangeUs || 0)) < 150000;
 
-        // Dynamic Adaptive Rate (macW1Y ProMotion logic):
-        // 1. Active transformation / drag / resize: up to 120 FPS (8,333 μs) for silky-smooth motion.
-        // 2. Resting / static geometry: throttle blur updates to 30 FPS (33,333 μs).
-        //    (Blurred background updates at 30 FPS save 75% GPU without visible degradation).
-        const minBlurIntervalUs = isActivelyTransforming ? 8333 : 33333;
+        // Dynamic Adaptive Rate (macW1Y ProMotion & Shared Engine Scheduler):
+        let minBlurIntervalUs = 33333; // 30 FPS default for static background
+        if (this._isDragging) {
+            minBlurIntervalUs = 50000; // 20 FPS for blur updates while dragging (geometry moves at 60 FPS)
+        } else if (isActivelyTransforming) {
+            minBlurIntervalUs = 16666; // 60 FPS capped for window/popup animations
+        }
+        if (engine.scheduler.getMode() === 'HIGH_LOAD') {
+            minBlurIntervalUs = 50000; // Throttle to 20 FPS under high load
+        }
 
         const canReuseBlur = this.PASS_COUNT > 0 &&
             this._blurResultTex !== null &&
             rectUnchanged &&
-            this._poolWidth === blurW &&
-            this._poolHeight === blurH;
+            this._poolWidth === bucketSize(blurW, 32) &&
+            this._poolHeight === bucketSize(blurH, 32);
 
         // Dirty tracking: only dirty if backdrop was explicitly marked dirty
         const isDirty = (this._backdropDirty !== false);
@@ -1885,7 +1890,7 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
         // Based on the cropped ("true") resolution — using the padded size here
         // would cause rounding error from bit-shifting (w >> 1) an odd value to
         // accumulate across passes, misaligning the sharp and blurred layers.
-        if (!reuseBlur && (blurW !== this._poolWidth || blurH !== this._poolHeight)) {
+        if (!reuseBlur && (bucketSize(blurW, 32) !== this._poolWidth || bucketSize(blurH, 32) !== this._poolHeight)) {
             try {
                 const ctx = this._getCoglContext();
                 if (!ctx)
@@ -2142,6 +2147,15 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
                 },
             };
         }
+        const paintElapsedMs = (GLib.get_monotonic_time() - now) / 1000;
+        engine.scheduler.reportFrameTime(paintElapsedMs);
+        engine.diagnostics.recordPaint({
+            isBlur: !reuseBlur,
+            durationMs: paintElapsedMs,
+            cacheHit: reuseBlur,
+            isDirty,
+            skipped: false
+        });
     }
     // ─── Crop pass ───────────────────────────────────────────────────────────
     //
@@ -3201,6 +3215,17 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
      * vfunc_paint_target based on get_texture()'s size, so no extra work is
      * needed here.
      */
+    setDragging(isDragging) {
+        this._isDragging = !!isDragging;
+        if (!isDragging) {
+            this.markBackdropDirty();
+            this.queue_repaint();
+        }
+    }
+    setFallbackMode(useFallback) {
+        this.useFallbackTint = !!useFallback;
+        this.queue_repaint();
+    }
     setResolution(width, height) {
         const curW = this._pendingUniforms.get('resolution_x') ?? 0;
         const curH = this._pendingUniforms.get('resolution_y') ?? 0;

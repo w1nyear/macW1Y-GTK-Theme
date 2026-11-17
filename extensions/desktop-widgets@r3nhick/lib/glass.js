@@ -65,6 +65,9 @@ if (!globalThis[GLASS_CLASS_KEY]) {
                 this._height = 1;
                 this._radius = 16;
                 this._params = null;
+                this._isDragging = false;
+                this._lastDragBlurTime = 0;
+                this._glassId = `dw-glass-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 
                 this._wpClone = null;
                 this._effect = null;
@@ -111,6 +114,16 @@ if (!globalThis[GLASS_CLASS_KEY]) {
                     this._effect.setShadowIntensity(0.0);
                     this._effect.setShadowMaxRadius(0.0);
                     this.add_effect(this._effect);
+
+                    if (globalThis._macSharedGlassEngine?.damageTracker) {
+                        globalThis._macSharedGlassEngine.damageTracker.registerElement(this._glassId, {
+                            actor: this,
+                            getRect: () => [this._screenX, this._screenY, this._width, this._height],
+                            onDirty: (_reason) => {
+                                this._syncWallpaper();
+                            },
+                        });
+                    }
                 } catch (err) {
                     console.warn('[desktop-widgets] Failed to initialize LiquidGlass pipeline:', err);
                 }
@@ -126,23 +139,55 @@ if (!globalThis[GLASS_CLASS_KEY]) {
                 }
             }
 
+            setDragging(isDragging) {
+                if (this._isDragging === isDragging) return;
+                this._isDragging = isDragging;
+                if (this._effect && typeof this._effect.setDragging === 'function') {
+                    this._effect.setDragging(isDragging);
+                }
+                if (!isDragging) {
+                    this._lastDragBlurTime = 0;
+                    if (this._effect) {
+                        this._effect.markBackdropDirty();
+                        this.queue_redraw();
+                    }
+                }
+            }
+
             setGeometry(x, y, width, height) {
+                const w = Math.max(1, width);
+                const h = Math.max(1, height);
+                const sizeChanged = (this._width !== w) || (this._height !== h);
+
                 this._screenX = x;
                 this._screenY = y;
-                this._width = Math.max(1, width);
-                this._height = Math.max(1, height);
+                this._width = w;
+                this._height = h;
 
-                this.set_size(this._width, this._height);
+                if (sizeChanged) {
+                    this.set_size(this._width, this._height);
+                }
 
                 if (this._wpClone) {
                     this._wpClone.set_position(-x, -y);
                 }
 
                 if (this._effect) {
-                    this._effect.setResolution(this._width, this._height);
-                    this._effect.setGlassGeometry(0, 0, this._width, this._height);
-                    this._effect.markBackdropDirty();
-                    this.queue_redraw();
+                    if (sizeChanged) {
+                        this._effect.setResolution(this._width, this._height);
+                        this._effect.setGlassGeometry(0, 0, this._width, this._height);
+                    }
+                    if (this._isDragging) {
+                        const now = GLib.get_monotonic_time();
+                        if (!this._lastDragBlurTime || (now - this._lastDragBlurTime) >= 50000) { // 50ms = 20 FPS throttle
+                            this._lastDragBlurTime = now;
+                            this._effect.markBackdropDirty();
+                            this.queue_redraw();
+                        }
+                    } else {
+                        this._effect.markBackdropDirty();
+                        this.queue_redraw();
+                    }
                 }
             }
 
@@ -191,6 +236,12 @@ if (!globalThis[GLASS_CLASS_KEY]) {
 
             _cleanup() {
                 Main.layoutManager.disconnectObject(this);
+                if (globalThis._macSharedGlassEngine?.damageTracker && this._glassId) {
+                    try {
+                        globalThis._macSharedGlassEngine.damageTracker.unregisterElement(this._glassId);
+                    } catch (_) {}
+                    this._glassId = null;
+                }
                 if (this._wpClone) {
                     try { this._wpClone.destroy(); } catch (_) {}
                     this._wpClone = null;

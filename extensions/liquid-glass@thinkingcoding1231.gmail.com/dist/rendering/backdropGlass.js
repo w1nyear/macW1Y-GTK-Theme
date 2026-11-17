@@ -212,6 +212,23 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
             }
         };
         addGlassWakeListener?.(this._wakeUnsub);
+
+        this._engineId = `bdg-${owner}-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+        globalThis._macSharedGlassEngine?.damageTracker?.registerElement(this._engineId, {
+            actor: this,
+            getRect: () => {
+                if (this._glassRect) return this._glassRect;
+                const [x, y] = this.get_transformed_position?.() ?? [this.x, this.y];
+                const [w, h] = this.get_transformed_size?.() ?? [this.width, this.height];
+                return [x, y, w, h];
+            },
+            onDirty: () => {
+                if (this._cleanedUp || !this.visible) return;
+                this._effect?.markBackdropDirty?.();
+                this.wakeFrameSync?.();
+            }
+        });
+
         this._startTick();
     }
 
@@ -385,7 +402,7 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
             } else {
                 this._idleCount = (this._idleCount || 0) + 1;
             }
-            if (this._idleCount < 8) {
+            if (this._idleCount < 2) {
                 this._frameSyncId = global.compositor
                     .get_laters()
                     .add(Meta.LaterType.BEFORE_REDRAW, tick);
@@ -409,6 +426,10 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
         const monW = Math.max(1, mon?.width ?? 1920);
         const monH = Math.max(1, mon?.height ?? 1080);
         this.setResolution(monW, monH);
+        const isFs = globalThis._macSharedGlassEngine?.damageTracker?.isTopWindowFullscreen?.() || false;
+        if (this._effect) {
+            this._effect.useFallbackTint = isFs;
+        }
         super.show();
         try {
             this._windowClones?.rebuildClones?.();
@@ -434,6 +455,10 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
 
     destroy() {
         this._cleanedUp = true;
+        if (this._engineId) {
+            globalThis._macSharedGlassEngine?.damageTracker?.unregisterElement(this._engineId);
+            this._engineId = null;
+        }
         if (this._wakeUnsub) {
             removeGlassWakeListener?.(this._wakeUnsub);
             this._wakeUnsub = null;

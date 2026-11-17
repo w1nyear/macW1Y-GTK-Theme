@@ -3468,11 +3468,6 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
     dummy.set_opacity(0);
     liquidBox.add_child(dummy);
 
-    const mirror = new Clutter.Clone({source: Main.layoutManager._backgroundGroup});
-    mirror.set_size(global.stage.width, global.stage.height);
-    mirror.set_position(-monitor.x, -monitor.y);
-    liquidBox.add_child(mirror);
-
     const cloneContainer = new UnpickableActor();
     cloneContainer.set_name(`clone-container-${name}`);
     liquidBox.add_child(cloneContainer);
@@ -3563,7 +3558,7 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
     uiSampler.rebindSelf();
     uiSampler.refresh();
 
-    return {bgActor, liquidBox, cloneContainer, effect, wcm, uiSampler, mirror,
+    return {bgActor, liquidBox, cloneContainer, effect, wcm, uiSampler, mirror: wcm.bgClone,
         lastRegions: null, lastBounds: null, grace: 0, clip: null, screen: null};
 }
 

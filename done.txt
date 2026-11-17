@@ -1340,3 +1340,36 @@ TASK 824: LEGAL REBRANDING, AUDIT CLEANUP, SF PRO RESTORATION AS DEFAULT, HASH R
    - Оновлено config/extensions.lock.json (21/21 розширень валідовано mac-extension-guard).
    - mac-audit-sync check: 100% PASS.
    - mac-i18n-verify: 100% SUCCESS.
+
+================================================================================
+TASK 825: LIQUID GLASS RENDER ENGINE OVERHAUL, SHARED PIPELINES & TEXTURES, DAMAGE TRACKING & 15/15 TESTS
+================================================================================
+1. Архітектурний аудит та усунення першопричин (Root Causes):
+   - Усунено застарілий фон під Tahoe OSD (tahoeOSD.js, tahoeOnScreenDisplay.js, osdManager.js): при показі примусово викликається wcm.rebuildClones(), uiSampler.refresh(), effect.markBackdropDirty().
+   - Зупинено постійний цикл BEFORE_REDRAW в osdManager.js у прихованому стані; переведено на реактивну подієву модель notify::visible / notify::opacity.
+   - Виправлено затримки ~0.1 с при переміщенні віджетів (desktop-widgets@r3nhick): розділено геометрію (60 FPS) та 8-прохідний Dual Kawase блюр (дроселювання до 20 FPS під час драгу). Усунено скидання та перестворення FBO на кожен субпіксельний рух миші.
+   - Очищено витік ресурсів: виявлено та безпечно знищено 26 невидимих осиротілих акторів liquid-glass-bg-actor у Main.layoutManager.uiGroup.
+   - Усунено дублюючі дзеркала шпалер у kiwi (tahoeControlCenter.js, tahoeQuickSettings.js): видалено зайвий клон _backgroundGroup на користь wcm.bgClone.
+
+2. Створення Shared Glass Render Engine (extensions/.../dist/rendering/sharedGlassEngine.js):
+   - SharedPipelinePool: кешування та спільне використання Cogl-пайплайнів (Downsample, Upsample, Gaussian H/V, Tahoe Ambient Frosted Tint). Усунуто повторну GLSL-компіляцію при кожному відкритті меню чи віджета. Виправлено синтаксис альфа-блендингу Cogl (SRC_COLOR[A]).
+   - SharedTexturePool: квантування FBO за сіткою 32 px (bucketSize), кільцевий буфер текстур з TTL 15 с, нульове виділення пам'яті під час переміщення вікон/віджетів.
+   - BackgroundDamageTracker: просторове відстеження пошкоджень сцени Mutter (зміна розмірів/позицій вікон, фокус, згортання, зміна робочих просторів, зміна шпалер) з фільтрацією за прямокутниками перетину (rectsIntersect). Селективна адресна інвалідація тільки перекритих елементів.
+   - AdaptiveRenderScheduler: режими IDLE, INTERACTION, ANIMATION, HIGH_LOAD. У стані спокою після 2 кадрів заспокоєння рендеринг повністю припиняється (0% GPU). При піковому навантаженні (>33 мс) роздільність FBO тимчасово знижується на 50% для усунення фризів Shell.
+   - LiquidGlassDiagnostics: легкий трекер FPS, середнього часу блюру, співвідношення Cache Hit/Miss, пропущених кадрів (>16.67 мс, >33.33 мс, >50 мс).
+
+3. Інтеграція в розширення macW1Y:
+   - liquid-glass: liquidEffect.js, liquidEffect_v2.js, backdropGlass.js, glassGate.js, osdManager.js.
+   - kiwi: tahoeOSD.js, tahoeOnScreenDisplay.js, tahoeControlCenter.js, tahoeQuickSettings.js.
+   - desktop-widgets: glass_v4.js, glass.js, glass_v3.js, extension.js.
+
+4. Автоматизоване тестування 15 обов'язкових runtime-сценаріїв (bin/test-liquid-glass-engine.py):
+   - Всі 15 сценаріїв виконано в реальному оточенні GNOME Shell 46 через D-Bus EvalHelper: 100% PASS (15/15).
+   - Сформовано детальний фінальний звіт MACW1Y_LIQUID_GLASS_OPTIMIZATION_REPORT.md.
+
+5. Синхронізація, блокування та перевірка цілісності:
+   - Оновлено хеші цілісності SHA-256 для 3 змінених розширень у config/extensions.lock.json.
+   - mac-extension-guard verify: VERIFICATION SUCCESS (21/21 розширень валідовано).
+   - mac-audit-sync check: 100% PASS.
+   - mac-i18n-verify: 100% SUCCESS.
+

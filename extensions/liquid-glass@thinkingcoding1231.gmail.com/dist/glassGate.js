@@ -320,7 +320,11 @@ export function glassRefreshDue(glassActor, extraHash) {
             // Активний рух власної геометрії скла -> до 120 FPS (8.3 мс)
             // Зміна фону під склом / вікно поруч (відео, гра, анімація) -> 60 FPS (16.6 мс)
             const dueInterval = ownChanged ? GLASS_REFRESH_ACTIVE_INTERVAL_US : GLASS_REFRESH_60FPS_INTERVAL_US;
-            return sinceFull >= dueInterval;
+            if (sinceFull >= dueInterval) {
+                return true;
+            }
+            _backdropSkipCount++;
+            return false;
         }
 
         // Пульс узгодженості у спокої: 1.5 с
@@ -330,6 +334,7 @@ export function glassRefreshDue(glassActor, extraHash) {
 
         // [GPU-OPTIMIZE] У спокої, коли нічого не брудне (st.dirty === false),
         // не виконувати дорогі оновлення взагалі (0% GPU в idle).
+        _backdropSkipCount++;
         return false;
     } catch (e) {
         globalThis._lastDueError = `${e?.message || e}\n${e?.stack || ''}`;

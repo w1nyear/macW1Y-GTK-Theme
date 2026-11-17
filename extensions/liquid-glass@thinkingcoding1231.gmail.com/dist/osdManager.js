@@ -216,41 +216,35 @@ export class OsdManager {
         const frameLaterType = Meta.LaterType.BEFORE_REDRAW;
         const frameTick = () => {
             this._frameSyncId = 0;
-            // [FIX] Hard stop after teardown. Every one of these ticks ends by
-            // re-adding itself as a BEFORE_REDRAW later, so a cleanup() that does
-            // not reach its laterRemove() — because an earlier step threw — leaves
-            // a self-rescheduling chain running forever against destroyed actors,
-            // holding this whole manager (and its settings and logger) alive. The
-            // next enable() then builds a second set on top of a live first set,
-            // which is the "the extension can no longer be enabled" symptom.
-            // Removing the later is still done in cleanup(); this is the backstop
-            // that does not depend on cleanup() getting that far.
             if (this._torndown)
                 return GLib.SOURCE_REMOVE;
             if (!this._isEffectActive)
                 return GLib.SOURCE_REMOVE;
-            // [DIAG] See setFrameSyncFrozen() in utils.ts. Reschedules but does
-            // nothing, so the cost of this poll can be measured directly.
             if (isFrameSyncFrozen()) {
                 this._frameSyncId = this._laterAdd(frameLaterType, frameTick);
                 return GLib.SOURCE_REMOVE;
             }
+            let anyVisible = false;
             for (let state of this._osdStates) {
-                // Per-state try/catch: one broken OSD must not stop the others, and
-                // must not skip the reschedule below (see DockManager's frameTick).
-                // See ensureGlassAllocated(): keeps this glass root in the
-                // stage's relayout queue so its clones can never strand.
                 ensureGlassAllocated(state.bgActor);
                 try {
                     this._syncGeometry(state);
+                    if (state.bgActor && state.bgActor.visible) {
+                        anyVisible = true;
+                    }
                 }
                 catch (e) {
                     reportFrameLoopError('OSDManager', e);
                 }
             }
-            this._frameSyncId = this._laterAdd(frameLaterType, frameTick);
+            if (anyVisible) {
+                this._frameSyncId = this._laterAdd(frameLaterType, frameTick);
+            } else {
+                this._frameSyncId = 0;
+            }
             return GLib.SOURCE_REMOVE;
         };
+        this._frameTickHandler = frameTick;
         this._frameSyncId = this._laterAdd(frameLaterType, frameTick);
         this._startAdaptiveColorSampling();
         // Rebuild everything if monitor configuration changes
@@ -260,6 +254,14 @@ export class OsdManager {
                 this._applyEffect();
             }
         });
+    }
+    wakeOsdLoop() {
+        if (this._torndown || !this._isEffectActive)
+            return;
+        if (this._frameSyncId === 0 && this._frameTickHandler) {
+            const frameLaterType = Meta.LaterType.BEFORE_REDRAW;
+            this._frameSyncId = this._laterAdd(frameLaterType, this._frameTickHandler);
+        }
     }
     _setupOsdEffect(osdWindow) {
         // ── Find the OSD's targetBox (the St.Widget with style methods) ───────────
@@ -375,6 +377,8 @@ export class OsdManager {
             _destroyId: 0,
         };
         this._osdStates.push(state);
+        state._visWatchId = osdWindow.connect('notify::visible', () => this.wakeOsdLoop());
+        state._opWatchId = osdWindow.connect('notify::opacity', () => this.wakeOsdLoop());
         // When the OSD window itself is destroyed, clean up our matching state
         state._destroyId = osdWindow.connect('destroy', () => {
             this._osdStates = this._osdStates.filter(s => s !== state);
@@ -420,6 +424,13 @@ export class OsdManager {
             state._wasVisible = true;
             this._isFirstAdaptiveRun = true;
             this._updateAdaptiveTextColors();
+            try {
+                state._windowCloneManager?.rebuildClones();
+                state._uiSampler?.refresh();
+                state.effect?.markBackdropDirty();
+                const isFs = globalThis._macSharedGlassEngine?.damageTracker?.isTopWindowFullscreen?.() || false;
+                if (state.effect) state.effect.useFallbackTint = isFs;
+            } catch (_) {}
         }
         else if (!isVisible && state._wasVisible) {
             state._wasVisible = false;
@@ -550,6 +561,14 @@ export class OsdManager {
             }
             catch (e) { }
             state._destroyId = 0;
+        }
+        if (state.osdWindow && state._visWatchId) {
+            try { state.osdWindow.disconnect(state._visWatchId); } catch (_) {}
+            state._visWatchId = 0;
+        }
+        if (state.osdWindow && state._opWatchId) {
+            try { state.osdWindow.disconnect(state._opWatchId); } catch (_) {}
+            state._opWatchId = 0;
         }
         // Restore target box
         if (state.targetBox) {
