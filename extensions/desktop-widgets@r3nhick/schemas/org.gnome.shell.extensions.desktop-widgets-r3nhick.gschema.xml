@@ -257,7 +257,7 @@
       <description>Refraction displacement strength (0-200).</description>
     </key>
     <key name="tint-alpha-pct" type="i">
-      <default>10</default>
+      <default>0</default>
       <summary>Tint opacity (%)</summary>
       <description>Glass tint opacity percentage (0-100). 0 = fully transparent tint, 100 = opaque.</description>
     </key>

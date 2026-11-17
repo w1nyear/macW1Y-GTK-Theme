@@ -579,7 +579,7 @@
         "50",
         "51"
       ],
-      "sha256": "b396968730ea42621a004105be12e99838c9fe6dbdd2baa434f577d274eaab78",
+      "sha256": "0e84d12dd3b04c8f989de9e68ece4e2096142e8c479e4cff217578c31cac7f23",
       "status": "locked",
       "source": "github",
       "macw1y_components": [
@@ -589,8 +589,8 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Liquid Glass GLSL shader scalar uniform binding fix, frosted card styling, and safe snippet support for GNOME 50",
-      "last_verified": "2026-11-10",
-      "pinned_sha256": "f2dd503d55f4846e4400bebdc8ecd08bab1ba5166ba566498fd92b5b5346e4a7"
+      "last_verified": "2026-11-17",
+      "pinned_sha256": "0e84d12dd3b04c8f989de9e68ece4e2096142e8c479e4cff217578c31cac7f23"
     },
     "ubuntu-appindicators@ubuntu.com": {
       "uuid": "ubuntu-appindicators@ubuntu.com",

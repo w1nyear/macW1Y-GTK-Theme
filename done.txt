@@ -1448,3 +1448,9 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
    - bin/mac-audit-sync check: 100% PASS.
    - bin/mac-i18n-verify: 100% SUCCESS.
 
+
+2026-11-17 — Усунення білого відтінку скла віджетів:
+- Причина: tint скла віджетів за замовчуванням мав непрозорість 10%, а в активних налаштуваннях було 20%; сам колір tint — білий.
+- Виправлення: типовий tint тепер прозорий (0%), зокрема після скидання параметрів віджетів. Поточне системне значення встановлено в 0%; розмиття, рефракцію та користувацьке налаштування tint збережено.
+- Синхронізовано prefs.js і схему налаштувань із ~/.local/share/gnome-shell/extensions/desktop-widgets@r3nhick; перекомпільовано схему. Оновлено SHA-256 у config/extensions.lock.json.
+- Перевірка: python3 bin/mac-extension-guard verify — успішно, 21/21 розширень.

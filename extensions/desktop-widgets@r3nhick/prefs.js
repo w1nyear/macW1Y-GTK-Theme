@@ -3240,7 +3240,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
                 settings.set_int('refract-ior-x100', 170);
                 settings.set_int('refract-scale', 65);
                 settings.set_int('chroma-strength-pct', 30);
-                settings.set_int('tint-alpha-pct', 10);
+                settings.set_int('tint-alpha-pct', 0);
                 settings.set_int('spec-strength-pct', 70);
             } else {
                 settings.set_int('style-shadow-size', 24);
