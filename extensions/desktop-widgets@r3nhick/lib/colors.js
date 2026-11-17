@@ -38,7 +38,7 @@ export function macColors(styleMode, appearance, systemIsDark) {
         isLight,
         glassIsLight,
         foreground: rgba((isGlass ? glassIsLight : isLight) ? '#1A1B1E' : '#ffffff'),
-        glassTint: rgba(glassIsLight ? '#ffffff' : '#000000'),
+        glassTint: rgba('#ffffff'),
         solidBackground: rgba(isLight ? '#ffffff' : '#1A1B1E'),
         accentRed: rgba(isLight ? '#D70015' : '#FF3B30'),
 

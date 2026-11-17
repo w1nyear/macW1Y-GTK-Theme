@@ -2643,6 +2643,9 @@ class WidgetController {
       tint = parseCssColor(background);
       if (typeof tint.a === 'number')
         tintAlpha *= tint.a;
+    } else if (tint.r === 0 && tint.g === 0 && tint.b === 0) {
+      // Liquid Glass default tint is frosted white highlight (authentic macOS Tahoe)
+      tint = { r: 1.0, g: 1.0, b: 1.0, a: 1.0 };
     }
 
     let blurRadius = Math.max(0, s.get_int('blur-radius-px'));

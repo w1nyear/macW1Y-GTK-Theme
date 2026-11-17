@@ -1732,6 +1732,11 @@ export const BackgroundMirror = _safeRegisterClass('BackgroundMirror', class Bac
     vfunc_pick(_pickContext) {
         // No-op: never respond to picking, exactly like UnpickableClone.
     }
+    vfunc_paint(paintNode, paintContext) {
+        if (!this.is_in_clone_paint())
+            return;
+        super.vfunc_paint(paintNode, paintContext);
+    }
 });
 // [black-frame] A/B switch for the fix above. `true` clones our own
 // BackgroundMirror (uncalled MetaBackgroundContent, painted through a Clone so
@@ -1775,20 +1780,10 @@ function ensureSharedBackgroundSource() {
             utilsLog(`[bg-mirror] source size constraint failed: ${e}`);
         }
     }
-    // Opacity 0, NOT visible=false. clutter_actor_paint() bails out at the top
-    // on a zero paint opacity:
-    //
-    //     if (!CLUTTER_ACTOR_IS_TOPLEVEL (self) &&
-    //         ((priv->opacity_override >= 0) ? priv->opacity_override : priv->opacity) == 0)
-    //       return;
-    //
-    // so on the real screen this costs one comparison and draws nothing — while
-    // ClutterClone sets opacity_override to ITS OWN paint opacity before
-    // painting the source, so every glass still gets a fully opaque wallpaper.
-    // Hiding it instead would take it out of the mapped/allocated set and make
-    // the clones depend on the has_mapped_clones path, which is a far subtler
-    // contract to rely on.
-    source.opacity = 0;
+    // Fully opaque (255) so that Clutter.Clone and child MetaBackgroundActors
+    // inherit full paint_opacity. vfunc_paint() above filters out direct screen
+    // painting via is_in_clone_paint(), so nothing draws on the screen directly.
+    source.opacity = 255;
     source.reactive = false;
     // uiGroup, deliberately: it is a sibling of global.window_group, so
     // meta_window_group_paint()'s cull walk can never reach our contents.

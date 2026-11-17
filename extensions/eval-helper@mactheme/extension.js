@@ -447,6 +447,7 @@ export default class EvalHelper extends Extension {
         globalThis.Shell = Shell;
         globalThis.Pango = Pango;
         globalThis.St = St;
+        globalThis.MacAnimationCache = MacAnimationCache;
         try {
             const nodeInfo = Gio.DBusNodeInfo.new_for_xml(EvalIface);
             this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(nodeInfo.interfaces[0], {
