@@ -2160,7 +2160,7 @@ export default class EvalHelper extends Extension {
                         const shadowIntensity = Math.max(0.0, Math.min(1.0, styling.alertShadow / 100.0));
 
                         const isTrash = dialogBox.has_style_class_name('mac-empty-trash-dialog');
-                        const radius = isTrash ? 24.0 : 30.0;
+                        const radius = isTrash ? 24.0 : 28.0;
 
 
                         glass.setResolution(screenW, screenH);
@@ -2182,8 +2182,8 @@ export default class EvalHelper extends Extension {
                         try {
                             const extra = isTrash
                                 ? ' width: 270px !important; min-width: 270px !important; max-width: 270px !important; padding: 22px 18px 18px 18px !important;'
-                                : '';
-                            dialogBox.set_style(`background-color: rgba(30, 30, 30, ${tintStrength.toFixed(2)}) !important; border-radius: ${Math.round(radius)}px !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; box-shadow: 0 16px 36px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important;${extra}`);
+                                : ' padding: 14px 16px !important;';
+                            dialogBox.set_style(`background-color: rgba(255, 255, 255, 0.05) !important; border-radius: ${Math.round(radius)}px !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; box-shadow: 0 16px 45px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;${extra}`);
                         } catch (_) {}
 
 
@@ -2273,12 +2273,60 @@ export default class EvalHelper extends Extension {
                 try { if (Main.endSessionDialog) attachIfSystemDialog(Main.endSessionDialog); } catch (_) {}
 
                 globalThis._macAttachDialogGlass = attachDialogGlass;
-                if (!ModalDialog.prototype._macDlgGlassPatchedV1) {
-                    ModalDialog.prototype._macDlgGlassPatchedV1 = true;
+                if (!ModalDialog.prototype._macRecoveryAlertPatchedV1) {
+                    ModalDialog.prototype._macRecoveryAlertPatchedV1 = true;
                     ModalDialog.prototype._macOrigOpen = ModalDialog.prototype.open;
+                    ModalDialog.prototype._macOrigClose = ModalDialog.prototype.close;
+                    ModalDialog.prototype._macOrigFadeOpen = ModalDialog.prototype._fadeOpen;
+                    ModalDialog.prototype._fadeOpen = function (...args) {
+                        const result = ModalDialog.prototype._macOrigFadeOpen.call(this, ...args);
+                        const content = this.dialogLayout;
+                        if (content) {
+                            content.remove_all_transitions();
+                            content.set_pivot_point(0.5, 0.5);
+                            content.scale_x = 0.78;
+                            content.scale_y = 0.78;
+                            content.opacity = 0;
+                            content.ease({
+                                scale_x: 1.0,
+                                scale_y: 1.0,
+                                opacity: 255,
+                                duration: 320,
+                                mode: Clutter.AnimationMode.EASE_OUT_BACK,
+                            });
+                        }
+                        return result;
+                    };
                     ModalDialog.prototype.open = function (...args) {
                         try { globalThis._macAttachDialogGlass?.(this); } catch (_) {}
-                        return (this._macOrigOpen || ModalDialog.prototype._macOrigOpen).call(this, ...args);
+                        return ModalDialog.prototype._macOrigOpen.call(this, ...args);
+                    };
+                    ModalDialog.prototype.close = function (...args) {
+                        if (this.state === ModalDialogMod.State.CLOSED || this.state === ModalDialogMod.State.CLOSING)
+                            return;
+                        if (this._shouldFadeOut) {
+                            this._setState(ModalDialogMod.State.CLOSING);
+                            this.popModal();
+                            this._savedKeyFocus = null;
+                            const content = this.dialogLayout;
+                            this.ease({
+                                opacity: 0,
+                                duration: 160,
+                                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                                onComplete: () => this._closeComplete(),
+                            });
+                            if (content) {
+                                content.ease({
+                                    scale_x: 0.84,
+                                    scale_y: 0.84,
+                                    opacity: 0,
+                                    duration: 160,
+                                    mode: Clutter.AnimationMode.EASE_IN_QUAD,
+                                });
+                            }
+                            return;
+                        }
+                        return ModalDialog.prototype._macOrigClose.call(this, ...args);
                     };
                 }
             } catch (e) {

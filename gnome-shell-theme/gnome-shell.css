@@ -3571,10 +3571,10 @@ StWidget.focused .app-grid-running-dot {
 .audio-device-selection-dialog,
 .access-dialog,
 .run-dialog {
-  background-color: rgba(30, 30, 30, 0.40) !important;
-  border-radius: 35px !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28) !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
 }
 
 .unlock-dialog,
@@ -3610,24 +3610,24 @@ StWidget.focused .app-grid-running-dot {
 
 .modal-dialog .modal-dialog-button:last-child,
 .modal-dialog .modal-dialog-linked-button:last-child {
-  color: white !important;
-  background-color: -st-accent-color !important;
+  color: #ffffff !important;
+  background-color: #007aff !important;
   background-gradient-direction: none !important;
   border-radius: 9999px !important;
 }
 
 .modal-dialog .modal-dialog-button:hover:last-child,
 .modal-dialog .modal-dialog-linked-button:hover:last-child {
-  color: white !important;
+  color: #ffffff !important;
   background-gradient-direction: none !important;
-  background-color: -st-accent-color !important;
+  background-color: #0084ff !important;
 }
 
 .modal-dialog .modal-dialog-button:active:last-child,
 .modal-dialog .modal-dialog-linked-button:active:last-child {
-  color: white !important;
+  color: #ffffff !important;
   background-gradient-direction: none !important;
-  background-color: -st-accent-color !important;
+  background-color: #006ce0 !important;
 }
 
 .modal-dialog .modal-dialog-button:insensitive:last-child,
@@ -3638,31 +3638,47 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .modal-dialog {
-  color: #dedede;
-  padding: 16px;
+  color: #ffffff;
+  padding: 14px 16px;
 }
 
 .modal-dialog .modal-dialog-content-box {
-  padding: 16px 32px 10px;
-  spacing: 12px;
+  padding: 0;
+  spacing: 6px;
   max-width: 28em;
 }
 
 .modal-dialog .modal-dialog-button-box {
-  padding-top: 8px;
+  padding-top: 10px;
   spacing: 8px;
+}
+
+.modal-dialog .message-dialog-content {
+  spacing: 6px;
+}
+
+.modal-dialog .message-dialog-title {
+  color: #ffffff;
+  font-size: 1.18em;
+  font-weight: 700;
+}
+
+.modal-dialog .message-dialog-description {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.91em;
 }
 
 .modal-dialog .modal-dialog-button,
 .modal-dialog .modal-dialog-linked-button {
   min-height: 44px;
-  padding: 0 22px;
+  min-width: 148px;
+  padding: 0 18px;
   margin: 0;
-  border: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 9999px !important;
   font-weight: 600;
   color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.12) !important;
+  background-color: rgba(255, 255, 255, 0.20) !important;
   text-shadow: none;
   icon-shadow: none;
 }
@@ -3670,19 +3686,19 @@ StWidget.focused .app-grid-running-dot {
 .modal-dialog .modal-dialog-button:hover,
 .modal-dialog .modal-dialog-linked-button:hover {
   color: #ffffff;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
   text-shadow: none;
   icon-shadow: none;
-  background-color: rgba(255, 255, 255, 0.20) !important;
+  background-color: rgba(255, 255, 255, 0.28) !important;
 }
 
 .modal-dialog .modal-dialog-button:active,
 .modal-dialog .modal-dialog-linked-button:active {
   color: #ffffff;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   text-shadow: none;
   icon-shadow: none;
-  background-color: rgba(255, 255, 255, 0.28) !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
 }
 
 .modal-dialog .modal-dialog-button:checked,
@@ -3705,10 +3721,26 @@ StWidget.focused .app-grid-running-dot {
 
 .modal-dialog .modal-dialog-button:focus,
 .modal-dialog .modal-dialog-linked-button:focus {
-  color: #dedede;
+  color: #ffffff;
   text-shadow: none;
   icon-shadow: none;
-  box-shadow: none !important;
+  border: 2px solid #00a2ff !important;
+  box-shadow: 0 0 0 1px #00a2ff, 0 0 4px rgba(0, 162, 255, 0.35) !important;
+}
+
+.modal-dialog .modal-dialog-button:last-child:hover,
+.modal-dialog .modal-dialog-linked-button:last-child:hover {
+  background-color: #0084ff !important;
+}
+
+.modal-dialog .modal-dialog-button:last-child:checked,
+.modal-dialog .modal-dialog-linked-button:last-child:checked {
+  background-color: #007aff !important;
+}
+
+.modal-dialog .modal-dialog-button:last-child:active,
+.modal-dialog .modal-dialog-linked-button:last-child:active {
+  background-color: #006ce0 !important;
 }
 
 .end-session-dialog {
