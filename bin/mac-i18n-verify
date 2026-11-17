@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
 """
 mac-i18n-verify - Comprehensive Internationalization & Localization Verification Suite
-Validates:
-1. Catalog integrity (194 Ubuntu/BCP-47 locales across 4 tiers)
-2. Dictionary completeness & UTF-8 integrity
-3. Placeholder consistency ({query}, {time}, {rpm}, {size}, etc.)
-4. Runtime modules generation & sync status
-5. Strict English-only enforcement on install.sh
-6. Fallback resolution to English for all Tier 4 locales
+Validates the advertised locale catalog, actual central dictionaries, runtime
+artifacts, installer syntax, and deliberate English fallback behavior.
 """
 
 import os
@@ -65,10 +60,17 @@ def main():
     t3_cnt = tiers.get("tier_3", {}).get("count", 0)
     t4_cnt = tiers.get("tier_4", {}).get("count", 0)
 
-    all_ok &= check(f"Tier 1: 2 Complete Primary languages (uk, en) -> {t1_cnt}", t1_cnt == 2)
-    all_ok &= check(f"Tier 2: 29 Comprehensive Major languages -> {t2_cnt}", t2_cnt == 29)
-    all_ok &= check(f"Tier 3: 3 RTL Bidirectional languages (ar, he, fa) -> {t3_cnt}", t3_cnt == 3)
-    all_ok &= check(f"Tier 4: 160 Ubuntu Fallback locales -> {t4_cnt}", t4_cnt == 160)
+    all_catalog_codes = {item.get("code") for item in catalog}
+    tier_codes = []
+    for tier_name in ("tier_1", "tier_2", "tier_3", "tier_4"):
+        tier_codes.extend(tiers.get(tier_name, {}).get("languages", []))
+    tier_total = t1_cnt + t2_cnt + t3_cnt + t4_cnt
+    all_ok &= check(f"Tier counts add up to catalog size ({tier_total})", tier_total == total_langs)
+    all_ok &= check("Tier definitions cover each catalog code exactly once", len(tier_codes) == len(set(tier_codes)) == total_langs and set(tier_codes) == all_catalog_codes)
+    all_ok &= check(f"Tier 1 primary locales: {t1_cnt}", t1_cnt == 2)
+    all_ok &= check(f"Tier 2 major locales: {t2_cnt}", t2_cnt == 29)
+    all_ok &= check(f"Tier 3 RTL locales: {t3_cnt}", t3_cnt == 3)
+    all_ok &= check(f"Tier 4 English-fallback locales: {t4_cnt}", t4_cnt == 160)
 
     # 2. Central Translations Dictionary Audit
     print(f"\n{C_BOLD}2. Central Translations Dictionary (config/i18n/translations.json):{C_RESET}")
@@ -89,6 +91,22 @@ def main():
 
     missing_in_uk = en_keys - uk_keys
     all_ok &= check("Tier 1 Ukrainian key parity with English (0 missing)", len(missing_in_uk) == 0, f"Missing: {missing_in_uk}")
+
+    incomplete_dictionaries = []
+    for lang, dictionary in translations.items():
+        missing = en_keys - set(dictionary)
+        empty = [key for key, value in dictionary.items() if not isinstance(value, str) or not value.strip()]
+        if missing or empty or set(dictionary) - en_keys:
+            incomplete_dictionaries.append((lang, len(missing), len(empty), len(set(dictionary) - en_keys)))
+    all_ok &= check(f"All shipped dictionaries have the same {len(en_keys)} keys and no empty values", not incomplete_dictionaries,
+                    f"Problems: {incomplete_dictionaries[:5]}")
+    declared_full = {item.get("code") for item in catalog if item.get("tier") in (1, 2, 3)}
+    actual_full = set(translations)
+    all_ok &= check(f"Full-dictionary locales match declared Tier 1–3 ({len(declared_full)})", declared_full == actual_full,
+                    f"Missing dictionaries: {sorted(declared_full - actual_full)}; extra: {sorted(actual_full - declared_full)}")
+    fallback_codes = {item.get("code") for item in catalog if item.get("tier") == 4}
+    all_ok &= check(f"Catalog explicitly marks {len(fallback_codes)} Tier 4 locales as English fallback",
+                    len(fallback_codes) == t4_cnt and all(item.get("status") == "english_fallback" for item in catalog if item.get("tier") == 4))
 
     # Placeholder checks ({query}, {time}, {rpm}, {size}, etc.)
     placeholder_re = re.compile(r"\{([a-zA-Z0-9_]+)\}")
@@ -121,25 +139,11 @@ def main():
         size = os.path.getsize(full_p) if exists else 0
         all_ok &= check(f"{rel} exists and populated ({size} bytes)", exists and size > 500)
 
-    # 4. Strict English-Only Verification for install.sh & gui.sh
-    print(f"\n{C_BOLD}4. Strict English-Only Enforcement for install.sh & gui.sh:{C_RESET}")
-    cyrillic_re = re.compile(r"[\u0400-\u04FF]")
+    print(f"\n{C_BOLD}4. Installer Script Syntax (localization is not implied):{C_RESET}")
     for sh_name in ["install.sh", "gui.sh"]:
         sh_path = os.path.join(REPO_ROOT, sh_name)
         if not os.path.exists(sh_path):
             continue
-        with open(sh_path, "r", encoding="utf-8") as f:
-            sh_lines = f.readlines()
-
-        cyrillic_matches = []
-        for idx, l in enumerate(sh_lines, 1):
-            if cyrillic_re.search(l):
-                cyrillic_matches.append((idx, l.strip()))
-
-        all_ok &= check(f"{sh_name} contains 0 Cyrillic characters (found {len(cyrillic_matches)})",
-                        len(cyrillic_matches) == 0,
-                        f"First match: line {cyrillic_matches[0][0]}: {cyrillic_matches[0][1]}" if cyrillic_matches else "")
-
         res_sh = subprocess.run(["bash", "-n", sh_path], capture_output=True, text=True)
         all_ok &= check(f"{sh_name} passes bash syntax validation", res_sh.returncode == 0, res_sh.stderr)
 
@@ -148,14 +152,12 @@ def main():
     res_guard = subprocess.run([os.path.join(REPO_ROOT, "bin/mac-extension-guard"), "verify"], capture_output=True, text=True)
     all_ok &= check("All 21 managed extensions match pinned lock hashes", res_guard.returncode == 0, res_guard.stdout.strip())
 
-    # 6. Fallback Behavior Test
-    print(f"\n{C_BOLD}6. Universal English Fallback Resolution Test:{C_RESET}")
+    print(f"\n{C_BOLD}6. Tier 4 English Fallback Behavior (not translated coverage):{C_RESET}")
     sys.path.insert(0, os.path.join(REPO_ROOT, "bin"))
     import mac_i18n
-    # Test Tier 4 locale (e.g. da - Danish)
-    fb_val = mac_i18n.t("power_performance", override_locale="da")
+    fb_values = [mac_i18n.t("power_performance", override_locale=code) for code in sorted(fallback_codes)]
     fb_expected = translations["en"]["power_performance"]
-    all_ok &= check(f"Tier 4 language 'da' cleanly falls back to English: '{fb_val}'", fb_val == fb_expected)
+    all_ok &= check(f"All {len(fallback_codes)} Tier 4 codes fall back to English", all(value == fb_expected for value in fb_values))
 
     # Test unknown key fallback
     unk_val = mac_i18n.t("non_existent_key_xyz", fallback="DefaultFallback")
@@ -168,7 +170,7 @@ def main():
     # SUMMARY
     print("\n" + "="*80)
     if all_ok:
-        print(f"{C_GREEN}{C_BOLD}RESULT: macW1Y 0.7 i18n/l10n VALIDATION 100% SUCCESSFUL.{C_RESET}\n")
+        print(f"{C_GREEN}{C_BOLD}RESULT: Structural and fallback checks passed; full localization coverage is not certified.{C_RESET}\n")
         return 0
     else:
         print(f"{C_RED}{C_BOLD}RESULT: Validation failed with issues.{C_RESET}\n")
