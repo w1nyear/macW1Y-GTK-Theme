@@ -18,7 +18,8 @@ import math
 
 import gi
 gi.require_version('Gtk', '4.0')
-from gi.repository import Gtk, Gdk, GLib, Gio, Pango, Graphene
+gi.require_version('Gsk', '4.0')
+from gi.repository import Gtk, Gdk, Gsk, GLib, Gio, Pango, Graphene
 
 # ------------------------------------------------------------------------------
 # Constants and Paths
@@ -625,9 +626,9 @@ button.mac-btn-pill-primary:active,
     min-height: 490px;
 }
 
-/* Modal Sheet (Frosted glass with 10% tint, 28px radius, slim compact width matching Photos 2-4) */
+/* Modal Sheet (LiquidGlass with 5px blur, 5% tint, 28px radius) */
 .mac-modal-dim {
-    background-color: transparent;
+    background-color: rgba(0, 0, 0, 0.16);
     border-radius: 20px;
 }
 
@@ -638,14 +639,21 @@ button.mac-btn-pill-primary:active,
 
 .mac-modal-sheet,
 .mac-alert-sheet {
-    background-color: rgba(65, 70, 82, 0.35);
-    border-radius: 30px;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45);
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.28);
     padding: 14px 16px;
-    width: 260px;
     min-width: 260px;
-    max-width: 260px;
+}
+
+.mac-loading-pill {
+    background-color: rgba(30, 33, 40, 0.75);
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    padding: 10px 24px;
+    min-width: 330px;
 }
 
 .mac-modal-sheet image,
@@ -1344,12 +1352,67 @@ class MacMenuPopover(Gtk.Popover):
         GLib.timeout_add(110, _finish)
 
 # ------------------------------------------------------------------------------
-# Modal Sheet Host with Spring Entrance & Smooth Ease-in Exit
+# LiquidGlass Card Overlay & Modal Sheet Host
 # ------------------------------------------------------------------------------
+class MacGlassOverlay(Gtk.Overlay):
+    """
+    LiquidGlass Container Overlay:
+    Captures underlying recovery card into a render node when an alert or modal is open,
+    supplying it to MacModalSheetHost for authentic 5px Gaussian backdrop blur.
+    """
+    def __init__(self, owner=None):
+        super().__init__()
+        self.owner = owner
+
+    def do_snapshot(self, snapshot):
+        card = self.get_child()
+        if not card:
+            return
+
+        modal_dim = getattr(self.owner, 'modal_dim', None)
+        modal_host = getattr(self.owner, 'modal_sheet_host', None)
+        modal_visible = (
+            modal_dim is not None and
+            modal_dim.get_visible() and
+            modal_host is not None and
+            modal_host.opacity_val > 0.01
+        )
+
+        if not modal_visible:
+            child = self.get_first_child()
+            while child:
+                self.snapshot_child(child, snapshot)
+                child = child.get_next_sibling()
+            return
+
+        # Snapshot background card into render node
+        card_snap = Gtk.Snapshot()
+        self.snapshot_child(card, card_snap)
+        card_node = card_snap.to_node()
+        if not card_node:
+            child = self.get_first_child()
+            while child:
+                self.snapshot_child(child, snapshot)
+                child = child.get_next_sibling()
+            return
+
+        # Supply background node to host
+        modal_host.backdrop_node = card_node
+
+        # Draw card in base snapshot
+        snapshot.append_node(card_node)
+
+        # Draw overlay children (dim container and modal sheet with LiquidGlass backdrop blur)
+        child = card.get_next_sibling()
+        while child:
+            self.snapshot_child(child, snapshot)
+            child = child.get_next_sibling()
+
+
 class MacModalSheetHost(Gtk.Box):
     """
-    Host container for Alert Modals supporting authentic macW1Y spring pop entrance
-    and smooth ease-in scale down exit without spring.
+    Host container for Alert Modals supporting authentic macW1Y spring pop entrance,
+    smooth ease-in scale down exit, and real-time LiquidGlass 5px backdrop blur.
     """
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -1364,12 +1427,44 @@ class MacModalSheetHost(Gtk.Box):
         self._start_time = 0
         self._duration = 0.32
         self._on_finish_cb = None
+        self.backdrop_node = None
 
     def set_content(self, widget):
         while child := self.get_first_child():
             self.remove(child)
         if widget:
             self.append(widget)
+
+    def _render_liquid_glass_backdrop(self, snapshot, child):
+        if not getattr(self, "backdrop_node", None):
+            return
+        try:
+            ok, bounds = child.compute_bounds(self)
+            if not ok or bounds.size.width <= 2 or bounds.size.height <= 2:
+                return
+
+            # LiquidGlass 5px Gaussian backdrop blur
+            blur_node = Gsk.BlurNode.new(self.backdrop_node, 5.0)
+
+            is_pill = child.has_css_class("mac-loading-pill")
+            corner_radius = (bounds.size.height / 2.0) if is_pill else 28.0
+            rrect = Gsk.RoundedRect()
+            rrect.init_from_rect(bounds, corner_radius)
+
+            snapshot.push_rounded_clip(rrect)
+            snapshot.save()
+
+            card_overlay = self.get_ancestor(Gtk.Overlay)
+            if card_overlay:
+                ok_h, h_bounds = self.compute_bounds(card_overlay)
+                if ok_h:
+                    snapshot.translate(Graphene.Point().init(-h_bounds.origin.x, -h_bounds.origin.y))
+
+            snapshot.append_node(blur_node)
+            snapshot.restore()
+            snapshot.pop()
+        except Exception:
+            pass
 
     def do_snapshot(self, snapshot):
         w = self.get_width()
@@ -1385,18 +1480,19 @@ class MacModalSheetHost(Gtk.Box):
                 snapshot.translate(Graphene.Point().init(cx, cy))
                 snapshot.scale(self.scale_val, self.scale_val)
                 snapshot.translate(Graphene.Point().init(-cx, -cy))
-            child = self.get_first_child()
-            while child:
-                self.snapshot_child(child, snapshot)
-                child = child.get_next_sibling()
+
+        child = self.get_first_child()
+        if child:
+            self._render_liquid_glass_backdrop(snapshot, child)
+
+        while child:
+            self.snapshot_child(child, snapshot)
+            child = child.get_next_sibling()
+
+        if need_transform:
             if self.opacity_val < 1.0:
                 snapshot.pop()
             snapshot.restore()
-        else:
-            child = self.get_first_child()
-            while child:
-                self.snapshot_child(child, snapshot)
-                child = child.get_next_sibling()
 
     def start_open_animation(self):
         if self._anim_tick_id:
@@ -1629,8 +1725,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         center_area.set_valign(Gtk.Align.CENTER)
         root_box.append(center_area)
 
-        # Overlay container for Dialog Card + Modal Sheets
-        self.card_overlay = Gtk.Overlay()
+        # Overlay container for Dialog Card + Modal Sheets (LiquidGlass)
+        self.card_overlay = MacGlassOverlay(self)
         center_area.append(self.card_overlay)
 
         # Dialog Card
@@ -1855,6 +1951,11 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         def _on_closed():
             self.modal_dim.set_visible(False)
             self.modal_sheet_host.set_content(None)
+            self.modal_sheet_host.backdrop_node = None
+            if hasattr(self, "lbl_wizard_title"):
+                self.lbl_wizard_title.set_opacity(1.0)
+            if hasattr(self, "lbl_wizard_sub"):
+                self.lbl_wizard_sub.set_opacity(1.0)
         self.modal_sheet_host.start_close_animation(on_finish=_on_closed)
 
     def switch_to_screen(self, screen_name):
@@ -2563,17 +2664,26 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     # Screen 5: Loading Installer Info Modal (Photo 5)
     # --------------------------------------------------------------------------
     def _show_modal_loading_info(self):
+        # Fade out welcome title & subtitle while loading to prevent overlap/collision
+        if hasattr(self, "lbl_wizard_title"):
+            self.lbl_wizard_title.set_opacity(0.0)
+        if hasattr(self, "lbl_wizard_sub"):
+            self.lbl_wizard_sub.set_opacity(0.0)
+
         sheet = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
         sheet.add_css_class("mac-modal-sheet")
+        sheet.add_css_class("mac-loading-pill")
         sheet.set_halign(Gtk.Align.CENTER)
+        sheet.set_valign(Gtk.Align.CENTER)
 
         spinner = Gtk.Spinner()
-        spinner.set_size_request(24, 24)
+        spinner.set_size_request(22, 22)
         spinner.start()
         sheet.append(spinner)
 
         lbl = Gtk.Label(label="Завантаження інформації про інсталяцію...")
         lbl.add_css_class("mac-modal-title")
+        lbl.set_valign(Gtk.Align.CENTER)
         sheet.append(lbl)
 
         self.show_modal(sheet)
@@ -2583,6 +2693,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
     def _finish_loading_info(self):
         self.hide_modal()
+        if hasattr(self, "lbl_wizard_title"):
+            self.lbl_wizard_title.set_opacity(1.0)
+        if hasattr(self, "lbl_wizard_sub"):
+            self.lbl_wizard_sub.set_opacity(1.0)
         self.morph_welcome_to_terms(animated=True)
         return GLib.SOURCE_REMOVE
 

@@ -1373,3 +1373,46 @@ TASK 825: LIQUID GLASS RENDER ENGINE OVERHAUL, SHARED PIPELINES & TEXTURES, DAMA
    - mac-audit-sync check: 100% PASS.
    - mac-i18n-verify: 100% SUCCESS.
 
+================================================================================
+TASK 826: SETTINGS LOCALIZATION (SEARCH & WIDGETS), SIDEBAR BLUR SHADER & APPLE LOGO
+================================================================================
+1. Локалізація панелі налаштувань (GNOME Control Center / macW1Y Settings):
+   - Замінено англійський плейсхолдер "search" на "Пошук" у рядку швидкого пошуку.
+   - Замінено назву пункту "widgets" на "Віджети" у бічній панелі (sidebar).
+   - Оновлено словник перекладів config/i18n/translations.json для всіх 34 мов та згенеровано оновлені заголовки mac_i18n.h (control-center, src, gnome-control-center-overlay).
+   - Перекомпільовано libmac_settings.so та синхронізовано в усі системні директорії.
+
+2. Ефект розмиття та зникання списку бічної панелі:
+   - Додано градієнтний шейдер розмиття/зникання списку зверху та знизу у лефтбарі (undershoot.top, undershoot.bottom 42px).
+
+3. Відновлення системної іконки Яблучка в менюбарі:
+   - Відновлено apple-logo.svg у розширенні appmenu@ChathurangaBW.github.io.
+   - Зафіксовано хеші цілісності у config/extensions.lock.json.
+
+================================================================================
+TASK 827: LIQUIDGLASS ALERT MODAL SHADER (5PX BLUR & 5% TINT) & LOADING PILL FIX
+================================================================================
+1. Архітектура LiquidGlass для вікон попереджень (mac-installer-gui):
+   - Створено клас контейнера MacGlassOverlay(Gtk.Overlay), який при відкритті модальних вікон захоплює шар фонової картки у GskRenderNode (card_node).
+   - У класі MacModalSheetHost реалізовано графічний шейдер рідкого скла LiquidGlass з 5-піксельним розмиттям:
+     * Gsk.BlurNode.new(self.backdrop_node, 5.0) — апаратне гаусове розмиття підкладки на 5 пікселів.
+     * Gsk.RoundedRect з радіусом 28 px — точне обрізання розмиття під скруглені краї вікна попередження.
+     * Точне позиціонування підкладки через snapshot.translate(-h_bounds.x, -h_bounds.y) відносно картки відновлення.
+   - Стилізація вікна попередження:
+     * 5% ледь помітний тінт: background-color: rgba(255, 255, 255, 0.05).
+     * Дзеркальна 1px рамка: border: 1px solid rgba(255, 255, 255, 0.20).
+     * Верхній світловий відблиск: inset 0 1px 0 rgba(255, 255, 255, 0.28).
+     * Глибока тінь: box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45).
+
+2. Виправлення накладання тексту пігулки завантаження:
+   - В _show_modal_loading_info усунуто конфлікт з заголовком "macW1Y 0.6": на час показу пігулки заголовок і підзаголовок плавно приховуються (set_opacity(0.0)), що усуває накладання символів.
+   - Для пігулки створено окремий CSS-клас .mac-loading-pill з капсульною формою (border-radius: 9999px), темним склом rgba(30, 33, 40, 0.75) та адаптивною шириною.
+   - При закритті модального вікна (hide_modal) або переході до наступного екрана початкова видимість елементів відновлюється.
+
+3. Валідація:
+   - Рендеринг обох станів перевірено через офлайн-захоплення буфера кадрів (preview_alert_reboot.png, preview_loading_pill.png).
+   - mac-audit-sync check: 100% PASS.
+   - mac-i18n-verify: 100% SUCCESS.
+   - mac-extension-guard verify: VERIFICATION SUCCESS (21/21).
+
+
