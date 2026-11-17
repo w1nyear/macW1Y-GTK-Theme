@@ -241,7 +241,7 @@ function _isSeparator(item) {
 
 function _getOrnament(item) {
     if (!item.property_exist(Dbusmenu.MENUITEM_PROP_TOGGLE_TYPE))
-        return 'none';
+        return 'hidden';
 
     const toggleType = item.property_get(Dbusmenu.MENUITEM_PROP_TOGGLE_TYPE);
     const toggleState = item.property_exist(Dbusmenu.MENUITEM_PROP_TOGGLE_STATE)

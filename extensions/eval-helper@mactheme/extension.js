@@ -4068,9 +4068,85 @@ export default class EvalHelper extends Extension {
         this._setupMinimizedWindowSnapshotManager();
         this._setupMemoryOptimizer();
         this._setupForcedWindowCorners();
+        this._setupDynamicMenuAlignment();
+    }
+
+    _setupDynamicMenuAlignment() {
+        const autoAlignMenu = (menu) => {
+            if (!menu || !menu._getMenuItems) return;
+            const items = menu._getMenuItems().filter(it => it instanceof PopupMenu.PopupBaseMenuItem && !(it instanceof PopupMenu.PopupSeparatorMenuItem));
+            if (!items.length) return;
+
+            const hasCheckbox = items.some(it => {
+                if (it._ornament === PopupMenu.Ornament.CHECK || it._ornament === PopupMenu.Ornament.DOT) return true;
+                if (it._checkSlot && it._checkSlot.text && it._checkSlot.text.trim().length > 0) return true;
+                if (it.has_style_class_name && it.has_style_class_name('mac-menu-item-active')) return true;
+                const tt = it._dbusItem?.propertyGet?.('toggle-type');
+                if (tt === 'checkmark' || tt === 'radio') return true;
+                return false;
+            });
+
+            const box = menu.box || menu.actor;
+            if (hasCheckbox) {
+                box?.add_style_class_name?.('has-checkbox-items');
+                for (const it of items) {
+                    if (it._ornament === PopupMenu.Ornament.HIDDEN) {
+                        it.setOrnament(PopupMenu.Ornament.NONE);
+                    }
+                }
+            } else {
+                box?.remove_style_class_name?.('has-checkbox-items');
+                for (const it of items) {
+                    if (it._ornament === PopupMenu.Ornament.NONE) {
+                        it.setOrnament(PopupMenu.Ornament.HIDDEN);
+                    }
+                    if (it._ornamentIcon) {
+                        it._ornamentIcon.visible = false;
+                    }
+                    if (it.remove_style_class_name) {
+                        it.remove_style_class_name('popup-ornamented-menu-item');
+                    }
+                }
+            }
+        };
+
+        if (!PopupMenu.PopupMenu.prototype._origMacAutoAlignOpen) {
+            PopupMenu.PopupMenu.prototype._origMacAutoAlignOpen = PopupMenu.PopupMenu.prototype.open;
+            PopupMenu.PopupMenu.prototype.open = function(animate) {
+                try { autoAlignMenu(this); } catch (_) {}
+                return this._origMacAutoAlignOpen(animate);
+            };
+        }
+
+        if (!PopupMenu.PopupSubMenu.prototype._origMacAutoAlignOpen) {
+            PopupMenu.PopupSubMenu.prototype._origMacAutoAlignOpen = PopupMenu.PopupSubMenu.prototype.open;
+            PopupMenu.PopupSubMenu.prototype.open = function(animate) {
+                try { autoAlignMenu(this); } catch (_) {}
+                return this._origMacAutoAlignOpen(animate);
+            };
+        }
+
+        try {
+            if (Main.panel?.statusArea) {
+                for (const key of Object.keys(Main.panel.statusArea)) {
+                    const item = Main.panel.statusArea[key];
+                    if (item?.menu) autoAlignMenu(item.menu);
+                }
+            }
+        } catch (_) {}
     }
 
     disable() {
+        try {
+            if (PopupMenu.PopupMenu.prototype._origMacAutoAlignOpen) {
+                PopupMenu.PopupMenu.prototype.open = PopupMenu.PopupMenu.prototype._origMacAutoAlignOpen;
+                delete PopupMenu.PopupMenu.prototype._origMacAutoAlignOpen;
+            }
+            if (PopupMenu.PopupSubMenu.prototype._origMacAutoAlignOpen) {
+                PopupMenu.PopupSubMenu.prototype.open = PopupMenu.PopupSubMenu.prototype._origMacAutoAlignOpen;
+                delete PopupMenu.PopupSubMenu.prototype._origMacAutoAlignOpen;
+            }
+        } catch (_) {}
         try {
             MacSetupWizard.stopSetupWizard();
         } catch (_) {}

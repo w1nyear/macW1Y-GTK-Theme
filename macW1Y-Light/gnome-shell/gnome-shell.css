@@ -2560,7 +2560,7 @@ StEntry StLabel.hint-text {
 }
 
 .popup-menu {
-  min-width: 250px !important;
+  min-width: 140px !important; max-width: 480px !important; width: auto !important;
   color: #afafaf;
 }
 
@@ -2589,7 +2589,7 @@ StEntry StLabel.hint-text {
   background: transparent !important;
   border-radius: 24px !important;
   border: none !important;
-  min-width: 250px !important;
+  min-width: 140px !important; max-width: 480px !important; width: auto !important;
 }
 
 .popup-menu-item {
@@ -6298,13 +6298,13 @@ StWidget.focused .app-grid-running-dot {
   box-shadow: none !important;
   border-radius: 24px !important;
   padding: 6px !important;
-  min-width: 250px !important;
+  min-width: 140px !important; max-width: 480px !important; width: auto !important;
 }
 
 .popup-menu-boxpointer .popup-menu-content {
   border-radius: 24px !important;
   border: none !important;
-  min-width: 250px !important;
+  min-width: 140px !important; max-width: 480px !important; width: auto !important;
 }
 
 .popup-sub-menu {
@@ -6347,7 +6347,7 @@ StWidget.focused .app-grid-running-dot {
   background-color: transparent !important;
   background: transparent !important;
   box-shadow: none !important;
-  min-width: 250px !important;
+  min-width: 140px !important; max-width: 480px !important; width: auto !important;
 }
 
 .appmenu-popup-menu .popup-sub-menu {
@@ -7441,4 +7441,18 @@ StWidget.focused .app-grid-running-dot {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+}
+
+
+/* Conditional ornament indent: collapsed to 0 for items/menus without checkboxes */
+.popup-menu-item:not(.popup-ornamented-menu-item) .popup-menu-ornament,
+.popup-menu-content:not(.has-checkbox-items) .popup-menu-ornament {
+  width: 0px !important;
+  min-width: 0px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.popup-menu-content:not(.has-checkbox-items) .popup-menu-item:not(.popup-ornamented-menu-item) {
+  padding-left: 10px !important;
 }

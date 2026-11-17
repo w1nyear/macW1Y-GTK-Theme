@@ -1290,3 +1290,19 @@
    - Аудит та цілісність:
      * Оновлено контрольний хеш у config/extensions.lock.json для desktop-widgets@r3nhick.
      * Усі аудити пройдено на 100%: mac-extension-guard verify (21/21), mac-audit-sync check (100% PASS), mac-i18n-verify (100% SUCCESS, 0 кириличних символів у shell-скриптах).
+
+823. Динамічна ширина контекстних меню та вирівнювання тексту відповідно до наявності чекбоксів/галочок:
+   - Динамічна ширина замість фіксованої (Dynamic Menu Width):
+     * Повністю усунено жорстку фіксацію min-width: 250px !important; по всій системі (GNOME Shell, AppMenu, BMS menubar, Liquid Glass, Desktop Widgets, Nautilus, GTK4 та GTK3).
+     * Впроваджено адаптивне динамічне масштабування: min-width: 140px !important; max-width: 480px !important; width: auto !important; (у GTK: min-width: 140px; max-width: 480px; width: auto;).
+     * Короткі меню (наприклад, у треї для RustDesk, Antigravity, меню «Файл») більше не мають мертвого порожнього простору праворуч (ширина акуратно облягає вміст: 176px для RustDesk, 199px для меню «Файл»).
+     * Меню з довшими пунктами (наприклад, меню мов чи довгі пункти списку дій) динамічно розширюються за шириною найдовшого пункту (до 366px), що повністю запобігає передчасному обрізанню тексту та появі крапок «…».
+   - Умовний зсув тексту тільки при наявності чекбоксів/галочок (Conditional Indentation):
+     * Реалізовано динамічне виявлення чекбоксів/радіокнопок у контекстних меню через eval-helper@mactheme, ubuntu-appindicators@ubuntu.com та appmenu@ChathurangaBW.github.io, а також у GTK4 через CSS :has(check), :has(radio).
+     * Тільки якщо меню містить чекбокс або радіокнопку (як-от меню мови введення з позначкою «✓»), усі пункти цього меню отримують слот орнаменту (Ornament.NONE) для строгого вирівнювання тексту по єдиній лінії праворуч від колонки галочки.
+     * Якщо ж у меню немає жодного чекбокса (трей-іконки Telegram, RustDesk, Antigravity, меню програм на менюбарі, Nautilus, контекстне меню робочого столу), елементи орнаменту повністю згортаються (Ornament.HIDDEN, width: 0px !important; margin: 0; padding: 0;), а текст починається природно від лівого краю без штучного зсуву вправо.
+   - Верифікація та синхронізація:
+     * Збережено візуальні артефакти з діючої системи: menu_keyboard_verified.png (меню з галочкою та динамічною шириною 366px), menu_rustdesk_tray_verified.png (трей-меню без галочок, 176px, текст впритул ліворуч), menu_appmenu_verified.png (менюбар-меню 199px без зсуву).
+     * Синхронізовано оновлений бінарник генератора тем до /usr/local/bin/mac-build-theme.
+     * Оновлено контрольні хеші 6 модифікованих розширень у config/extensions.lock.json.
+     * Усі аудити пройдено на 100%: mac-extension-guard verify (21/21), mac-audit-sync check (100% PASS), mac-i18n-verify (100% SUCCESS).

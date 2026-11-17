@@ -250,5 +250,7 @@
     border-radius: 20px !important;
     box-shadow: none !important;
     padding: 6px !important;
-    min-width: 250px !important;
+    min-width: 140px !important;
+    max-width: 480px !important;
+    width: auto !important;
 }

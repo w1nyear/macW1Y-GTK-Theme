@@ -1848,7 +1848,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 }
 
 #menu-search-entry {
-  min-width: 250px;
+  min-width: 140px; max-width: 480px; width: auto;
   min-height: 16px;
   font-weight: normal;
   caret-color: #242424;

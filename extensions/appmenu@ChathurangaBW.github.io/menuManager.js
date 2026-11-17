@@ -708,6 +708,7 @@ const TopLevelMenuButton = GObject.registerClass(
     }
 
         _buildSubMenu(menuItems, parentMenu) {
+      const hasAnyOrnament = menuItems.some(it => it && (it.ornament === 'check' || it.ornament === 'dot' || it.ornament === 'none'));
       for (let idx = 0; idx < menuItems.length; idx++) {
         const item = menuItems[idx];
         const label = _(item.label);
@@ -740,13 +741,14 @@ const TopLevelMenuButton = GObject.registerClass(
           menuItem.add_style_class_name('appmenu-popup-menu-item');
           if (item.sensitive === false)
             menuItem.setSensitive(false);
-          if (item.ornament) {
-            const ornament = item.ornament === 'dot'
-              ? PopupMenu.Ornament.DOT
-              : item.ornament === 'check'
-                ? PopupMenu.Ornament.CHECK
-                : PopupMenu.Ornament.NONE;
-            menuItem.setOrnament(ornament);
+          if (item.ornament === 'dot') {
+            menuItem.setOrnament(PopupMenu.Ornament.DOT);
+          } else if (item.ornament === 'check') {
+            menuItem.setOrnament(PopupMenu.Ornament.CHECK);
+          } else if (item.ornament === 'none' || hasAnyOrnament) {
+            menuItem.setOrnament(PopupMenu.Ornament.NONE);
+          } else {
+            menuItem.setOrnament(PopupMenu.Ornament.HIDDEN);
           }
           if (typeof item.activate === 'function') {
             const aid = menuItem.connect("activate", () => { item.activate(); });

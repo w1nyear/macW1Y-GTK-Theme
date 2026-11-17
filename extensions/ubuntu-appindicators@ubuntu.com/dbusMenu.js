@@ -691,8 +691,20 @@ const MenuItemFactory = {
     },
 
     _onPropertyChanged(dbusItem, prop, _value) {
-        if (prop === 'toggle-type' || prop === 'toggle-state')
+        if (prop === 'toggle-type' || prop === 'toggle-state') {
             MenuItemFactory._updateOrnament.call(this);
+            try {
+                const parent = this._parent;
+                if (parent && parent._getMenuItems) {
+                    const siblings = parent._getMenuItems();
+                    for (const it of siblings) {
+                        if (it !== this && it._dbusItem) {
+                            MenuItemFactory._updateOrnament.call(it);
+                        }
+                    }
+                }
+            } catch (_) {}
+        }
         else if (prop === 'label')
             MenuItemFactory._updateLabel.call(this);
         else if (prop === 'enabled')
@@ -749,14 +761,33 @@ const MenuItemFactory = {
         if (!this.setOrnament)
             return; // separators and alike might not have gotten the polyfill
 
-        if (this._dbusItem.propertyGet('toggle-type') === 'checkmark' &&
-            this._dbusItem.propertyGetInt('toggle-state'))
+        const toggleType = this._dbusItem.propertyGet('toggle-type');
+        const toggleState = this._dbusItem.propertyGetInt('toggle-state');
+
+        if (toggleType === 'checkmark' && toggleState) {
             this.setOrnament(PopupMenu.Ornament.CHECK);
-        else if (this._dbusItem.propertyGet('toggle-type') === 'radio' &&
-                 this._dbusItem.propertyGetInt('toggle-state'))
+        } else if (toggleType === 'radio' && toggleState) {
             this.setOrnament(PopupMenu.Ornament.DOT);
-        else
+        } else if (toggleType === 'checkmark' || toggleType === 'radio') {
             this.setOrnament(PopupMenu.Ornament.NONE);
+        } else {
+            // Plain item with NO toggle-type.
+            // Check if any sibling in parent menu has a toggle-type
+            let hasToggleSibling = false;
+            try {
+                const parent = this._parent;
+                const siblings = parent && parent._getMenuItems ? parent._getMenuItems() : [];
+                hasToggleSibling = siblings.some(it => {
+                    const tt = it._dbusItem?.propertyGet?.('toggle-type');
+                    return tt === 'checkmark' || tt === 'radio';
+                });
+            } catch (_) {}
+
+            if (hasToggleSibling)
+                this.setOrnament(PopupMenu.Ornament.NONE);
+            else
+                this.setOrnament(PopupMenu.Ornament.HIDDEN);
+        }
     },
 
     async _updateImage() {

@@ -244,7 +244,9 @@
 }
 
 .appmenu-cascading-menu {
-    min-width: 220px;
+    min-width: 140px !important;
+    max-width: 480px !important;
+    width: auto !important;
 }
 
 .appmenu-popup-menu-item .popup-menu-arrow,
@@ -269,7 +271,9 @@
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    min-width: 250px !important;
+    min-width: 140px !important;
+    max-width: 480px !important;
+    width: auto !important;
 }
 
 .appmenu-popup-menu .popup-sub-menu {

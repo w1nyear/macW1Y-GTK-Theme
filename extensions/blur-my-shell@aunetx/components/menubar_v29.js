@@ -2632,7 +2632,7 @@ export const MenuBarController = class MenuBarController {
 
     _updatePopupRealtime(tint, radius = 20) {
         try {
-            const style = `background-color: transparent !important; background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; min-width: 250px !important;`;
+            const style = `background-color: transparent !important; background: transparent !important; background-image: none !important; border: none !important; box-shadow: none !important; min-width: 140px !important; max-width: 480px !important; width: auto !important;`;
             const found = [];
             const walk = (actor) => {
                 if (!actor) return;
