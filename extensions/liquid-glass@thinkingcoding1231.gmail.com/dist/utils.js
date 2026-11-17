@@ -1732,11 +1732,6 @@ export const BackgroundMirror = _safeRegisterClass('BackgroundMirror', class Bac
     vfunc_pick(_pickContext) {
         // No-op: never respond to picking, exactly like UnpickableClone.
     }
-    vfunc_paint(paintNode, paintContext) {
-        if (!this.is_in_clone_paint())
-            return;
-        super.vfunc_paint(paintNode, paintContext);
-    }
 });
 // [black-frame] A/B switch for the fix above. `true` clones our own
 // BackgroundMirror (uncalled MetaBackgroundContent, painted through a Clone so
@@ -1781,13 +1776,13 @@ function ensureSharedBackgroundSource() {
         }
     }
     // Fully opaque (255) so that Clutter.Clone and child MetaBackgroundActors
-    // inherit full paint_opacity. vfunc_paint() above filters out direct screen
-    // painting via is_in_clone_paint(), so nothing draws on the screen directly.
+    // inherit full paint_opacity. Placed at index 0 of global.window_group
+    // behind the real wallpaper (_backgroundGroup), so it is completely occluded
+    // on screen and never covers windows, panel or dock.
     source.opacity = 255;
     source.reactive = false;
-    // uiGroup, deliberately: it is a sibling of global.window_group, so
-    // meta_window_group_paint()'s cull walk can never reach our contents.
-    uiGroup.add_child(source);
+    const winGroup = global.window_group ?? uiGroup;
+    winGroup.insert_child_at_index(source, 0);
     source.connect('destroy', () => {
         if (_sharedBackgroundSource === source)
             _sharedBackgroundSource = null;
