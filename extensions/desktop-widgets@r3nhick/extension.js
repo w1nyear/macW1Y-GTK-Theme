@@ -3267,10 +3267,6 @@ class WidgetController {
         return;
       };
 
-      if (view.glass && typeof view.glass.setDragging === 'function') {
-        try { view.glass.setDragging(false); } catch (_) {}
-      }
-
       drag = null;
       this._clampWidget(widget);
 
@@ -3401,10 +3397,6 @@ class WidgetController {
       // Capture pointer events globally while dragging. No pushModal needed —
       // captured-event on stage works without it, like music widget seek.
       this._dragActor = actor;
-      this._dragView = view;
-      if (view.glass && typeof view.glass.setDragging === 'function') {
-        try { view.glass.setDragging(true); } catch (_) {}
-      }
       global.stage.connectObject('captured-event', (_stage, capturedEvent) => {
         if (!drag) {
           return Clutter.EVENT_PROPAGATE;
@@ -3432,9 +3424,6 @@ class WidgetController {
           delete widget.oldX;
           delete widget.oldY;
           actor.set_position(widget.x, widget.y);
-          if (view.glass && typeof view.glass.setDragging === 'function') {
-            try { view.glass.setDragging(false); } catch (_) {}
-          }
           this._cancelActiveDrag();
           return Clutter.EVENT_STOP;
         };
@@ -3449,11 +3438,6 @@ class WidgetController {
   };
 
   _cancelActiveDrag() {
-    if (this._dragView?.glass && typeof this._dragView.glass.setDragging === 'function') {
-      try { this._dragView.glass.setDragging(false); } catch (_) {}
-    }
-    this._dragView = null;
-
     if (!this._dragActor) {
       return;
     };

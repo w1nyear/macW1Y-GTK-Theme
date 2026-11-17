@@ -664,7 +664,7 @@ function _ensureGlass() {
     }
 }
 
-function _syncGlass(forceRefresh = false) {
+function _syncGlass() {
     const s = _glass;
     if (!s || !_box)
         return false;
@@ -721,25 +721,11 @@ function _syncGlass(forceRefresh = false) {
             baseStrength: surf.a,
         }]);
         s.effect.setResolution(monitor.width, monitor.height);
-
-        // Fallback for fullscreen games/apps
-        const isFs = globalThis._macSharedGlassEngine?.damageTracker?.isTopWindowFullscreen?.() || (global.display?.focus_window?.is_fullscreen?.() ?? false);
-        if (s.effect) {
-            s.effect.useFallbackTint = isFs;
-            s.effect.markBackdropDirty?.();
-        }
-
         s.liquidBox.set_position(0, 0);
         s.liquidBox.set_size(monitor.width, monitor.height);
         setClipIfChanged(s.bgActor, rx - 100, ry - 100,
             bw + OSD_PAD * 2 + 200, bh + OSD_PAD * 2 + 200);
         s.wcm.setOffset(-monitor.x, -monitor.y);
-
-        if (forceRefresh) {
-            s.wcm?.rebuildClones?.();
-            s.uiSampler?.refresh?.();
-        }
-
         syncGlassCaptureClip({
             cloneContainer: s.cloneContainer,
             effect: s.effect,
@@ -752,22 +738,6 @@ function _syncGlass(forceRefresh = false) {
         s.uiSampler.refresh();
         s.uiSampler.sync(monitor.x, monitor.y, monitor.width, monitor.height);
         s.wcm.sync();
-
-        // Hook damage while OSD is visible
-        if (globalThis._macSharedGlassEngine?.damageTracker) {
-            globalThis._macSharedGlassEngine.damageTracker.registerElement('kiwi-tahoe-osd', {
-                actor: s.bgActor,
-                getRect: () => [rx, ry, bw + OSD_PAD * 2, bh + OSD_PAD * 2],
-                onDirty: () => {
-                    if (!_box || !_box.visible) return;
-                    s.effect?.markBackdropDirty?.();
-                    s.wcm?.sync?.();
-                    s.uiSampler?.refresh?.();
-                    s.bgActor?.queue_redraw?.();
-                }
-            });
-        }
-
         return true;
     } catch (_) {}
     return false;
@@ -942,11 +912,6 @@ function _hideNow() {
     _hideId = 0;
     _cancelAnim();
     _restoreCcIcon();
-    if (globalThis._macSharedGlassEngine?.damageTracker) {
-        try {
-            globalThis._macSharedGlassEngine.damageTracker.unregisterElement('kiwi-tahoe-osd');
-        } catch (_) {}
-    }
     if (_glass?.bgActor) {
         try {
             _glass.bgActor.ease({
@@ -1115,7 +1080,7 @@ function _show(kind, title, iconL, iconR, value) {
         const firstShow = !_box.visible;
         try {
             if (_ensureGlass())
-                _syncGlass(firstShow);
+                _syncGlass();
         } catch (_) {}
 
         if (firstShow) {
