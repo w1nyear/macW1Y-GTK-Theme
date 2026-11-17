@@ -1,4 +1,4 @@
-// -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
+
 
 import {
     Clutter,
@@ -17,11 +17,11 @@ import {
 
 const {signals: Signals} = imports;
 
-/*
- * DEFAULT:  transparency given by theme
- * FIXED:    constant transparency chosen by user
- * DYNAMIC:  apply 'transparent' style when no windows are close to the dock
- * */
+
+
+
+
+
 const TransparencyMode = {
     DEFAULT:  0,
     FIXED:    1,
@@ -40,9 +40,9 @@ export const PositionStyleClass = Object.freeze([
     'left',
 ]);
 
-/**
- * Manage theme customization and custom theme support
- */
+
+
+
 export class ThemeManager {
     constructor(dock) {
         this._signalsHandler = new Utils.GlobalSignalsHandler(this);
@@ -50,13 +50,13 @@ export class ThemeManager {
         this._actor = dock;
         this._dash = dock.dash;
 
-        // initialize colors with generic values
+
         this._customizedBackground = {red: 0, green: 0, blue: 0, alpha: 0};
         this._customizedBorder = {red: 0, green: 0, blue: 0, alpha: 0};
         this._transparency = new Transparency(dock);
 
         this._signalsHandler.add([
-            // update :overview pseudoclass
+
             Main.overview,
             'showing',
             this._onOverviewShowing.bind(this),
@@ -87,14 +87,14 @@ export class ThemeManager {
 
         maybeUpdateCustomTheme();
 
-        // Set the initial overview pseudo-class state.
+
         if (Main.overview.visible)
             this._onOverviewShowing();
         else
             this._onOverviewHiding();
 
-        // destroy themeManager when the managed actor is destroyed (e.g. extension unload)
-        // in order to disconnect signals
+
+
         this._signalsHandler.add(this._actor, 'destroy', () => this.destroy());
     }
 
@@ -138,13 +138,13 @@ export class ThemeManager {
         if (!backgroundColor)
             return;
 
-        // Get the background and border alphas. We check the background alpha
-        // for a minimum of .001 to prevent division by 0 errors
+
+
         const backgroundAlpha = Math.max(Math.round(backgroundColor.alpha / 2.55) / 100, .001);
         let borderAlpha = Math.round(borderColor.alpha / 2.55) / 100;
 
-        // The border and background alphas should remain in sync
-        // We also limit the borderAlpha to a maximum of 1 (full opacity)
+
+
         borderAlpha = Math.min((borderAlpha / backgroundAlpha) * newAlpha, 1);
 
         this._customizedBackground = `rgba(${
@@ -161,7 +161,7 @@ export class ThemeManager {
     }
 
     _getDefaultColors() {
-        // Remove custom style
+
         const oldStyle = this._dash._background.get_style();
         this._dash._background.set_style(null);
 
@@ -170,10 +170,10 @@ export class ThemeManager {
 
         const backgroundColor = themeNode.get_background_color();
 
-        // Just in case the theme has different border colors ..
-        // We want to find the inside border-color of the dock because it is
-        // the side most visible to the user. We do this by finding the side
-        // opposite the position
+
+
+
+
         const position = Utils.getPosition();
         let side = position + 2;
         if (side > 3)
@@ -185,8 +185,8 @@ export class ThemeManager {
     }
 
     _updateDashColor() {
-        // Retrieve the color. If needed we will adjust it before passing it to
-        // this._transparency.
+
+
         let [backgroundColor] = this._getDefaultColors();
 
         if (!backgroundColor)
@@ -195,14 +195,14 @@ export class ThemeManager {
         const {settings} = Docking.DockManager;
 
         if (settings.customBackgroundColor) {
-            // When applying a custom color, we need to check the alpha value,
-            // if not the opacity will always be overridden by the color below.
-            // Note that if using 'dynamic' transparency modes,
-            // the opacity will be set by the opaque/transparent styles anyway.
+
+
+
+
             let newAlpha = Math.round(backgroundColor.alpha / 2.55) / 100;
 
             ({backgroundColor} = settings);
-            // backgroundColor is a string like rgb(0,0,0)
+
             const Color = Clutter.Color ?? Cogl.Color;
             const [ret, color] = Color.from_string(backgroundColor);
             if (!ret) {
@@ -223,7 +223,7 @@ export class ThemeManager {
             color.alpha = newAlpha * 255;
             this._transparency.setColor(color);
         } else {
-            // backgroundColor is a {Clutter,Cogl}.Color object
+
             this._transparency.setColor(backgroundColor);
         }
     }
@@ -246,7 +246,7 @@ export class ThemeManager {
         else
             this._actor.remove_style_class_name('running-dots');
 
-        // If not the built-in theme option is not selected
+
         if (!settings.applyCustomTheme) {
             if (settings.forceStraightCorner)
                 this._actor.add_style_class_name('straight-corner');
@@ -268,30 +268,30 @@ export class ThemeManager {
         this.emit('updated');
     }
 
-    /**
-     * Reimported back and adapted from atomdock
-     */
+
+
+
     _adjustTheme() {
         const {settings} = Docking.DockManager;
 
-        // Remove prior style edits
+
         this._dash._background.set_style(null);
         this._transparency.disable();
 
-        // If built-in theme is enabled do nothing else
+
         if (settings.applyCustomTheme)
             return;
 
         let newStyle = '';
         const position = Utils.getPosition(settings);
 
-        // obtain theme border settings
+
         const themeNode = this._dash._background.get_theme_node();
         const borderColor = themeNode.get_border_color(St.Side.TOP);
         const borderWidth = themeNode.get_border_width(St.Side.TOP);
 
-        // We're copying border and corner styles to left border and top-left
-        // corner, also removing bottom border and bottom-right corner styles
+
+
         let borderMissingStyle = '';
 
         if (this._rtl && (position !== St.Side.RIGHT)) {
@@ -305,12 +305,12 @@ export class ThemeManager {
         newStyle = borderMissingStyle;
 
         if (newStyle) {
-            // I do call set_style possibly twice so that only the background gets the transition.
-            // The transition-property css rules seems to be unsupported
+
+
             this._dash._background.set_style(newStyle);
         }
 
-        // Customize background
+
         const fixedTransparency = settings.transparencyMode === TransparencyMode.FIXED;
         const defaultTransparency = settings.transparencyMode === TransparencyMode.DEFAULT;
         if (!defaultTransparency && !fixedTransparency) {
@@ -346,11 +346,11 @@ export class ThemeManager {
 }
 Signals.addSignalMethods(ThemeManager.prototype);
 
-/**
- * The following class is based on the following upstream commit:
- * https://git.gnome.org/browse/gnome-shell/commit/?id=447bf55e45b00426ed908b1b1035f472c2466956
- * Transparency when free-floating
- */
+
+
+
+
+
 class Transparency {
     constructor(dock) {
         this._dash = dock.dash;
@@ -361,8 +361,8 @@ class Transparency {
         this._panel = Main.panel;
         this._position = Utils.getPosition();
 
-        // All these properties are replaced with the ones in the .dummy-opaque
-        // and .dummy-transparent css classes
+
+
         this._backgroundColor = '0,0,0';
         this._transparentAlpha = '0.2';
         this._opaqueAlpha = '1';
@@ -377,8 +377,8 @@ class Transparency {
     }
 
     enable() {
-        // ensure I never double-register/inject
-        // although it should never happen
+
+
         this.disable();
 
         this._base_actor_style = this._actor.get_style();
@@ -389,7 +389,7 @@ class Transparency {
         let addedSignal = 'child-added';
         let removedSignal = 'child-removed';
 
-        // for compatibility with Gnome Shell 45
+
         if (GObject.signal_lookup('actor-added', global.window_group)) {
             addedSignal = 'actor-added';
             removedSignal = 'actor-removed';
@@ -417,10 +417,10 @@ class Transparency {
             this._updateSolidStyle.bind(this),
         ]);
 
-        // Window signals
+
         global.window_group.get_children().filter(child => {
-            // An irrelevant window actor ('Gnome-shell') produces an error when the signals are
-            // disconnected, therefore do not add signals to it.
+
+
             return child instanceof Meta.WindowActor &&
                    child.get_meta_window().get_wm_class() !== 'Gnome-shell';
         }).forEach(function (win) {
@@ -437,8 +437,8 @@ class Transparency {
     }
 
     disable() {
-        // ensure I never double-register/inject
-        // although it should never happen
+
+
         this._signalsHandler.removeWithLabel(Labels.TRANSPARENCY);
 
         for (const key of this._trackedWindows.keys()) {
@@ -493,7 +493,7 @@ class Transparency {
     _dockIsNear() {
         if (this._dockActor.has_style_pseudo_class('overview'))
             return false;
-        /* Get all the windows in the active workspace that are in the primary monitor and visible */
+
         const activeWorkspace = global.workspace_manager.get_active_workspace();
         const dash = this._dash;
         const windows = activeWorkspace.list_windows().filter(metaWindow => {
@@ -503,10 +503,10 @@ class Transparency {
                    !metaWindow.skip_taskbar;
         });
 
-        /* Check if at least one window is near enough to the panel.
-         * If the dock is hidden, we need to account for the space it would take
-         * up when it slides out. This is avoid an ugly transition.
-         * */
+
+
+
+
         let factor = 0;
         if (!Docking.DockManager.settings.dockFixed &&
             this._dock.dockState === Docking.State.HIDDEN)
@@ -569,7 +569,7 @@ class Transparency {
     }
 
     _getAlphas() {
-        // Create dummy object and add to the uiGroup to get it to the stage
+
         const dummyObject = new St.Bin({
             name: 'dashtodockContainer',
         });

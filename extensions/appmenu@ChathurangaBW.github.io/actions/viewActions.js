@@ -3,7 +3,7 @@ import * as Logger from '../logger.js';
 
 const NAUTILUS_PREFS = 'org.gnome.nautilus.preferences';
 
-// Lazily-created Gio.Settings — avoids persistent D-Bus connection at module import
+
 let _settingsInstance = null;
 function _getSettings() {
     if (!_settingsInstance) {
@@ -29,15 +29,15 @@ function gsettingsToggle(key) {
     }
 }
 
-/**
- * Force Nautilus to re-read its sort/view preferences on open windows.
- * Nautilus monitors GSettings changes, but sometimes the sort state
- * is cached per-window. This sends a gsettings set via command line
- * (ensures D-Bus propagation) and toggles the view briefly to force
- * a re-render of the current directory listing.
- */
+
+
+
+
+
+
+
 function applyNautilusSetting(key, value) {
-    // Direct GSettings write. Nautilus monitors these changes over D-Bus.
+
     gsettingsSet(key, value);
 }
 

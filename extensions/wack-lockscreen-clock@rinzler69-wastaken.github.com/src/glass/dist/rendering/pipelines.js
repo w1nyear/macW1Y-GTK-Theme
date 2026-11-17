@@ -4,9 +4,9 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import { uniformDeclarations, setUniformVector, coglContext, safeRegisterClass } from '../shellVersion.js';
 
-/**
- * Splits a GLSL source string into { decl, body } at the "void main()" boundary.
- */
+
+
+
 export function splitShader(src, warn) {
     const match = src.match(/void\s+main\s*\(\s*\)\s*\{/);
     if (!match || match.index === undefined) {
@@ -15,7 +15,7 @@ export function splitShader(src, warn) {
     }
     const decl = src.substring(0, match.index);
     const rest = src.substring(match.index + match[0].length);
-    // Find the matching closing brace.
+
     let depth = 1;
     let bodyEnd = 0;
     for (let i = 0; i < rest.length; i++) {
@@ -32,13 +32,13 @@ export function splitShader(src, warn) {
     return { decl, body: rest.substring(0, bodyEnd) };
 }
 
-/**
- * A linear-sampling Gaussian kernel for `sigma` (half-res texels) with
- * `fetchPairs` merged tap pairs: the center stays a single sample, and each
- * (i, i+1) pair becomes one fetch at the weighted mean offset. The shader's
- * structure depends only on fetchPairs, so a sigma change within it only
- * updates the kernel_scale uniform.
- */
+
+
+
+
+
+
+
 export function computeGaussianKernel(sigma, fetchPairs) {
     const sideTaps = Math.max(2, fetchPairs * 2);
     const raw = [];
@@ -66,10 +66,10 @@ export function computeGaussianKernel(sigma, fetchPairs) {
     return { offsets, weights };
 }
 
-/**
- * An unrolled GLSL snippet for `kernel`. Offsets and weights are constants;
- * kernel_scale scales the offsets at runtime.
- */
+
+
+
+
 export function buildGaussianSnippet(kernel, direction) {
     const decl = `uniform vec2 inv_size;    /* 1/width, 1/height of the SOURCE texture */\n` +
         `uniform float kernel_scale; /* dynamic scale based on the sigma ratio, avoids recompiling */\n`;
@@ -90,9 +90,9 @@ export function buildGaussianSnippet(kernel, direction) {
 }
 
 const SHADER_FILES = ['downsample.frag', 'upsample.frag', 'glass.frag'];
-// The shader sources by path, read once. A glass made while an animation runs
-// (a notification banner sliding in) then has them before its first frame,
-// where reading them again would leave it undrawn for a few frames.
+
+
+
 const shaderSources = new Map();
 
 export function clearShaderSources() {
@@ -103,8 +103,8 @@ export class ShaderPipelines {
     _logger;
     _shapeTexture;
 
-    // `shapeTexture`: the composite takes the glass's outline from a distance
-    // field on layer 2 (glass text) instead of the rounded rect.
+
+
     constructor(_logger, _shapeTexture = false) {
         this._logger = _logger;
         this._shapeTexture = _shapeTexture;
@@ -119,7 +119,7 @@ export class ShaderPipelines {
         [this._downsampleSource, this._upsampleSource, this._glassSource] = sources;
     }
 
-    /** Takes the sources another glass has read already; false while none has. */
+
     loadCached(extensionPath) {
         const sources = SHADER_FILES.map(name => shaderSources.get(`${extensionPath}/shaders/${name}`));
         if (!extensionPath || sources.some(source => source === undefined))
@@ -136,21 +136,21 @@ export class ShaderPipelines {
         this.boxDown = null;
     }
 
-    // Compiled once and reused across frames. downsample/upsample are Dual Kawase.
+
     downsample = null;
     upsample = null;
     composite = null;
-    // A plain one-fetch copy with a UV remap, for the Gaussian's half-res
-    // pre-pass. No snippet: Cogl's default combine modulates the
-    // texture by the pipeline color, which is opaque white.
+
+
+
     passthrough = null;
-    // A 4x4 box filter, the first pass when glass-blur-downscale is 4.
+
     boxDown = null;
     _downsampleSource = null;
     _upsampleSource = null;
     _glassSource = null;
 
-    // load_contents_finish() throws a GError when the file cannot be read.
+
     _readFileAsync(path, cancellable) {
         return new Promise((resolve, reject) => {
             const file = Gio.File.new_for_path(path);
@@ -173,10 +173,10 @@ export class ShaderPipelines {
         });
     }
 
-    /**
-     * Compiles the pipelines. Runs on the first frame, once a Cogl context
-     * exists; call clear() first to recompile.
-     */
+
+
+
+
     initialize(ctx) {
         this.downsample = Cogl.Pipeline.new(ctx);
         configureSamplerLayer(this.downsample, 0);
@@ -196,10 +196,10 @@ export class ShaderPipelines {
         }
         this.passthrough = Cogl.Pipeline.new(ctx);
         configureSamplerLayer(this.passthrough, 0);
-        // For a 4x reduction a single bilinear fetch covers only the inner 2x2 of
-        // each 4x4 block and aliases. These four taps land on source texel
-        // corners, so each fetch averages one 2x2 quadrant and together they
-        // weigh the whole block equally.
+
+
+
+
         this.boxDown = Cogl.Pipeline.new(ctx);
         configureSamplerLayer(this.boxDown, 0);
         {
@@ -212,22 +212,22 @@ export class ShaderPipelines {
                 'cogl_color_out = c * 0.25;\n');
             this.boxDown.add_snippet(boxSnip);
         }
-        // The Gaussian pipelines depend on the blur radius and are compiled by
-        // BlurRenderer when needed.
+
+
         this.composite = Cogl.Pipeline.new(ctx);
         configureSamplerLayer(this.composite, 0);
         if (this._shapeTexture)
             configureSamplerLayer(this.composite, SHAPE_LAYER);
-        // Premultiplied-alpha "over", as ShaderEffect blends by default.
+
         this.composite.set_blend('RGBA = ADD(SRC_COLOR, DST_COLOR * (1 - SRC_COLOR[A]))');
         this._loadCompositeShader();
     }
 
-    /**
-     * Adds glass.frag to the composite pipeline. The shader uses ShaderEffect's
-     * "cogl_sampler", which becomes "cogl_sampler0", the name Cogl declares for
-     * layer 0 in a fragment snippet; the shader's own declaration is dropped.
-     */
+
+
+
+
+
     _loadCompositeShader() {
         if (!this.composite || !this._glassSource)
             return;
@@ -242,30 +242,30 @@ export class ShaderPipelines {
     }
 }
 
-// The composite's layer for the distance field of a shape-texture glass.
+
 export const SHAPE_LAYER = 2;
 
-// Bilinear filtering and clamp-to-edge on one layer.
+
 export function configureSamplerLayer(pipeline, layer) {
     pipeline.set_layer_wrap_mode(layer, Cogl.PipelineWrapMode.CLAMP_TO_EDGE);
     pipeline.set_layer_filters(layer, Cogl.PipelineFilter.LINEAR, Cogl.PipelineFilter.LINEAR);
 }
 
 export class RenderPasses {
-    // Per-pass pipeline copies; see pipeline().
+
     _passPipelines = new Map();
 
     clear() {
         this._passPipelines.clear();
     }
 
-    /**
-     * A copy of `base` for one pass. Paint nodes run after the paint that
-     * queued them returns, so passes sharing a pipeline would all draw with the
-     * last pass's uniforms. Copies are copy-on-write and are replaced only when
-     * `base` is (a shader recompile). Blending is plain replace: a LayerNode
-     * does not clear, and every pass covers its whole target.
-     */
+
+
+
+
+
+
+
     pipeline(key, base) {
         const cached = this._passPipelines.get(key);
         if (cached && cached.base === base)
@@ -276,13 +276,13 @@ export class RenderPasses {
         return copy;
     }
 
-    /**
-     * Queues a render-to-texture pass as a paint node. An actor builds its
-     * node tree first and runs it afterwards, so the backdrop copy queued in the
-     * same tree has not reached its texture yet; drawing immediately would read
-     * the previous copy. As a paint node the pass runs after it. The
-     * projection is framebuffer state, so setting it at build time is fine.
-     */
+
+
+
+
+
+
+
     add(parentNode, targetFbo, pipeline, destW, destH, uv) {
         targetFbo.orthographic(0, 0, destW, destH, -1, 1);
         const layerNode = Clutter.LayerNode.new_to_framebuffer(targetFbo, pipeline);
@@ -292,12 +292,12 @@ export class RenderPasses {
         drawNode.add_texture_rectangle(new Clutter.ActorBox({ x1: 0, y1: 0, x2: destW, y2: destH }), uv[0], uv[1], uv[2], uv[3]);
     }
 
-    /**
-     * Queues the final composite as a paint node, after the copy and the blur
-     * passes. Every layer is drawn with the same UV range:
-     * add_multitexture_rectangle()'s introspection is broken and crashes the
-     * shell.
-     */
+
+
+
+
+
+
     composite(parentNode, pipeline, dest, uv) {
         const drawNode = Clutter.PipelineNode.new(pipeline);
         parentNode.add_child(drawNode);
@@ -305,7 +305,7 @@ export class RenderPasses {
     }
 }
 
-// Cogl caches uniform locations, so these are cheap to call every frame.
+
 export function setPipelineVec2(pipeline, name, x, y) {
     setUniformVector(pipeline, name, [x, y]);
 }
@@ -362,8 +362,8 @@ export class BlurRenderer {
         }
         else
             this._runDualKawaseBlur(parent, source, uv);
-        // Only a chain that actually produced a result may be reused later, and
-        // the key records the configuration it was produced with.
+
+
         if (inputKey && this._blurResultTex !== null)
             this._renderedKey = [...inputKey, ...this._configKey()];
     }
@@ -398,7 +398,7 @@ export class BlurRenderer {
         if (factor === this._blurDownscale)
             return;
         this._blurDownscale = factor;
-        // Level 0 changes size; the next paint rebuilds the pool.
+
         this._destroyTexturePool();
         this.setBlurRadius(this._targetRadius);
         this._repaint();
@@ -435,46 +435,46 @@ export class BlurRenderer {
         };
     }
 
-    // The texture pool; see resize() for the sizes.
+
     _blurTextures = [];
     _blurFbos = [];
-    // The Gaussian horizontal pass output, per level.
+
     _gaussianTempTextures = [];
     _gaussianTempFbos = [];
-    // Separate output targets per level, so no pass writes a framebuffer that
-    // an earlier pass read. Deferred paint nodes make Cogl track dependencies
-    // between framebuffers, and ping-ponging is a cycle it rejects; the passes
-    // then lose their order and the composite reads an unwritten blur.
+
+
+
+
     _upTextures = [];
     _upFbos = [];
-    // This frame's finished blur, read by the composite.
+
     _blurResultTex = null;
     _gaussianHPipeline = null;
     _gaussianVPipeline = null;
     _blurMethod = 1;
-    // The kernel compiled into the H/V pipelines, and one waiting to be
-    // compiled on the next paint.
+
+
     _gaussianKernel = null;
     _pendingGaussianKernel = null;
     _gaussianPipelineDirty = false;
-    // The sigma the compiled kernel was built for; radius changes that keep
-    // the tap count only change kernel_scale = sigma / _gaussianBaseSigma.
+
+
     _gaussianBaseSigma = 0;
     _gaussianScale = 1.0;
     _gaussianFetchPairs = 0;
     _poolWidth = 0;
     _poolHeight = 0;
-    // glass-blur-downscale: 2 = half resolution (default), 4 = quarter.
+
     _blurDownscale = 2;
-    // Passes per direction. With 4: 1/2 → 1/4 → 1/8 → 1/16 → 1/8 → 1/4 → 1/2.
+
     PASS_COUNT = 4;
-    // The Kawase shaders' blur_radius uniforms.
+
     _blurRadiusDown = 0.5;
     _blurRadiusUp = 1.0;
-    // The requested radius, before the per-method mapping.
+
     _targetRadius = 15.0;
 
-    // The caller drops the previous pipelines first.
+
     _compileGaussianPipelines(ctx, kernel) {
         this._gaussianHPipeline = Cogl.Pipeline.new(ctx);
         configureSamplerLayer(this._gaussianHPipeline, 0);
@@ -493,11 +493,11 @@ export class BlurRenderer {
         this._pendingGaussianKernel = null;
     }
 
-    /**
-     * Allocates the pool for a (w, h) source. Level i is w >> (i + 1) wide
-     * (level 0 at half resolution); glass-blur-downscale = 4 shifts every level
-     * down one more step.
-     */
+
+
+
+
+
     resize(ctx, w, h) {
         this._destroyTexturePool();
         const shift = this._blurDownscale >= 4 ? 2 : 1;
@@ -520,8 +520,8 @@ export class BlurRenderer {
         this._poolHeight = h;
     }
 
-    // Dual Kawase: downsample srcTex through every level, then upsample back
-    // into the _up* targets.
+
+
     _runDualKawaseBlur(parentNode, srcTex, srcUV) {
         let currentSrc = srcTex;
         for (let i = 0; i < this.PASS_COUNT; i++) {
@@ -531,10 +531,10 @@ export class BlurRenderer {
             const destH = destTex.get_height();
             const invW = 1.0 / currentSrc.get_width();
             const invH = 1.0 / currentSrc.get_height();
-            // Only the first pass reads the source, through srcUV.
+
             const uv = (i === 0) ? srcUV : [0, 0, 1, 1];
-            // At downscale 4 the first pass is a 4x reduction, which Kawase's
-            // kernel does not filter properly; the box filter does.
+
+
             const boxFirst = i === 0 && this._blurDownscale >= 4 && this._pipelines.boxDown !== null;
             const pipeline = boxFirst
                 ? this._passes.pipeline('kawase-down-0-box', this._pipelines.boxDown)
@@ -569,9 +569,9 @@ export class BlurRenderer {
         this._blurResultTex = this._upTextures[0];
     }
 
-    // Separable Gaussian on pool level 0 only: a downsampling pre-pass into
-    // _blurTextures[0], the horizontal pass into the temp texture, and the
-    // vertical pass into _upTextures[0].
+
+
+
     _runGaussianBlur(parentNode, srcTex, srcUV) {
         const tempFbo = this._gaussianTempFbos[0];
         const tempTex = this._gaussianTempTextures[0];
@@ -579,8 +579,8 @@ export class BlurRenderer {
         const destTex = this._blurTextures[0];
         const destW = destTex.get_width();
         const destH = destTex.get_height();
-        // At downscale 2 one bilinear fetch averages the 2x2 footprint exactly;
-        // at 4 the box filter is needed.
+
+
         const wideDownsample = this._blurDownscale >= 4 && this._pipelines.boxDown !== null;
         const prePipeline = wideDownsample
             ? this._passes.pipeline('gauss-pre-box', this._pipelines.boxDown)
@@ -595,7 +595,7 @@ export class BlurRenderer {
         setPipelineVec2(hPipeline, 'inv_size', 1.0 / destW, 1.0 / destH);
         setPipelineFloat(hPipeline, 'kernel_scale', this._gaussianScale);
         this._passes.add(parentNode, tempFbo, hPipeline, destW, destH, [0, 0, 1, 1]);
-        // Not back into destFbo, which the horizontal pass read (see _upTextures).
+
         const vPipeline = this._passes.pipeline('gauss-v', this._gaussianVPipeline);
         vPipeline.set_layer_texture(0, tempTex);
         setPipelineVec2(vPipeline, 'inv_size', 1.0 / destW, 1.0 / destH);
@@ -605,8 +605,8 @@ export class BlurRenderer {
         this._blurResultTex = this._upTextures[0];
     }
 
-    // Dropping the references frees the textures; GJS owns them, so
-    // run_dispose() would free them twice.
+
+
     _destroyTexturePool() {
         this._blurFbos = [];
         this._blurTextures = [];
@@ -615,14 +615,14 @@ export class BlurRenderer {
         this._upFbos = [];
         this._upTextures = [];
         this._blurResultTex = null;
-        // The reuse key holds the old source texture.
+
         this._renderedKey = null;
         this._poolWidth = 0;
         this._poolHeight = 0;
     }
 
-    // Both methods share the pool, and the Gaussian kernel is compiled on the
-    // next paint, so a repaint is all a switch needs.
+
+
     setBlurMethod(method) {
         if (this._blurMethod === method)
             return;
@@ -640,18 +640,18 @@ export class BlurRenderer {
         this._setDualKawaseBlurRadius(radius);
     }
 
-    /**
-     * The Gaussian uses one pool level, so a radius change never rebuilds the
-     * pool. The tap count follows a 4-sigma cutoff; while it stays the same,
-     * only kernel_scale changes and nothing is recompiled.
-     */
+
+
+
+
+
     _setGaussianBlurRadius(radius) {
-        // The radius is in screen pixels; one texel is RES_SCALE of them. The
-        // sigma cap is in texels, so quarter resolution reaches twice as far.
+
+
         const RES_SCALE = this._blurDownscale >= 4 ? 4.0 : 2.0;
         const MAX_SIGMA_TEXEL = 15.0;
-        // The kernel is at least one texel wide so it absorbs the downsample's
-        // aliasing; a smaller radius only lowers kernel_scale.
+
+
         const MIN_SIGMA_TEXEL = 1.0;
         if (radius <= 0) {
             if (this.PASS_COUNT !== 0) {
@@ -664,8 +664,8 @@ export class BlurRenderer {
         }
         const sigmaTexel = Math.min(radius / RES_SCALE, MAX_SIGMA_TEXEL);
         const kernelSigma = Math.max(sigmaTexel, MIN_SIGMA_TEXEL);
-        // A 4-sigma cutoff (3 sigma truncated visibly), two taps per fetch, and
-        // at least two pairs.
+
+
         const sideTaps = Math.max(2, Math.ceil(kernelSigma * 4));
         const fetchPairs = Math.max(2, Math.ceil(sideTaps / 2));
         const needsRecompile = this._gaussianFetchPairs !== fetchPairs ||
@@ -683,7 +683,7 @@ export class BlurRenderer {
                 ? sigmaTexel / this._gaussianBaseSigma
                 : 1.0;
         }
-        // Coming from no blur or from Dual Kawase: the next paint rebuilds the pool.
+
         if (this.PASS_COUNT !== 1) {
             this.PASS_COUNT = 1;
             this._destroyTexturePool();
@@ -691,10 +691,10 @@ export class BlurRenderer {
         this._repaint();
     }
 
-    // An empirical mapping (the preferences say a Dual Kawase radius is not
-    // pixel-accurate). It is not scaled for glass-blur-downscale, since that
-    // would also change the pass count; at quarter resolution the same value
-    // gives a wider blur.
+
+
+
+
     _setDualKawaseBlurRadius(radius) {
         let newPassCount = 0;
         let offsetDown = 0.0;
@@ -702,8 +702,8 @@ export class BlurRenderer {
         if (radius > 0) {
             let p = Math.floor(Math.log2(radius + 1));
             newPassCount = Math.max(1, Math.min(4, p));
-            // Position within this pass count's radius range, eased with a cubic
-            // Hermite (C1 continuous) and mapped onto the tap offset.
+
+
             let baseR = (newPassCount === 1) ? 0 : Math.pow(2, newPassCount) - 1;
             let nextR = Math.pow(2, newPassCount + 1) - 1;
             let t = (radius - baseR) / (nextR - baseR);
@@ -729,14 +729,14 @@ export class BlurRenderer {
     }
 }
 
-// A menu's items seen through the glass they sit in while it changes shape:
-// cut to its rounded outline and, when they are deep in it, refracted by its
-// rim the way the glass refracts what is behind it. At no depth it only cuts
-// round corners (the media card's cover art).
-//
-// Note: this implementation is inspired by and adapted from:
-// https://github.com/AndrewPrifer/liquid-dom
-// Big thanks to the original author (@AndrewPrifer) for the elegant solution.
+
+
+
+
+
+
+
+
 const DECL = `
 // The glass's box in the offscreen (texture coordinates), and px on screen per
 // texture width and height.
@@ -770,18 +770,18 @@ vec4 color = texture2D(cogl_sampler0, clamp(uv + shift / lens_px, lens_box.xy, l
 float inside = 1.0 - smoothstep(-0.5, 0.5, lensBox(p));
 cogl_color_out = color * (lens_opacity * inside);
 `;
-// liquid-dom's showcase menu: content 80 px deep in glass of index 1.5 under a
-// 70 px rim.
+
+
 const DEPTH = 80;
 const IOR = 1.5;
 const BAND = 70;
 
-/**
- * Where `rect` [x, y, w, h] (the actor's own px) is in an offscreen effect's
- * texture, as texture coordinates [x0, y0, x1, y1], and the size of what the
- * texture covers. The texture covers the actor's paint volume as
- * _clutter_actor_box_enlarge_for_effects() pads it.
- */
+
+
+
+
+
+
 export function rectInOffscreen(actor, rect) {
     const volume = actor.get_paint_volume();
     if (!volume)
@@ -794,7 +794,7 @@ export function rectInOffscreen(actor, rect) {
     return { box: [(cx - x0) / w, (cy - y0) / h, (cx + cw - x0) / w, (cy + ch - y0) / h], width: w, height: h };
 }
 
-/** Put on the actor that holds the items, clipped to the glass's box. */
+
 export const ContentLens = safeRegisterClass({ GTypeName: 'WackGlass_ContentLens' }, class ContentLens extends Clutter.OffscreenEffect {
     _init() {
         super._init();
@@ -804,7 +804,7 @@ export const ContentLens = safeRegisterClass({ GTypeName: 'WackGlass_ContentLens
         this._scale = 1;
     }
 
-    // Draws the offscreen as ClutterOffscreenEffect does, through the lens.
+
     vfunc_paint_target(node, _paintContext) {
         const texture = this.get_texture();
         if (!texture)
@@ -826,11 +826,11 @@ export const ContentLens = safeRegisterClass({ GTypeName: 'WackGlass_ContentLens
         drawNode.add_rectangle(new Clutter.ActorBox({ x1: 0, y1: 0, x2: texture.get_width(), y2: texture.get_height() }));
     }
 
-    /**
-     * The glass is `clip` [x, y, w, h] in the actor's own px, which are
-     * `scale` px on screen, with corners of `radius` (on screen). `depth` (0
-     * to 1) is how deep in it the content looks.
-     */
+
+
+
+
+
     shape(clip, scale, radius, depth) {
         const u = this._uniforms;
         this._clip = clip;

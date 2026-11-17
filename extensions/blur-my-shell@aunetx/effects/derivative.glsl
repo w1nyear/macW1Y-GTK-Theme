@@ -35,7 +35,7 @@ void main() {
     vec4 source_color = get_texture_at_position(vec2(corrected_position));
     vec4 effect_color = source_color;
 
-    // 1-step derivative
+
     if (operation == 0) {
         vec4 color = vec4(0.0);
         int c = 0;
@@ -48,7 +48,7 @@ void main() {
         }
         effect_color = vec4(color.xyz, source_color.a);
     } else
-    // 2-step derivative
+
     if (operation == 1) {
         vec4 color = vec4(0.0);
         int c = 0;
@@ -61,7 +61,7 @@ void main() {
         }
         effect_color = vec4(color.xyz / 2.0, source_color.a);
     } else
-    // laplacian
+
     if (operation == 2) {
         vec4 color = vec4(0.0);
         color = -4.0 * get_texture_at_position(vec2(corrected_position));

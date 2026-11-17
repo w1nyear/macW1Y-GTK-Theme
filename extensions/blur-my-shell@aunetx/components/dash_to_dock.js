@@ -23,7 +23,7 @@ const DASH_STYLES = [
     "dark-dash"
 ];
 
-/// Manages blur and styling for an individual Dash to Dock instance
+
 class DashInfos {
     constructor(
         dash_blur, dash, dash_container, dash_background,
@@ -77,7 +77,7 @@ class DashInfos {
             this.dash_blur.connect('update-pipeline', () => this.update_pipeline())
         );
 
-        // Instantly apply dynamic blur on the desktop
+
         if (!this.dash_blur.is_static) {
             this.apply_dynamic_blur();
         }
@@ -126,7 +126,7 @@ class DashInfos {
         const theme_context = St.ThemeContext.get_for_stage(global.stage);
         const scale = theme_context ? theme_context.scale_factor : 1;
         const radius = Math.max(1, (this.settings.dash_to_dock.SIGMA || 30) * scale);
-        // User requested dock blur radius and tint radius matching dock radius (28px)
+
         const corner_radius = Math.round((this.settings.dash_to_dock.CORNER_RADIUS || 28) * scale);
 
         let effect = this.dash_background.get_effect('bms-dock-blur');
@@ -270,7 +270,7 @@ class DashInfos {
             this.background_group.disconnect(this.bg_allocation_id);
             this.bg_allocation_id = null;
         }
-        
+
         this._first_boot = null;
 
         if (this.background_group) {
@@ -340,7 +340,7 @@ class DashInfos {
 
         if (this.current_monitor_index !== monitor.index) {
             this.current_monitor_index = monitor.index;
-            this.change_blur_type(); 
+            this.change_blur_type();
             return;
         }
 
@@ -359,7 +359,7 @@ class DashInfos {
             this.background.y = dash_box.background_y + inset;
             this.background.set_clip(clip_x, clip_y, clip_w, clip_h);
         }
-        
+
         if (this._first_boot) {
             if (this.settings.dash_to_dock.UNBLUR_IN_OVERVIEW && Main.overview.visible) {
                 this.background_group?.hide();
@@ -486,7 +486,7 @@ export const DashBlur = class DashBlur extends Signals.EventEmitter {
             return;
 
         dash_container._bms_pending_blur_setup = true;
-        
+
         const connections = [];
         const cleanup = () => {
             delete dash_container._bms_pending_blur_setup;
@@ -601,10 +601,10 @@ export const DashBlur = class DashBlur extends Signals.EventEmitter {
         this.connections.connect(
             dash_container,
             [
-                'notify::width', 
-                'notify::height', 
-                'notify::y', 
-                'notify::x', 
+                'notify::width',
+                'notify::height',
+                'notify::y',
+                'notify::x',
                 'notify::style-class-name',
                 'notify::allocation'
             ],
@@ -696,11 +696,11 @@ export const DashBlur = class DashBlur extends Signals.EventEmitter {
     connect_to_overview() {
         this.connections.disconnect_all_for(Main.overview);
 
-        // When entering/leaving the Overview the wallpaper behind the dock may
-        // change (blur/dim during overview, restored afterwards). The dynamic
-        // BlurEffect on dash_background samples the live wallpaper, so it must
-        // be repainted once the overview settles, otherwise the dock keeps a
-        // stale/blurry backdrop until the user moves the dock.
+
+
+
+
+
         this.connections.connect(
             Main.overview, 'showing', _ => {
                 if (this.settings.dash_to_dock.UNBLUR_IN_OVERVIEW)

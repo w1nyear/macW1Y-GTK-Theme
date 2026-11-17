@@ -1,18 +1,18 @@
-// This file is part of the AppIndicator/KStatusNotifierItem GNOME Shell extension
-//
-// This program is free software; you can redistribute it and/or
+
+
+
 // modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
+
 // of the License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+
+
+
+
 // GNU General Public License for more details.
-//
+
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
@@ -96,8 +96,8 @@ function connectSmart4A(src, signal, target, method) {
             target.disconnect(tgtDestroyId);
     };
 
-    // GObject classes might or might not have a destroy signal
-    // JS Classes will not complain when connecting to non-existent signals
+
+
     const srcDestroyId = src.connect && (!(src instanceof GObject.Object) ||
         GObject.signal_lookup('destroy', src)) ? src.connect('destroy', onDestroy) : 0;
     const tgtDestroyId = target.connect && (!(target instanceof GObject.Object) ||
@@ -107,15 +107,15 @@ function connectSmart4A(src, signal, target, method) {
 }
 
 // eslint-disable-next-line valid-jsdoc
-/**
- * Connect signals to slots, and remove the connection when either source or
- * target are destroyed
- *
- * Usage:
- *      Util.connectSmart(srcOb, 'signal', tgtObj, 'handler')
- * or
- *      Util.connectSmart(srcOb, 'signal', () => { ... })
- */
+
+
+
+
+
+
+
+
+
 export function connectSmart(...args) {
     if (arguments.length === 4)
         return connectSmart4A(...args);
@@ -163,10 +163,10 @@ export function destroyDefaultTheme() {
 }
 
 // eslint-disable-next-line valid-jsdoc
-/**
- * Helper function to wait for the system startup to be completed.
- * Adding widgets before the desktop is ready to accept them can result in errors.
- */
+
+
+
+
 export async function waitForStartupCompletion(cancellable) {
     if (Main.layoutManager._startingUp)
         await Main.layoutManager.connect_once('startup-complete', cancellable);

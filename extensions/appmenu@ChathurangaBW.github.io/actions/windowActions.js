@@ -62,7 +62,7 @@ export const windowActions = {
         if (ctx.app) ctx.app.open_new_window(-1);
     },
 
-    // Direct JS eval — runs inside GNOME Shell, no gdbus fork+exec
+
     'hide-app': () => {
         const actors = global.get_window_actors();
         actors.forEach(a => {
@@ -79,8 +79,8 @@ export const windowActions = {
         });
     },
 
-    // 'show-all' (app menu) and 'bring-all-front' (Window menu)
-    // are the same operation, implemented via shared helper
+
+
     'show-all': _unminimizeAll,
 
     'tile-left': () => {

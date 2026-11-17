@@ -6,8 +6,8 @@ import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import { _, initI18n } from './i18n.js';
 
-// Loaded asynchronously to avoid synchronous file IO in shell code (EGO-X-004).
-// The Icon selector renders an empty list until the load completes, then patches itself.
+
+
 let ICONS_DATA = [];
 let _iconsLoadStarted = false;
 let _iconsLoadFinished = false;
@@ -38,7 +38,7 @@ function _ensureIconsLoading() {
                 const data = JSON.parse(new TextDecoder().decode(bytes));
                 ICONS_DATA = Array.isArray(data) ? data : [];
             }
-        } catch (_e) { /* icons.json unavailable — use empty list */ }
+        } catch (_e) {   }
         _iconsLoadFinished = true;
     });
 }
@@ -86,7 +86,7 @@ export default class AppMenuPreferences extends ExtensionPreferences {
             _('Enable troubleshooting logs only when you need to collect debug information.')
         );
 
-        // Show OS icon
+
         const showOsIconRow = new Adw.SwitchRow({
             title: _('Show OS icon'),
             subtitle: _('Show the logo icon in the top panel.'),
@@ -94,7 +94,7 @@ export default class AppMenuPreferences extends ExtensionPreferences {
         settings.bind('show-os-icon', showOsIconRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         appearanceGroup.add(showOsIconRow);
 
-        // Visual icon gallery — populated asynchronously from icons.json.
+
         _ensureIconsLoading();
         const deriveIconName = (path) => path.endsWith('.svg') ? path.slice(0, -4) : path;
         let iconsDir = null;
@@ -205,9 +205,9 @@ export default class AppMenuPreferences extends ExtensionPreferences {
         appearanceGroup.add(iconGalleryScroll);
         populateIconGallery();
 
-        // Patch the icon list once the async load completes (covers the common case
-        // where the user opens preferences before icons.json has been read).
-        // The poll is bounded — returns SOURCE_REMOVE once the data length changes.
+
+
+
         let _iconsPolling = true;
         let _iconsTimeoutId = 0;
         const _iconsLoadCheck = () => {
@@ -223,7 +223,7 @@ export default class AppMenuPreferences extends ExtensionPreferences {
         };
         _iconsTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, _iconsLoadCheck);
 
-        // Stop the poll if the window is destroyed before the load completes.
+
         window.connect('destroy', () => {
             _iconsPolling = false;
             if (_iconsTimeoutId) {
@@ -232,7 +232,7 @@ export default class AppMenuPreferences extends ExtensionPreferences {
             }
         });
 
-        // Icon size
+
         const iconSizeRow = new Adw.SpinRow({
             title: _('Icon Size'),
             subtitle: _('Panel icon size in pixels (12–36).'),
@@ -247,7 +247,7 @@ export default class AppMenuPreferences extends ExtensionPreferences {
         }));
         appearanceGroup.add(iconSizeRow);
 
-        // Lock to focused app
+
         const lockRow = new Adw.SwitchRow({
             title: _('Lock to focused app'),
             subtitle: _('Only update menu when switching windows.'),
@@ -262,7 +262,7 @@ export default class AppMenuPreferences extends ExtensionPreferences {
         settings.bind('use-real-menus', realMenusRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         behaviorGroup.add(realMenusRow);
 
-        // Show user switcher
+
         const showUserSwitcherRow = new Adw.SwitchRow({
             title: _('Show User Switcher'),
             subtitle: _('Show user switcher in the right side of the panel.'),
@@ -270,7 +270,7 @@ export default class AppMenuPreferences extends ExtensionPreferences {
         settings.bind('show-user-switcher', showUserSwitcherRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         panelGroup.add(showUserSwitcherRow);
 
-        // Show workspace indicator
+
         const showWorkspaceIndicatorRow = new Adw.SwitchRow({
             title: _('Show Workspace Indicator'),
             subtitle: _('Show workspace navigation dots in the top panel.'),
@@ -302,7 +302,7 @@ export default class AppMenuPreferences extends ExtensionPreferences {
         settings.bind('show-workspace-indicator', workspacePositionRow, 'sensitive', Gio.SettingsBindFlags.GET);
         panelGroup.add(workspacePositionRow);
 
-        // Debug logging
+
         const debugLoggingRow = new Adw.SwitchRow({
             title: _('Debug Logging'),
             subtitle: _('Write diagnostic AppMenu logs to the GNOME Shell journal.'),

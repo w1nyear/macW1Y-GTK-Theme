@@ -8,25 +8,25 @@ const DEFAULT_BLUR_BRIGHTNESS = 1.0;
 const DEFAULT_CANCEL_HOVER_ALPHA = 0.12;
 const DEFAULT_CANCEL_ACTIVE_ALPHA = 0.24;
 
-/**
- * Normalizes floating-point bounds into a deterministic canonical string key.
- *
- * @param {number} x1
- * @param {number} x2
- * @param {number} y1
- * @param {number} y2
- * @returns {string}
- */
+
+
+
+
+
+
+
+
+
 export function formatBoundsKey(x1, x2, y1, y2) {
     return `${x1.toFixed(4)}_${x2.toFixed(4)}_${y1.toFixed(4)}_${y2.toFixed(4)}`;
 }
 
-/**
- * Normalizes transition progress into a deterministic canonical string key.
- *
- * @param {object|null} transitionInfo
- * @returns {string}
- */
+
+
+
+
+
+
 export function formatProgressKey(transitionInfo) {
     if (transitionInfo && transitionInfo.isTransition) {
         const rounded = Math.round(transitionInfo.progress * 100) / 100;
@@ -35,12 +35,12 @@ export function formatProgressKey(transitionInfo) {
     return '';
 }
 
-/**
- * Creates a structured canonical identity for Clock Alpha calculation.
- *
- * @param {object} params
- * @returns {object}
- */
+
+
+
+
+
+
 export function createClockAlphaIdentity(params) {
     const {
         targetUri,
@@ -68,22 +68,22 @@ export function createClockAlphaIdentity(params) {
     };
 }
 
-/**
- * Serializes a Clock Alpha identity into a canonical cache key.
- *
- * @param {object} id
- * @returns {string}
- */
+
+
+
+
+
+
 export function serializeClockAlphaIdentity(id) {
     return `${id.targetUri}_${id.mtime}_${id.size}_${id.isColor}_${id.primaryColor}_${id.secondaryColor}_${id.shadingType}_${id.textLuminance}${id.progressKey}`;
 }
 
-/**
- * Creates a structured canonical identity for Prompt Vibrancy calculation.
- *
- * @param {object} params
- * @returns {object}
- */
+
+
+
+
+
+
 export function createPromptVibrancyIdentity(params) {
     const {
         targetUri,
@@ -137,35 +137,35 @@ export function createPromptVibrancyIdentity(params) {
     };
 }
 
-/**
- * Serializes a Prompt Vibrancy identity into a canonical cache key.
- *
- * @param {object} id
- * @returns {string}
- */
+
+
+
+
+
+
 export function serializePromptVibrancyIdentity(id) {
     return `prompt_grad_${id.targetUri}_${id.mtime}_${id.size}_${id.isColor}_${id.primaryColor}_${id.secondaryColor}_${id.shadingType}_${id.pictureOptions}_${id.monitorWidth}x${id.monitorHeight}_${id.boundsKey}_cb${id.cancelBoundsKey}_av${id.avatarBoundsKey}_a11y${id.a11yBoundsKey}_sess${id.sessionBoundsKey}_b${id.blurRadius}_pbr${id.blurBrightness}_chov${id.cancelHoverAlpha}_cact${id.cancelActiveAlpha}_cover_vis${id.algorithmVersion}_vm${id.vibrancyMode}${id.progressKey}`;
 }
 
-/**
- * Computes an 8-character cryptographic checksum hash for an identity or cache key.
- *
- * @param {string} cacheKey
- * @returns {string}
- */
+
+
+
+
+
+
 export function computeSliceHash(cacheKey) {
     return GLib.compute_checksum_for_string(GLib.ChecksumType.MD5, cacheKey, -1).substring(0, 8);
 }
 
-/**
- * Resolves the destination directory and filename for a blurred PNG slice.
- *
- * @param {string} userName
- * @param {string} sliceHash
- * @param {boolean} isXml
- * @param {string|null} xmlName
- * @returns {{targetDir: string, filePath: string}}
- */
+
+
+
+
+
+
+
+
+
 export function resolveSlicePath(userName, sliceHash, isXml = false, xmlName = null) {
     const BASE_VIBRANCY_DIR = '/var/tmp/wack/vibrancy';
     const GENERAL_DIR = `${BASE_VIBRANCY_DIR}/general`;

@@ -1,8 +1,8 @@
-// -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
-// This file is part of Dash2Dock Motion, a modified copy of Dash to Dock
-// (https://github.com/micheleg/dash-to-dock) by Michele Gaio and
+
+
+
 // contributors. Distributed under the GNU General Public License,
-// version 2 or later.
+
 
 import {
     GLib,
@@ -17,7 +17,7 @@ import {
 
 const {signals: Signals} = imports;
 
-// A good compromise between reactivity and efficiency; to be tuned.
+
 const INTELLIHIDE_CHECK_INTERVAL = 100;
 
 const OverlapStatus = Object.freeze({
@@ -33,8 +33,8 @@ const IntellihideMode = Object.freeze({
     ALWAYS_ON_TOP: 3,
 });
 
-// List of windows type taken into account. Order is important (keep the original
-// enum order).
+
+
 const handledWindowTypes = [
     Meta.WindowType.NORMAL,
     Meta.WindowType.DOCK,
@@ -47,23 +47,23 @@ const handledWindowTypes = [
     Meta.WindowType.DROPDOWN_MENU,
 ];
 
-// List of applications, ignore windows of these applications in considering intellihide
+
 const ignoreApps = ['com.rastersoft.ding', 'com.desktop.ding'];
 
-/**
- * A rough and ugly implementation of the intellihide behaviour.
- * Intallihide object: emit 'status-changed' signal when the overlap of windows
- * with the provided targetBoxClutter.ActorBox changes;
- */
+
+
+
+
+
 export class Intellihide {
     constructor(monitorIndex) {
-        // Load settings
+
         this._monitorIndex = monitorIndex;
 
         this._signalsHandler = new Utils.GlobalSignalsHandler();
         this._tracker = Shell.WindowTracker.get_default();
-        this._focusApp = null; // The application whose window is focused.
-        this._topApp = null; // The application whose window is on top on the monitor with the dock.
+        this._focusApp = null;
+        this._topApp = null;
 
         this._isEnabled = false;
         this._status = OverlapStatus.UNDEFINED;
@@ -76,24 +76,24 @@ export class Intellihide {
 
         // Connect global signals
         this._signalsHandler.add([
-            // Add signals on windows created from now on
+
             global.display,
             'window-created',
             this._windowCreated.bind(this),
         ], [
-            // triggered for instance when the window list order changes,
-            // included when the workspace is switched
+
+
             global.display,
             'restacked',
             this._checkOverlap.bind(this),
         ], [
-            // when windows are alwasy on top, the focus window can change
-            // without the windows being restacked. Thus monitor window focus change.
+
+
             this._tracker,
             'notify::focus-app',
             this._checkOverlap.bind(this),
         ], [
-            // update wne monitor changes, for instance in multimonitor when monitor are attached
+
             Utils.getMonitorManager(),
             'monitors-changed',
             this._checkOverlap.bind(this),
@@ -104,7 +104,7 @@ export class Intellihide {
         // Disconnect global signals
         this._signalsHandler.destroy();
 
-        // Remove  residual windows signals
+
         this.disable();
     }
 
@@ -172,7 +172,7 @@ export class Intellihide {
         if (!this._isEnabled || !this._targetBox)
             return;
 
-        /* Limit the number of calls to the doCheckOverlap function */
+
         if (this._checkOverlapTimeoutId) {
             this._checkOverlapTimeoutContinue = true;
             return;
@@ -201,12 +201,12 @@ export class Intellihide {
         let windows = global.get_window_actors().filter(wa => this._handledWindow(wa));
 
         if (windows.length > 0) {
-            /*
-             * Get the top window on the monitor where the dock is placed.
-             * The idea is that we dont want to overlap with the windows of the topmost application,
-             * event is it's not the focused app -- for instance because in multimonitor the user
-             * select a window in the secondary monitor.
-             */
+
+
+
+
+
+
 
             let topWindow = null;
             for (let i = windows.length - 1; i >= 0; i--) {
@@ -219,7 +219,7 @@ export class Intellihide {
 
             if (topWindow) {
                 this._topApp = this._tracker.get_window_app(topWindow);
-                // If there isn't a focused app, use that of the window on top
+
                 this._focusApp = this._tracker.focus_app || this._topApp;
 
                 windows = windows.filter(this._intellihideFilterInteresting, this);
@@ -250,35 +250,35 @@ export class Intellihide {
         }
     }
 
-    // Filter interesting windows to be considered for intellihide.
-    // Consider all windows visible on the current workspace.
-    // Optionally skip windows of other applications
+
+
+
     _intellihideFilterInteresting(wa) {
         const metaWin = wa.get_meta_window();
         const currentWorkspace = global.workspace_manager.get_active_workspace_index();
         const workspace = metaWin.get_workspace();
         const workspaceIndex = workspace.index();
 
-        // Depending on the intellihide mode, exclude non-relevent windows
+
         const mode = Docking.DockManager.settings.get_enum('intellihide-mode');
         switch (mode) {
         case IntellihideMode.ALL_WINDOWS:
-            // Do nothing
+
             break;
 
         case IntellihideMode.FOCUS_APPLICATION_WINDOWS:
-            // Skip windows of other apps
+
             if (this._focusApp) {
-                // The DropDownTerminal extension is not an application per se
-                // so we match its window by wm class instead
+
+
                 if (metaWin.get_wm_class() === 'DropDownTerminalWindow')
                     return true;
 
                 const currentApp = this._tracker.get_window_app(metaWin);
                 const focusWindow = global.display.get_focus_window();
 
-                // Consider half maximized windows side by side
-                // and windows which are alwayson top
+
+
                 if (currentApp !== this._focusApp && currentApp !== this._topApp &&
                     !((focusWindow && focusWindow.maximized_vertically &&
                        !focusWindow.maximized_horizontally) &&
@@ -290,13 +290,13 @@ export class Intellihide {
             break;
 
         case IntellihideMode.MAXIMIZED_WINDOWS:
-            // Skip unmaximized windows
+
             if (!metaWin.maximized_vertically && !metaWin.maximized_horizontally && !metaWin.fullscreen)
                 return false;
             break;
 
         case IntellihideMode.ALWAYS_ON_TOP:
-            // Always on top, except for fullscreen windows
+
             if (this._focusApp) {
                 const {focusWindow} = global.display;
                 if (!focusWindow?.fullscreen)
@@ -311,8 +311,8 @@ export class Intellihide {
             return false;
     }
 
-    // Filter windows by type
-    // inspired by Opacify@gnome-shell.localdomain.pl
+
+
     _handledWindow(wa) {
         const metaWindow = wa.get_meta_window();
 
@@ -321,13 +321,13 @@ export class Intellihide {
 
         const wmApp = metaWindow.get_gtk_application_id ? metaWindow.get_gtk_application_id() : '';
 
-        // The DING extension desktop window needs to be excluded
-        // so we match its window by application id and window property.
+
+
         if (ignoreApps.includes(wmApp) && metaWindow.is_skip_taskbar())
             return false;
 
-        // The DropDownTerminal extension uses the POPUP_MENU window type hint
-        // so we match its window by wm class instead
+
+
         if (metaWindow.get_wm_class() === 'DropDownTerminalWindow')
             return true;
 

@@ -1,7 +1,7 @@
-// macW1Y-style "pull out of the dock to remove": releasing a pinned app icon
-// far outside the dock unpins it with a poof (puff up + fade), instead of
-// snapping back. Running-only icons, the trash, Show Apps and kiwi's strips
-// have no favorite id and are left alone.
+
+
+
+
 
 import {
     Clutter,
@@ -12,7 +12,7 @@ import {
     Main,
 } from './dependencies/shell/ui.js';
 
-// Pointer travel outside the dock rect that counts as "pulled out".
+
 const REMOVE_DISTANCE = 100;
 
 let _beginId = 0;
@@ -27,7 +27,7 @@ function _dockContainer() {
                 return child;
         }
     } catch (_) {
-        // uiGroup gone
+
     }
     return null;
 }
@@ -81,7 +81,7 @@ function _onDragEnd() {
     if (Math.hypot(ox, oy) < REMOVE_DISTANCE)
         return;
 
-    // Poof, then unpin.
+
     try {
         const target = source.icon ?? source;
         target.set_pivot_point(0.5, 0.5);
@@ -95,7 +95,7 @@ function _onDragEnd() {
                 try {
                     favs.removeFavorite(id);
                 } catch (_) {
-                    // already gone
+
                 }
             },
         });
@@ -103,7 +103,7 @@ function _onDragEnd() {
         try {
             favs.removeFavorite(id);
         } catch (_) {
-            // already gone
+
         }
     }
 }
@@ -123,7 +123,7 @@ export function disable() {
         try {
             Main.overview.disconnect(_beginId);
         } catch (_) {
-            // already gone
+
         }
         _beginId = 0;
     }
@@ -131,7 +131,7 @@ export function disable() {
         try {
             Main.overview.disconnect(_endId);
         } catch (_) {
-            // already gone
+
         }
         _endId = 0;
     }
@@ -139,7 +139,7 @@ export function disable() {
         try {
             Main.overview.disconnect(_cancelId);
         } catch (_) {
-            // already gone
+
         }
         _cancelId = 0;
     }

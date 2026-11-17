@@ -218,7 +218,7 @@ export class CupertinoPromptManager {
                 }
             }
         } catch (err) {
-            // Ignore and assume not inhibited
+
         }
         return false;
     }

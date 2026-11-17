@@ -6,9 +6,9 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
-// Adaptive ink lives in kiwi@kemma. Static `import ... from 'file://' + ...`
-// is a SyntaxError (module specifiers must be string literals), so load it
-// dynamically at runtime instead.
+
+
+
 let getTopbarInk = () => 'light';
 let watchInk = () => () => {};
 const _INK_URL = 'file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeInk.js';
@@ -35,7 +35,7 @@ const SYSTEM_DARK_PATH = '/usr/share/mactheme/icons/controlcenter-dark.png';
 const FALLBACK_LIGHT = GLib.get_home_dir() + '/controlcenter.png';
 const FALLBACK_DARK = GLib.get_home_dir() + '/controlcenter-dark.png';
 
-// Adaptive ink (not theme): white icon on dark backgrounds, black on light.
+
 function themedIconPath() {
     const isDarkInk = (getTopbarInk() === 'dark');
     try {
@@ -55,7 +55,7 @@ export default class RunCommandExtension extends Extension {
     enable() {
         this._indicator = new PanelMenu.Button(0.0, 'Ydotool Trigger', true);
 
-        const FADE_DURATION = 200; // ms (smooth macW1Y cross-fade)
+        const FADE_DURATION = 200;
 
         this._iconBox = new St.Widget({
             layout_manager: new Clutter.BinLayout(),
@@ -91,7 +91,7 @@ export default class RunCommandExtension extends Extension {
             this._indicator.add_style_pseudo_class('checked');
             this._osdIcon.icon_name = iconName;
 
-            // If already fully transitioned to OSD icon, keep it at 255
+
             if (this._osdIcon.opacity === 255 && this._ccIcon.opacity === 0) {
                 return;
             }
@@ -159,8 +159,8 @@ export default class RunCommandExtension extends Extension {
         } catch (e) {
             this._inkUnwatch = null;
         }
-        // The real ink module loads async; attach the live watcher + icon
-        // once it arrives (if enable() ran before the import resolved).
+
+
         _loadInk().then(m => {
             if (!m || !this._indicator)
                 return;
@@ -168,7 +168,7 @@ export default class RunCommandExtension extends Extension {
                 if (this._inkUnwatch)
                     this._inkUnwatch();
             } catch (e) {
-                // stub unwarch goes away
+
             }
             try {
                 this._inkUnwatch = watchInk(() => this._syncIcon());
@@ -205,7 +205,7 @@ export default class RunCommandExtension extends Extension {
             const file = Gio.File.new_for_path(themedIconPath());
             icon.gicon = new Gio.FileIcon({file});
         } catch (e) {
-            // keep the previous icon
+
         }
     }
 
@@ -221,7 +221,7 @@ export default class RunCommandExtension extends Extension {
             try {
                 this._inkUnwatch();
             } catch (e) {
-                // already gone
+
             }
             this._inkUnwatch = null;
         }
@@ -229,7 +229,7 @@ export default class RunCommandExtension extends Extension {
             try {
                 this._interfaceSettings.disconnect(this._themeChangedId);
             } catch (e) {
-                // already gone
+
             }
             this._themeChangedId = 0;
         }

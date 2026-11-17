@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macW1Y Tahoe-style top bar gradient: a semi-transparent dark veil over the
-// panel that fades out toward its bottom edge. Same no-layout pattern as the
-// panel blur (Meta.BackgroundGroup + sized St.Widgets), so panel layout is
-// never disturbed. Toggle: 'panel-gradient' gsettings key.
+
+
+
+
 
 import Meta from 'gi://Meta';
 import St from 'gi://St';
@@ -21,8 +21,8 @@ function _syncSize() {
         return;
     gradientWidget.set_position(panel.x, panel.y);
     gradientWidget.set_size(panel.width, panel.height);
-    // Upper veil: top 55% of the bar, adds extra darkness at the very top
-    // so the falloff reads as a smooth progressive fade, not a flat bar.
+
+
     if (gradientWidgetTop) {
         gradientWidgetTop.set_position(panel.x, panel.y);
         gradientWidgetTop.set_size(panel.width, Math.round(panel.height * 0.55));
@@ -36,7 +36,7 @@ function _apply() {
     try {
         on = settingsObj.get_boolean('panel-gradient');
     } catch (_) {
-        // settings gone: keep visible
+
     }
     gradientGroup.visible = on;
 }
@@ -56,7 +56,7 @@ export function enable(settings) {
     if (!panel || !panelBox)
         return;
 
-    // BackgroundGroup keeps the widgets out of panelBox layout.
+
     gradientGroup = new Meta.BackgroundGroup({
         name: 'kiwi-panel-gradient-group',
         width: 0,
@@ -95,7 +95,7 @@ export function disable() {
         try {
             settingsObj.disconnect(settingsSignal);
         } catch (_) {
-            // already gone
+
         }
         settingsSignal = 0;
     }
@@ -105,7 +105,7 @@ export function disable() {
         try {
             actor.disconnect(id);
         } catch (_) {
-            // already gone
+
         }
     }
     sizeSignals = [];
@@ -116,18 +116,18 @@ export function disable() {
             try {
                 panelBox.remove_child(gradientGroup);
             } catch (_) {
-                // already removed
+
             }
         }
         try {
             gradientGroup.destroy_all_children();
         } catch (_) {
-            // ignore
+
         }
         try {
             gradientGroup.destroy();
         } catch (_) {
-            // ignore
+
         }
         gradientGroup = null;
     }

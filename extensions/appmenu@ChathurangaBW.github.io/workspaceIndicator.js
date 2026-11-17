@@ -103,7 +103,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         this._activeIdx = -1;
         this._pillAllocId = 0;
 
-        // 1. Compact Labels Layer (height 34px) with sliding pill indicator
+
         this._labelsLayer = new St.Widget({
             layout_manager: new Clutter.BinLayout(),
             style: 'height: 34px;',
@@ -113,7 +113,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             y_align: Clutter.ActorAlign.CENTER,
         });
 
-        // Expanding wrapper for pill indicator to ensure 0-based coordinate alignment in BinLayout
+
         this._pillWrapper = new Clutter.Actor({
             x_expand: true,
             y_expand: true,
@@ -121,7 +121,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             y_align: Clutter.ActorAlign.FILL,
         });
 
-        // Pill indicator sliding smoothly behind the active workspace label
+
         this._pillIndicator = new St.Widget({
             style: 'background-color: rgba(255, 255, 255, 0.22); border-radius: 6px;',
             reactive: false,
@@ -134,7 +134,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         this._pillWrapper.add_child(this._pillIndicator);
         this._labelsLayer.add_child(this._pillWrapper);
 
-        // Buttons box (holding transparent text buttons)
+
         this._buttonsBox = new St.BoxLayout({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
@@ -148,7 +148,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         this._labelsBox = this._labelsLayer;
         this.add_child(this._labelsBox);
 
-        // 2. Expanded Thumbnails Box (anchored 10px below top of panel)
+
         this._thumbnailsBox = new St.BoxLayout({
             vertical: false,
             y_align: Clutter.ActorAlign.START,
@@ -374,7 +374,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             this._labelWidgets.push(lbl);
         }
 
-        // Plus button at right end of labels
+
         const plusBtn = this._createPlusButton(false);
         this._buttonsBox.add_child(plusBtn);
 
@@ -541,7 +541,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
                 track_hover: true,
             });
 
-            // Card container
+
             const accent = getSystemAccentColor();
             const cardBtn = new St.Button({
                 style: isActive
@@ -554,7 +554,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             });
             cardBtn.set_pivot_point(0.5, 0.5);
 
-            // Mini desktop preview canvas
+
             const desktopCanvas = new Clutter.Actor({
                 width: thumbWidth,
                 height: thumbHeight,
@@ -562,7 +562,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             });
             cardBtn.set_child(desktopCanvas);
 
-            // Populate mini window representation safely
+
             if (ws) {
                 try {
                     const windows = ws.list_windows().filter(w => !w.is_skip_taskbar() && !w.minimized);
@@ -589,7 +589,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
 
             itemCol.add_child(cardBtn);
 
-            // Name Container underneath the card
+
             const nameContainer = new St.Bin({
                 x_align: Clutter.ActorAlign.CENTER,
                 y_align: Clutter.ActorAlign.CENTER,
@@ -614,7 +614,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             nameBtn.set_child(nameLbl);
             nameContainer.set_child(nameBtn);
 
-            // Visible on hover or when editing
+
             nameContainer.opacity = (i === editingIdx) ? 255 : 0;
 
             const onHoverChange = (isHover) => {
@@ -654,7 +654,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             itemCol.connect('notify::hover', () => onHoverChange(cardBtn.hover || itemCol.hover || nameBtn.hover));
             nameBtn.connect('notify::hover', () => onHoverChange(cardBtn.hover || itemCol.hover || nameBtn.hover));
 
-            // Clicking card activates workspace
+
             cardBtn.connect('clicked', () => {
                 if (ws) {
                     ws.activate(global.get_current_time());
@@ -662,12 +662,12 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
                 Main.overview.hide();
             });
 
-            // Clicking name button starts inline rename!
+
             nameBtn.connect('clicked', () => {
                 this._startInlineRename(i, nameContainer, name, thumbWidth);
             });
 
-            // Check if this item is entering with animation
+
             if (i === animateIdx) {
                 itemCol.set_pivot_point(0.5, 0.5);
                 itemCol.scale_x = 0.3;
@@ -682,7 +682,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
                 });
             }
 
-            // If this item was requested to start in editing mode (e.g. from + click)
+
             if (i === editingIdx) {
                 this._startInlineRename(i, nameContainer, name, thumbWidth);
             }
@@ -690,7 +690,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             this._thumbnailsBox.add_child(itemCol);
         }
 
-        // Plus button column at the right end of thumbnails
+
         const plusCol = new St.BoxLayout({
             vertical: true,
             y_align: Clutter.ActorAlign.START,
@@ -815,7 +815,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             return Clutter.EVENT_PROPAGATE;
         });
 
-        // Stage click listener: click anywhere outside commits rename!
+
         stageClickId = global.stage.connect('button-press-event', (_stage, event) => {
             const actor = event.get_source ? event.get_source() : null;
             if (actor !== entry && !this._isDescendant(actor, entry)) {
@@ -1210,19 +1210,19 @@ export class WorkspaceIndicatorController {
         const barReactive = (v >= 0.95);
         const barVisible = (v > 0.005);
 
-        // 1. Smoothly fade left box icons (System logo, app name, menus)
+
         if (Main.panel && Main.panel._leftBox) {
             if (Main.panel._leftBox.opacity !== iconOpacity) Main.panel._leftBox.opacity = iconOpacity;
             if (Main.panel._leftBox.reactive !== iconReactive) Main.panel._leftBox.reactive = iconReactive;
         }
 
-        // 2. Smoothly fade right box icons (tray, indicators, clock, quick settings)
+
         if (Main.panel && Main.panel._rightBox) {
             if (Main.panel._rightBox.opacity !== iconOpacity) Main.panel._rightBox.opacity = iconOpacity;
             if (Main.panel._rightBox.reactive !== iconReactive) Main.panel._rightBox.reactive = iconReactive;
         }
 
-        // 3. Smoothly fade center box other children (excluding spacesBar)
+
         if (Main.panel && Main.panel._centerBox) {
             for (const child of Main.panel._centerBox.get_children()) {
                 if (child === this._spacesBar) continue;
@@ -1231,7 +1231,7 @@ export class WorkspaceIndicatorController {
             }
         }
 
-        // 4. Smoothly fade spaces bar
+
         if (this._spacesBar) {
             if (this._spacesBar.opacity !== barOpacity) this._spacesBar.opacity = barOpacity;
             if (this._spacesBar.visible !== barVisible) this._spacesBar.visible = barVisible;
@@ -1253,7 +1253,7 @@ export class WorkspaceIndicatorController {
             this._spacesBar._collapse(true);
         }
 
-        // Unconditionally force panel to normal compact height (34px) upon entering overview
+
         Main.layoutManager.panelBox.remove_transition('height');
         Main.panel.remove_transition('height');
         Main.layoutManager.panelBox.height = PANEL_NORMAL_HEIGHT;
@@ -1261,7 +1261,7 @@ export class WorkspaceIndicatorController {
         Main.layoutManager.panelBox.opacity = 255;
         Main.layoutManager.panelBox.translation_y = 0;
 
-        // Ensure spacesBar is placed in centerBox
+
         if (Main.panel?._centerBox && !this._spacesBar.get_parent()) {
             Main.panel._centerBox.add_child(this._spacesBar);
         }
@@ -1285,7 +1285,7 @@ export class WorkspaceIndicatorController {
         if (this._stateAdjustment) {
             this._onOverviewProgressChanged();
         } else {
-            // Fallback if _stateAdjustment is unavailable: Clutter easing
+
             if (Main.panel?._leftBox) {
                 Main.panel._leftBox.remove_all_transitions();
                 Main.panel._leftBox.ease({
@@ -1336,7 +1336,7 @@ export class WorkspaceIndicatorController {
             this._spacesBar.reactive = false;
         }
 
-        // Unconditionally force panel back to normal height immediately when overview starts hiding
+
         Main.layoutManager.panelBox.remove_transition('height');
         Main.panel.remove_transition('height');
         Main.layoutManager.panelBox.height = PANEL_NORMAL_HEIGHT;
@@ -1347,7 +1347,7 @@ export class WorkspaceIndicatorController {
         if (this._stateAdjustment) {
             this._onOverviewProgressChanged();
         } else {
-            // Fallback if _stateAdjustment is unavailable: Clutter easing
+
             if (Main.panel?._leftBox) {
                 Main.panel._leftBox.remove_all_transitions();
                 Main.panel._leftBox.ease({

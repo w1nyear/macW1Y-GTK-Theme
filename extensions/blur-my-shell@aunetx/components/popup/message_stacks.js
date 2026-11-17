@@ -272,7 +272,7 @@ export const PopupBlurMessageStacks = class PopupBlurMessageStacks {
             return;
         }
 
-        // 0.01 < expansion < 0.99: Animating unravel / collapse
+
         const height = message.height || message.get_height() || 0;
         const width = message.width || message.get_width() || 0;
 
@@ -286,7 +286,7 @@ export const PopupBlurMessageStacks = class PopupBlurMessageStacks {
         message.set_clip(0, clip_y, Math.max(1, width), visible_edge);
         this.bms_clipped.add(message);
 
-        // Staggered opacity progress for cards so they smoothly fade in as they unravel
+
         const stagger_start = Math.min(0.8, index * 0.04);
         const progress = Math.min(1.0, Math.max(0.0, (expansion - stagger_start) / (1.0 - stagger_start)));
         const target_alpha = Math.round(255 * progress);
@@ -313,24 +313,24 @@ export const PopupBlurMessageStacks = class PopupBlurMessageStacks {
         const index = this.get_message_index_in_group(message);
 
         if (index === 1) {
-            // 2nd card: tight visible strip of 10px (matches exact 10px bottom offset below card 1)
+
             const visible_edge = 10;
             const clip_y = Math.max(0, height - visible_edge);
             message.set_clip(0, clip_y, Math.max(1, width), visible_edge);
             this.bms_clipped.add(message);
         } else if (index === 2) {
-            // 3rd card: tight visible strip of 7px (matches exact 7px bottom offset below card 2)
+
             const visible_edge = 7;
             const clip_y = Math.max(0, height - visible_edge);
             message.set_clip(0, clip_y, Math.max(1, width), visible_edge);
             this.bms_clipped.add(message);
         } else if (index >= 3) {
-            // 4th+ cards: hidden when collapsed so they don't stack behind card 3
+
             message.opacity = 0;
             message.remove_clip();
             this.bms_clipped.delete(message);
         } else {
-            // Fallback by pseudo class
+
             const is_second = this.has_pseudo_class(message, 'second-in-stack');
             const visible_edge = is_second ? 10 : 6;
             const clip_y = Math.max(0, height - visible_edge);

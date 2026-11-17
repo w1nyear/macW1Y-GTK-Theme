@@ -76,13 +76,13 @@ export function clearCache() {
     _bgSettings = null;
 }
 
-/**
- * Calculates the ideal clock opacity (alpha) based on the background color/wallpaper behind it.
- * Uses single-flight request coalescing to prevent redundant parallel calculations.
- *
- * @param {Object} params
- * @returns {Promise<number>}
- */
+
+
+
+
+
+
+
 export async function getWallpaperAlpha(params) {
     const {
         uri,
@@ -114,14 +114,14 @@ export async function getWallpaperAlpha(params) {
     if (hasCache(cacheKey))
         return getCache(cacheKey);
 
-    // Single-flight coalescing: await an identical in-flight query if active
+
     if (_inFlightAlphaQueries.has(cacheKey)) {
         CacheMetrics.coalescedRequests++;
         return _inFlightAlphaQueries.get(cacheKey);
     }
 
     const queryPromise = (async () => {
-        let bgR = 40, bgG = 40, bgB = 40; // Dark grey default fallback
+        let bgR = 40, bgG = 40, bgB = 40;
         let bgNoise = 0.0;
 
         if (isColor) {
@@ -132,12 +132,12 @@ export async function getWallpaperAlpha(params) {
                 bgG = c1.g;
                 bgB = c1.b;
             } else if (shadingType === 1) {
-                // Upper third average is roughly 17.5% of the transition from color1 to color2
+
                 bgR = c1.r + (c2.r - c1.r) * 0.175;
                 bgG = c1.g + (c2.g - c1.g) * 0.175;
                 bgB = c1.b + (c2.b - c1.b) * 0.175;
             } else {
-                // Horizontal gradient average across the screen
+
                 bgR = (c1.r + c2.r) / 2;
                 bgG = (c1.g + c2.g) / 2;
                 bgB = (c1.b + c2.b) / 2;
@@ -198,14 +198,14 @@ export async function getWallpaperAlpha(params) {
     });
 }
 
-/**
- * Samples the wallpaper behind the Cupertino password prompt and resolves an
- * opaque chip color. Coalesces concurrent identical calculations and schedules
- * background disk pruning without blocking the Clutter UI thread.
- *
- * @param {Object} params
- * @returns {Promise<{r: number, g: number, b: number}>}
- */
+
+
+
+
+
+
+
+
 export async function getWallpaperPromptColor(params) {
     const {
         uri,
@@ -295,7 +295,7 @@ export async function getWallpaperPromptColor(params) {
         }
     }
 
-    // Single-flight coalescing: await an identical in-flight query if active
+
     if (_inFlightPromptQueries.has(cacheKey)) {
         CacheMetrics.coalescedRequests++;
         return _inFlightPromptQueries.get(cacheKey);
@@ -404,16 +404,16 @@ export async function getWallpaperPromptColor(params) {
                         promptVisualState = sliceResult.visualState
                             ?? resolvePromptVisualState(sliceResult.avgColor, CUPERTINO_PROMPT_WHITE_BLEND_ALPHA);
 
-                        // Schedule asynchronous background pruning
+
                         scheduleVibrancyPruning(targetDir, hash);
                     }
 
-                    // Sample dedicated color for cancel button
+
                     const rawCancelColor = sampleRegionAverageColor(pixbuf, cancelMappedBounds) || sampledPrimary || { r: 40, g: 40, b: 40 };
                     sampledCancelColor = applyPromptVisualState(rawCancelColor, promptVisualState, { preblend: true });
                 }
 
-                // Decoupled chrome sampling (avatar, a11y, session)
+
                 const chromeColors = sampleWallpaperChromeColors({
                     pixbuf,
                     mappedBoundsMap: {
@@ -516,12 +516,12 @@ export async function getWallpaperPromptColor(params) {
 
 const _precachedXmls = new Set();
 
-/**
- * Parses all static slide files from an XML slideshow and warms the alpha and
- * prompt color cache for each slide in background idle, ensuring 0ms lookups.
- *
- * @param {Object} params Wallpaper parameters
- */
+
+
+
+
+
+
 export async function precacheSlideshow(params) {
     const { uri } = params;
     if (!uri || !uri.toLowerCase().endsWith('.xml'))

@@ -8,7 +8,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 export default class VolumePercentageExtension extends Extension {
     enable() {
-        // Connect to mixer to track sink changes
+
         this._mixer = new Gvc.MixerControl({ name: this.uuid });
         this._mixer.connectObject('default-sink-changed', (mixer) => this._onSinkChanged(mixer), this);
         this._mixer.open();
@@ -23,7 +23,7 @@ export default class VolumePercentageExtension extends Extension {
             const quickSettingsMenu = Main.panel.statusArea.quickSettings.menu;
 
             const sliderRow = quickSettingsMenu._grid.get_children()[1].get_first_child();
-            // [mute button] [slider] [<our inserted label>] [settings button]
+
             sliderRow.insert_child_at_index(this._label, 2);
 
             this._update();
@@ -60,7 +60,7 @@ export default class VolumePercentageExtension extends Extension {
             GLib.source_remove(this._idleId);
             this._idleId = 0;
         }
-        
+
         this._sink?.disconnectObject(this);
         this._sink = null;
 

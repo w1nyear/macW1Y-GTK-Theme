@@ -145,9 +145,9 @@ export function openPhotoChooser(widget, onPhotoChange) {
 	openFileChooser(widget, onPhotoChange);
 };
 
-// Whether the widget currently displays a real photo (vs. the empty
-// "Select photo" placeholder). The extension uses this to decide whether
-// the glass backdrop applies (placeholder) or not (photo paints itself).
+
+
+
 export function hasPhoto(widget) {
 	const photo = widget?.data?.photo;
 
@@ -165,9 +165,9 @@ function buildEmptyState(createLabel, onPick, theme, radius = 16) {
 		style: 'spacing: 12px;',
 	}));
 
-	// Same icon as in the settings: dw-image-light / dw-image-dark.
-	// It has no -symbolic suffix, so GTK does not fill it with a solid
-	// color and the line strokes stay visible.
+
+
+
 	const iconName = theme?.dark ? 'dw-image-dark' : 'dw-image-light';
 	const iconFile = settingsIconPath(iconName);
 
@@ -181,8 +181,8 @@ function buildEmptyState(createLabel, onPick, theme, radius = 16) {
 			y_align: Clutter.ActorAlign.CENTER,
 		});
 	} else {
-		// Fallback when the icon file is missing: the symbolic one is tinted
-		// with the theme color, so it reads on any background.
+
+
 		icon = new St.Icon({
 			style_class: 'widget-photo-icon',
 			icon_name: 'image-x-generic-symbolic',
@@ -255,8 +255,8 @@ const PhotoFrame = GObject.registerClass(
 );
 
 export function style(theme) {
-	// Take the background from the theme: a hardcoded #242424 kept the widget
-	// dark in the light theme, and theme.text went dark too — invisible.
+
+
 	return `background-color: ${theme?.background ?? '#242424'}; border-color: ${theme.border}; border-radius: ${theme?.radius ?? 16}px; padding: 0px;`;
 };
 

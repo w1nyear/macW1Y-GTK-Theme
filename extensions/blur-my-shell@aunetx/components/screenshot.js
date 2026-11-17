@@ -13,19 +13,19 @@ export const ScreenshotBlur = class ScreenshotBlur {
     enable() {
         this._log("blurring screenshot's window selector");
 
-        // connect to monitors change
+
         this.connections.connect(Main.layoutManager, 'monitors-changed',
             _ => this.update_backgrounds()
         );
 
-        // update backgrounds when the component is enabled
+
         this.update_backgrounds();
     }
 
     update_backgrounds() {
-        // remove every old background
+
         this.remove_background_actors();
-        // create new backgrounds for the screenshot window selector
+
         for (let i = 0; i < Main.screenshotUI._windowSelectors.length; i++) {
             const window_selector = Main.screenshotUI._windowSelectors[i];
             const pipeline = new Pipeline(
@@ -38,7 +38,7 @@ export const ScreenshotBlur = class ScreenshotBlur {
                 window_selector, 'bms-screenshot-blurred-widget', false
             );
 
-            // prevent old `BackgroundActor` from being accessed, which creates a whole bug of logs
+
             this.connections.connect(window_selector.get_parent(), 'destroy', _ => {
                 this.screenshot_background_managers.forEach(background_manager => {
                     if (background_manager.backgroundActor) {

@@ -1,8 +1,8 @@
-// -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
-// This file is part of Dash2Dock Motion, a modified copy of Dash to Dock
-// (https://github.com/micheleg/dash-to-dock) by Michele Gaio and
+
+
+
 // contributors. Distributed under the GNU General Public License,
-// version 2 or later.
+
 
 import {
     Gio,
@@ -22,8 +22,8 @@ import {
 
 import {Extension} from './dependencies/shell/extensions/extension.js';
 
-// Use __ () and N__() for the extension gettext domain, and reuse
-// the shell domain with the default _() and N_()
+
+
 const {gettext: __} = Extension;
 
 const {signals: Signals} = imports;
@@ -61,9 +61,9 @@ if (GJS_SUPPORTS_FILE_IFACE_PROMISES) {
 }
 
 
-/**
- *
- */
+
+
+
 function makeNautilusFileOperationsProxy() {
     const proxy = new NautilusFileOperations2ProxyInterface(
         Gio.DBus.session,
@@ -468,8 +468,8 @@ class MountableVolumeAppInfo extends LocationAppInfo {
         this._mountChanged = this.connect('notify::mount', updateAndMonitor);
 
         if (!this.mount && this.volume.get_identifier('class') === 'network') {
-            // For some devices the mount point isn't advertised promptly
-            // even if it's already existing, and there's no signaling about
+
+
             this._lazyUpdater = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 2, () => {
                 this._update();
                 delete this._lazyUpdater;
@@ -706,33 +706,33 @@ class MountableVolumeAppInfo extends LocationAppInfo {
     }
 
     _isEncryptedMountError(error) {
-        // FIXME: we will always get G_IO_ERROR_FAILED from the gvfs udisks
-        // backend, see https://bugs.freedesktop.org/show_bug.cgi?id=51271
+
+
 
         if (!error.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.FAILED))
             return false;
 
-        // cryptsetup
+
         if (error.message.includes('No key available with this passphrase'))
             return true;
 
-        // udisks (no password)
+
         if (error.message.includes('No key available to unlock device'))
             return true;
 
-        // libblockdev wrong password opening LUKS device
+
         if (error.message.includes('Failed to activate device: Incorrect passphrase'))
             return true;
 
-        // cryptsetup returns EINVAL in many cases, including wrong TCRYPT password/parameters
+
         if (error.message.includes('Failed to load device\'s parameters: Invalid argument') ||
-            error.message.includes(`Failed to load device's parameters: ${GLib.strerror(22 /* EINVAL */)}`))
+            error.message.includes(`Failed to load device's parameters: ${GLib.strerror(22  )}`))
             return true;
 
-        // cryptsetup returns EPERM when the TCRYPT header can't be decrypted
-        // with the provided password/parameters.
+
+
         if (error.message.includes('Failed to load device\'s parameters: Operation not permitted') ||
-            error.message.includes(`Failed to load device's parameters: ${GLib.strerror(1 /* EPERM */)}`))
+            error.message.includes(`Failed to load device's parameters: ${GLib.strerror(1  )}`))
             return true;
 
         return false;
@@ -914,9 +914,9 @@ class TrashAppInfo extends LocationAppInfo {
     }
 });
 
-/**
- * @param shellApp
- */
+
+
+
 function wrapWindowsBackedApp(shellApp) {
     if (shellApp._dtdData)
         throw new Error('%s has been already wrapped'.format(shellApp));
@@ -983,7 +983,7 @@ function wrapWindowsBackedApp(shellApp) {
     const m = (...args) => shellApp._dtdData.methodInjections.add(shellApp, ...args);
     const p = (...args) => shellApp._dtdData.propertyInjections.add(shellApp, ...args);
 
-    // mi is Method injector, pi is Property injector
+
     shellApp._setDtdData({mi: m, pi: p}, {public: false});
 
     m('get_state', () => shellApp._state ?? shellApp._getStateByWindows());
@@ -1069,7 +1069,7 @@ function wrapWindowsBackedApp(shellApp) {
     shellApp._signalConnections.add(global.display, 'notify::focus-window', () =>
         shellApp._checkFocused());
 
-    // Re-implements shell_app_activate_window for generic activation and alt-tab support
+
     m('activate_window', function (_om, window, timestamp) {
         /* eslint-disable no-invalid-this */
         if (!window)
@@ -1090,7 +1090,7 @@ function wrapWindowsBackedApp(shellApp) {
         /* eslint-enable no-invalid-this */
     });
 
-    // Re-implements shell_app_activate_full for generic activation and dash support
+
     m('activate_full', function (_om, workspace, timestamp) {
         /* eslint-disable no-invalid-this */
         if (!timestamp)
@@ -1135,11 +1135,11 @@ function wrapWindowsBackedApp(shellApp) {
     return shellApp;
 }
 
-/**
- * We can't inherit from Shell.App as it's a final type, so let's patch it
- *
- * @param params
- */
+
+
+
+
+
 function makeLocationApp(params) {
     if (!(params?.appInfo instanceof LocationAppInfo))
         throw new TypeError('Invalid location');
@@ -1172,7 +1172,7 @@ function makeLocationApp(params) {
         fallbackIconName,
     }));
 
-    // FIXME: We need to add a new API to Nautilus to open new windows
+
     shellApp._mi('can_open_new_window', () => {
         try {
             if (!shellApp.get_n_windows())
@@ -1278,16 +1278,16 @@ function makeLocationApp(params) {
     return shellApp;
 }
 
-/**
- *
- */
+
+
+
 function getFileManagerApp() {
     return Shell.AppSystem.get_default().lookup_app(FILE_MANAGER_DESKTOP_APP_ID);
 }
 
-/**
- *
- */
+
+
+
 export function wrapFileManagerApp() {
     const fileManagerApp = getFileManagerApp();
     if (!fileManagerApp)
@@ -1303,7 +1303,7 @@ export function wrapFileManagerApp() {
     fileManagerApp._signalConnections.addWithLabel(Labels.WINDOWS_CHANGED,
         fileManagerApp, 'windows-changed', () => {
             fileManagerApp.stop_emission_by_name('windows-changed');
-            // Let's wait for the location app to take control before of us
+
             const id = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
                 fileManagerApp._sources.delete(id);
                 fileManagerApp._updateWindows();
@@ -1348,9 +1348,9 @@ export function wrapFileManagerApp() {
     return fileManagerApp;
 }
 
-/**
- *
- */
+
+
+
 export function unWrapFileManagerApp() {
     const fileManagerApp = getFileManagerApp();
     if (!fileManagerApp || !fileManagerApp._dtdData)
@@ -1359,10 +1359,10 @@ export function unWrapFileManagerApp() {
     fileManagerApp.destroy();
 }
 
-/**
- * This class maintains a Shell.App representing the Trash and keeps it
- * up-to-date as the trash fills and is emptied over time.
- */
+
+
+
+
 export class Trash {
     destroy() {
         this._trashApp?.destroy();
@@ -1384,15 +1384,15 @@ export class Trash {
     }
 }
 
-/**
- * This class maintains Shell.App representations for removable devices
- * plugged into the system, and keeps the list of Apps up-to-date as
- * devices come and go and are mounted and unmounted.
- */
+
+
+
+
+
 export class Removables {
     static initVolumePromises(object) {
-        // TODO: This can be simplified using actual interface type when we
-        // can depend on gjs 1.72
+
+
         if (!(object instanceof Gio.Volume) || object.constructor.prototype._d2dPromisified)
             return;
 
@@ -1403,8 +1403,8 @@ export class Removables {
     }
 
     static initMountPromises(object) {
-        // TODO: This can be simplified using actual interface type when we
-        // can depend on gjs 1.72
+
+
         if (!(object instanceof Gio.Mount) || object.constructor.prototype._d2dPromisified)
             return;
 
@@ -1509,7 +1509,7 @@ export class Removables {
             appInfo.volume === volume);
         if (volumeIndex !== -1) {
             const [volumeApp] = this._volumeApps.splice(volumeIndex, 1);
-            // We don't care about cancelling the ongoing operations from now on.
+
             volumeApp.appInfo.cancellable = null;
             volumeApp.destroy();
             this.emit('changed');
@@ -1523,9 +1523,9 @@ export class Removables {
             return;
 
         if (!this._volumeApps.find(({appInfo}) => appInfo.mount === mount)) {
-            // In some Gio.Mount implementations the volume may be set after
-            // mount is emitted, so we could just ignore it as we'll get it
-            // later via volume-added
+
+
+
             const volume = mount.get_volume();
             if (volume)
                 this._onVolumeAdded(volume);
@@ -1538,9 +1538,9 @@ export class Removables {
 }
 Signals.addSignalMethods(Removables.prototype);
 
-/**
- *
- */
+
+
+
 function getApps() {
     const dockManager = Docking.DockManager.getDefault();
     const locationApps = [];
@@ -1554,16 +1554,16 @@ function getApps() {
     return locationApps;
 }
 
-/**
- *
- */
+
+
+
 export function getRunningApps() {
     return getApps().filter(a => a.state === Shell.AppState.RUNNING);
 }
 
-/**
- *
- */
+
+
+
 export function getStartingApps() {
     return getApps().filter(a => a.state === Shell.AppState.STARTING);
 }

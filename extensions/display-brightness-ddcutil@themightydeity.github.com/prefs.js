@@ -230,7 +230,7 @@ const PrefsWidget = GObject.registerClass({
                 disableSubMenu(_('Need to disable (Only "All" slider)'))
             }
         }
-    } 
+    }
     onButtonLocationChanged() {
         this.settings.set_int('button-location', this._button_location_combo_row.selected);
         if (this._button_location_combo_row.selected === 0) {

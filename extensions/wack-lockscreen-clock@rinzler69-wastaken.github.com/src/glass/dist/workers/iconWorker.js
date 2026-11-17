@@ -1,14 +1,14 @@
-// Takes icons apart in a process of its own (gjs -m), so the shell keeps
-// drawing meanwhile. Answers {file, cache} by drawing the icon file, writing
-// its style map's pixels, its tones' and its lens map's to `cache` and saying
-// {styled}.
+
+
+
+
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import { analyzeIcon } from '../iconStyle/iconAnalysis.js';
 import { drawIcon } from '../imaging.js';
 import { buildStyleMap } from '../iconStyle/styleMap.js';
 import { serveRequests } from './workerProcess.js';
-// The size the analysis is tuned at; the symbol is taken from the icon drawn at twice that.
+
 const ANALYSIS_SIZE = 128;
 
 function write(path, bytes) {

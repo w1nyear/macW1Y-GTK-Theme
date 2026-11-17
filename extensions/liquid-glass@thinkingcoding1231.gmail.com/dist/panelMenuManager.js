@@ -2,12 +2,12 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import GLib from 'gi://GLib';
 import { UIManager } from './uiManager.js?v=fix1';
-// GSettings namespace for every detected panel dropdown. Separate from the
-// Calendar's `menu-*` so these can be tuned without moving the date menu —
-// the same split quick-settings-*, notification-*, osd-* and dock-* already
-// have. UIManager builds its keys from this; see its _keyPrefix.
+
+
+
+
 const PANEL_MENU_PREFIX = 'panel-menu';
-// Preserve the preferences from the original keyboard/Vitals implementation.
+
 const LEGACY_KEYS = {
     keyboard: 'enable-keyboard-menu-glass',
     vitalsMenu: 'enable-vitals-menu-glass',
@@ -18,8 +18,8 @@ export class PanelMenuManager {
     _logger;
     _signals = [];
     _buttons = new Map();
-    // menu actor -> the glass on it, tagged with the indicator name it was
-    // found under so logs and teardown can name the menu that misbehaved.
+
+
     _menus = new Map();
     _idleId = 0;
     _active = false;
@@ -118,7 +118,7 @@ export class PanelMenuManager {
         const watch = (target, signal) => {
             this._signals.push({ target, id: target.connect(signal, schedule) });
         };
-        // Defer until addToStatusArea() has finished registering the indicator.
+
         const panel = Main.panel;
         for (const box of [panel._leftBox, panel._centerBox, panel._rightBox]) {
             watch(box, 'child-added');
@@ -142,7 +142,7 @@ export class PanelMenuManager {
         const panel = Main.panel;
         const buttons = new Set();
         const wanted = new Map();
-        // Indicator name per menu, so each glass can be told apart in the log.
+
         const wantedNames = new Map();
         const detected = [];
         const disabled = new Set(this._settings.get_strv('disabled-extra-menus'));
@@ -162,8 +162,8 @@ export class PanelMenuManager {
                 ]);
             }
             const menu = button.menu;
-            // Dummy menus and custom non-popup actors cannot use UIManager.
-            // Calendar and Quick Settings already have their own managers.
+
+
             if (!(menu instanceof PopupMenu.PopupMenu) || reserved.has(menu) || !menu.actor || !menu.box)
                 continue;
             detected.push(name);
@@ -181,7 +181,7 @@ export class PanelMenuManager {
                 button.disconnect(id);
             this._buttons.delete(button);
         }
-        // Keep existing instances: a new indicator must not close another menu.
+
         for (const [menu, entry] of this._menus) {
             if (wanted.has(menu))
                 continue;
@@ -216,7 +216,7 @@ export class PanelMenuManager {
                 try {
                     manager?.cleanup();
                 }
-                catch (_) { /* partial setup */ }
+                catch (_) {   }
                 this._logger.log(`[Liquid Glass] Could not attach panel menu glass to "${name}": ${e}`);
             }
         }
@@ -224,13 +224,13 @@ export class PanelMenuManager {
         if (JSON.stringify(detected) !== JSON.stringify(this._settings.get_strv('detected-extra-menus')))
             this._settings.set_strv('detected-extra-menus', detected);
     }
-    // [FIX] Teardown must not be all-or-nothing — the same guard UIManager,
-    // NotificationManager and extension.js already use. These steps used to run
-    // bare, so the first one that threw skipped every step after it, leaving
-    // this manager's signal handlers and its per-menu UIManagers (each with its
-    // own actors and per-frame later chain) alive across disable(). Disabling
-    // is exactly when a throw is most likely: the shell is destroying the same
-    // indicators we are.
+
+
+
+
+
+
+
     _teardownStep(name, fn) {
         try {
             fn();
@@ -245,8 +245,8 @@ export class PanelMenuManager {
         }
     }
     cleanup() {
-        // Set before anything that can throw, so a scan queued by a signal that
-        // fires mid-teardown stops itself even if this method never finishes.
+
+
         this._active = false;
         this._teardownStep('idleScan', () => {
             if (this._idleId)
@@ -272,7 +272,7 @@ export class PanelMenuManager {
                 }
             this._buttons.clear();
         });
-        // One step per menu: a menu that throws must not strand the others.
+
         for (const [menu, { name, manager }] of this._menus) {
             if (menu._liquidGlassUIManager === manager) {
                 menu._liquidGlassUIManager = null;

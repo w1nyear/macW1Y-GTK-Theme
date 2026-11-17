@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Kiwi Extension - Panel media playback menu
+
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
@@ -104,7 +104,7 @@ class MediaWidget extends St.ScrollView {
             height += naturalHeight;
         }
 
-        // Limit the viewport, while the list keeps its full scrollable height.
+
         const [, listHeight] = listThemeNode.adjust_preferred_height(0, height);
         return themeNode.adjust_preferred_height(0, listHeight);
     }
@@ -136,8 +136,8 @@ export function enable(gettext) {
     panelButton.menu.setSourceAlignment(1);
     panelButton.menu.box.add_style_class_name('kiwi-media-menu');
     const popupActor = panelButton.menu.actor;
-    // Redraw the whole popup during media animations so dynamic background
-    // blur does not rely on damage limited to the title or slider.
+
+
     const requestRedraw = () => {
         if (popupActor.mapped)
             popupActor.queue_redraw();

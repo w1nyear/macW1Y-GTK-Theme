@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2020 Florian Müllner <fmuellner@gnome.org>
-//
+
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-// we use async/await here to not block the mainloop, not to parallelize
+
 /* eslint-disable no-await-in-loop */
 
 import Adw from 'gi://Adw';
@@ -37,7 +37,7 @@ class UserThemePrefsWidget extends Adw.PreferencesGroup {
         this.connect('destroy', () => (this._settings = null));
 
         this._rows = new Map();
-        this._addTheme(''); // default
+        this._addTheme('');
 
         this._collectThemes();
     }

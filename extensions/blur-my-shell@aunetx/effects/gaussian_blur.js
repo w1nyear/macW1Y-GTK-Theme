@@ -101,7 +101,7 @@ const GaussianBlurEffectClass = utils.IS_IN_PREFERENCES ? null : class GaussianB
 
                 const scale_factor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
 
-                // like Clutter, we use the assumption radius = 2*sigma
+
                 uniforms.set_uniform(this, 'sigma', parseFloat(this._radius * scale_factor / 2 - 1e-6));
                 this.set_enabled(this.radius > 0.);
 

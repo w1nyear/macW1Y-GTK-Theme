@@ -134,7 +134,7 @@ class OverviewWallpaperManager {
             this._bgGroup.add_child(monBin);
 
             try {
-                // If blur-my-shell is actively blurring the overview, do not duplicate Shell.BlurEffect
+
                 const bmsExt = Main.extensionManager?.lookup('blur-my-shell@aunetx');
                 const bmsHasOverviewBlur = bmsExt && bmsExt.stateObj?._overview_blur?.enabled;
                 if (!bmsHasOverviewBlur) {
@@ -240,7 +240,7 @@ class MacMenuHoverGlide {
         const parent = box ? box.get_parent() : null;
         if (!parent) return;
 
-        // Clean up any stray duplicate pills in parent first
+
         for (const c of parent.get_children()) {
             if (c !== this._pill && c.name === 'mac-menu-hover-pill') {
                 try { c.destroy(); } catch (_) {}
@@ -343,7 +343,7 @@ class MacMenuHoverGlide {
             let h = (ab && ab.y2 > ab.y1) ? (ab.y2 - ab.y1) : child.height;
             if (w <= 0 || h <= 0) return;
 
-            // Correct for pill's own allocation origin inside parent:
+
             const pillAb = this._pill.get_allocation_box ? this._pill.get_allocation_box() : null;
             const originX = (pillAb && pillAb.x2 >= pillAb.x1) ? pillAb.x1 : 0;
             const originY = (pillAb && pillAb.y2 >= pillAb.y1) ? pillAb.y1 : 0;
@@ -379,7 +379,7 @@ class MacMenuHoverGlide {
                     opacity: 255,
                     scale_x: 1.0,
                     scale_y: 1.0,
-                    duration: 130, // 130ms authentic macW1Y glide
+                    duration: 130,
                     mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                 });
             }
@@ -621,7 +621,7 @@ export default class EvalHelper extends Extension {
             hasTouchpad: MacSetupWizard.hasTouchpadGestures()
         });
 
-        // Automatically launch setup wizard if macSetupWizard flag is 1 on login
+
         if (MacSetupWizard.getSetupWizardFlag()) {
             GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
                 MacSetupWizard.startSetupWizard(false);
@@ -629,13 +629,13 @@ export default class EvalHelper extends Extension {
             });
         }
 
-        // Prewarm animation & rendering cache
+
         GLib.idle_add(GLib.PRIORITY_LOW, () => {
             try { MacAnimationCache.prewarmAll(); } catch (_) {}
             return GLib.SOURCE_REMOVE;
         });
 
-        // Permanently prevent GNOME from disabling user extensions or resetting theme
+
         try {
             this._shellSettings = new Gio.Settings({ schema_id: 'org.gnome.shell' });
             if (this._shellSettings.get_boolean('disable-user-extensions')) {
@@ -662,7 +662,7 @@ export default class EvalHelper extends Extension {
             });
         } catch (_) {}
 
-        // Ensure wack-lockscreen-clock unlock fade is enabled without requiring wack-shell
+
         try {
             const patchWackFade = () => {
                 const wack = Main.extensionManager?.lookup('wack-lockscreen-clock@rinzler69-wastaken.github.com')?.stateObj;
@@ -689,7 +689,7 @@ export default class EvalHelper extends Extension {
             });
         } catch (_) {}
 
-        // macW1Y Screenshot & Screencast integration
+
         try {
             if (Main.screenshotUI) {
                 this._screenshotTakenSignalId = Main.screenshotUI.connect('screenshot-taken', (_ui, file) => {
@@ -712,7 +712,7 @@ export default class EvalHelper extends Extension {
             }
         } catch (_) {}
 
-        // Group notifications by application name so multiple notifications from the same app stack together
+
         const fdo = Main.notificationDaemon?._fdoNotificationDaemon;
         if (fdo && !this._origGetSourceForPidAndName) {
             this._origGetSourceForPidAndName = fdo._getSourceForPidAndName.bind(fdo);
@@ -732,7 +732,7 @@ export default class EvalHelper extends Extension {
             };
         }
 
-        // Ensure liquid-glass covers macW1Y Control Center submenu cards and sound drawer
+
         const patchLiquidGlass = () => {
             try {
                 const lg = Main.extensionManager?.lookup?.('liquid-glass@thinkingcoding1231.gmail.com')?.stateObj;
@@ -792,7 +792,7 @@ export default class EvalHelper extends Extension {
                     lg._findDashToDock();
                 }
 
-                // Apply StageCopier backdrop caching & throttling to avoid 60fps GPU blit/blur when idle
+
                 if (global._lgGlass && global._lgGlass.glassObjects) {
                     for (const glass of global._lgGlass.glassObjects()) {
                         if (glass._copier && !glass._copier.constructor._macThrottled) {
@@ -811,7 +811,7 @@ export default class EvalHelper extends Extension {
                                 }
                                 let copy = this._copies.get(view) ?? null;
 
-                                // 1. Strict backdrop lock: If locked and we already have a backdrop, NEVER re-blit
+
                                 if (actor._backdropLocked && copy?.texture) {
                                     this.reuseCount++;
                                     return { copy, missed: false };
@@ -854,15 +854,15 @@ export default class EvalHelper extends Extension {
                                 const isForced = nowUs < (this._forceUntilUs || 0);
                                 const mustCopy = !copy?.texture || !copy?.rect || overviewChanged;
 
-                                // 2. Throttle blits to ~60 FPS (16ms interval) when geometry is stable and not forced.
-                                // If less than 16ms has elapsed since the last blit, reuse existing copy to avoid excessive blits.
+
+
                                 if (!mustCopy && !isForced && sameGeometry && copy?.texture && (nowUs - (copy.lastTimeUs || 0) < 16000)) {
                                     this.reuseCount++;
                                     return { copy, missed: false };
                                 }
 
-                                // 3. Redraw clip check: if clip doesn't touch our glass rect and we have a copy,
-                                // Mutter only redrew an unrelated area on the screen; reuse existing copy.
+
+
                                 const clip = paintContext.get_redraw_clip();
                                 const clipX = Math.floor(rect[0]);
                                 const clipY = Math.floor(rect[1]);
@@ -897,7 +897,7 @@ export default class EvalHelper extends Extension {
                         }
                     }
                 }
-                // Gentle dock glass sync on workspace switch / overview transitions without hammering GPU
+
                 const syncDockGlass = () => {
                     if (typeof global._liquidGlassDockSync === 'function') {
                         try { global._liquidGlassDockSync(); } catch (_) {}
@@ -925,7 +925,7 @@ export default class EvalHelper extends Extension {
             return GLib.SOURCE_REMOVE;
         });
 
-        // Ensure dock icon magnification never stays stuck after opening/closing Overview
+
         const setupDockMagnifierGuard = () => {
             try {
                 const getMag = () => {
@@ -1004,8 +1004,8 @@ export default class EvalHelper extends Extension {
             return GLib.SOURCE_REMOVE;
         });
 
-        // Ensure dialog and modal windows for apps with sidebars (e.g. Nautilus "Empty Trash")
-        // get full-width blur across the entire element instead of being clipped to sidebar width (240px)
+
+
         const setupAppDialogBlurGuard = () => {
             try {
                 const bmsExt = Main.extensionManager.lookup('blur-my-shell@aunetx');
@@ -1071,7 +1071,7 @@ export default class EvalHelper extends Extension {
             return GLib.SOURCE_REMOVE;
         });
 
-        // macW1Y Tahoe context & popup menus: single gliding hover pill following cursor
+
         const setupMenuHoverGlide = () => {
             try {
                 const attachToMenu = (menu) => {
@@ -1170,11 +1170,11 @@ export default class EvalHelper extends Extension {
         });
 
 
-        // Ensure search-shortcut Ctrl+Space connects to redesigned macW1Y Liquid Glass Spotlight
-        // with strict suppression in fullscreen apps and when pointer/mouse is grabbed/captured (games)
+
+
         const patchSpotlightKeybinding = async () => {
             try {
-                // Ensure ibus doesn't intercept Control+space
+
                 try {
                     const ibusSettings = new Gio.Settings({ schema_id: 'org.freedesktop.ibus.general.hotkey' });
                     let trig = ibusSettings.get_strv('trigger');
@@ -1264,7 +1264,7 @@ export default class EvalHelper extends Extension {
                                             globalThis.toggleMacSpotlight();
                                             return;
                                         }
-                                        const mod = await import(`file://${ext.path}/searchDialog_v5.js?t=${Date.now()}`);
+                                        const mod = await import(`file://${ext.path}/searchDialog.js?t=${Date.now()}`);
                                         if (mod?.toggleSearchDialog) {
                                             mod.toggleSearchDialog();
                                         }
@@ -1310,7 +1310,7 @@ export default class EvalHelper extends Extension {
             return GLib.SOURCE_REMOVE;
         });
 
-        // Patch SwitcherPopup (Alt+Tab) with macW1Y Liquid Glass & Focused Label
+
         const patchSwitcherPopupLQVisual = async () => {
             try {
                 const SwitcherPopupMod = await import('resource:///org/gnome/shell/ui/switcherPopup.js');
@@ -1344,7 +1344,7 @@ export default class EvalHelper extends Extension {
                     return globalThis._macAltTabConfig;
                 };
 
-                // 1. Helper to update visual outline for an item in SwitcherList
+
                 SwitcherList.prototype._macUpdateItemVisual = function(i) {
                     if (!Array.isArray(this._items) || i < 0 || i >= this._items.length) return;
                     const item = this._items[i];
@@ -1382,8 +1382,8 @@ export default class EvalHelper extends Extension {
                     }
                 };
 
-                // 2. Patch SwitcherList.prototype.vfunc_get_preferred_height & vfunc_allocate
-                // for 100% strict vertical centering ("Головне завжди центруватись по висоті").
+
+
                 if (!SwitcherList.prototype._macHeightPatchedV12) {
                     SwitcherList.prototype._macHeightPatchedV12 = true;
                     SwitcherList.prototype.vfunc_get_preferred_height = function(_forWidth) {
@@ -1417,13 +1417,13 @@ export default class EvalHelper extends Extension {
                         const labelH = 16;
                         const labelGap = 6;
 
-                        // Perfect vertical centering:
-                        // The entire block consisting of icon tile, label gap, and label has height:
+
+
                         const contentH = tileH + labelGap + labelH;
-                        // Equal top and bottom margins guarantee 100% vertical centering:
+
                         const topMargin = Math.max(0, Math.floor((H - contentH) / 2));
 
-                        // Allocate _scrollView for the horizontal icon list
+
                         const scrollBox = new Clutter.ActorBox();
                         scrollBox.x1 = 0;
                         scrollBox.x2 = W;
@@ -1434,7 +1434,7 @@ export default class EvalHelper extends Extension {
                         if (this._leftArrow) this._leftArrow.opacity = 0;
                         if (this._rightArrow) this._rightArrow.opacity = 0;
 
-                        // Allocate active app label centered under the highlighted item
+
                         if (this._activeAppLabel) {
                             if (this._activeAppLabel.visible && this._highlighted >= 0 && Array.isArray(this._items) && this._items[this._highlighted]) {
                                 const item = this._items[this._highlighted];
@@ -1466,7 +1466,7 @@ export default class EvalHelper extends Extension {
                     };
                 }
 
-                // 3. Patch SwitcherList.prototype.highlight to update item outlines and center the shared active app title
+
                 if (!SwitcherList.prototype._macHighlightPatchedV12) {
                     SwitcherList.prototype._macHighlightPatchedV12 = true;
                     const origHighlight = SwitcherList.prototype._macOrigHighlight || SwitcherList.prototype.highlight;
@@ -1513,7 +1513,7 @@ export default class EvalHelper extends Extension {
                     };
                 }
 
-                // 4. Patch SwitcherList.prototype.addItem to enforce dock-like item width, hide scroll arrows, and connect hover
+
                 if (!SwitcherList.prototype._macAddItemPatchedV12) {
                     SwitcherList.prototype._macAddItemPatchedV12 = true;
                     const origAddItem = SwitcherList.prototype._macOrigAddItem || SwitcherList.prototype.addItem;
@@ -1571,7 +1571,7 @@ export default class EvalHelper extends Extension {
                     };
                 }
 
-                // 5. Patch AppIcon to format label, add squircle class to iconBin, and hide label by default
+
                 if (AltTabMod.AppIcon && !AltTabMod.AppIcon.prototype._macPatchedV12) {
                     AltTabMod.AppIcon.prototype._macPatchedV12 = true;
                     const origAppIconInit = AltTabMod.AppIcon.prototype._macOrigInit || AltTabMod.AppIcon.prototype._init;
@@ -1604,7 +1604,7 @@ export default class EvalHelper extends Extension {
                     };
                 }
 
-                // 6. Patch WindowIcon & WindowSwitcher for touchpad gestures & fallback switcher
+
                 if (AltTabMod.WindowIcon && !AltTabMod.WindowIcon.prototype._macPatchedV12) {
                     AltTabMod.WindowIcon.prototype._macPatchedV12 = true;
                     const origWindowIconInit = AltTabMod.WindowIcon.prototype._macOrigInit || AltTabMod.WindowIcon.prototype._init;
@@ -1650,7 +1650,7 @@ export default class EvalHelper extends Extension {
                     };
                 }
 
-                // 7. Hide multi-window arrows in AppSwitcher and enforce crisp dock-proportional sizing & spacing
+
                 try {
                     const dummyPopup = new AltTabMod.AppSwitcherPopup();
                     const AppSwitcherProto = dummyPopup._switcherList ? Object.getPrototypeOf(dummyPopup._switcherList) : null;
@@ -1762,7 +1762,7 @@ export default class EvalHelper extends Extension {
                     dummyPopup.destroy();
                 } catch (_) {}
 
-                // 7. Hide label in WindowSwitcher
+
                 try {
                     const dummyWinPopup = new AltTabMod.WindowSwitcherPopup();
                     const WinSwitcherProto = dummyWinPopup._switcherList ? Object.getPrototypeOf(dummyWinPopup._switcherList) : null;
@@ -1825,7 +1825,7 @@ export default class EvalHelper extends Extension {
                     return glass;
                 };
 
-                // Preload glass asynchronously
+
                 getSwitcherGlass().catch(() => {});
 
                 if (!SwitcherPopup.prototype._macLQVisualPatchedV12) {
@@ -1895,7 +1895,7 @@ export default class EvalHelper extends Extension {
                                     const bgW = Math.round(slW);
                                     const bgH = Math.round(slH);
 
-                                    // Dynamic Liquid Glass parameters from settings (Liquid Glass group)
+
                                     let blurRad = 20.0;
                                     let tintStr = 0.06;
                                     let tR = 0.0, tG = 0.0, tB = 0.0;
@@ -1979,9 +1979,9 @@ export default class EvalHelper extends Extension {
             return GLib.SOURCE_REMOVE;
         });
 
-        // Patch ModalDialog (confirmation/system dialogs) with LQ-Visual glass
-        // The dialog keeps its own rgba(30,30,30,0.40) fill; only the BackdropGlass
-        // shader is added behind the dialog box (same engine as Tahoe widgets).
+
+
+
         const patchModalDialogLQVisual = async () => {
             try {
                 const ModalDialogMod = await import('resource:///org/gnome/shell/ui/modalDialog.js');
@@ -2024,7 +2024,7 @@ export default class EvalHelper extends Extension {
                     const dialogBox = dialogLayout?._dialog;
                     if (!stack || !dialogBox) return null;
 
-                    // Remove any lingering glass from previous runs
+
                     for (const child of stack.get_children()) {
                         if (child.name === 'liquid-glass-dialog-actor') {
                             stack.remove_child(child);
@@ -2085,7 +2085,7 @@ export default class EvalHelper extends Extension {
                         dialogActor
                     );
 
-                    // Wait for shader initialization if not immediately ready
+
                     if (!glass._effect?._shadersLoaded) {
                         checkShaderTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 20, () => {
                             if (dialogActor.is_finalized?.() || glass.is_finalized?.()) {
@@ -2107,7 +2107,7 @@ export default class EvalHelper extends Extension {
 
                 const syncDialogGlass = (state) => {
                     const { dialogActor, dialogBox, glass } = state;
-                    // Actor validity guards
+
                     if (!dialogActor || !dialogBox || !glass) return;
                     if (dialogActor.is_finalized?.() || dialogBox.is_finalized?.() || glass.is_finalized?.()) return;
 
@@ -2116,8 +2116,8 @@ export default class EvalHelper extends Extension {
                     const isOpeningOrOpen = dialogActor.visible && dialogActor.mapped && dialogActor.opacity > 0;
                     const shadersReady = (glass._effect?._shadersLoaded === true);
 
-                    // During open animation (State.OPENING), during close, or before shaders finish loading:
-                    // Keep glass hidden so no unshaded background quad or raw FBO snapshot flashes on screen.
+
+
                     if (!isOpeningOrOpen || isOpening || isClosing || !shadersReady) {
                         if (glass.visible) glass.hide();
                         return;
@@ -2162,7 +2162,7 @@ export default class EvalHelper extends Extension {
                         const isTrash = dialogBox.has_style_class_name('mac-empty-trash-dialog');
                         const radius = isTrash ? 24.0 : 30.0;
 
-                        // Tahoe-widget / macW1Y Alert look: Liquid Glass shader
+
                         glass.setResolution(screenW, screenH);
                         glass.setCornerRadius(radius);
                         glass.setTintColor(0.0, 0.0, 0.0);
@@ -2186,7 +2186,7 @@ export default class EvalHelper extends Extension {
                             dialogBox.set_style(`background-color: rgba(30, 30, 30, ${tintStrength.toFixed(2)}) !important; border-radius: ${Math.round(radius)}px !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; box-shadow: 0 16px 36px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important;${extra}`);
                         } catch (_) {}
 
-                        // Calibrated clip padding (40px) matching dock and notifications to allow soft shadow gradient without clipping, avoiding oversized 160px backdrop box
+
                         const CLIP_PAD = 40;
                         glass.set_clip(localBgX - CLIP_PAD, localBgY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
                     }
@@ -2249,7 +2249,7 @@ export default class EvalHelper extends Extension {
                 if (!globalThis._macDlgStates) {
                     globalThis._macDlgStates = new Set();
                 } else {
-                    // stale states from a previous extension run
+
                     globalThis._macDlgStates.clear();
                 }
                 if (globalThis._macDlgStageId) {
@@ -2263,7 +2263,7 @@ export default class EvalHelper extends Extension {
                     globalThis._macDlgChildId = 0;
                 }
 
-                // Modal dialog glass is event-driven via notify::allocation / notify::position (ZERO per-frame stage polling)
+
 
                 const mg = Main.layoutManager.modalDialogGroup;
                 if (mg) {
@@ -2287,7 +2287,7 @@ export default class EvalHelper extends Extension {
         };
         patchModalDialogLQVisual();
 
-        // System-wide Empty Trash Modal Dialog with Liquid Glass (Above All Windows)
+
         const emptyTrashInternal = () => {
             try {
                 const bus = Gio.DBus.session;
@@ -2324,7 +2324,7 @@ export default class EvalHelper extends Extension {
                 );
             } catch (_) {}
 
-            // Direct Gio fallback
+
             try {
                 const trashFile = Gio.File.new_for_uri('trash:///');
                 trashFile.enumerate_children_async(
@@ -2366,7 +2366,7 @@ export default class EvalHelper extends Extension {
                     destroyOnClose: true,
                 });
 
-                // Dim top menu bar in sync with modal backdrop
+
                 let panelScrim = null;
                 try {
                     const stageW = global.stage.width;
@@ -2515,7 +2515,7 @@ export default class EvalHelper extends Extension {
 
         globalThis.showMacEmptyTrashDialog = showMacEmptyTrashDialog;
 
-        // Monitor styling.json changes for real-time modal dialog styling updates
+
         try {
             const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
             const confFile = Gio.File.new_for_path(confPath);
@@ -2542,7 +2542,7 @@ export default class EvalHelper extends Extension {
             });
         } catch (_) {}
 
-        // Alt+Tab (App Switcher) real-time styling synchronization
+
         const syncAltTabStyling = () => {
             try {
                 const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
@@ -2567,7 +2567,7 @@ export default class EvalHelper extends Extension {
         globalThis._macSyncAltTabStyling = syncAltTabStyling;
         syncAltTabStyling();
 
-        // Dock app labels real-time styling & hardware blur synchronization
+
         const syncAllLabels = () => {
             try {
                 const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
@@ -2618,7 +2618,7 @@ export default class EvalHelper extends Extension {
         globalThis._macSyncLabelStyling = syncAllLabels;
         syncAllLabels();
 
-        // Dock size, icon size & spacing real-time synchronization
+
         const syncDockStyling = () => {
             try {
                 const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
@@ -2636,18 +2636,18 @@ export default class EvalHelper extends Extension {
                 const dash = d2d?.dash;
                 if (!dash) return;
 
-                // 1. Spacing between icons (linear 1:1, true 0 at spacing=0)
+
                 if (dash._box?.layout_manager) {
                     dash._box.layout_manager.spacing = spacing;
                 }
 
-                // 2. Dock plate horizontal padding (true 0 at dockSize=0)
+
                 if (dash._dashContainer) {
                     dash._dashContainer.set_style(`padding: 0 ${dockSize}px !important;`);
                 }
 
-                // 3. App icons vertical padding & margins (true 0 at dockSize=0 & spacing=0)
-                // Equal padding on top and bottom so icons are perfectly centered vertically in dock
+
+
                 const padV = dockSize;
                 const itemMarginStyle = 'margin: 0px !important;';
                 const appPaddingStyle = `padding-top: ${padV}px !important; padding-bottom: ${padV}px !important; margin: 0px !important;`;
@@ -2674,7 +2674,7 @@ export default class EvalHelper extends Extension {
                     }
                 }
 
-                // 4. Update GSettings for dash-max-icon-size, edge-distance, and liquid-glass
+
                 const motionEd = Math.min(8, Math.max(0, edgeDistance));
                 try {
                     const schemaMotion = 'org.gnome.shell.extensions.dash2dock-motion';
@@ -2707,10 +2707,10 @@ export default class EvalHelper extends Extension {
                     }
                 } catch (_) {}
 
-                // 5. Position dock container correctly:
-                // NEVER set d2d.translation_y = 0 because d2d.y = 1080 (screen bottom),
-                // which completely pushes the dock below the screen!
-                // Normal position is translation_y = -dockHeight.
+
+
+
+
                 const extraEdge = Math.max(0, edgeDistance - 8);
                 d2d._macExtraEdge = extraEdge;
                 const dockHeight = d2d.height > 0 ? d2d.height : (d2d._box?.height > 0 ? d2d._box.height : 80);
@@ -2729,7 +2729,7 @@ export default class EvalHelper extends Extension {
                 dash._box?.queue_relayout?.();
                 d2d.queue_relayout?.();
 
-                // 6. Notify liquid-glass to synchronize glass geometry
+
                 if (typeof global._liquidGlassDockSync === 'function') {
                     global._liquidGlassDockSync();
                 }
@@ -2740,17 +2740,17 @@ export default class EvalHelper extends Extension {
         globalThis._macSyncDockStyling = syncDockStyling;
         syncDockStyling();
 
-        // Notification Center and Notification Banners are natively handled by blur-my-shell (menubar_v29 & notifications_v4)
 
-        // Ensure GNOME Overview is strictly Mission Control (Window/Workspace picker only)
-        // Ensure GNOME Overview is strictly Mission Control (Window/Workspace picker only)
-        // Completely remove GNOME app grid and top "Введіть текст для пошуку" search bar
+
+
+
+
         const patchMissionControlOverview = () => {
             try {
                 const controls = Main.overview?._overview?.controls;
                 if (!controls) return;
 
-                // 1. Stable, centered and proportionally scaled Workspaces Box with generous Dock clearance
+
                 const lm = controls.layout_manager;
                 if (lm && !lm._macOverviewSpacingPatchedV3) {
                     lm._macOverviewSpacingPatchedV3 = true;
@@ -2758,13 +2758,13 @@ export default class EvalHelper extends Extension {
                     lm._origComputeWorkspacesBox = origCompute;
                     lm._computeWorkspacesBoxForState = function(state, box, ...rest) {
                         const mon = Main.layoutManager.primaryMonitor;
-                        if (state === 0 /* ControlsState.HIDDEN (Desktop) */) {
+                        if (state === 0  ) {
                             const res = new Clutter.ActorBox();
                             res.set_origin(0, 0);
                             res.set_size(mon.width, mon.height);
                             return res;
                         }
-                        if (state === 1 /* OverviewControls.ControlsState.WINDOW_PICKER */) {
+                        if (state === 1  ) {
                             const workArea = Main.layoutManager.getWorkAreaForMonitor(mon.index);
                             const topPanelH = 34;
                             const dockH = mon.height - (workArea ? (workArea.y + workArea.height) : (mon.height - 92));
@@ -2782,8 +2782,8 @@ export default class EvalHelper extends Extension {
                     };
                 }
 
-                // 2. Full-monitor workspace layout & background: guarantees 1:1 true 16:9 monitor aspect ratio,
-                // completely eliminating vertical stretching/distortion on wallpaper and desktop widgets!
+
+
                 (async () => {
                     try {
                         const { WorkspaceBackground, WorkspaceLayout } = await import('resource:///org/gnome/shell/ui/workspace.js');
@@ -2878,14 +2878,14 @@ export default class EvalHelper extends Extension {
                     }
                 })();
 
-                // 3. Unhide window_group on overview hiding so wallpaper is continuously visible behind overview exit
+
                 if (!Main.overview._macWgHidingConn) {
                     Main.overview._macWgHidingConn = Main.overview.connect('hiding', () => {
                         global.window_group.show();
                     });
                 }
 
-                // Desktop Icons (DING) smooth opacity fade on overview open/close (Persistent Clone Pool)
+
                 const getDingActors = () => {
                     return (global.window_group?.get_children() || []).filter(c => {
                         const mw = c.meta_window || c.get_meta_window?.();
@@ -2920,7 +2920,7 @@ export default class EvalHelper extends Extension {
                     const ovGroup = Main.layoutManager.overviewGroup;
                     if (!ovGroup) return;
 
-                    // Reuse existing clones if valid
+
                     if (_dingClones.length === dingActors.length && _dingClones.every(c => c && c.get_parent() === ovGroup)) {
                         for (let i = 0; i < dingActors.length; i++) {
                             const actor = dingActors[i];
@@ -3001,7 +3001,7 @@ export default class EvalHelper extends Extension {
                     });
                 }
 
-                // 4. Hide and keep AppDisplay hidden
+
                 controls._updateAppDisplayVisibility = function() {
                     if (this._appDisplay) {
                         this._appDisplay.visible = false;
@@ -3013,7 +3013,7 @@ export default class EvalHelper extends Extension {
                     controls._appDisplay.opacity = 0;
                 }
 
-                // 5. Override _shiftState: Down closes overview, Up does NOT go to APP_GRID
+
                 if (!controls._macControlsPatched) {
                     controls._shiftState = function(direction) {
                         let {currentState, finalState} = this._stateAdjustment.getStateTransitionParams();
@@ -3038,7 +3038,7 @@ export default class EvalHelper extends Extension {
                     };
                 }
 
-                // 6. Override showApps and _toggleAppsPage to toggle our Mac Applications Menu
+
                 controls._toggleAppsPage = function() {
                     if (typeof globalThis.toggleMacApplications === 'function') {
                         globalThis.toggleMacApplications();
@@ -3050,7 +3050,7 @@ export default class EvalHelper extends Extension {
                     }
                 };
 
-                // 7. Hide search entry and searchEntryBin completely (no "Введіть текст для пошуку")
+
                 if (controls._searchEntryBin) {
                     controls._searchEntryBin.visible = false;
                     controls._searchEntryBin.opacity = 0;
@@ -3066,7 +3066,7 @@ export default class EvalHelper extends Extension {
                     controls._searchEntry.get_preferred_width = () => [0, 0];
                 }
 
-                // 8. Disable search controller triggering in overview
+
                 if (controls._searchController) {
                     controls._searchController._shouldTriggerSearch = () => false;
                     if (controls._searchController._entry) {
@@ -3075,7 +3075,7 @@ export default class EvalHelper extends Extension {
                     }
                 }
 
-                // 9. Keep WorkspaceBackground desktop cards fully visible (opacity = 255) in overview
+
                 const showWorkspaceBackgrounds = () => {
                     try {
                         const ws = Main.overview?._overview?._controls?._workspacesDisplay;
@@ -3115,15 +3115,15 @@ export default class EvalHelper extends Extension {
         };
         patchMissionControlOverview();
 
-        // Ensure GNOME Overview always has a solid, crisp desktop wallpaper background behind all workspaces
-        // Completely eliminates window ghosting, Solitaire Win98 trails, and transparent stage margins on physical display
+
+
         try {
             this._overviewWallpaperManager = new OverviewWallpaperManager();
         } catch (e) {
             console.error('[EvalHelper] OverviewWallpaperManager init error: ' + e);
         }
 
-        // Ensure blur-my-shell panel overview and folder transitions are smooth, seamless and dynamic
+
         const patchPanelOverviewAndFolders = () => {
             try {
                 const pb = Main.extensionManager?.lookup?.('blur-my-shell@aunetx')?.stateObj?._panel_blur;
@@ -3186,7 +3186,7 @@ export default class EvalHelper extends Extension {
                     try {
                         const duration = durationMs;
 
-                        // 1. Panel Blur Actors: ALWAYS HIDDEN on desktop and overview!
+
                         this.actors_list?.forEach(actors => {
                             const bg = actors.widgets?.background;
                             if (!bg) return;
@@ -3195,7 +3195,7 @@ export default class EvalHelper extends Extension {
                             if (bg.visible) bg.hide();
                         });
 
-                        // 2. Main.panel: Clean transparent bar without dark gradient overlay
+
                         if (Main.panel) {
                             Main.panel.opacity = 255;
                             Main.panel.set_style(
@@ -3212,11 +3212,11 @@ export default class EvalHelper extends Extension {
                 };
 
                 proto.on_overview_progress = function(_progress) {
-                    // Disabled continuous polling to eliminate GPU/CPU lag
+
                 };
 
                 proto._on_overview_adjustment_changed = function(_stateAdjustment) {
-                    // Disabled dynamic adjustment tracking - fixed 0.3s transition used instead
+
                 };
 
                 proto.set_overview_blur = function(enabled) {
@@ -3242,21 +3242,21 @@ export default class EvalHelper extends Extension {
 
 
 
-        // macW1Y-compliant notification & urgency handling:
-        // Background apps (e.g. Telegram, messaging, Zoom) receiving new messages must NEVER
-        // automatically raise or steal focus over the active foreground window.
-        // We also suppress the redundant/annoying GNOME "is ready" banner because
-        // the app's real notification is already handled by the notification center,
-        // and urgency is indicated by the dock icon (bounce/badge).
+
+
+
+
+
+
         const wah = Main.windowAttentionHandler;
         if (wah && !this._origOnWindowDemandsAttention) {
             this._origOnWindowDemandsAttention = wah._onWindowDemandsAttention.bind(wah);
             wah._onWindowDemandsAttention = function(_display, _window) {
-                // Do not steal focus, do not raise windows, and do not show redundant "is ready" popups
+
             };
         }
 
-        // Dynamic macW1Y Accent Color Synchronization
+
         const ACCENT_COLOR_MAP = {
             'blue': '#007aff',
             'teal': '#00a294',
@@ -3289,31 +3289,31 @@ export default class EvalHelper extends Extension {
             syncAccentColor();
         } catch (_) {}
 
-        // macW1Y Startup Transition: Smooth opacity fade-in, rock-solid wallpaper (strict no-zoom / no-flicker)
+
         if (Main.layoutManager) {
-            // 1. Immediately eliminate any GNOME Ubuntu zoom-in scale (0.75 -> 1.0) and fix pivot point
+
             Main.layoutManager.uiGroup.scale_x = 1.0;
             Main.layoutManager.uiGroup.scale_y = 1.0;
             Main.layoutManager.uiGroup.set_pivot_point(0, 0);
             Main.layoutManager.uiGroup.opacity = 255;
 
-            // Only hook layoutManager if the native mac layout overlay is not active
+
             if (!Main.layoutManager._isMacLayoutOverlay) {
-                // 2. Intercept _prepareStartupAnimation so uiGroup is NEVER scaled down to 0.75
-                // and all desktop elements (top bar, dock, widgets, windows) start hidden
+
+
                 if (Main.layoutManager._prepareStartupAnimation) {
                     this._origPrepareStartupAnimation = Main.layoutManager._prepareStartupAnimation;
                     Main.layoutManager._prepareStartupAnimation = async function() {
                     if (!Main.sessionMode.isGreeter) {
                         this._showSecondaryBackgrounds();
 
-                        // Force rock-solid 1.0 scale — eliminate Ubuntu zoom-in
+
                         this.uiGroup.set_pivot_point(0, 0);
                         this.uiGroup.scale_x = 1.0;
                         this.uiGroup.scale_y = 1.0;
                         this.uiGroup.opacity = 255;
 
-                        // A. Hide top panel above the screen
+
                         if (this.panelBox) {
                             this.panelBox.remove_all_transitions();
                             const panelH = this.panelBox.height > 0 ? this.panelBox.height : 34;
@@ -3321,20 +3321,20 @@ export default class EvalHelper extends Extension {
                             this.panelBox.opacity = 0;
                         }
 
-                        // B. Hide open windows & desktop icons
+
                         if (global.window_group) {
                             global.window_group.remove_all_transitions();
                             global.window_group.opacity = 0;
                         }
 
-                        // C. Hide dock if already present
+
                         const dock = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
                         if (dock) {
                             dock.remove_all_transitions();
                             dock.opacity = 0;
                         }
 
-                        // D. Ensure any dock added during extension initialization starts hidden
+
                         if (!this._macDockChildAddedId) {
                             this._macDockChildAddedId = this.uiGroup.connect('child-added', (_group, child) => {
                                 if (child.name === 'dashtodockContainer') {
@@ -3344,7 +3344,7 @@ export default class EvalHelper extends Extension {
                             });
                         }
 
-                        // E. Hide desktop widgets if already loaded
+
                         if (this._backgroundGroup && !this._macBgChildAddedId) {
                             this._macBgChildAddedId = this._backgroundGroup.connect('child-added', (_group, child) => {
                                 if ((child.has_style_class_name && child.has_style_class_name('widget-layer')) || child.name === 'widget-layer') {
@@ -3368,19 +3368,19 @@ export default class EvalHelper extends Extension {
                 };
             }
 
-            // 3. Intercept _startupAnimationSession:
-            // Wait until the entire system, all extensions, and the final look have fully loaded and settled.
-            // ONLY THEN trigger the synchronized macW1Y entrance animation:
-            // Top menu bar slides down from top, dock slides up from bottom, desktop widgets fade in.
+
+
+
+
             this._origStartupAnimationSession = Main.layoutManager._startupAnimationSession;
             Main.layoutManager._startupAnimationSession = async function() {
-                // Keep uiGroup strictly at 1.0
+
                 this.uiGroup.scale_x = 1.0;
                 this.uiGroup.scale_y = 1.0;
                 this.uiGroup.set_pivot_point(0, 0);
                 this.uiGroup.opacity = 255;
 
-                // Step 1: Wait until all enabled extensions have finished initializing
+
                 const waitForAllExtensions = async () => {
                     const em = Main.extensionManager;
                     if (!em || !em._enabledExtensions || em._enabledExtensions.length === 0)
@@ -3413,14 +3413,14 @@ export default class EvalHelper extends Extension {
 
                 await waitForAllExtensions();
 
-                // Step 2: Settle delay — let stylesheets apply, top-bar-organizer rearrange icons,
-                // and desktop-widgets & dock finalize their layout while hidden.
+
+
                 await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 350, () => {
                     resolve();
                     return GLib.SOURCE_REMOVE;
                 }));
 
-                // Disconnect dock and widget child-added listeners
+
                 if (this._macDockChildAddedId) {
                     try { this.uiGroup.disconnect(this._macDockChildAddedId); } catch (_) {}
                     this._macDockChildAddedId = null;
@@ -3430,11 +3430,11 @@ export default class EvalHelper extends Extension {
                     this._macBgChildAddedId = null;
                 }
 
-                // Step 3: Coordinated macW1Y entrance animation
+
                 const DURATION = 650;
                 const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
 
-                // A. Menu bar slides down from the top
+
                 if (this.panelBox) {
                     this.panelBox.remove_all_transitions();
                     const panelH = this.panelBox.height > 0 ? this.panelBox.height : 34;
@@ -3448,7 +3448,7 @@ export default class EvalHelper extends Extension {
                     });
                 }
 
-                // B. Dock fades in cleanly with liquid glass
+
                 const dock = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
                 if (dock) {
                     dock.remove_all_transitions();
@@ -3466,7 +3466,7 @@ export default class EvalHelper extends Extension {
                     }
                 }
 
-                // C. Desktop widgets fade in with opacity animation
+
                 const widgetsExt = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
                 const widgetLayer = widgetsExt?.stateObj?._controller?._layer ||
                     this._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer'));
@@ -3481,7 +3481,7 @@ export default class EvalHelper extends Extension {
                     });
                 }
 
-                // D. Desktop icons (DING) and open windows fade in with opacity animation
+
                 if (global.window_group) {
                     global.window_group.remove_all_transitions();
                     global.window_group.opacity = 0;
@@ -3495,12 +3495,12 @@ export default class EvalHelper extends Extension {
             }
         }
 
-        // macW1Y MenuBar Interaction Model:
-        // When Control Center (QuickSettings) or Notification Center (DateMenu) is open:
-        // 1. Hover-switching is strictly disabled. Moving the mouse across other buttons
-        //    (Wi-Fi, Bluetooth, Sound, Battery, Keyboard, AppIndicators) does NOT open them.
-        // 2. Opening any other menu requires explicitly pressing that button ("потрібно натиснути на іншу кнопку").
-        // 3. When the user clicks on another button in the menu bar, it immediately switches in ONE single click.
+
+
+
+
+
+
         const setupMacMenuBarInteraction = async () => {
             try {
                 const { PopupAnimation } = await import('resource:///org/gnome/shell/ui/boxpointer.js');
@@ -3515,7 +3515,7 @@ export default class EvalHelper extends Extension {
                         const dmMenu = Main.panel?.statusArea?.dateMenu?.menu;
                         const notifOpen = Boolean(globalThis._macNotificationCenter?._notifCenterOpen);
 
-                        // If Control Center or Notification Center is active, or if hovering onto them: NO hover switching!
+
                         if (active === qsMenu || active === dmMenu || notifOpen || newMenu === qsMenu || newMenu === dmMenu) {
                             return;
                         }
@@ -3533,22 +3533,22 @@ export default class EvalHelper extends Extension {
                         const dmMenu = Main.panel?.statusArea?.dateMenu?.menu;
                         const notifOpen = Boolean(globalThis._macNotificationCenter?._notifCenterOpen);
 
-                        // Block hover switching from Control Center or Notification Center
+
                         if (event.type() === Clutter.EventType.ENTER) {
                             if (menu === qsMenu || menu === dmMenu || notifOpen) {
                                 return Clutter.EVENT_PROPAGATE;
                             }
                         }
 
-                        // On Click outside the active popup menu
+
                         if ((event.type() === Clutter.EventType.BUTTON_PRESS ||
                              event.type() === Clutter.EventType.TOUCH_BEGIN) &&
                             targetActor && actor && !actor.contains(targetActor)) {
 
                             const clickedMenu = this._findMenuForSource(targetActor);
                             if (clickedMenu && clickedMenu !== menu) {
-                                // User intentionally clicked on another menu in the panel!
-                                // Immediately change to the clicked menu atomically without desync.
+
+
                                 this._changeMenu(clickedMenu);
                                 return Clutter.EVENT_STOP;
                             }
@@ -3584,7 +3584,7 @@ export default class EvalHelper extends Extension {
                     });
                 }
 
-                // Ensure Wifi, Bluetooth, Volume menus are populated and ready
+
                 const wifi = Main.panel?.statusArea?.macWifi;
                 if (wifi && typeof wifi._populateMenu === 'function') {
                     try { wifi._populateMenu(); } catch (_) {}
@@ -3605,7 +3605,7 @@ export default class EvalHelper extends Extension {
             return GLib.SOURCE_REMOVE;
         });
 
-        // Accent-color dynamic sync across all popup menu glide pills
+
         try {
             this._interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
             this._interfaceSettings.connectObject('changed::accent-color', () => {
@@ -3632,7 +3632,7 @@ export default class EvalHelper extends Extension {
             }, this);
         } catch (_) {}
 
-        // Periodic GNOME Shell memory compaction / Garbage Collection every 3 minutes
+
         this._gcIntervalId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 180, () => {
             try {
                 if (typeof imports.system.gc === 'function') {
@@ -3642,9 +3642,9 @@ export default class EvalHelper extends Extension {
             return GLib.SOURCE_CONTINUE;
         });
 
-        // Permanent Launchpad ("Програми") dock icon protection:
-        // Ensures launchpad.desktop cannot be unpinned, and is always present in favorite-apps,
-        // while allowing free drag-and-drop reordering anywhere on the dock.
+
+
+
         this._setupLaunchpadProtection();
     }
 
@@ -3656,7 +3656,7 @@ export default class EvalHelper extends Extension {
                 const proto = Object.getPrototypeOf(favs);
                 favs.removeFavorite = function(appId) {
                     if (appId === 'launchpad.desktop') {
-                        return; // Disallow unpinning Launchpad
+                        return;
                     }
                     return proto.removeFavorite.call(this, appId);
                 };
@@ -3705,7 +3705,7 @@ export default class EvalHelper extends Extension {
                 };
             }
 
-            import('file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js?t=' + Date.now())
+            import('file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog.js?t=' + Date.now())
                 .then(mod => {
                     globalThis.toggleMacApplications = () => mod.toggleSearchDialog('apps');
                     globalThis.toggleApplicationsMenu = () => mod.toggleSearchDialog('apps');
@@ -3723,7 +3723,7 @@ export default class EvalHelper extends Extension {
                 } else if (typeof globalThis.toggleMacSpotlight === 'function') {
                     globalThis.toggleMacSpotlight('apps');
                 } else {
-                    import('file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js?t=' + Date.now())
+                    import('file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog.js?t=' + Date.now())
                         .then(mod => {
                             globalThis.toggleMacApplications = () => mod.toggleSearchDialog('apps');
                             mod.toggleSearchDialog('apps');
@@ -3744,7 +3744,7 @@ export default class EvalHelper extends Extension {
             console.error(`[EvalHelper] Launchpad protection error: ${e}`);
         }
 
-        // Menubar Context & Popup Menu Appearance Animation (authentic 0.3s scale & fade)
+
         try {
             import('resource:///org/gnome/shell/ui/boxpointer.js').then((BoxPointer) => {
                 if (!this._origBoxPointerOpen) {
@@ -3796,7 +3796,7 @@ export default class EvalHelper extends Extension {
                         }
                     } catch (_) {}
 
-                    // When animate is explicitly disabled (0 or false), show instantly
+
                     if (animate === 0 || animate === false) {
                         this.scale_x = 1.0;
                         this.scale_y = 1.0;
@@ -3805,7 +3805,7 @@ export default class EvalHelper extends Extension {
                         return;
                     }
 
-                    // Ultra-responsive authentic macW1Y Tahoe appearance: immediate visibility (no delay/lag) with snappy 75ms micro-spring
+
                     this.scale_x = 0.98;
                     this.scale_y = 0.98;
 
@@ -3876,7 +3876,7 @@ export default class EvalHelper extends Extension {
 
                         if (onComplete) onComplete();
 
-                        // Guard against lingering dimming glass overlays
+
                         try {
                             const uiGroup = Main.layoutManager.uiGroup;
                             if (uiGroup) {
@@ -3900,15 +3900,15 @@ export default class EvalHelper extends Extension {
                         } catch (_) {}
                     };
 
-                    // Synchronous instant close only when explicitly requested without animation:
-                    // 1) animate is 0 or false
-                    // 2) animate is PopupAnimation.FADE (used during rapid menu switching in PopupMenuManager._changeMenu)
+
+
+
                     if (animate === 0 || animate === false || animate === BoxPointer.PopupAnimation.FADE) {
                         finalizeClose();
                         return;
                     }
 
-                    // For animated close: snappy 70ms fade-out and scale 1.0 -> 0.98
+
                     this._closeTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
                         this._closeTimeoutId = 0;
                         finalizeClose();
@@ -3919,7 +3919,7 @@ export default class EvalHelper extends Extension {
                     const pivotX = (this.arrowSide === St.Side.RIGHT) ? 1.0 : (this.arrowSide === St.Side.LEFT ? 0.0 : 0.5);
                     this.set_pivot_point(pivotX, pivotY);
 
-                    // Simultaneously ease liquid glass backdrop actor in exact lockstep
+
                     try {
                         const uim = getMenuUIM(this);
                         const bg = uim?.bgActor;
@@ -3959,7 +3959,7 @@ export default class EvalHelper extends Extension {
                         event.type() === Clutter.EventType.LEAVE)
                         return Clutter.EVENT_PROPAGATE;
 
-                    // When menu is open and not in close animation, never block pointer events (clicks, scrolls, gestures)
+
                     if (this.visible && !this._isClosingAnimation) {
                         const type = event.type();
                         if (type !== Clutter.EventType.KEY_PRESS && type !== Clutter.EventType.KEY_RELEASE)
@@ -3976,7 +3976,7 @@ export default class EvalHelper extends Extension {
                     return Clutter.EVENT_PROPAGATE;
                 };
 
-                // Instant AppIndicator context menu activation (eliminate 400ms double-click timeout)
+
                 const patchAppIndicators = () => {
                     try {
                         const ext = Main.extensionManager?.lookup('ubuntu-appindicators@ubuntu.com');
@@ -4021,7 +4021,7 @@ export default class EvalHelper extends Extension {
             console.error(`[EvalHelper] BoxPointer setup error: ${e}`);
         }
 
-        // Window Context Menus (Desktop Context Menu / GTK Popup Windows) Smooth Exit Animation
+
         try {
             if (!this._origWmDestroyWindow && Main.wm?._destroyWindow) {
                 this._origWmDestroyWindow = Main.wm._destroyWindow;
@@ -4062,7 +4062,7 @@ export default class EvalHelper extends Extension {
             console.error(`[EvalHelper] wm._destroyWindow setup error: ${e}`);
         }
 
-        // Anti-dimming watchdog: safely ensure no stuck full-screen glass dimmer dims the screen (low frequency 10s fallback)
+
         this._dimmerWatchdogId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 10, () => {
             try {
                 const uiGroup = Main.layoutManager?.uiGroup;
@@ -4601,8 +4601,8 @@ export default class EvalHelper extends Extension {
 
         const applySnapshotOverlay = (actor) => {
             if (!actor || !actor.meta_window) return;
-            // Keep the snapshot for parked/minimized windows, but never paint
-            // it over the live actor during Compiz Magic Lamp deformation.
+
+
             if (hasMagicLampTransition(actor)) return;
             const snap = actor.meta_window._macCachedSnapshot;
             if (!snap) return;
@@ -4641,7 +4641,7 @@ export default class EvalHelper extends Extension {
 
         this._snapshotCleanups = [];
 
-        // Pre-minimize hook: capture snapshot and apply overlay immediately for minimize animation
+
         this._snapshotMinId = global.window_manager.connect('minimize', (e, actor) => {
             if (actor) {
                 captureWindowSnapshot(actor);
@@ -4655,7 +4655,7 @@ export default class EvalHelper extends Extension {
             }
         });
 
-        // Pre-unminimize hook: ensure overlay is applied during animation
+
         this._snapshotUnminId = global.window_manager.connect('unminimize', (e, actor) => {
             if (actor) {
                 applySnapshotOverlay(actor);
@@ -4668,7 +4668,7 @@ export default class EvalHelper extends Extension {
             }
         });
 
-        // Window state tracking: clean up overlay & snapshot once unminimized or unmanaged
+
         const trackWindow = (win) => {
             if (!win || win._macSnapshotTracked) return;
             win._macSnapshotTracked = true;
@@ -4729,7 +4729,7 @@ export default class EvalHelper extends Extension {
             } catch (_) {}
         };
 
-        // 1. Periodic trim every 3 minutes
+
         const timerId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 180, () => {
             runMemoryTrim();
             return GLib.SOURCE_CONTINUE;
@@ -4738,7 +4738,7 @@ export default class EvalHelper extends Extension {
             GLib.source_remove(timerId);
         });
 
-        // 2. Debounced idle trim when overview remains hidden for at least 15s (min interval 60s)
+
         let overviewHiddenTimer = 0;
         let lastTrimTime = 0;
         const overviewHiddenId = Main.overview.connect('hidden', () => {
@@ -4749,7 +4749,7 @@ export default class EvalHelper extends Extension {
             overviewHiddenTimer = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 15, () => {
                 overviewHiddenTimer = 0;
                 const now = GLib.get_monotonic_time();
-                if ((now - lastTrimTime) > 60000000) { // 60s
+                if ((now - lastTrimTime) > 60000000) {
                     lastTrimTime = now;
                     runMemoryTrim();
                 }
@@ -4770,7 +4770,7 @@ export default class EvalHelper extends Extension {
             try { Main.overview.disconnect(overviewShowingId); } catch (_) {}
         });
 
-        // Initial trim after 5 seconds
+
         GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 5, () => {
             runMemoryTrim();
             return GLib.SOURCE_REMOVE;
@@ -4801,7 +4801,7 @@ export default class EvalHelper extends Extension {
 
         let currentRadius = getApplicationCornerRadius();
 
-        // Listen for setting changes
+
         try {
             const lgSettings = new Gio.Settings({ schema_id: 'org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com' });
             const lgId = lgSettings.connect('changed::application-corner-radius', () => {
@@ -4931,13 +4931,13 @@ export default class EvalHelper extends Extension {
                 });
                 entry.signals = [];
             }
-            // CRITICAL: DO NOT remove entry.effect from entry.actor here!
-            // When Mutter or ShellWM closes a window, 'unmanaged' is emitted on MetaWindow
-            // right at the BEGINNING of the closing animation (scale/fade/magic lamp).
-            // Stripping the effect here causes the 24px corner radius to vanish prematurely,
-            // revealing the old smaller client radius during the animation.
-            // Instead, the effect remains attached to entry.actor until entry.actorDestroyId
-            // fires upon actual Clutter actor destruction.
+
+
+
+
+
+
+
         };
 
         const doAttach = (win, actor, Clazz) => {
@@ -4981,7 +4981,7 @@ export default class EvalHelper extends Extension {
 
                 entry.actorSignal = actor.connect('notify::size', () => syncWindow(win, entry));
 
-                // Clean up effect only when Clutter actor is fully destroyed after close animation
+
                 entry.actorDestroyId = actor.connect('destroy', () => {
                     if (entry.actorSignal) {
                         try { actor.disconnect(entry.actorSignal); } catch (_) {}
@@ -5030,10 +5030,10 @@ export default class EvalHelper extends Extension {
             doAttach(win, actor, Clazz);
         };
 
-        // Preload CornerEffect class immediately
+
         loadCornerEffect();
 
-        // Hook window-manager 'map' so the effect is attached on frame 0 of opening animation
+
         const mapId = global.window_manager.connect('map', (wm, actor) => {
             if (actor?.meta_window) {
                 trackWindow(actor.meta_window, actor);
@@ -5048,7 +5048,7 @@ export default class EvalHelper extends Extension {
             try { global.display.disconnect(winCreatedId); } catch (_) {}
         });
 
-        // Track all existing windows
+
         global.get_window_actors().forEach(a => {
             if (a.meta_window) {
                 trackWindow(a.meta_window, a);

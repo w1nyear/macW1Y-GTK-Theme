@@ -1,8 +1,8 @@
-// -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
-// This file is part of Dash2Dock Motion, a modified copy of Dash to Dock
-// (https://github.com/micheleg/dash-to-dock) by Michele Gaio and
+
+
+
 // contributors. Distributed under the GNU General Public License,
-// version 2 or later.
+
 
 import {Gio} from './dependencies/gi.js';
 import {Main} from './dependencies/shell/ui.js';

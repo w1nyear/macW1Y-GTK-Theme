@@ -1,8 +1,8 @@
-// -*- mode: js2; indent-tabs-mode: nil; js2-basic-offset: 4 -*-
+
 
 /* exported init, buildPrefsWidget */
 
-import Gtk from 'gi://Gtk';  // will be removed
+import Gtk from 'gi://Gtk';
 import Gdk from 'gi://Gdk';
 import * as GeneralPreferences from './preferences/generalPage.js';
 import * as CustomIconPreferences from './preferences/customIconPage.js';

@@ -1,6 +1,6 @@
-// A worker process (gjs -m) that answers requests one line of JSON at a time:
-// each request carries an `id`, and the answer the same `id`. Started on the
-// first request and again after it exits, a few times at most.
+
+
+
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 const MAX_STARTS = 3;
@@ -16,7 +16,7 @@ export class WorkerProcess {
     _process = null;
     _output = null;
     _waiting = new Map();
-    // Lines for the worker, written one after another.
+
     _lines = [];
     _writing = false;
     _nextId = 1;
@@ -24,24 +24,24 @@ export class WorkerProcess {
     _cancellable = new Gio.Cancellable();
     _encoder = new TextEncoder();
 
-    /** @param _script The worker's module, run with gjs -m. */
+
     constructor(_script, _name, _logger) {
         this._script = _script;
         this._name = _name;
         this._logger = _logger;
     }
 
-    /** Whether the worker runs or can be started. */
+
     get available() {
         return !!this._process || (this._starts < MAX_STARTS && !!GLib.find_program_in_path('gjs'));
     }
 
-    /** Requests not answered yet. */
+
     get pending() {
         return this._waiting.size;
     }
 
-    /** Rejects when the worker cannot be started, exits meanwhile or answers with an error. */
+
     request(message) {
         if (!this._process && !this._start())
             return Promise.reject(new Error(`the ${this._name} cannot start`));
@@ -62,7 +62,7 @@ export class WorkerProcess {
             this._process = Gio.Subprocess.new([gjs, '-m', this._script], Gio.SubprocessFlags.STDIN_PIPE | Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE);
         }
         catch (e) {
-            // It would fail the same way again.
+
             this._logger.log(`[Liquid Glass] Could not start the ${this._name}: ${e}`);
             this._process = null;
             this._starts = MAX_STARTS;
@@ -134,7 +134,7 @@ export class WorkerProcess {
             waiting.resolve(message);
     }
 
-    // The worker exited or its pipes broke: what was asked of it fails, and the next request starts it again.
+
     _lost(process, error) {
         if (this._process !== process)
             return;
@@ -158,12 +158,12 @@ export class WorkerProcess {
     }
 }
 
-/**
- * The worker's side: answers each line of JSON on stdin with what `handle`
- * returns, or with its error, until stdin closes. `arrived` sees each request
- * as soon as it is read, while earlier ones may still be worked on. Call from
- * the worker's module and await.
- */
+
+
+
+
+
+
 export async function serveRequests(handle, arrived = () => { }) {
     const GioUnix = (await import('gi://GioUnix')).default;
     const input = new Gio.DataInputStream({ base_stream: new GioUnix.InputStream({ fd: 0, close_fd: false }) });
@@ -171,7 +171,7 @@ export async function serveRequests(handle, arrived = () => { }) {
     const encoder = new TextEncoder();
     const loop = new GLib.MainLoop(null, false);
     const answer = (message) => output.write_all(encoder.encode(`${JSON.stringify(message)}\n`), null);
-    // One request at a time, in order.
+
     let queue = Promise.resolve();
     const read = () => {
         input.read_line_async(GLib.PRIORITY_DEFAULT, null, (_s, res) => {
@@ -180,7 +180,7 @@ export async function serveRequests(handle, arrived = () => { }) {
                 [line] = input.read_line_finish_utf8(res);
             }
             catch {
-                // The shell is gone.
+
             }
             if (line === null) {
                 loop.quit();
@@ -208,6 +208,6 @@ export async function serveRequests(handle, arrived = () => { }) {
         });
     };
     read();
-    // runAsync() keeps promises running, which run() blocks in a module still being evaluated.
+
     await loop.runAsync();
 }

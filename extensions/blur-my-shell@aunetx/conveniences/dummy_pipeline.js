@@ -1,8 +1,8 @@
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 
-/// A dummy `Pipeline`, for dynamic blur only.
-/// Instead of a pipeline id, we take the settings of the component we want to blur.
+
+
 export const DummyPipeline = class DummyPipeline {
     constructor(effects_manager, settings, actor = null, options = {}) {
         this.effects_manager = effects_manager;
@@ -18,12 +18,12 @@ export const DummyPipeline = class DummyPipeline {
         background_group,
         widget_name
     ) {
-        // create the new actor
+
         this.actor = new St.Widget({ name: widget_name });
 
         this.attach_effect_to_actor(this.actor);
 
-        // a dummy `BackgroundManager`, just to access the pipeline easily
+
         let bg_manager = new Clutter.Actor;
         bg_manager.backgroundActor = this.actor;
         bg_manager._bms_pipeline = this;
@@ -34,7 +34,7 @@ export const DummyPipeline = class DummyPipeline {
     };
 
     attach_effect_to_actor(actor) {
-        // set the actor
+
         if (actor)
             this.actor = actor;
         else {
@@ -42,7 +42,7 @@ export const DummyPipeline = class DummyPipeline {
             return;
         }
 
-        // build the new effect to be added
+
         this.build_effect({
             unscaled_radius: this.get_unscaled_radius(),
             brightness: this.get_brightness(),
@@ -53,7 +53,7 @@ export const DummyPipeline = class DummyPipeline {
             "destroy", () => this.remove_pipeline_from_actor()
         );
 
-        // add the effect to the actor
+
         if (this.actor) {
             this.actor.add_effect(this.effect);
         } else {
@@ -70,10 +70,10 @@ export const DummyPipeline = class DummyPipeline {
     }
 
     build_effect(params) {
-        // create the effect
+
         this.effect = this.effects_manager.new_native_dynamic_gaussian_blur_effect(params);
 
-        // connect to settings changes, using the true gsettings object
+
         this._sigma_changed_id = this.settings.settings.connect('changed::sigma', () => this.update_effect());
         this._brightness_changed_id = this.settings.settings.connect('changed::brightness', () => this.update_effect());
         this._corner_radius_changed_id = this.settings.settings.connect(
@@ -115,8 +115,8 @@ export const DummyPipeline = class DummyPipeline {
         this.effect?.queue_repaint();
     }
 
-    /// Remove every effect from the actor it is attached to. Please note that they are not
-    /// destroyed, but rather stored (thanks to the `EffectManager` class) to be reused later.
+
+
     remove_effect() {
         if (this.effect)
             this.effects_manager.remove(this.effect);
@@ -133,11 +133,11 @@ export const DummyPipeline = class DummyPipeline {
         delete this._corner_radius_changed_id;
     }
 
-    /// Do nothing for this dummy pipeline.
-    /// Note: exposed to public API.
+
+
     change_pipeline_to() { return; }
 
-    /// Note: exposed to public API.
+
     destroy() {
         this.remove_pipeline_from_actor();
     }

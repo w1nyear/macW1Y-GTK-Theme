@@ -3,26 +3,26 @@ import { fileActions } from './fileActions.js';
 import { viewActions } from './viewActions.js';
 import { executeKeyboardAction } from './keyboardActions.js';
 import * as Logger from '../logger.js';
-import { toggleSearchDialog } from '../searchDialog_v5.js';
+import { toggleSearchDialog } from '../searchDialog.js';
 
-/**
- * Action dispatcher — registry of all named actions.
- *
- * Each handler receives:
- *   ctx    — { window, app, desktopId }
- *   param  — optional string after the colon (e.g. "activate-window:123" → "123")
- *   manager — the MenuManager instance (for timeout tracking)
- *
- * Actions that are virtual-keyboard shortcuts are handled by keyboardActions
- * as a fallback, so they don't need entries here.
- */
+
+
+
+
+
+
+
+
+
+
+
 const registry = { ...windowActions, ...fileActions, ...viewActions };
 
-/**
- * Dispatch an action string.
- * Format: "action-name" or "action-name:param"
- * Returns true if handled.
- */
+
+
+
+
+
 export function dispatch(actionStr, ctx, manager) {
     if (actionStr === 'open-search') {
         if (typeof globalThis._macSpotlightToggle === 'function') {
@@ -39,7 +39,7 @@ export function dispatch(actionStr, ctx, manager) {
     const handler = registry[action];
     if (handler) {
         try {
-            // Await-aware: wrap handler call so async handlers don't silently reject
+
             const result = handler(ctx, param, manager);
             if (result && typeof result.then === 'function') {
                 result.catch(e => Logger.error(`Action "${action}" failed: ${e}`));
@@ -51,7 +51,7 @@ export function dispatch(actionStr, ctx, manager) {
         }
     }
 
-    // Fallback: keyboard-simulated shortcuts
+
     if (executeKeyboardAction(action, manager, ctx?.window ?? null)) return true;
 
     Logger.warn(`Unknown action: "${action}"`);

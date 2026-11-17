@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Hides the round system toggles at the top of Quick Settings
-// (wifi, bluetooth and friends). Sliders, battery and system rows stay.
+
+
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
@@ -44,7 +44,7 @@ function _isToggle(actor, depth = 0) {
                 return true;
         }
     } catch (_) {
-        // gone mid-walk
+
     }
     return false;
 }
@@ -61,7 +61,7 @@ function _isSlider(actor, depth = 0) {
                 return true;
         }
     } catch (_) {
-        // gone mid-walk
+
     }
     return false;
 }
@@ -71,7 +71,7 @@ function _apply() {
     if (!grid)
         return;
     _forgetDead();
-    // Only toggles above the first slider: battery/system rows below stay.
+
     let pastSliders = false;
     for (const child of grid.get_children()) {
         try {
@@ -87,7 +87,7 @@ function _apply() {
                 child.visible = false;
             }
         } catch (_) {
-            // gone mid-walk
+
         }
     }
 }
@@ -97,7 +97,7 @@ function _restore() {
         try {
             actor.visible = true;
         } catch (_) {
-            // destroyed
+
         }
     }
     _hidden.clear();
@@ -132,7 +132,7 @@ export function disable() {
         try {
             Main.panel?.statusArea?.quickSettings?.menu?.disconnect(_openStateId);
         } catch (_) {
-            // already gone
+
         }
         _openStateId = 0;
     }

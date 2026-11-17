@@ -33,11 +33,11 @@ const ShowErrorPopup = imports.showErrorPopup;
 
 const _ = Gettext.gettext;
 
-/**
- *
- * @param context
- * @param modifiersToCheck
- */
+
+
+
+
+
 function getModifiersInDnD(context, modifiersToCheck) {
     let device = context.get_device();
     let display = device.get_display();
@@ -46,25 +46,25 @@ function getModifiersInDnD(context, modifiersToCheck) {
     return (modifiers & modifiersToCheck) != 0;
 }
 
-/**
- *
- */
+
+
+
 function getDesktopDir() {
     let desktopPath = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DESKTOP);
     return Gio.File.new_for_commandline_arg(desktopPath);
 }
 
-/**
- *
- */
+
+
+
 function getScriptsDir() {
     let scriptsDir =  GLib.build_filenamev([GLib.get_home_dir(), Enums.NAUTILUS_SCRIPTS_DIR]);
     return Gio.File.new_for_commandline_arg(scriptsDir);
 }
 
-/**
- *
- */
+
+
+
 function getTemplatesDir() {
     let templatesDir = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_TEMPLATES);
     if ((templatesDir == GLib.get_home_dir()) || (templatesDir == null)) {
@@ -73,21 +73,21 @@ function getTemplatesDir() {
     return Gio.File.new_for_commandline_arg(templatesDir);
 }
 
-/**
- *
- * @param value
- * @param min
- * @param max
- */
+
+
+
+
+
+
 function clamp(value, min, max) {
     return Math.max(Math.min(value, max), min);
 }
 
-/**
- *
- * @param commandLine
- * @param environ
- */
+
+
+
+
+
 function spawnCommandLine(commandLine, environ = null) {
     try {
         let [success, argv] = GLib.shell_parse_argv(commandLine);
@@ -97,11 +97,11 @@ function spawnCommandLine(commandLine, environ = null) {
     }
 }
 
-/**
- *
- * @param workdir
- * @param command
- */
+
+
+
+
+
 function launchTerminal(workdir, command) {
     const settings = new Gio.Settings({schema_id: Enums.TERMINAL_SCHEMA});
     const settingsExec = settings.get_string(Enums.EXEC_KEY);
@@ -133,19 +133,19 @@ function launchTerminal(workdir, command) {
     );
 }
 
-/**
- *
- * @param workdir
- * @param argv
- * @param environ
- */
+
+
+
+
+
+
 function trySpawn(workdir, argv, environ = null) {
-    /* The following code has been extracted from GNOME Shell's
-     * source code in Misc.Util.trySpawn function and modified to
-     * set the working directory.
-     *
-     * https://gitlab.gnome.org/GNOME/gnome-shell/blob/gnome-3-30/js/misc/util.js
-     */
+
+
+
+
+
+
 
     var success, pid;
     try {
@@ -153,18 +153,18 @@ function trySpawn(workdir, argv, environ = null) {
             GLib.SpawnFlags.SEARCH_PATH | GLib.SpawnFlags.DO_NOT_REAP_CHILD,
             null);
     } catch (err) {
-        /* Rewrite the error in case of ENOENT */
+
         if (err.matches(GLib.SpawnError, GLib.SpawnError.NOENT)) {
             throw new GLib.SpawnError({
                 code: GLib.SpawnError.NOENT,
                 message: _('Command not found'),
             });
         } else if (err instanceof GLib.Error) {
-            // The exception from gjs contains an error string like:
-            //   Error invoking GLib.spawn_command_line_async: Failed to
-            //   execute child process "foo" (No such file or directory)
-            // We are only interested in the part in the parentheses. (And
-            // we can't pattern match the text, since it gets localized.)
+
+
+
+
+
             let message = err.message.replace(/.*\((.+)\)/, '$1');
             throw new err.constructor({
                 code: err.code,
@@ -174,22 +174,22 @@ function trySpawn(workdir, argv, environ = null) {
             throw err;
         }
     }
-    // Dummy child watch; we don't want to double-fork internally
-    // because then we lose the parent-child relationship, which
-    // can break polkit.  See https://bugzilla.redhat.com//show_bug.cgi?id=819275
+
+
+
     GLib.child_watch_add(GLib.PRIORITY_DEFAULT, pid, () => {});
 }
 
-/**
- *
- */
+
+
+
 function getFilteredEnviron() {
     let environ = [];
     for (let env of GLib.get_environ()) {
-        /* It's a must to remove the WAYLAND_SOCKET environment variable
-            because, under Wayland, DING uses an specific socket to allow the
-            extension to detect its windows. But the scripts must run under
-            the normal socket */
+
+
+
+
         if (env.startsWith('WAYLAND_SOCKET=')) {
             continue;
         }
@@ -198,20 +198,20 @@ function getFilteredEnviron() {
     return environ;
 }
 
-/**
- *
- * @param x
- * @param y
- * @param x2
- * @param y2
- */
+
+
+
+
+
+
+
 function distanceBetweenPoints(x, y, x2, y2) {
     return Math.pow(x - x2, 2) + Math.pow(y - y2, 2);
 }
 
-/**
- *
- */
+
+
+
 function getExtraFolders() {
     let extraFolders = [];
     if (Prefs.desktopSettings.get_boolean('show-home')) {
@@ -223,10 +223,10 @@ function getExtraFolders() {
     return extraFolders;
 }
 
-/**
- *
- * @param volumeMonitor
- */
+
+
+
+
 function getMounts(volumeMonitor) {
     let showVolumes = Prefs.desktopSettings.get_boolean('show-volumes');
     let showNetwork = Prefs.desktopSettings.get_boolean('show-network-volumes');
@@ -255,11 +255,11 @@ function getMounts(volumeMonitor) {
     return result;
 }
 
-/**
- *
- * @param filename
- * @param opts
- */
+
+
+
+
+
 function getFileExtensionOffset(filename, opts = {'isDirectory': false}) {
     let offset = filename.length;
     let extension = '';
@@ -283,11 +283,11 @@ function getFileExtensionOffset(filename, opts = {'isDirectory': false}) {
     return {offset, 'basename': filename, extension};
 }
 
-/**
- *
- * @param selection
- * @param type
- */
+
+
+
+
+
 function getFilesFromNautilusDnD(selection, type) {
     let data = String.fromCharCode.apply(null, selection.get_data());
     let retval = [];
@@ -297,11 +297,11 @@ function getFilesFromNautilusDnD(selection, type) {
             continue;
         }
         if (type == 1) {
-            // x-special/gnome-icon-list
+
             let entry = item.split('\r');
             retval.push(entry[0]);
         } else {
-            // text/uri-list
+
             if (item[0] == '#') {
                 continue;
             }
@@ -311,12 +311,12 @@ function getFilesFromNautilusDnD(selection, type) {
     return retval;
 }
 
-/**
- *
- * @param text
- * @param filename
- * @param dropCoordinates
- */
+
+
+
+
+
+
 function writeTextFileToDesktop(text, filename, dropCoordinates) {
     let path = GLib.build_filenamev([GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DESKTOP),  filename]);
     let file = Gio.File.new_for_path(path);
@@ -333,11 +333,11 @@ function writeTextFileToDesktop(text, filename, dropCoordinates) {
     }
 }
 
-/**
- *
- * @param window
- * @param modal
- */
+
+
+
+
+
 function windowHidePagerTaskbarModal(window, modal) {
     let usingX11 = Gdk.Display.get_default().constructor.$gtype.name === 'GdkX11Display';
     if (usingX11) {
@@ -366,10 +366,10 @@ function windowHidePagerTaskbarModal(window, modal) {
     }
 }
 
-/**
- *
- * @param ms
- */
+
+
+
+
 function waitDelayMs(ms) {
     return new Promise((resolve, reject) => {
         GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
@@ -379,13 +379,13 @@ function waitDelayMs(ms) {
     });
 }
 
-/**
- * Creates a new desktop menu with desktop menu theming.
- *
- * @param {string[]} additionalStyleClasses - Additional style classes to add to
- *    the menu and its toplevel.
- * @returns {Gtk.Menu} The created desktop menu.
- */
+
+
+
+
+
+
+
 function createDesktopMenu(additionalStyleClasses = []) {
     return new DesktopMenu({ additionalStyleClasses });
 }

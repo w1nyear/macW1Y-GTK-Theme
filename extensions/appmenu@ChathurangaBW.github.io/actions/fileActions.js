@@ -17,10 +17,10 @@ function openPath(path) {
     launch(['xdg-open', path]);
 }
 
-/**
- * Create a new folder on the Desktop.
- * Note: For in-Nautilus folder creation, use the virtual keyboard shortcut Ctrl+Shift+N.
- */
+
+
+
+
 function createNewFolder() {
     const timestamp = Date.now();
     try {
@@ -32,10 +32,10 @@ function createNewFolder() {
     }
 }
 
-/**
- * Get list of removable drives/block devices using udisks2.
- * Returns array of {device, name, size, isRemovable, mountPoints}
- */
+
+
+
+
 async function getRemovableDrives() {
     return new Promise((resolve) => {
         try {
@@ -50,14 +50,14 @@ async function getRemovableDrives() {
                     const bytes = source.read_bytes_finish(result);
                     stdout = new TextDecoder().decode(bytes.get_data());
                 } catch (e) {
-                    // ignore
+
                 }
 
                 subprocess.wait_check_async(null, (source, result) => {
                     const drives = [];
                     try {
                         source.finish(result);
-                        // Parse udisksctl output for removable drives
+
                         const lines = stdout.split('\n');
                         let currentDrive = null;
 
@@ -96,7 +96,7 @@ async function getRemovableDrives() {
                                 }
                             }
                         }
-                        // Don't forget the last drive
+
                         if (currentDrive && currentDrive.isRemovable) {
                             drives.push(currentDrive);
                         }
@@ -113,13 +113,13 @@ async function getRemovableDrives() {
     });
 }
 
-/**
- * Eject/unmount a block device.
- */
+
+
+
 async function ejectDevice(device) {
     return new Promise((resolve) => {
         try {
-            // First unmount if mounted
+
             const subprocess = Gio.Subprocess.new(
                 ['udisksctl', 'unmount', '-b', `/dev/${device}`],
                 Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE
@@ -128,7 +128,7 @@ async function ejectDevice(device) {
             subprocess.wait_check_async(null, (source, result) => {
                 try {
                     source.finish(result);
-                    // Then power off the drive
+
                     const powerOff = Gio.Subprocess.new(
                         ['udisksctl', 'power-off', '-b', `/dev/${device}`],
                         Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE
@@ -155,7 +155,7 @@ async function ejectDevice(device) {
 }
 
 export const fileActions = {
-    // macW1Y Menu
+
     'about-this-system': () => launch(['gnome-control-center', 'about']),
     'system-settings': () => launch(['gnome-control-center']),
     'app-store': () => launch(['gnome-software']),
@@ -167,11 +167,11 @@ export const fileActions = {
     'lock-screen': () => launch(['loginctl', 'lock-session']),
     'log-out': () => launch(['gnome-session-quit']),
 
-    // File browser actions
-    'open-settings-ext': () => launch(['gnome-extensions', 'prefs', 'appmenu@ChathurangaBW.github.io']),
-    // hide-app, hide-others, show-all — moved to windowActions.js (direct JS eval)
 
-    // File Menu
+    'open-settings-ext': () => launch(['gnome-extensions', 'prefs', 'appmenu@ChathurangaBW.github.io']),
+
+
+
     'open-finder': () => openPath(HOME),
     'new-finder-win': () => openPath(HOME),
     'new-folder': () => createNewFolder(),
@@ -180,14 +180,14 @@ export const fileActions = {
     'empty-bin': () => launch(['gio', 'trash', '--empty']),
 
     'eject': async () => {
-        // Eject - show list of removable drives and eject them
+
         const drives = await getRemovableDrives();
         if (drives.length === 0) {
             Logger.debug('No removable drives found');
             return;
         }
 
-        // Eject all removable drives
+
         for (const drive of drives) {
             if (drive.mountPoints.length > 0 || drive.size > 0) {
                 await ejectDevice(drive.device);
@@ -195,7 +195,7 @@ export const fileActions = {
         }
     },
 
-    // Go Menu
+
     'go-home': () => openPath(HOME),
     'go-recents': () => openPath('recent:///'),
     'go-documents': () => openPath(specialDir(GLib.UserDirectory.DIRECTORY_DOCUMENTS)),
@@ -206,12 +206,12 @@ export const fileActions = {
     'go-applications': () => openPath('/usr/share/applications'),
     'go-utilities': () => openPath('/usr/bin'),
 
-    // Help
+
     'open-system-help': () => launch(['yelp']),
 
-    // Window — tile-left, tile-right, bring-all-front moved to windowActions.js
 
-    // Feedback
+
+
     'send-feedback': () => {
         Gio.AppInfo.launch_default_for_uri(
             'https://github.com/ChathurangaBW/AppMenu',

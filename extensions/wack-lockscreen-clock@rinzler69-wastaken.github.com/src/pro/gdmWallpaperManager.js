@@ -139,12 +139,12 @@ export class GdmWallpaperManager {
         if (!this.themeStore || !this.view)
             return;
 
-        // On an explicit account switch (or cancel back to the user list), restore
-        // the canonical color scheme of the target user.  For a named user this is
-        // the account's stored last-known scheme.  For null (cancel/reset), the entry
-        // state owner is the default user — the last-active session that launched GDM.
-        // This wipes any ephemeral QS-toggle or per-account scheme write that occurred
-        // during navigation, ensuring every cancel atomically restores the entry state.
+
+
+
+
+
+
         if (isExplicitSelection) {
             const schemeOwner = requestedUserName ?? this.themeStore._defaultUser ?? null;
             const rawMeta = schemeOwner !== null
@@ -155,9 +155,9 @@ export class GdmWallpaperManager {
                 const globalScheme = this.themeStore._getColorScheme();
                 if (canonicalScheme !== globalScheme)
                     this.themeStore._interfaceSettings.set_enum('color-scheme', canonicalScheme);
-                // _onColorSchemeChanged fires -> re-installs themes under canonical scheme
-                // -> _onChanged -> applyWallpaper with isExplicitSelection=false -> no
-                // further write.  We continue below so presentation is immediate.
+
+
+
             }
         }
 
@@ -168,13 +168,13 @@ export class GdmWallpaperManager {
         this._gdm._currentWallpaperMetadata = theme.meta;
         this.currentWallpaperMetadata = theme.meta;
 
-        // Fast in-memory property updates (no disk I/O, no blocking on main thread)
+
         this.view.present(theme, animate);
 
-        // Apply prompt styling synchronously
+
         this._gdm._promptStyling.applyTheme(theme);
 
-        // Update clock alpha and presentation settings
+
         if (this._gdm._clockManager) {
             if (theme.clockAlpha !== null)
                 this._gdm._clockManager.setWallpaperAlpha(theme.clockAlpha, theme.palette ? theme.palette.value : null);
@@ -190,7 +190,7 @@ export class GdmWallpaperManager {
 
         this._gdm._applyUserPresentation(theme.meta);
 
-        // Update lockscreen message
+
         this._gdm._updateLockscreenMessage(theme.meta);
     }
 

@@ -36,9 +36,9 @@ const CALENDAR_SERVER_PATH = '/org/gnome/Shell/CalendarServer';
 const CALENDAR_SERVER_IFACE = 'org.gnome.Shell.CalendarServer';
 const EVENTS_REFRESH_SECONDS = 300;
 const EVENTS_WINDOW_DAYS = 35;
-// The events list looks this far ahead; the schema stores the index
-// (mirror of the reference widget's lookahead idea: 0 = only today and
-// tomorrow, 1 = 7, 2 = 14, 3 = 30, 4 = 60 days).
+
+
+
 const LOOKAHEAD_DAYS = [1, 7, 14, 30, 60];
 
 function lookaheadDays(settings) {
@@ -51,9 +51,9 @@ const ANIMATION_DURATION = 250;
 const VIEW_CALENDAR = 0;
 const VIEW_EVENTS = 1;
 
-// 1x1 view memory. Theme/style changes rebuild the card in place — the
-// open view must survive that instead of snapping back to the calendar
-// page (in-memory only: a shell restart starts on the calendar view).
+
+
+
 let lastCalendarView = VIEW_CALENDAR;
 
 export class CalendarEventsClient {
@@ -228,8 +228,8 @@ export class CalendarEventsClient {
   };
 
   eventsInRange(since, until) {
-    // Events starting inside the window — the Calendar app's "upcoming"
-    // semantics for the events list lookahead.
+
+
     const out = [];
 
     for (const event of this._events.values()) {
@@ -288,13 +288,13 @@ function uppercaseWeekday(date) {
 
 function weekdayLabels(format, firstDay = 1) {
 	const referenceDates = [
-		new Date(2024, 0, 7), // Sunday
-		new Date(2024, 0, 1), // Monday
-		new Date(2024, 0, 2), // Tuesday
-		new Date(2024, 0, 3), // Wednesday
-		new Date(2024, 0, 4), // Thursday
-		new Date(2024, 0, 5), // Friday
-		new Date(2024, 0, 6), // Saturday
+		new Date(2024, 0, 7),
+		new Date(2024, 0, 1),
+		new Date(2024, 0, 2),
+		new Date(2024, 0, 3),
+		new Date(2024, 0, 4),
+		new Date(2024, 0, 5),
+		new Date(2024, 0, 6),
 	];
 
 	return Array.from({length: 7}, (_unused, column) => {
@@ -310,10 +310,10 @@ function weekdayLabels(format, firstDay = 1) {
 	});
 };
 
-// Which days count as weekend, and which day a week starts on — resolved
-// from the user locale (Intl.Locale.getWeekInfo), with the GNOME
-// "first day of week" setting as a fallback. Mirror of the reference
-// calendar widget.
+
+
+
+
 function localeCalendarInfo() {
 	const localeName = Intl.DateTimeFormat().resolvedOptions().locale;
 	let weekend = new Set([0, 6]);
@@ -386,9 +386,9 @@ function noEventsToday() {
 }
 
 function isAllDayEvent(event) {
-	// The calendar server doesn't report an all-day flag, so infer it from
-	// timestamps: the event starts at local midnight and spans a whole number
-	// of days (a ±1 h tolerance covers DST transitions).
+
+
+
 	const start = new Date(event.start * 1000);
 	if (start.getHours() !== 0 || start.getMinutes() !== 0 || start.getSeconds() !== 0)
 		return false;
@@ -403,7 +403,7 @@ function formatEventTime(event, settings, forceShowMinutes = false) {
 	if (hourFormat === '12') {
 		const hours = ((start.getHours() + 11) % 12) + 1;
 		const amPm = start.getHours() < 12 ? _('AM') : _('PM');
-		// For events list, always show minutes and AM/PM
+
 		const time = (forceShowMinutes || start.getMinutes() !== 0)
 			? `${hours}:${minutes}`
 			: String(hours);
@@ -412,11 +412,11 @@ function formatEventTime(event, settings, forceShowMinutes = false) {
 	return `${String(start.getHours()).padStart(2, '0')}:${minutes}`;
 }
 
-// Palette used to color event rows. The calendar server doesn't report a
-// per-source color, so each calendar gets a stable color derived from its
-// source UID (embedded in the event id as "source_uid\ncomp_uid\ncomp_rid"),
-// matching how the Calendar app keeps one color per calendar instead of
-// cycling by list position.
+
+
+
+
+
 const EVENT_COLORS = ['#ff6600', '#3584e4', '#33d17a', '#f6d32d', '#9141ac', '#e01b24'];
 
 function hashString(str) {
@@ -431,9 +431,9 @@ function sourceColor(eventId) {
 	return EVENT_COLORS[Math.abs(hashString(sourceId)) % EVENT_COLORS.length];
 }
 
-// White or near-black day number so the highlighted day stays readable on
-// any accent color — including white / very light custom accents where a
-// hardcoded white label would vanish into the pill.
+
+
+
 function readableOnColor(color) {
 	const s = String(color ?? '').trim();
 
@@ -449,7 +449,7 @@ function readableOnColor(color) {
 		g = (v >> 8) & 255;
 		b = v & 255;
 	} else {
-		// The custom accent arrives as "rgba(R, G, B, A)" (Gdk.RGBA.to_string).
+
 		const rgb = s.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
 
 		if (rgb) {
@@ -463,7 +463,7 @@ function readableOnColor(color) {
 		return '#ffffff';
 	};
 
-	// Perceived (relative) luminance, 0..1
+
 	const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 
 	return lum > 0.62 ? '#1c1c1e' : '#ffffff';
@@ -478,14 +478,14 @@ function isTomorrowEvent(event, now) {
 };
 
 function isUpcomingEvent(event, now) {
-	// Anything from the day after tomorrow onward — gets a date subtitle.
+
 	const d = new Date(event.start * 1000);
 	const dayAfter = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
 	return d.getTime() >= dayAfter.getTime();
 };
 
-// "Wed, Oct 24" / "ср, 24 жовт." — locale-driven day label for the
-// upcoming-events lookahead rows.
+
+
 function formatEventDay(date) {
 	return date.toLocaleDateString(undefined, {weekday: 'short', month: 'short', day: 'numeric'});
 };
@@ -606,9 +606,9 @@ function buildGrid(options) {
 				: null;
 
 			row.add_child(calendarCell(String(day), labelStyle, cellStyle, createLabel, cellWidth, cellHeight, cellsInteractive, 0, label => {
-				// The accent pill is drawn by the cell style at the cell size;
-				// no extra width anywhere, so the row never shifts around the
-				// highlighted day.
+
+
+
 				label.clutter_text.set_line_wrap(false);
 			}));
 			day++;
@@ -635,8 +635,8 @@ function monthLabel(now, createLabel, dayFont, theme, useAccentColor, scale = 1)
 };
 
 export function style(theme) {
-	// Inner padding kept tighter than the original framing; the bottom is
-	// 4px so the 1x1 page dots can sit close to the frame edge.
+
+
 	return `background-color: ${theme.background}; border-color: ${theme.border}; color: ${theme.text}; border-radius: 16px; padding: 17px 15px 4px 15px;`;
 };
 
@@ -686,7 +686,7 @@ function buildEventsView(options) {
 		style: 'spacing: 8px;',
 	}));
 
-	// Header
+
 	const header = createLabel(
 		_('Events'),
 		'widget-calendar-month',
@@ -698,7 +698,7 @@ function buildEventsView(options) {
 	header.clutter_text.set_ellipsize(Pango.EllipsizeMode.NONE);
 	view.add_child(header);
 
-	// Events scroll container
+
 	const eventsScroll = new St.ScrollView({
 		x_expand: true,
 		y_expand: true,
@@ -742,15 +742,15 @@ function fillEventsBox(container, {eventsClient, now, secondary, createLabel, se
 	const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 	const tomorrowEvents = eventsClient.eventsForDate(tomorrow);
 
-	// Upcoming events from the day after tomorrow through the lookahead
-	// window (mirror of the reference widget's "upcoming" group).
+
+
 	const upcomingSince = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
 	const upcomingSinceUnix = Math.floor(upcomingSince.getTime() / 1000);
 	const horizon = new Date(now.getFullYear(), now.getMonth(), now.getDate() + lookaheadDays(settings));
 	const horizonUnix = Math.floor(horizon.getTime() / 1000) + 86399;
 	const upcomingEvents = eventsClient.eventsInRange?.(upcomingSinceUnix, horizonUnix) ?? [];
 
-	// Show all today's events + tomorrow's + upcoming ones inside the window (max 2)
+
 	const allEvents = [...todayEvents, ...tomorrowEvents, ...upcomingEvents];
 	const shown = allEvents.slice(0, 2);
 
@@ -761,31 +761,31 @@ function fillEventsBox(container, {eventsClient, now, secondary, createLabel, se
 
 	for (const event of shown) {
 		const eventText = event.summary && event.summary.trim() ? event.summary.trim() : '…';
-		// Use accent color for the event indicator line
+
 		const eventColor = theme?.accent ?? '#ff6600';
 
-		// Event item container - vertical layout like in CALD design
+
 		const eventItem = new St.BoxLayout(boxLayoutProps({
 			vertical: false,
 			style_class: 'widget-calendar-event-item',
 			style: `spacing: 0;`,
 		}));
 
-		// Colored vertical indicator line on the left (3.5px)
+
 		const colorBar = new St.Widget({
 			style_class: 'widget-calendar-event-color',
 			style: `background-color: ${eventColor}; width: 3.5px; border-radius: 2px; min-height: 24px;`,
 		});
 		eventItem.add_child(colorBar);
 
-		// Text container (title + subtitle)
+
 		const textBox = new St.BoxLayout(boxLayoutProps({
 			vertical: true,
 			x_expand: true,
 			style: `spacing: 1px; padding-left: 7px;`,
 		}));
 
-		// Event title
+
 		const eventTextLabel = createLabel(
 			eventText,
 			'widget-calendar-events',
@@ -796,8 +796,8 @@ function fillEventsBox(container, {eventsClient, now, secondary, createLabel, se
 		eventTextLabel.x_expand = true;
 		textBox.add_child(eventTextLabel);
 
-		// Subtitle: time for today, "Tomorrow" for the next day, and a
-		// locale day label for upcoming events (or "All day" variants).
+
+
 		let subtitleText;
 		if (isUpcomingEvent(event, now)) {
 			const dayStr = formatEventDay(new Date(event.start * 1000));
@@ -809,7 +809,7 @@ function fillEventsBox(container, {eventsClient, now, secondary, createLabel, se
 				? _('Tomorrow')
 				: _('All day');
 		} else {
-			// Show time for both today and tomorrow events (always with minutes and AM/PM)
+
 			const timeStr = formatEventTime(event, settings, true);
 			subtitleText = isTomorrowEvent(event, now)
 				? _('Tomorrow, %s').format(timeStr)
@@ -837,16 +837,16 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 	const weekdayFormat = settings?.get_string('calendar-weekday-format') ?? 'short';
 	const useAccentColor = settings?.get_boolean('calendar-use-accent-color') ?? false;
 	const localeInfo = localeCalendarInfo();
-	// First day of the week: 0 = auto (locale / GNOME setting), otherwise a
-	// reference-enum day (1 = Sunday, 2 = Monday) mapped to JS getDay().
+
+
 	const firstDaySetting = settings?.get_int('calendar-first-day') ?? 0;
 	const firstDay = firstDaySetting === 1
 		? 0
 		: firstDaySetting === 2 ? 1 : localeInfo.firstDay;
 	const weekend = localeInfo.weekend;
-	// Dimmed text for weekend days — slightly lighter on dark themes and
-	// darker gray on light ones (reference calendar treatment). The light
-	// shade is dark enough to hold its own on the milky light glass.
+
+
+
 	const weekendColor = theme?.dark ? 'rgba(255, 255, 255, 0.55)' : 'rgba(36, 31, 49, 0.62)';
 	const weekdays = weekdayLabels(weekdayFormat, firstDay);
 	const now = new Date();
@@ -897,7 +897,7 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 			`font-size: 48px; font-weight: 700; color: ${text};`));
 		left.add_child(new St.Widget({y_expand: true}));
 
-		// Events container (max 2 items, no scrollbar)
+
 		const eventsBox = new St.BoxLayout(boxLayoutProps({
 			vertical: true,
 			style: 'spacing: 3px;',
@@ -907,12 +907,12 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 
 		if (events) {
 			const refresh = () => {
-				// Fill regardless of mapping: if the body is unmapped when we
-				// render (freshly created layer, rebuild while the overview is
-				// open), the events box would stay empty forever — the client
-				// is already loaded and requestRange() no-ops on the same
-				// range, so nothing ever re-triggers this again. Populating an
-				// unmapped box is harmless; it shows once mapped.
+
+
+
+
+
+
 				fillEventsBox(eventsBox, {eventsClient: events, now, secondary, createLabel, settings, text, theme});
 			};
 
@@ -963,7 +963,7 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 		return;
 	};
 
-	// Small widget (1x1) with swipe navigation
+
 	const scale = clamp(Math.min(widgetWidth, widgetHeight) / 220, 0.8, 2.2);
 	const dayFont = DAY_BASE_FONT;
 	const availWidth = widgetWidth - 32;
@@ -976,7 +976,7 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 	let viewContainer = null;
 	let currentEventBox = null;
 	const animatingActors = new Set();
-	// The 1x1 page-indicator dots are toggleable (prefs → Calendar Widget).
+
 	const showPageDots = settings?.get_boolean('calendar-show-page-dots') ?? true;
 
 	const container = new St.BoxLayout(boxLayoutProps({
@@ -985,11 +985,11 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 		y_expand: true,
 	}));
 
-	// Page-indicator dots: a BinLayout stacks the pages and the dots in the
-	// same area; the shared component pins the row to the very bottom-center
-	// of the shared rect on both pages. The color is the accent when the
-	// Calendar Widget switch is on, otherwise the neutral theme text
-	// (white on dark, black on light).
+
+
+
+
+
 	const indicatorColor = settings?.get_boolean('calendar-page-indicator-accent') ?? true
 		? (theme?.accent ?? text)
 		: text;
@@ -1004,30 +1004,30 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 	container.y_align = Clutter.ActorAlign.FILL;
 	pageStack.add_child(container);
 	if (showPageDots) {
-		pageStack.add_child(indicator.wrap); // dots paint above the pages
+		pageStack.add_child(indicator.wrap);
 	};
 
-	// The dots delegate to the shared page-indicator component; the wrap
-	// guard lives inside refresh().
+
+
 	const refreshDots = () => indicator.refresh(currentView);
 
-	// The events view registers one eventsClient listener per build; each
-	// swipe rebuilds the view, so the CURRENT swap's dispose is kept here
-	// and released when that view goes away (see rebuild + the swipe path).
+
+
+
 	let pendingEventsDispose = null;
 
 	const rebuild = (enterX = 0) => {
 		if (viewContainer) {
 			container.remove_child(viewContainer);
-			// Swapped-out views are never destroyed (they are only removed),
-			// so an onChange listener registered through viewContainer's
-			// 'destroy' hook would survive every swap. Cancel the previous
-			// one explicitly so events view swipes cannot accumulate
-			// stale refresh closures.
+
+
+
+
+
 			pendingEventsDispose?.();
 			pendingEventsDispose = null;
-			// ...and drop the view itself: its cached layout is useless, and
-			// keeping it alive holds every label actor it created.
+
+
 			if (!animatingActors.has(viewContainer)) {
 				viewContainer.destroy();
 			};
@@ -1070,10 +1070,10 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 			viewContainer = result.view;
 			currentEventBox = result.eventsBox;
 
-			// Setup events refresh for events view. The dispose handle is
-			// tracked per-swap (pendingEventsDispose): viewContainer is only
-			// ever REMOVED from the container, never destroyed mid-widget —
-			// a 'destroy' hook alone would leak one listener per swipe.
+
+
+
+
 			if (events) {
 				const refresh = () => {
 					if (currentEventBox && currentView === VIEW_EVENTS) {
@@ -1082,8 +1082,8 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 				};
 
 				pendingEventsDispose = events.onChange(refresh);
-				// Maltese-cross: if the view ever IS destroyed (widget teardown),
-				// release the listener with it.
+
+
 				viewContainer.connect('destroy', () => {
 					pendingEventsDispose?.();
 					pendingEventsDispose = null;
@@ -1114,13 +1114,13 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 		refreshDots();
 	};
 
-	// Swipe gesture handlers (same as system monitor)
+
 	container.reactive = true;
 	let startX = 0;
 	let dragging = false;
 
-	// Swipe only with the RIGHT button — the left button stays free for
-	// normal content clicks.
+
+
 	container.connect('button-press-event', (actor, event) => {
 		if (event.get_button() !== 3) return Clutter.EVENT_PROPAGATE;
 		startX = event.get_coords()[0];
@@ -1137,7 +1137,7 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 		if (Math.abs(delta) > SWIPE_THRESHOLD) {
 			const oldView = viewContainer;
 			const exitX = delta < 0 ? -widgetWidth : widgetWidth;
-			
+
 			animatingActors.add(oldView);
 			oldView.ease({
 				opacity: 0,
@@ -1152,18 +1152,18 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 					if (oldView.get_parent()) {
 						oldView.get_parent().remove_child(oldView);
 					}
-					// Its layout cache is worthless after the swap; keep it
-					// alive would pin hundreds of label actors per swipe.
+
+
 					oldView.destroy();
 				},
 			});
 
-			// Toggle between views (any swipe direction switches to the other view)
+
 			currentView = currentView === VIEW_CALENDAR ? VIEW_EVENTS : VIEW_CALENDAR;
 			lastCalendarView = currentView;
 
-			// One-shot flashback of the entering view may outlive the widget
-			// (destroy mid-swipe) — guard against touching dead actors.
+
+
 			GLib.timeout_add(GLib.PRIORITY_DEFAULT, ANIMATION_DURATION / 2, () => {
 				if (!isActorDestroyed(container)) {
 					rebuild(-exitX);
@@ -1176,7 +1176,7 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 
 	rebuild();
 
-	// Request events data
+
 	if (events) {
 		const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 		const startEpoch = Math.floor(dayStart.getTime() / 1000);

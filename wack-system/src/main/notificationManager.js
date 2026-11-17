@@ -273,7 +273,7 @@ export class NotificationManager {
         for (const child of nb._notificationBox.get_children())
             this._addCardBlur(child);
 
-        // Hook _updateVisibility to capture all notification changes (adds, removes, count updates)
+
         this._origUpdateVisibility = nb._updateVisibility.bind(nb);
         nb._updateVisibility = () => {
             this._origUpdateVisibility();
@@ -525,7 +525,7 @@ export class NotificationManager {
 
         this._notifBox = null;
         this._lastPlayingPlayer = null;
-        // Break the back-reference to the extension to avoid a reference cycle.
+
         this._extension = null;
     }
 }

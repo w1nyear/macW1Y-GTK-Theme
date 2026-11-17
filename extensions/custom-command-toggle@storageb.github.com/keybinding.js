@@ -1,8 +1,8 @@
-/* keybinding.js 
+/* keybinding.js
  *
  * This file is part of the Custom Command Toggle GNOME Shell extension
  * https://github.com/StorageB/custom-command-toggle
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 2 of the License, or
@@ -17,11 +17,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
- * 
+ *
  * Credit to the author of the Eye on Cursor extension for creating this
  * keybinding.js code used to incorporate keyboard shortcuts into this extension.
  * https://github.com/djinnalexio/eye-on-cursor/
- * The code has been slightly modified for use with this extension. 
+ * The code has been slightly modified for use with this extension.
  */
 
 'use strict';
@@ -33,18 +33,18 @@ import Gtk from 'gi://Gtk';
 
 import {gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-//#region Keybinding row class
+
 export const KeybindingRow = GObject.registerClass(
     class KeybindingRow extends Adw.ActionRow {
         constructor(settings, key, shortcutName) {
-            /**
-             * A row that allows users to set and manage a keyboard shortcut.
 
-             * @param {Gio.Settings} settings - settings object of the extension
-             * @param {string} key - key in the settings object for the keybinding
-             * @param {string} shortcutName - name of the shortcut and title of the row
-             * @param {string} subtitle - subtitle of the row
-             */
+
+
+
+
+
+
+
 
             super({
                 title: shortcutName,
@@ -55,7 +55,7 @@ export const KeybindingRow = GObject.registerClass(
             this.settings = settings;
             this.key = key;
 
-            // Display current keybinding
+
             this.label = new Gtk.ShortcutLabel({
                 disabled_text: _('Not assigned'),
                 valign: Gtk.Align.CENTER,
@@ -67,7 +67,7 @@ export const KeybindingRow = GObject.registerClass(
             this.box.append(this.label);
             this.add_suffix(this.box);
 
-            // Button to reset keybinding
+
             this.resetButton = new Gtk.Button({
                 has_frame: false,
                 valign: Gtk.Align.CENTER,
@@ -78,17 +78,17 @@ export const KeybindingRow = GObject.registerClass(
             this.resetButton.set_child(image);
             this.resetButton.connect('clicked', this.resetKeybind.bind(this));
 
-            // Hide reset button if no shortcut is set
+
             if (!this.label.accelerator) this.resetButton.visible = false;
 
-            // Connect row activation to open capture window
+
             this.captureWindow = null;
             this.connect('activated', this.openCaptureWindow.bind(this));
 
-            // Connect change in accelerator to update setting
+
             this.label.connect('notify::accelerator', widget => {
                 this.settings.set_strv(this.key, [widget.accelerator]);
-                // Main.wm.addKeybinding takes string arrays, not strings
+
             });
         }
 
@@ -121,25 +121,25 @@ export const KeybindingRow = GObject.registerClass(
         }
 
         registerKey(widget, keyval, keycode, state) {
-            // Get default modifier mask (keys) that are currently pressed
+
             let mask = state & Gtk.accelerator_get_default_mod_mask();
-            // Filter out CAPS LOCK
+
             mask &= ~Gdk.ModifierType.LOCK_MASK;
 
-            // If Esc is pressed without modifiers, close capture window
+
             if (!mask && keyval === Gdk.KEY_Escape) {
                 this.captureWindow.close();
                 return Gdk.EVENT_STOP;
             }
 
-            // If Backspace is pressed, reset keybinding
+
             if (keyval === Gdk.KEY_BackSpace) {
                 this.resetKeybind();
                 this.captureWindow.destroy();
                 return Gdk.EVENT_STOP;
             }
 
-            // If the key combination is not acceptable, ignore it
+
             if (!this.isValidBinding(mask, keycode, keyval) || !this.isValidAccel(mask, keyval)) {
                 return Gdk.EVENT_STOP;
             }
@@ -150,8 +150,8 @@ export const KeybindingRow = GObject.registerClass(
             return Gdk.EVENT_STOP;
         }
 
-        //#region Keybinding Validation
-        // Validating functions from https://gitlab.gnome.org/GNOME/gnome-control-center/-/blob/main/panels/keyboard/keyboard-shortcuts.c
+
+
 
         isValidBinding(mask, keycode, keyval) {
             if (mask === 0) return false;
@@ -183,7 +183,7 @@ export const KeybindingRow = GObject.registerClass(
 
         keyvalIsForbidden(keyval) {
             return [
-                // Navigation keys
+
                 Gdk.KEY_Home,
                 Gdk.KEY_Left,
                 Gdk.KEY_Up,
@@ -194,7 +194,7 @@ export const KeybindingRow = GObject.registerClass(
                 Gdk.KEY_End,
                 Gdk.KEY_Tab,
 
-                // Return
+
                 Gdk.KEY_KP_Enter,
                 Gdk.KEY_Return,
 
@@ -209,7 +209,6 @@ export const KeybindingRow = GObject.registerClass(
         isValidAccel(mask, keyval) {
             return Gtk.accelerator_valid(keyval, mask) || (keyval === Gdk.KEY_Tab && mask !== 0);
         }
-        //#endregion
+
     }
 );
-//#endregion

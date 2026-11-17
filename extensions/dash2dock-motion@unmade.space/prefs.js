@@ -1,8 +1,8 @@
-// -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
-// This file is part of Dash2Dock Motion, a modified copy of Dash to Dock
-// (https://github.com/micheleg/dash-to-dock) by Michele Gaio and
+
+
+
 // contributors. Distributed under the GNU General Public License,
-// version 2 or later.
+
 
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
@@ -13,8 +13,8 @@ import Gtk from 'gi://Gtk';
 import {
     ExtensionPreferences,
 
-    // Use __ () and N__() for the extension gettext domain, and reuse
-    // the shell domain with the default _() and N_()
+
+
     gettext as __,
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
@@ -71,7 +71,7 @@ const MonitorsConfig = GObject.registerClass({
             '/org/gnome/Mutter/DisplayConfig'
         );
 
-        // Connecting to a D-Bus signal
+
         this._monitorsConfigProxy.connectSignal('MonitorsChanged',
             () => this._updateResources());
 
@@ -106,7 +106,7 @@ const MonitorsConfig = GObject.registerClass({
                 const [x_, y_, scale_, transform_, isPrimary, monitorsSpecs] =
                     logicalMonitor;
 
-                // We only care about the first one really
+
                 for (const monitorSpecs of monitorsSpecs) {
                     const [connector, vendor, product, serial] = monitorSpecs;
                     const monitor = this._monitors.find(m =>
@@ -125,7 +125,7 @@ const MonitorsConfig = GObject.registerClass({
 
             const activeMonitors = this._monitors.filter(m => m.active);
             if (activeMonitors.length > 1 && logicalMonitors.length === 1) {
-                // We're in cloning mode, so let's just activate the primary monitor
+
                 this._monitors.forEach(m => (m.active = false));
                 this._primaryMonitor.active = true;
             }
@@ -136,16 +136,16 @@ const MonitorsConfig = GObject.registerClass({
     }
 
     _updateMonitorsIndexes() {
-        // This function ensures that we follow the old Gdk indexing strategy
-        // for monitors, it can be removed when we don't care about breaking
-        // old user configurations or external apps configuring this extension
-        // such as ubuntu's gnome-control-center.
+
+
+
+
         const {index: primaryMonitorIndex} = this._primaryMonitor;
         for (const monitor of this._monitors) {
             let {index} = monitor;
-            // The The dock uses the Gdk index for monitors, where the primary monitor
-            // always has index 0, so let's follow what dash-to-dock does in docking.js
-            // (as part of _createDocks), but using inverted math
+
+
+
             index -= primaryMonitorIndex;
 
             if (index < 0)
@@ -164,9 +164,9 @@ const MonitorsConfig = GObject.registerClass({
     }
 });
 
-/**
- * @param settings
- */
+
+
+
 function setShortcut(settings) {
     const shortcutText = settings.get_string('shortcut-text');
     const [success, key, mods] = Gtk.accelerator_parse(shortcutText);
@@ -199,14 +199,14 @@ const DockSettings = GObject.registerClass({
         this.widget = this._builder.get_object('settings_notebook');
         this._buildMagnificationPage();
 
-        // Set a reasonable initial window height
+
         this.widget.connect('realize', () => {
             const rootWindow = this.widget.get_root();
             rootWindow.set_default_size(-1, 850);
             rootWindow.connect('close-request', () => this._onWindowsClosed());
         });
 
-        // Timeout to delay the update of the settings
+
         this._dock_size_timeout = 0;
         this._icon_size_timeout = 0;
         this._opacity_timeout = 0;
@@ -232,7 +232,7 @@ const DockSettings = GObject.registerClass({
         }
     }
 
-    // Built in code rather than in Settings.ui, which is left unmodified.
+
     _buildMagnificationPage() {
         const page = new Gtk.Box({
             orientation: Gtk.Orientation.VERTICAL,
@@ -270,8 +270,8 @@ const DockSettings = GObject.registerClass({
                 value_pos: Gtk.PositionType.RIGHT,
                 hexpand: true,
             });
-            // The label must be non-null: unlabelled marks make the marks
-            // gizmo report a negative min width (Gtk-WARNING).
+
+
             scale.add_mark(mark, Gtk.PositionType.BOTTOM, ' ');
             this._settings.bind(key, adjustment, 'value',
                 Gio.SettingsBindFlags.DEFAULT);
@@ -373,8 +373,8 @@ const DockSettings = GObject.registerClass({
         return row;
     }
 
-    // Apps kept out of the dash when they open. Launchers are the usual case:
-    // they hold a window for a moment and there is nothing to switch back to.
+
+
     _addExclusions(page) {
         page.append(new Gtk.Label({
             label: `<b>${__('Never show when running')}</b>`,
@@ -496,7 +496,7 @@ const DockSettings = GObject.registerClass({
     }
 
     dock_size_scale_value_changed_cb(scale) {
-        // Avoid settings the size continuously
+
         if (this._dock_size_timeout > 0)
             GLib.source_remove(this._dock_size_timeout);
         this._dock_size_timeout = GLib.timeout_add(
@@ -508,7 +508,7 @@ const DockSettings = GObject.registerClass({
     }
 
     icon_size_scale_value_changed_cb(scale) {
-        // Avoid settings the size consinuosly
+
         if (this._icon_size_timeout > 0)
             GLib.source_remove(this._icon_size_timeout);
         this._icon_size_timeout = GLib.timeout_add(
@@ -528,7 +528,7 @@ const DockSettings = GObject.registerClass({
     }
 
     custom_opacity_scale_value_changed_cb(scale) {
-        // Avoid settings the opacity consinuosly as it's change is animated
+
         if (this._opacity_timeout > 0)
             GLib.source_remove(this._opacity_timeout);
         this._opacity_timeout = GLib.timeout_add(
@@ -540,7 +540,7 @@ const DockSettings = GObject.registerClass({
     }
 
     min_opacity_scale_value_changed_cb(scale) {
-        // Avoid settings the opacity consinuosly as it's change is animated
+
         if (this._opacity_timeout > 0)
             GLib.source_remove(this._opacity_timeout);
         this._opacity_timeout = GLib.timeout_add(
@@ -552,7 +552,7 @@ const DockSettings = GObject.registerClass({
     }
 
     max_opacity_scale_value_changed_cb(scale) {
-        // Avoid settings the opacity consinuosly as it's change is animated
+
         if (this._opacity_timeout > 0)
             GLib.source_remove(this._opacity_timeout);
         this._opacity_timeout = GLib.timeout_add(
@@ -584,7 +584,7 @@ const DockSettings = GObject.registerClass({
     }
 
     _updateMonitorsSettings() {
-        // Monitor options
+
         const preferredMonitor = this._settings.get_int('preferred-monitor');
         const preferredMonitorByConnector = this._settings.get_string('preferred-monitor-by-connector');
         const dockMonitorCombo = this._builder.get_object('dock_monitor_combo');
@@ -593,20 +593,20 @@ const DockSettings = GObject.registerClass({
         dockMonitorCombo.remove_all();
         let primaryIndex = -1;
 
-        // Add connected monitors
+
         for (const monitor of this._monitorsConfig.monitors) {
             if (!monitor.active && monitor.index !== preferredMonitor)
                 continue;
 
             if (monitor.isPrimary) {
                 dockMonitorCombo.append_text(
-                    /* Translators: This will be followed by Display Name - Connector. */
+
                     `${__('Primary monitor: ') + monitor.displayName} - ${
                         monitor.connector}`);
                 primaryIndex = this._monitors.length;
             } else {
                 dockMonitorCombo.append_text(
-                    /* Translators: Followed by monitor index, Display Name - Connector. */
+
                     `${__('Secondary monitor ') + (monitor.index + 1)} - ${
                         monitor.displayName} - ${monitor.connector}`);
             }
@@ -623,7 +623,7 @@ const DockSettings = GObject.registerClass({
     }
 
     _bindSettings() {
-        // Position and size panel
+
 
         this._updateMonitorsSettings();
         this._monitorsConfig.connect('updated',
@@ -633,7 +633,7 @@ const DockSettings = GObject.registerClass({
         this._settings.connect('changed::preferred-monitor-by-connector',
             () => this._updateMonitorsSettings());
 
-        // Position option
+
         const position = this._settings.get_enum('dock-position');
 
         switch (position) {
@@ -652,12 +652,12 @@ const DockSettings = GObject.registerClass({
         }
 
         if (this._rtl) {
-            /* Left is Right in rtl as a setting */
+
             this._builder.get_object('position_left_button').set_label(__('Right'));
             this._builder.get_object('position_right_button').set_label(__('Left'));
         }
 
-        // Intelligent autohide options
+
         this._settings.bind('dock-fixed',
             this._builder.get_object('intelligent_autohide_switch'),
             'active',
@@ -703,10 +703,10 @@ const DockSettings = GObject.registerClass({
             'value',
             Gio.SettingsBindFlags.DEFAULT);
 
-        // this._builder.get_object('animation_duration_spinbutton').set_value(
-        //   this._settings.get_double('animation-time'));
 
-        // Create dialog for intelligent autohide advanced settings
+
+
+
         this._builder.get_object('intelligent_autohide_button').connect('clicked', () => {
             const dialog = new Gtk.Dialog({
                 title: __('Intelligent autohide customization'),
@@ -715,8 +715,8 @@ const DockSettings = GObject.registerClass({
                 modal: true,
             });
 
-            // GTK+ leaves positive values for application-defined response ids.
-            // Use +1 for the reset action
+
+
             dialog.add_button(__('Reset to defaults'), 1);
 
             const box = this._builder.get_object('intelligent_autohide_advanced_settings_box');
@@ -727,7 +727,7 @@ const DockSettings = GObject.registerClass({
                 'sensitive',
                 Gio.SettingsBindFlags.GET);
 
-            // intellihide mode
+
 
             const intellihideModeRadioButtons = [
                 this._builder.get_object('all_windows_radio_button'),
@@ -772,7 +772,7 @@ const DockSettings = GObject.registerClass({
 
             dialog.connect('response', (_, id) => {
                 if (id === 1) {
-                    // restore default settings for the relevant keys
+
                     const keys = ['intellihide', 'autohide', 'intellihide-mode',
                         'autohide-in-fullscreen', 'show-dock-urgent-notify',
                         'require-pressure-to-show', 'animation-time',
@@ -782,7 +782,7 @@ const DockSettings = GObject.registerClass({
                     }, this);
                     intellihideModeRadioButtons[this._settings.get_enum('intellihide-mode')].set_active(true);
                 } else {
-                    // remove the settings box so it doesn't get destroyed;
+
                     dialog.get_content_area().remove(box);
                     dialog.destroy();
                 }
@@ -791,7 +791,7 @@ const DockSettings = GObject.registerClass({
             dialog.present();
         });
 
-        // size options
+
         const dockSizeScale = this._builder.get_object('dock_size_scale');
         dockSizeScale.set_value(this._settings.get_double('height-fraction'));
         dockSizeScale.add_mark(0.9, Gtk.PositionType.TOP, null);
@@ -810,15 +810,15 @@ const DockSettings = GObject.registerClass({
         this._builder.get_object('preview_size_scale').set_value(
             this._settings.get_double('preview-size-scale'));
 
-        // Corrent for rtl languages
+
         if (this._rtl) {
-            // Flip value position: this is not done automatically
+
             dockSizeScale.set_value_pos(Gtk.PositionType.LEFT);
             iconSizeScale.set_value_pos(Gtk.PositionType.LEFT);
-            // I suppose due to a bug, having a more than one mark and one above
-            // a value of 100 makes the rendering of the marks wrong in rtl.
-            // This doesn't happen setting the scale as not flippable
-            // and then manually inverting it
+
+
+
+
             iconSizeScale.set_flippable(false);
             iconSizeScale.set_inverted(true);
         }
@@ -850,7 +850,7 @@ const DockSettings = GObject.registerClass({
             Gio.SettingsBindFlags.INVERT_BOOLEAN);
 
 
-        // Apps panel
+
 
         this._settings.bind('show-running',
             this._builder.get_object('show_running_switch'),
@@ -992,7 +992,7 @@ const DockSettings = GObject.registerClass({
             Gio.SettingsBindFlags.DEFAULT);
 
 
-        // Behavior panel
+
 
         this._settings.bind('hot-keys',
             this._builder.get_object('hot_keys_switch'),
@@ -1024,7 +1024,7 @@ const DockSettings = GObject.registerClass({
             this._settings.set_enum('shift-middle-click-action', widget.get_active());
         });
 
-        // Create dialog for number overlay options
+
         this._builder.get_object('overlay_button').connect('clicked', () => {
             const dialog = new Gtk.Dialog({
                 title: __('Show dock and application numbers'),
@@ -1033,8 +1033,8 @@ const DockSettings = GObject.registerClass({
                 modal: true,
             });
 
-            // GTK+ leaves positive values for application-defined response ids.
-            // Use +1 for the reset action
+
+
             dialog.add_button(__('Reset to defaults'), 1);
 
             const box = this._builder.get_object('box_overlay_shortcut');
@@ -1045,7 +1045,7 @@ const DockSettings = GObject.registerClass({
             this._builder.get_object('show_dock_switch').set_active(
                 this._settings.get_boolean('hotkeys-show-dock'));
 
-            // We need to update the shortcut 'strv' when the text is modified
+
             this._settings.connect('changed::shortcut-text', () => setShortcut(this._settings));
             this._settings.bind('shortcut-text',
                 this._builder.get_object('shortcut_entry'),
@@ -1067,14 +1067,14 @@ const DockSettings = GObject.registerClass({
 
             dialog.connect('response', (_, id) => {
                 if (id === 1) {
-                    // restore default settings for the relevant keys
+
                     const keys = ['shortcut-text', 'hotkeys-overlay',
                         'hotkeys-show-dock', 'shortcut-timeout'];
                     keys.forEach(function (val) {
                         this._settings.set_value(val, this._settings.get_default_value(val));
                     }, this);
                 } else {
-                    // remove the settings box so it doesn't get destroyed;
+
                     dialog.get_content_area().remove(box);
                     dialog.destroy();
                 }
@@ -1083,7 +1083,7 @@ const DockSettings = GObject.registerClass({
             dialog.present();
         });
 
-        // Create dialog for middle-click options
+
         this._builder.get_object('middle_click_options_button').connect('clicked', () => {
             const dialog = new Gtk.Dialog({
                 title: __('Customize middle-click behavior'),
@@ -1092,8 +1092,8 @@ const DockSettings = GObject.registerClass({
                 modal: true,
             });
 
-            // GTK+ leaves positive values for application-defined response ids.
-            // Use +1 for the reset action
+
+
             dialog.add_button(__('Reset to defaults'), 1);
 
             const box = this._builder.get_object('box_middle_click_options');
@@ -1123,7 +1123,7 @@ const DockSettings = GObject.registerClass({
 
             dialog.connect('response', (_, id) => {
                 if (id === 1) {
-                    // restore default settings for the relevant keys
+
                     const keys = ['shift-click-action', 'middle-click-action', 'shift-middle-click-action'];
                     keys.forEach(function (val) {
                         this._settings.set_value(val, this._settings.get_default_value(val));
@@ -1135,7 +1135,7 @@ const DockSettings = GObject.registerClass({
                     this._builder.get_object('shift_middle_click_action_combo').set_active(
                         this._settings.get_enum('shift-middle-click-action'));
                 } else {
-                    // remove the settings box so it doesn't get destroyed;
+
                     dialog.get_content_area().remove(box);
                     dialog.destroy();
                 }
@@ -1144,7 +1144,7 @@ const DockSettings = GObject.registerClass({
             dialog.present();
         });
 
-        // Appearance Panel
+
 
         this._settings.bind('apply-custom-theme',
             this._builder.get_object('customize_theme'),
@@ -1159,7 +1159,7 @@ const DockSettings = GObject.registerClass({
             'active',
             Gio.SettingsBindFlags.DEFAULT);
 
-        // Running indicators
+
         this._builder.get_object('running_indicators_combo').set_active(
             this._settings.get_enum('running-indicator-style')
         );
@@ -1180,7 +1180,7 @@ const DockSettings = GObject.registerClass({
                 this._builder.get_object('running_indicators_advance_settings_button').set_sensitive(true);
         });
 
-        // Create dialog for running indicators advanced settings
+
         this._builder.get_object('running_indicators_advance_settings_button').connect('clicked', () => {
             const dialog = new Gtk.Dialog({
                 title: __('Customize running indicators'),
@@ -1231,7 +1231,7 @@ const DockSettings = GObject.registerClass({
 
 
             dialog.connect('response', () => {
-                // remove the settings box so it doesn't get destroyed;
+
                 dialog.get_content_area().remove(box);
                 dialog.destroy();
             });
@@ -1256,7 +1256,7 @@ const DockSettings = GObject.registerClass({
             this._settings.set_string('background-color', css);
         });
 
-        // Opacity
+
         this._builder.get_object('customize_opacity_combo').set_active_id(
             this._settings.get_enum('transparency-mode').toString()
         );
@@ -1295,7 +1295,7 @@ const DockSettings = GObject.registerClass({
                 this._builder.get_object('dynamic_opacity_button').set_sensitive(true);
         });
 
-        // Create dialog for transparency advanced settings
+
         this._builder.get_object('dynamic_opacity_button').connect('clicked', () => {
             const dialog = new Gtk.Dialog({
                 title: __('Customize opacity'),
@@ -1343,7 +1343,7 @@ const DockSettings = GObject.registerClass({
             );
 
             dialog.connect('response', () => {
-                // remove the settings box so it doesn't get destroyed;
+
                 dialog.get_content_area().remove(box);
                 dialog.destroy();
             });
@@ -1374,7 +1374,7 @@ const DockSettings = GObject.registerClass({
             this._builder.get_object('show_overview_on_startup_switch'),
             'active', Gio.SettingsBindFlags.INVERT_BOOLEAN);
 
-        // About Panel
+
 
         this._builder.get_object('extension_version').set_label(
             `${this._extensionPreferences.metadata.version}`);

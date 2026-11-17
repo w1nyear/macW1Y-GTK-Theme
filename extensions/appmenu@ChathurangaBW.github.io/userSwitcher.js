@@ -1,7 +1,7 @@
-/*
- * userSwitcher.js — Fast User Switching for AppMenu.
- * Displays user avatars in the right side of the panel with session switching.
- */
+
+
+
+
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -19,18 +19,18 @@ let AccountsService = null;
 try {
     AccountsService = imports.gi.AccountsService;
 } catch (_e) {
-    // AccountsService is optional; the extension can run without user switching.
+
 }
 
-// Lazily import Gdm — it's only needed for session switching and may not exist
-// on non-GDM display managers (LightDM, SDDM, console-only, etc.)
+
+
 let _Gdm = null;
 try {
-    // Dynamic runtime import is intentional: some systems use LightDM/SDDM and do not ship the GDM typelib.
-    // A static ES import would crash the extension at parse time on those systems.
+
+
     _Gdm = imports.gi.Gdm;
 } catch (_e) {
-    // GDM typelib not available — extension still loads, just can't switch sessions
+
 }
 
 Gio._promisify(Gio.DBusProxy, 'new', 'new_finish');
@@ -41,9 +41,9 @@ const AVATAR_ICON_SIZE = 64;
 const MINIMUM_VISIBLE_UID = 1000;
 const STATUS_AREA_NAME = 'appmenu@ChathurangaBW.github.io-user-switcher';
 
-/**
- * Manages the UserSwitcherButton lifecycle — shows/hides based on user count.
- */
+
+
+
 export class UserSwitcherController {
     constructor(extension, settings) {
         this._extension = extension;
@@ -56,7 +56,7 @@ export class UserSwitcherController {
 
         this._initUserManager();
 
-        // Listen for settings changes
+
         if (this._settings) {
             this._settingsChangedId = this._settings.connect('changed::show-user-switcher', () => {
                 this._updateVisibility();
@@ -95,7 +95,7 @@ export class UserSwitcherController {
 
         this._userManager = AccountsService.UserManager.get_default();
         if (!this._userManager) {
-            // UserManager unavailable — show based on setting alone after a brief delay
+
             this._fallbackTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2000, () => {
                 this._fallbackTimeoutId = 0;
                 this._updateVisibility();
@@ -114,7 +114,7 @@ export class UserSwitcherController {
             this._updateVisibility();
         } else {
             this._userManager.list_users();
-            // Fallback: if UserManager doesn't load within 3s, show based on setting
+
             this._fallbackTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 3000, () => {
                 this._fallbackTimeoutId = 0;
                 if (!this._userManager?.is_loaded) {
@@ -128,7 +128,7 @@ export class UserSwitcherController {
     _disconnectSignals() {
         if (!this._userManager) return;
         this._signals.filter(id => id > 0).forEach(id => {
-            try { this._userManager.disconnect(id); } catch (_e) { /* ignore */ }
+            try { this._userManager.disconnect(id); } catch (_e) {   }
         });
         this._signals = [];
     }
@@ -150,9 +150,9 @@ export class UserSwitcherController {
     }
 }
 
-/**
- * Panel button that shows user avatars and allows fast user switching.
- */
+
+
+
 export const UserSwitcherButton = GObject.registerClass(
     {GTypeName: 'AppMenuUserSwitcherButton'},
     class UserSwitcherButton extends PanelMenu.Button {
@@ -245,14 +245,14 @@ export const UserSwitcherButton = GObject.registerClass(
         _disconnectUserManagerSignals() {
             if (!this._userManager) return;
             this._menuSignals.filter(id => id > 0).forEach(id => {
-                try { this._userManager.disconnect(id); } catch (_e) { /* ignore */ }
+                try { this._userManager.disconnect(id); } catch (_e) {   }
             });
             this._menuSignals = [];
         }
 
         async _rebuildMenu() {
             if (!this._userManager || !this.menu || !this._userManager.is_loaded) return;
-            // Prevent concurrent rebuild storms from rapid user-changed signals
+
             if (this._rebuilding) {
                 this._rebuildPending = true;
                 return;
@@ -458,7 +458,7 @@ export const UserSwitcherButton = GObject.registerClass(
                 x_align: Clutter.ActorAlign.CENTER,
             });
 
-            // Avatar container with badge overlay
+
             const avatarContainer = new St.Widget({
                 style_class: 'appmenu-user-avatar-container',
                 layout_manager: new Clutter.BinLayout(),
@@ -485,7 +485,7 @@ export const UserSwitcherButton = GObject.registerClass(
             avatarBin.set_child(avatar);
             avatarContainer.add_child(avatarBin);
 
-            // Session badge (checkmark) for current/logged-in users
+
             if (isCurrent || isSignedIn) {
                 const sessionBadge = new St.Icon({
                     style_class: isCurrent

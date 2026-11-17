@@ -8,9 +8,9 @@
 #include <gsk/gsk.h>
 #include <graphene.h>
 
-/* =========================================================================
- * macW1Y Tahoe GtkPopover Smooth Open & Close Animation (Opacity + Scaling)
- * ========================================================================= */
+
+
+
 static void (*orig_popover_hide)(GtkWidget *widget) = NULL;
 static void (*orig_popover_map)(GtkWidget *widget) = NULL;
 static void (*orig_popover_snapshot)(GtkWidget *widget, GtkSnapshot *snapshot) = NULL;
@@ -91,11 +91,11 @@ static gboolean mac_popover_close_tick(GtkWidget *widget, GdkFrameClock *clock, 
         return G_SOURCE_CONTINUE;
     }
     gint64 elapsed = now - d->start_time;
-    double p = (double)elapsed / 110000.0; /* 110ms macW1Y quad ease-in */
+    double p = (double)elapsed / 110000.0;
     if (p >= 1.0) p = 1.0;
 
     double opacity = 1.0 - (p * p);
-    double scale = 1.0 - 0.05 * (p * p); /* 1.0 -> 0.95 */
+    double scale = 1.0 - 0.05 * (p * p);
     d->current_scale = scale;
     gtk_widget_set_opacity(widget, (float)opacity);
     gtk_widget_queue_draw(widget);
@@ -123,11 +123,11 @@ static gboolean mac_popover_open_tick(GtkWidget *widget, GdkFrameClock *clock, g
         return G_SOURCE_CONTINUE;
     }
     gint64 elapsed = now - d->start_time;
-    double p = (double)elapsed / 140000.0; /* 140ms macW1Y cubic ease-out */
+    double p = (double)elapsed / 140000.0;
     if (p >= 1.0) p = 1.0;
 
     double ease = 1.0 - pow(1.0 - p, 3);
-    double scale = 0.94 + 0.06 * ease; /* 0.94 -> 1.0 */
+    double scale = 0.94 + 0.06 * ease;
     d->current_scale = scale;
     gtk_widget_set_opacity(widget, (float)ease);
     gtk_widget_queue_draw(widget);
@@ -217,9 +217,9 @@ static void install_mac_popover_hooks(void) {
     }
 }
 
-/* =========================================================================
- * macW1Y Tahoe Window Controls Liquid Glass Jelly Drag & Spring Physics
- * ========================================================================= */
+
+
+
 static void (*orig_wc_map)(GtkWidget *widget) = NULL;
 static void (*orig_wc_snapshot)(GtkWidget *widget, GtkSnapshot *snapshot) = NULL;
 
@@ -239,7 +239,7 @@ typedef struct {
     double button_radius_x, button_radius_y;
     guint tick_id;
     gint64 last_time;
-    int target_button_idx; /* 0: close, 1: min, 2: max */
+    int target_button_idx;
 } MacWcDragData;
 
 static MacWcDragData *get_wc_drag_data(GtkWidget *w) {
@@ -278,7 +278,7 @@ static gboolean mac_wc_spring_tick(GtkWidget *widget, GdkFrameClock *clock, gpoi
     d->vel_sy += f_sy * dt;
     d->cur_sy += d->vel_sy * dt;
 
-    /* Anchor smoothly glides back to center as the spring settles */
+
     d->anchor_ox *= exp(-14.0 * dt);
     d->anchor_oy *= exp(-14.0 * dt);
 
@@ -362,10 +362,10 @@ static void on_wc_drag_begin(GtkGestureDrag *gesture, double start_x, double sta
     d->button_radius_x = 8.0;
     d->button_radius_y = 8.0;
 
-    /* Do NOT claim sequence on begin; allow standard click events to reach child GtkButtons */
+
     gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_NONE);
 
-    /* Determine target button index based on child bounds */
+
     int b_idx = 0;
     int found_idx = -1;
     double min_dist_to_center = 1e9;
@@ -395,7 +395,7 @@ static void on_wc_drag_begin(GtkGestureDrag *gesture, double start_x, double sta
         else d->target_button_idx = 2;
     }
 
-    /* Compute button radius for anchor calculations */
+
     b_idx = 0;
     for (GtkWidget *child = gtk_widget_get_first_child(wc); child != NULL; child = gtk_widget_get_next_sibling(child), b_idx++) {
         if (b_idx == d->target_button_idx) {
@@ -408,7 +408,7 @@ static void on_wc_drag_begin(GtkGestureDrag *gesture, double start_x, double sta
         }
     }
 
-    /* Start hold timer (280ms): only activate jelly if held! */
+
     d->hold_timer_id = g_timeout_add(280, on_wc_hold_timeout, d);
 }
 
@@ -435,11 +435,11 @@ static void on_wc_drag_update(GtkGestureDrag *gesture, double offset_x, double o
     if (!d->is_holding) return;
 
     if (dist > 0.5) {
-        /* Smooth elastic stretch and volume-preserving compression */
-        double stretch = 1.12 + fmin(dist * 0.022, 0.40); /* Max stretch ~1.52 */
+
+        double stretch = 1.12 + fmin(dist * 0.022, 0.40);
         double compress = fmax(0.72, 1.12 / sqrt(stretch / 1.12));
 
-        /* Smooth continuous interpolation between horizontal and vertical axes (ZERO abrupt snap!) */
+
         double t_axis = (dist > 0.001) ? (offset_x * offset_x) / (dist * dist) : 0.5;
         d->cur_sx = compress + (stretch - compress) * t_axis;
         d->cur_sy = stretch - (stretch - compress) * t_axis;
@@ -448,10 +448,10 @@ static void on_wc_drag_update(GtkGestureDrag *gesture, double offset_x, double o
         double u_y = (dist > 0.001) ? (offset_y / dist) : 0.0;
         double blend = CLAMP(dist / 5.0, 0.0, 1.0);
 
-        /* Anchor point on the OPPOSITE side of drag direction:
-         * When pulling right (u_x > 0), anchor is at the left edge (-radius_x), so the left edge stays pinned and right edge stretches.
-         * The button does NOT slide or travel ("не їде").
-         */
+
+
+
+
         d->anchor_ox = -d->button_radius_x * u_x * blend;
         d->anchor_oy = -d->button_radius_y * u_y * blend;
 
@@ -481,7 +481,7 @@ static void on_wc_drag_end(GtkGestureDrag *gesture, double offset_x, double offs
     }
 
     if (!d->is_holding) {
-        /* Simple click without holding: DO NOT animate, keep 1.0! */
+
         d->cur_sx = 1.0;
         d->cur_sy = 1.0;
         d->cur_tx = 0.0;
@@ -499,7 +499,7 @@ static void on_wc_drag_end(GtkGestureDrag *gesture, double offset_x, double offs
         d->tick_id = gtk_widget_add_tick_callback(wc, mac_wc_spring_tick, d, NULL);
     }
 
-    /* Check if pointer is still over widget after release to keep or clear hover state */
+
     if (!gtk_widget_contains(wc, d->start_x + offset_x, d->start_y + offset_y)) {
         gtk_widget_remove_css_class(wc, "mac-controls-hover");
         for (GtkWidget *child = gtk_widget_get_first_child(wc); child != NULL; child = gtk_widget_get_next_sibling(child)) {
@@ -515,7 +515,7 @@ static void mac_wc_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
         return;
     }
 
-    /* Step 1: Draw non-target static buttons first */
+
     GtkWidget *target_child = NULL;
     int idx = 0;
     for (GtkWidget *child = gtk_widget_get_first_child(widget);
@@ -528,7 +528,7 @@ static void mac_wc_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
         }
     }
 
-    /* Step 2: Draw the target (jelly) button last so it renders on top pinned at its anchor edge */
+
     if (target_child) {
         graphene_rect_t bounds;
         float cx, cy;
@@ -544,7 +544,7 @@ static void mac_wc_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
             cy = ch * 0.5f;
         }
 
-        /* Anchor point where the button is pinned */
+
         float ax = cx + (float)d->anchor_ox;
         float ay = cy + (float)d->anchor_oy;
 
@@ -580,7 +580,7 @@ static void on_wc_motion_leave(GtkEventControllerMotion *ctrl, gpointer user_dat
     GtkWidget *wc = GTK_WIDGET(user_data);
     MacWcDragData *d = get_wc_drag_data(wc);
     if (d && (d->is_dragging || d->is_holding)) {
-        /* Keep group hover active while user is dragging jelly */
+
         return;
     }
     gtk_widget_remove_css_class(wc, "mac-controls-hover");
@@ -596,7 +596,7 @@ static void mac_wc_map(GtkWidget *w) {
 
     if (!g_object_get_data(G_OBJECT(w), "mac_wc_gesture_installed")) {
         g_object_set_data(G_OBJECT(w), "mac_wc_gesture_installed", GINT_TO_POINTER(1));
-        
+
         GtkGesture *gesture = gtk_gesture_drag_new();
         gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(gesture), 1);
         gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(gesture), GTK_PHASE_CAPTURE);
@@ -630,7 +630,7 @@ static void install_mac_wc_hooks(void) {
 
 __attribute__((constructor))
 static void ctor_mac_popover(void) {
-    /* Safety guard: only initialize if GTK is linked and active in process */
+
     if (!dlsym(RTLD_DEFAULT, "gtk_init")) {
         return;
     }

@@ -1,14 +1,14 @@
-// The preferences process cannot use Meta or Shell, so this service publishes
-// the list of open windows over D-Bus (on the shell's own bus name) for the
-// window picker, with a WindowsChanged signal to keep it current.
+
+
+
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 export const WINDOW_LIST_OBJECT_PATH = '/org/gnome/Shell/Extensions/LiquidGlass';
 export const WINDOW_LIST_INTERFACE_NAME = 'org.gnome.Shell.Extensions.LiquidGlass';
-// The payload is passed as a JSON string rather than a typed D-Bus structure so
-// that adding a field later does not break an older preferences process.
+
+
 const WINDOW_LIST_IFACE = `
 <node>
   <interface name="${WINDOW_LIST_INTERFACE_NAME}">
@@ -23,7 +23,7 @@ function readWindow(metaWindow) {
     const wmClass = metaWindow.get_wm_class() ?? '';
     const windowType = metaWindow.get_window_type();
     const title = metaWindow.get_title() ?? '';
-    // Desktop, dock and splash surfaces cannot get the effect.
+
     if (!wmClass || windowType === Meta.WindowType.DESKTOP ||
         windowType === Meta.WindowType.DOCK || windowType === Meta.WindowType.SPLASHSCREEN)
         return null;
@@ -37,8 +37,8 @@ function readApplication(entry, metaWindow, tracker) {
     if (!app)
         return;
     entry.appName = app.get_name() ?? '';
-    // Serialized; the preferences turn it back into an icon with
-    // Gio.Icon.new_for_string().
+
+
     const icon = app.get_app_info()?.get_icon();
     if (icon)
         entry.iconName = icon.to_string() ?? '';
@@ -48,7 +48,7 @@ export class WindowListService {
     _logger;
     _dbusImpl = null;
     _displaySignals = [];
-    // A window's class and title can arrive after it is created.
+
     _windowSignals = new Map();
     _emitIdleId = 0;
 
@@ -57,7 +57,7 @@ export class WindowListService {
     }
 
     setup() {
-        // Exporting fails with a GError if the path is already taken.
+
         try {
             this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(WINDOW_LIST_IFACE, this);
             this._dbusImpl.export(Gio.DBus.session, WINDOW_LIST_OBJECT_PATH);
@@ -99,7 +99,7 @@ export class WindowListService {
         }
     }
 
-    // D-Bus method.
+
     ListWindows() {
         return JSON.stringify(this._collectWindows());
     }
@@ -130,7 +130,7 @@ export class WindowListService {
         return global.display.list_all_windows();
     }
 
-    // One entry per WM_CLASS, the granularity the window lists match on.
+
     _collectWindows() {
         const tracker = Shell.WindowTracker.get_default();
         const byClass = new Map();
@@ -157,8 +157,8 @@ export class WindowListService {
         return entries;
     }
 
-    // Windows open and close in bursts and 'restacked' fires often, so the
-    // signal is coalesced onto an idle.
+
+
     _queueChanged() {
         if (this._emitIdleId)
             return;

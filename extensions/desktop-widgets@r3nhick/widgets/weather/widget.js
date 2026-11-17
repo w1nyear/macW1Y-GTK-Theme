@@ -21,23 +21,23 @@ export const cacheTtlMs = 10 * 60 * 1000;
 export const defaultSize = 'medium';
 export const supportedSizes = ['small', 'medium', 'large', 'wide'];
 
-// Load marker: lets you verify in the journal that the shell imported the
-// fresh module instead of a cached copy (log() goes to the journal).
+
+
 log('[desktop-widgets] weather widget module imported (page-dots build)');
 
 const HOUR_MS = 3600 * 1000;
 const HOURS_AHEAD = 24;
-// 1x1 page flip: the calendar's two-leg slide (30px swipe, 250ms beats).
+
 const WEATHER_SWIPE_THRESHOLD = 30;
 const WEATHER_FLIP_DURATION = 250;
-// The swipe page survives the card's periodic re-renders (module-wide,
-// the same way the calendar keeps its view across event refreshes).
+
+
 let weatherCompactPage = 0;
 
 export function style(theme) {
-	// Bottom padding matches the calendar widget (4px): the 1x1 page
-	// indicator dots must sit at the exact same offset from the frame edge,
-	// inside the card, + the dots row's own 2px bottom margin.
+
+
+
 	return `background-color: ${theme.background}; border-color: ${theme.border}; color: ${theme.text}; border-radius: 16px; padding: 18px 18px 4px 18px;`;
 };
 
@@ -272,8 +272,8 @@ function formatTemperature(temperature) {
 	return Number.isFinite(value) ? `${Math.round(value)}°` : '--';
 };
 
-// Natural width of a piece of text at the given font; used to size the
-// hourly cells so the full time label ("9:00 PM") fits without clipping.
+
+
 function measureLabelWidth(text, fontPx, weight) {
 	const label = new St.Label({
 		text: String(text ?? ''),
@@ -436,7 +436,7 @@ function temperatureRange(daily, theme, createLabel, scale, size = 11, weight = 
 };
 
 function buildHeader(rendered, theme, createLabel, scale, opts = {}) {
-	// The main temperature carries the accent color when the toggle allows it.
+
 	const tempColor = opts.tempColor ?? theme.text;
 	const cityFont = opts.cityFont ?? 17;
 	const cityWeight = opts.cityWeight ?? 800;
@@ -452,7 +452,7 @@ function buildHeader(rendered, theme, createLabel, scale, opts = {}) {
 		style: 'spacing: 0px;',
 	}));
 
-	// City name with navigation icon
+
 	const cityRow = new St.BoxLayout(boxLayoutProps({
 		vertical: false,
 		x_align: Clutter.ActorAlign.START,
@@ -464,11 +464,11 @@ function buildHeader(rendered, theme, createLabel, scale, opts = {}) {
 		'widget-weather-city',
 		`color: ${theme.text}; font-size: ${scaledFont(cityFont, scale)}px; font-weight: ${cityWeight};`));
 
-	// Navigation icon (use white or black based on theme)
+
 	const iconName = theme.dark ? 'navigation-white' : 'navigation-black';
 	const iconPath = `${EXTENSION_PATH}/icons/widgets_settings/weather/${iconName}.svg`;
 	const iconFile = Gio.File.new_for_path(iconPath);
-	
+
 	if (iconFile.query_exists(null)) {
 		const navIcon = new St.Icon({
 			gicon: Gio.icon_new_for_string(iconPath),
@@ -522,7 +522,7 @@ function buildHeader(rendered, theme, createLabel, scale, opts = {}) {
 		'widget-weather-condition',
 		`color: ${theme.text}; font-size: ${scaledFont(condFont, scale)}px; font-weight: ${condWeight};`));
 
-	// H/L: condition row minus 1 unit (dialed scaledown); 600 weight stays.
+
 	const range = temperatureRange(rendered.daily, theme, createLabel, scale, condFont - 1, 600);
 
 	right.add_child(condRow);
@@ -531,11 +531,11 @@ function buildHeader(rendered, theme, createLabel, scale, opts = {}) {
 		right.add_child(range);
 	};
 
-	// With equalColumnWidth (2x1) the header splits into two exact halves;
-	// otherwise the left column keeps its natural width and the rest goes
-	// to a spacer. Fixed widths are used instead of layout-manager
-	// homogeneous settings: St/Clutter allocation quirks made the left
-	// column disappear with those.
+
+
+
+
+
 	const header = new St.BoxLayout(boxLayoutProps({
 		style_class: 'widget-weather-header',
 		x_expand: true,
@@ -612,9 +612,9 @@ function buildWeekList(days, theme, createLabel, scale, barWidth = 110, fill = f
 		clip_to_allocation: true,
 	}));
 
-	// With fill the list itself claims every free pixel under the hourly
-	// strip, and its rows split that height equally — the card has no empty
-	// gap at the bottom.
+
+
+
 	if (fill) {
 		list.y_expand = true;
 	};
@@ -628,8 +628,8 @@ function buildWeekList(days, theme, createLabel, scale, barWidth = 110, fill = f
 			style: `spacing: ${Math.round(4 * scale)}px;`,
 		}));
 
-		// With fill the rows share the leftover height of the card equally,
-		// so the week list reaches the bottom edge with no empty gap.
+
+
 		if (fill) {
 			row.y_expand = true;
 		};
@@ -673,14 +673,14 @@ function stripDivider() {
 	});
 };
 
-// Compact (1×1) card in the W01 style: location label, a bold accent-colored
-// temperature, then the condition icon, the sky summary and the day's
-// high/low, stacked in a single left-aligned column.
+
+
+
 function buildCompactRegime(body, rendered, theme, createLabel, scale, tempColor, settings) {
-	// City name with navigation icon — one standard horizontal layout box:
-	// the arrow joins the name on the same visual line through the box's
-	// cross-axis centering (vertical-align: middle), no absolute
-	// positioning and no manual margins.
+
+
+
+
 	const cityRow = new St.BoxLayout(boxLayoutProps({
 		vertical: false,
 		x_align: Clutter.ActorAlign.START,
@@ -692,7 +692,7 @@ function buildCompactRegime(body, rendered, theme, createLabel, scale, tempColor
 		'widget-weather-city',
 		`color: ${theme.text}; font-size: ${scaledFont(16, scale)}px; font-weight: 800;`));
 
-	// Navigation icon (use white or black based on theme)
+
 	const iconName = theme.dark ? 'navigation-white' : 'navigation-black';
 	const iconPath = `${EXTENSION_PATH}/icons/widgets_settings/weather/${iconName}.svg`;
 	const iconFile = Gio.File.new_for_path(iconPath);
@@ -701,8 +701,8 @@ function buildCompactRegime(body, rendered, theme, createLabel, scale, tempColor
 		const navIcon = new St.Icon({
 			gicon: Gio.icon_new_for_string(iconPath),
 			icon_size: scaledFont(12, scale),
-			// Standard box alignment: the icon centers on the name's line
-			// box, so label and arrow share one visual baseline.
+
+
 			y_align: Clutter.ActorAlign.CENTER,
 		});
 		cityRow.add_child(navIcon);
@@ -710,13 +710,13 @@ function buildCompactRegime(body, rendered, theme, createLabel, scale, tempColor
 
 	body.add_child(cityRow);
 
-	// Main temperature, restored: plain labels only — a Pango markup span
-	// invalid-attribute parse failure is what cleared the text before, so
-	// markup stays out. The temperature is the card's focal point: double
-	// the previous mid size (48 base, capped at 56 so the page never
-	// feels clipped); the degree mark is its own small label pinned to
-	// the digits' line top — the superscript look — with no fixed
-	// heights and no manual margins.
+
+
+
+
+
+
+
 	const tempFont = Math.min(scaledFont(48, scale), 56);
 	const tint = tempColor ?? theme.accent;
 
@@ -735,32 +735,32 @@ function buildCompactRegime(body, rendered, theme, createLabel, scale, tempColor
 		'°',
 		'widget-weather-temp-degree',
 		`color: ${tint}; font-size: ${degFont}px; font-weight: 600;`);
-	// createLabel defaults to x_expand: true (the framework's _label) —
-	// in a full-width row that would fling the ° toward the right edge;
-	// pin both to their natural width, packed left after the digits.
+
+
+
 	digitsLabel.x_expand = false;
 	degLabel.x_expand = false;
-	// Superscript: cross-axis start keeps the mark at the top of the
-	// digits' line box, sharing the digits' baseline as ordinary type.
+
+
 	degLabel.y_align = Clutter.ActorAlign.START;
 
 	tempRow.add_child(digitsLabel);
 	tempRow.add_child(degLabel);
 	body.add_child(tempRow);
 
-	// Balanced lower half: an equal expanding filler above the condition
-	// block and one below it split the page's remaining air, so the gap
-	// between the big temperature and the icon/summary/H-L rows equals
-	// the gap between that block and the dots at the bottom edge — the
-	// lower group centers in the space under the temperature instead of
-	// packing tight against it.
+
+
+
+
+
+
 	body.add_child(new St.Widget({y_expand: true}));
 
 	const bottom = new St.BoxLayout(boxLayoutProps({
 		vertical: true,
 		x_align: Clutter.ActorAlign.START,
-		// Removed y_align: END and bottomLift margin — content naturally sits
-		// in the middle now that the spacer below (not above) pushes it up.
+
+
 		style: `spacing: 2px;`,
 	}));
 	const iconParams = {
@@ -783,22 +783,22 @@ function buildCompactRegime(body, rendered, theme, createLabel, scale, tempColor
 		'widget-weather-summary',
 		`color: ${theme.text}; font-size: ${scaledFont(13, scale)}px; font-weight: 600;`));
 
-	// H/L: mirrors the condition line directly above it — same 13-unit
-	// font, same 600 weight, same full-strength text color (no muted
-	// dimming), so the two small rows read as one visual voice.
+
+
+
 	const range = temperatureRange(rendered.daily, theme, createLabel, scale, 13, 600, theme.text);
 
 	if (range) {
 		bottom.add_child(range);
 	};
 
-	// Clear dot gap: the expanding filler under the condition block keeps
-	// its equal share with the filler above it (proportional air), and a
-	// fixed foot under that reserves the dots band (dot/dash + its row
-	// margin, height from the shared component) plus a small extra
-	// margin. The H/L line therefore always sits a clear distance above
-	// the pagination indicators — never touching or sliding under them —
-	// and the dots render on top of the transparent foot.
+
+
+
+
+
+
+
 	body.add_child(bottom);
 	body.add_child(new St.Widget({y_expand: true}));
 	body.add_child(new St.Widget({
@@ -808,8 +808,8 @@ function buildCompactRegime(body, rendered, theme, createLabel, scale, tempColor
 };
 
 export function render({body, widget, createLabel, theme, weather, weatherLocation, sizeForWidget, settings}) {
-	// The main temperature is accent-colored by default; the toggle in the
-	// widget's preferences switches it back to the neutral text color.
+
+
 	const useAccentColor = settings?.get_boolean('weather-use-accent-color') ?? true;
 	const tempColor = useAccentColor ? theme.accent : theme.text;
 	const detail = widget.data.detail || _('Weather unavailable');
@@ -824,35 +824,35 @@ export function render({body, widget, createLabel, theme, weather, weatherLocati
 	};
 	const [widgetWidth, widgetHeight] = sizeForWidget(widget);
 
-	// Three coherent regimes, decided by width and height:
-	//   compact (width < 340):        location + accent temp + icon/summary/H-L (1x1)
-	//   wide    (width >= 340, short): header + hourly strip             (2x4)
-	//   large   (width >= 340, tall):  header + hourly + temp-bar week   (4x4)
+
+
+
+
 	const large = widgetWidth >= 340 && widgetHeight >= 340;
 	const wide = widgetWidth >= 340 && !large;
-	// Exact equal halves for the 2x1 header: content box = cell width minus
-	// the card chrome (18px padding on each side + 1px border), minus the
-	// 8px gap between the two header columns.
+
+
+
 	const equalColumnWidth = Math.floor((widgetWidth - 38 - 8) / 2);
-	// HTML mockups are drawn at 360px (wide/large) and 170px (compact),
-	// but the real widgets are 454px / 220px wide, so scale fonts up
-	// proportionally to keep them looking the same size as in the mockups.
+
+
+
 	const scale = Math.max(1, Math.min(1.6, widgetWidth / 360));
 	const compactScale = large || wide ? 1 : Math.max(0.9, Math.min(1.6, Math.min(widgetWidth, widgetHeight) / 170));
 
 	if (!wide && !large) {
-		// ── 1x1 — two swipeable pages, the calendar's flip animation ──────
-		// Page one is the classic compact card (location, temp, icon,
-		// summary, H/L). Page two carries the incoming hours — time, icon
-		// and temperature per column, the wide card's hourly strip scaled
-		// down. The right-button swipe plays the calendar's sequential
-		// leg: the page slides out and fades, the other one waits
-		// off-stage, then slides in from the opposite side. Page dots
-		// accompany both pages, always rendered.
-		// Page dots (calendar's classic look, ALWAYS rendered): dash/dot
+
+
+
+
+
+
+
+
+
 		// follows the global page-indicator-style, the color is the accent
-		// while the weather accent toggle is on, otherwise the neutral
-		// theme text.
+
+
 		const pages = [];
 
 		const conditionsPage = new St.BoxLayout(boxLayoutProps({
@@ -870,9 +870,9 @@ export function render({body, widget, createLabel, theme, weather, weatherLocati
 		}));
 		const hourly = renderedWeather.hourly ?? [];
 		if (hourly.length > 0) {
-			// Two rows of two cells (the mockup look) — a 2x2 grid of
-			// upcoming hours, vertically centered on the page. Each cell
-			// reuses the hourly strip cell: time, icon, temperature.
+
+
+
 			const rowIndexes = [0, 2];
 			const hoursGrid = new St.BoxLayout(boxLayoutProps({
 				vertical: true,
@@ -898,15 +898,15 @@ export function render({body, widget, createLabel, theme, weather, weatherLocati
 				}));
 			});
 
-			// Vertical centering that accounts for the indicator band: the
-			// dots overlay the page's bottom band (7px), so plain equal
-			// fillers would leave the air to the top border and the air
-			// to the dots unequal. A fixed foot (exactly the dots band
-			// height, from the shared component) sits under the bottom
-			// filler, so the two equal fillers only split the space ABOVE
-			// the band — the grid centers within (page height - band) and
-			// the air above it equals the air between it and the dots.
-			// The foot is invisible; the dots render on top of it.
+
+
+
+
+
+
+
+
+
 			hoursPage.add_child(new St.Widget({y_expand: true}));
 			hoursPage.add_child(hoursGrid);
 			hoursPage.add_child(new St.Widget({y_expand: true}));
@@ -915,7 +915,7 @@ export function render({body, widget, createLabel, theme, weather, weatherLocati
 				height: indicatorBandHeight(settings),
 			}));
 		} else {
-			// No forecast payload: keep the page real but quiet.
+
 			const emptyLabel = createLabel(
 				_('No forecast'),
 				'widget-weather-hours-empty',
@@ -933,10 +933,10 @@ export function render({body, widget, createLabel, theme, weather, weatherLocati
 		});
 
 		// dash/dot follows the global page-indicator-style,
-		// the color is the accent while the page-indicator toggle is on,
-		// otherwise the neutral theme text — the shared page indicator
-		// component (the calendar's pagination, identical spacing, size,
-		// active-state opacity and vertical offset).
+
+
+
+
 		const indicatorColor = settings?.get_boolean('weather-page-indicator-accent') ?? true
 			? (theme?.accent ?? theme.text)
 			: theme.text;
@@ -950,27 +950,27 @@ export function render({body, widget, createLabel, theme, weather, weatherLocati
 		});
 		pageStack.add_child(pages[weatherCompactPage]);
 
-		// ── EXACTLY the calendar widget's indicator hierarchy ─────────────
-		// The dots wrap is added to the SAME BinLayout stack as the pages
-		// (dots paint above the pages) and pins itself to the very
-		// bottom-center of the shared rect through its internal
-		// y-expanding filler — the "vertical-align: end" of the main
-		// vertical box. The dots are added UNCONDITIONALLY: no pref, no
-		// content height and no overflow path can leave this indicator out
-		// of the layout child list. The card's bottom padding is 4px (the
-		// calendar's value), so the band rests 6px above the frame edge,
-		// identical spacing/size/active-state to the calendar's dots.
+
+
+
+
+
+
+
+
+
+
 		pageStack.add_child(indicator.wrap);
 
 		body.add_child(pageStack);
 
-		// The dots delegate to the shared page-indicator component; the
-		// wrap guard lives inside refresh().
+
+
 		const refreshDots = () => indicator.refresh(weatherCompactPage);
 		refreshDots();
 
-		// Dispose safety: re-renders replace this whole page stack; the
-		// late flight timers of a swipe must never touch disposed actors.
+
+
 		const stackLifetime = {alive: true};
 		const pageLifetimes = pages.map(page => {
 			const lifetime = {alive: true};
@@ -979,7 +979,7 @@ export function render({body, widget, createLabel, theme, weather, weatherLocati
 		});
 		pageStack.connect('destroy', () => { stackLifetime.alive = false; });
 
-		// Right-button swipe — the calendar's sequential two-leg flip.
+
 		let swipeStartX = null;
 		let swipeBusy = false;
 		pageStack.reactive = true;
@@ -1002,7 +1002,7 @@ export function render({body, widget, createLabel, theme, weather, weatherLocati
 			const leaving = pages[leavingPage];
 			const exitX = delta < 0 ? -widgetWidth : widgetWidth;
 
-			// Leg one: the page slides out and fades.
+
 			leaving.ease({
 				opacity: 0,
 				translation_x: exitX,
@@ -1015,12 +1015,12 @@ export function render({body, widget, createLabel, theme, weather, weatherLocati
 				},
 			});
 
-			// Any swipe direction switches to the other page.
+
 			weatherCompactPage = 1 - weatherCompactPage;
 			refreshDots();
 
-			// Leg two starts mid-flight, exactly like the calendar: the
-			// page waits off-stage, then slides in and fades up.
+
+
 			GLib.timeout_add(GLib.PRIORITY_DEFAULT, Math.round(WEATHER_FLIP_DURATION / 2), () => {
 				swipeBusy = false;
 				if (!stackLifetime.alive || !pageLifetimes[weatherCompactPage].alive)
@@ -1044,8 +1044,8 @@ export function render({body, widget, createLabel, theme, weather, weatherLocati
 	};
 
 	const hourly = renderedWeather.hourly;
-	// Size the hourly cells from the measured time label so the full
-	// "9:00 PM" always fits (12h locales) instead of being clipped.
+
+
 	const stripTimeFont = large ? 12 : 10;
 	const stripTimeWeight = large ? 700 : 800;
 	const widestHourTime = hourly.slice(0, 6).reduce(
@@ -1083,10 +1083,10 @@ export function render({body, widget, createLabel, theme, weather, weatherLocati
 			const stripContentH = Math.round((12 + 24 + 14 + 16) * scale);
 			const headerH = Math.round((17 + 2 + 38) * scale);
 			const availableH = Math.max(1, widgetHeight - Math.round(20 * scale) - headerH - stripContentH - (hourCount >= 4 ? Math.round(12 * scale) : 0) - Math.round(4 * scale));
-			// 2x2 (square) can fit a longer week list, the 4x2 (wide) layout
-			// keeps a 5-day summary: square/tall widgets show as many days as
-			// the available height allows (up to 8 days, incl. the day after
-			// Saturday); wide widgets show exactly one more than before.
+
+
+
+
 			const wideLayout = widgetWidth >= widgetHeight * 1.6;
 			let targetDays = Math.min(5, renderedWeather.daily.length);
 			if (!wideLayout) {
@@ -1109,15 +1109,15 @@ export function render({body, widget, createLabel, theme, weather, weatherLocati
 				body.add_child(buildWeekList(days, theme, createLabel, weeklyScale, barWidth, true));
 			};
 		} else {
-			// No week data: the old bottom spacer keeps the hourly strip
-			// anchored under the header instead of stretching it.
+
+
 			body.add_child(new St.Widget({y_expand: true}));
 		};
 		return;
 	};
 
-	// Wide (2x4, Tokyo): city + temp left, condition (icon + text + range) right,
-	// hourly strip at the bottom.
+
+
 	body.add_child(buildHeader(renderedWeather, theme, createLabel, scale, {
 		cityFont: 17,
 		cityWeight: 800,

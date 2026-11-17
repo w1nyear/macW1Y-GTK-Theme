@@ -1,5 +1,5 @@
-// backdropGlass.js — Liquid Glass Rendering Engine for Shell Popups & Dialogs
-// Compatible with GNOME-Tahoe Liquid Glass shader & Clutter pipeline.
+
+
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
@@ -23,7 +23,7 @@ import {
     addGlassWakeListener,
     removeGlassWakeListener,
     isActorNearGlass
-} from '../utils.js?v=fix1';
+} from '../utils.js?v=fix3';
 
 function lgDir() {
     try {
@@ -77,33 +77,33 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
             uniforms: new Map(),
         };
 
-        // Inner liquid box container with clip to allocation
+
         this._liquidBox = new UnpickableActor({
             name: 'liquid-box',
             clip_to_allocation: true,
         });
         this.add_child(this._liquidBox);
 
-        // Dummy 1px guard against black frame
+
         const dummy = new UnpickableActor();
         dummy.set_size(1, 1);
         dummy.set_opacity(0);
         this._liquidBox.add_child(dummy);
 
-        // Clone container for windows
+
         this._cloneContainer = new UnpickableActor({
             name: `clone-container-${owner}`,
         });
         this._liquidBox.add_child(this._cloneContainer);
 
-        // Liquid Effect instance
+
         this._effect = new LiquidEffect({
             extensionPath: extensionPath || lgDir(),
             settings: lgSettings() || this._settings,
             owner: this._owner,
         });
 
-        // Tahoe widget glass parameters (clean subtle rim 0.08, zero sheen, zero chroma, soft dark tint)
+
         this._effect.setPadding(20);
         this._effect.setIsDock(false);
         this._effect.setCornerRadius(26.0);
@@ -191,7 +191,7 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
             this._uiSampler?.rebindSelf?.();
         } catch (_) {}
 
-        // Mutual exclusion with other liquid-glass sheets
+
         try {
             for (const child of Main.layoutManager.uiGroup.get_children()) {
                 if (child === this) continue;
@@ -325,7 +325,7 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
     }
 
     _scheduleIdleHeartbeat() {
-        // [GPU-OPTIMIZE] No-op in idle.
+
     }
 
     _startTick() {
@@ -339,9 +339,9 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
                     .add(Meta.LaterType.BEFORE_REDRAW, tick);
                 return GLib.SOURCE_REMOVE;
             }
-            // [GPU-SAVE] Дешевий rescue аллокації щотіка; дорожній блок
-            // (семпли UI + клони вікон + capture-clip) — лише при реальній зміні
-            // фону, з динамічною ProMotion частотою. В спокої тік не має GPU-роботи.
+
+
+
             let doHeavy = true;
             if (this._backdropLocked) {
                 doHeavy = false;
@@ -379,7 +379,7 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
                 reportFrameLoopError?.(`BackdropGlass_${this._owner}`, e);
             }
 
-            // Idle sleep pattern (macW1Y Core Animation principle)
+
             if (doHeavy) {
                 this._idleCount = 0;
             } else {

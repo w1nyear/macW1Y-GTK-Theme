@@ -6,20 +6,20 @@ import * as SystemActions from 'resource:///org/gnome/shell/misc/systemActions.j
 import Gettext from 'gettext';
 import { getChromeAlpha, getUserLabelStyle } from '../main/colorUtils.js';
 
-// Reuse gnome-shell's translated action names.
+
 const shellDomain = Gettext.domain('gnome-shell');
 const actionName = name => shellDomain.pgettext('search-result', name);
 
-// Gap between the bottom of the user list and the buttons.
+
 const CSA_TOP_GAP = 28;
 
-/**
- * Reports no width to its parent and lays its child out centred. Inside the
- * user list this keeps the buttons from widening the list, so the list stays
- * horizontally dead centre, while the buttons still follow the list's
- * visibility, fades and movement. The real height is reported so the list
- * still makes room for the buttons above the bottom of the screen.
- */
+
+
+
+
+
+
+
 const OverflowBin = GObject.registerClass(
     class WackCsaOverflowBin extends St.Bin {
         vfunc_get_preferred_width(_forHeight) {
@@ -43,13 +43,13 @@ const OverflowBin = GObject.registerClass(
         }
     });
 
-/**
- * Cupertino System Actions (CSA): macW1Y-style Suspend / Restart / Power Off
- * buttons under the GDM user list. Each button follows SystemActions, which
- * already honours logind availability and org.gnome.login-screen
- * disable-restart-buttons. While enabled, the Quick Settings power menu is
- * hidden since CSA replaces it.
- */
+
+
+
+
+
+
+
 export class GdmPowerButtons {
     constructor(gdmManager = null) {
         this._gdm = gdmManager;
@@ -61,7 +61,7 @@ export class GdmPowerButtons {
     }
 
     setup(_dialog) {
-        // Disabled per user request
+
     }
 
     positionPowerButtons(dialogBox = null) {
@@ -264,10 +264,10 @@ export class GdmPowerButtons {
         }
     }
 
-    /**
-     * Toggle CSA (per-user setting from the cross-session manifest).
-     * @param {boolean} enabled
-     */
+
+
+
+
     setEnabled(enabled) {
         this._userEnabled = Boolean(enabled);
         if (!this.actor)
@@ -276,11 +276,11 @@ export class GdmPowerButtons {
         this.syncQuickSettingsVisibility();
     }
 
-    /**
-     * Re-syncs Quick Settings power menu visibility based on whether CSA is currently
-     * accessible (i.e. user selection picker is visible and CSA is enabled).
-     * When at password prompts or where CSA is hidden, Quick Settings power options are restored.
-     */
+
+
+
+
+
     syncQuickSettingsVisibility() {
         const dialog = this._gdm?._dialog;
         const isUserListShowing = Boolean(dialog?._userSelectionBox?.visible && dialog?._userSelectionBox?.opacity > 0);
@@ -288,10 +288,10 @@ export class GdmPowerButtons {
         this._setQuickSettingsPowerMenuHidden(shouldHideQuickSettings);
     }
 
-    // GNOME re-syncs ShutdownItem's visibility whenever an action's
-    // availability changes; shadow it while CSA replaces the Quick Settings
-    // power options. Quick Settings loads asynchronously, so an unsuccessful
-    // lookup is deliberately retried by subsequent state changes.
+
+
+
+
     _setQuickSettingsPowerMenuHidden(hidden) {
         if (hidden && !this._shutdownItem) {
             const systemItem = Main.panel.statusArea.quickSettings?._system?._systemItem;

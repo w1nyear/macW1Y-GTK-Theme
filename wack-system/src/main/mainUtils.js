@@ -24,8 +24,8 @@ export const PowerProfilesIface = `<node>
 </node>`;
 
 export function hasFingerprint(_userName) {
-    // Never probe or query fprintd over DBus: querying another user's fingerprints from GDM
-    // triggers Polkit's "Privileges are required to manage fingerprints for other users" modal prompt!
+
+
     return false;
 }
 

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Adaptive ink: text/icons follow the brightness BEHIND them, not the theme.
-// Sampling cascade (first sane source wins, checked at runtime):
-//   1. Shell.Screenshot.pick_color (cheap, sync)
-//   2. screenshot_area to a temp PNG (heavier, sync)
-//   3. wallpaper pixbuf mapped onto the monitor (no windows, always works)
-//   4. theme fallback
-// Median over a point grid (robust against our own icons in a sample),
-// hysteresis against flicker.
-//   ink 'dark'  = dark text/icons (background is light)
-//   ink 'light' = white text/icons (background is dark)
+
+
+
+
+
+
+
+
+
+
 
 import GdkPixbuf from 'gi://GdkPixbuf';
 import Gio from 'gi://Gio';
@@ -17,8 +17,8 @@ import Shell from 'gi://Shell';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 const POLL_MS = 5000;
-const TO_LIGHT = 0.38;  // median lum below -> white ink
-const TO_DARK = 0.62;   // median lum above -> dark ink
+const TO_LIGHT = 0.38;
+const TO_DARK = 0.62;
 const TMP_DIR = '/tmp/opencode';
 
 let _topbarInk = null;
@@ -28,7 +28,7 @@ let _watchers = new Set();
 let _timer = 0;
 let _shot = null;
 let _wallCache = {path: '', pb: null};
-let _method = 0; // 0 unknown, 1 pick, 2 area, 3 wallpaper, 4 theme
+let _method = 0;
 let _bgSettings = null;
 let _bgIds = [];
 let _recheckId = 0;
@@ -60,7 +60,7 @@ function _pushInk(med, cur) {
     return cur ?? _themeInk();
 }
 
-// ---- method 1: pick_color ----
+
 
 function _shooter() {
     return null;
@@ -70,7 +70,7 @@ function _pickLum(x, y) {
     return -1;
 }
 
-// ---- method 2: area screenshot to temp PNG ----
+
 
 function _areaLum(rect) {
     return -1;
@@ -109,7 +109,7 @@ function _pbGridLum(pb, ox, oy, w, h, div) {
     }
 }
 
-// ---- method 3: wallpaper pixbuf, zoom-mapped onto the monitor ----
+
 
 function _wallpaperPath() {
     try {
@@ -150,8 +150,8 @@ function _wallLum(rect) {
         const path = _wallpaperPath();
         if (!path)
             return -1;
-        // cache the decoded pixbuf (a 4MB JPEG decode every poll is waste);
-        // reload on wallpaper change only
+
+
         let pb = null;
         try {
             if (_wallCache.path === path && _wallCache.pb)
@@ -169,7 +169,7 @@ function _wallLum(rect) {
         const pw = pb.get_width(), ph = pb.get_height();
         if (!(pw > 0) || !(ph > 0))
             return -1;
-        // 'zoom': scale to fill, centered crop
+
         const scale = Math.max(monitor.width / pw, monitor.height / ph);
         const sw = monitor.width / scale, sh = monitor.height / scale;
         const ox = (pw - sw) / 2 - monitor.x / scale;
@@ -181,7 +181,7 @@ function _wallLum(rect) {
     }
 }
 
-// ---- rects + poll ----
+
 
 function _topbarRect() {
     try {
@@ -202,9 +202,9 @@ function _sampleRect(rect) {
 }
 
 function _poll() {
-    // Topbar: wallpaper only. Stage sampling here is poisoned by the panel's
-    // own dark veil + icons composited over the strip (median drags dark and
-    // ink locks to theme) - wallpaper is veil-proof by construction.
+
+
+
     try {
         const tr = _topbarRect();
         if (tr) {
@@ -216,7 +216,7 @@ function _poll() {
             }
         }
     } catch (_) {
-        // keep last ink
+
     }
     try {
         if (_panelRect) {
@@ -227,7 +227,7 @@ function _poll() {
             }
         }
     } catch (_) {
-        // keep last ink
+
     }
 }
 
@@ -241,7 +241,7 @@ function _applyPanelClass() {
         panel.add_style_class_name(
             _topbarInk === 'light' ? 'tahoe-ink-light' : 'tahoe-ink-dark');
     } catch (_) {
-        // panel gone
+
     }
 }
 
@@ -250,7 +250,7 @@ function _notify() {
         try {
             cb();
         } catch (_) {
-            // watcher gone
+
         }
     }
 }
@@ -287,7 +287,7 @@ export function notePanelRect(rect) {
                 _notify();
             }
         } catch (_) {
-            // theme fallback stays
+
         }
     }
 }
@@ -331,7 +331,7 @@ export function disable() {
         try {
             GLib.Source.remove(_timer);
         } catch (_) {
-            // gone
+
         }
         _timer = 0;
     }
@@ -339,7 +339,7 @@ export function disable() {
         try {
             GLib.Source.remove(_recheckId);
         } catch (_) {
-            // gone
+
         }
         _recheckId = 0;
     }
@@ -347,7 +347,7 @@ export function disable() {
         try {
             _bgSettings?.disconnect(id);
         } catch (_) {
-            // gone
+
         }
     }
     _bgIds = [];
@@ -360,6 +360,6 @@ export function disable() {
         Main.panel?.remove_style_class_name('tahoe-ink-dark');
         Main.panel?.remove_style_class_name('tahoe-ink-light');
     } catch (_) {
-        // gone
+
     }
 }

@@ -31,7 +31,7 @@ export class GdmManager {
         this._dialogParent = null;
         this._menuBarManager = null;
 
-        // Subsystems
+
         this._clockManager = new GdmClockManager(this);
         this._wallpaperManager = new GdmWallpaperManager(this);
         this._userListManager = new GdmUserListManager(this);
@@ -305,7 +305,7 @@ export class GdmManager {
             this._messageManager.setup(this._dialogParent);
             this._userListManager.setup(dialog);
             this._avatarManager.setup(dialog);
-            // this._powerButtons.setup(dialog); // Disabled per user request
+
 
             if (!this._menuBarManager) {
                 this._menuBarManager = new LockscreenMenuBarManager(this._extension);
@@ -317,13 +317,13 @@ export class GdmManager {
             _logError(`[WACK/GdmManager] Sub-manager setup error: ${subErr.stack || subErr}`);
         }
 
-        // Ensure no System logo in GDM top left panel
+
         if (Main.panel?._leftBox) {
             const mainBtn = Main.panel._leftBox.get_children().find(c => c.name === "gdm-main-menu");
             if (mainBtn) mainBtn.destroy();
         }
 
-        // Cleanly hide accessibility button and session menu button at bottom of GDM
+
         if (dialog._bottomButtonGroup) {
             dialog._bottomButtonGroup.visible = false;
             dialog._bottomButtonGroup.opacity = 0;
@@ -336,7 +336,7 @@ export class GdmManager {
             dialog._a11yMenuButton.hide();
         }
 
-        // Shift user selection list down
+
         if (dialog._userSelectionBox) {
             this._connectAllocation(dialog._userSelectionBox, () => {
                 this._positionUserList();
@@ -345,7 +345,7 @@ export class GdmManager {
         }
         this._positionUserList();
 
-        // Shift auth prompt and message label
+
         if (dialog._authPrompt) {
             this._connectAllocation(dialog._authPrompt, () => this._positionAuthPrompt());
         }
@@ -353,7 +353,7 @@ export class GdmManager {
             this._connectAllocation(this._messageManager.scrollView, () => this._positionAuthPrompt());
         }
 
-        // Ensure auth prompt and lockscreen message are hidden initially when no user is selected
+
         if (!dialog._user) {
             if (dialog._authPrompt) {
                 dialog._authPrompt.visible = false;
@@ -374,7 +374,7 @@ export class GdmManager {
             }
         }
 
-        // Auto-select single user immediately on GDM boot
+
         if (dialog._loadUserList && !dialog._wackOrigLoadUserList) {
             this._wackOrigLoadUserList = dialog._loadUserList.bind(dialog);
             dialog._loadUserList = () => {
@@ -386,7 +386,7 @@ export class GdmManager {
             this._autoSelectSingleUser(dialog);
         }
 
-        // Distro logo opacity override
+
         if (dialog._logoBin) {
             dialog._logoBin.opacity = 0;
         }
@@ -442,12 +442,12 @@ export class GdmManager {
             const wasAlreadyVisible = dialog._authPrompt?.visible;
             this._origShowPrompt(...args);
 
-            // Guard against re-entering selection on a spurious _showPrompt re-fire
-            // (e.g. GDM re-arming the entry after a wrong-password retry). If the
-            // prompt is already visible and already mid-selection, _onUserSelected()
-            // must not run again for either mode — otherwise animateCupertinoPromptIn()
-            // re-fades an already-opaque authPrompt from 0, producing the double
-            // fade-in, and _cupertinoRestPromptContainer gets needlessly rebuilt.
+
+
+
+
+
+
             if (wasAlreadyVisible && this._legacyPromptAnimationState === 'selection')
                 return;
 
@@ -458,10 +458,10 @@ export class GdmManager {
         dialog._onReset = (...args) => {
             const resetType = args[1];
 
-            // If there is no active user selected and not entering username:
-            // Any reset other than PROVIDE_USERNAME (0) is a trailing verifier artifact.
-            // If passed to _origOnReset, GNOME Shell's fallback 'else' branch would execute
-            // _hideUserListAndBeginVerification(), hiding the user list and resurrecting the prompt!
+
+
+
+
             if (!dialog._user && !this._isNotListed) {
                 if (resetType === 0) {
                     this._origOnReset(...args);
@@ -469,8 +469,8 @@ export class GdmManager {
                 return;
             }
 
-            // If resetType is REUSE_USERNAME (2), GDM is retrying for the current user.
-            // Do NOT tear down prompt state or return to idle!
+
+
             if (resetType === 2) {
                 this._origOnReset(...args);
                 return;
@@ -653,7 +653,7 @@ export class GdmManager {
                 return this._origAuthPromptReset(...args);
             }
 
-            // Soft reset (e.g. wrong password retry): do NOT animate out or return to picker!
+
             if (args[0]?.softReset) {
                 if (!dialog._user && !this._isNotListed)
                     return undefined;
@@ -690,22 +690,22 @@ export class GdmManager {
 
         this._origAuthPromptCancel = dialog._authPrompt.cancel.bind(dialog._authPrompt);
         dialog._authPrompt.cancel = () => {
-            if (dialog._authPrompt.verificationStatus === 3) // VERIFICATION_SUCCEEDED
+            if (dialog._authPrompt.verificationStatus === 3)
                 return;
 
             dialog._user = null;
             this._isNotListed = false;
 
-            // Force status to VERIFICATION_CANCELLED (4) so authPrompt.reset() emits
-            // ResetType.PROVIDE_USERNAME (0) instead of REUSE_USERNAME (2), ensuring
-            // GDM returns to user list and does not restart verification.
-            dialog._authPrompt.verificationStatus = 4; // VERIFICATION_CANCELLED
+
+
+
+            dialog._authPrompt.verificationStatus = 4;
             this._origAuthPromptCancel();
         };
 
         if (dialog._authPrompt.setMessage) {
             this._origAuthPromptSetMessage = dialog._authPrompt.setMessage.bind(dialog._authPrompt);
-            // Pass every argument through: GNOME 50 adds wiggleParameters.
+
             dialog._authPrompt.setMessage = (...args) => {
                 this._origAuthPromptSetMessage(...args);
                 if (this._promptStyling)
@@ -718,16 +718,16 @@ export class GdmManager {
         this._applyUserPresentation(this._currentWallpaperMetadata ?? null);
     }
 
-    /**
-     * Per-user presentation published by the user session in the cross-session
-     * manifest, so GDM matches that user's lockscreen. Missing fields (older
-     * manifests, or no user yet) fall back to the schema defaults.
-     * @param {object|null} meta
-     */
+
+
+
+
+
+
     _applyUserPresentation(meta) {
-        // GDM's CSA (Cupertino System Actions) state is a session-level presentation
-        // property established by the canonical entry session (defaultTheme). It must
-        // remain invariant across account selection switches in the GDM session.
+
+
+
         const defaultActions = this._wallpaperManager?.themeStore?.defaultTheme()?.meta?.systemActions;
         const systemActions = defaultActions ?? meta?.systemActions ?? (
             (this._settings && this._settings.settings_schema.has_key('cupertino-system-actions'))
@@ -781,7 +781,7 @@ export class GdmManager {
         const FADE_DURATION = 800;
         const FADE_MODE = Clutter.AnimationMode.EASE_OUT_QUAD;
 
-        // 1. Wallpaper view: smoothly ease in from 0 to 255
+
         const wpGroup = this._wallpaperManager?.view?._group;
         if (wpGroup) {
             wpGroup.remove_all_transitions();
@@ -794,7 +794,7 @@ export class GdmManager {
             });
         }
 
-        // 2. GNOME Shell default background group
+
         const bgGroup = Main.layoutManager?._backgroundGroup;
         if (bgGroup) {
             bgGroup.remove_all_transitions();
@@ -806,7 +806,7 @@ export class GdmManager {
             });
         }
 
-        // 3. macW1Y lockscreen clock: fade in & subtle slide down
+
         if (this._clockManager?.clockWrapper) {
             this._clockManager.clockWrapper.remove_all_transitions();
             this._clockManager.clockWrapper.visible = true;
@@ -821,7 +821,7 @@ export class GdmManager {
             });
         }
 
-        // 4. Login dialog (account avatar, username, password entry)
+
         dialog.remove_all_transitions();
         dialog.opacity = 0;
         dialog.ease({
@@ -830,7 +830,7 @@ export class GdmManager {
             mode: FADE_MODE,
         });
 
-        // 5. Top bar menubar: slide in from top
+
         if (Main.panel) {
             Main.panel.remove_all_transitions();
             const panelHeight = Main.panel.height || 34;
@@ -1126,7 +1126,7 @@ export class GdmManager {
         }
     }
 
-    // Delegations to sub-managers
+
     _getLockscreenMessageActor() { return this._messageManager.getMessageActor(); }
     _syncLockscreenMessageLayout() { this._messageManager.syncLayout(); }
     _updateLockscreenMessage(metadata = null) { this._messageManager.update(metadata); }

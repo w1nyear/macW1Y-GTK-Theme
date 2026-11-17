@@ -19,14 +19,14 @@ const ANCHOR_NAMES = [
     ['center', 'Center'],
 ];
 
-/**
- * The glass clock and the desktop widgets, above the wallpaper and below
- * every window, so they are hidden with the windows in the overview. Each
- * sits at a corner or the center of the primary monitor's work area, stacked
- * with the others there, unless the user moved it somewhere else. A right
- * click on one opens its menu, from which it can be moved (and the clock
- * resized). They can be kept to the first workspace.
- */
+
+
+
+
+
+
+
+
 export class DesktopLayer {
     _path;
     _settings;
@@ -133,7 +133,7 @@ export class DesktopLayer {
                 this._syncWorkspace();
             }),
         });
-        // The workspace switch animation covers the desktop with pictures of the workspaces until it ends.
+
         this._signals.push({ target: Main.uiGroup, id: Main.uiGroup.connect('child-added', (_group, actor) => this._addToSwitch(actor)) });
         this._signals.push({
             target: Main.uiGroup, id: Main.uiGroup.connect('child-removed', (_group, actor) => {
@@ -141,8 +141,8 @@ export class DesktopLayer {
                     this._syncWorkspace();
             }),
         });
-        // Mutter restacks the windows without telling; this runs before every
-        // frame is drawn, so the items are back in place before anyone sees them.
+
+
         this._signals.push({ target: global.stage, id: global.stage.connect('before-update', () => this._restack()) });
         startSyncLoop(this._frameSignalSlot, this._frameSlot, {
             alive: () => !!this._container,
@@ -170,8 +170,8 @@ export class DesktopLayer {
             this._container.visible = !this._firstWorkspaceOnly() || global.workspace_manager.get_active_workspace_index() === 0;
     }
 
-    // Puts a clone of the items on each workspace's wallpaper in the switch animation, so they move with it instead of
-    // disappearing under it. The clones draw their glass with the backdrop it last copied, which is the same wallpaper.
+
+
     _addToSwitch(actor) {
         const container = this._container;
         if (!container || !(actor instanceof MonitorGroup) || !canCloneSource(container))
@@ -187,8 +187,8 @@ export class DesktopLayer {
             }));
             cloned = true;
         }
-        // A hidden source would be mapped and unmapped by every clone paint. The animation covers the items until it
-        // ends, and child-removed hides them again.
+
+
         if (cloned)
             container.show();
     }
@@ -212,8 +212,8 @@ export class DesktopLayer {
             container.destroy();
     }
 
-    // The topmost window of desktop icons (DING and the like): it covers the
-    // whole desktop and would take every click meant for the items. DING hides
+
+
     // its window from global.get_window_actors(), hence the window group.
     _desktopWindow() {
         let top = null;
@@ -227,8 +227,8 @@ export class DesktopLayer {
         return top;
     }
 
-    // Right above the desktop icons' window when there is one, so the items
-    // get the pointer; otherwise on top of the wallpaper.
+
+
     _restack() {
         const container = this._container;
         if (!container)
@@ -248,7 +248,7 @@ export class DesktopLayer {
         }
     }
 
-    // Lays the items out before the next frame, and makes sure there is one.
+
     _queueLayout() {
         this._needsLayout = true;
         if (this._layoutLaterId || !this._container)
@@ -284,18 +284,18 @@ export class DesktopLayer {
             sanitizeAnchor(this._settings.get_string('desktop-widgets-position'));
     }
 
-    // Places every item: where it was moved to, or stacked at its anchor.
+
     _layout() {
         const area = this._workArea();
         const moved = parsePositions(this._settings.get_string('desktop-item-positions'));
         const stacks = new Map();
         const movedItems = [];
         for (const [id, item] of this._items) {
-            // The frame holds the item while it is being dragged.
+
             if (this._edit?.dragging && this._edit.item === item)
                 continue;
             const fraction = moved[id];
-            // A hidden item still counts for which of the others sit in its column.
+
             if (fraction) {
                 const [w, h] = item.size();
                 const [x, y] = placeAtFraction([fraction[0], fraction[1]], area, [w, fraction[2] ?? h]);
@@ -332,8 +332,8 @@ export class DesktopLayer {
         this._settings.set_string('desktop-item-positions', JSON.stringify(positions));
     }
 
-    // Puts an item back in the stack at `anchor`. A widget alone gets its own
-    // anchor; the others keep the one they share.
+
+
     _placeAt(id, anchor) {
         if (id === 'clock') {
             this._settings.set_string('glass-clock-position', anchor);
@@ -386,8 +386,8 @@ export class DesktopLayer {
         edit.start();
     }
 
-    // Keeps the clock's center where the resized frame's is, as far as the
-    // frame and the clock's shown part differ.
+
+
     _resized(clock, from, to) {
         const sx = to.width / from.width;
         const sy = to.height / from.height;
@@ -419,30 +419,30 @@ export class DesktopLayer {
     }
 }
 
-// Room between the item and its frame, px.
+
 const FRAME_GAP = 8;
 const HANDLE_SIZE = 14;
-// How far (px) from a handle's center a press still takes it.
+
 const HANDLE_REACH = 12;
-// The smallest the frame can be resized to, px.
+
 const MIN_SIZE = 48;
-// A moved item this near (px) to a guide goes onto it.
+
 const SNAP_REACH = 6;
-// How thick a guide is drawn, and how long the ticks at the ends of a gap are, px.
+
 const GUIDE_WIDTH = 2;
 const GAP_TICK = 9;
-// The handles: which edges each one moves, and its cursor.
+
 const HANDLES = [
     [-1, -1, 'nw'], [0, -1, 'n'], [1, -1, 'ne'], [1, 0, 'e'],
     [1, 1, 'se'], [0, 1, 's'], [-1, 1, 'sw'], [-1, 0, 'w'],
 ];
 
-/**
- * A blue frame round a desktop item, over everything else, that moves the
- * item when dragged and resizes it by its handles (when `resized` is given).
- * It holds the pointer and keyboard until Escape, Enter, the Done button or
- * a click outside it.
- */
+
+
+
+
+
+
 export class EditFrame {
     item;
     _callbacks;
@@ -452,9 +452,9 @@ export class EditFrame {
     _done;
     _grab = null;
     _drag = null;
-    // The frame being resized, while it is.
+
     _resizing = null;
-    // Drawn guides, reused from one move to the next, and what each one shows.
+
     _guideActors = [];
     _guides = [];
 
@@ -480,9 +480,9 @@ export class EditFrame {
         this._done = new St.Button({ style_class: 'liquid-glass-edit-done', label: 'Done', can_focus: true });
         this._done.connect('clicked', () => this.end());
         this._layer.add_child(this._done);
-        // Presses are told apart by where they are, not by the actor they reach:
-        // the actor under the pointer is only looked up again when the stage is
-        // redrawn, and the handles move with the item.
+
+
+
         this._layer.connect('button-press-event', (_a, event) => this._press(event));
         this._layer.connect('motion-event', (_a, event) => this._motion(event));
         this._layer.connect('button-release-event', (_a, event) => this._release(event));
@@ -505,15 +505,15 @@ export class EditFrame {
         this.sync();
     }
 
-    // The frame round the item, or round the size it is being resized to.
+
     _frameRect() {
         const r = this._resizing ?? itemRect(this.item);
         const g = FRAME_GAP;
-        return { x: r.x - g, y: r.y - g, width: r.width + g * 2, height: r.height + g * 2 }; // Rect that includes FRAME_GAP
+        return { x: r.x - g, y: r.y - g, width: r.width + g * 2, height: r.height + g * 2 };
     }
 
     _handleCenter(f, hx, hy) {
-        return [f.x + (hx + 1) / 2 * f.width, f.y + (hy + 1) / 2 * f.height]; // Maps handle side (-1, 0, 1) to position ratio (0, 0.5, 1). And then calculates the center of the handle.
+        return [f.x + (hx + 1) / 2 * f.width, f.y + (hy + 1) / 2 * f.height];
     }
 
     sync() {
@@ -558,7 +558,7 @@ export class EditFrame {
         });
     }
 
-    // A dotted line along the guide; a gap also gets a tick across each end.
+
     _drawGuide(actor, g) {
         if (!g)
             return;
@@ -589,7 +589,7 @@ export class EditFrame {
         cr.$dispose();
     }
 
-    // The work area of the monitor the frame's center is on.
+
     _workArea(f) {
         const cx = f.x + f.width / 2, cy = f.y + f.height / 2;
         const layout = Main.layoutManager;
@@ -597,8 +597,8 @@ export class EditFrame {
         return layout.getWorkAreaForMonitor(monitor?.index ?? layout.primaryIndex);
     }
 
-    // Returns the docks' rects. One that hides itself leaves the work area as it is
-    // but still covers the Done button when it slides in.
+
+
     _docks() {
         const dockNames = ['dashtodockContainer', 'DhruvaContainer'];
         return Main.layoutManager.uiGroup.get_children()
@@ -610,8 +610,8 @@ export class EditFrame {
         });
     }
 
-    // What a press at (x, y) takes: the handle there [hx, hy], the frame
-    // [0, 0], or nothing.
+
+
     _hit(x, y) {
         const f = this._frameRect();
         for (let i = 0; i < this._handles.length; i++) {
@@ -671,7 +671,7 @@ export class EditFrame {
         return Clutter.EVENT_STOP;
     }
 
-    /** Takes the frame away. */
+
     end() {
         if (this._grab) {
             Main.popModal(this._grab);
@@ -684,14 +684,14 @@ export class EditFrame {
     }
 }
 
-// An item's top left corner, stage coordinates. Its x and y, not its
-// allocation, which lags a frame behind a new position.
+
+
 function itemOrigin(item) {
     const [px, py] = item.actor.get_parent().get_transformed_position();
     return [px + item.actor.x, py + item.actor.y];
 }
 
-/** An item's shown part, stage coordinates. */
+
 export function itemRect(item) {
     const [x, y] = itemOrigin(item);
     const [bx, by, width, height] = item.bounds();

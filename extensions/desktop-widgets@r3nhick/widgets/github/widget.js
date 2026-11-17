@@ -1,8 +1,8 @@
-/*
- * GitHub Activity widget
- * Adapted for desktop-widgets@r3nhick rendering system
- * Sizes: 2×1 mini, 2×1, 2×2
- */
+
+
+
+
+
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -58,8 +58,8 @@ const translateDayRows = rows => {
 
 const decoder = new TextDecoder();
 
-// A single Soup session is shared by every github widget instance so that
-// HTTP connections are pooled instead of torn down and rebuilt per render.
+
+
 let sharedSession = null;
 
 function getSession() {
@@ -91,7 +91,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
     const accentHex = theme.accent || '#3584e4';
     const textRgba = (a) => cssColorToRgba(textColor, a);
 
-    // Empty cell color is explicitly #454545 so it stands out against the widget background
+
     const emptyCellColor = '#454545';
 
     const useGreen = settings?.get_boolean('github-use-green') ?? false;
@@ -111,7 +111,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 
     const [refW, refH] = sizeForWidget(widget);
 
-    // The .widget style adds 16px padding on each side
+
     const contentW = refW - WIDGET_PADDING * 2 - 2;
     const contentH = refH - WIDGET_PADDING * 2 - 2;
 
@@ -129,19 +129,19 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
             }
         : isLarge
             ? {
-                // 2×2: cells tightened to 15px so that besides 5 months
-                // the 5th stats row still fits — pitch 15+1=16,
-                // weeks = floor((361-30+1)/16) = 20 weeks (Jun..Oct),
-                // the grid gets 14px shorter, exactly above the new chip.
-                // monthLabels: 2×2 shows exactly 5 month labels.
+
+
+
+
+
                 avatar: 34, username: 16, badge: 16, label: 13, entryWidth: 170,
                 footer: 14, month: 15, spacing: 6, gap: 1, daysW: 30,
                 footerFont: 16, dayRows: translateDayRows(DAY_LABEL_ROWS), maxWeeks: 48, cellMax: 15, monthLabels: 5,
             }
             : {
-                // 2×1: cells tightened to 10px to fit
-                // 26 weeks (6 months) instead of 5 months — pitch 10+2=12,
-                // weeks = floor((361-28+2)/12) = 27. monthLabels: 6 labels.
+
+
+
                 avatar: 28, username: 14, badge: 12, label: 12, entryWidth: 150,
                 footer: 12, month: 14, spacing: 3, gap: 2, daysW: 28,
                 footerFont: 11, dayRows: translateDayRows(DAY_LABEL_ROWS), maxWeeks: 60, cellMax: 10, monthLabels: 6,
@@ -150,11 +150,11 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
     const avatarSize = layout.avatar;
     const cellGap = layout.gap;
     const dayLabelsWidth = layout.daysW;
-    // Day-label gap: a clear 7px strip between the Mon/Wed/Fri column and
-    // the first column of activity squares (the mini variants already sit
-    // at 6). Put on both the month-labels row and the grid row, so the
-    // month labels keep the canvas's exact coordinate space and stay
-    // centered over the months they belong to.
+
+
+
+
+
     const dayLabelGap = isMini ? 6 : 7;
 
     const mainGaps = isMini ? layout.spacing : layout.spacing * 2;
@@ -205,7 +205,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
     });
     body.add_child(mainBox);
 
-    // --- HEADER ---
+
     const headerBox = new St.BoxLayout({
         orientation: Clutter.Orientation.HORIZONTAL,
         x_align: Clutter.ActorAlign.FILL,
@@ -238,8 +238,8 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
     const usernameEntry = new St.Entry({
         can_focus: true,
         y_align: Clutter.ActorAlign.CENTER,
-        // Same compact editor chrome as the todo task editor: translucent
-        // band, tight paddings, left-flushed text (no fat entry frame).
+
+
         style: `font-size: ${layout.username}px; color: ${textColor}; `
             + `background-color: ${textRgba(0.07)}; border-radius: ${Math.round(layout.username * 0.7)}px; `
             + `padding: 3px 8px; width: ${layout.entryWidth}px;`,
@@ -247,8 +247,8 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
     usernameEntry.clutter_text.x_align = Clutter.ActorAlign.START;
     usernameEntry.hide();
 
-    // Accent-名为 checkmark next to the entry (same idea as the accent-color
-    // button in preferences): always visible while editing, click = commit.
+
+
     const usernameApplyButton = new St.Button({
         reactive: true,
         can_focus: false,
@@ -271,7 +271,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
         style: `font-size: ${layout.badge || 11}px; font-weight: 700; color: ${textColor};`,
     });
 
-    // In mini the status lives in the header (no footer row)
+
     const statusLabel = new St.Label({
         text: isMini ? _('Set user') : _('Click username to configure'),
         y_align: Clutter.ActorAlign.CENTER,
@@ -286,7 +286,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
     headerBox.add_child(badgeLabel);
     mainBox.add_child(headerBox);
 
-    // --- MATRIX ---
+
     const matrixBox = new St.BoxLayout({
         orientation: Clutter.Orientation.VERTICAL,
         x_expand: true,
@@ -294,7 +294,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
     });
     mainBox.add_child(matrixBox);
 
-    // Month labels container with same structure as matrixBody
+
     const monthLabelsContainer = new St.BoxLayout({
         orientation: Clutter.Orientation.HORIZONTAL,
         x_align: Clutter.ActorAlign.FILL,
@@ -303,15 +303,15 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
     });
     matrixBox.add_child(monthLabelsContainer);
 
-    // Spacer for day labels width (to align months with grid)
+
     const monthLabelsSpacer = new St.Widget({
         x_expand: false,
         style: `width: ${dayLabelsWidth}px;`,
     });
     monthLabelsContainer.add_child(monthLabelsSpacer);
 
-    // Month labels row (will be aligned with grid canvas)
-    const monthLabelsRow = new St.Widget({ 
+
+    const monthLabelsRow = new St.Widget({
         x_align: Clutter.ActorAlign.START,
         x_expand: true,
     });
@@ -332,10 +332,10 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
     });
     matrixBody.add_child(dayLabelsColumn);
 
-    // x_align: START — cells are drawn from x = 0 inside the canvas, so the
-    // canvas must not slide right by the leftover width (END did that): the
-    // month label row then shares the exact same coordinate space, keeping
-    // labels centered over the months they belong to.
+
+
+
+
     const gridCanvas = new St.DrawingArea({
         x_expand: true,
         x_align: Clutter.ActorAlign.START,
@@ -343,9 +343,9 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
     });
     matrixBody.add_child(gridCanvas);
 
-    // --- STATS (for large size only) ---
-    // statsBox stretches over the leftover height between the grid and the footer,
-    // so chips split the space evenly — no gaps right above the footer.
+
+
+
     let statsBox = null;
     if (isLarge) {
         statsBox = new St.BoxLayout({
@@ -357,7 +357,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
         mainBox.add_child(statsBox);
     }
 
-    // --- FOOTER (medium and large only) ---
+
     let footerBox = null;
     if (!isMini) {
         footerBox = new St.BoxLayout({
@@ -402,7 +402,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
         mainBox.add_child(footerBox);
     }
 
-    // --- MATRIX DRAWING ---
+
     const matrixGeometry = { size: 0, gap: 0, dataKey: '', cells: [] };
 
     function traceRoundedRect(ctx, x, y, w, h, radius) {
@@ -437,12 +437,12 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
         const monthBottomMargin = isMini ? 0 : 4;
         monthLabelsRow.style = `height: ${layout.month}px; margin-bottom: ${monthBottomMargin}px;`;
 
-        // One coordinate space with the canvas: the drawn grid spans exactly
-        // weeks * pitch - gap starting at row x = 0 (see gridCanvas above).
+
+
         const gridEndX = weeks * pitch - cellGap;
 
-        // First and last grid column each month is visible in, so a label can
-        // be centered over the month's own column block.
+
+
         const spans = [];
         for (let day = 0; day < weeks * 7; day++) {
             const dt = GLib.DateTime.new_from_unix_local(startUnix + day * 86400);
@@ -456,8 +456,8 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
                 spans.push({month, firstCol: col, lastCol: col});
         }
 
-        // The size defines a label count: when more months are visible,
-        // trim the OLDEST ones (partial months on the left edge of the grid).
+
+
         if (Number.isFinite(layout.monthLabels) && spans.length > layout.monthLabels)
             spans.splice(0, spans.length - layout.monthLabels);
 
@@ -472,14 +472,14 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
             });
             const [, labelWidth] = lbl.get_preferred_width(-1);
 
-            // A month that only slivers into the grid cannot host its label
-            // under itself — skip it instead of pinning it to an edge.
+
+
             if (endX - startX < labelWidth)
                 continue;
 
-            // Centered over the month's visible column block — no first-label
-            // pins, no cumulative min-spacing shifts, no even-spacing
-            // interpolation that drifted middle labels off their months.
+
+
+
             lbl.translation_x = Math.max(0, Math.min(
                 gridEndX - labelWidth,
                 Math.round((startX + endX - labelWidth) / 2)));
@@ -499,7 +499,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
                 style: `font-size: ${layout.label}px; font-weight: 800; color: ${textColor}; opacity: ${SECONDARY_OPACITY};`,
             });
 
-            // Disable text ellipsize to show full day names
+
             const clutterText = lbl.get_clutter_text();
             if (clutterText) {
                 clutterText.ellipsize = Pango.EllipsizeMode.NONE;
@@ -507,8 +507,8 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 
             dayLabelsColumn.add_child(lbl);
 
-            // Position each label at its natural size, centered on its row, so the
-            // glyphs are never force-shrunk into the tiny row slot (no clipping).
+
+
             const [, natW] = lbl.get_preferred_width(-1);
             const [, natH] = lbl.get_preferred_height(-1);
             const x = dayLabelsWidth >= natW ? Math.round((dayLabelsWidth - natW) / 2) : 0;
@@ -522,9 +522,9 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
         return levelColors[4 - level];
     }
 
-    // Cheap fingerprint of the contribution data. GitHub counts only ever
-    // change by growing, so (active days, total) changes whenever the fetched
-    // data differs — letting us skip rebuilding ~371 cells on identical polls.
+
+
+
     function contributionsSignature(byDate) {
         let sum = 0;
         let days = 0;
@@ -537,8 +537,8 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 
     function renderMatrix(contributionsByDate) {
         const byDate = contributionsByDate || latestByDate;
-        // The grid is anchored to today, so it must be rebuilt when the date
-        // rolls over even if the contribution counts are unchanged.
+
+
         const todayKey = GLib.DateTime.new_now_local().format('%Y-%m-%d');
         const dataKey = `${cellSize}|${cellGap}|${weeks}|${useGreen}|${contentW}|${todayKey}|${contributionsSignature(byDate)}`;
         if (dataKey === matrixGeometry.dataKey) return;
@@ -577,7 +577,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
         gridCanvas.queue_repaint();
     }
 
-    // --- STATS RENDERING (for large size only) ---
+
     function computeStats(byDate) {
         const today = GLib.DateTime.new_now_local();
         const todayKey = today.format('%Y-%m-%d');
@@ -588,7 +588,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
         let tempStreak = 0;
         let active = 0;
 
-        // Compute streaks from today backwards
+
         const checkDate = GLib.DateTime.new_now_local();
         for (let i = 0; i < 365; i++) {
             const d = checkDate.add_days(-i);
@@ -604,7 +604,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
             }
         }
 
-        // The most productive day among all days present in the GitHub data.
+
         let bestCount = 0;
         let bestKey = null;
         for (const [key, count] of byDate) {
@@ -616,9 +616,9 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 
         activeDaysCount = active;
         bestDayCount = bestCount;
-        // 'YYYY-MM-DD' is parsed manually: GLib.DateTime.new_from_iso8601 +
-        // format_utf8 is a GJS trap (format_utf8 does not exist and computeStats
-        // crashed, leaving the stats block empty).
+
+
+
         if (bestKey) {
             const [, bM, bD] = bestKey.split('-').map(Number);
             bestDayLabel = `${String(bD).padStart(2, '0')} ${monthNames()[bM - 1] ?? ''}`;
@@ -646,8 +646,8 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
             { icon: 'weather-clear-symbolic', label: _('Best day'), value: `${formatCount(bestDayCount)} · ${bestDayLabel}` },
         ];
 
-        // Each metric is a full-width chip: 4 chips × ~30px
-        // fit the 2×2 stats budget (~138px) without overflow.
+
+
         for (const stat of statsData) {
             const chip = new St.BoxLayout({
                 x_expand: true,
@@ -682,11 +682,11 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
         }
     }
 
-    // --- NETWORK ---
+
     function fetchContributions() {
         if (!username) return;
         setStatus(isMini ? '…' : _('Fetching…'));
-        
+
         const url = `https://github.com/users/${encodeURIComponent(username)}/contributions`;
         const message = Soup.Message.new('GET', url);
         session.send_and_read_async(message, GLib.PRIORITY_DEFAULT, state.cancellable, (s, res) => {
@@ -694,9 +694,9 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
             try {
                 const bytes = s.send_and_read_finish(res);
                 if (message.get_status() !== HTTP_OK) throw new Error(`HTTP ${message.get_status()}`);
-                
+
                 const html = decoder.decode(bytes.get_data());
-                
+
                 const byDate = new Map();
                 const tdRegex = /<td([^>]+)>/g;
                 let match;
@@ -716,10 +716,10 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
                     const text = match[2].trim();
                     const forM = attr.match(/for="([^"]+)"/);
                     if (!forM) continue;
-                    
+
                     const countMatch = text.match(/^([\d,]+|No)\s+contribution/);
                     if (!countMatch) continue;
-                    
+
                     const count = countMatch[1] === "No" ? 0 : parseInt(countMatch[1].replace(/,/g, ''), 10);
                     const dateStr = idToDate.get(forM[1]);
                     if (dateStr) {
@@ -733,7 +733,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
                 const h2Match = html.match(h2Regex);
                 const sumAll = [...byDate.values()].reduce((a, b) => a + b, 0);
                 const yearTotal = h2Match ? parseInt(h2Match[1].replace(/,/g, ''), 10) : sumAll;
-                
+
                 badgeLabel.text = _('%s commits').format(formatCount(yearTotal));
                 lastSyncTime = GLib.DateTime.new_now_local();
                 setStatus(isMini
@@ -759,7 +759,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
                 if (!cancelled) {
                     setProfileUrl(false);
                     const cached = latestByDate.size > 0;
-                    // Show the error only when there is no cache
+
                     if (cached && lastSyncTime) {
                         setStatus(isMini
                             ? lastSyncTime.format('%H:%M')
@@ -818,7 +818,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
                     );
                 }
             } catch (err) {
-                // Ignore cancel errors
+
             }
         });
     }
@@ -828,7 +828,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
         loadAvatar();
     }
 
-    // --- USERNAME EDITING ---
+
     const startEdit = () => {
         if (state.editing) return;
         state.editing = true;
@@ -854,9 +854,9 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
             global.stage.set_key_focus(null);
         if (!commit || submitted === '' || submitted === username) return;
 
-        // Update local state immediately: the header shows the name and the
-        // matrix resets even before the settings-changed re-render lands
-        // (this is what made the typed name appear to "not apply").
+
+
+
         username = submitted;
         updateHeader();
         setProfileUrl(false);
@@ -894,10 +894,10 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
         return Clutter.EVENT_STOP;
     });
 
-    // Plain-Enter commit: on GNOME 51 the Return key arrives as the
-    // Clutter.Text 'activate' signal (journal-proofed: activate fired while
-    // no key-press reached the text). The key-press fallback below stays for
-    // KP_Enter/ISO_Enter variants; endEdit is re-entrant (guard on editing).
+
+
+
+
     usernameEntry.clutter_text.connect('activate', () => endEdit(true));
 
     usernameEntry.clutter_text.connect('key-press-event', (_actor, event) => {
@@ -906,21 +906,21 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
         if (sym === Clutter.KEY_Escape) { endEdit(false); return Clutter.EVENT_STOP; }
         return Clutter.EVENT_PROPAGATE;
     });
-    // Clicking the checkmark moves stage focus off the entry BEFORE the
-    // click lands, so don't treat that specific focus loss as cancel.
+
+
     usernameEntry.clutter_text.connect('key-focus-out', () => {
         if (global.stage.get_key_focus() === usernameApplyButton) return;
         endEdit(false);
     });
 
-    // --- REFRESH TIMER ---
+
     state.timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, REFRESH_INTERVAL, () => {
         if (isActorDestroyed(body) || mainBox.get_parent() !== body) return GLib.SOURCE_REMOVE;
         fetchContributions();
         return GLib.SOURCE_CONTINUE;
     });
 
-    // --- CLEANUP ---
+
     body.connect('destroy', () => {
         profileUrls.delete(widget.id);
         state.cancellable.cancel();
@@ -929,7 +929,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
             global.stage.set_key_focus(null);
     });
 
-    // --- CACHED CONTRIBUTIONS ---
+
     const loadContributionsCache = (data) => {
         if (!data || !Array.isArray(data.contributions) || data.username !== username)
             return;
@@ -949,8 +949,8 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
         const sumAll = [...cached.values()].reduce((a, b) => a + b, 0);
         const yearTotal = latestYear !== null ? (data.total[latestYear] ?? sumAll) : sumAll;
         badgeLabel.text = _('%s commits').format(formatCount(yearTotal));
-        
-        // Restore lastSyncTime from the cache when available
+
+
         if (data.lastSync) {
             lastSyncTime = GLib.DateTime.new_from_unix_local(data.lastSync);
             setStatus(isMini
@@ -967,7 +967,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
         }
     };
 
-    // --- INIT ---
+
     renderMatrix();
     updateHeader();
 

@@ -46,7 +46,7 @@ export default class DashAnimatorPreferences extends ExtensionPreferences {
 
         const settings = this.getSettings();
 
-        // ── Home page ────────────────────────────────────────────────────────
+
         const homePage = new Adw.PreferencesPage({
             title: 'Home',
             icon_name: 'go-home-symbolic',
@@ -108,7 +108,7 @@ export default class DashAnimatorPreferences extends ExtensionPreferences {
 
         homeGroup.add(homeBox);
 
-        // ── Support/Donations group ──────────────────────────────────────────
+
         const supportGroup = new Adw.PreferencesGroup({
             title: 'Enjoying this extension?',
             description: 'Consider supporting its development!',
@@ -169,7 +169,7 @@ export default class DashAnimatorPreferences extends ExtensionPreferences {
 
         supportGroup.add(saweriaRow);
 
-        // ── Resources group ──────────────────────────────────────────────────
+
         const resourcesGroup = new Adw.PreferencesGroup({ title: 'Resources' });
 
         const repoRow = new Adw.ActionRow({
@@ -203,13 +203,13 @@ export default class DashAnimatorPreferences extends ExtensionPreferences {
 
         window.add(homePage);
 
-        // ── Configuration page ────────────────────────────────────────────────
+
         const configPage = new Adw.PreferencesPage({
             title: 'Configuration',
             icon_name: 'preferences-system-symbolic',
         });
 
-        // ── Bounce animation group ────────────────────────────────────────────
+
         const bounceGroup = new Adw.PreferencesGroup({
             title: 'Icon Bounce',
         });
@@ -222,7 +222,7 @@ export default class DashAnimatorPreferences extends ExtensionPreferences {
         bounceGroup.add(urgentBounceRow);
         configPage.add(bounceGroup);
 
-        // ── Dock theme group ──────────────────────────────────────────────────
+
         const themeGroup = new Adw.PreferencesGroup({
             title: 'Dock Theme',
             description: 'Override Dash to Dock styling with macW1Y-inspired themes. Note that toggling "Shrink the Dock" off may not work as expected when this theming is active.',

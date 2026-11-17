@@ -43,9 +43,9 @@ static int uinput_fd = -1;
 static int sock_fd = -1;
 
 struct TouchpadConfig {
-    int drag_mode;          // 0: fullscreen, 1: normal
-    int copy_paste_enabled; // 0: disabled, 1: enabled
-    int gesture_delay_ms;   // delay in ms (default 250)
+    int drag_mode;
+    int copy_paste_enabled;
+    int gesture_delay_ms;
 };
 
 static void read_touchpad_config(struct TouchpadConfig *cfg) {
@@ -104,13 +104,13 @@ static void emit_key_combo(uint16_t mod, uint16_t key) {
     if (uinput_fd < 0) return;
     emit_event(uinput_fd, EV_KEY, mod, 1);
     emit_syn(uinput_fd);
-    usleep(25000); // 25ms
+    usleep(25000);
     emit_event(uinput_fd, EV_KEY, key, 1);
     emit_syn(uinput_fd);
-    usleep(35000); // 35ms
+    usleep(35000);
     emit_event(uinput_fd, EV_KEY, key, 0);
     emit_syn(uinput_fd);
-    usleep(25000); // 25ms
+    usleep(25000);
     emit_event(uinput_fd, EV_KEY, mod, 0);
     emit_syn(uinput_fd);
 }
@@ -236,7 +236,7 @@ static int create_uinput_device(void) {
     int fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
     if (fd < 0) return -1;
 
-    // Keyboard keys only for Ctrl+C, Ctrl+V, Super
+
     ioctl(fd, UI_SET_EVBIT, EV_KEY);
     ioctl(fd, UI_SET_KEYBIT, KEY_LEFTCTRL);
     ioctl(fd, UI_SET_KEYBIT, KEY_C);
@@ -306,7 +306,7 @@ int main(void) {
 
         ssize_t n = read(touch_fd, &ev, sizeof(ev));
         if (n < (ssize_t)sizeof(ev)) {
-            usleep(2000); // 2ms sleep when idle
+            usleep(2000);
             continue;
         }
 
@@ -336,7 +336,7 @@ int main(void) {
                     quad_down_time = now;
                     quad_max_dist = 0;
 
-                    // Immediately cancel any active 3-finger gesture
+
                     if (current_mode == MODE_DRAG) {
                         send_to_shell("DRAG_END\n");
                     } else if (current_mode == MODE_ALTTAB) {
@@ -358,16 +358,16 @@ int main(void) {
                     }
                 } else if (quadrap == 0) {
                     long long duration = now - quad_down_time;
-                    // Reliable 4-finger tap: duration between 30ms and 450ms, max motion < 180 units
+
                     if (duration >= 30 && duration <= 450 && quad_max_dist < 180) {
                         long long time_since_last = now - last_quad_tap_time;
                         if (last_quad_tap_time > 0 && time_since_last <= 400) {
-                            // Double tap -> Launchpad / App Grid
+
                             fprintf(stderr, "[mac-touchpad-daemon] 4-finger DOUBLE tap detected!\n");
                             send_to_shell("4FG_DOUBLE_TAP\n");
                             last_quad_tap_time = 0;
                         } else {
-                            // Single tap -> Overview toggle
+
                             fprintf(stderr, "[mac-touchpad-daemon] 4-finger SINGLE tap detected!\n");
                             send_to_shell("4FG_TAP\n");
                             last_quad_tap_time = now;
@@ -379,7 +379,7 @@ int main(void) {
                 long long now = get_time_ms();
 
                 if (tripletap == 1) {
-                    // Do not initiate 3-finger gestures immediately after 4-finger events
+
                     if (now - last_quad_event_time >= 180 && !quadrap) {
                         read_touchpad_config(&config);
                         current_mode = MODE_PENDING_TRI;
@@ -418,7 +418,7 @@ int main(void) {
         } else if (ev.type == EV_SYN && ev.code == SYN_REPORT) {
             long long now = get_time_ms();
 
-            // Track 4-finger displacement
+
             if (quadrap) {
                 int count = 0, sum_x = 0, sum_y = 0;
                 for (int i = 0; i < MAX_SLOTS; i++) {
@@ -434,7 +434,7 @@ int main(void) {
                 }
             }
 
-            // Process 3-finger gestures
+
             if (tripletap && !quadrap && (now - last_quad_event_time >= 180)) {
                 int xs[3], ys[3];
                 int found = 0;
@@ -477,19 +477,19 @@ int main(void) {
                     int delta_y_start = centroid_y - tri_down_y;
                     long long elapsed = now - tri_down_time;
 
-                    // Sort fingers by y (top to bottom: y increases downwards)
+
                     int it = 0, im = 1, ib = 2;
                     if (ys[it] > ys[im]) { int t = it; it = im; im = t; }
                     if (ys[im] > ys[ib]) { int t = im; im = ib; ib = t; }
                     if (ys[it] > ys[im]) { int t = it; it = im; im = t; }
-                    int x_T = xs[it], y_T = ys[it]; // Top (середній палець зверху)
-                    int x_M = xs[im], y_M = ys[im]; // Mid (вказівний палець зліва)
-                    int x_B = xs[ib], y_B = ys[ib]; // Bottom (головний/великий палець внизу)
+                    int x_T = xs[it], y_T = ys[it];
+                    int x_M = xs[im], y_M = ys[im];
+                    int x_B = xs[ib], y_B = ys[ib];
 
-                    // Enclosed triangle area (S = 0.5 * |x_T*(y_M - y_B) + x_M*(y_B - y_T) + x_B*(y_T - y_M)|)
+
                     double area = 0.5 * fabs((double)(x_T - x_M) * (y_B - y_M) - (double)(x_B - x_M) * (y_T - y_M));
 
-                    // Geometry classification
+
                     int is_horizontal_row = 0;
                     if (span_x >= 70) {
                         if (span_y <= (int)(span_x * 0.45) || span_y <= 90) {
@@ -501,11 +501,11 @@ int main(void) {
 
                     int is_vertical_column = (span_y >= 300 && span_x <= (int)(span_y * 0.35));
 
-                    // PENDING MODE CLASSIFICATION
+
                     if (current_mode == MODE_PENDING_TRI) {
-                        // 1. PINCH GESTURES (Copy & Paste)
+
                         if (config.copy_paste_enabled && tri_start_slots_captured) {
-                            // 1A. Pinch In (Copy): fingers converge together
+
                             if (tri_initial_spread >= 140.0) {
                                 if ((current_spread <= tri_initial_spread * 0.70) || (tri_initial_spread - current_spread >= 110.0)) {
                                     current_mode = MODE_PINCH_DONE;
@@ -514,7 +514,7 @@ int main(void) {
                                     emit_key_combo(KEY_LEFTCTRL, KEY_C);
                                 }
                             }
-                            // 1B. Pinch Out / Spread (Paste): fingers expand outwards
+
                             if (tri_initial_spread <= 400.0 && current_mode == MODE_PENDING_TRI) {
                                 if ((current_spread >= tri_initial_spread * 1.35) || (current_spread - tri_initial_spread >= 110.0)) {
                                     current_mode = MODE_PINCH_DONE;
@@ -525,8 +525,8 @@ int main(void) {
                             }
                         }
 
-                        // 2. HORIZONTAL ROW -> OVERVIEW (Swipe Up / Down)
-                        // Even if fingers are close together in a row, smoothly trigger overview!
+
+
                         if (current_mode == MODE_PENDING_TRI && is_horizontal_row) {
                             if (delta_y_start <= -35) {
                                 current_mode = MODE_OVERVIEW;
@@ -541,7 +541,7 @@ int main(void) {
                             }
                         }
 
-                        // 3. VERTICAL COLUMN -> ALTTAB (Horizontal swipe)
+
                         if (current_mode == MODE_PENDING_TRI && is_vertical_column) {
                             if (abs(delta_x_start) >= 40) {
                                 current_mode = MODE_ALTTAB;
@@ -554,13 +554,13 @@ int main(void) {
                             }
                         }
 
-                        // 4. MOVE / DRAG (CIRCLE FORMATION: "якщо розташувати кругом")
+
                         if (current_mode == MODE_PENDING_TRI) {
                             int is_circle_formation = 0;
                             if (!is_horizontal_row && !is_vertical_column) {
-                                // Three fingers form a 2D circle/cluster
+
                                 if (span_x >= 35 && span_y >= 35 && area >= 250.0) {
-                                    // Spread must be stable (not pinching in or spreading out)
+
                                     if (tri_initial_spread > 0 &&
                                         current_spread >= tri_initial_spread * 0.68 &&
                                         current_spread <= tri_initial_spread * 1.32) {
@@ -588,7 +588,7 @@ int main(void) {
                         }
                     }
 
-                    // ACTIVE EXECUTION
+
                     if (current_mode == MODE_DRAG) {
                         int dx = centroid_x - drag_last_x;
                         int dy = centroid_y - drag_last_y;
@@ -625,7 +625,7 @@ int main(void) {
                             last_alttab_step_time = now;
                         }
                     } else if (current_mode == MODE_OVERVIEW || current_mode == MODE_PINCH_DONE) {
-                        // Handled; wait for finger release
+
                     }
                 }
             }

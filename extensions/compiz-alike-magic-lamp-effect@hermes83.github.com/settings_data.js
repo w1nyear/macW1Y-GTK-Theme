@@ -31,19 +31,19 @@ export class SettingsData {
             get: function () { return settings.get_string(this.key); },
             set: function (v) { settings.set_string(this.key, v); }
         };
-    
+
         this.DURATION = {
             key: 'duration',
             get: function () { return settings.get_double(this.key); },
             set: function (v) { settings.set_double(this.key, v); }
         };
-    
+
         this.X_TILES = {
             key: 'x-tiles',
             get: function () { return settings.get_double(this.key); },
             set: function (v) { settings.set_double(this.key, v); }
         };
-    
+
         this.Y_TILES = {
             key: 'y-tiles',
             get: function () { return settings.get_double(this.key); },

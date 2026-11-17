@@ -7,13 +7,13 @@ import {Extension, InjectionManager} from 'resource:///org/gnome/shell/extension
 const HOTSPOT_LABEL = _('Turn On Wi-Fi Hotspot');
 const WIFI_PANEL_DESKTOP_FILE = 'gnome-wifi-panel.desktop';
 
-// Hotspot activation is delegated to NetworkManager CLI.
+
 const ENABLE_WIFI_COMMAND = ['nmcli', 'radio', 'wifi', 'on'];
 const ENABLE_HOTSPOT_COMMAND = ['nmcli', 'device', 'wifi', 'hotspot'];
 
 class HotspotMenuController {
     constructor(logger) {
-        this._entries = new Map(); // menu -> {indicator, menu, item, signalId}
+        this._entries = new Map();
         this._cancellable = new Gio.Cancellable();
         this._logger = logger;
     }
@@ -77,13 +77,13 @@ class HotspotMenuController {
             this._logger?.message(`failed to enable Wi-Fi: ${result.stderr}`);
             return;
         }
-    
+
         result = await this._runCommand(ENABLE_HOTSPOT_COMMAND);
         if (!result.ok) {
             this._logger?.message(`failed to enable hotspot: ${result.stderr}`);
             return;
         }
-    
+
         this._syncEntry(indicator._wirelessToggle.menu, indicator);
     }
 
@@ -106,7 +106,7 @@ class HotspotMenuController {
                     const [, , stderr] = p.communicate_utf8_finish(res);
                     resolve({ok: p.get_successful(), stderr: stderr ?? ''});
                 } catch (e) {
-                    // Gio.IOErrorEnum.CANCELLED is expected during disable()
+
                     if (e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
                         resolve({ok: false, stderr: 'cancelled'});
                     else

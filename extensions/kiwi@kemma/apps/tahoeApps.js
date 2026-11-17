@@ -13,9 +13,9 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { dockContainers } from './dockUtils.js';
 import { t } from './mac_i18n.js';
 
-// Liquid-glass helpers live in another extension. Static
-// `import ... from 'file://' + ...` is a SyntaxError (module specifiers must
-// be string literals), so load them dynamically at runtime.
+
+
+
 let LiquidEffect = null;
 let UnpickableActor = null;
 let UILayerSampler = null;
@@ -43,9 +43,9 @@ import(_LG_BASE + '/utils.js').then(m => {
         syncGlassCaptureClip = m.syncGlassCaptureClip;
 }).catch(e => console.warn(`[tahoe-apps] liquid-glass utils unavailable: ${e}`));
 
-// Only Clutter.ColorizeEffect exists in this build (Desaturate and
-// BrightnessContrast throw at construction). Single effect, tint passed
-// via constructor.
+
+
+
 function _newTintChain(r, g, b) {
     try {
         const effect = new Clutter.ColorizeEffect({
@@ -58,10 +58,10 @@ function _newTintChain(r, g, b) {
     }
 }
 
-// macW1Y Tahoe-style "Applications" (Launchpad) window that replaces
-// GNOME's app grid. Grabs the shell's toggle-application-view binding
-// and intercepts overview.showApps()/selectApp() so every activation
-// path (Super+A, dock button, D-Bus) lands on this window.
+
+
+
+
 
 const KEYBINDING = 'toggle-application-view';
 
@@ -73,17 +73,17 @@ const CATEGORIES = [
     {title: 'Other', match: null},
 ];
 
-const ITEM_W = 88;       // nominal item width used for column math
-const ROW_GAP = 8;       // vertical: keep in sync with .tahoe-section spacing
-const COL_GAP = 1;       // horizontal: keep in sync with .tahoe-row spacing
-const CONTENT_PAD = 22;   // keep in sync with .tahoe-content horizontal padding
-const SCROLLBAR_GAP = 0;  // full width: the grid is clipped to the window
+const ITEM_W = 88;
+const ROW_GAP = 8;
+const COL_GAP = 1;
+const CONTENT_PAD = 22;
+const SCROLLBAR_GAP = 0;
 
-// Uniform visual icon size, whitespace ignored (reference: the clock icon,
-// whose content fills its frame edge to edge). Resolves the app GIcon to a
-// pixbuf, trims transparent padding, scales the CONTENT (not the canvas) so
-// its longest side equals iconSize, and centers it. Anything unresolvable
-// returns null and the caller falls back to the stock texture path.
+
+
+
+
+
 const _normCache = new Map();
 const NORM_LOAD_PX = 192;
 
@@ -117,13 +117,13 @@ function _normPixbufForGicon(gicon) {
                     if (path)
                         return GdkPixbuf.Pixbuf.new_from_file_at_scale(path, NORM_LOAD_PX, NORM_LOAD_PX, true);
                 } catch (_) {
-                    // next name
+
                 }
             }
             return null;
         }
     } catch (_) {
-        // unresolvable
+
     }
     return null;
 }
@@ -190,8 +190,8 @@ function _loadLiquidGlassSettings() {
     try {
         return new Gio.Settings({schema_id: LG_SCHEMA_ID});
     } catch (_) {
-        // Not in the default GSettings source (extension schemas live in
-        // the extension's own schemas/ dir). Fall through to manual load.
+
+
     }
     try {
         const dir = GLib.build_filenamev([GLib.get_home_dir(),
@@ -202,7 +202,7 @@ function _loadLiquidGlassSettings() {
         if (schema)
             return new Gio.Settings({settings_schema: schema});
     } catch (_) {
-        // liquid-glass not installed
+
     }
     return null;
 }
@@ -241,7 +241,7 @@ class TahoeApps {
         this._workspaceId = 0;
         this._overviewShowingId = 0;
 
-        // Redirect showApps / selectApp to our own window.
+
         this._origShowAppsOwn = Object.hasOwn(Main.overview, 'showApps');
         this._origShowApps = Main.overview.showApps;
         Main.overview.showApps = () => this._toggle();
@@ -250,7 +250,7 @@ class TahoeApps {
         this._origSelectApp = Main.overview.selectApp;
         Main.overview.selectApp = () => this._toggle();
 
-        // Grab the Launchpad keybinding with our own handler.
+
         this._keySettings = new Gio.Settings({
             schema_id: 'org.gnome.shell.keybindings',
         });
@@ -270,8 +270,8 @@ class TahoeApps {
                 this._close();
         });
 
-        // Live-apply appearance settings: reopen the window with the new
-        // values while it is shown.
+
+
         this._settingsChangedId = settings.connect('changed', () => {
             if (!this._overlay)
                 return;
@@ -330,7 +330,7 @@ class TahoeApps {
             null;
     }
 
-    // ---------------------------------------------------------------- toggling
+
 
     _toggle() {
         if (this._overlay) {
@@ -390,7 +390,7 @@ class TahoeApps {
         }
     }
 
-    // ---------------------------------------------------------------- building
+
 
     _monitorAtPointer() {
         try {
@@ -401,13 +401,13 @@ class TahoeApps {
             if (monitor)
                 return monitor;
         } catch (e) {
-            // fall through to the primary monitor
+
         }
         return Main.layoutManager.primaryMonitor;
     }
 
-    // Idle step 1: glass actors + effect (shader compile), inserted
-    // below the already-visible overlay.
+
+
     _setupGlassStep1() {
         const p = this._pendingGlass;
         if (!p || !this._overlay)
@@ -429,7 +429,7 @@ class TahoeApps {
         bgActor.add_child(liquidBox);
         this._liquidBox = liquidBox;
 
-        // dummyBreaker: prevents the BMS black-screen optimization bug.
+
         const dummyBreaker = new UnpickableActor();
         dummyBreaker.set_name('optimization-breaker');
         dummyBreaker.set_size(1.0, 1.0);
@@ -448,7 +448,7 @@ class TahoeApps {
         liquidBox.add_child(cloneContainer);
         this._cloneContainerRef = cloneContainer;
 
-        // Glass rect = window rect grown by PAD, in monitor-local coords.
+
         const gX = p.winX + p.overlayX - monitor.x - PAD;
         const gY = p.winY + p.overlayY - monitor.y - PAD;
         this._glassState = null;
@@ -469,9 +469,9 @@ class TahoeApps {
                 winW + PAD * 2 + CLIP_PAD * 2,
                 winH + PAD * 2 + CLIP_PAD * 2);
             effect.setShadowMaxRadius(CLIP_PAD - 20);
-            // A visible soft shadow under the window: stronger and wider
+
             // than the liquid-glass defaults (local override — the global
-            // shadow settings keep driving the dock and notifications).
+
             effect._setFloat('shadow_radius', 56.0);
             effect._setFloat('shadow_intensity', 0.2);
             effect.setBlurRadius(this._settings.get_int('tahoe-glass-blur'));
@@ -503,7 +503,7 @@ class TahoeApps {
         });
     }
 
-    // Idle step 2: clone rebuild + sampler (the slowest part) + sync tick.
+
     _setupGlassStep2() {
         const p = this._pendingGlass;
         this._pendingGlass = null;
@@ -530,9 +530,9 @@ class TahoeApps {
             return;
         }
 
-        // Per-frame clone sync (dock/OSD manager pattern): keeps the
-        // offscreen capture of everything behind the window up to date so
-        // the shader refracts live content.
+
+
+
         if (this._glassState) {
             this._laters = global.compositor.get_laters();
             const tick = () => {
@@ -635,7 +635,7 @@ class TahoeApps {
             return Clutter.EVENT_STOP;
         });
 
-        // Theme: explicit override, else system scheme + GTK theme name.
+
         let dark = false;
         const themeMode = this._settings.get_string('tahoe-theme');
         if (themeMode === 'dark') {
@@ -654,30 +654,30 @@ class TahoeApps {
                 else
                     dark = false;
             } catch (e) {
-                // light theme fallback
+
             }
         }
         if (dark)
             overlay.add_style_class_name('tahoe-dark');
         this._tahoeDark = dark;
 
-        // Liquid glass (LiquidEffect from the liquid-glass extension) with the
-        // dock/OSD architecture: bgActor + liquidBox cover the whole monitor,
-        // the shader is told where the window lives via setGlassGeometry().
-        // WindowCloneManager + UILayerSampler deposit clones of everything
-        // behind the window (windows, dock, panel) into the effect's offscreen
-        // capture — that content is what the refraction distorts, exactly like
-        // in the dock.
-        // Glass is heavy (shader compile + clone rebuild blocks the main
-        // thread ~1s, freezing dock/panel glass). Paint + animate first,
-        // build glass in two idle steps.
+
+
+
+
+
+
+
+
+
+
         this._pendingGlass = {
             monitor, winW, winH, tahoeRadius,
             winX: win.x, winY: win.y,
             overlayX: overlay.x, overlayY: overlay.y,
         };
 
-        // Header: icon + search entry + "…" button.
+
         const header = new St.BoxLayout({
             style_class: 'tahoe-header',
             x_expand: true,
@@ -720,10 +720,10 @@ class TahoeApps {
         header.add_child(moreBtn);
         win.add_child(header);
 
-        // Thin black divider between search and categories.
+
         win.add_child(this._makeDivider());
 
-        // Category pills (jump links).
+
         const pillsBox = new St.BoxLayout({
             style_class: 'tahoe-pills',
             x_expand: true,
@@ -757,10 +757,10 @@ class TahoeApps {
         }
         win.add_child(pillsBox);
 
-        // Thin black divider between categories and applications.
+
         win.add_child(this._makeDivider());
 
-        // Scrollable grid.
+
         const content = new St.BoxLayout({
             style_class: 'tahoe-content',
             vertical: true,
@@ -777,8 +777,8 @@ class TahoeApps {
             y_expand: true,
             clip_to_allocation: true,
             hscrollbar_policy: St.PolicyType.NEVER,
-            // AUTOMATIC: St itself drives the wheel, including touchpad
-            // smooth scrolling — the bar below is fully hidden by CSS.
+
+
             vscrollbar_policy: St.PolicyType.AUTOMATIC,
             enable_mouse_scrolling: true,
             child: content,
@@ -817,7 +817,7 @@ class TahoeApps {
 
         overlay.add_child(win);
 
-        // Appearance animation: fade + slight scale-up.
+
         win.set_pivot_point(0.5, 0.5);
         win.opacity = 0;
         win.scale_x = 0.96;
@@ -881,7 +881,7 @@ class TahoeApps {
             mode: Clutter.AnimationMode.EASE_OUT_BACK,
         });
 
-        // Glass builds in idle steps so the window paints + animates first.
+
         this._glassIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
             this._glassIdleId = 0;
             this._setupGlassStep1();
@@ -889,12 +889,12 @@ class TahoeApps {
         });
     }
 
-    // ---------------------------------------------------------------- app data
 
-    // Accepts '#rrggbb[aa]' and 'rgb()/rgba()' (what Gtk.ColorButton writes).
-    // Returns a plain {red, green, blue, alpha} struct for Clutter effects.
-    // Builds a real Cogl.Color: plain JS objects do not reliably marshal
-    // into the effect's tint struct (silent white = invisible tint).
+
+
+
+
+
     _makeTintColor(spec) {
         const c = this._parseAccentColor(spec);
         if (!c)
@@ -938,8 +938,8 @@ class TahoeApps {
         return null;
     }
 
-    // Icon styles removed - plain stock icons only. Kept as a no-op
-    // so existing call sites don't need touching.
+
+
     _applyIconTint(icon) {
         return;
     }
@@ -960,7 +960,7 @@ class TahoeApps {
                 if (!id)
                     continue;
 
-                // Tahoe: Finder and the Launchpad stub are not apps.
+
                 if (id === 'org.gnome.Nautilus.desktop' ||
                     id === 'org.gnome.Shell.Extensions.Kiwi.Launchpad.desktop')
                     continue;
@@ -989,7 +989,7 @@ class TahoeApps {
                     category: this._categoryOf(cats),
                 });
             } catch (e) {
-                // Skip entries with invalid metadata (e.g. bad encodings).
+
             }
         }
 
@@ -1007,7 +1007,7 @@ class TahoeApps {
         return 'Other';
     }
 
-    // ------------------------------------------------------------------- grid
+
 
     _rebuildGrid() {
         if (!this._content)
@@ -1042,8 +1042,8 @@ class TahoeApps {
             this._pillsBox.visible = false;
         }
 
-        // Recommended: the most recently launched apps, one row, on top —
-        // pills stay category-only, so this section never takes a pill.
+
+
         if (this._groupByCategory && this._recents.length) {
             const seen = new Set();
             const recentRecords = [];
@@ -1104,7 +1104,7 @@ class TahoeApps {
             }
 
             this._content.add_child(section);
-            // Divider between Recommended and the category list below it.
+
             if (group.title === 'Recommended') {
                 secRec.divider = this._makeDivider();
                 this._content.add_child(secRec.divider);
@@ -1133,8 +1133,8 @@ class TahoeApps {
 
         const iconSize = Math.round(
             this._settings.get_int('tahoe-app-icon-size') * (this._scale ?? 1));
-        // uniform visual size, whitespace ignored (see _normalizedAppIcon);
-        // anything unresolvable falls back to the stock texture path.
+
+
         let icon = null;
         try {
             const gicon = record.info?.get_icon?.();
@@ -1180,9 +1180,9 @@ class TahoeApps {
             fired = true;
             this._launch(record);
         };
-        // Launch on press: St.Button 'clicked' never fires under the modal
-        // grab, so the press path is the primary trigger; 'clicked' stays as
-        // the keyboard (Enter) fallback.
+
+
+
         button.connect('button-press-event', () => {
             fire();
             return Clutter.EVENT_STOP;
@@ -1191,11 +1191,11 @@ class TahoeApps {
         return button;
     }
 
-    // ------------------------------------------------------------- header icon
 
-    // App Store logo recoloured to the current text colour (dark text on the
-    // light theme, light text on the dark one) — SVG fills are rewritten to
-    // the target colour and cached, then loaded as a FileIcon.
+
+
+
+
     _makeHeaderIcon() {
         const S = this._scale ?? 1;
         const icon = new St.Icon({
@@ -1204,10 +1204,10 @@ class TahoeApps {
             y_align: Clutter.ActorAlign.CENTER,
             style_class: 'tahoe-header-icon',
         });
-        // Поднять иконку на уровень текста Applications.
+
         icon.translation_y = 0;
         try {
-            // Match the hint text exactly: same colour at 0.7 opacity.
+
             const color = this._tahoeDark ? '#f5f5f7' : '#3c3c43';
             const src = Gio.File.new_for_path('/home/micronix/app-store-logo.svg');
             const [, bytes] = src.load_contents(null);
@@ -1230,7 +1230,7 @@ class TahoeApps {
         return icon;
     }
 
-    // Thin black 1px divider between the window's stacked areas.
+
     _makeDivider() {
         return new St.Widget({
             style_class: 'tahoe-divider',
@@ -1238,7 +1238,7 @@ class TahoeApps {
         });
     }
 
-    // ----------------------------------------------------------------- filter
+
 
     _applyFilter() {
         if (!this._entry)
@@ -1269,7 +1269,7 @@ class TahoeApps {
         this._updateActivePill();
     }
 
-    // ------------------------------------------------------------------ pills
+
 
     _setActivePill(title) {
         for (const pill of this._pills) {
@@ -1325,7 +1325,7 @@ class TahoeApps {
 
         if (needsClear) {
             this._entry.clutter_text.set_text('');
-            // Positions are stale until the next allocation; defer the jump.
+
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, 60, () => {
                 this._scrollToSection(section);
                 return GLib.SOURCE_REMOVE;
@@ -1359,7 +1359,7 @@ class TahoeApps {
         this._setActivePill(section.title);
     }
 
-    // ------------------------------------------------------------------ menu
+
 
     _toggleMenu(anchor) {
         if (this._menu) {
@@ -1445,7 +1445,7 @@ class TahoeApps {
         menu.destroy();
     }
 
-    // ---------------------------------------------------------------- launch
+
 
     _launch(record) {
         console.log(`[tahoe-apps] launch ${record.id}`);
@@ -1468,7 +1468,7 @@ class TahoeApps {
             this._launch(first.record);
     }
 
-    // --------------------------------------------------------------- recents
+
 
     _recentPath() {
         return GLib.build_filenamev(
@@ -1486,9 +1486,9 @@ class TahoeApps {
         } catch (e) {
             this._recents = [];
         }
-        // First run (or empty cache): seed from the shell's own usage
-        // stats, so Recommended is populated before anything is launched
-        // from this window.
+
+
+
         if (!this._recents.length) {
             try {
                 const mostUsed = Shell.AppUsage.get_default().get_most_used();
@@ -1503,7 +1503,7 @@ class TahoeApps {
                 if (this._recents.length)
                     this._saveRecents();
             } catch (e) {
-                // usage stats unavailable: stays empty until first launch
+
             }
         }
     }
@@ -1515,7 +1515,7 @@ class TahoeApps {
                 new TextEncoder().encode(JSON.stringify(this._recents)),
                 null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
         } catch (e) {
-            // cache write is best-effort
+
         }
     }
 
@@ -1527,7 +1527,7 @@ class TahoeApps {
         this._saveRecents();
     }
 
-    // ----------------------------------------------------------------- close
+
 
     _close() {
         if (!this._overlay)
@@ -1536,24 +1536,24 @@ class TahoeApps {
         this._cancelPendingOpen();
         this._closeMenu();
 
-        // Cancel pending idle glass steps from a lightning open/close.
+
         if (this._glassIdleId) {
             try {
                 GLib.source_remove(this._glassIdleId);
             } catch (e) {
-                // already fired
+
             }
             this._glassIdleId = 0;
         }
         this._pendingGlass = null;
 
-        // Stop the per-frame glass sync and tear the effect down before the
-        // actors go away (effect must be cleaned up before bgActor.destroy()).
+
+
         if (this._frameLaterId && this._laters) {
             try {
                 this._laters.remove(this._frameLaterId);
             } catch (e) {
-                // later may already be gone
+
             }
             this._frameLaterId = 0;
         }
@@ -1563,24 +1563,24 @@ class TahoeApps {
             try {
                 glassState.effect.cleanup();
             } catch (e) {
-                // effect may already be cleaned
+
             }
             try {
                 glassState.uiSampler.destroy();
             } catch (e) {
-                // sampler may already be gone
+
             }
             try {
                 glassState.windowCloneManager.destroy();
             } catch (e) {
-                // clone manager may already be gone
+
             }
         }
         if (this._bgActor) {
             try {
                 this._bgActor.destroy();
             } catch (e) {
-                // actor may already be gone
+
             }
             this._bgActor = null;
         }
@@ -1604,7 +1604,7 @@ class TahoeApps {
             try {
                 this._vadjConn.adj.disconnect(this._vadjConn.id);
             } catch (e) {
-                // adjustment may already be gone with the scroll view
+
             }
             this._vadjConn = null;
         }

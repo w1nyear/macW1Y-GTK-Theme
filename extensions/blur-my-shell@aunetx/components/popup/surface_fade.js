@@ -68,7 +68,7 @@ export const PopupBlurSurfaceFade = class PopupBlurSurfaceFade {
             const panel_width = Main.panel.width || Main.panel.get_width() || 0;
             const panel_height = Main.panel.height || Main.panel.get_height() || 36;
 
-            // Must be a horizontal panel anchored at the monitor's top edge
+
             const is_horizontal = panel_width > panel_height;
             const is_at_monitor_top = Math.abs(panel_y - monitor.y) <= 5;
 

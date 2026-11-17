@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Makes windows semi-transparent while being moved or resized for visual feedback.
+
 
 import Clutter from 'gi://Clutter';
 import Meta from 'gi://Meta';
 
 const TRANSPARENT_ON_MOVING = true;
 const TRANSPARENT_ON_RESIZING = true;
-const TRANSITION_TIME = 0.2; // in seconds
-const WINDOW_OPACITY = 230; // Opacity value (0-255)
+const TRANSITION_TIME = 0.2;
+const WINDOW_OPACITY = 230;
 
 const _grab_moving_operations = [
     Meta.GrabOp.MOVING,
@@ -47,7 +47,7 @@ export class TransparentMove {
         if (TRANSPARENT_ON_MOVING) {
             this._allowed_grab_operations.push(..._grab_moving_operations);
         }
-    
+
         if (TRANSPARENT_ON_RESIZING) {
             this._allowed_grab_operations.push(..._grab_resizing_operations);
         }
@@ -101,7 +101,7 @@ export class TransparentMove {
         if (meta_actor.constructor.name.indexOf('MetaSurfaceActor') > -1) {
             return [meta_actor];
         }
-        
+
         const surfaces = [];
         for (const child of meta_actor.get_children()) {
             const result = this.find_meta_surface_actors(child);
@@ -117,7 +117,7 @@ export class TransparentMove {
         if (!meta_window || !this.is_grab_operation_allowed(meta_grab_op)) {
             return;
         }
-    
+
         const window_surfaces = this.get_window_surfaces(meta_window);
         if (window_surfaces.length === 0)
             return;
@@ -133,7 +133,7 @@ export class TransparentMove {
         if (!meta_window || !this.is_grab_operation_allowed(meta_grab_op)) {
             return;
         }
-    
+
         const window_surfaces = this.get_window_surfaces(meta_window);
         if (window_surfaces.length === 0)
             return;
@@ -155,7 +155,7 @@ export class TransparentMove {
     disable() {
         global.display.disconnect(this._on_window_grab_begin);
         global.display.disconnect(this._on_window_grab_end);
-    
+
         delete this._window_opacity;
         delete this._allowed_grab_operations;
         delete this._on_window_grab_begin;

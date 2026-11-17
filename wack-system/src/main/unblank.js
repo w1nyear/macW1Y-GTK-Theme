@@ -3,7 +3,7 @@ import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { _logError } from './mainUtils.js';
 
-const MANUAL_FADE_TIME = 300; // mirrors screenShield.js
+const MANUAL_FADE_TIME = 300;
 
 const UPowerIface = `<node>
 <interface name="org.freedesktop.UPower">
@@ -77,16 +77,16 @@ export class UnblankManager {
             this._restore();
     }
 
-    // Only intercept the short lightbox triggered after manual lock.
-    // The long lightbox (idle session fade) runs normally — gsd owns that path.
+
+
     _patchedActivateFade(lightbox, time) {
         if (lightbox !== Main.screenShield._shortLightbox || !Main.screenShield._isLocked) {
             this._originalActivateFade(lightbox, time);
             return;
         }
 
-        // Register idle watch so user input resets the delay timer.
-        // Mirrors what upstream _activateFade does, minus lightOn().
+
+
         if (Main.screenShield._becameActiveId === 0) {
             Main.screenShield._becameActiveId =
                 Main.screenShield.idleMonitor.add_user_active_watch(
@@ -98,7 +98,7 @@ export class UnblankManager {
     }
 
     _onUserActive() {
-        // Remove the watch — _startTimer will re-register it if needed
+
         Main.screenShield.idleMonitor.remove_watch(Main.screenShield._becameActiveId);
         Main.screenShield._becameActiveId = 0;
 
@@ -110,7 +110,7 @@ export class UnblankManager {
             }
         }
 
-        // Re-arm: genuine user input resets the blank delay from the top
+
         this._startTimer();
     }
 
@@ -122,9 +122,9 @@ export class UnblankManager {
 
         const delay = this._sessionSettings.get_value('idle-delay').recursiveUnpack();
         if (delay === 0)
-            return; // "never blank" — nothing to do
+            return;
 
-        // Re-register the watch so the next user interaction is caught
+
         if (Main.screenShield._becameActiveId === 0) {
             Main.screenShield._becameActiveId =
                 Main.screenShield.idleMonitor.add_user_active_watch(
@@ -134,7 +134,7 @@ export class UnblankManager {
 
         this._timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, delay, () => {
             this._timerId = 0;
-            // Hand off to upstream — let the original fade + gsd take over
+
             this._originalActivateFade(Main.screenShield._shortLightbox, MANUAL_FADE_TIME);
             return GLib.SOURCE_REMOVE;
         });

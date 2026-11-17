@@ -1,8 +1,8 @@
 #!/usr/bin/env gjs
-// This file is part of Dash2Dock Motion, a modified copy of Dash to Dock
-// (https://github.com/micheleg/dash-to-dock) by Michele Gaio and
+
+
 // contributors. Distributed under the GNU General Public License,
-// version 2 or later.
+
 
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
@@ -47,10 +47,10 @@ async function mainAsync(argv) {
     const location = Gio.File.new_for_uri(uri);
     const cancellable = new Gio.Cancellable();
 
-    // GVfs providers could hang when querying the file information, so we
-    // workaround this by using the async API in a sync way, but we need to
-    // use a timeout to avoid this to hang forever, better than hang the
-    // shell.
+
+
+
+
     let launchMaxWaitId;
 
     try {

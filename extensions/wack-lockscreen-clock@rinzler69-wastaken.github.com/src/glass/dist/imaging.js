@@ -1,6 +1,6 @@
-// PNG in and out for pixels GJS cannot read or write otherwise: a Cairo
-// surface's pixels and a texture's are out of reach, so images go through PNG
-// files. Only what Cairo writes is read (8 bits a channel, not interlaced).
+
+
+
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Cairo from 'cairo';
@@ -77,7 +77,7 @@ export function decodePng(png) {
     return { width, height, channels, data };
 }
 
-/** Unpremultiplied RGBA, 4 bytes a pixel, whatever the PNG holds. */
+
 export function decodePngRgba(png) {
     const { width, height, channels, data } = decodePng(png);
     if (channels === 4)
@@ -123,7 +123,7 @@ function chunk(type, body) {
     return out;
 }
 
-/** An 8-bit RGBA PNG of unpremultiplied pixels. */
+
 export function encodePngRgba(width, height, rgba) {
     const header = new Uint8Array(13);
     const view = new DataView(header.buffer);
@@ -146,20 +146,20 @@ export function encodePngRgba(width, height, rgba) {
     return out;
 }
 
-// Draws an icon file at a given size into unpremultiplied RGBA, for the icon
-// worker (iconWorker.ts) and the contact sheet's collector. SVGs go through
-// librsvg and PNGs through Cairo; anything else through GdkPixbuf, whose
-// loaders may start a sandboxed process of their own.
+
+
+
+
 let rsvg = null;
 
-// Imported on first use, so that a system without its typelib can still draw PNGs.
+
 async function librsvg() {
     const name = 'gi://Rsvg?version=2.0';
     rsvg ??= (await import(name)).default;
     return rsvg;
 }
 
-// Cairo keeps its pixels premultiplied and cannot hand them over; its PNG writer unpremultiplies them.
+
 function pixelsOf(surface) {
     const [fd, path] = GLib.file_open_tmp('liquid-glass-icon-XXXXXX.png');
     GLib.close(fd);
@@ -183,7 +183,7 @@ function fromPixbuf(pixbuf, size) {
     return { width: size, height: size, data };
 }
 
-/** Throws a GError when the file cannot be read or drawn. */
+
 export async function drawIcon(path, size) {
     const svg = /\.svgz?$/i.test(path);
     if (!svg && !/\.png$/i.test(path))

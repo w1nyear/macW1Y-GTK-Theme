@@ -2,7 +2,7 @@
  *
  * This file is part of the Custom Command Toggle GNOME Shell extension
  * https://github.com/StorageB/custom-command-toggle
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 2 of the License, or
@@ -18,7 +18,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
- 
+
 import Gio from 'gi://Gio';
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
@@ -34,7 +34,7 @@ const timestamp = new Date().toLocaleString();
 export function exportConfiguration(numButtons, settings, window) {
     let keyFile = new GLib.KeyFile();
 
-    //#region Header
+
     keyFile.set_comment(null, null,
         ` Custom Command Toggle \n` +
         ` Exported settings for the Custom Command Toggle extension \n` +
@@ -46,7 +46,7 @@ export function exportConfiguration(numButtons, settings, window) {
         ` toggle-on-command: <command> \n` +
         ` toggle-off-command: <command> \n` +
         ` check-status-command: <command> \n` +
-        ` search-term: <text> \n` +        
+        ` search-term: <text> \n` +
         ` initial-state: 0, 1, 2, or 3 \n` +
         `     0 = On \n` +
         `     1 = Off \n` +
@@ -54,7 +54,7 @@ export function exportConfiguration(numButtons, settings, window) {
         `     3 = Command output \n` +
         ` run-at-startup: true or false \n` +
         ` startup-delay-time: 0-10 (seconds) \n` +
-        ` check-status-delay-time: 0-10 (seconds) \n` + 
+        ` check-status-delay-time: 0-10 (seconds) \n` +
         ` button-click-action: 0, 1, or 2 \n` +
         `     0 = Always on \n` +
         `     1 = Always off \n` +
@@ -63,19 +63,19 @@ export function exportConfiguration(numButtons, settings, window) {
         ` show-indicator: true or false \n` +
         ` close-menu: true or false \n` +
         ` command-sync: true or false \n` +
-        ` polling-frequency: 2-900 (seconds) \n` + 
+        ` polling-frequency: 2-900 (seconds) \n` +
         ` keyboard-shortcut: <shortcut> \n` +
         ` enabled: true or false \n` +
         ` menu-items: <JSON array> \n` +
         `     [{"name":"<name>","icon":"<icon>","command":"<command>"},{"name":"<name>","icon":"<icon>","command":"<command>"}] \n` +
         ` \n`
     );
-    //#endregion Header
 
 
-    //#region Export Settings
+
+
     for (let i = 1; i <= numButtons; i++) {
-        
+
         let j = i === 1 ? '' : i;
 
         keyFile.set_string(`Toggle ${i}`, 'button-name', settings.get_string(`entryrow3${j}-setting`));
@@ -83,7 +83,7 @@ export function exportConfiguration(numButtons, settings, window) {
         keyFile.set_string(`Toggle ${i}`, 'toggle-on-command', settings.get_string(`entryrow1${j}-setting`));
         keyFile.set_string(`Toggle ${i}`, 'toggle-off-command', settings.get_string(`entryrow2${j}-setting`));
         keyFile.set_string(`Toggle ${i}`, 'check-status-command', settings.get_string(`checkcommand${i}-setting`));
-        keyFile.set_string(`Toggle ${i}`, 'search-term', settings.get_string(`checkregex${i}-setting`));        
+        keyFile.set_string(`Toggle ${i}`, 'search-term', settings.get_string(`checkregex${i}-setting`));
         keyFile.set_string(`Toggle ${i}`, 'initial-state', `${settings.get_int(`initialtogglestate${i}-setting`)}`);
         keyFile.set_string(`Toggle ${i}`, 'run-at-startup', `${settings.get_boolean(`runcommandatboot${i}-setting`)}`);
         keyFile.set_string(`Toggle ${i}`, 'startup-delay-time', `${settings.get_int(`delaytime${i}-setting`)}`);
@@ -91,18 +91,18 @@ export function exportConfiguration(numButtons, settings, window) {
         keyFile.set_string(`Toggle ${i}`, 'button-click-action', `${settings.get_int(`buttonclick${i}-setting`)}`);
         keyFile.set_string(`Toggle ${i}`, 'check-exit-code', `${settings.get_boolean(`checkexitcode${i}-setting`)}`);
         keyFile.set_string(`Toggle ${i}`, 'show-indicator', `${settings.get_boolean(`showindicator${i}-setting`)}`);
-        keyFile.set_string(`Toggle ${i}`, 'close-menu', `${settings.get_boolean(`closemenu${i}-setting`)}`); 
-        keyFile.set_string(`Toggle ${i}`, 'command-sync', `${settings.get_boolean(`checkcommandsync${i}-setting`)}`); 
+        keyFile.set_string(`Toggle ${i}`, 'close-menu', `${settings.get_boolean(`closemenu${i}-setting`)}`);
+        keyFile.set_string(`Toggle ${i}`, 'command-sync', `${settings.get_boolean(`checkcommandsync${i}-setting`)}`);
         keyFile.set_string(`Toggle ${i}`, 'polling-frequency', `${settings.get_int(`checkcommandinterval${i}-setting`)}`);
         const keybindings = settings.get_value(`keybinding${i}-setting`).deep_unpack();
         keyFile.set_string(`Toggle ${i}`, 'keyboard-shortcut', keybindings[0]);
         keyFile.set_string(`Toggle ${i}`, 'enabled', `${settings.get_boolean(`enabled${i}-setting`)}`);
         keyFile.set_string(`Toggle ${i}`, 'menu-items', settings.get_string(`menuitems${i}-setting`));
     }
-    //#endregion Export Settings
 
 
-    //#region Save File
+
+
     try {
         keyFile.save_to_file(filePath);
         console.log(`[Custom Command Toggle] Toggle button settings exported to ${filePath}`);
@@ -110,7 +110,7 @@ export function exportConfiguration(numButtons, settings, window) {
         toast.set_timeout(4);
         toast.set_button_label(_('Open'));
         toast.connect('button-clicked', () => {
-            // Determine if there is a default text editor available and open the saved file
+
             let appInfo = Gio.AppInfo.get_default_for_type('text/plain', false);
             if (appInfo) {
                 appInfo.launch_uris([`file://${filePath}`], null);
@@ -153,11 +153,11 @@ export function exportConfiguration(numButtons, settings, window) {
         });
         window.add_toast(toast);
     }
-    //#endregion Save File
+
 }
 
 
-//#region Import
+
 export function importConfiguration(settings, window) {
 
     let keyFile = new GLib.KeyFile();
@@ -184,7 +184,7 @@ export function importConfiguration(settings, window) {
         console.log(`[Custom Command Toggle] Failed to import settings. File not found.`);
         return;
     }
-    
+
     try {
         keyFile.load_from_file(filePath, GLib.KeyFileFlags.NONE);
     } catch (e) {
@@ -224,7 +224,7 @@ export function importConfiguration(settings, window) {
             };
             const getInt = (k, def) => {
                 try { return keyFile.get_integer(`Toggle ${i}`, k); } catch (_) { return def; }
-            };    
+            };
 
             let button_name          = getString('button-name', _('My Button'));
             let icon                 = getString('icon', 'face-smile-symbolic');
@@ -271,15 +271,15 @@ export function importConfiguration(settings, window) {
             settings.set_strv(`keybinding${buttonCount}-setting`, keyboard_shortcut ? [keyboard_shortcut] : ['']);
             settings.set_boolean(`enabled${buttonCount}-setting`, enabled);
             settings.set_string(`menuitems${buttonCount}-setting`, menu_items);
-        } 
+        }
     }
 
     if (buttonCount === 0) {
         const toast = Adw.Toast.new(_('No toggles found in %s.').format(fileName));
         toast.set_timeout(4);
         window.add_toast(toast);
-        return; 
-    }    
+        return;
+    }
 
     settings.set_int('numbuttons-setting', buttonCount === 0 ? 1 : buttonCount);
     console.log('[Custom Command Toggle] Configuration imported from %s'.format(filePath));
@@ -294,7 +294,7 @@ export function importConfiguration(settings, window) {
     toast.set_timeout(4);
     window.add_toast(toast);
 
-    //#endregion Import
+
 }
 
 
@@ -317,4 +317,3 @@ export function reset(settings, window) {
         window.add_toast(errorToast);
     }
 }
-        

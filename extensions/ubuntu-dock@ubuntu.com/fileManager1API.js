@@ -1,4 +1,4 @@
-// -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
+
 
 import {GLib, Gio} from './dependencies/gi.js';
 const {signals: Signals} = imports;
@@ -15,14 +15,14 @@ const Labels = Object.freeze({
     WINDOWS: Symbol('windows'),
 });
 
-/**
- * This class implements a client for the org.freedesktop.FileManager1 dbus
- * interface, and specifically for the OpenWindowsWithLocations property
- * which is published by Nautilus, but is not an official part of the interface.
- *
- * The property is a map from window identifiers to a list of locations open in
- * the window.
- */
+
+
+
+
+
+
+
+
 export class FileManager1Client {
     constructor() {
         this._signalsHandler = new Utils.GlobalSignalsHandler();
@@ -34,7 +34,7 @@ export class FileManager1Client {
             'org.freedesktop.FileManager1',
             '/org/freedesktop/FileManager1',
             (initable, error) => {
-            // Use async construction to avoid blocking on errors.
+
                 if (error) {
                     if (!error.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
                         global.log(error);
@@ -49,8 +49,8 @@ export class FileManager1Client {
             'g-properties-changed',
             this._onPropertyChanged.bind(this),
         ], [
-            // We must additionally listen for Screen events to know when to
-            // rebuild our location map when the set of available windows changes.
+
+
             global.workspaceManager,
             'workspace-added',
             () => this._onWindowsChanged(),
@@ -81,12 +81,12 @@ export class FileManager1Client {
         this._proxy = null;
     }
 
-    /**
-     * Return an array of windows that are showing a location or
-     * sub-directories of that location.
-     *
-     * @param location
-     */
+
+
+
+
+
+
     getWindows(location) {
         if (!location)
             return [];
@@ -134,7 +134,7 @@ export class FileManager1Client {
     _updateLocationMap() {
         const properties = this._proxy.get_cached_property_names();
         if (!properties) {
-            // Nothing to check yet.
+
             return;
         }
 
@@ -172,8 +172,8 @@ export class FileManager1Client {
 
                 windowGroup.forEach(window => {
                     location += location.endsWith('/') ? '' : '/';
-                    // Use a set to deduplicate when a window has a
-                    // location open in multiple tabs.
+
+
                     const windows = windowsByLocation.get(location) || new Set();
                     windows.add(window);
 

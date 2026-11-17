@@ -66,7 +66,7 @@ void main(void) {
     }
     vec4 outColor = ret / gauss_coefficient_total;
 
-    // apply brightness on the second pass (dir==0 comes last)
+
     if (dir == 0) {
         outColor.rgb *= brightness;
     }

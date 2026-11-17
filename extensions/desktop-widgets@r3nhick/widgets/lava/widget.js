@@ -40,7 +40,7 @@ function getBallColor(theme, settings) {
 	return parseCssColor(DEFAULT_GRAY);
 }
 
-// Metaball effect: field strength at point (x, y)
+
 function calculateFieldStrength(x, y, balls) {
 	let sum = 0;
 	for (let ball of balls) {
@@ -48,7 +48,7 @@ function calculateFieldStrength(x, y, balls) {
 		const dy = y - ball.y;
 		const distSq = dx * dx + dy * dy;
 		if (distSq > 0) {
-			// Metaball formula: strength = radius^2 / distance^2
+
 			sum += (ball.r * ball.r) / distSq;
 		}
 	}
@@ -63,13 +63,13 @@ function drawLavaMetaballs(area, balls, ballColor) {
 	ctx.paint();
 	ctx.setOperator(2);
 
-	// Metaball threshold (lowered to reduce blobbiness)
+
 	const threshold = 1.8;
-	// Grid step (smaller = better quality)
+
 	const step = 3;
 	const pointRadius = step * 0.8;
 
-	// Walk the grid and draw points where the field strength exceeds the threshold
+
 	ctx.setSourceRGB(ballColor.r, ballColor.g, ballColor.b);
 
 	for (let y = 0; y < height; y += step) {

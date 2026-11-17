@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Shared base class for managing Mozilla app (Firefox/Thunderbird) userChrome.css
-// imports aligned with the extension's window control settings.
+
+
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
 const KIWI_MARKER_FILENAME = '.kiwi-managed';
 
-/**
- * MozillaThemeManager — reusable manager for injecting Kiwi window‐control
- * CSS into any Mozilla application that supports userChrome.css.
- *
- * @param {object} ext       – GNOME Shell Extension instance
- * @param {object} config
- * @param {string} config.settingsKey    – GSettings boolean key that toggles this app's styling
- * @param {string} config.profileBaseDir – relative path under $HOME (e.g. '.mozilla/firefox')
- * @param {string} config.cssPrefix      – CSS filename prefix (e.g. 'firefoxWindowControls')
- * @param {string} config.logPrefix      – label used in log messages
- */
+
+
+
+
+
+
+
+
+
+
+
 export class MozillaThemeManager {
     constructor(ext, config) {
         this._extension = ext;
@@ -82,11 +82,11 @@ export class MozillaThemeManager {
 
             if (chromeExists) {
                 if (chromeIsKiwiManaged) {
-                    try { this._deleteDirRecursive(chromeGFile); } catch (_e) { /* ignore */ }
+                    try { this._deleteDirRecursive(chromeGFile); } catch (_e) {   }
                 } else if (!bakGFile.query_exists(null)) {
                     chromeGFile.move(bakGFile, Gio.FileCopyFlags.NONE, null, null);
                 } else {
-                    try { this._deleteDirRecursive(chromeGFile); } catch (_e) { /* ignore */ }
+                    try { this._deleteDirRecursive(chromeGFile); } catch (_e) {   }
                 }
             }
 
@@ -141,7 +141,7 @@ export class MozillaThemeManager {
             if (bakGFile.query_exists(null))
                 bakGFile.move(chromeGFile, Gio.FileCopyFlags.NONE, null, null);
         } catch (_e) {
-            // ignore cleanup errors
+
         }
     }
 
@@ -151,7 +151,7 @@ export class MozillaThemeManager {
             const markerFile = Gio.File.new_for_path(markerPath);
             markerFile.replace_contents('Kiwi managed chrome folder\n', null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
         } catch (_e) {
-            // ignore marker failures
+
         }
     }
 
@@ -178,14 +178,14 @@ export class MozillaThemeManager {
                 file.replace_contents(content, null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
             }
         } catch (_e) {
-            // non-fatal
+
         }
     }
 
-    /**
-     * Locate the default profile directory.
-     * Tries installs.ini first, falls back to profiles.ini.
-     */
+
+
+
+
     async _getDefaultProfile() {
         const home = GLib.get_home_dir();
         const baseDir = GLib.build_filenamev([home, ...this._config.profileBaseDir.split('/')]);
@@ -224,7 +224,7 @@ export class MozillaThemeManager {
 
             const sections = await this._parseIniFile(profilesIni);
 
-            // Find the profile marked as Default=1
+
             let chosen = sections.find(sec => sec.name.startsWith('Profile') && sec.data.Default === '1');
             if (!chosen)
                 chosen = sections.find(sec => sec.name.startsWith('Profile') && sec.data.Path);

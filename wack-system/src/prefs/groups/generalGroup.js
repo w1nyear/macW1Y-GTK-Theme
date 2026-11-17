@@ -13,14 +13,14 @@ export function buildGeneralGroup(settings, window, _, settingsSignalIds) {
 
     const dateStyleBox = new Gtk.Box({ valign: Gtk.Align.CENTER });
 
-    // Linked buttons (wide layout)
+
     const dateStyleLinkedBox = new Gtk.Box({ css_classes: ['linked'] });
     const btnDateShort = new Gtk.ToggleButton({ label: _('Short') });
     const btnDateFull = new Gtk.ToggleButton({ label: _('Full'), group: btnDateShort });
     dateStyleLinkedBox.append(btnDateShort);
     dateStyleLinkedBox.append(btnDateFull);
 
-    // Dropdown fallback (narrow layout)
+
     const dateStyleDropdown = new Gtk.DropDown({
         valign: Gtk.Align.CENTER,
         model: Gtk.StringList.new([_('Short'), _('Full')]),

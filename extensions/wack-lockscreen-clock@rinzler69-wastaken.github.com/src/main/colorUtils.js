@@ -1,22 +1,22 @@
-// Tuning range for the adaptive prompt-chip white-blend alpha.
-// Calibrated against the real macW1Y Sonoma lockscreen:
-//   At FLOOR (0.16): chip is 16% white on very dark wallpapers — keeps the chip dark.
-//   At ROOF  (0.224): chip is 22.4% white on bright wallpapers — keeps the chip frosted-white.
+
+
+
+
 export const PROMPT_ALPHA_FLOOR = 0.16;
 export const PROMPT_ALPHA_ROOF = 0.224;
 export const CUPERTINO_PROMPT_WHITE_BLEND_ALPHA = 0.16;
 
-// Bright colorful samples should become a darker version of themselves, rather
-// than getting muddied by blending toward black. This tunes the target lightness
-// for that hue-preserving darken step.
+
+
+
 export const PROMPT_BRIGHT_HUE_LIGHTNESS_FACTOR = 0.935;
 export const PROMPT_BRIGHT_HUE_MIN_CHROMA = 0.08;
 export const PROMPT_BRIGHT_HUE_LIGHTNESS_THRESHOLD = 0.72;
 export const PROMPT_INVERSE_ALPHA_CEILING = 0.18;
 
-// Tuning range for the dynamic password prompt box-shadow alpha.
-//   At FLOOR (0.0175): subtle shadow on very dark wallpapers.
-//   At ROOF  (0.1175): maximum shadow depth on bright wallpapers (like pink clouds).
+
+
+
 export const PROMPT_SHADOW_FLOOR = 0.0175;
 export const PROMPT_SHADOW_ROOF = 0.1175;
 
@@ -44,7 +44,7 @@ export function rgbToHsl(r, g, b) {
     let h, s, l = (max + min) / 2;
 
     if (max === min) {
-        h = s = 0; // achromatic
+        h = s = 0;
     } else {
         const d = max - min;
         s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
@@ -147,9 +147,9 @@ export function getRelativeLuminance(color) {
         0.0722 * channelLum(b));
 }
 
-// WCAG relative luminance is gamma-linear, not perceptually linear (mid-gray sits
-// at ~0.18-0.22 relative luminance, not 0.5). Convert to CIE L* so the adaptive
-// alpha responds to how bright the sample actually LOOKS, not the raw light value.
+
+
+
 export function getPerceptualLightness(luminance) {
     const lum = clamp01(luminance);
     const lStar = lum <= 0.008856
@@ -187,14 +187,14 @@ export function getApcaContrast(txtR, txtG, txtB, bgR, bgG, bgB) {
     }
 }
 
-/**
- * Canonical perceptual analysis of a sampled color region.
- * Single source of truth for color metrics across the extension.
- *
- * @param {{r: number, g: number, b: number}} color
- * @param {number} [noise=0.0]
- * @returns {{r: number, g: number, b: number, luminance: number, perceptualLightness: number, chroma: number, noise: number}}
- */
+
+
+
+
+
+
+
+
 export function analyzePerceptualColor(color, noise = 0.0) {
     const r = clamp255(color?.r ?? 0);
     const g = clamp255(color?.g ?? 0);
@@ -218,13 +218,13 @@ export function analyzePerceptualColor(color, noise = 0.0) {
     };
 }
 
-/**
- * Computes the adaptive white-blend alpha for the Cupertino prompt chip based on
- * the sampled backdrop color's perceptual lightness and saturation.
- *
- * @param {{r: number, g: number, b: number}} sampled
- * @returns {number} alpha between PROMPT_ALPHA_FLOOR and PROMPT_ALPHA_ROOF
- */
+
+
+
+
+
+
+
 export function getPromptBlendAlpha(sampled) {
     const analysis = analyzePerceptualColor(sampled);
     let alpha = PROMPT_ALPHA_FLOOR + (PROMPT_ALPHA_ROOF - PROMPT_ALPHA_FLOOR) * analysis.perceptualLightness;
@@ -246,14 +246,14 @@ export function getPromptDarkenedHueColor(sampled) {
     );
 }
 
-/**
- * Resolves the base visual policy from perceptual analysis.
- *
- * @param {object} analysis Analyzed perceptual characteristics
- * @param {object} [options]
- * @param {number|null} [options.whiteBlendAlpha=null]
- * @returns {object} Base visual policy decision
- */
+
+
+
+
+
+
+
+
 export function resolveBaseVisualPolicy(analysis, options = {}) {
     const whiteBlendAlpha = options.whiteBlendAlpha ?? null;
     const { r, g, b, luminance, perceptualLightness, chroma, noise } = analysis;
@@ -320,14 +320,14 @@ export function resolveBaseVisualPolicy(analysis, options = {}) {
     };
 }
 
-/**
- * Single authoritative owner of password-prompt and button visual decisions.
- * Sampled wallpaper color in -> complete PromptVisualState out.
- *
- * @param {{r: number, g: number, b: number, noise?: number}} sampledColor
- * @param {number|null} [whiteBlendAlpha=null] Optional override used by the prompt chip path
- * @returns {object} PromptVisualState
- */
+
+
+
+
+
+
+
+
 export function resolvePromptVisualState(sampledColor, whiteBlendAlpha = null) {
     const analysis = analyzePerceptualColor(sampledColor, sampledColor?.noise ?? 0.0);
     const policy = resolveBaseVisualPolicy(analysis, { whiteBlendAlpha });
@@ -369,13 +369,13 @@ export function ensurePromptVisualState(color, whiteBlendAlpha = CUPERTINO_PROMP
     );
 }
 
-/**
- * Apply an already-resolved prompt visual policy to a locally sampled base color.
- *
- * @param {{r: number, g: number, b: number, noise?: number}} sourceColor
- * @param {object} visualState
- * @param {{preblend?: boolean}} [options]
- */
+
+
+
+
+
+
+
 export function applyPromptVisualState(sourceColor, visualState, options = {}) {
     const overlay = visualState.overlay;
     const isSameColor = sourceColor.r === visualState.sourceColor?.r &&
@@ -433,14 +433,14 @@ export function getPromptBlendOverlay(sampledColor, whiteBlendAlpha = null) {
     };
 }
 
-/**
- * Computes dynamic shadow alpha for the User Label based on backdrop lightness and texture noisiness.
- * Consistently stronger than hint shadow alpha to maintain clear visual hierarchy.
- * Range: 0.15 (dark smooth wallpapers) to 0.675 (bright/noisy wallpapers).
- *
- * @param {number|object} visualStateOrLightness
- * @returns {number}
- */
+
+
+
+
+
+
+
+
 export function getUserLabelShadowAlpha(visualStateOrLightness) {
     let pL = 0.5;
     let noise = 0.0;
@@ -467,15 +467,15 @@ export function getUserLabelShadowAlpha(visualStateOrLightness) {
     return clamp01(Math.max(0.10, Math.min(0.80, shadowAlpha)));
 }
 
-/**
- * Computes dynamic shadow alpha for the password prompt chip derived from the user label shadow decision-making.
- * Uses a two-zone curve:
- *   - Zone 1 (t <= 0.5): subtle ambient occlusion for dark wallpapers (0.0175 to 0.045)
- *   - Zone 2 (t > 0.5): gentle elevation lift for bright / textured wallpapers (0.045 to 0.1175)
- *
- * @param {number|object} visualStateOrLightness
- * @returns {number}
- */
+
+
+
+
+
+
+
+
+
 export function getPromptShadowAlpha(visualStateOrLightness) {
     const userLabelAlpha = getUserLabelShadowAlpha(visualStateOrLightness);
     const t = clamp01((userLabelAlpha - 0.10) / 0.70);
@@ -497,13 +497,13 @@ export function getUserLabelStyle(visualStateOrLightness) {
     return `text-shadow: 0 2px 10px rgba(0, 0, 0, ${shadowAlpha.toFixed(3)});`;
 }
 
-/**
- * Computes dynamic shadow alpha for hint text based on backdrop lightness and texture noisiness.
- * Range: 0.10 (dark smooth wallpapers) to 0.50 (bright/noisy wallpapers).
- *
- * @param {number|object} visualStateOrLightness
- * @returns {number}
- */
+
+
+
+
+
+
+
 export function getHintTextShadowAlpha(visualStateOrLightness) {
     let pL = 0.5;
     let noise = 0.0;
@@ -530,14 +530,14 @@ export function getHintTextShadowAlpha(visualStateOrLightness) {
     return clamp01(Math.max(0.10, Math.min(0.375, shadowAlpha)));
 }
 
-/**
- * Computes dynamic color alpha for hint text based on backdrop lightness / wallpaper alpha and noisiness.
- * Range: 0.60 (dark smooth wallpapers) to 0.95 (bright/noisy wallpapers).
- *
- * @param {number|object} visualStateOrLightness
- * @param {number|null} [wallpaperAlpha=null]
- * @returns {number}
- */
+
+
+
+
+
+
+
+
 export function getHintTextColorAlpha(visualStateOrLightness, wallpaperAlpha = null) {
     let noise = 0.0;
     if (visualStateOrLightness && typeof visualStateOrLightness === 'object') {
@@ -585,20 +585,20 @@ export function getPromptMessageStyle(visualStateOrLightness, wallpaperAlpha = n
 }
 
 
-/**
- * Calculates adaptive white chrome alpha for Lockscreen interactive controls
- * (Cancel, Accessibility, Session selector) based on the resolved visual state.
- *
- * Fundamental invariant:
- * - The interaction chrome is ALWAYS strictly WHITE.
- * - Darker / more inverted visual backdrops -> higher/stronger white chrome alpha.
- * - Lighter / softer backdrops -> lower/subtler chrome alpha.
- * - Continuous, bounded, monotonic mapping with zero discontinuities.
- *
- * @param {object|number} visualStateOrLightness
- * @param {'base'|'hover'|'focus'|'active'} state
- * @returns {number} alpha value between 0.0 and 1.0
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export function getChromeAlpha(visualStateOrLightness, state = 'base') {
     let pL = 0.5;
     let noise = 0.0;
@@ -637,19 +637,19 @@ export function getChromeAlpha(visualStateOrLightness, state = 'base') {
     }
 }
 
-/**
- * Calculates adaptive dim veil alpha for unfocused prompt background (Acrylic & Tonal)
- * based on APCA / perceptual lightness sensibilities.
- *
- * Sensibilities:
- * - On dark backdrops: slightly deeper dark veil (0.25 - 0.35) creates distinct unfocused depth.
- * - On bright/inverse backdrops: gentle, subtle dark veil (0.10 - 0.16) avoids muddy black blotches
- *   and maintains clean macW1Y-style frosted aesthetic.
- * - Monotonic mapping bounded between 0.10 and 0.35.
- *
- * @param {object|number} visualStateOrLightness
- * @returns {number} veil alpha between 0.10 and 0.35
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
 export function getPromptDimVeilAlpha(visualStateOrLightness) {
     let pL = 0.5;
     let isInverse = false;
@@ -671,10 +671,10 @@ export function getPromptDimVeilAlpha(visualStateOrLightness) {
 
     let veilAlpha;
     if (isInverse) {
-        // Reduced by 25%: range 0.075 - 0.1125
+
         veilAlpha = 0.1125 - 0.0375 * clampedL;
     } else {
-        // Reduced by 50%: range 0.100 - 0.175
+
         veilAlpha = 0.175 - 0.075 * clampedL;
     }
 
@@ -685,14 +685,14 @@ export function getPromptDimVeilAlpha(visualStateOrLightness) {
     return clamp01(Math.max(0.075, Math.min(0.175, veilAlpha)));
 }
 
-/**
- * Calculates adaptive background styling for notification and media cards on the lockscreen.
- * Adapts opacity and hue overlay to match prompt vibrancy and prevent wash-out on bright wallpapers.
- *
- * @param {object|null} color
- * @param {boolean} [useInverse=false]
- * @returns {{style: string, isInverseClass: boolean}}
- */
+
+
+
+
+
+
+
+
 export function getNotifCardBackground(color, useInverse = false) {
     if (!color) {
         return { style: '', isInverseClass: useInverse };
@@ -740,4 +740,3 @@ export function getNotifCardBackground(color, useInverse = false) {
         isInverseClass: false,
     };
 }
-

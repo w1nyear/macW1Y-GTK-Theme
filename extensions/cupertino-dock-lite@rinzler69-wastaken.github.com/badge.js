@@ -1,4 +1,4 @@
-// badge.js — clone badge renderer, delegates count to D2D's notificationsMonitor
+
 import Clutter from 'gi://Clutter';
 
 export class BadgeManager {
@@ -7,7 +7,7 @@ export class BadgeManager {
     this._notificationsMonitor = null;
   }
 
-  // Called by animator.js once D2D is ready.
+
   setNotificationsMonitor(monitor) {
     if (this._notificationsMonitor) {
       this._notificationsMonitor.disconnectObject(this);

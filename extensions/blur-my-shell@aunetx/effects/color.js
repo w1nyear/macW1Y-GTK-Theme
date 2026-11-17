@@ -84,7 +84,7 @@ const ColorEffectClass = utils.IS_IN_PREFERENCES ? null : class ColorEffect exte
             this._blend_mode = null;
             this._opacity_factor = null;
 
-            // set params; utils.setup_params doesn't work here with color
+
             this.color = 'color' in params ? params.color : this.constructor.default_params.color;
             this.blend_mode = 'blend_mode' in params ?  params.blend_mode : this.constructor.default_params.blend_mode;
             this.opacity_factor = 'opacity_factor' in params ? params.opacity_factor : this.constructor.default_params.opacity_factor;
@@ -179,7 +179,7 @@ const ColorEffectClass = utils.IS_IN_PREFERENCES ? null : class ColorEffect exte
             return [this.red, this.green, this.blue, this.blend];
         }
 
-        /// False set function, only cares about the color. Too hard to change.
+
         set(params) {
             this.color = params.color;
             this.blend_mode = params.blend_mode;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Kiwi Extension - Quick Settings Media playback widget helpers
+
 
 import * as MessageList from 'resource:///org/gnome/shell/ui/messageList.js';
 import Clutter from 'gi://Clutter';

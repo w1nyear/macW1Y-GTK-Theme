@@ -3,7 +3,7 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 
-// menu items
+
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
@@ -39,7 +39,7 @@ function sliderKeyUpDownEvent(actor, settings, direction) {
     actor.getStoredSliders().forEach(slider => {
         slider.setShowOSD();
         const nextValue = Math.min(Math.max(0, slider.ValueSlider.value + step), slider.ValueSlider._maxValue)
-        brightnessLog(settings, 
+        brightnessLog(settings,
             `Slider key up or down, direction:${direction} step:${step}, current:${slider.ValueSlider.value} => ${nextValue}`
         )
         slider.ValueSlider.value = nextValue;
@@ -77,10 +77,10 @@ function sliderValueChangeCommon(item) {
         }
 
         Main.osdWindowManager.show(
-            new Gio.ThemedIcon({name: 'display-brightness-symbolic'}), 
+            new Gio.ThemedIcon({name: 'display-brightness-symbolic'}),
             osdLabel,
-            Array.from({ 
-                length: Main.layoutManager.monitors.length 
+            Array.from({
+                length: Main.layoutManager.monitors.length
             }, () => (
                 { level: item.ValueSlider.value, maxLevel: 1 })
             )
@@ -170,7 +170,7 @@ export const SystemMenuBrightnessMenu = GObject.registerClass({
     }
 
     removeAllMenu() {
-        /* Remove all quick settings items by destroying */
+
         this.quickSettingsItems.forEach(item => item.destroy());
         this.quickSettingsItems = [];
     }
@@ -222,7 +222,7 @@ export const SingleMonitorSliderAndValueForStatusAreaMenu = class SingleMonitorS
         this._displayName = displayName;
         this._currentValue = currentValue;
         this._onSliderChange = onSliderChange;
-        /* OSD is never shown by default */
+
         this._hideOSD = true;
         this.__hideOSDBackup = true;
         this._init();
@@ -272,7 +272,7 @@ export const SingleMonitorSliderAndValueForStatusAreaMenu = class SingleMonitorS
     }
 
     _SliderChange() {
-        brightnessLog(this._settings, `StatusArea _SliderChange event ${this.ValueSlider.value}`) 
+        brightnessLog(this._settings, `StatusArea _SliderChange event ${this.ValueSlider.value}`)
         sliderValueChangeCommon(this);
     }
 };
@@ -304,12 +304,12 @@ export const SingleMonitorSliderAndValueForQuickSettingsSubMenu = GObject.regist
         this.display_name = params['display-name']
         this.current_value = params['current-value']
 
-        /* OSD is never shown by default */
+
         this._hideOSD = true;
         this.__hideOSDBackup = true;
 
-        //if (this.settings.get_boolean('show-display-name'))
-        //    this.label.text = this.display_name;
+
+
 
         this.ValueSlider = new Slider(this.current_value);
         this.ValueSlider.connect('notify::value', this._SliderChange.bind(this));
@@ -324,7 +324,7 @@ export const SingleMonitorSliderAndValueForQuickSettingsSubMenu = GObject.regist
         this.ValueLabel = new St.Label({text: sliderValuePercentFixed(this.current_value).toString()});
         this.add_child(this.ValueSlider);
 
-        /* for compatibility in other places */
+
         this._settings = this.settings;
         this.displayName = this.display_name;
 
@@ -351,7 +351,7 @@ export const SingleMonitorSliderAndValueForQuickSettingsSubMenu = GObject.regist
     }
 
     _SliderChange() {
-        brightnessLog(this._settings, `QuickSettings submenu _SliderChange event ${this.ValueSlider.value}`) 
+        brightnessLog(this._settings, `QuickSettings submenu _SliderChange event ${this.ValueSlider.value}`)
         sliderValueChangeCommon(this);
     }
 });
@@ -381,7 +381,7 @@ export const SingleMonitorSliderAndValueForQuickSettings = GObject.registerClass
             ...params,
             iconName: 'display-brightness-symbolic',
         });
-        /* OSD is never shown by default */
+
         this._hideOSD = true;
         this.__hideOSDBackup = true;
 
@@ -399,7 +399,7 @@ export const SingleMonitorSliderAndValueForQuickSettings = GObject.registerClass
             style: 'font-size: 12px; font-weight: normal;',
             text: sliderValuePercentFixed(this.current_value).toString(),
         });
-        /* for compatibility in other places */
+
         this.ValueSlider = this.slider;
         this._settings = this.settings;
         this.displayName = this.display_name;
@@ -424,7 +424,7 @@ export const SingleMonitorSliderAndValueForQuickSettings = GObject.registerClass
     }
 
     _SliderChange() {
-        brightnessLog(this._settings, `QuickSettings _SliderChange event ${this.ValueSlider.value}`) 
+        brightnessLog(this._settings, `QuickSettings _SliderChange event ${this.ValueSlider.value}`)
         sliderValueChangeCommon(this);
     }
 });

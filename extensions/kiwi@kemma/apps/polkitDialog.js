@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macW1Y-style authentication dialogs (polkit): centered card, lock icon,
-// round password field, gray Cancel + blue Unlock. Purely visual: the
-// stock session/PAM flow is untouched, so every consumer (Settings unlock,
-// Software, system dialogs) keeps working.
+
+
+
+
 
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -24,14 +24,14 @@ function _styleDialog(dialog) {
         return;
     }
 
-    // macW1Y shows a lock instead of the user avatar.
+
     try {
         dialog._userAvatar?.hide();
     } catch (_) {
-        // older layout
+
     }
 
-    // App icon header: lock + action title, like Privacy & Security.
+
     try {
         const header = new St.BoxLayout({
             style_class: 'tahoe-polkit-header',
@@ -46,21 +46,21 @@ function _styleDialog(dialog) {
         if (content)
             content.insert_child_at_index(header, 0);
     } catch (_) {
-        // keep the stock header
+
     }
 
-    // Unlock reads better than Authenticate on every flow.
+
     try {
         if (dialog._okButton)
             dialog._okButton.label = 'Unlock';
     } catch (_) {
-        // keep stock label
+
     }
 
     try {
         dialog.connect('destroy', () => _styled.delete(dialog));
     } catch (_) {
-        // gone
+
     }
 }
 
@@ -71,7 +71,7 @@ function _onActorAdded(_group, actor) {
             _styleDialog(actor);
         }
     } catch (_) {
-        // not a dialog
+
     }
 }
 
@@ -81,7 +81,7 @@ function _sweepExisting() {
         try {
             (actor.get_children?.() ?? []).forEach(walk);
         } catch (_) {
-            // gone mid-walk
+
         }
     };
     for (const group of [Main.layoutManager.modalDialogGroup,
@@ -89,7 +89,7 @@ function _sweepExisting() {
         try {
             walk(group);
         } catch (_) {
-            // no group yet
+
         }
     }
 }
@@ -103,14 +103,14 @@ export function enable(settings) {
     _enabled = true;
     console.log('[tahoe-polkit] enabled');
 
-    // Modal dialogs live in modalDialogGroup, not directly in uiGroup.
+
     for (const group of [Main.layoutManager.modalDialogGroup,
                          Main.layoutManager.uiGroup]) {
         try {
             _actorAddedIds.push([group, group.connect(
                 'actor-added', _onActorAdded)]);
         } catch (_) {
-            // group gone
+
         }
     }
     _sweepExisting();
@@ -122,7 +122,7 @@ export function disable() {
         try {
             group.disconnect(id);
         } catch (_) {
-            // already gone
+
         }
     }
     _actorAddedIds = [];
@@ -130,7 +130,7 @@ export function disable() {
         try {
             dialog.remove_style_class_name(MARK);
         } catch (_) {
-            // destroyed
+
         }
     }
     _styled.clear();

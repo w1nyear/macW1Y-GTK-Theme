@@ -18,7 +18,7 @@ class AppIndicatorGeneralPage extends Adw.PreferencesPage {
         this._settings = settings;
         this._settingsKey = settingsKey;
 
-        this.group = new Adw.PreferencesGroup();  // no title since only single group
+        this.group = new Adw.PreferencesGroup();
 
         const legacyTraySwitch = new Adw.SwitchRow({
             title: _('Enable Legacy Tray Icons support'),
@@ -155,5 +155,3 @@ class AppIndicatorGeneralPage extends Adw.PreferencesPage {
         this.group.add(spin);
     }
 });
-
-

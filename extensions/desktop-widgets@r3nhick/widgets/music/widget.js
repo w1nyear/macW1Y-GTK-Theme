@@ -27,16 +27,16 @@ const PLAYER_PATH = '/org/mpris/MediaPlayer2';
 const DBUS_IFACE = 'org.freedesktop.DBus.Properties';
 const TICK_MS = 2000;
 const LOOP_CYCLE = ['None', 'Track', 'Playlist'];
-// The system monitor's cross constants, copied 1:1: the 250ms base beat
-// and the cross sweep at exactly twice it.
+
+
 const SWIPE_THRESHOLD = 30;
 const ANIMATION_DURATION = 250;
-const CROSS_DURATION = Math.round(ANIMATION_DURATION * 2); // 500ms
-// Cover fallback: every candidate GIF is decoded once and cached, so cards
-// after the first one paint instantly instead of re-reading the file.
+const CROSS_DURATION = Math.round(ANIMATION_DURATION * 2);
+
+
 const GIF_CANDIDATES = ['pushy.gif', 'pushy2.gif', 'pushy3.gif', 'pushy4.gif', 'pushy5.gif'];
-// Each cache entry holds up to ~240 decoded frames; without a cap a session
-// that sweeps through many GIFs grows the shell's memory without bound.
+
+
 const GIF_CACHE_LIMIT = 4;
 const gifFramesCache = new Map();
 function cacheGifFrames(path, frames) {
@@ -113,9 +113,9 @@ function arraysEqual(a, b) {
 	return true;
 };
 
-// GdkPixbuf GIF decode — runs in an idle so it doesn't block the UI thread.
-// The 240-frame loop + pixel comparison can take 50-200 ms on a large GIF;
-// yielding to the main loop every N frames keeps compositor latency healthy.
+
+
+
 function pixbufFramesAsync(path, onDone) {
 	let frames = [];
 	let firstPixels = null;
@@ -131,7 +131,7 @@ function pixbufFramesAsync(path, onDone) {
 		return;
 	};
 
-	// Process up to CHUNK frames per idle tick so the UI stays responsive.
+
 	const CHUNK = 8;
 	const idleId = GLib.idle_add(GLib.PRIORITY_LOW, () => {
 		let count = 0;
@@ -187,7 +187,7 @@ function removeGifTempDir(baseDir) {
 	try {
 		Gio.File.new_for_path(baseDir).delete(null);
 	} catch (cleanupError) {
-		// Ignore cleanup failures.
+
 	};
 };
 
@@ -278,9 +278,9 @@ function decodeGifFrames(path, onDone) {
 		onDone(decoded ?? null);
 	};
 
-	// GdkPixbuf iterates seamless loops as repeated identical bitmaps, which can
-	// collapse to a single frame. Extract with ffmpeg first, then fall back to
-	// the GdkPixbuf loop when ffmpeg is unavailable.
+
+
+
 	const ffmpeg = GLib.find_program_in_path('ffmpeg');
 
 	if (ffmpeg) {
@@ -290,8 +290,8 @@ function decodeGifFrames(path, onDone) {
 				return;
 			};
 
-			// ffmpeg fallback: decode via GdkPixbuf asynchronously (idle-chunked)
-			// so the 240-frame pixel loop does not block the compositor.
+
+
 			pixbufFramesAsync(path, decoded => {
 				finish(decoded.length > 1 ? decoded : null);
 			});
@@ -299,7 +299,7 @@ function decodeGifFrames(path, onDone) {
 		return;
 	};
 
-	// No ffmpeg: decode via idle-chunked GdkPixbuf path.
+
 	pixbufFramesAsync(path, decoded => {
 		finish(decoded.length > 1 ? decoded : null);
 	});
@@ -410,9 +410,9 @@ export function style(theme) {
 	return `background-color: ${theme.background}; border-color: ${theme.border}; color: ${theme.text}; padding: 12px 16px;`;
 };
 
-// Control icons: gray when inactive, white/black when active
+
 function controlIconFile(theme, iconName, isActive = false) {
-	const suffix = isActive 
+	const suffix = isActive
 		? (theme?.dark ? '-white' : '-black')
 		: '';
 	return widgetResourcePath('music', `dw-${iconName}${suffix}.svg`);
@@ -426,9 +426,9 @@ function controlIcon(theme, iconName, isActive = false) {
 		: null;
 };
 
-// Loop-control icons painted in the widget accent color (system accent or
-// style-accent-color). St.Icon + FileIcon renders these fine, so the SVG is
-// recolored on disk in a per-(icon,state,accent) cache file.
+
+
+
 function controlAccentIcon(theme, iconName, isActive = false) {
 	const accent = String(theme?.accent ?? '#5b9de0');
 	const file = controlIconFile(theme, iconName, isActive);
@@ -458,17 +458,17 @@ function controlAccentIcon(theme, iconName, isActive = false) {
 
 		return Gio.FileIcon.new(Gio.File.new_for_path(cachePath));
 	} catch (_error) {
-		// Fall back to the plain variant rather than an invisible icon.
+
 		return controlIcon(theme, iconName, isActive);
 	};
 };
 
-// Click squash-and-spring lives in lib/buttonBounce.js (shared with the
-// stopwatch/timer/pomodoro/task buttons) and is wired in createControlButton.
 
-// Control buttons: plain St.Button + St.Icon with the bundled SVG, exactly
-// like the reference implementation (gray when inactive, white/black when
-// active). No cairo painting; click gets a squash-and-spring bounce.
+
+
+
+
+
 function createControlButton(theme, iconName, iconSize = 18, padding = 4, radius = 9, isActive = false, accentPainted = false) {
 	const gicon = accentPainted
 		? controlAccentIcon(theme, iconName, isActive)
@@ -496,8 +496,8 @@ function createControlButton(theme, iconName, iconSize = 18, padding = 4, radius
 	button.set_height(27);
 	button.set_pivot_point(0.5, 0.5);
 	button.connect('clicked', () => bounceButton(button));
-	// Hover = no frame, just the icon briefly shrinking (shared with every
-	// other widget's buttons); the click keeps the squash-and-spring bounce.
+
+
 	bindHoverShrink(button);
 
 	return {button, icon};
@@ -513,8 +513,8 @@ function setButtonIcon(target, iconName, isActive = false) {
 		: controlIcon(target.button._theme, iconName, isActive);
 
 	if (gicon) {
-		// Clear the textual name first: St.Icon keeps whichever source was
-		// set last, and swapping only the gicon left the old bars painted.
+
+
 		target.icon.icon_name = '';
 		target.icon.gicon = gicon;
 		target.button._iconName = iconName;
@@ -549,9 +549,9 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 		style: `spacing: ${gap}px;`,
 	}));
 
-	// Bin wrapper so the lyrics overlay can cover the WHOLE widget instead
-	// of only the cover-art preview: the card is the lower layer, the lyrics
-	// feed slides above it while open and closes on a click.
+
+
+
 	card.stage = new St.Widget({layout_manager: new Clutter.BinLayout(), x_expand: true, y_expand: true});
 	card.stage.add_child(card.container);
 
@@ -587,11 +587,11 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 		};
 	};
 
-	// ── Lyrics overlay ────────────────────────────────────────────────────
-	// The top-right status icon doubles as the toggle: a click swaps the
-	// cover art for a synced lyrics feed. The resolution chain lives in
-	// lib/lyrics.js (local .lrc -> lrclib.net -> cached); any failure just
-	// keeps the cover art in place.
+
+
+
+
+
 	card._lyricsDir = getDataDir('lyrics');
 	card._lyricsOn = false;
 	card._lyricsToken = 0;
@@ -602,30 +602,30 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 	card._lyricsLabels = [];
 	card._lyricsActive = -1;
 
-	// Isle's lyric presentation constants, ported from
-	// isle@zickrian.github.io/src/pages/lyrics.js: the sung line bright,
-	// the following three fading by distance, sung lines dimmest, the rest
-	// slightly smaller (scale around the left pivot); scroll anchors the
-	// sung line at 36% of the viewport and a manual scroll parks the
-	// follow for 4 s.
+
+
+
+
+
+
 	const LYR_CURRENT_OPACITY = 255;
 	const LYR_COMING_OPACITY = [150, 115, 90];
 	const LYR_SUNG_OPACITY = 75;
 	const LYR_RESTING_SCALE = 0.93;
 	const LYR_LINE_EASE_MS = 380;
-	const LYR_SCROLL_EASE_MS = 150;  // Reduced from 520ms for instant snap
+	const LYR_SCROLL_EASE_MS = 150;
 	const LYR_ANCHOR = 0.36;
 	const LYR_MANUAL_HOLD_MS = 4000;
 	const LYR_INTRO_MS = 3;
-	// Isle's dynamic scheduling: +30ms buffer after the exact line timestamp
-	// to ensure the position has definitely crossed the threshold.
+
+
 	const LYR_SCHEDULE_BUFFER_MS = 30;
-	// Sync offset: Negative value to trigger line switches EARLY, compensating for:
-	// - D-Bus PropertiesChanged signal propagation delay (~50-100ms)
-	// - MPRIS position update intervals (~2000ms, causes drift between updates)
-	// - Audio output buffer latency (PipeWire/PulseAudio ~150-250ms)
-	// - UI rendering and scroll animation lag (~50-100ms)
-	// Total empirically measured lag: ~350-400ms behind Isle's daemon-based approach.
+
+
+
+
+
+
 	const LYR_SYNC_OFFSET_MS = -350;
 
 	const lyrFont = Math.max(11, Math.round(widgetHeight * 0.09));
@@ -639,26 +639,26 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 	card._lyricsScales = [];
 	card._lyricsUpperHooked = false;
 	card._lyricsScheduledUpdate = null;
-	card._controller = null; // Reference to controller for position calculation
+	card._controller = null;
 
-	// Panel structure (proven primitives only): a vertical Box with the
-	// badge row on top — the music icon anchors top-right even while the
-	// overlay is open — over a Bin layer where the feed fills the area and
-	// the hint floats centered over it (same centering the cover icon uses).
-	// Panel structure: vertical box with badge header row at top and lyrics
-	// feed below, maximizing vertical space while keeping the music icon
-	// visible and clickable in the top-right corner.
+
+
+
+
+
+
+
 	card.lyricsPanel = new St.BoxLayout(boxLayoutProps({
 		vertical: true,
 		x_expand: true,
 		y_expand: true,
 		visible: false,
 		reactive: true,
-		// Minimal padding for maximum lyrics viewport.
+
 		style: `border-radius: ${coverRadius}px; padding: 2px 10px 2px 10px;`,
 	}));
 
-	// Compact badge row: music icon in top-right, minimal height.
+
 	const badgeRow = new St.BoxLayout(boxLayoutProps({
 		x_expand: true,
 		style: 'height: 24px;',
@@ -688,8 +688,8 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 
 	card._lyricsBox = new St.BoxLayout(boxLayoutProps({
 		vertical: true,
-		// Normal spacing for readable multi-line wrapped lyrics.
-		// Top/bottom padding prevents text clipping at container edges.
+
+
 		style: 'spacing: 3px; padding: 8px 0px 8px 0px;',
 	}));
 	card._lyricsScroll = new St.ScrollView({
@@ -712,22 +712,22 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 
 	card.lyricsPanel.add_child(card._lyricsFeed);
 
-	// The panel covers the whole card, so a click anywhere on it returns to
-	// the normal card (including the badge — it is a passive mirror of the
-	// toggle icon beneath).
+
+
+
 	card.lyricsPanel.connect('button-press-event', (actor, event) => {
-		// Only the LEFT button closes — the right button is the cross
-		// swipe's press leg; toggling on it tore the gesture mid-flight.
+
+
 		if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
 		card.toggleLyrics();
 		return Clutter.EVENT_PROPAGATE;
 	});
-	// Isle's manual-scroll hold after a user scroll (wheel/touchpad): the
-	// auto-follow parks for 4 s instead of fighting the hand — and the
-	// running scroll tween stops mid-flight, since it would otherwise keep
-	// dragging the view against the fingers (their remove_transition
-	// analog here is killing the hand-rolled tween — St-51 lacks
-	// st_adjustment_ease).
+
+
+
+
+
+
 	card.lyricsPanel.connect('scroll-event', () => {
 		card._lyricsManualUntil = Date.now() + LYR_MANUAL_HOLD_MS;
 		if (card._lyricsScrollTween) {
@@ -743,8 +743,8 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 		card._lyricsHint.visible = Boolean(text);
 	};
 
-	// Breathing «…» while the resolver runs: a chained in/out ease that
-	// stops the moment real content (or the miss hint) lands.
+
+
 	card._startLyricsWait = function () {
 		if (card._lyricsWaitOn) {
 			return;
@@ -791,16 +791,16 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 	card._resetLyricsFeed = function () {
 		card._stopLyricsWait();
 
-		// A follow tween must never write into a feed that is being torn
-		// down or replaced.
+
+
 		if (card._lyricsScrollTween) {
 			GLib.source_remove(card._lyricsScrollTween);
 			card._lyricsScrollTween = null;
 		};
 
 		for (const child of card._lyricsBox.get_children()) {
-			// Rows with repeat:-1 breathing anims must stop before removal
-			// (a detached actor would keep easing off-stage forever).
+
+
 			if (child._setBreathing) {
 				child._setBreathing(false);
 			};
@@ -810,8 +810,8 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 		card._lyricsLabels = [];
 		card._lyricsActive = -1;
 		card._lyricsSynced = false;
-		// A rebuilt feed follows again: the manual park is tied to the old
-		// rows (Isle resets the hold on every track rebuild too).
+
+
 		card._lyricsManualUntil = 0;
 		card._lyricsScrollPending = -1;
 		card._lyricsOpacities = [];
@@ -830,23 +830,23 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 		};
 
 		card._lyricsSynced = Boolean(result.synced);
-		
-		// Convert to milliseconds immediately (match Isle's data structure exactly)
-		// This ensures indices align correctly between _lyricsLines and _lyricsLabels
+
+
+
 		let linesMs = result.lines.map(line => ({
-			time_ms: line.time * 1000,  // seconds → milliseconds
+			time_ms: line.time * 1000,
 			text: line.line || ''
 		}));
 
 		if (card._lyricsSynced) {
-			// Isle's long-intro rule: a song whose first line comes late
-			// opens with the breathing pause dots at 0:00.
+
+
 			if (linesMs.length > 0 && linesMs[0].time_ms > LYR_INTRO_MS) {
 				linesMs = [{time_ms: 0, text: ''}, ...linesMs];
 			};
 		};
 
-		// Store the millisecond-based array (matches Isle's structure)
+
 		card._lyricsLines = linesMs;
 
 		for (const entry of linesMs) {
@@ -856,9 +856,9 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 			card._lyricsLabels.push(row);
 		};
 
-		// Isle's end spacer: room after the last line, so it too can scroll
-		// up to the reading anchor (padding would not do: St takes it off
-		// the scrolled view).
+
+
+
 		if (card._lyricsLabels.length > 0) {
 			card._lyricsBox.add_child(new St.Widget({
 				x_expand: true,
@@ -868,16 +868,16 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 
 		card._setLyricsHint('');
 
-		// Wrapped rows reflow when the container width changes (window
-		// resize, widget scale): the adjustment's upper limit changes, and
-		// the active line's allocation moves — re-anchor it unless a manual
-		// scroll hold is parked (Isle's relayout hook), once per feed.
+
+
+
+
 		if (!card._lyricsUpperHooked && card._lyricsScroll.vadjustment) {
 			card._lyricsUpperHooked = true;
 			card._lyricsScroll.vadjustment.connect('notify::upper', () => {
 				if (card._lyricsOn && card._lyricsSynced && Date.now() >= card._lyricsManualUntil) {
-					// Force re-scroll without changing the active row by
-					// resetting the active index so the tick sees a change.
+
+
 					const same = card._lyricsActive;
 					card._lyricsActive = -2;
 					card._tickLyrics(card._lyricsPositionUs ?? 0);
@@ -885,26 +885,26 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 			});
 		};
 
-		// Landing on a line mid-song (toggle open, track switch): the
-		// ladder sets in one shot, then the follow scroll snaps to the
-		// anchor on the same frame.
+
+
+
 		card._tickLyrics(card._lyricsPositionUs ?? 0, { shown: true });
 	};
 
-	// One lyric line: multi-line wrap on word boundaries (char fallback —
-	// the WORD_CHAR rule), no truncation and no ellipsis, so a long line
-	// keeps its full text at any card width and simply grows the block.
-	// Synced rows are reactive (Isle): a click jumps the player to the
-	// line's stamp through the seek hook; stopping the press also keeps
-	// the panel's own close-on-click handler out of the way.
+
+
+
+
+
+
 	function buildLyricLine(text, timeMs) {
-		// Isle's instrumental fallback: empty text shows ♪ music note
+
 		const displayText = text.trim() || '♪';
 		const row = new St.Label({
 			text: displayText,
 			x_align: Clutter.ActorAlign.START,
-			// Resting state: dimmest-comer opacity + slightly smaller, as
-			// Isle's rows are built before their first follow().
+
+
 			opacity: card._lyricsSynced ? LYR_COMING_OPACITY.at(-1) : 140,
 			style: card._lyricsSynced ? lyricStyleInactive : lyricStyleInactive,
 		});
@@ -922,7 +922,7 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 			row.connect('button-press-event', (actor, event) => {
 				if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
 				if (typeof card._lyricsSeekUs === 'function') {
-					// Convert milliseconds to microseconds for MPRIS (Isle does: line.time_ms * 1000)
+
 					card._lyricsSeekUs(Math.round(timeMs * 1000));
 				};
 				return Clutter.EVENT_STOP;
@@ -932,11 +932,11 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 		return row;
 	};
 
-	// Isle's instrumental pause row: a single subtle music note (♪) that
-	// pulses gently when active, left-aligned to match lyric text flow —
-	// no plain text dots, matching Isle's top-bar overlay instrumental
-	// indicator. The note responds to the active state (accent color, full
-	// opacity) just like text lines do.
+
+
+
+
+
 	function buildPauseDots(timeMs) {
 		const row = new St.BoxLayout(boxLayoutProps({
 			vertical: false,
@@ -950,8 +950,8 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 			text: '♪',
 			x_align: Clutter.ActorAlign.START,
 			y_align: Clutter.ActorAlign.CENTER,
-			// Extra line-height prevents top/bottom clipping of the glyph.
-			// Color and opacity are set dynamically by the ladder.
+
+
 			style: `font-size: ${noteSize}px; line-height: ${Math.round(noteSize * 1.3)}px; padding: 2px 0px;`,
 		});
 		note.set_pivot_point(0, 0.5);
@@ -965,8 +965,8 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 			note.remove_all_transitions();
 			note.set_scale(1, 1);
 			if (!on || !row.mapped) {
-				// When not breathing, the ladder's opacity takes over
-				// (set via row.opacity in applyRow).
+
+
 				return;
 			};
 			try {
@@ -988,7 +988,7 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 			row.connect('button-press-event', (actor, event) => {
 				if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
 				if (typeof card._lyricsSeekUs === 'function') {
-					// Convert milliseconds to microseconds for MPRIS
+
 					card._lyricsSeekUs(Math.round(timeMs * 1000));
 				};
 				return Clutter.EVENT_STOP;
@@ -1009,45 +1009,45 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 		const goingLyrics = !card._lyricsOn;
 		card._lyricsOn = goingLyrics;
 
-		// ── Instant swap (click path), plus the cold-start fallback: a
-		// stage without a real allocation yet cannot measure a page, so it
-		// flips without a flight (the system cross's cold-start branch).
+
+
+
 		const stageBox = card.stage.get_allocation_box();
 		const pageW = Math.floor(stageBox.get_width());
 		if (!animated || pageW < 32) {
 			card.lyricsPanel.visible = card._lyricsOn;
-			// Hide entire card content when showing lyrics (glass mode shows only text)
+
 			card.container.visible = !card._lyricsOn;
 			if (card._lyricsOn) {
-				// Same-track reopen reuses the existing feed; an empty feed
-				// (previous lookup failed) forces a retry.
+
+
 				card._loadLyrics(card._lyricsLabels.length === 0);
 			};
 			return;
 		};
 
-		// ── The cross (swipe path) — the system monitor's page flight,
-		// copied 1:1: both pages live side by side in the stage bin, start
-		// exactly one baseDistance apart (base = pageW + pageW/16, GNOME's
-		// baseDistance), and travel by their own translations in lockstep —
-		// EASE_OUT_CUBIC over CROSS_DURATION on both travellers, nothing
-		// fades, the pages never overlap; the only thing crossing the pane
-		// is the seam between them. No page dashes here on purpose.
+
+
+
+
+
+
+
 		const base = pageW + Math.round(pageW / 16);
 
 		card.crossBusy = true;
 		const leaving = goingLyrics ? card.container : card.lyricsPanel;
 		const entering = goingLyrics ? card.lyricsPanel : card.container;
 
-		// The arriving page waits exactly one baseDistance off-stage; the
-		// offset lands BEFORE it turns visible — no flash at its old spot.
+
+
 		entering.translation_x = next ? base : -base;
 		entering.visible = true;
 
 		if (goingLyrics) {
-			// Real content rides in: start the resolve at the flight start
-			// (the same call and the same retry rule the click toggle uses),
-			// the way the system cross pushes live data onto both pages.
+
+
+
 			card._loadLyrics(card._lyricsLabels.length === 0);
 		};
 
@@ -1058,8 +1058,8 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 			onComplete: () => {
 				if (isActorDestroyed(leaving)) return;
 				leaving.visible = false;
-				// The slot resets for the next flight, the way the system
-				// cross re-lays its rows once the pages settle.
+
+
 				leaving.translation_x = 0;
 			},
 		});
@@ -1068,8 +1068,8 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 			duration: CROSS_DURATION,
 			mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
 			onComplete: () => {
-				// The arriving page is the page now on duty — same as the
-				// system cross's onComplete wiring.
+
+
 				card.crossBusy = false;
 			},
 		});
@@ -1102,7 +1102,7 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 			dir: card._lyricsDir,
 		}).then(result => {
 			if (token !== card._lyricsToken) {
-				// A newer track (or toggle cycle) superseded this lookup.
+
 				return;
 			};
 
@@ -1116,11 +1116,11 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 		});
 	};
 
-	// ── System-cross swipe over the whole card ────────────────────────────
-	// Copied from the system monitor's gesture: right-button press-drag-
-	// release, threshold 30px, serialized by crossBusy — a swipe during a
-	// travelling cross is swallowed. The left button stays free for the
-	// controls and the click toggles above; drag left plays "next".
+
+
+
+
+
 	card.stage.reactive = true;
 	let swipeStartX = null;
 
@@ -1143,34 +1143,34 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 		return Clutter.EVENT_STOP;
 	});
 
-	// Follow hook: highlights the line being sung and glides it to the
-	// reading anchor — ported from isle@zickrian.github.io's
-	// LyricsPane.follow(): opened-at-once rows (`shown`) skip the ease;
-	// opacity/scale ladders only touch rows that actually change; a manual
-	// scroll hold parks the SCROLL (highlighting keeps running); pause-dot
-	// rows breathe only with the playing state.
+
+
+
+
+
+
 	card._tickLyrics = function (positionUs, { shown = false } = {}) {
-		// Kept for the rebuild path (_buildLyrics lands mid-song).
+
 		card._lyricsPositionUs = positionUs;
 
 		if (!card._lyricsSynced || card._lyricsLabels.length === 0) {
 			return;
 		};
 
-		// Off stage (panel closed or not mapped yet) nothing eases or
-		// scrolls: rows hold their states, and the shown path explicitly
-		// bypasses so a mid-flight rebuild still lands dressed.
+
+
+
 		if (!shown && (!card._lyricsOn || !card.lyricsPanel.mapped)) {
 			return;
 		};
 
-		// Convert microseconds to milliseconds and apply fine-tuned offset
-		// to compensate for audio output buffer latency + UI rendering lag.
+
+
 		const positionMs = (positionUs / 1000) + LYR_SYNC_OFFSET_MS;
-		
-		// Binary search: find LAST index where line.time_ms <= positionMs
-		// This matches Isle's exact logic - finds the currently ACTIVE line.
-		// Line N is active from lines[N].time_ms up until lines[N+1].time_ms
+
+
+
+
 		let index = -1;
 		let low = 0;
 		let high = card._lyricsLines.length - 1;
@@ -1188,22 +1188,22 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 			return;
 		};
 
-		// Per-row last eased values (Isle's `follow`): only rows that
-		// actually change get a tween, the rest keep easing where they are.
+
+
 		if (card._lyricsOpacities?.length !== card._lyricsLabels.length) {
 			card._lyricsOpacities = card._lyricsLabels.map(() => -1);
 			card._lyricsScales = card._lyricsLabels.map(() => -1);
 		};
 
 		const applyRow = (row, i, opacity, scale, immediate) => {
-			// Text rows get active/inactive styles; instrumental note rows
-			// get active accent color or inactive muted color based on the
-			// opacity ladder (current line = accent + full opacity).
+
+
+
 			if (row._styleActive) {
 				row.style = opacity >= 255 ? row._styleActive : row._styleInactive;
 			} else if (row._noteChild) {
-				// Instrumental note: change color to accent when active,
-				// muted when inactive. The row's opacity is applied on top.
+
+
 				const color = opacity >= 255 ? theme.accent : theme.muted;
 				const noteSize = Math.round(lyrFont * 1.1);
 				row._noteChild.style = `font-size: ${noteSize}px; color: ${color}; line-height: ${Math.round(noteSize * 1.3)}px; padding: 2px 0px;`;
@@ -1215,8 +1215,8 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 			card._lyricsOpacities[i] = opacity;
 			card._lyricsScales[i] = scale;
 
-			// As ease() would off screen: there at once (`shown`, Isle's
-			// just-on-screen path); otherwise the 380ms ease.
+
+
 			row.remove_all_transitions();
 			if (immediate) {
 				row.opacity = opacity;
@@ -1250,25 +1250,25 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 			return;
 		};
 
-		// St.ScrollView in this runtime answers neither the "vscroll" JS
-		// property nor a working get_vscroll_bar() accessor (journaled),
-		// while the St.Scrollable interface exposes the adjustment right
-		// on the view as "vadjustment" — verified against the installed
-		// St-51 typelib, which also lacks st_adjustment_ease, so the
-		// follow tween walks adjustment.value by hand.
+
+
+
+
+
+
 		const adjustment = card._lyricsScroll.vadjustment ?? null;
 
 		if (!adjustment) {
 			return;
 		};
 
-		// Layout-managed children are positioned through their ALLOCATION:
-		// the actor's own y property stays 0 (it is the fixed-position
-		// slot), which made every line look like the first row
-		// (journaled: line=46 y=0 upper=984 page=130 -> 0).
+
+
+
+
 		const rowY = current.allocation ? current.allocation.y1 : 0;
-		// Isle's reading anchor: the sung line rests at 36% of the viewport
-		// from the top (not dead center) — the eye reads above the motion.
+
+
 		const ideal = rowY + current.height / 2 - adjustment.page_size * LYR_ANCHOR;
 		const highest = Math.max(adjustment.lower, adjustment.upper - adjustment.page_size);
 		const clamped = Math.min(Math.max(ideal, adjustment.lower), highest);
@@ -1277,16 +1277,16 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 			return;
 		};
 
-		// A manual scroll parks the follow for a while (Isle's hold):
-		// highlight updates keep running, the view keeps where the hand
-		// left it until the hold expires.
+
+
+
 		if (!shown && Date.now() < card._lyricsManualUntil) {
 			card._lyricsScrollPending = -1;
 			return;
 		};
 
-		// The view has no layout yet (cold start / mid-flight): park the
-		// request; the 250 ms ticker reprocesses and scrolls once mapped.
+
+
 		if (!card._lyricsScroll.mapped) {
 			card._lyricsScrollPending = index;
 			return;
@@ -1298,13 +1298,13 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 			return;
 		};
 
-		// Kill a running follow tween so two writes never race.
+
 		if (card._lyricsScrollTween) {
 			GLib.source_remove(card._lyricsScrollTween);
 			card._lyricsScrollTween = null;
 		};
 
-		// Isle's 520 ms ease-out-cubic scroll...
+
 		const startValue = adjustment.value;
 		const delta = clamped - startValue;
 		const durationMs = shown ? 1 : LYR_SCROLL_EASE_MS;
@@ -1324,36 +1324,36 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 			return GLib.SOURCE_REMOVE;
 		});
 
-		// Isle's dynamic scheduling: calculate exactly when the next line
-		// starts and schedule a timer for that moment (+30ms buffer),
-		// instead of fixed-interval polling. This ensures instant line
-		// switching at the exact timestamp.
+
+
+
+
 		if (card._lyricsPlaying && !shown && card._lyricsLines && index >= 0) {
 			const nextLine = card._lyricsLines[index + 1];
 			if (nextLine) {
-				// Calculate milliseconds until next line with sync offset applied
+
 				const nextTimeMs = nextLine.time_ms + LYR_SYNC_OFFSET_MS;
 				const currentPosMs = positionMs;
 				const msUntilNext = Math.max(0, nextTimeMs - currentPosMs);
-				
-				// Cancel any existing scheduled update
+
+
 				if (card._lyricsScheduledUpdate) {
 					GLib.source_remove(card._lyricsScheduledUpdate);
 					card._lyricsScheduledUpdate = null;
 				};
 
-				// Schedule the next update for exactly when the line appears
-				if (msUntilNext < 60000) { // Only schedule if within 1 minute
+
+				if (msUntilNext < 60000) {
 					card._lyricsScheduledUpdate = GLib.timeout_add(
 						GLib.PRIORITY_DEFAULT,
 						msUntilNext + LYR_SCHEDULE_BUFFER_MS,
 						() => {
 							card._lyricsScheduledUpdate = null;
-							// Recalculate position at the scheduled moment
+
 							const now = Math.floor(GLib.get_real_time() / 1000);
 							const controller = card._controller;
 							if (controller && controller._playing && now >= controller._seekLockUntil) {
-								const position = controller._position + 
+								const position = controller._position +
 									(Math.max(0, controller._rate) || 1) * (now - controller._posAt) * 1000;
 								card._tickLyrics(position);
 							};
@@ -1373,9 +1373,9 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 
 	card.title = createLabel('', 'widget-music-title', `font-size: ${titleFont}px; font-weight: 800; color: ${theme.text};`);
 	card.title.clutter_text.single_line_mode = true;
-	// Without ellipsize the meta line's min width equals the full text width,
-	// which pushed the column past the body clip and shaved the top-right
-	// status icon. Ellipsis keeps the column inside its allocation.
+
+
+
 	card.title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
 
 	card.artist = createLabel('', 'widget-music-artist', `font-size: ${artistFont}px; color: ${theme.muted};`);
@@ -1397,24 +1397,24 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 	card._contentWidth = contentWidth;
 	card._lastLength = 0;
 
-	// Ported from liquidglass-widgets: animated seek bar (thickness 3->8px
-	// on hover/drag), drag-to-seek with a stage grab, and built-in time
-	// labels painted under the bar.
+
+
+
 	const mutedColor = parseCssColor(theme.muted ?? '#ffffff');
 	const accentColor = parseCssColor(theme.accent ?? '#5b9de0');
 	card.slider = new SeekBar({
 		accent: [accentColor.r, accentColor.g, accentColor.b],
 		fg: [mutedColor.r, mutedColor.g, mutedColor.b],
-		// Light glass needs a stronger track and a higher disabled floor,
-		// or the bar disappears into the milky surface while idle.
+
+
 		trackAlpha: theme.dark ? 0.2 : 0.4,
 		disabledOpacity: theme.dark ? 90 : 150,
 		fontSize: Math.round(timeFont * 0.85),
 	});
 	card.slider.x_expand = true;
-	// 16 = bar headroom (thickness up to 8 at hover + margin) + 2px gap, then
-	// the MEASURED pixel height of the time markup (its size= is in points and
-	// renders wider in px, so a bare 1.25 guess shaved the digits' bottoms).
+
+
+
 	card.slider.set_size(-1, 16 + Math.ceil(card.slider.timeLabelHeight));
 
 	card.fractionForEvent = function (event) {
@@ -1437,8 +1437,8 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 		x_align: Clutter.ActorAlign.CENTER,
 	}));
 
-	// The repeat control is painted in the widget accent color (system accent
-	// or style-accent-color), per the reference look.
+
+
 	card.btnLoop = createControlButton(theme, 'repeat', 18, 4, 9, false, true);
 	card.btnPrev = createControlButton(theme, 'rewind', 18, 4, 9);
 	card.btnPlay = createControlButton(theme, 'play', 22, 2, 11);
@@ -1449,10 +1449,10 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 	card.controls.add_child(card.btnPlay.button);
 	card.controls.add_child(card.btnNext.button);
 
-	// The new icon sits top-right of the first row of the right column:
-	// that row belongs to it alone, the rest of the content sits below.
+
+
 	card.statusIcon = new St.Icon({
-		gicon: controlIcon(theme, 'music', false), // Inactive by default (gray)
+		gicon: controlIcon(theme, 'music', false),
 		x_align: Clutter.ActorAlign.END,
 		reactive: false,
 		style: 'icon-size: 18px; margin-bottom: 2px;',
@@ -1460,12 +1460,12 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 
 	card.times.add_child(card.timeElapsed);
 	card.times.add_child(card.timeTotal);
-	// The SeekBar paints its own time labels now; the old labels row stays
-	// out of the layout (its update code is kept harmless above).
+
+
 	if (card._coverSize >= 64) {
-		// The top-right music icon opens/closes the lyrics overlay. Same
-		// visuals as the old static icon; now clickable, with the shared
-		// hover shrink and click bounce of every other widget button.
+
+
+
 		card.lyricsToggle = new St.Button({
 			child: card.statusIcon,
 			x_align: Clutter.ActorAlign.END,
@@ -1491,10 +1491,10 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 	if (isMini) {
 		card.slider.hide();
 		card.times.hide();
-		// The mini right column is 113px wide; the full-size control row is
-		// 4×27px + gaps = 114px, so it overflowed the body clip by a pixel and
-		// shaved the top-right status icon. 26px buttons (icon 18 + 2×4 pad)
-		// bring the row to 110px.
+
+
+
+
 		for (const button of [card.btnLoop.button, card.btnPrev.button, card.btnPlay.button, card.btnNext.button]) {
 			button.set_width(26);
 			button.set_height(26);
@@ -1531,14 +1531,14 @@ card.artist.text = _('Play something to get going');
 				card.showArt(null);
 			};
 
-			// Reset time displays and slider when no track
+
 			card.timeElapsed.text = '0:00';
 			card.timeTotal.text = length > 0 ? formatUs(length) : '0:00';
 		};
 
-		// Lyrics plumbing: remember the query for the (lazy) load, auto-close
-		// the overlay on an empty card, refresh an open feed on track change
-		// (the key guard inside _loadLyrics keeps same-track ticks a no-op).
+
+
+
 		if (hasTrack) {
 			card._lyricsMeta = {title, artist, length, trackUrl};
 
@@ -1551,7 +1551,7 @@ card.artist.text = _('Play something to get going');
 			if (card._lyricsOn) {
 				card._lyricsOn = false;
 				card.lyricsPanel.visible = false;
-				card.container.visible = true; // Show card content when lyrics close
+				card.container.visible = true;
 			};
 		};
 
@@ -1559,34 +1559,34 @@ card.artist.text = _('Play something to get going');
 		card._lastLength = displayLength;
 		card.timeTotal.text = displayLength > 0 ? formatUs(displayLength) : '0:00';
 		card.slider.setLength?.(displayLength);
-		// Skipped while dragging (SeekBar guards inside, paints _dragPos).
+
 
 		if (!seekPreview) {
 			card.timeElapsed.text = hasTrack ? formatUs(position) : '0:00';
 			card.slider.setPosition?.(hasTrack ? position : 0);
 		};
 
-		// Inactive widget guard: players like VLC/Amberol keep Can* = true
-		// advertised over MPRIS even while stopped, so the old gate left every
-		// button "clickable but dead" on the empty card. Real control requires
-		// content: a track loaded or playback actually running.
+
+
+
+
 		const trackGate = hasTrack || playing;
 		const control = (canControl !== false || canPlay || canPause || canPrev || canNext || canSeek) && trackGate;
 
-		// Fully inactive (no track, not playing) dims the row harder than the
-		// in-session "capability off" state. On light glass the dark icons
-		// at the old 45-level vanished into the milky surface, so the idle
-		// floor is higher there; dark glass keeps the tuned look.
+
+
+
+
 		const idleDim = theme.dark ? 45 : 120;
 		const loopDim = theme.dark ? 30 : 80;
 		const dimmed = control ? 100 : idleDim;
 
 		const loopOk = loopSupported !== false;
 
-		// Buttons stay reactive: the disabled look is carried by the dimmed
-		// opacity, while every click still plays the squash bounce (visual
-		// feedback on dead buttons). Dead clicks are safe no-ops —
-		// _callMethod bails without this._name, _cycleLoop/_setLoop too.
+
+
+
+
 		card.btnLoop.button.reactive = loopOk;
 		card.btnLoop.button.opacity = !loopOk ? loopDim : (control ? 255 : idleDim);
 		card.btnPrev.button.reactive = true;
@@ -1598,25 +1598,25 @@ card.artist.text = _('Play something to get going');
 
 		const seekable = control && (length > 0 || playing) && (canSeek || canPlay || canPause);
 		card.slider.setEnabled?.(seekable);
-		// The bar stays reactive even when it cannot seek: hover must still
-		// animate its thickness (the user expectations), while drag attempts
-		// bail out inside SeekBar's own press guard (disabled/lengthless).
 
-		// Update play/pause icon (bare pause bars — no ring, bigger symbol)
+
+
+
+
 		setButtonIcon(card.btnPlay, playing ? 'pause' : 'play', hasTrack);
 		recolorIcon(card.btnPlay);
-		
-		// Update navigation icons (prev/next) with active state
+
+
 		setButtonIcon(card.btnPrev, 'rewind', hasTrack);
 		setButtonIcon(card.btnNext, 'fast-forward', hasTrack);
-		
-		// Update status icon (lyrics) based on track state
+
+
 		if (card.statusIcon) {
 			card.statusIcon.gicon = controlIcon(theme, 'music', hasTrack);
 			card.statusIcon.opacity = hasTrack ? 255 : idleDim;
 		}
-		
-		// Update loop icon based on state
+
+
 		if (loop === 'Track') {
 			setButtonIcon(card.btnLoop, 'repeat-1', hasTrack);
 			recolorIcon(card.btnLoop);
@@ -1627,14 +1627,14 @@ card.artist.text = _('Play something to get going');
 			setButtonIcon(card.btnLoop, 'repeat-off', hasTrack);
 			recolorIcon(card.btnLoop, control ? 1 : (theme.dark ? 0.4 : 0.6));
 		}
-		
+
 		recolorIcon(card.btnPrev);
 		recolorIcon(card.btnNext);
 
-		// Keep the lyrics feed in sync with the reported position. Runs every
-		// tick but repaints only on an active-line change (guarded inside).
-		// The playing state drives the pause-dot breathing (Isle's
-		// syncPlaying()).
+
+
+
+
 		card._lyricsPlaying = playing;
 		card._tickLyrics(position);
 	};
@@ -1649,10 +1649,10 @@ let Controller = class Controller {
 	constructor(card, bus, settings) {
 		this._card = card;
 
-		// Isle's click-to-seek (LyricsPane rows): clicking a lyric line
-		// jumps the player to that stamp. Reuses the controller's own seek
-		// commit path (SetPosition + Seek fallback + rate-aware bookkeeping)
-		// with the fraction derived from the line's microsecond target.
+
+
+
+
 		card._lyricsSeekUs = (us) => {
 			if (!this._card || !this._name || !(this._length > 0)) {
 				return;
@@ -1740,9 +1740,9 @@ let Controller = class Controller {
 
 		const bestRow = await this._pickActive();
 
-		// destroy() may have run while the player list was resolving; wiring
-		// a player after that would re-subscribe D-Bus signals and re-arm
-		// the timers destroy() already removed (leak until extension disable).
+
+
+
 		if (this._relisten === false || !this._card) {
 			return;
 		};
@@ -1808,8 +1808,8 @@ let Controller = class Controller {
 			let value = 0;
 
 			if (playing) {
-				// Every playing player keeps a heartbeat timestamp, so the
-				// most recently activated one stays stable while it plays.
+
+
 				this._lastPlayingAt[candidate] = Date.now();
 				value = 500;
 			} else if (status === 'Paused' && hasTitle) {
@@ -1826,10 +1826,10 @@ let Controller = class Controller {
 		const playingRows = candidates.filter(row => row.playing);
 		const idleRows = candidates.filter(row => !row.playing);
 
-		// What is playing right now owns the card. The browser skip
-		// preference only outranks it while some other app still plays:
-		// Spotify playing beats a noisy YouTube tab, but on an empty field
-		// the YouTube tab is shown rather than "ignored to nothing".
+
+
+
+
 		const playNonBrowser = playingRows.filter(row => !row.isChromium);
 		const playPool = playingRows.length === 0
 			? []
@@ -1841,8 +1841,8 @@ let Controller = class Controller {
 			return playPool[0];
 		};
 
-		// Nothing plays: paused-with-title keeps leading bare titles, and
-		// the browser preference applies only while alternatives remain.
+
+
 		let idlePool = idleRows;
 		if (ignoreBrowsers) {
 			const nonBrowser = idleRows.filter(row => !row.isChromium);
@@ -1900,8 +1900,8 @@ let Controller = class Controller {
 						this._syncPosition();
 					};
 
-					// Instant lyrics sync on play/pause: breathing animation
-					// state changes immediately, not waiting for the ticker.
+
+
 					if (this._card?._lyricsOn && this._card?._lyricsSynced) {
 						this._card._tickLyrics(this._position);
 					};
@@ -1909,16 +1909,16 @@ let Controller = class Controller {
 
 				if (changed?.Position !== undefined) {
 					this._position = Math.max(0, Number(variantValue(changed.Position) ?? 0));
-					// Record timestamp when position was received (no backdating)
-					// Isle's daemon captures position and timestamp atomically; we
-					// receive them via D-Bus with a small delay, but the MPRIS position
-					// value itself is already accurate for the player's internal state.
+
+
+
+
 					const now = Math.floor(GLib.get_real_time() / 1000);
-					this._posAt = now;  // No artificial backdating
+					this._posAt = now;
 					this._lastPosSync = now;
 
-					// Instant lyrics sync on position change: immediate line
-					// switching instead of waiting up to 50ms for the ticker.
+
+
 					if (this._card?._lyricsOn && this._card?._lyricsSynced) {
 						this._card._tickLyrics(this._position);
 					};
@@ -1978,9 +1978,9 @@ let Controller = class Controller {
 					this._lastPosSync = Math.floor(GLib.get_real_time() / 1000);
 					this._seekLockUntil = 0;
 
-					// Instant lyrics re-sync on seek: the ticker would take up
-					// to 100ms to catch the new position, but a seek demands
-					// immediate line switching for responsive UX.
+
+
+
 					if (this._card?._lyricsOn && this._card?._lyricsSynced) {
 						this._card._tickLyrics(position);
 					};
@@ -2037,8 +2037,8 @@ let Controller = class Controller {
 
 		if (status === 'Playing') {
 			this._acceptUntil = Math.floor(GLib.get_real_time() / 1000) + 1500;
-			// Re-anchor posAt so the timer's first accumulation step starts
-			// from now, not from whenever the last update arrived.
+
+
 			this._posAt = Math.floor(GLib.get_real_time() / 1000);
 
 			if (this._chromium) {
@@ -2047,8 +2047,8 @@ let Controller = class Controller {
 		};
 
 		if (wasPlaying && status === 'Paused') {
-			// Freeze the accumulated position so re-play doesn't add the
-			// pause duration to the extrapolated offset.
+
+
 			const now = Math.floor(GLib.get_real_time() / 1000);
 			this._position = Math.max(0, this._position + (Math.max(0, this._rate) || 1) * (now - this._posAt) * 1000);
 			this._posAt = now;
@@ -2080,11 +2080,11 @@ let Controller = class Controller {
 						const reply = _connection.call_finish(result);
 						this._handleMetaChange(parseMetadata(reply?.deep_unpack()?.[0]), true);
 					} catch (error) {
-						// Ignore stale metadata reads.
+
 					};
 				});
 		} catch (error) {
-			// Ignore invalid bus states.
+
 		};
 	};
 
@@ -2162,11 +2162,11 @@ let Controller = class Controller {
 		this._applyStatus(status);
 
 		if (this._status === 'Stopped') {
-			// Players like Amberol pre-load queue metadata while Stopped and
-			// never re-emit Metadata when playback starts on the SAME track
-			// (only PlaybackStatus changes) — dropping it here left the card
-			// empty with just buttons/slider reacting. The reference renders
-			// whatever metadata the player reports, Stopped or not.
+
+
+
+
+
 			this._meta = meta.title
 				? {title: meta.title, artist: meta.artist, artUrl: meta.artUrl, trackUrl: meta.trackUrl}
 				: {title: null, artist: null, artUrl: null, trackUrl: null};
@@ -2242,28 +2242,28 @@ let Controller = class Controller {
 
 				this._render();
 			} catch (error) {
-				// Keep the per-second renderer alive: in GJS an exception
-				// inside a GLib.timeout_add callback would otherwise destroy
-				// the source, silently killing the ticking slider/time.
+
+
+
 				log(`music widget tick error: ${error}`);
 			};
 			return GLib.SOURCE_CONTINUE;
 		});
 
-		// Dedicated fast lyrics ticker: high-frequency position tracking
-		// (50ms = 20fps) ensures responsive line switching. Uses GLib.get_real_time()
-		// for microsecond precision matching Isle's timing approach.
+
+
+
 		if (!this._lyricsTimerId) {
 			this._lyricsTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
 				try {
 					if (!this._card || !this._card._lyricsOn || !this._card._lyricsSynced || !this._card._lyricsLabels?.length) {
 						return GLib.SOURCE_CONTINUE;
 					};
-					// High-resolution time calculation using microseconds
+
 					const nowMs = Math.floor(GLib.get_real_time() / 1000);
 					let position = this._position;
 					if (this._playing && nowMs >= this._seekLockUntil && !this._seekActive) {
-						// Calculate position with microsecond precision
+
 						const elapsedMs = nowMs - this._posAt;
 						position = this._position + (Math.max(0, this._rate) || 1) * elapsedMs * 1000;
 					};
@@ -2284,9 +2284,9 @@ let Controller = class Controller {
 		let best;
 
 		try {
-			// _pickActive is async — without await this was a Promise, so the
-			// player switch check always bailed and widgets missed freshly
-			// started players (e.g. first track in Amberol).
+
+
+
 			best = await this._pickActive();
 		} catch (error) {
 			warn('music: failed to scan MPRIS players', error);
@@ -2354,16 +2354,16 @@ let Controller = class Controller {
 		connect(c.btnPrev.button, 'clicked', callMethod('Previous'));
 		connect(c.btnPlay.button, 'clicked', callMethod('PlayPause'));
 		connect(c.btnNext.button, 'clicked', callMethod('Next'));
-		// SeekBar handles press/motion/release internally (stage grab); only
-		// the commit hook is wired here.
+
+
 		c.slider._onSeek = fraction => {
 			this._positionBeforeSeek = this._position;
 			this._commitSeek(fraction);
 		};
 	};
 
-	// The SeekBar handles press/motion/release internally (stage grab) and
-	// calls back through c.slider._onSeek when the user commits a seek.
+
+
 
 	_onSliderTouch(event) {
 		const type = event.type();
@@ -2475,10 +2475,10 @@ let Controller = class Controller {
 		this._seekLockUntil = Date.now() + 2000;
 		this._render();
 
-		// Reference seekTo rule: SetPosition only with the player's real,
-		// current trackId; players without one (or that reject it) only honor
-		// relative Seek — feeding them a fabricated NoTrack object path makes
-		// GetPosition-targeted apps silently ignore the seek.
+
+
+
+
 		if (trackId && trackId.startsWith('/')) {
 			const reply = await this._callRemote(this._name, PLAYER_PATH, PLAYER_IFACE, 'SetPosition',
 				GLib.Variant.new('(ox)', [trackId, target]), null);
@@ -2560,11 +2560,11 @@ let Controller = class Controller {
 						this._posAt = Math.floor(GLib.get_real_time() / 1000);
 						this._render();
 					} catch (error) {
-						// Ignore stale position reads.
+
 					};
 				});
 		} catch (error) {
-			// Ignore invalid bus states.
+
 		};
 	};
 
@@ -2605,14 +2605,14 @@ let Controller = class Controller {
 		const call = (m) => this._callRemote(this._name, PLAYER_PATH, PLAYER_IFACE, m, null, null);
 
 		if (method === 'PlayPause') {
-			// Flatpak Amberol accepts PlayPause, answers it successfully
-			// and silently does nothing (checked by direct busctl: Play
-			// works, PlayPause never toggles). The call returning without
-			// an error meant no fallback ever fired and the card sat there
-			// while "music did not turn on". Read the status back after
-			// the toggle; when it did not change, send the explicit
-			// Play/Pause that such players do honor — and remember the
-			// player so the next click skips the probe entirely.
+
+
+
+
+
+
+
+
 			const name = this._name;
 
 			if (this._playToggleBusy) {
@@ -2632,8 +2632,8 @@ let Controller = class Controller {
 
 				await call('PlayPause');
 
-				// PlaybackStatus changes arrive within milliseconds of the
-				// call; this small wait is only a read-back window.
+
+
 				await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 400, () => {
 					resolve();
 					return GLib.SOURCE_REMOVE;
@@ -2712,14 +2712,14 @@ let Controller = class Controller {
 		if (this._card) {
 			stopEmptyGif(this._card);
 
-			// The 16 ms lyrics scroll tween writes adjustment.value and must
-			// not fire into a destroyed card after this.
+
+
 			if (this._card._lyricsScrollTween) {
 				GLib.source_remove(this._card._lyricsScrollTween);
 				this._card._lyricsScrollTween = null;
 			};
 
-			// Dynamic lyrics scheduling timer must also be cleaned up.
+
 			if (this._card._lyricsScheduledUpdate) {
 				GLib.source_remove(this._card._lyricsScheduledUpdate);
 				this._card._lyricsScheduledUpdate = null;
@@ -2735,7 +2735,7 @@ let Controller = class Controller {
 			try {
 				target.disconnect(id);
 			} catch (error) {
-				// Ignore disconnect failures.
+
 			};
 		};
 
@@ -2765,9 +2765,9 @@ export function render({body, createLabel, theme, sizeForWidget, widget, setting
 	const card = createCard(theme, createLabel, widgetWidth, widgetHeight);
 	card._settings = settings;
 
-	// Restore lyrics state across theme/style re-renders: when _rebuildWidgets
-	// destroys the old card and creates a new one, the lyrics view should stay
-	// open if it was open before. Store in widget._runtimeState (survives rebuild).
+
+
+
 	widget._runtimeState = widget._runtimeState || {};
 	if (widget._runtimeState.lyricsWasOn) {
 		card._lyricsOn = true;
@@ -2775,7 +2775,7 @@ export function render({body, createLabel, theme, sizeForWidget, widget, setting
 		card.container.visible = false;
 	}
 
-	// Track state on toggle for next rebuild
+
 	const originalToggle = card.toggleLyrics;
 	card.toggleLyrics = function(opts) {
 		originalToggle.call(card, opts);
@@ -2783,11 +2783,11 @@ export function render({body, createLabel, theme, sizeForWidget, widget, setting
 	};
 
 	const controller = new Controller(card, sessionBus(), settings);
-	card._controller = controller; // Store reference for dynamic scheduling
+	card._controller = controller;
 
 	body.add_child(card.stage);
 	body.connect('destroy', () => {
-		// Save lyrics state before destruction so next render can restore it
+
 		widget._runtimeState.lyricsWasOn = card._lyricsOn;
 		controller.destroy();
 	});

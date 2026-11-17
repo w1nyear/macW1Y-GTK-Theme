@@ -1,46 +1,46 @@
-// Takes an application icon apart into the plates it is drawn on (rounded
-// squares, circles and the like, outermost first) and the symbol drawn on them,
-// so that it can be redrawn as glass plates under a one-color symbol.
-//
-// A plate is a shape close to a rounded rectangle or a superellipse (a circle,
-// an ellipse and a squircle are superellipses), possibly with regular teeth or
-// waves along its outline. Its color is one color or a smooth gradient; a
-// plate that carries a picture keeps its shape, and the picture is taken as
-// the symbol. Pure computation on unpremultiplied RGBA, so that it runs in a
-// worker process as well as in tests.
-// A shape counts as a plate when it covers the candidate this well, a shape between a diamond and an ellipse only when
-// it covers it as well as FIT_POINTED: one that covers it less rounds off the corners of a polygon.
+
+
+
+
+
+
+
+
+
+
+
+
 const FIT_PLATE = 0.94;
 const FIT_POINTED = 0.96;
-// Oklab distances: neighbours closer than this are one area; a pixel this far
-// from its plate's color is symbol, fully from SYMBOL_HIGH.
+
+
 const SAME_AREA = 0.035;
-// For fineAreas(): how readily small areas join (over their size in analysis px), the largest step ever joined, and
-// room for every edge of an image up to 1024 px square.
+
+
 const EDGE_SLOTS = 2 ** 21;
 const FINE_JOIN = 0.6;
 const FINE_MAX = 0.1;
 const FINE_DRIFT = 0.25;
 const SYMBOL_LOW = 0.045;
 const SYMBOL_HIGH = 0.11;
-// A plate whose largest area strays this much (RMS) from a smooth color, or
-// covers less than this share of it, carries a picture.
+
+
 const PLAIN_RMS = 0.035;
 const MIN_SURFACE = 0.3;
-// The most grain (typical distance from the plate's color) a plain plate has.
+
 const MAX_GRAIN = 0.04;
-// An area smaller than this share of the image is never a plate, and an inner
-// plate has at least this share of the plate it sits on.
+
+
 const MIN_PLATE_AREA = 0.04;
-// A shape counts as a plate only when this much of it is opaque (an outline
-// drawn on nothing is a symbol).
+
+
 const MIN_OPAQUE = 0.85;
-// Two areas of the symbol meet on an edge where the color across it steps by this share of their colors' difference.
+
 const TONE_STEP = 0.5;
-// The weakest part of a symbol is drawn this much weaker than its strongest; see symbolTone().
+
 const DETAIL_DIM = 0.45;
 const TONE_GROUPS = 6;
-// See gradientsOf().
+
 const GRADIENT_SPREAD = 0.15;
 const GRADIENT_TAIL = 0.05;
 const TONE_LEVELS = 8;
@@ -48,77 +48,77 @@ const TONE_FULL = 0.3;
 const TONE_SEEN = 0.2;
 const TONE_ORDER = 0.12;
 const MIN_INNER_SHARE = 0.1;
-// A shape that falls a little short of a plate (smaller than MIN_PLATE_AREA or MIN_INNER_SHARE, or fitted less closely
-// than FIT_PLATE) is one all the same when a plate on the same plate has about its size and proportions, so that of two or three
-// alike shapes all become plates, not one.
+
+
+
 const PEER_AREA = 0.012;
 const PEER_FIT = 0.88;
 const PEER_SIZE = 0.3;
-// An area with pieces of other colors on its edge (a toggle's knob) is not closed by filling its holes: the pieces
-// mostly in the shape fitted to it (which ends where the piece begins), adding at most this share to it, are taken in
-// and the shape fitted again.
+
+
+
 const ABSORB_SHARE = 0.7;
 const ABSORB_INSIDE = 0.6;
-// A plate's surface cut into pieces, each at least this share of the largest and of the plate, in three or more
-// colors this far apart, has none of them as its color. Two colors are a surface and something on it.
+
+
 const PIECE_SHARE = 0.4;
 const PIECE_MIN = 0.08;
 const PIECE_APART = 0.07;
-// A plate on such a plate whose color is this far from all the pieces' is not one of them (the disc in a pie's middle).
+
 const PIECE_FOREIGN = 0.14;
-// A shape on a plate in a shade of its color with more than this share of its edge along the plate's outline (within
-// BAND) is part of the plate's surface.
+
+
 const ALONG_PARENT = 0.1;
-// Areas smaller than this share of the image are measured pixel by pixel (anti-aliased edges, thin lines, specks), and
-// so are areas less than THICK of whose pixels have all four neighbours in them.
+
+
 const REGION_MIN = 0.002;
 const THICK = 0.4;
-// A large area of a plate is part of its surface when it covers GROUND_SHARE of the plate, lies along GROUND_EDGE of
-// its outline (the pixels within BAND analysis px of it, past a rim or a border along it) and the closest
-// GROUND_CLOSEST of its pixels come within GROUND_NEAR (Oklab) of an area of the surface.
+
+
+
 const GROUND_SHARE = 0.02;
 const GROUND_EDGE = 0.015;
 const BAND = 4;
 const GROUND_CLOSEST = 0.05;
 const GROUND_NEAR = 0.1;
-// Nor is an area narrower than this (its breadth, analysis px; see broad()).
+
 const GROUND_BREADTH = 3;
-// An area with EDGE_INSIDE of its pixels within EDGE_BAND of its plate's half size from its outline is the icon's own
-// rim, which the glass's rim takes the place of.
-// A pixel outside every plate that is this transparent and this dark is a drop shadow, not symbol.
+
+
+
 const SHADOW_ALPHA = 0.6;
 const SHADOW_LIGHTNESS = 0.3;
 const EDGE_BAND = 0.09;
 const EDGE_INSIDE = 0.8;
-// So is a line running along the outline at an even depth within twice that, as long as the plate is wide.
+
 const EDGE_EVEN = 1.2;
-// Two areas shade into each other when the median step across their edge, at least SEAM_MIN px long, is below SEAM_STEP.
+
 const SEAM_STEP = 0.02;
 const SEAM_MIN = 12;
-// Inside a plate, deeper than FADE_DEPTH (analysis px), a symbol pixel's opacity is raised to FADE_GAMMA: a symbol that
-// fades out over a hole in its plate keeps its fade without growing faint.
+
+
 const FADE_DEPTH = 2;
 const FADE_GAMMA = 0.6;
-// A gloss or a shade lays GLOSS_MIN to GLOSS_MAX of white or black over what is under it, the same over each color to
-// within GLOSS_NEAR (Oklab).
+
+
 const GLOSS_MIN = 0.05;
 const GLOSS_MAX = 0.6;
 const GLOSS_NEAR = 0.03;
-// A veil (see symbolLayer()) lays GLOSS_MIN to VEIL_MAX of white or black over at least VEIL_MIN analysis px², within
-// VEIL_NEAR (Oklab) of the surface's colors under it, which change by VEIL_SPREAD or more across it.
+
+
 const VEIL_MAX = 0.35;
 const VEIL_MIN = 40;
 const VEIL_NEAR = 0.04;
 const VEIL_SPREAD = 0.08;
-// Pixels that stand out of the surface more than STROKE_LOW of the symbol's threshold, next to one another and at
-// least STROKE_MIN analysis px² together, are one stroke.
+
+
 const STROKE_LOW = 0.6;
 const STROKE_MIN = 3;
-// The share of a large area's pixels closest to the surface that tell whether it fades into it.
+
 const FADE_CLOSEST = 0.05;
-// The surface around a pixel is averaged over squares of these half sides (analysis px), the nearer weighing more.
+
 const REACH = [1, 2, 4, 8, 16, 32, 64];
-// Lightness differences on a plate's surface smaller than this (Oklab L), or than twice its grain, are noise.
+
 const SURFACE_STEP = 0.012;
 const LINEAR = new Float32Array(256).map((_, i) => {
     const c = i / 255;
@@ -135,7 +135,7 @@ function oklab(r, g, b, out, at) {
     out[at + 2] = 0.0259040371 * l + 0.7827717662 * m - 0.808650822 * s;
 }
 
-/** sRGB (0-255) of an Oklab color. */
+
 export function oklabToSrgb(L, a, b) {
     const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
     const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
@@ -154,7 +154,7 @@ function smoothstep(lo, hi, x) {
     return t * t * (3 - 2 * t);
 }
 
-/** Signed distance (px, negative inside) from a pixel position to the shape's outline. */
+
 export function shapeDistance(shape, x, y) {
     const dx = x - shape.cx, dy = y - shape.cy;
     let d;
@@ -166,7 +166,7 @@ export function shapeDistance(shape, x, y) {
     else {
         const n = shape.exponent;
         const f = (Math.abs(dx / shape.rx) ** n + Math.abs(dy / shape.ry) ** n) ** (1 / n);
-        // A first-order distance: the level set's value over the length of its gradient.
+
         d = (f - 1) * Math.min(shape.rx, shape.ry);
     }
     if (!shape.ripple)
@@ -178,8 +178,8 @@ export function shapeDistance(shape, x, y) {
     return len - base * rippleFactor(shape.ripple, Math.atan2(dy, dx));
 }
 
-// The distance into a corner of radius r at (px, py) from its center, for a superellipse corner of exponent n: its
-// norm over the length of its gradient, which fades in from the center, where the gradient has no direction.
+
+
 function cornerLength(px, py, r, n) {
     if (n === 2)
         return Math.hypot(px, py);
@@ -220,10 +220,10 @@ function maskOf(data, w, h) {
     return { data, x1, y1, x2, y2, area };
 }
 
-// Every `step`th pixel each way only, when ranking shapes.
+
 function overlap(shape, mask, w, h, step = 1) {
     let inter = 0, union = 0;
-    // Teeth reach out of the basic shape; nothing else does.
+
     const reach = shape.ripple ? 1.3 : 1;
     const x1 = Math.max(Math.floor(Math.min(mask.x1, shape.cx - shape.rx * reach)) - 2, 0);
     const x2 = Math.min(Math.ceil(Math.max(mask.x2, shape.cx + shape.rx * reach)) + 2, w - 1);
@@ -240,14 +240,14 @@ function overlap(shape, mask, w, h, step = 1) {
     return union > 0 ? inter / union : 0;
 }
 
-// The fewest teeth or waves a plate's outline has: fewer are a polygon's corners (a hexagon), not teeth.
+
 const MIN_TEETH = 7;
-// An icon's outline that is a plate but that its shape covers less than this is moved and resized to fit better, for at most
-// REFINE_ROUNDS steps, and the result kept when it fits at least REFINE_GAIN better.
+
+
 const REFINE_BELOW = 0.985;
 const REFINE_ROUNDS = 12;
 const REFINE_GAIN = 0.008;
-// From a diamond (1) through an ellipse (2) and a squircle to nearly a rectangle.
+
 const EXPONENTS = [1, 1.25, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 8];
 const RADII = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
 
@@ -255,7 +255,7 @@ function fits(shape) {
     return shape.fit >= (shape.kind === 'superellipse' && shape.exponent < 2 ? FIT_POINTED : FIT_PLATE);
 }
 
-// The shape spans the mask's bounding box unless refined, so that it ends where a piece on the mask's edge begins.
+
 function fitBasic(mask, w, h, refine = false, exponents = EXPONENTS) {
     const base = {
         cx: (mask.x1 + mask.x2 + 1) / 2, cy: (mask.y1 + mask.y2 + 1) / 2,
@@ -276,8 +276,8 @@ function fitBasic(mask, w, h, refine = false, exponents = EXPONENTS) {
     return !refine || best.fit < FIT_PLATE || best.fit >= REFINE_BELOW ? best : refined(best, mask, w, h);
 }
 
-// The shape moved and resized a pixel at a time while that fits better: the bounding box is too large when something
-// sticks out of the icon's plate (a badge over its corner).
+
+
 function refined(shape, mask, w, h) {
     let best = shape;
     const moves = [[1, 0, 0, 0], [-1, 0, 0, 0], [0, 1, 0, 0], [0, -1, 0, 0], [0, 0, 1, 0], [0, 0, -1, 0], [0, 0, 0, 1],
@@ -301,8 +301,8 @@ function refined(shape, mask, w, h) {
     return best.fit - shape.fit >= REFINE_GAIN ? best : shape;
 }
 
-// The outline's distance from the center at `count` angles, or null when a ray
-// leaves the shape more than once (not star-shaped).
+
+
 function radii(mask, w, h, cx, cy, count) {
     const out = new Float64Array(count);
     const reach = Math.hypot(mask.x2 - mask.x1 + 2, mask.y2 - mask.y1 + 2);
@@ -327,9 +327,9 @@ function radii(mask, w, h, cx, cy, count) {
     return bent > count * 0.03 ? null : out;
 }
 
-// A shape with regular teeth or waves (a gear, a scalloped badge): the
-// outline's distance from the center is the basic shape's times a periodic
-// factor whose energy sits in one count of teeth and its multiples.
+
+
+
 function fitRipple(mask, w, h, basic) {
     const N = 256;
     const measured = radii(mask, w, h, basic.cx, basic.cy, N);
@@ -340,7 +340,7 @@ function fitRipple(mask, w, h, basic) {
     for (let i = 0; i < N; i++) {
         const angle = (i / N) * 2 * Math.PI;
         const ux = Math.cos(angle), uy = Math.sin(angle);
-        // The basic shape's radius along the ray, by bisection on its distance.
+
         let lo = 0, hi = Math.max(basic.rx, basic.ry) * 2;
         const plain = { ...basic, ripple: null };
         for (let k = 0; k < 24; k++) {
@@ -385,21 +385,21 @@ function fitRipple(mask, w, h, basic) {
     return shape.fit >= FIT_PLATE ? shape : null;
 }
 
-// The closest shape, which may fit less than FIT_PLATE (down to PEER_FIT).
+
 function fitShape(mask, w, h, refine = false) {
     if (mask.x2 - mask.x1 < 6 || mask.y2 - mask.y1 < 6)
         return null;
     const basic = fitBasic(mask, w, h, refine);
     if (fits(basic))
         return basic;
-    // Teeth sit on a round or a square outline, not on a diamond's.
+
     const round = basic.kind === 'superellipse' && basic.exponent < 2
         ? fitBasic(mask, w, h, refine, EXPONENTS.filter(n => n >= 2)) : basic;
     return fitRipple(mask, w, h, round) ?? (basic.fit >= PEER_FIT ? basic : null);
 }
 
-// Neighbouring pixels closer than SAME_AREA in color, joined: the plates are found in these areas, which keep a shape
-// whole across faint lines in it.
+
+
 function areas(lab, opaque, w, h) {
     const parent = new Int32Array(w * h).map((_, i) => i);
     const find = (i) => {
@@ -432,15 +432,15 @@ function apart(lab, i, j) {
     return Math.hypot(lab[i * 3] - lab[j * 3], lab[i * 3 + 1] - lab[j * 3 + 1], lab[i * 3 + 2] - lab[j * 3 + 2]);
 }
 
-// Finer areas, by graph-based segmentation (Felzenszwalb and Huttenlocher): neighbours are joined from the closest
-// pair up, and two areas only while the step between them is no larger than the steps already inside each, plus
-// FINE_JOIN over the area's size (`pixel` is the size of an analysis pixel). A gradient's small steps join it whole,
-// while a faint edge parts two areas even where anti-aliasing along a curve softens it. Two areas whose mean colors
-// are more than FINE_DRIFT apart stay apart all the same, so that a soft edge (a bevel, a blur) is not a gradient
-// that joins a letter to its outline.
+
+
+
+
+
+
 function fineAreas(lab, opaque, w, h, pixel) {
     const n = w * h;
-    // Each edge as its weight in millionths and its index in one number, so that a numeric sort orders them by weight.
+
     const keys = new Float64Array(n * 2);
     let edges = 0;
     for (let i = 0; i < n; i++) {
@@ -486,7 +486,7 @@ function fineAreas(lab, opaque, w, h, pixel) {
     return labels;
 }
 
-/** The mask with every hole in it filled. */
+
 function filled(data, w, h) {
     const outside = new Uint8Array(w * h);
     const stack = [];
@@ -531,7 +531,7 @@ function terms(shape, x, y, out) {
     out[5] = v * v;
 }
 
-/** The plate's Oklab color at a pixel position. */
+
 export function plateColor(plate, x, y, out = [0, 0, 0]) {
     const t = new Float64Array(TERMS);
     terms(plate.shape, x, y, t);
@@ -572,11 +572,11 @@ function solve(a, b, n) {
     return x;
 }
 
-// A least-squares quadratic color over the pixels, refitted twice without the
-// ones far from it (a symbol over the rim, the plate's own highlights).
+
+
 function fitColor(shape, pixels, lab, w) {
-    // Start from the pixels near the median color, so that a symbol that runs
-    // into the plate through soft edges does not pull the first fit.
+
+
     const median = [0, 1, 2].map(ch => {
         const values = pixels.map(i => lab[i * 3 + ch]).sort((a, b) => a - b);
         return values[Math.floor(values.length / 2)] ?? 0;
@@ -599,7 +599,7 @@ function fitColor(shape, pixels, lab, w) {
                     atb[ch][r] += t[r] * lab[i * 3 + ch];
             }
         });
-        // A little damping keeps the curvature terms from running off on a thin rim.
+
         for (let r = 1; r < TERMS; r++)
             ata[r * TERMS + r] += r >= 3 ? 2 : 0.5;
         const solved = atb.map(b => solve(ata, b, TERMS));
@@ -634,7 +634,7 @@ function fitColor(shape, pixels, lab, w) {
     return { color, rms, kept: pixels.length ? kept / pixels.length : 0, noise };
 }
 
-// The mask grown by `steps` pixels.
+
 function dilated(mask, w, h, steps) {
     let out = mask;
     for (let k = 0; k < steps; k++) {
@@ -648,12 +648,12 @@ function dilated(mask, w, h, steps) {
     return out;
 }
 
-// Shapes a pixel or so apart in place and size are one plate.
+
 function sameShape(a, b) {
     return [a.cx - b.cx, a.cy - b.cy, a.rx - b.rx, a.ry - b.ry].every(d => Math.abs(d) <= 1.5);
 }
 
-// How much of the mask's edge lies on the shape's outline.
+
 function alongOutline(mask, shape, w, h) {
     let edge = 0, on = 0;
     for (let y = mask.y1; y <= mask.y2; y++) {
@@ -687,7 +687,7 @@ export function analyzeIcon(icon) {
         alpha[i] = data[i * 4 + 3] / 255;
         opaque[i] = alpha[i] >= 0.5 ? 1 : 0;
     }
-    // Candidates: the whole silhouette, and every large area with its holes filled.
+
     const candidates = [];
     const add = (fill, absorbed = false, refine = false) => {
         const mask = maskOf(fill, w, h);
@@ -746,12 +746,12 @@ export function analyzeIcon(icon) {
             add(filled(whole, w, h), true);
     }
     const platesFrom = (pool) => {
-        // Outermost first. A candidate the same as one kept already is the same
-        // plate, and one that lies partly over a kept plate is not a plate.
+
+
         const sorted = [...pool].sort((a, b) => b.mask.area - a.mask.area);
         const kept = [];
         const parents = [];
-        // How much of `mask` lies in `shape`.
+
         const share = (mask, shape) => {
             let inside = 0;
             for (let i = 0; i < n; i++) {
@@ -760,7 +760,7 @@ export function analyzeIcon(icon) {
             }
             return inside / mask.area;
         };
-        // The median of an Oklab channel over the opaque pixels of `mask`.
+
         const medianOf = (mask, ch) => {
             const values = [];
             for (let i = 0; i < n; i++) {
@@ -769,7 +769,7 @@ export function analyzeIcon(icon) {
             }
             return values.sort((a, b) => a - b)[Math.floor(values.length / 2)] ?? 0;
         };
-        // The kept plate `c` lies in, -1 for none, or null when it lies partly over one.
+
         const placeOf = (c) => {
             if (kept.some(k => overlap(k.shape, c.mask, w, h) > 0.95 || sameShape(k.shape, c.shape)))
                 return null;
@@ -781,8 +781,8 @@ export function analyzeIcon(icon) {
                 if (shares[k] >= 0.9)
                     parent = k;
             }
-            // A part of the plate's surface lies in it, not on it: a shape in the color around it (one a line encloses), or
-            // in a shade of that color reaching the plate's outline past any rim (a stripe, a quarter).
+
+
             if (parent >= 0) {
                 const around = dilated(c.mask.data, w, h, 6).map((v, i) => v & kept[parent].mask.data[i] & (1 - c.mask.data[i]));
                 const near = Math.hypot(...[0, 1, 2].map(ch => medianOf(c.mask.data, ch) - medianOf(around, ch)));
@@ -803,7 +803,7 @@ export function analyzeIcon(icon) {
             kept.push(c);
             parents.push(parent);
         }
-        // Then the shapes alike to a kept plate on the same plate. Nothing kept lies in them, so they go last.
+
         loose.sort((a, b) => b.mask.area - a.mask.area);
         for (const c of loose) {
             const parent = placeOf(c);
@@ -814,7 +814,7 @@ export function analyzeIcon(icon) {
             kept.push(c);
             parents.push(parent);
         }
-        // Per pixel, the innermost plate it is in.
+
         const owner = new Int32Array(n).fill(-1);
         for (let i = 0; i < n; i++) {
             const x = i % w + 0.5, y = Math.floor(i / w) + 0.5;
@@ -825,9 +825,9 @@ export function analyzeIcon(icon) {
                 }
             }
         }
-        // A plate's color is that of its largest smooth area: its rim may carry a
-        // lit edge or a border, and a symbol may cross it. A plate whose largest
-        // area is a small part of it carries a picture.
+
+
+
         const plates = kept.map((c, k) => {
             const own = [];
             const counts = new Map();
@@ -844,7 +844,7 @@ export function analyzeIcon(icon) {
                     most = count;
                 }
             }
-            // Grain breaks a plate into specks; then the fit starts from all of it.
+
             const share = own.length ? most / own.length : 0;
             const fit = fitColor(c.shape, share >= MIN_SURFACE ? own.filter(i => labels[i] === main) : own, lab, w);
             const plate = {
@@ -860,15 +860,15 @@ export function analyzeIcon(icon) {
                     surface++;
             }
             plate.surface = own.length ? surface / own.length : 0;
-            // A grainy plate strays evenly: its typical pixel is near its color.
+
             plate.plain = plate.surface >= MIN_SURFACE && (fit.rms < PLAIN_RMS || fit.noise < MAX_GRAIN);
             return plate;
         });
         return { plates, kept };
     };
-    // Plates that took in pieces of other colors must not make the icon one that carries a picture (shown as it is,
-    // which happens when such a plate, or the plate it takes the place of part of, is no longer plain): then the
-    // pieces stay symbol on the plates under them.
+
+
+
     const picture = (plates) => plates.some(plate => !plate.plain);
     let { plates } = platesFrom(candidates);
     if (picture(plates) && candidates.some(c => c.absorbed)) {
@@ -876,8 +876,8 @@ export function analyzeIcon(icon) {
         if (!picture(without))
             plates = without;
     }
-    // The ring and the disc in the middle of a pie, in colors far from all of its pieces', are drawn as symbol with the
-    // pieces, which they belong to.
+
+
     const cut = plates;
     plates = withoutPlates(plates, plate => plate.parent >= 0 && cut[plate.parent].pieces.length > 0 &&
         cut[plate.parent].pieces.every(p => Math.hypot(...plateColor(plate, plate.shape.cx, plate.shape.cy).map((v, c) => v - p[c])) >= PIECE_FOREIGN));
@@ -885,7 +885,7 @@ export function analyzeIcon(icon) {
     return { width: w, height: h, plates, symbol, intensity };
 }
 
-/** The plates without those `leftOut` picks and the plates on them. A plate comes after the plate it sits on. */
+
 export function withoutPlates(plates, leftOut) {
     const index = [];
     const out = [];
@@ -899,7 +899,7 @@ export function withoutPlates(plates, leftOut) {
     return out;
 }
 
-// The mean colors of the pieces a plate's surface is cut into (see PIECE_SHARE), or none.
+
 function piecesOf(own, counts, most, labels, lab) {
     const big = [...counts].filter(([label, count]) => label >= 0 && count >= most * PIECE_SHARE && count >= own.length * PIECE_MIN)
         .map(([label]) => label);
@@ -921,8 +921,8 @@ function piecesOf(own, counts, most, labels, lab) {
     return distinct.length >= 3 ? colors : [];
 }
 
-// Oklab distance from `c` to the segment from `p` to `q`: a pixel on the
-// line between two plates mixes their colors.
+
+
 function segmentDistance(c, p, q) {
     const v = [q[0] - p[0], q[1] - p[1], q[2] - p[2]];
     const len2 = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
@@ -930,21 +930,21 @@ function segmentDistance(c, p, q) {
     return Math.hypot(c[0] - p[0] - v[0] * t, c[1] - p[1] - v[1] * t, c[2] - p[2] - v[2] * t);
 }
 
-/**
- * The symbol over `plates` (from analyzeIcon() at `analysisWidth` px) in `pixels`, which may be the icon drawn at
- * another size: per pixel how much of it is symbol, the symbol's own tone, and the shade of the plate's surface.
- *
- * Whether something is symbol is decided for each large color area as a whole, so that a gradient across an area
- * cannot make part of it symbol. A plate's surface is the area most in its color, the large areas in shades of it
- * that reach its outline and the areas enclosed in it in its color; everything else on the plate is measured against
- * the surface around it. Small areas (anti-aliased edges, thin lines) and areas that fade into the surface (a glow, a
- * soft shadow) are measured pixel by pixel: a pixel's distance from the surface grows with how much of it the symbol
- * covers, up to the symbol's full color, taken from the strongest pixel next to it that differs the same way.
- */
+
+
+
+
+
+
+
+
+
+
+
 export function symbolLayer(plates, analysisWidth, pixels) {
     const { width: w, height: h, data } = pixels;
     const n = w * h;
-    // Analysis px per pixel.
+
     const s = analysisWidth / w;
     const lab = new Float32Array(n * 3);
     const alpha = new Float32Array(n);
@@ -955,7 +955,7 @@ export function symbolLayer(plates, analysisWidth, pixels) {
         opaque[i] = alpha[i] >= 0.5 ? 1 : 0;
     }
     const owner = new Int32Array(n).fill(-1);
-    // How far inside its plate a pixel is, in pixels, and the plates whose outline it is near.
+
     const depth = new Float32Array(n);
     const nearby = new Map();
     for (let i = 0; i < n; i++) {
@@ -975,12 +975,12 @@ export function symbolLayer(plates, analysisWidth, pixels) {
     const { region } = regions;
     const list = regions.list;
     const plain = (k) => k >= 0 && plates[k].plain;
-    // Per plate, how many of its pixels there are and how many lie in its outer band, and its main area: the one with
-    // the most pixels in the plate's own color (the largest area may be a symbol over most of it).
+
+
     const colorDistance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
     const own = plates.map(() => 0), band = plates.map(() => 0);
     const matching = new Float64Array(list.length);
-    // Per area, how much lighter its pixels are than the plate's color there, summed (the plate's own gradient left out).
+
     const lighter = new Float64Array(list.length);
     const fit = [0, 0, 0];
     for (let i = 0; i < n; i++) {
@@ -1002,12 +1002,12 @@ export function symbolLayer(plates, analysisWidth, pixels) {
         if (main[r.owner] < 0 || matching[j] > matching[main[r.owner]])
             main[r.owner] = j;
     });
-    // The surface grows from each plate's main area by the large areas along its outline whose closest pixels come
-    // near the color of an area already in it: facets shaded away from it, quarters in a darker shade, stripes.
-    // A line (a trace, a stroke) is not part of a surface however close in color: its pixels over its edge's are its
-    // breadth, about half its width.
+
+
+
+
     const broad = (r) => r.count / Math.max(r.count - r.interior, 1) * s >= GROUND_BREADTH;
-    // The areas that lie along their plate's outline.
+
     const rim = new Float64Array(list.length);
     const deep = new Float64Array(list.length), deep2 = new Float64Array(list.length);
     const bandOf = (k) => Math.max(1.5, Math.min(plates[k].shape.rx, plates[k].shape.ry) * EDGE_BAND);
@@ -1049,9 +1049,9 @@ export function symbolLayer(plates, analysisWidth, pixels) {
             pending.delete(j);
         }
     }
-    // Then the large areas anywhere on the plate most of whose pixels have that surface's color: the cells between
-    // lines drawn across it, a faint glow on it. Measured against that surface alone, so that it does not reach on
-    // through a glow into the line it comes from.
+
+
+
     const surfaces = list.filter(r => r.ground);
     const closest = new Map();
     list.forEach((r, j) => {
@@ -1069,8 +1069,8 @@ export function symbolLayer(plates, analysisWidth, pixels) {
         if (near < Math.max(SYMBOL_LOW, plates[r.owner].noise * 3))
             r.ground = true;
     }
-    // And the large areas the surface shades into with no step along most of the edge they share: the side of a raised
-    // shape turned from the light.
+
+
     const seams = new Map();
     for (let i = 0; i < n; i++) {
         const j = region[i];
@@ -1099,8 +1099,8 @@ export function symbolLayer(plates, analysisWidth, pixels) {
         }
     }
     const step = (k) => Math.max(SURFACE_STEP, plates[k].noise * 2);
-    // How much lighter or darker than the plate's color a part of its surface is, against the main area's, small
-    // differences left out.
+
+
     const lift = (j) => (list[j].interior ? lighter[j] / list[j].interior : 0);
     const shades = list.map((r, j) => {
         if (!plain(r.owner))
@@ -1108,7 +1108,7 @@ export function symbolLayer(plates, analysisWidth, pixels) {
         const d = lift(j) - lift(main[r.owner]);
         return Math.sign(d) * Math.max(Math.abs(d) - step(r.owner), 0);
     });
-    // The surface's color and shade around every pixel of a plate.
+
     const ref = new Float32Array(n * 3);
     const refShade = new Float32Array(n);
     const low = new Float32Array(n);
@@ -1127,7 +1127,7 @@ export function symbolLayer(plates, analysisWidth, pixels) {
         for (let i = 0; i < n; i++) {
             if (!wanted[i])
                 continue;
-            // Inside the surface only what stands far out of it is symbol (a line in a glow that took the area in).
+
             const inside = region[i] >= 0 && list[region[i]].ground && regions.inner[i];
             low[i] = Math.max(inside ? SYMBOL_HIGH : SYMBOL_LOW, plate.noise * 3);
             if (around[i * 5 + 4] > 0) {
@@ -1139,7 +1139,7 @@ export function symbolLayer(plates, analysisWidth, pixels) {
             }
         }
     });
-    // Per pixel, how far it is from the surface around it (Oklab); Infinity off the plain plates.
+
     const raw = new Float32Array(n);
     const other = [0, 0, 0];
     for (let i = 0; i < n; i++) {
@@ -1148,12 +1148,12 @@ export function symbolLayer(plates, analysisWidth, pixels) {
             raw[i] = Infinity;
             continue;
         }
-        // The plate's own anti-aliased outline is not symbol.
+
         if (depth[i] > -1.2 && plates[k].parent < 0)
             continue;
         const c = lab.subarray(i * 3, i * 3 + 3), at = Array.from(ref.subarray(i * 3, i * 3 + 3));
         let d = colorDistance(c, at);
-        // Along the outline between two plates, the pixel mixes them.
+
         for (const j of nearby.get(i) ?? []) {
             if (j === k || !plates[j].plain)
                 continue;
@@ -1161,9 +1161,9 @@ export function symbolLayer(plates, analysisWidth, pixels) {
         }
         raw[i] = d;
     }
-    // A large area's contrast: its typical pixel's distance from the surface around it. One that fades into the surface
-    // (a glow, a soft shadow: its closest pixels come within the symbol's threshold of it) is measured pixel by pixel,
-    // as the surface itself is: only what stands far out of it is symbol.
+
+
+
     const distances = list.map(r => (r.decided && !r.ground ? [] : null));
     for (let i = 0; i < n; i++) {
         const j = region[i];
@@ -1179,12 +1179,12 @@ export function symbolLayer(plates, analysisWidth, pixels) {
         r.fades = !r.decided;
         if (!r.decided)
             return;
-        // An area is symbol or not as a whole: only around the threshold is it partly.
+
         r.contrast = d[Math.floor(d.length / 2)];
         r.strength = smoothstep(lo * 0.8, lo * 1.3, r.contrast);
     });
-    // A large area that is the surface around it under a veil of white or black, laid evenly over a surface whose color
-    // changes under it (a pane of frosted glass over a gradient), is a shade of the surface.
+
+
     const veiled = list.map(() => []);
     for (let i = 0; i < n; i++) {
         const r = region[i] >= 0 ? list[region[i]] : null;
@@ -1212,8 +1212,8 @@ export function symbolLayer(plates, analysisWidth, pixels) {
             low[i] = Math.max(low[i], SYMBOL_HIGH);
     }
     const like = glossed(list, main, regions, w, h);
-    // Whether the pixels of a group in a large area off the surface, which stand out of it, shade into the rest of that area
-    // (`rest`) with no step: then only a gradient across the area (the shaded side of a raised shape) sets them apart.
+
+
     const stepless = (group, rest) => {
         const steps = [];
         for (const i of group) {
@@ -1227,8 +1227,8 @@ export function symbolLayer(plates, analysisWidth, pixels) {
         }
         return steps.length >= SEAM_MIN && steps.sort((a, b) => a - b)[Math.floor(steps.length / 2)] < SEAM_STEP;
     };
-    // In an area that fades into the surface, the pixels that stand far out of it but only through such a gradient, on
-    // the lesser part of it.
+
+
     const smooth = new Uint8Array(n);
     {
         const far = (i) => region[i] >= 0 && list[region[i]].fades && raw[i] !== Infinity && raw[i] > low[i];
@@ -1252,13 +1252,13 @@ export function symbolLayer(plates, analysisWidth, pixels) {
                     smooth[i] = 1;
         }
     }
-    // Faint lines and specks, which fall into many small areas: each group of pixels next to one another that stand out
-    // of the surface is symbol as a whole, as strongly as its typical pixel stands out, so that a faint line is drawn
-    // evenly instead of in dots.
+
+
+
     const stroke = new Float32Array(n).fill(-1);
     {
-        // How far a pixel stands out: from the surface, or within a faint area that is not symbol, from that area's color
-        // (the lines of a sketch drawn on a pale patch).
+
+
         const out = Float32Array.from(raw, (d, i) => {
             const r = region[i] >= 0 ? list[region[i]] : null;
             return r?.decided && !r.ground ? Math.min(d, colorDistance(lab.subarray(i * 3, i * 3 + 3), r.color)) : d;
@@ -1294,13 +1294,13 @@ export function symbolLayer(plates, analysisWidth, pixels) {
         }
     }
     // Coverage: a large area's strength, less along its edge where it mixes with what is next to it; elsewhere the
-    // distance over that of the strongest pixel within reach that differs from the surface in the same direction.
+
     const reach = Math.max(1, Math.ceil(1 / s));
     const cover = new Float32Array(n);
     for (let i = 0; i < n; i++) {
         const d = raw[i];
         if (d === Infinity) {
-            // The drop shadow an icon casts outside its base would draw as a light halo round the glass.
+
             cover[i] = owner[i] < 0 && alpha[i] < SHADOW_ALPHA && lab[i * 3] < SHADOW_LIGHTNESS ? 0 : 1;
             continue;
         }
@@ -1338,8 +1338,8 @@ export function symbolLayer(plates, analysisWidth, pixels) {
         full = Math.max(full, low[i] + SYMBOL_HIGH - SYMBOL_LOW);
         cover[i] = Math.min(Math.max((d - low[i]) / (full - low[i]), 0), 1);
     }
-    // A line that runs all along a plate at one depth (a lit edge, a border) is
-    // part of the plate. A symbol rarely fills most of a ring at one depth.
+
+
     plates.forEach((plate, k) => {
         if (!plate.plain)
             return;
@@ -1363,7 +1363,7 @@ export function symbolLayer(plates, analysisWidth, pixels) {
             if (owner[i] !== k || -depth[i] >= deepest || !cover[i])
                 continue;
             const b = Math.floor(-depth[i] * 2);
-            // The ring's own bins, or ones next to them for its anti-aliased sides.
+
             let r = -1;
             for (let o = 0; o <= spread * 2 && r < 0; o++) {
                 if (ring(b - o))
@@ -1378,7 +1378,7 @@ export function symbolLayer(plates, analysisWidth, pixels) {
             cover[i] *= smoothstep(0.04, 0.1, d);
         }
     });
-    // The pieces a plate is cut into are symbol, whichever of them its color was taken from.
+
     for (let i = 0; i < n; i++) {
         const k = owner[i];
         if (k < 0 || raw[i] === Infinity || !plates[k].pieces.length || (depth[i] > -1.2 && plates[k].parent < 0))
@@ -1386,8 +1386,8 @@ export function symbolLayer(plates, analysisWidth, pixels) {
         const nearest = Math.min(...plates[k].pieces.map(p => colorDistance(lab.subarray(i * 3, i * 3 + 3), p)));
         cover[i] = Math.max(cover[i], 1 - smoothstep(0.03, 0.07, nearest));
     }
-    // The symbol's color per pixel: its area's for a large area, otherwise the pixel's own with the surface it is
-    // mixed with taken out.
+
+
     const symbolic = new Float64Array(list.length);
     for (let i = 0; i < n; i++) {
         if (region[i] >= 0)
@@ -1415,8 +1415,8 @@ export function symbolLayer(plates, analysisWidth, pixels) {
                 tint[i * 3 + c] = ref[i * 3 + c] + (lab[i * 3 + c] - ref[i * 3 + c]) / Math.max(cover[i], 0.25);
         }
     }
-    // How long the edges are between the symbol's large areas (across a pixel of anti-aliasing, too), where the color
-    // steps from one to the other rather than shading over smoothly.
+
+
     const touching = new Map();
     for (let i = 0; i < n; i++) {
         const j = region[i];
@@ -1439,13 +1439,13 @@ export function symbolLayer(plates, analysisWidth, pixels) {
     const tone = symbolTone(list.filter((_, j) => big(j)), edges);
     const symbol = new Float32Array(n);
     const intensity = new Float32Array(n);
-    // Where the plate shows, how much lighter (positive) or darker it is there than its color: parts of a surface a
-    // little apart in shade, which glass of one color would make the same.
+
+
     const surface = new Float32Array(n);
     for (let i = 0; i < n; i++) {
         const seen = owner[i] >= 0 && -depth[i] * s >= FADE_DEPTH ? alpha[i] ** FADE_GAMMA : alpha[i];
         symbol[i] = seen * cover[i];
-        // A symbol in one color keeps the gradients in it as its only shading.
+
         const gradient = gradients.get(region[i]);
         intensity[i] = tone ? tone(tint.subarray(i * 3, i * 3 + 3)) : gradient ? 1 - DETAIL_DIM * (1 - gradient(lab, i)) : 1;
         const k = owner[i];
@@ -1457,9 +1457,9 @@ export function symbolLayer(plates, analysisWidth, pixels) {
     return { symbol, intensity, surface };
 }
 
-// Per area, the symbol area it is part of under a gloss or a shade (-1: none): an area next to a symbol area whose
-// color is that area's with the same white or black laid over it as an area of the surface next to it has over the
-// surface's own color (a highlight across a lens and the rings on it).
+
+
+
 function glossed(list, main, regions, w, h) {
     const like = list.map(() => -1);
     const near = new Map();
@@ -1490,7 +1490,7 @@ function glossed(list, main, regions, w, h) {
             const over = list[k];
             if (!over.ground || k === main[y.owner])
                 continue;
-            // How much white (or black) the gloss lays over the surface, from lightness.
+
             const white = over.color[0] > ground[0];
             const alpha = white ? (over.color[0] - ground[0]) / (1 - ground[0]) : (ground[0] - over.color[0]) / ground[0];
             if (alpha < GLOSS_MIN || alpha > GLOSS_MAX)
@@ -1509,9 +1509,9 @@ function glossed(list, main, regions, w, h) {
     return like;
 }
 
-// The symbol's large areas (`big`) that are gradients: their colors spread GRADIENT_SPREAD or more apart along the way
-// they differ most, the extreme GRADIENT_TAIL of them left out. Each with where a pixel's color lies along that way,
-// from 0 to 1 (the lighter end).
+
+
+
 function gradientsOf(regions, lab, big) {
     const inside = new Map();
     regions.region.forEach((j, i) => {
@@ -1526,7 +1526,7 @@ function gradientsOf(regions, lab, big) {
         if (pixels.length < 8)
             continue;
         const mean = [0, 1, 2].map(c => pixels.reduce((sum, i) => sum + lab[i * 3 + c], 0) / pixels.length);
-        // The principal direction, by power iteration on the covariance, starting along lightness.
+
         let axis = [1, 0, 0];
         for (let round = 0; round < 12; round++) {
             const next = [0, 0, 0];
@@ -1555,8 +1555,8 @@ function gradientsOf(regions, lab, big) {
     return out;
 }
 
-// The color areas of an image split by the plates they lie in: per pixel an index into `list` (-1: clear), and
-// whether the pixel's four neighbours are in its area too.
+
+
 function regionsOf(lab, opaque, owner, depth, w, h, s) {
     const labels = fineAreas(lab, opaque, w, h, 1 / (s * s));
     const n = w * h;
@@ -1605,9 +1605,9 @@ function regionsOf(lab, opaque, owner, depth, w, h, s) {
     return { region, inner, list };
 }
 
-// Per pixel `wanted`, the means of `channels` values (the last a weight, 0 or 1) around it, with that weight last
-// (0 where there is none): the squares of the given radii, each its weight's density, laid over one another, which
-// makes a kernel that falls off smoothly with distance, so that the means do not jump where the nearest values do.
+
+
+
 function localMeans(values, wanted, w, h, channels, radii) {
     const W = w + 1;
     const table = new Float64Array(W * (h + 1) * channels);
@@ -1646,13 +1646,13 @@ function localMeans(values, wanted, w, h, channels, radii) {
     return out;
 }
 
-// How strongly each color of the symbol is drawn, 1 - DETAIL_DIM to 1 (null: all fully). The symbol's large areas are put together
-// into up to TONE_GROUPS colors (the largest), which are given the strengths, out of TONE_LEVELS steps, that best
-// keep apart the colors that meet (`edges`: two colors and the length of their edge), the more so the more they
-// differ (TONE_FULL of Oklab apart, or more, TONE_SEEN apart in strength, which is told apart at a glance): red next
-// to green stays apart from it even at one lightness. Of two colors TONE_ORDER or more apart in lightness the lighter
-// is never the weaker; other things equal, lighter is stronger, and a color that meets none of the others is drawn
-// at full strength. A color between two of them is drawn in between.
+
+
+
+
+
+
+
 function symbolTone(parts, edges) {
     const distance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
     const groups = [];
@@ -1678,7 +1678,7 @@ function symbolTone(parts, edges) {
         });
         return best;
     };
-    // How long each two groups meet.
+
     const meet = new Map();
     for (const [a, b, length] of edges) {
         const p = nearest(a), q = nearest(b);
@@ -1698,7 +1698,7 @@ function symbolTone(parts, edges) {
     if (!pairs.length)
         return null;
     const levels = Array.from({ length: TONE_LEVELS }, (_, k) => 1 - DETAIL_DIM * k / (TONE_LEVELS - 1));
-    // Of two colors clearly apart in lightness, the lighter is never the weaker.
+
     const order = [];
     kept.forEach((a, p) => kept.forEach((b, q) => {
         if (a.color[0] - b.color[0] >= TONE_ORDER)
@@ -1714,8 +1714,8 @@ function symbolTone(parts, edges) {
         }
         return score;
     };
-    // Each group in turn moved to the step that does best, until none moves, from all at full strength and from strengths
-    // spread by lightness either way.
+
+
     const lightness = kept.map(g => g.color[0]);
     const lo = Math.min(...lightness), hi = Math.max(...lightness);
     const spread = (k) => Math.round((hi - lightness[k]) / Math.max(hi - lo, 1e-6) * (TONE_LEVELS - 1));
@@ -1745,7 +1745,7 @@ function symbolTone(parts, edges) {
             bestScore = score;
         }
     }
-    // Colors a little apart are drawn alike; most pixels share their area's color.
+
     const known = new Map();
     return c => {
         const key = Math.round(c[0] * 200) * 160000 + Math.round(c[1] * 200 + 200) * 400 + Math.round(c[2] * 200 + 200);

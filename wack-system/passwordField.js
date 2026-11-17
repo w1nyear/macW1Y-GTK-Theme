@@ -1,6 +1,6 @@
-/**
- * passwordField.js - Support for password indicators and shake effects in GDM
- */
+
+
+
 import Clutter from "gi://Clutter";
 
 export class PasswordIndicators {
@@ -44,6 +44,6 @@ export function connectFailureShake(authPrompt, gdmManager, isCupertinoFn) {
             });
         }
     } catch (e) {
-        // Fallback gracefully
+
     }
 }

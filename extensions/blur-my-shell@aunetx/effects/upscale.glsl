@@ -30,21 +30,21 @@ void main() {
     vec4 effect_color = get_texture_at_position(adjusted_position);
     cogl_color_out = mix(source_color, effect_color, opacity_factor);
 
-    // round
+
     if (distance(vec2(corrected_position), (floor(adjusted_position) + 0.5) * float(safe_factor)) < float(safe_factor) / 2.5) {
-        //cogl_color_out = get_texture_at_position(adjusted_position);
+
     } else {
-        //cogl_color_out = vec4(0, 0, 0, 1);
+
     }
 
-    // square
+
     if (mod(float(corrected_position.x), float(safe_factor)) >= 2.0 && mod(float(corrected_position.y), float(safe_factor)) >= 2.0) {
-        //cogl_color_out = get_texture_at_position(adjusted_position);
+
     } else {
-        //cogl_color_out = vec4(0, 0, 0, 1);
+
     }
 
-    // local mix
+
     vec4 color = vec4(0.0);
     int count = 0;
     for (int i = -1; i <= 1; i++) {
@@ -57,5 +57,5 @@ void main() {
             }
         }
     }
-    //cogl_color_out = color / count;
+
 }

@@ -13,43 +13,43 @@ import { ensureGlassAllocated, isActorValid } from './actors.js';
 import { startSyncLoop, stopStageLoop, hexToColorArray, RectTween, RectSpring } from './animation.js';
 import { AdaptiveTextColor, sanitizeColorPreference } from './contrastSampler.js';
 import { verticalBoxParams } from './shellVersion.js';
-// The pinned items' page is this much wider than the search.
+
 const PINNED_EXTRA_WIDTH = 80;
-// The least room left at either side of the panel.
+
 const SIDE_MARGIN = 16;
-// The search field's top, as a fraction of the monitor's height.
+
 const TOP = 0.2;
 const MAX_RESULTS = 8;
 const PER_PROVIDER = 5;
 const ICON_SIZE = 32;
 const SEARCH_DELAY_MS = 120;
-// How long the previous results stay up while slow providers are still answering.
+
 const SETTLE_MS = 400;
 const SHADER_PADDING = 20;
 const SHADOW_MARGIN = 60;
 const FADE_MS = 150;
-// The glass opens from this much larger, like SwiftUI's materialize.
+
 const OPEN_SCALE = 1.06;
 const SHAPE_MS = 220;
-// Frames asked for past the glass's tween, and after the panel changes size.
+
 const TICK_MS = 50;
 const HINT_OPACITY = 178;
-// The pinned page's content scrolls past this share of the monitor's height.
+
 const PINNED_MAX_HEIGHT = 0.7;
 const GRID_SPACING = 8;
 const PIN_ICON_SIZE = 16;
-// What a tile's pin takes at each side of its icon: the pin, its padding and the tile's padding in stylesheet.css.
+
 const TILE_SIDE_ROOM = PIN_ICON_SIZE + 4 + 8;
-// Changing page: the old content goes over SWITCH_OUT_MS, then the new comes over SWITCH_IN_MS.
+
 const SWITCH_OUT_MS = 110;
 const SWITCH_IN_MS = 280;
-// Results that change from one search to the next have nothing worth keeping.
+
 const UNPINNABLE = new Set(['org.gnome.Calculator.desktop']);
-// The panel's padding in stylesheet.css.
+
 const PANEL_PADDING = 10;
-// The search field's height, to place the panel before it has been laid out, and the least room for results.
+
 const ENTRY_HEIGHT = 56;
-// Between the field and the results: .lg-launcher-page in stylesheet.css.
+
 const PAGE_SPACING = 6;
 const MIN_RESULTS_HEIGHT = 240;
 
@@ -57,26 +57,26 @@ function isCancelled(e) {
     return e instanceof GLib.Error && e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED);
 }
 
-/**
- * A search field on glass in the middle of the screen, like Spotlight, that
- * opens with a shortcut and asks the same search providers as the overview
- * (applications, settings, files, the calculator and whatever else is
- * installed and enabled in Settings).
- */
+
+
+
+
+
+
 export class Launcher {
     _path;
     _settings;
     _logger;
     _icons;
-    // The open launcher, for the test driver.
+
     static instance = null;
     _settingsIds = [];
-    // The look's watchers, while the launcher is open.
+
     _materialIds = [];
     _keybinding = false;
     _root = null;
     _panel = null;
-    // What the clear icons' glass copies the stage from: see open().
+
     _iconBackdropHost = null;
     _entry = null;
     _list = null;
@@ -86,7 +86,7 @@ export class Launcher {
     _view = 'search';
     _switch = null;
     _lens = null;
-    // The glass's spring while it morphs between pages; the tween the rest of the time.
+
     _spring = null;
     _pins;
     _refreshId = 0;
@@ -99,19 +99,19 @@ export class Launcher {
     _frameSignalId = 0;
     _searchId = 0;
     _cancellable = null;
-    // The running search's results so far, the providers it still waits for, and its deadline.
+
     _found = [];
     _waiting = 0;
     _settleId = 0;
     _results = [];
     _items = [];
-    // Of _items on the pinned page, how many are application tiles before the list, and in how many columns.
+
     _tileCount = 0;
     _columns = 1;
     _selected = 0;
     _terms = [];
     _text;
-    // The panel's top and height its text color was last chosen for.
+
     _coloredFor = '';
 
     constructor(_path, _settings, _logger, _icons) {
@@ -119,8 +119,8 @@ export class Launcher {
         this._settings = _settings;
         this._logger = _logger;
         this._icons = _icons;
-        // One color for the field and the results, set on the panel. Rows that come in take it at once, and the
-        // color for the panel's new size is chosen as they come, while the glass is still growing to it.
+
+
         this._text = new AdaptiveTextColor(() => (this._panel ? [this._panel] : []), () => (this._glass ? [this._glass] : []), _logger, 'launcher', { ownColor: true, held: () => this._shapeRemaining(GLib.get_monotonic_time()) > 0 });
         this._pins = new PinStore(_settings);
     }
@@ -174,20 +174,20 @@ export class Launcher {
             style_class: 'liquid-glass-launcher', reactive: true, can_focus: true, width,
             x: Math.round((monitor.width - width) / 2), y: this._panelTop(monitor.height), ...verticalBoxParams()
         });
-        // Keys on the pinned page, where the panel has the focus.
+
         panel.connect('key-press-event', (_actor, event) => this._onPinnedKey(event));
-        // A click outside the field closes it. Presses inside must not be stopped: from GNOME 49 a button clicks
-        // through a gesture, and an actor that stops the press cancels it.
+
+
         root.connect('button-press-event', (_actor, event) => {
             if (panel.contains(global.stage.get_event_actor(event)))
                 return Clutter.EVENT_PROPAGATE;
             this.close();
             return Clutter.EVENT_STOP;
         });
-        // The glass follows the panel from before-update, which does not ask for frames and runs ahead of the layout
-        // that resizes the panel. Without the ticker, an idle stage leaves the glass, and the clip that also limits
-        // where rows can be hovered and clicked, at the old size. It runs for a set time, so that it stops even when
-        // no JS can run.
+
+
+
+
         const ticker = new Clutter.Timeline({ actor: root, duration: TICK_MS });
         ticker.connect('completed', () => this._keepTicking());
         panel.connect('notify::allocation', () => {
@@ -200,11 +200,11 @@ export class Launcher {
             style_class: 'lg-launcher-entry', hint_text: 'Search', can_focus: true, x_expand: true,
             primary_icon: new St.Icon({ icon_name: 'edit-find-symbolic', style_class: 'lg-launcher-entry-icon' })
         });
-        // The hint takes the panel's color too, dimmed the way the theme dims it.
+
         entry.hint_actor.opacity = HINT_OPACITY;
         const list = new St.BoxLayout({ style_class: 'lg-launcher-list', x_expand: true, ...verticalBoxParams() });
-        // Hidden while empty, so the panel's spacing does not add room below the field. Its height is limited in
-        // _limitResults(), as St.BoxLayout ignores max-height.
+
+
         const resultsBox = new St.ScrollView({
             style_class: 'lg-launcher-results', x_expand: true, visible: false,
             hscrollbar_policy: St.PolicyType.NEVER, vscrollbar_policy: St.PolicyType.AUTOMATIC, overlay_scrollbars: true
@@ -216,14 +216,14 @@ export class Launcher {
         const pinnedBox = new St.ScrollView({
             style_class: 'lg-launcher-pinned', x_expand: true, visible: false,
             hscrollbar_policy: St.PolicyType.NEVER, vscrollbar_policy: St.PolicyType.AUTOMATIC, overlay_scrollbars: true,
-            // On the scroll view, as St.BoxLayout ignores min-height; inside the panel's padding.
+
             style: this._pinnedStyle(monitor.height)
         });
         panel.add_child(searchBox);
         panel.add_child(pinnedBox);
-        // Painted just before the panel, which is drawn through an offscreen while
-        // it fades and bends to another page; the stage cannot be read in there, so
-        // the clear icons' backdrop is copied here and they stay glass meanwhile.
+
+
+
         const iconBackdropHost = new St.Widget({ name: 'liquid-glass-launcher-icons', width: monitor.width, height: monitor.height });
         root.add_child(iconBackdropHost);
         this._icons.prepareLauncherHost(iconBackdropHost);
@@ -309,21 +309,21 @@ export class Launcher {
             root.destroy();
     }
 
-    /** Types `text` into the field, for the test driver. */
+
     setText(text) {
         if (this._entry)
             this._entry.text = text;
     }
 
-    /** The pinned items' page, or the search again. */
+
     showView(view) {
         if (!this._root || view === (this._switch?.view ?? this._view))
             return;
         const morph = this._settings.get_string('launcher-pinned-transition') === 'morph';
         const sw = this._switch;
         if (sw) {
-            // Turned back midway: the content goes again from as far as it had come, or comes back from as far as
-            // it had gone.
+
+
             sw.view = view;
             if (sw.phase === 'in' && view !== this._view) {
                 const now = GLib.get_monotonic_time();
@@ -341,7 +341,7 @@ export class Launcher {
         this._keepTicking();
     }
 
-    // The search's width is a setting; the pinned page is wider. Neither outgrows a small screen.
+
     _panelWidth(pinned, monitorWidth) {
         const width = this._settings.get_int('launcher-width') + (pinned ? PINNED_EXTRA_WIDTH : 0);
         return Math.min(width, monitorWidth - SIDE_MARGIN * 2);
@@ -353,13 +353,13 @@ export class Launcher {
         return `min-height: ${min}px; max-height: ${max}px;`;
     }
 
-    // The field sits at TOP of the screen's height, and higher on a screen too short to leave MIN_RESULTS_HEIGHT below it.
+
     _panelTop(monitorHeight) {
         const lowest = monitorHeight - SIDE_MARGIN - PANEL_PADDING * 2 - PAGE_SPACING - ENTRY_HEIGHT - MIN_RESULTS_HEIGHT;
         return Math.max(SIDE_MARGIN, Math.min(Math.round(monitorHeight * TOP), lowest));
     }
 
-    // The results scroll past what is left of the screen below the field, so that they never run off it.
+
     _limitResults() {
         const panel = this._panel;
         const room = this._root.height - panel.y - SIDE_MARGIN - PANEL_PADDING * 2 - PAGE_SPACING - this._entry.get_preferred_height(-1)[1];
@@ -386,8 +386,8 @@ export class Launcher {
         glass.setSaturation(s.get_double('launcher-saturation'));
     }
 
-    // Every frame: the glass eases to the field and its results, which are cut
-    // off where the glass ends.
+
+
     _sync() {
         const glass = this._glass;
         const panel = this._panel;
@@ -441,8 +441,8 @@ export class Launcher {
         ticker.start();
     }
 
-    // Changing page: the content goes (in a morph, sinking deep into the glass), the page is swapped, the glass
-    // takes the new page's shape, and the new content comes up.
+
+
     _stepSwitch(now, rect, clip) {
         const sw = this._switch;
         if (!sw) {
@@ -459,7 +459,7 @@ export class Launcher {
             const k = Math.min(elapsed / SWITCH_OUT_MS, 1);
             shown = 1 - k;
             if (k >= 1 && sw.view === this._view) {
-                // Turned back before the swap: the same page comes back.
+
                 sw.phase = 'in';
                 sw.startUs = now;
             }
@@ -541,7 +541,7 @@ export class Launcher {
         return Clutter.EVENT_PROPAGATE;
     }
 
-    // The tiles are moved between as a grid, then the list below them row by row.
+
     _onPinnedKey(event) {
         if (this._view !== 'pinned')
             return Clutter.EVENT_PROPAGATE;
@@ -565,7 +565,7 @@ export class Launcher {
         else if (key === Clutter.KEY_Up)
             next = i < tiles ? (i >= cols ? i - cols : i) : i === tiles ? Math.max(tiles - 1, 0) : i - 1;
         else {
-            // Typing goes back to the search, with what was typed in the field.
+
             const text = event.get_key_unicode();
             if ((event.get_state() & Clutter.ModifierType.CONTROL_MASK) || !/^[^\p{C}]$/u.test(text))
                 return Clutter.EVENT_PROPAGATE;
@@ -578,7 +578,7 @@ export class Launcher {
         return Clutter.EVENT_STOP;
     }
 
-    // Scrolls to the item only when the keys moved to it; with the pointer, the rows would move under it.
+
     _select(index, reveal = true) {
         this._items[this._selected]?.actor.remove_style_pseudo_class('selected');
         this._selected = index;
@@ -594,7 +594,7 @@ export class Launcher {
         const view = this._view === 'pinned' ? this._pinnedBox : this._resultsBox;
         const page = view.get_child();
         const adjustment = view.get_vadjustment();
-        // Both are moved by the scrolling alike, so their difference is the actor's place on the page.
+
         const y1 = actor.get_transformed_position()[1] - page.get_transformed_position()[1];
         const y2 = y1 + actor.height;
         if (y1 < adjustment.value)
@@ -608,7 +608,7 @@ export class Launcher {
         const terms = this._terms;
         this.close();
         if (!provider) {
-            // The calculation: its value goes to the clipboard.
+
             St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, meta.value);
         }
         else if (provider.isRemoteProvider) {
@@ -658,13 +658,13 @@ export class Launcher {
         });
     }
 
-    // The overview's providers, applications first.
+
     _providers() {
         return Main.overview.searchController._searchResults._providers;
     }
 
-    // The previous results stay up until every provider has answered, or SETTLE_MS have passed, so that the glass
-    // does not shrink and grow back on each keystroke. Answers after the deadline are shown as they come.
+
+
     _search() {
         const text = this._entry?.text.trim() ?? '';
         this._terms = text ? text.split(/\s+/) : [];
@@ -695,10 +695,10 @@ export class Launcher {
         let metas = [];
         try {
             let ids = await provider.getInitialResultSet(terms, cancellable);
-            // GNOME Software also finds what is installed, which the applications' own results already show.
+
             if (provider.id === SOFTWARE_PROVIDER)
                 ids = ids.filter(id => !this._isInstalled(id));
-            // Pinned results go first, so that the cut to PER_PROVIDER keeps them.
+
             const pinned = this._pins.idsOf(provider.id);
             const ordered = pinned.size ? [...ids.filter(id => pinned.has(id)), ...ids.filter(id => !pinned.has(id))] : ids;
             const wanted = provider.filterResults(ordered, PER_PROVIDER);
@@ -723,7 +723,7 @@ export class Launcher {
         return !!desktopId && !!Shell.AppSystem.get_default().lookup_app(desktopId);
     }
 
-    // The calculation, first of all results, with the value as its name.
+
     _calculation(text, value) {
         const formatted = formatNumber(value);
         return {
@@ -743,7 +743,7 @@ export class Launcher {
         if (this._settleId)
             GLib.Source.remove(this._settleId);
         this._settleId = 0;
-        // The calculation first, then pinned results, then each provider's in the overview's order.
+
         const rank = (r) => (r.provider ? (this._isPinned(r) ? 1 : 2) : 0);
         this._results = [...this._found].sort((a, b) => rank(a) - rank(b) || a.order - b.order).slice(0, MAX_RESULTS);
         if (this._view === 'search' && !this._switch)
@@ -773,7 +773,7 @@ export class Launcher {
     }
 
     _resultIcon(result, size) {
-        // A remote provider's result may come without an icon; its application's icon stands in.
+
         const gicon = result.provider?.appInfo?.get_icon();
         const icon = result.meta.createIcon(size) ?? (gicon ? new St.Icon({ gicon, icon_size: size }) : null);
         if (icon instanceof St.Icon && result.provider?.id === 'applications')
@@ -781,7 +781,7 @@ export class Launcher {
         return icon;
     }
 
-    // What a result is kept as when pinned, or null when it cannot be.
+
     _pinOf(result, icon) {
         const { provider, meta } = result;
         if (!provider || UNPINNABLE.has(provider.id))
@@ -793,8 +793,8 @@ export class Launcher {
         };
     }
 
-    // The pin to the left of a row or in a tile's corner: an outline while not pinned, shown on hover, and filled
-    // while pinned, shown all the time. A click on it flips it; a click on the rest of the owner activates that.
+
+
     _pinToggle(owner, pin, activate, onChange) {
         const icon = new St.Icon({ icon_size: PIN_ICON_SIZE });
         const toggle = new St.Bin({
@@ -808,8 +808,8 @@ export class Launcher {
         };
         owner.connect('notify::hover', sync);
         owner.connect('clicked', () => {
-            // By position rather than toggle.hover: a pin that was transparent when the pointer came is not picked
-            // until the pointer moves again.
+
+
             const [px, py] = global.get_pointer();
             const [x, y] = toggle.get_transformed_position();
             const [w, h] = toggle.get_transformed_size();
@@ -828,7 +828,7 @@ export class Launcher {
     _row(icon, title, detail, pin, activate, onPinChange, badge = '') {
         const row = new St.Button({ style_class: 'lg-launcher-result', can_focus: false, x_expand: true });
         const box = new St.BoxLayout({ style_class: 'lg-launcher-result-box', x_expand: true });
-        // The pin's room is kept on every row, so that the icons line up.
+
         if (pin) {
             box.add_child(this._pinToggle(row, pin, activate, onPinChange));
         }
@@ -874,7 +874,7 @@ export class Launcher {
         return new St.Icon({ gicon: gicon ?? Gio.ThemedIcon.new('text-x-generic-symbolic'), icon_size: size });
     }
 
-    // The pinned page: a back button, the applications in a grid of square tiles, and the rest as a list.
+
     _showPinned() {
         const view = this._pinnedBox;
         view.get_child()?.destroy();
@@ -892,7 +892,7 @@ export class Launcher {
         const apps = pins.filter(p => p.provider === 'applications');
         const rest = pins.filter(p => p.provider !== 'applications');
         this._items = [];
-        // After the click that unpinned an item has been handled: the page is built again without it.
+
         const refresh = () => {
             if (this._refreshId)
                 return;
@@ -969,8 +969,8 @@ export class Launcher {
         this._colorText();
     }
 
-    // Chooses the text color for where the panel is about to be, from its size with the rows it has now, before
-    // the next layout gives it that size.
+
+
     _colorText() {
         const root = this._root;
         const panel = this._panel;
@@ -1004,8 +1004,8 @@ export class Launcher {
     }
 }
 
-// Arithmetic typed into the launcher, such as "3*8", "3*8=" or "1-5": + - * / % ^, parentheses, decimals,
-// and the × ÷ − signs. Parsed by hand rather than evaluated, so nothing typed can run as code.
+
+
 const OPERATORS = '+-*/%^()';
 
 function tokenize(text) {
@@ -1034,7 +1034,7 @@ function tokenize(text) {
 class Parser {
     _tokens;
     _at = 0;
-    // Whether a binary operator was read: a lone number is not a calculation.
+
     binary = false;
 
     constructor(_tokens) {
@@ -1110,7 +1110,7 @@ class Parser {
     }
 }
 
-/** The value of `text` when it is a calculation, else null. */
+
 export function evaluate(text) {
     const expression = text.replace(/[×✕]/g, '*').replace(/÷/g, '/').replace(/[−–]/g, '-').trim().replace(/=$/, '');
     const tokens = tokenize(expression);
@@ -1121,7 +1121,7 @@ export function evaluate(text) {
     return value !== null && parser.binary && Number.isFinite(value) ? value : null;
 }
 
-/** `value` with no more digits than a double holds reliably, and no exponent for everyday sizes. */
+
 export function formatNumber(value) {
     const rounded = Number(value.toPrecision(12));
     return Object.is(rounded, -0) ? '0' : String(rounded);
@@ -1146,12 +1146,12 @@ export class PinStore {
         return this.all().some(p => p.provider === provider && p.id === id);
     }
 
-    /** The ids pinned from one provider. */
+
     idsOf(provider) {
         return new Set(this.all().filter(p => p.provider === provider).map(p => p.id));
     }
 
-    /** Pins `pin`, or unpins it if it is pinned already; true when it ends up pinned. */
+
     toggle(pin) {
         const pins = this.all();
         const kept = pins.filter(p => p.provider !== pin.provider || p.id !== pin.id);
@@ -1165,10 +1165,10 @@ export class PinStore {
     }
 }
 
-/**
- * The columns of the pinned page for a row `width` wide. A tile is as wide as its icon plus the room the pin in
- * its corner needs at each side, and the tiles grow to use up what is left over.
- */
+
+
+
+
 export function pinnedGrid(width, iconSize, gap, sideRoom) {
     const least = iconSize + sideRoom * 2;
     const columns = Math.max(1, Math.floor((width + gap) / (least + gap)));
@@ -1177,10 +1177,10 @@ export function pinnedGrid(width, iconSize, gap, sideRoom) {
 
 export const SOFTWARE_PROVIDER = 'org.gnome.Software.desktop';
 
-/**
- * The desktop file that an application found by GNOME Software's search has once it is installed, from its result id
- * (scope/kind/origin/id/branch). Null for kinds whose desktop file is not named after the id.
- */
+
+
+
+
 export function softwareDesktopId(resultId) {
     const [, kind, , appId] = resultId.split('/');
     if (!appId)

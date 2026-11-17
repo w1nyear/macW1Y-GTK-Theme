@@ -18,7 +18,7 @@
         "49",
         "50"
       ],
-      "sha256": "e31c7246584ec8e2cdd01a9d455d15d0339146e53cdc63e4ad5a8ed61330a491",
+      "sha256": "04526710de445d1b1ebbe90add61397c7ea503fec21cc3368aa74dff5f191eea",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -44,7 +44,7 @@
         "50",
         "51"
       ],
-      "sha256": "3a25db8643803d84267611cf244e21f5fb571a7e83c44a1b09dc2c602a3e11ea",
+      "sha256": "bddb369834f56005cf32aa2d4c57dca8263460ee6a1f21f85b838e8e2dffa1e8",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -72,7 +72,7 @@
         "50",
         "51"
       ],
-      "sha256": "47a429f266a0cb4290e3298b28b98236b4cf96e99ee24618d60602015579312e",
+      "sha256": "5c0deccc831a189ae556e3609bfe018b39e565f20cf1f46c9e3d87e7382925bd",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -94,7 +94,7 @@
         "49",
         "50"
       ],
-      "sha256": "3643fa89119887aa85043ed56718b853622b1b8d836fba0c2a1fee461b8479c3",
+      "sha256": "53d21eb2a556bfe948e99ea625ef923e76790dc2eddc177ea221bea22fa74f7f",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -120,7 +120,7 @@
         "50",
         "51"
       ],
-      "sha256": "f77abdb11fa65e53e0d60a57bcc5656eaeb9c325fd17f36ac6e567ad28eb62bf",
+      "sha256": "639c178d7bb84c0b257da9a632fa551b5549b8a3e3306a8c2767deab00f45428",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -138,7 +138,7 @@
       "shell_compatibility": [
         "50"
       ],
-      "sha256": "afa0aaa2e613a28c1bc349eb28663d43f089ae1e027a9f019cdfaaaae24d8f57",
+      "sha256": "bd42b344a9978b3dad79d23979dd5a2be22ed9a50171acfb6a71aa80cb42dcff",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -238,7 +238,7 @@
         "49",
         "50"
       ],
-      "sha256": "f31c57dfe4762e940dbdf7496b7b011ceba1d59975f1086776d26feade352ffc",
+      "sha256": "8329dcb05fd29c16221906aa288b158840ef6b1edf88d64b41aaabec977327fa",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -261,7 +261,7 @@
         "50",
         "51"
       ],
-      "sha256": "0e972fc4e2bbb0b0c4426c4666432e7a2354778fe4b249d49cccc9e1548fba8a",
+      "sha256": "1d021a59a30a329201a1c37cc3fb35389132deb25b1782bd5cae7e88ee684d84",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -287,7 +287,7 @@
         "49",
         "50"
       ],
-      "sha256": "b828bed676f5d9adb1413629606b649c29083decb3767b33ce0220f4080e94b1",
+      "sha256": "bd0d612530720a06d0330461120dc6beee98604c94d1271a3a9b61020384351d",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -366,7 +366,7 @@
         "49",
         "50"
       ],
-      "sha256": "ec75777cc94c3b46562e6d31ab2f0c411eb8a8081086149b4346696660f3d913",
+      "sha256": "cb75c1c9cc0cd710f4dbf2edad661d7782d4fdfe888d7fd5fd3d46a729165012",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -391,7 +391,7 @@
         "50",
         "51"
       ],
-      "sha256": "67ea6c3417df44d85ac40b3ef26744f88f553394b84fb7c3f9c4754461320bad",
+      "sha256": "b0aa501ebe5166324fabf371d896cfe075f5960adefb695486808fb36c6f9eb6",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -434,7 +434,7 @@
         "50",
         "51"
       ],
-      "sha256": "f07c1c43df6a75e9a0a6207dda6dbd5b7b4999d50263396a38370e32948d268a",
+      "sha256": "49c9f35462e2948ee8b25646b5e89de606741746340d612531265eb8bdc29234",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -457,7 +457,7 @@
         "49",
         "50"
       ],
-      "sha256": "9afcc51c3b1293ada97a0f2faa5f3d3959d664e5e5ca08ef7d0c8d297cb34291",
+      "sha256": "afddfc8033dd2872a7861c45211f4d57180aa824120737fd8537d0110c62e46b",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -475,7 +475,7 @@
       "shell_compatibility": [
         "50"
       ],
-      "sha256": "f56c1eb63f1b830c70ce4d7a815003a3c29964c46dbd355555cf2f5486ed886c",
+      "sha256": "8fda2d3dc29313838fbffefaa6811efa74596e15273b28943c13b0a50f2c8f08",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -497,7 +497,7 @@
         "49",
         "50"
       ],
-      "sha256": "fb258d9f2e4e933a91e00f7503ecd831b316ad08495866a0db13067aa704b71e",
+      "sha256": "a70cfa7489ff254b9518923c735c45b67d63141d45c877cea8ad5c0bf7059b7e",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -519,7 +519,7 @@
         "49",
         "50"
       ],
-      "sha256": "4f4caf9820aeaa80fc88801aee3a229f5a2744640a9b6065d10a119e2116589c",
+      "sha256": "737a7db401c133cc4d8e999e5f2b44ba31939e5531734caf99ce57f8dc316622",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -537,7 +537,7 @@
       "shell_compatibility": [
         "50"
       ],
-      "sha256": "ee3a2ff8e928cc79508fbd336fab1d694a9bd961c2d6ac1295c83c19d9ae8987",
+      "sha256": "7f3cb900ef69114c6f5726509ff3cdb0495cd4932215a88127e7018f08f5e0a2",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -579,7 +579,7 @@
         "50",
         "51"
       ],
-      "sha256": "0e1b87b97356ba0a10540af8920a3886f4154b91be1b1c1ac564b1f119c55553",
+      "sha256": "e82b9aeccd35128b0c9eb60cbc614bc76d44dfbc7fc1835e2cd87ebbaab34b2e",
       "status": "locked",
       "source": "github",
       "macw1y_components": [
@@ -604,7 +604,7 @@
         "49",
         "50"
       ],
-      "sha256": "3abf988328af9a1201068b454441a9bca28f494ec60ee129fbc637efd993510b",
+      "sha256": "f782af7f8949bd120b6be800737aeff78583adf6e8a4c9c97757a7d7b5915e9a",
       "status": "locked",
       "source": "apt_system",
       "macw1y_components": [

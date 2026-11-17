@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Persistent macW1Y-style topbar backdrop: pure blur behind the panel,
-// full at the top screen edge, dissipating downward over TOP_FADE px.
-// Layering: uiGroup below panelBox (paints over windows). Input is
-// wallpaper only - all UI newborn-excluded every frame, all windows
-// culled via NOWHERE_RECT. Same pure-blur params as the QS backdrop
-// (no tint, no refraction, no rim).
+
+
+
+
+
+
 
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-// Liquid-glass helpers live in another extension. Static
-// `import ... from 'file://' + ...` is a SyntaxError (module specifiers must
-// be string literals), so load them dynamically at runtime.
+
+
+
 let ensureGlassAllocated = () => {};
 let setClipIfChanged = () => {};
 let syncGlassCaptureClip = () => {};
@@ -29,10 +29,10 @@ import {_makeGlassStack, getQSPanelBox, getQSOverlay} from './tahoeControlCenter
 import {getNCPanelBox, getNCOverlay} from './tahoeNotificationCenter.js';
 
 const SHADER_PAD = 20;
-// topbar fade tail: shorter than the QS backdrop (60) - the bar is thin
+
 const TOP_FADE = 12;
-// windows stay out of the blur entirely: cull rect that hits nothing.
-// (bgClone wallpaper uses a separate clip path and is unaffected.)
+
+
 const NOWHERE_RECT = [-100000, -100000, 1, 1];
 
 let _settings = null;
@@ -49,9 +49,9 @@ function _blur() {
     }
 }
 
-// Window-aware output: the band minus window rects (x-segmentation).
-// Windows stay sharp under the panel; blur lives only where they aren't.
-// Returns {key, rects} - key cached so setGlassRegions runs on change only.
+
+
+
 function _bandSegments(monitor, panelH) {
     const F = TOP_FADE, P = SHADER_PAD;
     const y = -F - P, h = panelH + 2 * (F + P);
@@ -80,7 +80,7 @@ function _bandSegments(monitor, panelH) {
                             t !== Meta.WindowType.DIALOG)
                             continue;
                     } catch (_) {
-                        // unknown type: count it
+
                     }
                 }
                 const [ax, ay] = a.get_transformed_position();
@@ -94,14 +94,14 @@ function _bandSegments(monitor, panelH) {
                 if (x1 - x0 >= 4)
                     iv.push([x0, x1]);
             } catch (_) {
-                // actor gone
+
             }
         }
     } catch (_) {
         return empty;
     }
-    // QS / NC panels overlap the band's fade tail: cut them out like
-    // windows, otherwise the bar frost smears over the panel top edge
+
+
     for (const getBox of [getQSPanelBox, getNCPanelBox]) {
         try {
             const b = getBox();
@@ -118,7 +118,7 @@ function _bandSegments(monitor, panelH) {
             if (x1 - x0 >= 4)
                 iv.push([x0, x1]);
         } catch (_) {
-            // panel gone
+
         }
     }
     iv.sort((p, q) => p[0] - q[0]);
@@ -145,11 +145,11 @@ function _bandSegments(monitor, panelH) {
     return {key, rects};
 }
 
-// Ghost-proofing: this band overlaps the panel, so clone NOTHING from the
-// UI layer - wallpaper + windows only (macW1Y behaviour). Runs EVERY frame
-// (before refresh) so newborn actors (Spotlight, banners, OSD, QS overlay)
-// are excluded the same frame they appear - a geometry-gated sweep misses
-// anything born between geometry changes.
+
+
+
+
+
 function _excludeUi(s) {
     try {
         const uiGroup = Main.layoutManager.uiGroup;
@@ -161,11 +161,11 @@ function _excludeUi(s) {
                     continue;
                 s.uiSampler.addExclusion(child);
             } catch (_) {
-                // gone
+
             }
         }
     } catch (_) {
-        // no ui group
+
     }
 }
 
@@ -182,7 +182,7 @@ function _sync() {
         const F = TOP_FADE, P = SHADER_PAD;
         s.bgActor.set_position(monitor.x, monitor.y);
         _excludeUi(s);
-        // output regions are window-aware (see tick); geometry here is static
+
         s.effect.setResolution(W, H);
         s.effect.setBlurRadius(_blur());
         s.liquidBox.set_position(0, 0);
@@ -207,18 +207,18 @@ function _sync() {
             uiSampler: s.uiSampler,
             windowCloneManager: s.wcm,
         });
-        // windows out: cull every window clone (persists until next _sync,
-        // which re-applies it the same way)
+
+
         try {
             s.wcm.setCullRect(NOWHERE_RECT);
         } catch (_) {
-            // uncullable
+
         }
         s.uiSampler.refresh();
         s.uiSampler.sync(monitor.x, monitor.y, W, H);
         s.wcm.sync();
     } catch (_) {
-        // panel gone
+
     }
 }
 
@@ -227,11 +227,11 @@ export function enable(settings) {
     if (settings)
         _settings = settings;
     if (_stack) {
-        // settings pass: live-update blur strength + geometry
+
         try {
             _stack.effect.setBlurRadius(_blur());
         } catch (_) {
-            // effect gone
+
         }
         _sync();
         return;
@@ -243,8 +243,8 @@ export function enable(settings) {
         const s = _makeGlassStack(monitor, 12, 'topbar', true, TOP_FADE);
         _stack = {...s, clip: null, screen: null, panelH: 0,
             geoKey: null, segKey: null, tickN: 5};
-        // back to the variant that visibly worked: uiGroup, below panelBox.
-        // (stage-bottom placement left the band with empty input.)
+
+
         try {
             Main.layoutManager.uiGroup.add_child(s.bgActor);
             try {
@@ -256,7 +256,7 @@ export function enable(settings) {
                     Main.layoutManager.uiGroup.set_child_at_index(s.bgActor, 0);
                     console.log('[tahoe-topbar-blur] placed at uiGroup 0');
                 } catch (_) {
-                    // order unchanged
+
                 }
             }
         } catch (e) {
@@ -268,7 +268,7 @@ export function enable(settings) {
         s.bgActor.ease({opacity: 255, duration: 250,
             mode: Clutter.AnimationMode.EASE_OUT_QUAD});
         _sync();
-        // one-shot diagnostic: allocation + clone inventory after settle
+
         try {
             GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 4, () => {
                 try {
@@ -295,12 +295,12 @@ export function enable(settings) {
                     console.log(`[tahoe-topbar-blur] bgActor=${Math.round(bx)},${Math.round(by)} ${Math.round(b.width)}x${Math.round(b.height)} vis=${b.visible} op=${b.opacity} mapped=${b.mapped}`);
                     console.log(`[tahoe-topbar-blur] liquidBox=${Math.round(lb.width)}x${Math.round(lb.height)} clones=${nKids} bgClone=${bgGeo} panelH=${_stack.panelH}`);
                 } catch (_) {
-                    // gone
+
                 }
                 return GLib.SOURCE_REMOVE;
             });
         } catch (_) {
-            // no clock
+
         }
         if (!_monitorsId) {
             try {
@@ -316,13 +316,13 @@ export function enable(settings) {
             try {
                 ensureGlassAllocated(_stack.bgActor);
             } catch (_) {
-                // not allocated yet
+
             }
             try {
-                // Invisible throttle: the band is static, so heavy sampler
-                // work runs at ~10fps (every 6th frame); exclusion sweep at
-                // ~20fps (every 3rd) so newborn popups never ghost a full
-                // frame longer than ~50ms. Geometry check stays per-frame.
+
+
+
+
                 const n = (_stack.tickN = ((_stack.tickN ?? 0) + 1) % 6);
                 if (n % 3 === 0)
                     _excludeUi(_stack);
@@ -335,8 +335,8 @@ export function enable(settings) {
                     _stack.geoKey = geoKey;
                     _sync();
                 }
-                // window-aware output regions + sampler work: heavy, ~10fps.
-                // Cached by key, so idle frames cost nothing here.
+
+
                 if (n === 0) {
                     let changed = false;
                     try {
@@ -353,11 +353,11 @@ export function enable(settings) {
                             }
                         }
                     } catch (_) {
-                        // regions stay
+
                     }
-                    // layering: the band paints above QS/NC overlays (both
-                    // sit below panelBox, so the bar keeps its own frost on
-                    // top and CC/NC backdrop never covers the icons)
+
+
+
                     try {
                         const ug = Main.layoutManager.uiGroup;
                         for (const getOv of [getQSOverlay, getNCOverlay]) {
@@ -376,11 +376,11 @@ export function enable(settings) {
                                     kids.indexOf(_stack.bgActor) < kids.indexOf(ov))
                                     ug.set_child_above_sibling(_stack.bgActor, ov);
                             } catch (_) {
-                                // order stays
+
                             }
                         }
                     } catch (_) {
-                        // no ui group
+
                     }
                     if (changed || !_stack.initialSynced) {
                         _stack.initialSynced = true;
@@ -392,7 +392,7 @@ export function enable(settings) {
                     }
                 }
             } catch (_) {
-                // tearing down
+
             }
             try {
                 if (_stack && (_stack.idleFrames || 0) >= 12) {
@@ -472,7 +472,7 @@ export function disable() {
         try {
             global.compositor.get_laters().remove(_frameId);
         } catch (_) {
-            // already gone
+
         }
         _frameId = 0;
     }
@@ -480,7 +480,7 @@ export function disable() {
         try {
             Main.layoutManager.disconnect(_monitorsId);
         } catch (_) {
-            // gone
+
         }
         _monitorsId = 0;
     }
@@ -492,21 +492,21 @@ export function disable() {
     try {
         s.effect?.cleanup?.();
     } catch (_) {
-        // already cleaned
+
     }
     try {
         s.uiSampler?.destroy?.();
     } catch (_) {
-        // gone
+
     }
     try {
         s.wcm?.destroy?.();
     } catch (_) {
-        // gone
+
     }
     try {
         s.bgActor?.destroy?.();
     } catch (_) {
-        // gone
+
     }
 }

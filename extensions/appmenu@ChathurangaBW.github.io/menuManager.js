@@ -60,12 +60,12 @@ function formatAppIdentifier(identifier) {
     return s.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
 
-// Default panel icon — `start-here-symbolic` adapts to every distro's icon theme
+
 const DEFAULT_ICON = 'start-here-symbolic';
 
-// Computed once at module load — avoids recomputing per button init
+
 const EXTENSION_ICONS_DIR = (() => {
-    // Resolve icons/ relative to this extension's directory
+
     try {
         const url = import.meta.url;
         if (url.startsWith('file://')) {
@@ -74,9 +74,9 @@ const EXTENSION_ICONS_DIR = (() => {
             return GLib.build_filenamev([extensionDir, 'icons']);
         }
     } catch (e) {
-        // fallback
+
     }
-    // Fallback: assume standard install location
+
     return GLib.build_filenamev([
         GLib.get_home_dir(),
         '.local', 'share', 'gnome-shell', 'extensions',
@@ -86,7 +86,7 @@ const EXTENSION_ICONS_DIR = (() => {
 
 import { _ } from './i18n.js';
 
-// Lazy-built for i18n — rebuilt on every request so translations apply
+
 function _getStaticMenus() {
     return [
         { label: _("File"),   children: buildFileMenu() },
@@ -154,7 +154,7 @@ class AppMenuHoverGlide {
         const parent = box ? box.get_parent() : null;
         if (!parent) return;
 
-        // Clean up any stray duplicate pills in parent first
+
         for (const c of parent.get_children()) {
             if (c !== this.pill && c.name === 'mac-menu-hover-pill') {
                 try { c.destroy(); } catch (_) {}
@@ -249,7 +249,7 @@ class AppMenuHoverGlide {
             let h = (ab && ab.y2 > ab.y1) ? (ab.y2 - ab.y1) : child.height;
             if (w <= 0 || h <= 0) return;
 
-            // Correct for pill's own allocation origin inside parent:
+
             const pillAb = this.pill.get_allocation_box ? this.pill.get_allocation_box() : null;
             const originX = (pillAb && pillAb.x2 >= pillAb.x1) ? pillAb.x1 : 0;
             const originY = (pillAb && pillAb.y2 >= pillAb.y1) ? pillAb.y1 : 0;
@@ -283,7 +283,7 @@ class AppMenuHoverGlide {
                     opacity: 255,
                     scale_x: 1.0,
                     scale_y: 1.0,
-                    duration: 130, // 130ms authentic macW1Y glide
+                    duration: 130,
                     mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                 });
             }
@@ -352,7 +352,7 @@ const TopLevelMenuButton = GObject.registerClass(
       super._init(0.0, label);
       this.add_style_class_name('appmenu-panel-button');
 
-      // macW1Y Menubar: Eliminate triangular pointer arrow and align menu flush with button
+
       this._setupMenuBoxPointer();
 
       this._appInstance = appInstance;
@@ -360,7 +360,7 @@ const TopLevelMenuButton = GObject.registerClass(
       this._isIcon = false;
       this._isAppName = Boolean(isAppName);
 
-      // Determine if label is an icon name (e.g. distributor-logo-ubuntu)
+
        if (label && (label.includes('distributor-logo') || label.includes('-logo') || false || label === DEFAULT_ICON)) {
         this._isIcon = true;
         this._iconSize = this._menuManagerInstance?._cachedIconSize ?? 16;
@@ -422,12 +422,12 @@ const TopLevelMenuButton = GObject.registerClass(
         const targetWindow = global.display.get_focus_window();
         const targetApp = this._appInstance;
 
-        // Close the menu first to return focus to the previous window
+
         if (closeMenu && this.menu) {
             this.menu.close(true);
         }
 
-        // --- v5.4: custom menu actions ---
+
         if (action.startsWith('spawn-command:')) {
             let cmd = action.slice('spawn-command:'.length);
             try {
@@ -443,8 +443,8 @@ const TopLevelMenuButton = GObject.registerClass(
             action = `custom-shortcut:${accel}`;
         }
 
-        // Closing a popup is asynchronous. Preserve the selected target and
-        // cancel rather than sending an action to a newly focused application.
+
+
         const timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
             if (this._menuManagerInstance)
                 this._menuManagerInstance._timeoutIds = this._menuManagerInstance._timeoutIds.filter(id => id !== timeoutId);
@@ -688,7 +688,7 @@ const TopLevelMenuButton = GObject.registerClass(
         try {
             this.menu.removeAll();
         } catch (_e) {
-            // Do not rebuild a popup whose actor was disposed during reload.
+
             return;
         }
         this._setupMenuBoxPointer();
@@ -766,7 +766,7 @@ const TopLevelMenuButton = GObject.registerClass(
       }
         }
 
-    // v5.4: send custom keyboard shortcuts from user-defined menus
+
     _sendAccelerator(accel) {
         try {
             let [success, keyval, mods] = Clutter.accelerator_parse(accel);
@@ -813,32 +813,32 @@ export class MenuManager {
         this._destroyed = false;
         this._recentMenuManager = new PopupMenu.PopupMenuManager(this);
 
-        // Virtual keyboard device — created once, reused across all actions
+
         this._virtualDevice = null;
 
-        // Pre-allocated blacklist cache
+
         this._cachedBlacklistKey = null;
         this._cachedBlacklistLower = null;
         this._cachedBlacklistSet = null;
 
-        // Auto-detected distro icon (computed once, used as fallback)
+
         this._distroIcon = DEFAULT_ICON;
         this._realMenuManager = new RealMenuManager(this._settings, () => {
             this.updateMenuForWindow(global.display.get_focus_window(), true);
         });
 
-        // Cached settings values (updated via signals, not read per focus change)
+
         this._cachedMenuIcon = this._settings ? this._settings.get_string('menu-icon') : '';
         this._cachedShowOsIcon = this._settings ? this._settings.get_boolean('show-os-icon') : true;
         this._cachedIconSize = this._settings ? Math.max(12, Math.min(36, this._settings.get_int('icon-size') || 16)) : 16;
 
-        // Cached singletons (avoid repeated get_default() calls)
+
         this._windowTracker = Shell.WindowTracker.get_default();
         this._appSystem = Shell.AppSystem.get_default();
 
             this._lastDiagnostics = null;
 
-        // Listen for settings changes
+
         if (this._settings) {
             this._settingsSignalIds = [
                 this._settings.connect('changed::show-os-icon', () => {
@@ -847,7 +847,7 @@ export class MenuManager {
                 }),
                 this._settings.connect('changed::menu-icon', () => {
                     this._cachedMenuIcon = this._settings.get_string('menu-icon');
-                    // Rebuild immediately so preferences do not require a focus change.
+
                     this.updateMenuForWindow(global.display.get_focus_window(), true);
                 }),
                 this._settings.connect('changed::use-real-menus', () => {
@@ -889,7 +889,7 @@ export class MenuManager {
     get _blacklist() {
         if (!this._settings) return [];
         const raw = this._settings.get_strv('app-blacklist');
-        // Invalidate cache only when values actually changed (get_strv returns new array each call)
+
         const key = raw.join('\0');
         if (key !== this._cachedBlacklistKey) {
             this._cachedBlacklistKey = key;
@@ -961,7 +961,7 @@ export class MenuManager {
         if (this._destroyed)
             return;
 
-        // Etap 113: mac Finder naming — no-window fallback shows "Finder" instead of "Desktop"
+
         let appName = "Finder";
         let isAppFocused = false;
         let detectedApp = null;
@@ -972,7 +972,7 @@ export class MenuManager {
             if (windowType === 0) {
                 detectedApp = this._windowTracker.get_window_app(window);
 
-                // Fast-path: skip blacklist entirely if list is empty
+
                 const blacklistLower = this._blacklist;
                 const blacklistSet = this._cachedBlacklistSet;
                 if (blacklistLower.length > 0) {
@@ -981,7 +981,7 @@ export class MenuManager {
                     const wmClassLower = (window.get_wm_class() || "").toLowerCase();
                     const titleLower = (window.get_title() || "").toLowerCase();
 
-                    // O(1) exact match first, then O(n) substring fallback
+
                     const isBlacklisted = blacklistSet.has(idLower) ||
                         blacklistSet.has(nameLower) ||
                         blacklistSet.has(wmClassLower) ||
@@ -1062,12 +1062,12 @@ export class MenuManager {
 
         const wmClass = window?.get_wm_class?.() ?? '';
 
-        // Clean up any remaining reverse-DNS app names
+
         if (appName && /^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/.test(appName.trim())) {
             appName = formatAppIdentifier(appName);
         }
 
-        // Etap 113: mac Finder naming — Nautilus windows are called "Finder"
+
         {
             const appNameLower = String(appName || '').toLowerCase();
             const appIdLower = (detectedApp?.get_id?.() || '').toLowerCase();
@@ -1096,7 +1096,7 @@ export class MenuManager {
             ? buildAppMenu(appName, detectedApp, window)
             : buildFallbackAppMenu();
 
-        // --- v5.4: window list + Quit / App Details ---
+
         let augmentedAppChildren = fallbackAppChildren.slice();
         if (isAppFocused && detectedApp) {
             let openWindows = detectedApp.get_windows();
@@ -1116,7 +1116,7 @@ export class MenuManager {
                 augmentedAppChildren = [...winItems, ...augmentedAppChildren];
             }
 
-            // App Details and Quit at the bottom
+
             augmentedAppChildren.push({ type: 'separator' });
             augmentedAppChildren.push({
                 label: _('App Details'),
@@ -1144,7 +1144,7 @@ export class MenuManager {
             ? realMenuData.appMenuChildren
             : augmentedAppChildren;
 
-        // --- Custom app menus ---
+
         let customMenus = [];
         try {
             let raw = this._settings.get_string('custom-app-menus') || '[]';
@@ -1168,7 +1168,7 @@ export class MenuManager {
                     });
                 });
             }
-        } catch (e) { /* ignore parse errors */ }
+        } catch (e) {   }
 
         const windowChildren = buildWindowMenu(window, detectedApp);
         const mainChildren = [
@@ -1211,7 +1211,7 @@ export class MenuManager {
             ...customMenus,
         ];
 
-        // Ensure we have exactly the required number of buttons
+
         while (this._buttons.length < newMenuData.length) {
             const idx = this._buttons.length;
             const data = newMenuData[idx];
@@ -1221,10 +1221,10 @@ export class MenuManager {
                 try { Main.panel.statusArea[role].destroy(); } catch (_) {}
                 delete Main.panel.statusArea[role];
             }
-            // Start empty; the update loop below builds each menu exactly once.
-            // Passing data.children here would build in the constructor and then
-            // immediately remove/rebuild, which causes disposed PopupMenuItem
-            // warnings during extension reloads.
+
+
+
+
             const btn = new TopLevelMenuButton(data.label, [], detectedApp, this, isAppName);
             Main.panel.addToStatusArea(role, btn, idx + 1, 'left');
             this._buttons.push(btn);
@@ -1256,13 +1256,13 @@ export class MenuManager {
             }
         }
 
-        // Destroy excess buttons (shouldn't happen, but defensive)
+
         while (this._buttons.length > newMenuData.length) {
             const extra = this._buttons.pop();
             try { extra.destroy(); } catch (_e) {}
         }
 
-        // Update OS icon visibility
+
         if (this._buttons.length > 0 && !this._buttons[0]._destroyed) {
             try { this._buttons[0].visible = this._showOsIcon; } catch (_e) {}
         }
@@ -1278,7 +1278,7 @@ export class MenuManager {
         });
         this._buttons = [];
 
-        // Safely cancel any active timeout loops to eliminate leaks/lint findings
+
         if (this._timeoutIds && this._timeoutIds.length > 0) {
             this._timeoutIds.forEach(id => GLib.source_remove(id));
             this._timeoutIds = [];
@@ -1290,10 +1290,10 @@ export class MenuManager {
             return;
         this._destroyed = true;
 
-        // Disconnect settings signals to prevent memory leaks
+
         if (this._settings && this._settingsSignalIds) {
             this._settingsSignalIds.forEach(id => {
-                try { this._settings.disconnect(id); } catch (_e) { /* ignore */ }
+                try { this._settings.disconnect(id); } catch (_e) {   }
             });
             this._settingsSignalIds = [];
         }

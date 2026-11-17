@@ -1,6 +1,6 @@
-/*
- * documentTooltip.js - Provides a delayed tooltip for document entries.
- */
+
+
+
 
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
@@ -171,7 +171,7 @@ export const DocumentTooltip = GObject.registerClass(
           try {
             this._target.disconnect(signalId);
           } catch (_error) {
-            // Target already disconnected, ignore.
+
           }
         }
       }

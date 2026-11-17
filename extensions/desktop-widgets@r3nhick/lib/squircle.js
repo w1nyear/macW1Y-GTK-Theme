@@ -1,11 +1,11 @@
-// Port of the ray-casting tick ring from liquidglass-widgets (lib/squircle.js,
-// originally KDE's HourDial.qml / TickRing.qml): each of the 60 minute
-// directions is cast from the centre onto two rounded-corner rectangles (the
-// widget shape shrunk by an inset), giving the outer and inner ends of that
-// tick. Ticks therefore follow the widget's silhouette instead of a circle.
 
-// Signed distance-like level of (x, y) against a centred squircle with
-// half-size hw x hh, corner radius r and exponent n; < 0 is inside.
+
+
+
+
+
+
+
 function level(x, y, hw, hh, r, n) {
 	const qx = Math.abs(x) - hw + r;
 	const qy = Math.abs(y) - hh + r;
@@ -15,7 +15,7 @@ function level(x, y, hw, hh, r, n) {
 	return Math.min(Math.max(qx, qy), 0) + arc - r;
 }
 
-// Distance along the unit ray (dx, dy) from the centre to the boundary.
+
 function rayHit(dx, dy, hw, hh, r, n) {
 	let lo = 0;
 	let hi = Math.min(
@@ -31,11 +31,11 @@ function rayHit(dx, dy, hw, hh, r, n) {
 	return (lo + hi) / 2;
 }
 
-// 60 ticks (index 0 at 12 o'clock, clockwise) for a width x height widget
-// whose glass has the given corner radius and roundness. Insets and the
-// tick length are fractions of the widget's shorter side; corner ticks are
-// pulled out by cornerOuterExtension so their gap to the edge looks even.
-// Returns [{dx, dy, outer: {x, y}, inner: {x, y}}], in widget pixels.
+
+
+
+
+
 export function perimeterTicks(width, height, cornerRadius, roundness, {
 	outerInset = 0.05,
 	tickLength = 0.026,
@@ -45,7 +45,7 @@ export function perimeterTicks(width, height, cornerRadius, roundness, {
 	const cx = width / 2;
 	const cy = height / 2;
 	const n = Math.max(roundness, 2);
-	// The shader clamps the radius to half the shorter side; match it.
+
 	const radius = Math.min(cornerRadius, cx, cy);
 
 	const outerInsetPx = outerInset * minSide;
@@ -62,7 +62,7 @@ export function perimeterTicks(width, height, cornerRadius, roundness, {
 		const dx = Math.sin(angle);
 		const dy = -Math.cos(angle);
 
-		// 0 on the flat edges, 1 on the 45-degree corner diagonals.
+
 		const cornerBlend = 1 - Math.abs(Math.abs(dx) - Math.abs(dy));
 		const inset = Math.max(0, outerInsetPx - extensionPx * cornerBlend);
 		const outerHw = Math.max(1, cx - inset);

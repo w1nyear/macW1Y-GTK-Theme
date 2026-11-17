@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Adds a hardware-accelerated rounded frosted glass blur effect to dock labels, tooltips, and overview window captions.
-// Dynamically connected to Mac Stylization "Blur" settings (blur-my-shell sigma/brightness).
+
+
 
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
@@ -117,8 +117,8 @@ export function applyLabelBlur(actor) {
         const brightness = _getCurrentBrightness();
         const active = _isBlurActive() && radius > 0;
 
-        // Mutter offscreen redirection MUST be disabled (0 = NEVER) so GbBlurEffect
-        // samples the true desktop framebuffer beneath the actor rather than an empty offscreen FBO.
+
+
         if (actor.set_offscreen_redirect) {
             actor.set_offscreen_redirect(0);
             if (!actor._origSetOffscreenRedirect) {
@@ -153,7 +153,7 @@ export function applyLabelBlur(actor) {
         if (Blur?.BlurEffect) {
             effect = new Blur.BlurEffect({
                 name: EFFECT_NAME,
-                mode: 1, // GB_BLUR_MODE_BACKGROUND
+                mode: 1,
                 radius: radius,
                 corner_radius: cornerR,
                 brightness: brightness,
@@ -297,7 +297,7 @@ export function enable() {
         stylingMonitor.connect("changed", _updateAllLabels);
     } catch (_) {}
 
-    // Listen to changes in Mac Stylization "Blur" settings
+
     if (bmsDockSettings) {
         settingsSignalIds.push([bmsDockSettings, bmsDockSettings.connect("changed::sigma", _updateAllLabels)]);
         settingsSignalIds.push([bmsDockSettings, bmsDockSettings.connect("changed::brightness", _updateAllLabels)]);
@@ -307,7 +307,7 @@ export function enable() {
         settingsSignalIds.push([bmsRootSettings, bmsRootSettings.connect("changed::brightness", _updateAllLabels)]);
     }
 
-    // 1. Blur existing and future dock labels / tooltips
+
     _dashLabels().forEach(applyLabelBlur);
 
     if (!childAddedId && Main.uiGroup) {
@@ -317,7 +317,7 @@ export function enable() {
         });
     }
 
-    // 2. Blur overview window captions on overview showing & shown
+
     if (!overviewShowingId && Main.overview) {
         overviewShowingId = Main.overview.connect("showing", _blurAllCaptions);
     }
@@ -325,7 +325,7 @@ export function enable() {
         overviewShownId = Main.overview.connect("shown", _blurAllCaptions);
     }
 
-    // 3. Hook WindowPreview._init & showOverlay
+
     if (WindowPreview) {
         if (!origWpInit) {
             origWpInit = WindowPreview.prototype._init;

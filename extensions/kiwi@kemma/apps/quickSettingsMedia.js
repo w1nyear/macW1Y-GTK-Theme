@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Kiwi Extension - Quick Settings Media playback widget
+
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import St from 'gi://St';
@@ -14,7 +14,7 @@ import { Source } from './quickSettingsMedia/source.js';
 const SCROLL_LOCK_TIMEOUT_MS = 320;
 const SMOOTH_SCROLL_THRESHOLD = 1.5;
 
-// State holders
+
 let enabled = false;
 let mediaWidget = null;
 let quickSettingsGrid = null;
@@ -22,7 +22,7 @@ let _initTimeoutId = null;
 let mediaIndicator = null;
 let gettextFunc = (message) => message;
 
-// Get QuickSettings grid
+
 function getQuickSettingsGrid() {
     if (!quickSettingsGrid) {
         const quickSettings = Main.panel.statusArea.quickSettings;
@@ -80,8 +80,8 @@ function destroyMediaIndicator() {
     }
 }
 
-// #region Media Classes
-// Player, Source, and MediaItem helpers are provided by modules in apps/quickSettingsMedia.
+
+
 
 class MediaList extends St.BoxLayout {
     constructor() {
@@ -532,7 +532,7 @@ class MediaWidget extends St.BoxLayout {
 }
 
 GObject.registerClass(MediaWidget);
-// #endregion Media Classes
+
 
 export function enable(gettext) {
     gettextFunc = typeof gettext === 'function' ? gettext : (message) => message;
@@ -542,7 +542,7 @@ export function enable(gettext) {
     _initTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
         const grid = getQuickSettingsGrid();
         if (!grid)
-            return GLib.SOURCE_CONTINUE; // Retry if grid not ready
+            return GLib.SOURCE_CONTINUE;
 
         mediaWidget = new MediaWidget();
         const existingChildren = grid.get_children?.() ?? [];

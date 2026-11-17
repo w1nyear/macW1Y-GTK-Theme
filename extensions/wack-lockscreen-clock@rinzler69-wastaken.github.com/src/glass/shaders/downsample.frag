@@ -1,10 +1,10 @@
-// Dual Kawase downsample pass, used as a Cogl fragment snippet.
-// Reads cogl_sampler0 and writes a half-resolution texture.
 
-uniform vec2 inv_size; /* 1/width, 1/height of the source texture */
-uniform float blur_radius; /* sample offset in source texels */
 
-// Centre weighted 4, four diagonal taps weighted 1.
+
+uniform vec2 inv_size;
+uniform float blur_radius;
+
+
 void main() {
     vec2 uv = cogl_tex_coord_in[0].st;
     float r = blur_radius;

@@ -1,24 +1,24 @@
-// A drawing area that acts as a button: paint(cr, button) draws it, and
-// 'clicked' fires on a primary press and release inside it. `pressed` and
-// `hover` are there for paint() to read. With bounce, the button squashes
-// and springs back when clicked (ControlButton.qml in the KDE music widget).
-//
-// It stops the button press, so pressing it never starts a widget drag.
+
+
+
+
+
+
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
-// Register the class only once, storing it in globalThis to survive module
-// re-evaluation on extension disable/enable (GType registrations persist for
-// the whole shell process, so a plain re-register would throw "already
-// registered").
+
+
+
+
 const CANVAS_BUTTON_KEY = 'DesktopWidgets_CanvasButton_class';
 
 export const CanvasButton = (globalThis[CANVAS_BUTTON_KEY] ??= GObject.registerClass({
-  // Explicit GType name: without it GJS derives "Gjs_lib_canvasButton_CanvasButton"
-  // from the module path, which collides with the identically-structured
-  // lib/canvasButton.js in the liquidglass-widgets extension.
+
+
+
   GTypeName: 'DesktopWidgets_CanvasButton',
   Signals: {'clicked': {}},
 }, class CanvasButton extends St.DrawingArea {
@@ -62,10 +62,10 @@ export const CanvasButton = (globalThis[CANVAS_BUTTON_KEY] ??= GObject.registerC
     return super.vfunc_leave_event(event);
   }
 
-  // St.DrawingArea reports a natural size of 0, and BoxLayout lays children
-  // out by their PREFERRED sizes (an explicit set_size isn't one), which
-  // would collapse these buttons to zero inside the controls row. Report the
-  // fixed size as the preferred request instead.
+
+
+
+
   vfunc_get_preferred_width(_forHeight) {
     const w = this.width > 0 ? Math.ceil(this.width) : 27;
     return [w, w];

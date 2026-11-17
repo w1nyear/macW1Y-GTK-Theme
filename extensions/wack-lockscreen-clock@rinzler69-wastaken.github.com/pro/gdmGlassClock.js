@@ -5,12 +5,12 @@ import St from 'gi://St';
 import { trackViewPaints } from '../src/glass/dist/rendering/backdropGlass.js';
 import { GlassClock } from '../src/glass/dist/desktop/clock.js';
 
-/**
- * GdmGlassClock wraps the liquid glass clock engine from ryohsuke1231/liquid-glass
- * specifically for the GDM lockscreen time text.
- * It renders high-fidelity refractive liquid glass digits with specular highlights,
- * rim edge lighting, and soft drop shadow over the lockscreen wallpaper.
- */
+
+
+
+
+
+
 export class GdmGlassClock {
     constructor(extensionPath, onRelayout = null) {
         this._extensionPath = extensionPath;
@@ -38,15 +38,15 @@ export class GdmGlassClock {
             try { setter(); } catch (_) {}
         };
 
-        // Typography: Open Runde SemiBold / Default Rounded (GDM lockscreen design)
+
         safeSet(() => this._settings.set_string('glass-clock-font', 'Open Runde SemiBold'));
         safeSet(() => this._settings.set_int('glass-clock-size', 128));
         safeSet(() => this._settings.set_double('glass-clock-stretch', 1.0));
         safeSet(() => this._settings.set_double('glass-clock-height', 1.0));
         safeSet(() => this._settings.set_string('glass-clock-tall-style', 'even'));
-        safeSet(() => this._settings.set_boolean('glass-clock-show-date', false)); // wack-lockscreen-clock manages dateLabel
+        safeSet(() => this._settings.set_boolean('glass-clock-show-date', false));
 
-        // Optical glass parameters: macW1Y Tahoe liquid glass
+
         safeSet(() => this._settings.set_string('glass-clock-tint-color', '#ffffff'));
         safeSet(() => this._settings.set_double('glass-clock-tint-strength', 0.35));
         safeSet(() => this._settings.set_int('glass-clock-blur-radius', 35));

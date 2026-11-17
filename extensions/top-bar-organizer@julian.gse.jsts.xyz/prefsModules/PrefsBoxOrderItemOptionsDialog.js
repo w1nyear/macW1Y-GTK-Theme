@@ -17,11 +17,11 @@ export default class PrefsBoxOrderItemOptionsDialog extends Adw.Dialog {
     item;
     constructor(params = {}, item) {
         super(params);
-        // Associate `this` with an item.
+
         this.item = item;
-        // Load the settings.
+
         this.#settings = ExtensionPreferences.lookupByURL(import.meta.url).getSettings();
-        // Set the selected visibility row choice to the settings value.
+
         const itemsToHide = new Set(this.#settings.get_strv("hide"));
         const itemsToShow = new Set(this.#settings.get_strv("show"));
         if (itemsToHide.has(this.item)) {

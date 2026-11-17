@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Syncs Firefox userChrome.css imports with the extension's window control settings.
+
 
 import {MozillaThemeManager} from './mozillaThemeManager.js';
 

@@ -3,7 +3,7 @@ import Meta from 'gi://Meta';
 import { isActorValid } from './actors.js';
 import { reportFrameLoopError } from './logger.js';
 
-// '#rrggbb' as normalized [r, g, b]; anything else gives white.
+
 export function hexToColorArray(hex) {
     if (!hex || !hex.startsWith('#') || hex.length !== 7)
         return [1.0, 1.0, 1.0];
@@ -31,13 +31,13 @@ export function crossFadeColorAt(start, startAlpha, target, targetAlpha, progres
         return { r: start.r, g: start.g, b: start.b, a };
     }
     const local = (p - 0.5) / 0.5;
-    // easeOutQuad on the fade-in: mirrors the curve above.
+
     const e = 1 - (1 - local) * (1 - local);
     return { r: target.r, g: target.g, b: target.b, a: targetAlpha * e };
 }
 
-// A small change (off-white to white) has no grey to pass through, and a
-// dissolve would only add a flicker. Rec. 709 luma difference, 0..1.
+
+
 const CROSS_FADE_LUMA_DELTA = 0.4;
 
 export function shouldCrossFadeColors(start, target) {
@@ -45,7 +45,7 @@ export function shouldCrossFadeColors(start, target) {
     return Math.abs(luma(target) - luma(start)) > CROSS_FADE_LUMA_DELTA;
 }
 
-// Plain per-channel interpolation (easeInOutQuad), used for small changes.
+
 export function lerpColorAt(start, startAlpha, target, targetAlpha, progress) {
     const p = Math.max(0, Math.min(1, progress));
     const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
@@ -67,7 +67,7 @@ export function getAdaptiveColorMode() {
     return _adaptiveColorMode;
 }
 
-// Whether this change should dissolve rather than interpolate.
+
 export function resolveCrossFade(start, target) {
     return _adaptiveColorMode === 'cross-fade' && shouldCrossFadeColors(start, target);
 }
@@ -76,17 +76,17 @@ class AdaptiveColorTweener {
     _entries = new Map();
     _laterId = 0;
 
-    /**
-     * @param batchStart monotonic timestamp shared by every actor updated in the
-     *   same turn. Callers pass one value for a whole color map so the actors
-     *   move in lockstep; omitted, the actor starts from now.
-     */
+
+
+
+
+
     add(actor, entry, batchStart) {
         if (!actor)
             return;
         const prev = this._entries.get(actor);
-        // Restarting mid-tween: start from what is on screen, not from the theme
-        // node, which St may not have re-resolved yet.
+
+
         const startRgb = prev?.last
             ? { r: prev.last.r, g: prev.last.g, b: prev.last.b }
             : entry.startRgb;
@@ -134,8 +134,8 @@ class AdaptiveColorTweener {
             ? crossFadeColorAt(e.startRgb, e.startAlpha, e.targetRgb, e.targetAlpha, progress)
             : lerpColorAt(e.startRgb, e.startAlpha, e.targetRgb, e.targetAlpha, progress);
         const a = Math.max(0, Math.min(1, c.a));
-        // set_style() re-parses CSS and relayouts, so skip frames that would
-        // write the same value (the flat ends of the curve).
+
+
         const same = e.coalesce !== false && e.last &&
             e.last.r === c.r && e.last.g === c.g && e.last.b === c.b &&
             Math.abs(e.last.a - a) < 0.002;
@@ -166,8 +166,8 @@ class AdaptiveColorTweener {
 export const adaptiveColorTweener = new AdaptiveColorTweener();
 export const SAME_FRAME_WINDOW_US = 4000;
 // Diagnostic switch (global._lgGlass.freezeSync): every per-frame sync tick
-// keeps rescheduling but does no work, so the cost of the sync itself can be
-// measured. The glass stops following anything that moves while it is on.
+
+
 let _frameSyncFrozen = false;
 
 export function setFrameSyncFrozen(frozen) {
@@ -188,9 +188,9 @@ export function removeBeforeRedraw(id) {
     global.compositor.get_laters().remove(id);
 }
 
-// A self-rescheduling BEFORE_REDRAW chain. The next tick is scheduled before
-// step() runs, so an exception in step() is reported (rate-limited) instead of
-// silently ending the chain and freezing the glass.
+
+
+
 export function startLaterLoop(slot, loop) {
     if (slot.get() !== 0)
         return false;
@@ -219,9 +219,9 @@ export function stopLaterLoop(slot) {
     removeBeforeRedraw(id);
 }
 
-// Follows the stage's own frames instead of requesting them, so an idle
-// desktop does not keep the frame clock running. `first` covers the frame in
-// which the loop starts.
+
+
+
 export function startStageLoop(signal, first, tick) {
     if (signal.get() !== 0)
         return false;
@@ -242,12 +242,12 @@ export function stopStageLoop(signal, first) {
     stopLaterLoop(first);
 }
 
-/**
- * startStageLoop() for a manager's per-frame sync, taking the same loop as
- * startLaterLoop(). `step` runs at most once per frame (several stage views
- * update in the same one), and the loop stops itself once `alive()` is false.
- * Exceptions are reported rate-limited, and the loop keeps running.
- */
+
+
+
+
+
+
 export function startSyncLoop(signal, first, loop) {
     let lastUs = 0;
     return startStageLoop(signal, first, () => {
@@ -274,11 +274,11 @@ const MAX_INTERVAL_MS = 50;
 let _nextId = 0;
 const _tickers = new Map();
 
-// Steps an animation at most once per frame from a BEFORE_REDRAW later, which
-// also keeps the frame clock running while the animation lives. A GLib timer
-// would beat against the frame; smoothness comes from sub-stepping the physics
-// (Spring.update()), not from writing the actors more often. `cb` returns true
-// to keep going; the returned id stays valid across the reschedules.
+
+
+
+
+
 export function addFrameTicker(cb, minIntervalMs = 0) {
     const id = ++_nextId;
     const ticker = { laterId: 0, cb, minUs: Math.max(0, minIntervalMs || 0) * 1000, last: 0 };
@@ -290,9 +290,9 @@ export function addFrameTicker(cb, minIntervalMs = 0) {
                 return GLib.SOURCE_REMOVE;
             let keep = true;
             const now = GLib.get_monotonic_time();
-            // At most once per frame even when several stage views update in the
-            // same one (SAME_FRAME_WINDOW_US), and a little slack so a 16ms minimum
-            // does not drop a frame whose interval happened to measure 15.9ms.
+
+
+
             const due = ticker.last === 0 ||
                 now - ticker.last >= Math.max(SAME_FRAME_WINDOW_US, ticker.minUs - SAME_FRAME_WINDOW_US);
             if (due) {
@@ -329,24 +329,24 @@ export function removeFrameTicker(id) {
     ticker.laterId = 0;
 }
 
-/**
- * Maps animation-interval-ms onto what a frame-driven animation can do:
- * anything up to one 60Hz frame means every frame (0); larger values cap the
- * frame rate, bounded to what the preferences offer.
- */
+
+
+
+
+
 export function normalizeAnimationIntervalMs(v) {
     if (!Number.isFinite(v) || v <= 16)
         return 0;
     return Math.min(Math.round(v), MAX_INTERVAL_MS);
 }
 
-// The longest frame the physics follows in full. It covers the 20fps cap the
-// preferences offer, so a capped animation keeps its speed; longer gaps (a
-// stall) are clamped instead of jumped over.
+
+
+
 export const MAX_STEP_S = 0.066;
 const SUB_STEP_S = 0.002;
 
-// Damped spring (Hooke's law), integrated with semi-implicit Euler.
+
 export class Spring {
     stiffness;
     damping;
@@ -374,8 +374,8 @@ export class Spring {
         let dt = elapsedMs / 1000;
         if (dt > MAX_STEP_S)
             dt = MAX_STEP_S;
-        // Sub-stepped: with the stiffness the preferences allow, a whole frame is
-        // not a stable step for an explicit integrator.
+
+
         const mass = this.mass > 1e-3 ? this.mass : 1e-3;
         let remaining = dt;
         while (remaining > 1e-6) {
@@ -387,13 +387,13 @@ export class Spring {
             this.value += this.velocity * h;
             remaining -= h;
         }
-        // Settled.
+
         return Math.abs(this.velocity) < 0.01 && Math.abs(this.value - this.target) < 0.001;
     }
 }
 
-// A spring described by response (period, seconds) and damping fraction, as
-// SwiftUI does, solved analytically so it cannot diverge at any stiffness.
+
+
 export class SwiftSpring {
     response = 0.4;
     dampingFraction = 0.7;
@@ -406,7 +406,7 @@ export class SwiftSpring {
         this.updateParams(response, dampingFraction, mass);
     }
 
-    // Out-of-range values (including NaN) keep the previous parameter.
+
     updateParams(response, dampingFraction, mass = 1.0) {
         if (response > 0.01)
             this.response = response;
@@ -439,7 +439,7 @@ export class SwiftSpring {
         let x_t = 0;
         let v_t = 0;
         if (zeta < 0.999) {
-            // Underdamped
+
             const omegaD = omega0 * Math.sqrt(1.0 - zeta * zeta);
             const alpha = zeta * omega0;
             const exp = Math.exp(-alpha * dt);
@@ -449,7 +449,7 @@ export class SwiftSpring {
             v_t = exp * (v0 * cos - ((alpha * v0 + omega0 * omega0 * x0) / omegaD) * sin);
         }
         else if (zeta > 1.001) {
-            // Overdamped
+
             const beta = omega0 * Math.sqrt(zeta * zeta - 1.0);
             const gamma1 = -zeta * omega0 + beta;
             const gamma2 = -zeta * omega0 - beta;
@@ -461,7 +461,7 @@ export class SwiftSpring {
             v_t = c1 * gamma1 * exp1 + c2 * gamma2 * exp2;
         }
         else {
-            // Critically damped
+
             const exp = Math.exp(-omega0 * dt);
             x_t = exp * (x0 + (v0 + omega0 * x0) * dt);
             v_t = exp * (v0 - omega0 * (v0 + omega0 * x0) * dt);
@@ -483,10 +483,10 @@ export class SwiftSpring {
     }
 }
 
-/**
- * A rectangle carried to each new target by a spring, so it swings a little past it and settles, as liquid
- * does. `rect()` steps the spring to the time it is given.
- */
+
+
+
+
 export class RectSpring {
     _from;
     _to;
@@ -532,7 +532,7 @@ function clampOpacity(v) {
     return Math.min(255, Math.max(0, v));
 }
 
-// Closing uses exponential decay: faster than the spring and never bounces.
+
 function stepClosing(scale, elapsedMs) {
     const dt = Math.min(elapsedMs / 1000, MAX_STEP_S);
     const k = 1.0 - Math.exp(-CLOSE_SPEED * dt);
@@ -542,11 +542,11 @@ function stepClosing(scale, elapsedMs) {
     return { s: scale.value, stopped: false };
 }
 
-// Opening uses the spring, which gives the bounce.
+
 function stepOpening(scale, elapsedMs) {
     const settled = scale.update(elapsedMs);
     const s = scale.value;
-    // Snap to 1.0 once the bounce has almost settled, instead of micro-stepping forever.
+
     if (Math.abs(1.0 - s) < OPEN_SNAP_DISTANCE && Math.abs(scale.velocity) < OPEN_SNAP_VELOCITY)
         return { s: 1.0, stopped: true };
     return { s, stopped: settled };
@@ -555,8 +555,8 @@ function stepOpening(scale, elapsedMs) {
 export function stepMenuSpring(scale, elapsedMs) {
     const closing = scale.target === 0;
     const { s, stopped } = closing ? stepClosing(scale, elapsedMs) : stepOpening(scale, elapsedMs);
-    // Scale 0 crashes Cogl, hence the 0.001 floor. Opacity fades out between
-    // scale 1.0 and 0.3, ahead of the shrink.
+
+
     if (closing)
         return { closing, stopped, scale: Math.max(0.001, s), opacity: clampOpacity((s - 0.3) / 0.7 * 255) };
     return { closing, stopped, scale: 0.2 + s * 0.8, opacity: clampOpacity((s / 0.3) * 255) };
@@ -595,8 +595,8 @@ export function showMenuAtRest(glass, animActor) {
     animActor.opacity = 255;
 }
 
-// A rectangle that eases to each new target in a fixed time, without the
-// overshoot of a spring.
+
+
 function easeOutCubic(t) {
     return 1 - (1 - t) ** 3;
 }
@@ -611,21 +611,21 @@ export class RectTween {
         this._durationMs = _durationMs;
     }
 
-    /** Puts it at `rect` [x, y, w, h] and eases from there to `target`. */
+
     start(rect, target, nowUs) {
         this._from = [...rect];
         this._to = [...target];
         this._startUs = nowUs;
     }
 
-    /** Eases from where it is now to `target`, unless it is already heading there. */
+
     setTarget(target, nowUs) {
         if (target.every((v, i) => Math.abs(v - this._to[i]) < 0.5))
             return;
         this.start(this.rect(nowUs), target, nowUs);
     }
 
-    /** Milliseconds until it lands, 0 once it has. */
+
     remaining(nowUs) {
         return Math.max(this._durationMs - (nowUs - this._startUs) / 1000, 0);
     }
@@ -665,63 +665,63 @@ class MorphSpring {
     }
 }
 
-// [stiffness, damping], unit mass, as liquid-dom's demo has them.
+
 const OPEN_MOVE = [144, 14];
 const CLOSE_MOVE = [130, 18];
 const CONTENT_FADE = [137, 20];
-// The demo throws the menu out at 2400 px/s over about 150 px; here the
-// throw is that many times the distance, per second.
+
+
 const THROW = 16;
-// The push each opening gets on top of the throw, px/s per px of the menu's
-// shorter side, at its strongest: the menu swings aside or dips by up to
-// about 15% of that side before it settles. Its strength is drawn from
-// PUSH_MIN to 1 of that (about 10% at the weakest), its direction from
-// anywhere in the lower half.
+
+
+
+
+
 const PUSH = 3.65;
 const PUSH_MIN = 0.67;
-// The capsule draws into a drop this many times the button's height across,
-// while the springs, started on a slow clock that comes up to full speed as
-// the capsule ends, carry it a little way down. The clock runs at CLOCK_START
-// at first, and the springs start with CAPSULE_PUSH times the way to the menu
-// per second.
+
+
+
+
+
 const DROP_SIZE = 1.15;
 const CAPSULE_S = 0.14;
 const CLOCK_START = 0.3;
 const CLOCK_POWER = 8;
 const CAPSULE_PUSH = 2.2;
-// Opening from a capsule that a reversal left behind: it first rounds into the drop this long.
+
 const ROUND_S = 0.1;
-// Opening from a reversal, the glass opacity and the softening come back to
-// their open values over this long.
+
+
 const REVEAL_S = 0.12;
-// The springs swing the drop past the menu; as it swells to the menu's size,
-// all but this much of the swing is taken out, so the grown glass does not
-// shoot back over the menu.
+
+
+
 const SETTLED_SWING = 0.25;
 const OPEN_SIZE_S = 0.3;
 const CLOSE_SIZE_S = 0.25;
 const CONTENT_SCALE_S = 0.3;
-// The content starts twice its size.
+
 const CONTENT_CLOSED_SCALE = 2;
-// The content is seen through the glass as if it were deep inside it when
-// the menu opens, and comes up to the surface over this long.
+
+
 const LENS_S = 0.3;
-// Closing: the drop starts to turn into the capsule once it is this many
-// button heights from where the capsule rests, or this long after closing
-// began whatever, and rises into place as it does over CLOSE_CAPSULE_S. It
-// fades over FADE_S from FADE_DELAY_S after it starts to, so it stays a
-// moment as the capsule, and then goes: on the button it only hides
-// the clock, bent by the glass.
+
+
+
+
+
+
 const ARRIVE_HEIGHTS = 2;
 const ARRIVE_MAX_S = 0.6;
 const CLOSE_CAPSULE_S = 0.16;
 const FADE_DELAY_S = 0.24;
 const FADE_S = 0.12;
-// Over the button the bent, blurred clock looks muddy, so the refraction and
-// the blur are taken down (MorphFrame.soften) as the drop comes back to the
-// button, from this many button heights away, and are all the way down when
-// it touches the button. Once on its way into the capsule, they are down
-// SOFTEN_S after that at the latest.
+
+
+
+
+
 const SOFTEN_HEIGHTS = 1.5;
 const SOFTEN_S = 0.1;
 
@@ -742,17 +742,17 @@ function cubicBezier(x1, y1, x2, y2) {
     };
 }
 
-// Slow out of the drop, then quick to the menu's size.
+
 const openSize = cubicBezier(0.8, 0.3, 0.5, 0.8);
 
 const easeOut = (t) => 1 - (1 - t) ** 2;
 
 const easeInOut = (t) => t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
 
-// Closing, the items are as faded as the opening had them at this many times
-// the time it took to reach the size, so they stay longer.
+
+
 const CLOSE_FADE_HOLD = 1.0;
-// How the items fade in as the glass opens, every FADE_STEP_S from its start.
+
 const FADE_STEP_S = 0.002;
 const OPEN_FADE = (() => {
     const fade = new MorphSpring(0, CONTENT_FADE[0], CONTENT_FADE[1]);
@@ -782,37 +782,37 @@ export class MenuMorphMotion {
     _x;
     _y;
     _opacity;
-    // Opening: how long the capsule takes to draw into a drop (0 when the
-    // motion takes over from another). The rest of the motion starts after it.
+
+
     _capsuleS;
     _sizeFrom;
-    // Opening, how round the corners start, as a fraction of the roundest they
-    // can be; closing, the radius they start from.
+
+
     _radiusFrom;
-    // Opening from a reversal: how long the capsule takes to round into a drop
-    // before the glass grows. 0 when it is not a capsule.
+
+
     _roundS = 0;
-    // Opening from a reversal: the glass opacity and softening it had.
+
     _glassFrom = 1;
     _softenFrom = 0;
     _contentFrom;
     _lensFrom;
-    // Closing: when the drop came near the button, and its size then.
+
     _arrivedAt = -1;
     _arrivedSize = [];
-    // Closing: the furthest the body has been from the button, and how far the
-    // refraction and blur are down; they never come back up.
+
+
     _furthest = 0;
     _soften = 0;
     _frame;
     _pushVx = 0;
     _pushVy = 0;
 
-    /**
-     * Starts towards the menu (`opening`) or back to the button, from `from`
-     * (the frame a reversed motion had got to) or from where that motion rests.
-     * `random` gives the opening its push.
-     */
+
+
+
+
+
     constructor(opening, _buttonRect, _menu, _menuRadius, from = null, velocities = null, random = Math.random) {
         this.opening = opening;
         this._buttonRect = _buttonRect;
@@ -830,7 +830,7 @@ export class MenuMorphMotion {
         this._frame = start;
         this._capsuleS = opening && !from ? CAPSULE_S : 0;
         const [stiffness, damping] = opening ? OPEN_MOVE : CLOSE_MOVE;
-        // The drop is thrown from where it fell to.
+
         const [cx, y] = center(start.body);
         this._x = new MorphSpring(cx, stiffness, damping);
         this._y = new MorphSpring(y, stiffness, damping);
@@ -863,7 +863,7 @@ export class MenuMorphMotion {
         }
     }
 
-    /** The body's velocity, for a motion that reverses this one. */
+
     get velocities() {
         return [this._x.velocity, this._y.velocity];
     }
@@ -872,7 +872,7 @@ export class MenuMorphMotion {
         return this._frame;
     }
 
-    /** Where the button and the menu are now; they may move while it runs. */
+
     retarget(button, menu, menuRadius) {
         this._buttonRect = button;
         if (menu)
@@ -881,7 +881,7 @@ export class MenuMorphMotion {
         this._aim();
     }
 
-    // The round drop between the capsule and the menu, px across.
+
     _drop() {
         const [, , w, h] = this._buttonRect;
         return Math.max(Math.min(h * DROP_SIZE, w), 1);
@@ -892,7 +892,7 @@ export class MenuMorphMotion {
         this._opacity.target = this.opening ? 1 : 0;
     }
 
-    /** Advances by `elapsed` seconds. */
+
     step(elapsed, speed) {
         let dt = Math.min(Math.max(elapsed, 0), MAX_FRAME_S);
         dt *= speed;
@@ -912,9 +912,9 @@ export class MenuMorphMotion {
 
     _open(dt) {
         if (this._capsuleS) {
-            // The springs run on a clock that is at full speed, with no
-            // acceleration of its own, where the capsule ends, so position,
-            // velocity and acceleration carry over without a step.
+
+
+
             const before = this._t - dt;
             const span = Math.min(this._t, this._capsuleS) - Math.min(before, this._capsuleS);
             if (span > 0) {
@@ -925,7 +925,7 @@ export class MenuMorphMotion {
         }
         if (this._t < this._capsuleS) {
             const t = this._t / this._capsuleS;
-            // It leaves the button as a capsule and rounds off on the way down.
+
             const k = easeInOut(clamp01((t - 0.3) / 0.7));
             const [, , bw, bh] = this._buttonRect;
             const drop = this._drop();
@@ -947,7 +947,7 @@ export class MenuMorphMotion {
         const g = t - this._roundS;
         let w, h, radius;
         if (g < 0) {
-            // A capsule from a reversal goes through the round drop before it grows.
+
             const drop = this._drop();
             const c = easeInOut(clamp01(t / this._roundS));
             w = lerp(this._sizeFrom[0], drop, c);
@@ -959,16 +959,16 @@ export class MenuMorphMotion {
             const k = openSize(clamp01(g / OPEN_SIZE_S));
             w = lerp(from[0], this._menu[2], k);
             h = lerp(from[1], this._menu[3], k);
-            // The corners square off as the glass grows, and are the menu's once it has.
+
             const menuRound = this._menuRadius / Math.max(Math.min(this._menu[2], this._menu[3]) / 2, 1);
             const roundFrom = this._roundS ? 1 : this._radiusFrom;
-            // Never a corner sharper than the menu's while the drop is still smaller than it.
+
             radius = Math.max(lerp(roundFrom, menuRound, k) * Math.min(w, h) / 2, Math.min(this._menuRadius, w / 2, h / 2));
         }
         const k = openSize(clamp01(Math.max(g, 0) / OPEN_SIZE_S));
         const reveal = clamp01(t / REVEAL_S);
         const moving = !this._x.settled(0.5) || !this._y.settled(0.5);
-        // Cubed, so the swing starts being taken out with no step in velocity or acceleration.
+
         const swing = lerp(1, SETTLED_SWING, k ** 3);
         const x = this._x.target + (this._x.value - this._x.target) * swing;
         const y = this._y.target + (this._y.value - this._y.target) * swing;
@@ -984,7 +984,7 @@ export class MenuMorphMotion {
         };
     }
 
-    // The items fade as they did when the glass opened to this size.
+
     _closeOpacity(w, h) {
         const drop = this._drop();
         const grown = Math.min((w - drop) / Math.max(this._menu[2] - drop, 1), (h - drop) / Math.max(this._menu[3] - drop, 1));
@@ -1009,7 +1009,7 @@ export class MenuMorphMotion {
         const k = easeOut(clamp01(t / CLOSE_SIZE_S));
         const w = lerp(this._sizeFrom[0], targetW, k);
         const h = lerp(this._sizeFrom[1], targetH, k);
-        // Rounding off into the drop as it shrinks, as the opening squares off as it grows.
+
         const radius = lerp(this._radiusFrom, Math.min(w, h) / 2, k);
         let body = [this._x.value - w / 2, this._y.value - h / 2, w, h];
         let bodyRadius = Math.min(radius, w / 2, h / 2);
@@ -1022,7 +1022,7 @@ export class MenuMorphMotion {
         let glassOpacity = 1;
         let since = -1;
         if (this._arrivedAt >= 0) {
-            // Into the capsule as it rises, ending on the button wherever the springs are.
+
             since = t - this._arrivedAt;
             const c = easeInOut(clamp01(since / CLOSE_CAPSULE_S));
             const [aw, ah] = this._arrivedSize;
@@ -1033,8 +1033,8 @@ export class MenuMorphMotion {
             bodyRadius = Math.min(cw, ch) / 2;
             glassOpacity = 1 - easeInOut(clamp01((since - FADE_DELAY_S) / FADE_S));
         }
-        // Measured from the furthest it got, so a menu that opened right below
-        // the button does not start out half way down.
+
+
         const gap = rectGap(body, this._buttonRect);
         this._furthest = Math.max(this._furthest, gap);
         const ramp = Math.min(this._buttonRect[3] * SOFTEN_HEIGHTS, this._furthest);
@@ -1054,7 +1054,7 @@ export class MenuMorphMotion {
     }
 }
 
-// How far apart two rects are, 0 when they touch or overlap.
+
 function rectGap(a, b) {
     const dx = Math.max(b[0] - (a[0] + a[2]), a[0] - (b[0] + b[2]), 0);
     const dy = Math.max(b[1] - (a[1] + a[3]), a[1] - (b[1] + b[3]), 0);
@@ -1065,30 +1065,30 @@ function center(r) {
     return [r[0] + r[2] / 2, r[1] + r[3] / 2];
 }
 
-// Quick Settings' buttons coming out as the menu opens in toggle mode. They
-// start smaller, gathered towards the middle of the area they end up in, and
-// spring out to their places, those nearest the panel button fastest. Their
-// glass shows from the start; their labels and icons fade in as they go.
-// The size and spread the buttons start at, as a share of their own.
+
+
+
+
+
 const START_SCALE = 0.7;
-// A spring that swings once just past the end and settles without a second
-// swing (about 6% over, then under 0.5%).
+
+
 const RESPONSE_S = 0.27;
 const DAMPING_FRACTION = 0.66;
-// Its speed at the start, in the whole way per second. From rest it would hardly move in the first frames, which
-// reads as a pause before the buttons grow.
+
+
 const START_VELOCITY = 4;
-// How fast the button furthest from the panel button springs out, as a share of the nearest's speed. Every button
-// moves from the first frame, so none sits at its start size waiting for its turn.
+
+
 const SLOWEST_SPEED = 0.65;
-// The spring is within 0.2% of the end by then.
+
 const SETTLE_S = Math.log(500) / (DAMPING_FRACTION * 2 * Math.PI / RESPONSE_S);
-// The least gap (px) kept between two buttons' glass while they swing past their size.
+
 export const MIN_GLASS_GAP = 3;
-// How strongly the larger of two buttons that come too close is the one made smaller.
+
 const YIELD_POWER = 8;
 
-/** The spring's progress (0 to about 1.06, then 1) `t` seconds after it starts. */
+
 export function introProgress(t) {
     if (t <= 0)
         return 0;
@@ -1096,19 +1096,19 @@ export function introProgress(t) {
     const zeta = DAMPING_FRACTION;
     const omegaD = omega0 * Math.sqrt(1 - zeta * zeta);
     const decay = Math.exp(-zeta * omega0 * t);
-    return 1 - decay * (Math.cos(omegaD * t) + (zeta * omega0 - START_VELOCITY) / omegaD * Math.sin(omegaD * t)); // 1 - decay * wave * start velocity -> t
+    return 1 - decay * (Math.cos(omegaD * t) + (zeta * omega0 - START_VELOCITY) / omegaD * Math.sin(omegaD * t));
 }
 
-/**
- * The buttons' rects over time, from their rects at rest `rects` [x, y, w, h],
- * the point they come from first `anchor` (the panel button) and how far
- * their glass reaches past them `expand`.
- */
+
+
+
+
+
 export class ToggleIntro {
     _rects;
     _center;
     _speeds;
-    // Pairs of buttons and the least gap kept between them.
+
     _pairs = [];
 
     constructor(_rects, anchor, expand) {
@@ -1125,7 +1125,7 @@ export class ToggleIntro {
         for (let i = 0; i < _rects.length; i++) {
             for (let j = i + 1; j < _rects.length; j++) {
                 const rest = distance(_rects[i], _rects[j]);
-                // Buttons whose glass already touches at rest are left as they are.
+
                 if (rest - 2 * expand < 0)
                     continue;
                 this._pairs.push({ i, j, gap: Math.min(rest, 2 * expand + MIN_GLASS_GAP) });
@@ -1150,22 +1150,22 @@ export class ToggleIntro {
         };
     }
 
-    // Buttons grow and swing at different speeds, so one can grow into its
-    // neighbour; both are made smaller about their middles until their glass is
-    // far enough apart, the larger (as a share of its size at rest) by most of
-    // the shortfall. The shares are weighed rather than compared, so the sizes
-    // change smoothly when one button overtakes the other.
+
+
+
+
+
     _keepApart(rects) {
-        for (let pass = 0; pass < 3; pass++) { // loop 3 times to settle
+        for (let pass = 0; pass < 3; pass++) {
             for (const { i, j, gap } of this._pairs) {
-                const short = gap - distance(rects[i], rects[j]); // calculate the gap between the buttons
+                const short = gap - distance(rects[i], rects[j]);
                 if (short <= 0)
                     continue;
                 const [gx, gy] = axisGaps(rects[i], rects[j]);
-                const [wi, wj] = [i, j].map(n => (rects[n][2] / this._rects[n][2]) ** YIELD_POWER); // which to make smaller
+                const [wi, wj] = [i, j].map(n => (rects[n][2] / this._rects[n][2]) ** YIELD_POWER);
                 for (const [n, weight] of [[i, wi / (wi + wj)], [j, wj / (wi + wj)]]) {
                     const r = rects[n];
-                    // Each side that faces the other moves in by this share of the shortfall.
+
                     const shrink = (axis) => (r[axis + 2] - 2 * short * weight) / r[axis + 2];
                     const k = Math.max(gx > 0 && gy > 0 ? Math.min(shrink(0), shrink(1)) : shrink(gx > gy ? 0 : 1), 0.5);
                     const [mx, my] = [r[0] + r[2] / 2, r[1] + r[3] / 2];
@@ -1176,12 +1176,12 @@ export class ToggleIntro {
     }
 }
 
-// The gaps between two rects [x, y, w, h] across and down; negative where they overlap.
+
 function axisGaps(a, b) {
     return [Math.max(a[0], b[0]) - Math.min(a[0] + a[2], b[0] + b[2]), Math.max(a[1], b[1]) - Math.min(a[1] + a[3], b[1] + b[3])];
 }
 
-// How far apart two rects are: corner to corner when they are apart both ways.
+
 function distance(a, b) {
     const [gx, gy] = axisGaps(a, b);
     return gx > 0 && gy > 0 ? Math.hypot(gx, gy) : Math.max(gx, gy);

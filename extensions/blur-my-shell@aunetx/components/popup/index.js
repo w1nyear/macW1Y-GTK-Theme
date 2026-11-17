@@ -102,7 +102,7 @@ export const PopupBlur = class PopupBlur {
         if (!actor || this.destroyed_actors.has(actor))
             return false;
         try {
-            // 1. Direct class check
+
             if (actor.has_style_class_name && (
                 actor.has_style_class_name('quick-settings') ||
                 actor.has_style_class_name('quick-settings-menu') ||
@@ -132,7 +132,7 @@ export const PopupBlur = class PopupBlur {
                 )) return true;
             }
 
-            // 2. Ancestor check
+
             let cur = actor.get_parent ? actor.get_parent() : null;
             while (cur) {
                 if (cur.has_style_class_name && (
@@ -147,7 +147,7 @@ export const PopupBlur = class PopupBlur {
                 cur = cur.get_parent ? cur.get_parent() : null;
             }
 
-            // 3. Descendant check
+
             if (actor.get_children) {
                 const stack = actor.get_children().slice();
                 let depth = 0;
@@ -169,7 +169,7 @@ export const PopupBlur = class PopupBlur {
     }
 
     track_quick_settings() {
-        // Quick Settings is blurred per-item by QuickSettingsBlur
+
     }
 
     track_keyboard() {
@@ -356,7 +356,7 @@ export const PopupBlur = class PopupBlur {
 
             if (parent === Main.layoutManager.unlockDialogGroup ||
                 parent === Main.layoutManager.screenShieldGroup ||
-                parent === Main.uiGroup || 
+                parent === Main.uiGroup ||
                 parent === Main.layoutManager.uiGroup)
                 return { parent, sibling: actor };
 

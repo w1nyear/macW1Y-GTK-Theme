@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Adds Caps Lock and Num Lock indicators to the top panel.
+
 
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
@@ -14,17 +14,17 @@ class LockIcon extends PanelMenu.Button {
     _init() {
         super._init(0.0, 'Lock Indicator', false);
 
-        // GNOME 51 dropped Clutter.get_default_backend(); the backend is reached
-        // through the actor's context instead, which only exists from 47 on.
+
+
         const backend = Clutter.get_default_backend
             ? Clutter.get_default_backend()
             : global.stage.get_context().get_backend();
         this.keymap = backend.get_default_seat().get_keymap();
 
-        // Get extension object for accessing icons
+
         const extensionObject = Main.extensionManager.lookup('kiwi@kemma');
 
-        // Create icons
+
         this._numLockIcon = new St.Icon({
             gicon: Gio.FileIcon.new(Gio.File.new_for_path(extensionObject.dir.get_child('icons/num-lock-symbolic.svg').get_path())),
             style_class: 'system-status-icon',
@@ -35,7 +35,7 @@ class LockIcon extends PanelMenu.Button {
             style_class: 'system-status-icon',
         });
 
-        // Create a layout container to hold both icons
+
         this._lockKeysLayout = new St.BoxLayout({
             vertical: false,
             style_class: 'lockkeys-container',
@@ -44,11 +44,11 @@ class LockIcon extends PanelMenu.Button {
         this._lockKeysLayout.add_child(this._capsLockIcon);
         this.add_child(this._lockKeysLayout);
 
-        // Delay the state initialization to ensure the keymap is fully ready
+
         this._timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 500, () => {
             this._updateLockState();
 
-            // Connect to keymap state change after initial state has been set
+
             this._keymapChangedId = this.keymap.connect('state-changed', () => {
                 this._updateLockState();
             });
@@ -61,7 +61,7 @@ class LockIcon extends PanelMenu.Button {
     _updateLockState() {
         const capsLockEnabled = this.keymap.get_caps_lock_state();
         const numLockEnabled = this.keymap.get_num_lock_state();
-        
+
         if (capsLockEnabled !== this._capsLockEnabled) {
             this._capsLockEnabled = capsLockEnabled;
             this._animateIcon(this._capsLockIcon, capsLockEnabled);

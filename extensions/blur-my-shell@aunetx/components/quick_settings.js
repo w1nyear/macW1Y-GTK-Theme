@@ -31,16 +31,16 @@ export const QuickSettingsBlur = class QuickSettingsBlur {
         this.enabled = true;
         const menu = quickSettings.menu;
 
-        // 1. Remove all old blur effects from Quick Settings items
+
         this.clean_all_blur(menu);
 
-        // 2. Ensure BoxPointer maintains native ALWAYS offscreen redirect so Liquid Glass shader renders
+
         this.ensure_boxpointer_redirect(menu);
 
-        // 3. Remove dimming effect when submenus open
+
         this.remove_dim_effect(menu);
 
-        // 4. Hook menu open-state-changed to maintain these guarantees
+
         this.connections.connect(menu, 'open-state-changed', (_, open) => {
             if (open) {
                 this.clean_all_blur(menu);

@@ -50,9 +50,9 @@ var DesktopGrid = class extends SignalManager.SignalManager{
         if (this._asDesktop) {
             this._window.set_decorated(false);
             this._window.set_deletable(false);
-            // For Wayland Transparent background, but only if this instance is working as desktop
+
             this._windowContext.add_class('desktopwindow');
-            // If we are under X11, Transparent background and everything else from here as well
+
             if (this._desktopManager.using_X11) {
                 let screen = this._window.get_screen();
                 let visual = screen.get_rgba_visual();
@@ -64,11 +64,11 @@ var DesktopGrid = class extends SignalManager.SignalManager{
                 this._window.set_type_hint(Gdk.WindowTypeHint.DESKTOP);
                 this._window.stick();
                 this._window.move(this._x / this._size_divisor, this._y / this._size_divisor);
-            } else { // Wayland
+            } else {
                 this._window.maximize();
             }
         } else {
-            // Opaque black test window
+
             this._windowContext.add_class('testwindow');
         }
         this._window.set_resizable(false);
@@ -77,10 +77,10 @@ var DesktopGrid = class extends SignalManager.SignalManager{
                 return false;
             }
             if (this._asDesktop) {
-                // Do not destroy window when closing if the instance is working as desktop
+
                 return true;
             } else {
-                // Exit if this instance is working as an stand-alone window
+
                 return false;
             }
         });
@@ -129,8 +129,8 @@ var DesktopGrid = class extends SignalManager.SignalManager{
         this.connectSignal(this._window, 'key-press-event', (window, event) => {
             this._desktopManager.onKeyPress(window, event, this);
         });
-        // key-release-event must be used for the arrow keys to avoid conflicts
-        // with assistive technologies.
+
+
         this.connectSignal(this._window, 'key-release-event', (actor, event) => {
             this._desktopManager.onKeyRelease(event, this);
         });
@@ -244,7 +244,7 @@ var DesktopGrid = class extends SignalManager.SignalManager{
         targets.add(Gdk.atom_intern('text/plain', false), 0,
             Enums.DndTargetInfo.TEXT_PLAIN);
         dropDestination.drag_dest_set_target_list(targets);
-        targets = undefined; // to avoid memory leaks
+        targets = undefined;
         this.connectSignal(dropDestination, 'drag-motion', (widget, context, x, y, time) => {
             this.receiveMotion(x, y);
 
@@ -418,17 +418,17 @@ var DesktopGrid = class extends SignalManager.SignalManager{
             Gdk.cairo_set_source_rgba(cr, this._desktopManager.borderColor);
             cr.stroke();
         }
-        // macW1Y Tahoe desktop: drop place orange grid rectangles are removed
+
     }
 
     getDistance(x, y) {
-        /**
-         * Checks if these coordinates belong to this grid.
-         *
-         * @returns -1 if there is no free space for new icons;
-         *          0 if the coordinates are inside this grid;
-         *          or the distance to the middle point, if none of the previous
-         */
+
+
+
+
+
+
+
 
         let isFree = false;
         for (let element in this._gridStatus) {
@@ -487,12 +487,12 @@ var DesktopGrid = class extends SignalManager.SignalManager{
             elementSpacing,
             this,
             column / this._maxColumns);
-        /* If this file is new in the Desktop and hasn't yet
-         * fixed coordinates, store the new position to ensure
-         * that the next time it will be shown in the same position.
-         * Also store the new position if it has been moved by the user,
-         * and not triggered by a screen change.
-         */
+
+
+
+
+
+
         if ((fileItem.savedCoordinates == null) || (coordinatesAction == Enums.StoredCoordinates.OVERWRITE)) {
             fileItem.savedCoordinates = [x, y];
         }

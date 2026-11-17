@@ -233,20 +233,20 @@ function createMacMenuBadge(text, isDark = false) {
             const [layoutInk] = layout.get_pixel_extents();
 
             if (!isDark) {
-                // White rounded badge with cut-out transparent text (per macW1Y menubar style)
+
                 cr.setOperator(Cairo.Operator.SOURCE);
                 cr.setSourceRGBA(1.0, 1.0, 1.0, 0.95);
                 _roundedBadgeRect(cr, 0.5, 0.5, aw - 1, ah - 1, radius);
                 cr.fill();
 
-                // Punch out glyphs: background / menu shows through transparent letters
+
                 cr.setOperator(Cairo.Operator.DEST_OUT);
                 const textX = (aw - layoutInk.width) / 2 - layoutInk.x;
                 const textY = (ah - layoutInk.height) / 2 - layoutInk.y;
                 cr.moveTo(textX, textY);
                 PangoCairo.show_layout(cr, layout);
             } else {
-                // Subtle dark translucent squircle for symbols (⌘, ⌨)
+
                 cr.setOperator(Cairo.Operator.SOURCE);
                 cr.setSourceRGBA(1.0, 1.0, 1.0, 0.15);
                 _roundedBadgeRect(cr, 0.5, 0.5, aw - 1, ah - 1, radius);
@@ -345,9 +345,9 @@ function setupMacMenuHoverCleanup(menu) {
     }
 }
 
-/* ==========================================================================
-   1. Wi-Fi Status Button & Control Center style Quick Menu
-   ========================================================================== */
+
+
+
 const WifiButton = GObject.registerClass({
     GTypeName: `MacWifiButton_${_UID}`,
 }, class WifiButton extends PanelMenu.Button {
@@ -508,9 +508,9 @@ const WifiButton = GObject.registerClass({
     }
 });
 
-/* ==========================================================================
-   2. Bluetooth Status Button & Control Center style Quick Menu
-   ========================================================================== */
+
+
+
 const BluetoothButton = GObject.registerClass({
     GTypeName: `MacBluetoothButton_${_UID}`,
 }, class BluetoothButton extends PanelMenu.Button {
@@ -591,9 +591,9 @@ const BluetoothButton = GObject.registerClass({
     }
 });
 
-/* ==========================================================================
-   3. Volume / Sound Button & Control Center style Quick Menu
-   ========================================================================== */
+
+
+
 const VolumeButton = GObject.registerClass({
     GTypeName: `MacVolumeButton_${_UID}`,
 }, class VolumeButton extends PanelMenu.Button {
@@ -720,7 +720,7 @@ const VolumeButton = GObject.registerClass({
         const max = this._control.get_vol_max_norm() || 1;
         const currentVol = sink ? sink.get_volume() / max : 0.5;
 
-        // 1. Control Center style Slider Card
+
         const sliderCard = new PopupMenu.PopupBaseMenuItem({
             reactive: false,
             can_focus: false,
@@ -783,7 +783,7 @@ const VolumeButton = GObject.registerClass({
 
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        // 2. Output Device Selection
+
         const secHeader = createMacSectionHeader(t('output_device', 'Вихідний пристрій'));
         this.menu.addMenuItem(secHeader);
 
@@ -845,9 +845,9 @@ const VolumeButton = GObject.registerClass({
     }
 });
 
-/* ==========================================================================
-   4. Battery Indicator Widget (Display-only, non-reactive, single instance)
-   ========================================================================== */
+
+
+
 const BatteryWidget = GObject.registerClass({
     GTypeName: `MacBatteryWidget_${_UID}`,
 }, class BatteryWidget extends PanelMenu.Button {
@@ -983,12 +983,12 @@ const BatteryWidget = GObject.registerClass({
             cr.closePath();
         }
 
-        // 1. Base uncharged capsule
+
         roundedRect(bx, by, bw, bh, br);
         cr.setSourceRGBA(1.0, 1.0, 1.0, 0.40);
         cr.fill();
 
-        // 2. Terminal nipple
+
         cr.newSubPath();
         cr.arc(nx + nw - nr, ny + nr, nr, -Math.PI / 2, 0);
         cr.arc(nx + nw - nr, ny + nh - nr, nr, 0, Math.PI / 2);
@@ -998,7 +998,7 @@ const BatteryWidget = GObject.registerClass({
         cr.setSourceRGBA(1.0, 1.0, 1.0, 0.40);
         cr.fill();
 
-        // 3. Charged level fill
+
         if (pct > 0.005) {
             cr.save();
             roundedRect(bx, by, bw, bh, br);
@@ -1008,7 +1008,7 @@ const BatteryWidget = GObject.registerClass({
             cr.rectangle(bx, by, fillW, bh);
 
             if (charging) {
-                // macW1Y vivid green while charging (#28cd41)
+
                 cr.setSourceRGBA(40 / 255, 205 / 255, 65 / 255, 1.0);
             } else if (pct <= 0.10) {
                 cr.setSourceRGBA(255 / 255, 59 / 255, 48 / 255, 1.0);
@@ -1021,7 +1021,7 @@ const BatteryWidget = GObject.registerClass({
             cr.restore();
         }
 
-        // 4. Lightning bolt if charging (solid white with contrast stroke, centered)
+
         if (charging) {
             cr.save();
             const cx = bx + bw / 2.0;
@@ -1038,14 +1038,14 @@ const BatteryWidget = GObject.registerClass({
                 cr.closePath();
             };
 
-            // Dark outline for contrast against green fill & translucent background
+
             boltPath();
             cr.setLineWidth(1.2);
             cr.setLineJoin(Cairo.LineJoin.ROUND);
             cr.setSourceRGBA(0.0, 0.0, 0.0, 0.75);
             cr.stroke();
 
-            // Crisp white lightning bolt fill
+
             boltPath();
             cr.setSourceRGBA(1.0, 1.0, 1.0, 1.0);
             cr.fill();
@@ -1167,7 +1167,7 @@ const BatteryWidget = GObject.registerClass({
             this._upowerDevice.state === UPowerGlib.DeviceState.PENDING_CHARGE
         );
 
-        // 1. Header Row & Subtitle (matching Photo 3)
+
         const headerItem = new PopupMenu.PopupBaseMenuItem({
             reactive: false,
             can_focus: false,
@@ -1211,14 +1211,14 @@ const BatteryWidget = GObject.registerClass({
         headerBox.add_child(subLbl);
         this.menu.addMenuItem(headerItem);
 
-        // Thin separator
+
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        // 2. Section: Режим енергоспоживання
+
         const pwrModeHeader = createMacSectionHeader(t('energy_mode', 'Режим енергоспоживання'));
         this.menu.addMenuItem(pwrModeHeader);
 
-        // Check power profile
+
         let isPowerSaver = false;
         try {
             const [, stdout] = GLib.spawn_command_line_sync('powerprofilesctl get');
@@ -1273,17 +1273,17 @@ const BatteryWidget = GObject.registerClass({
         });
         this.menu.addMenuItem(saverItem);
 
-        // Thin separator
+
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        // 3. Status text: Немає програм із високим споживанням енергії
+
         const statusItem = createMacStatusText(t('no_apps_using_energy', 'Немає програм із високим споживанням енергії'));
         this.menu.addMenuItem(statusItem);
 
-        // Thin separator
+
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        // 4. Footer action: Параметри акумулятора...
+
         const settingsItem = new PopupMenu.PopupMenuItem(t('battery_settings', 'Параметри акумулятора...'), {
             style_class: 'mac-menu-footer-button',
             can_focus: false,
@@ -1299,9 +1299,9 @@ const BatteryWidget = GObject.registerClass({
     }
 });
 
-/* ==========================================================================
-   5. Privacy Indicator (Microphone & Camera active pills)
-   ========================================================================== */
+
+
+
 const PrivacyIndicator = GObject.registerClass({
     GTypeName: `MacPrivacyIndicator_${_UID}`,
 }, class PrivacyIndicator extends PanelMenu.Button {
@@ -1315,7 +1315,7 @@ const PrivacyIndicator = GObject.registerClass({
         });
         this.add_child(this._box);
 
-        // Microphone Pill (Orange)
+
         this._micPill = new St.BoxLayout({
             style_class: 'mac-privacy-pill mac-privacy-pill-mic',
             y_align: Clutter.ActorAlign.CENTER,
@@ -1328,7 +1328,7 @@ const PrivacyIndicator = GObject.registerClass({
         this._micPill.add_child(this._micIcon);
         this._box.add_child(this._micPill);
 
-        // Camera Pill (Green)
+
         this._camPill = new St.BoxLayout({
             style_class: 'mac-privacy-pill mac-privacy-pill-cam',
             y_align: Clutter.ActorAlign.CENTER,
@@ -1469,9 +1469,9 @@ const PrivacyIndicator = GObject.registerClass({
     }
 });
 
-/* ==========================================================================
-   5b. Compiz Magic Lamp Deform Effect for Control Center
-   ========================================================================== */
+
+
+
 const CC_LAMP_DURATION_OPEN = 320;
 const CC_LAMP_DURATION_CLOSE = 260;
 
@@ -1515,7 +1515,7 @@ export const ControlCenterMagicLampEffect = GObject.registerClass({
         this._setupGeometry();
 
         if (this.isSlave) {
-            // Driven synchronously by the master effect
+
             return;
         }
 
@@ -1573,10 +1573,10 @@ export const ControlCenterMagicLampEffect = GObject.registerClass({
     }
 
     _easeMac(t) {
-        // Curve: peak velocity at t = 1/3 (t_peak = 0.333)
-        // and smooth deceleration to zero at t = 1:
-        // v(t) = 12 * t * (1 - t)^2
-        // integral: 6*t^2 - 8*t^3 + 3*t^4
+
+
+
+
         const clampedT = Math.max(0, Math.min(1, t));
         const t2 = clampedT * clampedT;
         const t3 = t2 * clampedT;
@@ -1597,15 +1597,15 @@ export const ControlCenterMagicLampEffect = GObject.registerClass({
         const easedT = this._easeMac(t);
         this.pY = this.isOpening ? easedT : (1.0 - easedT);
 
-        // Horizontal width animation:
-        // Active during the second third of time (t in [1/3, 2/3]) with ease
+
+
         let pxNorm = 0;
         if (t <= 1 / 3) {
             pxNorm = 0;
         } else if (t >= 2 / 3) {
             pxNorm = 1.0;
         } else {
-            const u = (t - 1 / 3) * 3; // 0 to 1 across the second third of time
+            const u = (t - 1 / 3) * 3;
             pxNorm = (1.0 - Math.cos(u * Math.PI)) / 2.0;
         }
 
@@ -1658,23 +1658,23 @@ export const ControlCenterMagicLampEffect = GObject.registerClass({
         const propX = w / this.winW;
         const propY = h / this.winH;
 
-        // 1. Downward vertical unfolding
+
         const curH = Math.max(1, this.winH * this.pY);
         const y = curH * v.ty;
 
-        // 2. Horizontal position
-        // ratio: 1.0 at top neck (v.ty = 0), 0.0 at bottom edge (v.ty = 1)
+
+
         const ratio = 1.0 - v.ty;
 
-        // Undeformed coordinate vs pinched coordinate
+
         const xNorm = v.tx * this.winW;
         const xIcon = this.iconX + v.tx * this.iconW;
 
-        // Neck pinch: smoothly disappears as pX reaches 1.0 (at pY = 0.5)
+
         const pinch = ratio * (1.0 - this.pX);
         const xBase = xNorm + pinch * (xIcon - xNorm);
 
-        // Fluid genie wave (only active during neck expansion, vanishes when pX = 1)
+
         const wave = Math.sin((0.5 - ratio) * 2 * Math.PI) *
                      (xNorm - xIcon) * 0.12 * (1.0 - this.pX);
 
@@ -1725,9 +1725,9 @@ export const ControlCenterMagicLampEffect = GObject.registerClass({
     }
 });
 
-/* ==========================================================================
-   5c. Compiz Magic Lamp Deform Effect for Individual Control Center Items
-   ========================================================================== */
+
+
+
 export const ItemMagicLampEffect = GObject.registerClass({
     GTypeName: `ItemMagicLampEffect_${_UID}`,
 }, class ItemMagicLampEffect extends Clutter.DeformEffect {
@@ -1772,22 +1772,22 @@ export const ItemMagicLampEffect = GObject.registerClass({
         const restX = v.tx * w;
         const restY = v.ty * h;
 
-        // 1. Vertical travel with neck lag (Compiz funnel)
-        // Top neck stays closer to the button nozzle while bottom leads
+
+
         const lagFactor = 0.30 * (1.0 - v.ty);
         const effPY = Math.pow(Math.max(0, Math.min(1, this.pY)), 1.0 + lagFactor);
         const curY = this.targetY + (restY - this.targetY) * effPY;
 
-        // 2. Horizontal position and magic lamp pinch
-        // At nozzle: width is compressed to a small stream around targetX
+
+
         const neckX = this.targetX + (v.tx - 0.5) * Math.min(16, w * 0.15);
 
-        // Funnel ratio: 1.0 at top neck, 0.0 at bottom edge
+
         const ratio = 1.0 - v.ty;
         const pinch = ratio * (1.0 - this.pX);
         const xBase = restX + pinch * (neckX - restX);
 
-        // Compiz fluid genie wave (vanishes when pX reaches 1)
+
         const wave = Math.sin((0.5 - ratio) * 2 * Math.PI) *
                      (restX - this.targetX) * 0.12 * (1.0 - this.pX);
 
@@ -1831,7 +1831,7 @@ export class ElementsAnimationController {
     _setup() {
         if (!this.button || !this.boxPointer) return;
 
-        // Collect all interactive items inside quickSettings menu
+
         const items = [];
         const grid = this.menu?._grid;
         if (grid) {
@@ -1860,7 +1860,7 @@ export class ElementsAnimationController {
 
         if (items.length === 0) return;
 
-        // Button center in stage coordinates
+
         let btnCenterX = 0;
         let btnCenterY = 0;
         try {
@@ -1938,7 +1938,7 @@ export class ElementsAnimationController {
         const t = this.timeline.get_progress();
         const clampedT = Math.max(0, Math.min(1, t));
 
-        // Ease curve with peak speed at t = 1/3
+
         const t2 = clampedT * clampedT;
         const t3 = t2 * clampedT;
         const t4 = t3 * clampedT;
@@ -1946,7 +1946,7 @@ export class ElementsAnimationController {
 
         const pY = this.isOpening ? easedT : (1.0 - easedT);
 
-        // Width progress (2nd third)
+
         let pxNorm = 0;
         if (t <= 1 / 3) {
             pxNorm = 0;
@@ -1958,7 +1958,7 @@ export class ElementsAnimationController {
         }
         const pX = this.isOpening ? pxNorm : (1.0 - pxNorm);
 
-        // Background glass fade (smooth sine alpha)
+
         const bgAlpha = this.isOpening
             ? Math.sin((easedT * Math.PI) / 2)
             : Math.pow(1.0 - easedT, 1.2);
@@ -1971,7 +1971,7 @@ export class ElementsAnimationController {
             this.surfaceActor.opacity = bgOpacity;
         }
 
-        // Update all item effects
+
         for (const { effect } of this.effects) {
             effect.updateProgress(pY, pX);
         }
@@ -2151,7 +2151,7 @@ class MenuHoverTracker {
             let h = (ab && ab.y2 > ab.y1) ? (ab.y2 - ab.y1) : child.height;
             if (w <= 0 || h <= 0) return;
 
-            // Correct for pill's own allocation origin inside parent:
+
             const pillAb = this._pill.get_allocation_box ? this._pill.get_allocation_box() : null;
             const originX = (pillAb && pillAb.x2 >= pillAb.x1) ? pillAb.x1 : 0;
             const originY = (pillAb && pillAb.y2 >= pillAb.y1) ? pillAb.y1 : 0;
@@ -2378,9 +2378,9 @@ function sanitizeDateMenu(dm) {
     } catch (_) {}
 }
 
-/* ==========================================================================
-   6. Main MenuBar Controller
-   ========================================================================== */
+
+
+
 export const MenuBarController = class MenuBarController {
     constructor(connections, settings, effects_manager, popupBlur = null) {
         this.connections = connections;
@@ -2450,7 +2450,7 @@ export const MenuBarController = class MenuBarController {
                     globalThis._macSpotlightToggle('apps');
                 } else {
                     const extHome = GLib.get_home_dir();
-                    import(`file://${extHome}/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js`)
+                    import(`file://${extHome}/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog.js`)
                         .then(mod => mod.toggleSearchDialog('apps'))
                         .catch(() => {
                             if (Main.overview.visible) Main.overview.hide();
@@ -2590,7 +2590,7 @@ export const MenuBarController = class MenuBarController {
             text = text.replace(/:\s*(\d+),(\d+)/g, ': $1.$2');
             const data = JSON.parse(text);
 
-            // 1. Panel tint (vertical gradient darkening from top to bottom, blurs wallpaper under it cleanly)
+
             if (typeof data.panel_tint === 'number' && Main.panel) {
                 if (data.panel_tint <= 0.001) {
                     Main.panel.set_style('background-color: transparent !important; background: transparent !important; background-gradient-start: transparent !important; background-gradient-end: transparent !important;');
@@ -2599,25 +2599,25 @@ export const MenuBarController = class MenuBarController {
                 }
             }
 
-            // 2. Dock tint and radius
+
             const dTint = (typeof data.dock_tint === 'number') ? data.dock_tint : 0.10;
             const dRad = (typeof data.dock_radius === 'number') ? data.dock_radius : 28;
             this._updateDockRealtime(dTint, dRad);
 
-            // 3. Notification tint and radius
+
             const nTint = (typeof data.notif_tint === 'number') ? data.notif_tint : 0.15;
             const nRad = (typeof data.notif_radius === 'number') ? data.notif_radius : 24;
             this._updateNotifRealtime(nTint, nRad);
 
-            // 4. Popup menus tint and radius
+
             const pTint = (typeof data.popup_tint === 'number') ? data.popup_tint : 0.10;
             const pRad = (typeof data.popup_radius === 'number') ? data.popup_radius : 14;
             this._updatePopupRealtime(pTint, pRad);
 
-            // 5. AppIndicators delay fix
+
             this._patchAppIndicatorClickDelay();
 
-            // 6. Overview MenuBar dynamic transition
+
             this._setupOverviewMenuBarAnimation();
         } catch (e) {
             console.error('[MenuBarController] Error applying realtime styling:', e);
@@ -2625,9 +2625,9 @@ export const MenuBarController = class MenuBarController {
     }
 
     _setupOverviewMenuBarAnimation() {
-        // Disabled in menubar.js to prevent duplicate frame-by-frame style recalculations
-        // and avoid GPU blur shader stalls during overview swiping.
-        // Handled cleanly and efficiently by panel.js via opacity crossfade.
+
+
+
     }
 
     _updatePopupRealtime(tint, radius = 20) {
@@ -2832,8 +2832,8 @@ export const MenuBarController = class MenuBarController {
             const monitor = Main.layoutManager.primaryMonitor;
             if (!monitor) return null;
 
-            // Exactly friend's CC backdrop blur stack:
-            // pure = true, radius = 82, edge_smoothing = 60, zero tint/specular/rim
+
+
             const s = mod._makeGlassStack(monitor, 82, 'nc_backdrop', true, 60);
             this._notifTahoeGlass = s;
             if (this._notifCenterActor && s.bgActor) {
@@ -2874,8 +2874,8 @@ export const MenuBarController = class MenuBarController {
         const screenW = monitor.width;
         const screenH = monitor.height;
 
-        // Friend's Control Center backdrop margins:
-        // BACKDROP_REGION = 80 (x), BACKDROP_REGION_Y = 60 (y)
+
+
         const mx = 80;
         const my = 60;
         let rx = (nx - monitorX) - mx;
@@ -3022,7 +3022,7 @@ export const MenuBarController = class MenuBarController {
                 }
             }
 
-            // Enforce subtle light darkening & soft blur for panel context menus (Wi-Fi, Bluetooth, Sound, Battery)
+
             try {
                 const schemaDir = Gio.File.new_for_path(GLib.build_filenamev([global.userdatadir, 'extensions', lgUuid, 'schemas']));
                 if (schemaDir.query_exists(null)) {
@@ -3069,13 +3069,13 @@ export const MenuBarController = class MenuBarController {
         this.enabled = true;
         globalThis._macNotificationCenter = this;
 
-        // Setup real-time styling monitor
+
         this._setupStylingMonitor();
 
-        // Setup Launchpad instant activate handler
+
         this._setupLaunchpadHandler();
 
-        // Setup macW1Y input source switcher
+
         try {
             this._macInputSwitcher = new MacInputSwitcher();
             this._macInputSwitcher.enable().catch(e => {
@@ -3085,16 +3085,16 @@ export const MenuBarController = class MenuBarController {
             console.error('[MenuBar] MacInputSwitcher enable error:', e);
         }
 
-        // Ensure liquid-glass extension is discovered and loaded in Main.extensionManager
+
         this._ensureLiquidGlassLoaded();
 
-        // 1. Setup Control Center single icon on QuickSettings & corner alignment
+
         this._setupControlCenterButton(quickSettings);
 
-        // 2. Hide any user switcher account button completely
+
         this._hideUserSwitcher();
 
-        // 3. Safely clean up any existing registrations and containers
+
         ['macPrivacy', 'macWifi', 'macBluetooth', 'macVolume', 'macBattery'].forEach(role => {
             const ind = Main.panel.statusArea[role];
             if (ind) {
@@ -3103,7 +3103,7 @@ export const MenuBarController = class MenuBarController {
             }
         });
 
-        // 4. Create fresh status buttons
+
         this._batteryWidget = new BatteryWidget();
         this._volumeButton = new VolumeButton();
         this._bluetoothButton = new BluetoothButton();
@@ -3116,24 +3116,24 @@ export const MenuBarController = class MenuBarController {
         Main.panel.addToStatusArea('macVolume', this._volumeButton, 3, 'right');
         Main.panel.addToStatusArea('macBattery', this._batteryWidget, 4, 'right');
 
-        // Standalone Wi-Fi, Bluetooth, and Volume live in Control Center, hide from menubar
+
         if (this._wifiButton?.container) this._wifiButton.container.visible = false;
         if (this._bluetoothButton?.container) this._bluetoothButton.container.visible = false;
         if (this._volumeButton?.container) this._volumeButton.container.visible = false;
 
-        // 5. Position dateMenu at the far right
+
         this._applyDateMenu(dateMenu);
 
-        // 6. Order all items in _rightBox
+
         this._reorderRightBox();
 
-        // 7. Setup sliding hover glide indicator for all context menus
+
         this._setupMenuHoverGlide();
 
-        // 7b. Setup macW1Y style Keyboard / Input Source Menu
+
         this._setupKeyboardMenu();
 
-        // 8. Watch for child additions to keep proper order and styling
+
         if (Main.panel?._rightBox) {
             this._childAddedId = Main.panel._rightBox.connect('child-added', () => {
                 if (this.enabled)
@@ -3141,7 +3141,7 @@ export const MenuBarController = class MenuBarController {
             });
         }
 
-        // 9. Setup macW1Y-style fade in/fade out and slide animations for menubar icons
+
         this._setupMenubarActorAnimations();
     }
 
@@ -3155,7 +3155,7 @@ export const MenuBarController = class MenuBarController {
             }
             if (!kb || !kb.menu) return;
 
-            // Safe guard against Mutter session logout crash when GNOME indicators change
+
             if (!kb._macSafePatched) {
                 kb._macSafePatched = true;
                 kb._buildPropSection = function() {};
@@ -3219,7 +3219,7 @@ export const MenuBarController = class MenuBarController {
         const currentSource = ism?.currentSource;
         const sources = ism?.inputSources ? Object.values(ism.inputSources) : [];
 
-        // 1. Input Sources List (matching Photo 4)
+
         for (const s of sources) {
             const isActive = currentSource && (currentSource.id === s.id || currentSource.index === s.index);
             const item = new PopupMenu.PopupBaseMenuItem({
@@ -3229,7 +3229,7 @@ export const MenuBarController = class MenuBarController {
             });
             setupMacMenuItem(item);
 
-            // Checkmark slot (width: 18px)
+
             const checkSlot = new St.Label({
                 text: isActive ? '✓' : '',
                 style_class: 'mac-menu-check-slot',
@@ -3237,7 +3237,7 @@ export const MenuBarController = class MenuBarController {
             });
             item.add_child(checkSlot);
 
-            // Squircle badge: white background, black bold letters
+
             const id = (s.id || '').toLowerCase();
             const short = (s.shortName || '').toLowerCase();
             let badgeText = 'A';
@@ -3293,10 +3293,10 @@ export const MenuBarController = class MenuBarController {
             kb.menu.addMenuItem(item);
         }
 
-        // Thin separator
+
         kb.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        // 2. Action: Показати панель «Емодзі та символи»
+
         const emojiItem = new PopupMenu.PopupBaseMenuItem({
             reactive: true,
             can_focus: false,
@@ -3328,7 +3328,7 @@ export const MenuBarController = class MenuBarController {
         });
         kb.menu.addMenuItem(emojiItem);
 
-        // 3. Action: Показати панель «Клавіатура»
+
         const layoutItem = new PopupMenu.PopupBaseMenuItem({
             reactive: true,
             can_focus: false,
@@ -3366,10 +3366,10 @@ export const MenuBarController = class MenuBarController {
         });
         kb.menu.addMenuItem(layoutItem);
 
-        // Thin separator
+
         kb.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        // 4. Toggle row: Показувати назву джерела введення
+
         const showNameItem = new PopupMenu.PopupBaseMenuItem({
             reactive: true,
             can_focus: false,
@@ -3397,10 +3397,10 @@ export const MenuBarController = class MenuBarController {
         });
         kb.menu.addMenuItem(showNameItem);
 
-        // Thin separator
+
         kb.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        // 5. Settings Footer: Відкрити параметри клавіатури...
+
         const settingsItem = new PopupMenu.PopupBaseMenuItem({
             reactive: true,
             can_focus: false,
@@ -3444,7 +3444,7 @@ export const MenuBarController = class MenuBarController {
     _setupControlCenterButton(quickSettings) {
         if (!quickSettings) return;
 
-        // Keep multi-indicator container attached in scene graph, but hidden with zero dimensions
+
         if (quickSettings._indicators) {
             try {
                 if (quickSettings._indicators.get_parent() !== quickSettings) {
@@ -3458,7 +3458,7 @@ export const MenuBarController = class MenuBarController {
             quickSettings._indicators.style = 'margin: 0 !important; padding: 0 !important; width: 0px !important; min-width: 0px !important; height: 0px !important; min-height: 0px !important;';
         }
 
-        // Clean up only our own old CC icon
+
         if (this._ccIcon) {
             try {
                 if (this._ccIcon.get_parent() === quickSettings)
@@ -3468,7 +3468,7 @@ export const MenuBarController = class MenuBarController {
             this._ccIcon = null;
         }
 
-        // Add macW1Y Control Center icon from /home/vitaliy/.themes/macW1Y-Dark/icons/control-center.png
+
         try {
             if (GLib.file_test(CC_PNG_PATH, GLib.FileTest.EXISTS)) {
                 const ccFile = Gio.File.new_for_path(CC_PNG_PATH);
@@ -3491,14 +3491,14 @@ export const MenuBarController = class MenuBarController {
             }
             this._ccIcon.visible = true;
             this._ccIcon.show();
-            // CRITICAL: Insert at index 0 so PanelMenu.ButtonBox (which only allocates first child) allocates this icon!
+
             quickSettings.insert_child_at_index(this._ccIcon, 0);
         } catch (e) {
             console.error(`[MenuBar] Error creating CC icon: ${e}`);
         }
 
-        // GNOME 46 QuickSettings inherits from PanelMenu.ButtonBox which ONLY allocates child 0.
-        // Overriding vfunc_allocate ensures all visible children (including _ccIcon) receive proper allocations.
+
+
         quickSettings.vfunc_allocate = function(box) {
             this.set_allocation(box);
             const availWidth = box.x2 - box.x1;
@@ -3514,7 +3514,7 @@ export const MenuBarController = class MenuBarController {
             }
         };
 
-        // Ensure container is attached to Main.panel._rightBox and always visible
+
         if (quickSettings.container) {
             try {
                 if (!Main.panel._rightBox.contains(quickSettings.container)) {
@@ -3530,7 +3530,7 @@ export const MenuBarController = class MenuBarController {
             quickSettings.container.style = 'margin: 2px 4px !important; padding: 0 !important; width: 34px !important; height: 28px !important; min-width: 34px !important; min-height: 28px !important;';
         }
 
-        // Make button width roughly equal to height (34px x 28px) and zero horizontal padding
+
         quickSettings.name = 'quickSettings';
         quickSettings.add_style_class_name('mac-control-center-button');
         quickSettings.visible = true;
@@ -3550,7 +3550,7 @@ export const MenuBarController = class MenuBarController {
             });
         }
 
-        // Add direct click & touch handlers so left clicking the button always toggles the menu
+
         if (!quickSettings._directClickConnected) {
             quickSettings._directClickConnected = true;
             quickSettings.connect('button-press-event', (_actor, event) => {
@@ -3579,8 +3579,8 @@ export const MenuBarController = class MenuBarController {
             });
         }
 
-        // Control Center is handled by macW1Y Tahoe Control Center (kiwi@kemma).
-        // Hide standard quickSettings menu grid so it never overlaps.
+
+
         if (this._macControlCenter) {
             try { this._macControlCenter.destroy(); } catch (_) {}
             this._macControlCenter = null;
@@ -3592,14 +3592,14 @@ export const MenuBarController = class MenuBarController {
         }
         return;
 
-        // Right-align Control Center menu flush to top-right corner and install smooth slide-in animation
+
         if (quickSettings.menu?._boxPointer) {
             const bp = quickSettings.menu._boxPointer;
             bp._arrowAlignment = 1.0;
             if (typeof bp.setSourceAlignment === 'function')
                 bp.setSourceAlignment(1.0);
 
-            // Hook reposition to always position flush in top-right corner
+
             bp._reposition = function(allocationBox) {
                 try {
                     Object.getPrototypeOf(bp)._reposition.call(this, allocationBox);
@@ -3634,7 +3634,7 @@ export const MenuBarController = class MenuBarController {
                             bp.y = monitor.y + 36;
                         }
 
-                        // Remove solid backgrounds on bp, bin, and menu box
+
                         bp.style = 'background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important;';
                         if (bp.bin)
                             bp.bin.style = 'background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important;';
@@ -3648,7 +3648,7 @@ export const MenuBarController = class MenuBarController {
                             self._ccBackdropBlur.actor.translation_x = 0;
                         }
 
-                        // Instant slide-in from right side animation
+
                         bp.remove_all_transitions();
                         bp.translation_x = 220;
                         bp.opacity = 0;
@@ -3663,7 +3663,7 @@ export const MenuBarController = class MenuBarController {
                         }
                     }
 
-                    // Run heavy syncs in idle to eliminate opening lag!
+
                     GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
                         if (self._macControlCenter) {
                             self._macControlCenter.syncAll();
@@ -3699,7 +3699,7 @@ export const MenuBarController = class MenuBarController {
                 });
             }
 
-            // Smooth Slide-in from Right Side Animation
+
             bp.open = function(animate, onComplete) {
                 sanitizeQuickSettings(quickSettings);
                 const isAnimated = (animate !== false && animate !== 0);
@@ -3764,7 +3764,7 @@ export const MenuBarController = class MenuBarController {
                 });
             };
 
-            // Smooth Slide-out to Right Side Animation
+
             bp.close = function(animate, onComplete) {
                 if (!bp.visible) {
                     onComplete?.();
@@ -3825,7 +3825,7 @@ export const MenuBarController = class MenuBarController {
                     onComplete: finish,
                 });
 
-                // Fallback guarantee: ensures bp is hidden even if foreign extensions cancel transitions
+
                 GLib.timeout_add(GLib.PRIORITY_DEFAULT, 210, () => {
                     finish();
                     return GLib.SOURCE_REMOVE;
@@ -3848,7 +3848,7 @@ export const MenuBarController = class MenuBarController {
             try { Main.panel._rightBox.set_child_above_sibling(container, null); } catch (_e) {}
         }
 
-        // Clean up direct handlers from before
+
         if (dateMenu._directClickId) {
             try { dateMenu.disconnect(dateMenu._directClickId); } catch (_) {}
             dateMenu._directClickId = null;
@@ -3862,16 +3862,16 @@ export const MenuBarController = class MenuBarController {
         dateMenu.can_focus = true;
         dateMenu.track_hover = true;
 
-        // Container margin click support
+
         if (container && container !== dateMenu) {
             container.reactive = true;
             if (container._clickConnId) {
                 try { container.disconnect(container._clickConnId); } catch (_) {}
             }
             container._clickConnId = container.connect('button-press-event', (_actor, event) => {
-                // Kiwi активний: Центр повідомлень повністю обробляється
-                // kiwi@kemma (tahoeNotifications.js) — власний NC menubar
-                // не відкриваємо (режим переробки UI сповіщень).
+
+
+
                 try {
                     const kiwiNow = Main.extensionManager.lookup('kiwi@kemma');
                     if (kiwiNow && kiwiNow.state === 1)
@@ -3885,9 +3885,9 @@ export const MenuBarController = class MenuBarController {
             });
         }
 
-        // Mutual exclusion: opening one closes the other.
-        // Hover switching between Control Center (QuickSettings) and Notification Center is strictly DISABLED.
-        // Switching is only permitted upon click.
+
+
+
         const qs = Main.panel?.statusArea?.quickSettings;
         if (qs) {
             if (this._qsHoverSwitchId) {
@@ -3916,12 +3916,12 @@ export const MenuBarController = class MenuBarController {
             }
         }
 
-        // macW1Y MenuBar Interaction Model:
-        // When Control Center (QuickSettings) or Notification Center (DateMenu) is open:
-        // 1. Hover-switching is strictly disabled. Moving the mouse across other buttons
-        //    (Wi-Fi, Bluetooth, Sound, Battery, Keyboard, AppIndicators) does NOT open them.
-        // 2. Opening any other menu requires explicitly pressing that button ("потрібно натиснути на іншу кнопку").
-        // 3. When the user clicks on another button in the menu bar, it immediately switches in ONE single click.
+
+
+
+
+
+
         if (Main.panel?.menuManager) {
             const pmm = Main.panel.menuManager;
             if (!pmm._macOrigChangeMenu) {
@@ -3933,7 +3933,7 @@ export const MenuBarController = class MenuBarController {
                     const notifOpen = Boolean(globalThis._macNotificationCenter?._notifCenterOpen || globalThis._tahoeNCOpen);
                     const qsOpen = Boolean(qsMenu?.isOpen || globalThis._tahoeQSOpen);
 
-                    // If Control Center or Notification Center is active, or if hovering onto them: NO hover switching!
+
                     if (active === qsMenu || active === dmMenu || notifOpen || qsOpen || newMenu === qsMenu || newMenu === dmMenu) {
                         return;
                     }
@@ -3952,22 +3952,22 @@ export const MenuBarController = class MenuBarController {
                     const notifOpen = Boolean(globalThis._macNotificationCenter?._notifCenterOpen || globalThis._tahoeNCOpen);
                     const qsOpen = Boolean(qsMenu?.isOpen || globalThis._tahoeQSOpen);
 
-                    // Block hover switching from Control Center or Notification Center
+
                     if (event.type() === Clutter.EventType.ENTER) {
                         if (menu === qsMenu || menu === dmMenu || notifOpen || qsOpen) {
                             return Clutter.EVENT_PROPAGATE;
                         }
                     }
 
-                    // On Click outside the active popup menu
+
                     if ((event.type() === Clutter.EventType.BUTTON_PRESS ||
                          event.type() === Clutter.EventType.TOUCH_BEGIN) &&
                         targetActor && actor && !actor.contains(targetActor)) {
 
                         const clickedMenu = this._findMenuForSource(targetActor);
                         if (clickedMenu && clickedMenu !== menu) {
-                            // User intentionally clicked on another menu in the panel!
-                            // Immediately close the active menu and open the clicked menu in one click.
+
+
                             menu.close(BoxPointer.PopupAnimation.FADE);
                             GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
                                 if (clickedMenu.isOpen) {
@@ -3984,7 +3984,7 @@ export const MenuBarController = class MenuBarController {
                     return this._macOrigOnCapturedEvent(actor, event);
                 };
 
-                // Re-wire all existing menus in pmm to use the updated captured-event handler and ensure NotifCenter closes when any menu opens
+
                 const rewireMenus = () => {
                     for (const m of (pmm._menus || [])) {
                         if (m && m.actor) {
@@ -4015,7 +4015,7 @@ export const MenuBarController = class MenuBarController {
         const kiwiExt = Main.extensionManager.lookup('kiwi@kemma');
         const isKiwiActive = kiwiExt && kiwiExt.state === 1;
         if (isKiwiActive) {
-            // Let Kiwi's Tahoe Notifications handle dateMenu completely
+
             return;
         }
 
@@ -4088,7 +4088,7 @@ export const MenuBarController = class MenuBarController {
             clip_to_allocation: true,
         });
 
-        // 1. Background gradient blur (10px fade on all 4 edges, dynamic height)
+
         const bgContainer = new St.Widget({
             name: 'macNotificationCenterGradientBlurBg',
             style_class: 'mac-notif-center-bg',
@@ -4096,7 +4096,7 @@ export const MenuBarController = class MenuBarController {
         });
         container.add_child(bgContainer);
 
-        // 2. Foreground content box
+
         const contentBox = new St.BoxLayout({
             name: 'macNotificationCenterContentBox',
             orientation: Clutter.Orientation.VERTICAL,
@@ -4107,7 +4107,7 @@ export const MenuBarController = class MenuBarController {
         });
         container.add_child(contentBox);
 
-        // Top Header Row
+
         const headerBox = new St.BoxLayout({
             name: 'macNotificationCenterHeaderBox',
             orientation: Clutter.Orientation.HORIZONTAL,
@@ -4160,7 +4160,7 @@ export const MenuBarController = class MenuBarController {
         headerBox.add_child(clearBtn);
         contentBox.add_child(headerBox);
 
-        // Scrollable list wrapper with edge darkening gradients
+
         const scrollWrapper = new St.Widget({
             name: 'macNotificationCenterScrollWrapper',
             layout_manager: new Clutter.BinLayout(),
@@ -4181,7 +4181,7 @@ export const MenuBarController = class MenuBarController {
             }
         });
 
-        // Scrollable list of cards with smooth overlay scrollbars
+
         const scrollView = new St.ScrollView({
             style_class: 'mac-notif-center-scroll',
             style: 'background: transparent !important; border: none !important; padding: 0 !important;',
@@ -4219,7 +4219,7 @@ export const MenuBarController = class MenuBarController {
             }
         };
 
-        // Empty state label with soft diffuse text blur
+
         const emptyLabel = new St.Label({
             text: t('no_new_notifications', 'Немає нових повідомлень'),
             style_class: 'mac-notif-empty-label',
@@ -4304,8 +4304,8 @@ export const MenuBarController = class MenuBarController {
         }
 
         const tintVal = isDark ? 0.0 : 1.0;
-        const baseStrength = 0.02; // Exactly 2% as requested by user
-        const tintStrength = 0.02; // Exactly 2% as requested by user
+        const baseStrength = 0.02;
+        const tintStrength = 0.02;
         return { isDark, tintVal, baseStrength, tintStrength };
     }
 
@@ -4487,15 +4487,15 @@ export const MenuBarController = class MenuBarController {
         const sources = Main.messageTray ? Main.messageTray.getSources() : [];
         const allItems = [];
 
-        // Track notifications from active banners
+
         const activeNotifs = new Set(activeBanners.map(b => b.notification));
 
-        // 1. Place all active floating banners at the very front of the list (newest)
+
         for (const b of activeBanners) {
             allItems.push({ source: b.source, notification: b.notification, activeBanner: b });
         }
 
-        // 2. Add existing notifications from tray sources (avoiding duplicates)
+
         for (const source of sources) {
             for (const notification of (source.notifications || [])) {
                 if (!activeNotifs.has(notification)) {
@@ -4504,14 +4504,14 @@ export const MenuBarController = class MenuBarController {
             }
         }
 
-        // Sort items by time (newest first)
+
         allItems.sort((a, b) => {
             const timeA = a.notification.datetime?.to_unix ? a.notification.datetime.to_unix() : 0;
             const timeB = b.notification.datetime?.to_unix ? b.notification.datetime.to_unix() : 0;
             return timeB - timeA;
         });
 
-        // Group items by groupKey = (source?.id || source?.title || 'app')
+
         const groupsMap = new Map();
         for (const item of allItems) {
             const groupKey = item.source?.id || item.source?.title || 'app';
@@ -4570,7 +4570,7 @@ export const MenuBarController = class MenuBarController {
 
                 this._notifCardsBox.add_child(cardData.banner);
             } else {
-                // Group of 2 or more notifications: use MacNotificationGroup stack!
+
                 const GroupClass = globalThis._macNotificationGroup || MacNotificationGroup;
                 const group = new GroupClass(groupKey, {
                     sigma: 30,
@@ -4626,7 +4626,7 @@ export const MenuBarController = class MenuBarController {
         const groupKey = source?.id || source?.title || 'app';
         const children = this._notifCardsBox.get_children();
 
-        // 1. Check if group already exists
+
         const existingGroupActor = children.find(c => c._macGroup && c._macGroup.groupKey === groupKey);
         if (existingGroupActor) {
             existingGroupActor._macGroup.addNotification(source, notification, true);
@@ -4635,7 +4635,7 @@ export const MenuBarController = class MenuBarController {
             return;
         }
 
-        // 2. Check if a single card exists for this source
+
         const singleCard = children.find(c => c._notification && ((c._notification.source?.id && c._notification.source.id === source?.id) || (c._notification.source?.title && c._notification.source.title === source?.title)));
         if (singleCard) {
             const oldNotif = singleCard._notification;
@@ -4683,7 +4683,7 @@ export const MenuBarController = class MenuBarController {
             return;
         }
 
-        // 3. Otherwise add as single card
+
         const builder = globalThis._macBuildNotificationCard || buildNotificationCard;
         const cardData = builder(source, notification, {
             sigma: 30,
@@ -4899,7 +4899,7 @@ export const MenuBarController = class MenuBarController {
         const headerH = Math.max(36, Math.round(hdrNat || 44));
         const maxScrollH = Math.max(120, maxCenterH - headerH - 16);
 
-        // Sum natural heights of all cards, using targetH for the animating card
+
         const children = this._notifCardsBox.get_children();
         let finalCardsH = 0;
         const spacing = 10;
@@ -4914,9 +4914,9 @@ export const MenuBarController = class MenuBarController {
             finalCardsH += chH;
             if (i > 0) finalCardsH += spacing;
         }
-        finalCardsH += 16; // bottom padding
+        finalCardsH += 16;
 
-        // The scrollbar requirement is strictly determined by the FINAL RESULT, not intermediate animation frames
+
         const willNeedScroll = finalCardsH > maxScrollH;
 
         if (willNeedScroll) {
@@ -4933,7 +4933,7 @@ export const MenuBarController = class MenuBarController {
                 this._notifCenterBg.height = actualTotalH;
             }
         } else {
-            // Content fits in final state: forbid scrollbar immediately so it does not flicker during animation
+
             this._notifScrollView.vscrollbar_policy = St.PolicyType.NEVER;
             const actualScrollH = Math.max(50, finalCardsH);
             const actualTotalH = Math.min(maxCenterH, headerH + actualScrollH + 16);
@@ -5104,14 +5104,14 @@ export const MenuBarController = class MenuBarController {
     }
 
     _openNotificationCenter() {
-        // Take any active floating banners so we can dock them smoothly into the center
+
         const notifCtrl = globalThis._macNotificationsController ||
             Main.extensionManager?.lookup?.('blur-my-shell@aunetx')?.stateObj?._notifications_controller;
         const activeBanners = (notifCtrl && typeof notifCtrl.takeActiveBanners === 'function')
             ? notifCtrl.takeActiveBanners()
             : [];
 
-        // Mutual exclusion: close QuickSettings and any other active panel popup menus
+
         const qs = Main.panel?.statusArea?.quickSettings;
         if (qs?.menu?.isOpen) {
             qs.menu.close(BoxPointer.PopupAnimation.FADE);
@@ -5193,7 +5193,7 @@ export const MenuBarController = class MenuBarController {
             },
         });
 
-        // Animate floating banner(s) sliding down into the reserved slot(s)
+
         if (reservedCards && reservedCards.length > 0) {
             const headerH = this._notifHeaderBox
                 ? (this._notifHeaderBox.get_preferred_height(targetW)[1] || 42)
@@ -5309,7 +5309,7 @@ export const MenuBarController = class MenuBarController {
         const container = this._notifCenterActor;
         if (!container) return;
 
-        // 1. Push modal grab so all pointer events anywhere on the screen are redirected (identical to Control Center)
+
         try {
             this._notifGrab = Main.pushModal(container, {
                 actionMode: Shell.ActionMode.POPUP,
@@ -5334,14 +5334,14 @@ export const MenuBarController = class MenuBarController {
             }
 
             if (evType === Clutter.EventType.BUTTON_PRESS || evType === Clutter.EventType.TOUCH_BEGIN) {
-                // Ignore the click that opened the Notification Center (within 250ms)
+
                 if (this._notifOpenedAt && (Date.now() - this._notifOpenedAt < 250)) {
                     return Clutter.EVENT_PROPAGATE;
                 }
 
                 const targetActor = global.stage.get_event_actor(event);
 
-                // If click is inside Notification Center, let it interact with the cards/buttons normally
+
                 if (targetActor && (targetActor === container || container.contains(targetActor))) {
                     return Clutter.EVENT_PROPAGATE;
                 }
@@ -5353,7 +5353,7 @@ export const MenuBarController = class MenuBarController {
                     return Clutter.EVENT_PROPAGATE;
                 }
 
-                // If user clicked on the clock button in panel, close Notification Center cleanly
+
                 const dateMenu = Main.panel?.statusArea?.dateMenu;
                 if (dateMenu) {
                     const [dx, dy] = dateMenu.get_transformed_position();
@@ -5364,7 +5364,7 @@ export const MenuBarController = class MenuBarController {
                     }
                 }
 
-                // User clicked outside on empty space, desktop, open app, or another panel menu:
+
                 const pmm = Main.panel?.menuManager;
                 const clickedMenu = targetActor ? pmm?._findMenuForSource(targetActor) : null;
 
@@ -5441,7 +5441,7 @@ export const MenuBarController = class MenuBarController {
     }
 
     _alignMenuRight(dateMenu) {
-        // Handled dynamically in open-state-changed and bp._reposition
+
     }
 
     _scheduleReorder() {
@@ -5514,7 +5514,7 @@ export const MenuBarController = class MenuBarController {
             return false;
         };
 
-        // Find all real, visible tray / appindicator children
+
         const externalIndicators = [];
         try {
             for (const child of rightBox.get_children()) {
@@ -5532,7 +5532,7 @@ export const MenuBarController = class MenuBarController {
                             continue;
                         }
 
-                        // Check if child is an inactive system indicator (which would create huge empty gaps)
+
                         const isHiddenSystem = ['tiling-assistant', 'unattended_upgrade', 'livepatch', 'software_update', 'screenRecording', 'screenSharing', 'dwellClick', 'a11y', 'macWifi', 'macBluetooth', 'macVolume', 'macBattery', 'macScreenCast'].some(s => role.includes(s));
                         const isAppIndicator = role.startsWith('appindicator-') && !isHiddenSystem;
                         const isSubVisible = (c) => {
@@ -5558,8 +5558,8 @@ export const MenuBarController = class MenuBarController {
             }
         } catch (_e) {}
 
-        // Exact requested order:
-        // [ Privacy (if active) ] -> [ AppIndicators (Tray) ] -> [ Wi-Fi ] -> [ Bluetooth ] -> [ Sound ] -> [ Battery ] -> [ Keyboard (uk) ] -> [ Control Center ] -> [ Date & Time ]
+
+
         const desiredOrder = [];
 
         if (this._privacyIndicator?.container && isAlive(this._privacyIndicator.container)) {
@@ -5577,7 +5577,7 @@ export const MenuBarController = class MenuBarController {
                     try { return v?.container === ext || v === ext; } catch (_e) { return false; }
                 })?.[0] || '';
                 if (role.includes('ydotool') || ext.accessible_name === 'Ydotool Trigger' || role.includes('run-cmd')) {
-                    continue; // Positioned explicitly below after battery
+                    continue;
                 }
                 if (role.includes('kiwi-wifi-button') || role.includes('kiwi-search-button') ||
                     role.includes('macWifi') || role.includes('macBluetooth') || role.includes('macVolume') || role.includes('macBattery')) {
@@ -5589,7 +5589,7 @@ export const MenuBarController = class MenuBarController {
             } catch (_e) {}
         }
 
-        // Hide standalone Wi-Fi, Bluetooth, and Volume from topbar (active in Control Center)
+
         if (this._wifiButton?.container) {
             this._wifiButton.container.visible = false;
             this._wifiButton.container.hide();
@@ -5603,8 +5603,8 @@ export const MenuBarController = class MenuBarController {
             this._volumeButton.container.hide();
         }
 
-        // Exact friend's GNOME-Tahoe order:
-        // [ Keyboard (uk/A) ] -> [ Spotlight (🔍) ] -> [ Battery (100% 🔋) ] -> [ Control Center (🎛️) ] -> [ Date & Time ]
+
+
         if (ensureInRightBox(Main.panel.statusArea?.keyboard?.container)) {
             desiredOrder.push(Main.panel.statusArea.keyboard.container);
         }
@@ -5664,7 +5664,7 @@ export const MenuBarController = class MenuBarController {
         try {
             for (const child of rightBox.get_children()) {
                 try {
-                    // Control Center (ydotool) and DateMenu must NEVER be hidden here
+
                     const ccBtn = Main.panel.statusArea?.['ydotool-trigger-button']?.container
                         || Main.panel.statusArea?.['ydotool-trigger-button'];
                     if (child === ccBtn || (ccBtn && child.contains && child.contains(ccBtn))) {
@@ -5705,7 +5705,7 @@ export const MenuBarController = class MenuBarController {
                         continue;
                     }
 
-                    // Check if child is an inactive/empty system indicator
+
                     const role = Object.entries(Main.panel.statusArea || {}).find(([_, v]) => {
                         try { return v?.container === child || v === child; } catch (_e) { return false; }
                     })?.[0] || '';
@@ -5729,7 +5729,7 @@ export const MenuBarController = class MenuBarController {
                         continue;
                     }
 
-                    // Visible items in right box: containers have 0 margin, matching left box
+
                     child.visible = true;
                     child.clip_to_allocation = false;
                     child.width = -1;
@@ -5753,7 +5753,7 @@ export const MenuBarController = class MenuBarController {
                         }
                     }
 
-                    // Clean up internal boxes and center background app icons
+
                     if (child.get_children) {
                         for (const sub of child.get_children()) {
                             try {
@@ -5773,7 +5773,7 @@ export const MenuBarController = class MenuBarController {
                                             if (item.has_style_class_name && item.has_style_class_name('system-status-icon')) {
                                                 item.style = 'padding: 0 !important; margin: 0 !important;';
                                             }
-                                            // Hide empty label that pushes the icon off-center
+
                                             if (item instanceof St.Label && (!item.text || item.text.trim() === '')) {
                                                 item.visible = false;
                                                 item.width = 0;
@@ -5788,7 +5788,7 @@ export const MenuBarController = class MenuBarController {
             }
         } catch (_e) {}
 
-        // Special styling for dateMenu: container has 0 margin, height 28px matching left box
+
         try {
             if (dateMenu?.container) {
                 dateMenu.container.visible = true;
@@ -5803,7 +5803,7 @@ export const MenuBarController = class MenuBarController {
             }
         } catch (_e) {}
 
-        // Special styling for Control Center: matching 28px height
+
         try {
             const ccBtn = Main.panel.statusArea?.['ydotool-trigger-button']?.container
                 || Main.panel.statusArea?.['ydotool-trigger-button'];
@@ -5852,7 +5852,7 @@ export const MenuBarController = class MenuBarController {
             if (!child || child._macAnimHooked) return;
             child._macAnimHooked = true;
 
-            // If it's an initial child on startup, ensure full visibility without entrance animation
+
             if (isInitial) {
                 child._macEntranceDone = true;
                 child.clip_to_allocation = false;
@@ -5861,7 +5861,7 @@ export const MenuBarController = class MenuBarController {
                 return;
             }
 
-            // Animate entrance if visible with smooth opacity fade-in (without clamping width or clipping)
+
             const triggerEntrance = () => {
                 if (!child || child._destroyed || child._macEntranceDone)
                     return;
@@ -5947,7 +5947,7 @@ export const MenuBarController = class MenuBarController {
             this._reorderTimeoutId = null;
         }
 
-        // Destroy our custom buttons and properly remove their containers from the panel
+
         const customWidgets = [
             this._privacyIndicator,
             this._wifiButton,
@@ -5974,12 +5974,12 @@ export const MenuBarController = class MenuBarController {
         this._volumeButton = null;
         this._batteryWidget = null;
 
-        // Disconnect custom keyboard menu
+
         try {
             Main.panel.statusArea?.keyboard?.menu?.disconnectObject(this);
         } catch (_e) {}
 
-        // Restore Control Center
+
         const quickSettings = Main.panel?.statusArea?.quickSettings;
         if (quickSettings) {
             if (this._macControlCenter) {
@@ -6016,7 +6016,7 @@ export const MenuBarController = class MenuBarController {
             this._cleanupActiveEffects();
         }
 
-        // Restore DateMenu
+
         const dateMenu = Main.panel?.statusArea?.dateMenu;
         if (dateMenu?.container) {
             if (dateMenu._directClickId) {

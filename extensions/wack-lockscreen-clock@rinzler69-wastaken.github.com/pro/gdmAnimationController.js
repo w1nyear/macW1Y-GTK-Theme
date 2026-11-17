@@ -409,7 +409,7 @@ export class GdmAnimationController {
             }
         }
 
-        // Apply theme synchronously to newly initialized prompt actors
+
         const theme = this._gdm._wallpaperManager?.themeStore?.peek(selectedUser) ?? null;
         if (theme && this._gdm._promptStyling) {
             this._gdm._promptStyling.applyTheme(theme);
@@ -432,7 +432,7 @@ export class GdmAnimationController {
             }
         }
 
-        // Intercept authPrompt.setMessage so warnings/errors replace "TouchID або пароль"
+
         if (!authPrompt._wackSetMessageWrapped) {
             authPrompt._wackSetMessageWrapped = true;
             const origSetMessage = (authPrompt.constructor?.prototype?.setMessage || authPrompt.setMessage).bind(authPrompt);

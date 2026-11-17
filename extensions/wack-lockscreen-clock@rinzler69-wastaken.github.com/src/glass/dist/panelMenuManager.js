@@ -3,17 +3,17 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as DateMenu from 'resource:///org/gnome/shell/ui/dateMenu.js';
 import { UIManager } from './uiManager.js';
-// Settings prefix for every detected panel menu, separate from the calendar's
-// `menu-*` keys (see UIManager._keyPrefix).
+
+
 const PANEL_MENU_PREFIX = 'panel-menu';
-// Menus that had their own switch before the generic detection existed.
+
 const LEGACY_KEYS = {
     keyboard: 'enable-keyboard-menu-glass',
     vitalsMenu: 'enable-vitals-menu-glass',
 };
 
-// The popup menus a status area entry opens, with the names they are listed
-// under. ArcMenu destroys the button's own menu and opens two of its own.
+
+
 function menusOf(name, button) {
     if (button.arcMenu)
         return [[name, button.arcMenu], [`${name}ContextMenu`, button.arcMenuContextMenu]];
@@ -26,7 +26,7 @@ export class PanelMenuManager {
     _logger;
     _signals = [];
     _buttons = new Map();
-    // Menu actor -> its glass, with the indicator name for the logs.
+
     _menus = new Map();
     _idleId = 0;
 
@@ -41,7 +41,7 @@ export class PanelMenuManager {
         const watch = (target, signal) => {
             this._signals.push({ target, id: target.connect(signal, schedule) });
         };
-        // Defer until addToStatusArea() has finished registering the indicator.
+
         const panel = Main.panel;
         for (const box of [panel._leftBox, panel._centerBox, panel._rightBox]) {
             watch(box, 'child-added');
@@ -87,8 +87,8 @@ export class PanelMenuManager {
             buttons.add(button);
             this._watchButton(button);
             for (const [menuName, menu] of menusOf(name, button)) {
-                // Dummy menus and custom non-popup actors cannot use UIManager.
-                // Calendar and Quick Settings already have their own managers.
+
+
                 if (!(menu instanceof PopupMenu.PopupMenu) || reserved.has(menu) || !menu.actor || !menu.box)
                     continue;
                 detected.push(menuName);
@@ -124,7 +124,7 @@ export class PanelMenuManager {
     }
 
     _detachUnwanted(wanted) {
-        // Keep existing instances: a new indicator must not close another menu.
+
         for (const [menu, entry] of this._menus) {
             if (wanted.has(menu))
                 continue;
@@ -133,8 +133,8 @@ export class PanelMenuManager {
         }
     }
 
-    // Most of these menus belong to other extensions and may not be built the
-    // way UIManager expects; such a menu is skipped instead of stopping the scan.
+
+
     _attachWanted(wanted) {
         for (const [menu, { name }] of wanted) {
             if (this._menus.has(menu))
@@ -171,17 +171,17 @@ export class PanelMenuManager {
     }
 }
 
-// PopupMenu sets itself as its actor's _delegate.
+
 function menuOf(actor) {
     const delegate = '_delegate' in actor ? actor._delegate : null;
     return delegate instanceof PopupMenu.PopupMenu ? delegate : null;
 }
 
-/**
- * Glass behind the calendar menus of the top bars other extensions put on further monitors,
- * such as Multi Monitors Bar. Those bars build their own DateMenuButton, which the main panel's
- * UIManager never sees. They follow the Calendar menu's switch and settings.
- */
+
+
+
+
+
 export class ExtraDateMenuManager {
     _path;
     _settings;
@@ -198,12 +198,12 @@ export class ExtraDateMenuManager {
     }
 
     setup() {
-        // PanelMenu.Button puts its menu straight into uiGroup, so a bar created or destroyed later shows up here.
+
         const uiGroup = Main.layoutManager.uiGroup;
         for (const signal of ['child-added', 'child-removed'])
             this._signals.push({ target: uiGroup, id: uiGroup.connect(signal, () => this._scheduleScan()) });
-        // The shell destroys uiGroup on shutdown without disabling extensions; a scan queued by the
-        // removal of its children would run on a disposed actor.
+
+
         this._signals.push({ target: uiGroup, id: uiGroup.connect('destroy', () => this.cleanup()) });
         this._scheduleScan();
     }
@@ -211,7 +211,7 @@ export class ExtraDateMenuManager {
     _scheduleScan() {
         if (this._idleId)
             return;
-        // The menu is added while its button is still being built.
+
         this._idleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
             this._idleId = 0;
             this._scan();
@@ -220,7 +220,7 @@ export class ExtraDateMenuManager {
     }
 
     _scan() {
-        // Gone while the shell shuts down.
+
         const primary = Main.panel.statusArea.dateMenu?.menu;
         const found = new Set();
         for (const child of Main.layoutManager.uiGroup.get_children()) {
@@ -238,7 +238,7 @@ export class ExtraDateMenuManager {
             if (this._menus.has(menu))
                 continue;
             const manager = new UIManager(this._path, this._settings, this._logger, { menu }, false, 'enable-menu-glass', 'menu', `menu:dateMenu${++this._attached}`, false);
-            // These buttons belong to other extensions and may not be built the way UIManager expects.
+
             try {
                 manager.setup();
                 this._menus.set(menu, manager);

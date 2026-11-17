@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Kiwi Extension - Quick Settings Media playback widget helpers
+
 
 import GObject from 'gi://GObject';
 import Gio from 'gi://Gio';

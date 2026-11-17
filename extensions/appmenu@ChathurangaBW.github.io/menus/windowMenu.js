@@ -1,7 +1,7 @@
-/**
- * Build the Window menu.
- * Dynamic — depends on the currently focused window and its state.
- */
+
+
+
+
 import Meta from 'gi://Meta';
 import { _ } from '../i18n.js';
 
@@ -12,7 +12,7 @@ export function buildWindowMenu(window, detectedApp = null) {
     const canTile = canMinimize;
     const canBringAllToFront = Boolean(detectedApp?.get_windows?.()?.length > 1);
 
-    // Workspace check
+
     let hasPrevWorkspace = false;
     let hasNextWorkspace = false;
     try {
@@ -20,7 +20,7 @@ export function buildWindowMenu(window, detectedApp = null) {
         const activeIdx = workspaceManager.get_active_workspace_index();
         hasPrevWorkspace = activeIdx > 0;
         hasNextWorkspace = activeIdx < workspaceManager.n_workspaces - 1;
-    } catch (_e) { /* glass */ }
+    } catch (_e) {   }
 
     return [
         { label: _("Minimize"), action: "minimize", sensitive: canMinimize },

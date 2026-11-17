@@ -224,7 +224,7 @@ export class MacSetupWizard {
             return false;
         }
 
-        // Clean up any stale overlay instances in uiGroup
+
         try {
             const existing = Main.layoutManager.uiGroup.get_children().filter(c => c.name === 'macSetupWizardOverlay');
             for (const o of existing) {
@@ -249,13 +249,13 @@ export class MacSetupWizard {
         this._selectedLocale = getLocale();
         this._sortedLanguages = getSortedLanguageList(this._selectedLocale);
 
-        // Hide desktop elements
+
         this._isolateDesktop();
 
-        // Build fullscreen overlay with blurred background
+
         this._buildOverlay();
 
-        // Build Screen 1: Welcome to Mac intro
+
         this._buildScreen1();
 
         return true;
@@ -264,7 +264,7 @@ export class MacSetupWizard {
     _isolateDesktop() {
         this._hiddenElements = [];
 
-        // Top Panel
+
         if (Main.panel) {
             this._hiddenElements.push({
                 actor: Main.panel,
@@ -275,7 +275,7 @@ export class MacSetupWizard {
             Main.panel.reactive = false;
         }
 
-        // Desktop Icons (DING) smooth fade-out animation
+
         try {
             const dingActors = (global.window_group?.get_children() || []).filter(c => {
                 const mw = c.meta_window || c.get_meta_window?.();
@@ -325,13 +325,13 @@ export class MacSetupWizard {
         }
         this._hiddenElements = [];
 
-        // Safety fallback: ensure Main.panel is fully visible and reactive
+
         if (Main.panel) {
             Main.panel.opacity = 255;
             Main.panel.reactive = true;
         }
 
-        // Safety fallback: ensure Dock, Liquid Glass, and Desktop Icons are 100% restored
+
         try {
             for (const child of Main.layoutManager.uiGroup.get_children()) {
                 const name = child.name || '';
@@ -360,7 +360,7 @@ export class MacSetupWizard {
             opacity: 0
         });
 
-        // Blurred Background Clone
+
         try {
             const bgGroup = Main.layoutManager._backgroundGroup;
             if (bgGroup) {
@@ -380,7 +380,7 @@ export class MacSetupWizard {
             console.error(`[macSetupWizard] Could not clone background: ${e}`);
         }
 
-        // Deep Scrim Layer
+
         const scrim = new St.Widget({
             width: stageW,
             height: stageH,
@@ -402,7 +402,7 @@ export class MacSetupWizard {
         const stageW = global.stage.width;
         const stageH = global.stage.height;
 
-        // Welcome Text Box (Centered vertically and horizontally)
+
         const textH = 120;
         this._welcomeBox = new St.BoxLayout({
             vertical: true,
@@ -428,7 +428,7 @@ export class MacSetupWizard {
         this._welcomeBox.add_child(welcomeLabel);
         this._overlay.add_child(this._welcomeBox);
 
-        // Continue Button at Bottom
+
         const btnBoxW = 140;
         const btnBoxH = 90;
         this._continueBtnBox = new St.BoxLayout({
@@ -498,7 +498,7 @@ export class MacSetupWizard {
         this._continueBtnBox.add_child(labelText);
         this._overlay.add_child(this._continueBtnBox);
 
-        // Animate elements in
+
         this._welcomeBox.ease({
             opacity: 255,
             duration: 600,
@@ -594,7 +594,7 @@ export class MacSetupWizard {
             style: 'padding: 40px 22px 20px 22px;'
         });
 
-        // 1. Top Header: App / Globe icon + Title + Subtitle
+
         const headerBox = new St.BoxLayout({
             vertical: true,
             x_align: Clutter.ActorAlign.CENTER,
@@ -620,7 +620,7 @@ export class MacSetupWizard {
         headerBox.add_child(this._subtitleLabel);
         mainLayout.add_child(headerBox);
 
-        // 2. Middle Content Stack Container
+
         this._pageContainer = new St.BoxLayout({
             vertical: true,
             width: contentW,
@@ -631,7 +631,7 @@ export class MacSetupWizard {
         });
         mainLayout.add_child(this._pageContainer);
 
-        // 3. Bottom Action Bar: Back button on the LEFT, Continue button on the RIGHT
+
         this._bottomBar = new St.BoxLayout({
             x_align: Clutter.ActorAlign.FILL,
             y_align: Clutter.ActorAlign.CENTER,
@@ -688,11 +688,11 @@ export class MacSetupWizard {
         this._dialogCard.add_child(mainLayout);
         this._overlay.add_child(this._dialogCard);
 
-        // Render Page 1 (Language Selection)
+
         this._currentPage = 1;
         this._renderCurrentPage();
 
-        // Animate Dialog Card in
+
         this._dialogCard.ease({
             opacity: 255,
             y: Math.round((stageH - cardH) / 2),
@@ -705,13 +705,13 @@ export class MacSetupWizard {
         this._selectedLocale = langCode;
         applyModpackSystemLocale(langCode, false);
 
-        // Update header texts in real time
+
         this._titleLabel.text = t('select_language', 'Виберіть мову', langCode);
         this._subtitleLabel.text = t('select_language_sub', 'Виберіть основну мову для інтерфейсу системи.', langCode);
         this._nextBtn.set_label(t('wizard_continue', 'Продовжити', langCode));
         this._backBtn.set_label(t('wizard_back', 'Назад', langCode));
 
-        // Update list styles
+
         for (const [code, row] of this._langRowButtons.entries()) {
             const isSelected = (code === langCode);
             row.btn.style = isSelected
@@ -734,7 +734,7 @@ export class MacSetupWizard {
         const curLang = this._selectedLocale;
 
         if (this._currentPage === 1) {
-            // Screen 1: Language Selection (Reference Photo)
+
             this._headerIcon.gicon = null;
             this._headerIcon.icon_name = 'preferences-desktop-locale-symbolic';
             this._headerIcon.icon_size = 56;
@@ -773,8 +773,8 @@ export class MacSetupWizard {
             const scrollView = new St.ScrollView({
                 width: listW,
                 height: listH,
-                hscrollbar_policy: 1, // NEVER
-                vscrollbar_policy: 0, // AUTOMATIC
+                hscrollbar_policy: 1,
+                vscrollbar_policy: 0,
                 style: 'padding: 4px;'
             });
 
@@ -831,7 +831,7 @@ export class MacSetupWizard {
             this._pageContainer.add_child(centerWrapper);
 
         } else if (this._currentPage === 2) {
-            // Screen 2: Features Overview
+
             try {
                 const iconFile = Gio.File.new_for_path(ICON_PATH);
                 this._headerIcon.gicon = new Gio.FileIcon({ file: iconFile });
@@ -915,7 +915,7 @@ export class MacSetupWizard {
             this._pageContainer.add_child(page2Box);
 
         } else if (this._currentPage === 3 && hasTouchpadGestures()) {
-            // Screen 3: Trackpad gestures
+
             this._headerIcon.gicon = null;
             this._headerIcon.icon_name = 'input-touchpad-symbolic';
             this._headerIcon.icon_size = 56;
@@ -1062,7 +1062,7 @@ export class MacSetupWizard {
             this._pageContainer.add_child(page3Box);
 
         } else {
-            // Screen 4: Setup Complete
+
             this._currentPage = 4;
             this._headerIcon.gicon = null;
             this._headerIcon.icon_name = 'emblem-ok-symbolic';
@@ -1087,7 +1087,7 @@ export class MacSetupWizard {
                 style: 'spacing: 12px;'
             });
 
-            // Success Badge Banner
+
             const banner = new St.BoxLayout({
                 x_align: Clutter.ActorAlign.FILL,
                 y_align: Clutter.ActorAlign.CENTER,
@@ -1114,7 +1114,7 @@ export class MacSetupWizard {
             banner.add_child(bannerText);
             page4Box.add_child(banner);
 
-            // Quick Tips Box
+
             const tipsBox = new St.BoxLayout({
                 vertical: true,
                 style: `background-color: ${rowBg}; border: 1px solid ${rowBorder}; border-radius: 14px; padding: 14px 20px; spacing: 10px;`
@@ -1201,10 +1201,10 @@ export class MacSetupWizard {
     }
 
     finish() {
-        // Persist final chosen locale and apply system-wide
+
         applyModpackSystemLocale(this._selectedLocale, true);
 
-        // Mark wizard as completed (0)
+
         setSetupWizardFlag(false);
         globalThis.macSetupWizardActive = false;
         globalThis.macSetupWizardGestureHook = null;
@@ -1230,7 +1230,7 @@ export class MacSetupWizard {
             this.destroy();
         }
 
-        // Restore desktop elements smoothly
+
         this._restoreDesktop();
     }
 

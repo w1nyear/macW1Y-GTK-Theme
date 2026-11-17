@@ -16,13 +16,13 @@ export class ScreenShieldCurtainManager {
         if (!screenShield || this._installed) return;
         this._installed = true;
 
-        // Pin translation_y to 0 immediately so no curtain slides up/down
+
         if (screenShield._lockDialogGroup) {
             screenShield._lockDialogGroup.remove_all_transitions();
             screenShield._lockDialogGroup.translation_y = 0;
         }
 
-        // Neutralize lightbox vignette/dimming
+
         if (screenShield._shortLightbox) {
             screenShield._shortLightbox.remove_all_transitions();
             screenShield._shortLightbox.opacity = 0;
@@ -73,7 +73,7 @@ export class ScreenShieldCurtainManager {
                 screenShield._longLightbox.hide();
                 screenShield._shortLightbox.hide();
 
-                // Strictly keep translation_y at 0 — no sliding curtain from bottom to top!
+
                 screenShield._lockDialogGroup.remove_all_transitions();
                 screenShield._lockDialogGroup.translation_y = 0;
 
@@ -90,7 +90,7 @@ export class ScreenShieldCurtainManager {
                         } catch (_) {}
                     }
 
-                    // Guarantee windows visibility
+
                     if (global.window_group) {
                         global.window_group.remove_all_transitions();
                         global.window_group.visible = true;
@@ -108,7 +108,7 @@ export class ScreenShieldCurtainManager {
                         }
                     }
 
-                    // Guarantee dock visibility and position
+
                     const d2d = Main.layoutManager.uiGroup?.get_children()?.find(c => c.name === 'dashtodockContainer');
                     if (d2d) {
                         d2d.remove_all_transitions();
@@ -131,7 +131,7 @@ export class ScreenShieldCurtainManager {
                     }
                     try { global._liquidGlassDockSync?.(); } catch (_) {}
 
-                    // Cleanup any leftover modal dialog blur actors in uiGroup
+
                     const strandedBlurs = Main.layoutManager.uiGroup?.get_children()?.filter(c =>
                         c.name === 'bms-popup-blurred-widget' || c.name === 'bms-blurred-widget'
                     ) || [];
@@ -163,7 +163,7 @@ export class ScreenShieldCurtainManager {
             };
         }
 
-        // 2. _hideLockScreen: eliminate upward ease (-height)
+
         if (screenShield._hideLockScreen) {
             this.origHideLockScreen = screenShield._hideLockScreen.bind(screenShield);
             screenShield._hideLockScreen = (animate) => {
@@ -228,7 +228,7 @@ export class ScreenShieldCurtainManager {
             };
         }
 
-        // 4. _activateFade: eliminate dark vignette curtain when dimmer is disabled
+
         if (screenShield._activateFade) {
             this.origActivateFade = screenShield._activateFade.bind(screenShield);
             screenShield._activateFade = (lightbox, time) => {

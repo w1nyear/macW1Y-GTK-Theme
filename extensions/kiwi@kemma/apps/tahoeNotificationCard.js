@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Конструктор картки сповіщення macW1Y Tahoe (kiwi@kemma).
-// ВЕРСІЯ v4: у режимі переробки UI сповіщень залишено ТІЛЬКИ картку —
-// MacNotificationGroup і NotificationsController видалено (стеки банерів
-// та старий контролер перероблятимуться заново).
-// Центр повідомлень використовує buildNotificationCard.
+
+
+
+
+
 
 import St from 'gi://St';
 import Gio from 'gi://Gio';
@@ -14,24 +14,24 @@ import Pango from 'gi://Pango';
 import { t, tf } from './mac_i18n.js';
 
 
-/**
- * Sanitizes and converts markdown and HTML tags into valid Pango markup.
- * Properly decodes HTML entities, strips orphan/malformed tags (like </b>),
- * balances open/close tags, and ensures formatting characters are never leaked into notification text.
- */
+
+
+
+
+
 export function safePangoMarkup(rawText) {
     if (!rawText || typeof rawText !== 'string') return '';
     let text = rawText.replace(/\r\n/g, '\n');
 
-    // 1. Unescape HTML tags if entity-encoded (e.g. &lt;b&gt; or &lt;/b&gt; from Telegram/Discord/browsers)
+
     text = text.replace(/&lt;(\/?[a-zA-Z0-9]+(?:\s+[^&>]*)?)&gt;/gi, '<$1>');
     text = text.replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#39;/g, "'");
 
-    // 2. Normalize <br> and <p>
+
     text = text.replace(/<br\s*\/?>/gi, '\n');
     text = text.replace(/<p\b[^>]*>/gi, '').replace(/<\/p>/gi, '\n');
 
-    // 3. Convert rich-text HTML tags to valid Pango tags
+
     text = text.replace(/<strong\b[^>]*>(.*?)<\/strong>/gi, '<b>$1</b>');
     text = text.replace(/<em\b[^>]*>(.*?)<\/em>/gi, '<i>$1</i>');
     text = text.replace(/<code\b[^>]*>(.*?)<\/code>/gi, '<tt>$1</tt>');
@@ -40,20 +40,20 @@ export function safePangoMarkup(rawText) {
     text = text.replace(/<del\b[^>]*>(.*?)<\/del>/gi, '<s>$1</s>');
     text = text.replace(/<a\b[^>]*>(.*?)<\/a>/gi, '<u>$1</u>');
 
-    // 4. Markdown conversions:
-    // **bold** or __bold__
+
+
     text = text.replace(/(\*\*|__)(.*?)\1/g, '<b>$2</b>');
-    // ~~strikethrough~~
+
     text = text.replace(/(~~)(.*?)\1/g, '<s>$2</s>');
-    // `inline code`
+
     text = text.replace(/`([^`]+)`/g, '<tt>$1</tt>');
-    // *italic* or _italic_ (not inside word identifiers)
+
     text = text.replace(/(^|[^\w])(\*|_)([^\*_]+?)\2([^\w]|$)/g, '$1<i>$3</i>$4');
 
-    // 5. Remove any remaining unsupported HTML tags, keeping only allowed pango tags
+
     text = text.replace(/<\/?(?!b\b|i\b|u\b|s\b|tt\b|span\b|sub\b|sup\b|big\b|small\b)[a-zA-Z0-9_-]+(?:\s+[^>]*)?>/gi, '');
 
-    // 6. Balance allowed tags and strip orphan closing tags (e.g. </b> without <b>)
+
     const allowedTags = ['b', 'i', 'u', 's', 'tt', 'span', 'sub', 'sup', 'big', 'small'];
     for (const tag of allowedTags) {
         const openMatches = text.match(new RegExp('<' + tag + '(?:\\s+[^>]*)?>', 'gi')) || [];
@@ -78,14 +78,14 @@ export function safePangoMarkup(rawText) {
         }
     }
 
-    // 7. Escape stray & that is not an existing XML entity
+
     text = text.replace(/&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9a-fA-F]+;)/g, '&amp;');
 
     try {
         Pango.parse_markup(text, -1, '');
         return text;
     } catch (e) {
-        // Fallback: completely strip tags, entity-tags, and markdown markers so formatting tokens never leak to user
+
         let stripped = rawText
             .replace(/&lt;(\/?[a-zA-Z0-9_-]+(?:\s+[^&>]*)?)&gt;/gi, '')
             .replace(/<[^>]+>/g, '')
@@ -110,13 +110,13 @@ export function setLabelMarkup(label, rawText) {
     }
 }
 
-/**
- * Formats notification timestamp:
- * - Today: HH:mm (e.g. "14:31")
- * - Yesterday: "Вчора, 14:31"
- * - Older (same year): "16.10, 14:31"
- * - Older (previous year): "16.10.2025, 14:31"
- */
+
+
+
+
+
+
+
 export function formatNotificationTimestamp(datetime) {
     let dt = datetime;
     if (!dt) {
@@ -146,9 +146,9 @@ export function formatNotificationTimestamp(datetime) {
 }
 
 
-// ── Новий вигляд повідомлень (адаптовано з MacShell / MacBar.qml NotifBody) ──
-// Розкладка: іконка-тайл 44×44 (radius 10), текстова колона, правий рейл
-// з відносним часом («тільки що», «5 хв тому») або круглою кнопкою ✕ при наведенні.
+
+
+
 export function formatRelativeNotifAge(datetime) {
     const now = GLib.DateTime.new_now_local();
     let dt = datetime;
@@ -169,8 +169,8 @@ export function formatRelativeNotifAge(datetime) {
     return formatNotificationTimestamp(dt);
 }
 
-// Відносний час у тост-каноні: «Щойно», «5 хв тому», «3 год тому»,
-// для старіших - дата/час як у Центрі.
+
+
 export function formatToastAge(datetime) {
     try {
         const now = GLib.DateTime.new_now_local();
@@ -202,14 +202,14 @@ export function buildNotificationCard(source, notification, options = {}) {
     const onClose = options.onClose || null;
     const onClick = options.onClick || null;
 
-    // Канон нового вигляду = тости v5 (етапи 2.2-2.4): картка з динамічним
-    // тінтом та тінню з "Мак стилізації", під нею власна плитка скла
-    // (стек 'nc-cards'); білий текст; іконка того, хто надіслав.
+
+
+
     const CARD_BASE_STYLE = (typeof globalThis._macGetNotifCardStyle === 'function')
         ? globalThis._macGetNotifCardStyle()
         : 'background-color: transparent !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
     const CARD_HOVER_STYLE = CARD_BASE_STYLE;
-    // Пілюля → картка (морф банерів): стілі сумісні зі старим API
+
     const CARD_PILL_STYLE = CARD_BASE_STYLE.replace(/border-radius:\s*[^;]+;/, 'border-radius: 9999px !important;');
     const CARD_MID_STYLE = CARD_BASE_STYLE.replace(/border-radius:\s*[^;]+;/, 'border-radius: 22px !important;');
     const CLOSE_BASE = 'width: 22px !important; height: 22px !important; border-radius: 11px !important; background-color: rgba(255, 255, 255, 0.18) !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important; padding: 0 !important; margin: 0px !important;';
@@ -239,7 +239,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         try { banner.set_width(width); } catch (_) {}
     }
 
-    // Головна розкладка тоста: [іконка] [тексти], для скріншотів компактний паддінг
+
     const mainBox = new St.BoxLayout({
         orientation: Clutter.Orientation.HORIZONTAL,
         x_expand: true,
@@ -251,7 +251,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     });
     banner.set_child(mainBox);
 
-    // 1. Іконка ХТО надіслав
+
     let gicon = null;
     try { gicon = notification.gicon ?? null; } catch (_) {}
     try { if (!gicon) gicon = source?.icon ?? null; } catch (_) {}
@@ -286,8 +286,8 @@ export function buildNotificationCard(source, notification, options = {}) {
     }
     const iconSize = isScreenshot ? 38 : 44;
     const bannerWidth = width || 440;
-    const padH = 28; // 14px left + 14px right
-    const iconW = iconSize + 12; // tile width + margin
+    const padH = 28;
+    const iconW = iconSize + 12;
     const railW = 76;
     const contentW = Math.max(120, bannerWidth - padH - iconW - railW);
 
@@ -310,7 +310,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     try { iconTile.style += 'margin-right: 12px;'; } catch (_) {}
     mainBox.add_child(iconTile);
 
-    // 2. Текст-колонка (фіксована ширина без зворотного переповнення Clutter)
+
     const contentBox = new St.BoxLayout({
         orientation: Clutter.Orientation.VERTICAL,
         x_expand: false,
@@ -322,7 +322,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     contentBox.max_width = contentW;
     mainBox.add_child(contentBox);
 
-    // GNOME 50: критичні мають urgency=3 (>=2 - HIGH і вище)
+
     const isCritical = (notification.urgency ?? 1) >= 2;
 
     let appLabel = null;
@@ -330,10 +330,10 @@ export function buildNotificationCard(source, notification, options = {}) {
     let bodyLabel = null;
 
     if (isScreenshot) {
-        // Канонічний вигляд скріншотів macW1Y:
-        // Рядок 1: Назва програми «Скріншот» (bold 700)
-        // Рядок 2: Заголовок «Скріншот створено» (regular 400)
-        // Рядок 3: Додаткова інструкція/статус (якщо не порожнє)
+
+
+
+
         const shotApp = appName && !appName.includes('Захоплення') ? appName : 'Скріншот';
         appLabel = new St.Label({
             text: shotApp,
@@ -366,7 +366,7 @@ export function buildNotificationCard(source, notification, options = {}) {
             contentBox.add_child(bodyLabel);
         }
     } else {
-        // Звичайні застосунки:
+
         const isDuplicateTitle = rawTitle.toLowerCase() === appName.toLowerCase();
         const hasBody = !!bodyText;
 
@@ -383,7 +383,7 @@ export function buildNotificationCard(source, notification, options = {}) {
             contentBox.add_child(appLabel);
         }
 
-        // Заголовок: якщо є rawTitle, або якщо взагалі немає body - показуємо завжди!
+
         const displayTitle = rawTitle || (!hasBody ? (appName || 'Повідомлення') : '');
         if (displayTitle && (!isDuplicateTitle || !hasBody)) {
             titleLabel = new St.Label({
@@ -409,7 +409,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         }
     }
 
-    // 3. Кнопки дій — компактні для скріншотів, приховані за замовчуванням (з'являються при hover)
+
     let actionsBox = null;
     if (notification.actions && notification.actions.length > 0) {
         actionsBox = new St.BoxLayout({
@@ -453,7 +453,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         contentBox.add_child(actionsBox);
     }
 
-    // 4. ✕ 22×22 на куті оверлеєм + час у правому рейлі
+
     const timeLabel = new St.Label({
         text: formatToastAge(notification.datetime),
         x_align: Clutter.ActorAlign.END,
@@ -503,7 +503,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     mainBox.add_child(rightRail);
     banner.add_child(closeBtn);
 
-    // Заглушка cardData (для замикань нижче)
+
     const cardData = {
         banner,
         notification,
@@ -556,8 +556,8 @@ export function buildNotificationCard(source, notification, options = {}) {
         return false;
     };
 
-    // При наведенні час м'яко поступається кнопці закриття (150мс),
-    // кнопки дій з'являються, а висота картки плавно збільшується
+
+
     const updateHoverState = () => {
         try {
             if (cardData.isClosing || !banner.get_stage() || !closeBtn.get_stage())
@@ -575,7 +575,7 @@ export function buildNotificationCard(source, notification, options = {}) {
                     duration: 150,
                     mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                 });
-                // "напис щойно приховуватись не має" - timeLabel stays visible
+
                 timeLabel.opacity = 255;
                 timeLabel.visible = true;
                 if (actionsBox) {
@@ -630,7 +630,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         }
     }
 
-    // Живе оновлення відносного часу кожні 30с
+
     let agoTimerId = 0;
     const updateAgo = () => {
         try {
@@ -651,15 +651,15 @@ export function buildNotificationCard(source, notification, options = {}) {
         }
     });
 
-    // Ремір висоти картки: перенесені рядки тіла St.BoxLayout меряє
-    // БЕЗ переносу (natural width), тому перший лейаут нищий і другомий
-    // рядок тіла обрізає клип банера. Міряю рядки напряму по ширині
-    // текст-колонки (як у тостів: get_preferred_height(colW)) і
-    // плавно анімую висоту банера при hover.
-    // Обчислення точної висоти картки (для unhovered та hovered станів)
+
+
+
+
+
+
     const computeCardTargetHeight = (isHover = false) => {
         const colW = Math.max(80, Math.round((width ?? 484)) - 28 - (isScreenshot ? 38 : 44) - 12 - 76);
-        let total = isScreenshot ? 20 : 30; // паддінги 10+10 (скріншот) або 14+16 (канон)
+        let total = isScreenshot ? 20 : 30;
         let count = 0;
         for (const l of [appLabel, titleLabel, bodyLabel]) {
             if (!l)
@@ -676,7 +676,7 @@ export function buildNotificationCard(source, notification, options = {}) {
             return isScreenshot ? 54 : 72;
 
         if (actionsBox && isHover) {
-            // Збільшена висота на hover для комфортного розміщення круглої кнопки з достатнім відступом знизу
+
             total += isScreenshot ? 30 : 34;
         }
         total += (isScreenshot ? 2 : 4) * Math.max(0, count - 1);
@@ -711,9 +711,9 @@ export function buildNotificationCard(source, notification, options = {}) {
         } catch (_) {}
     };
 
-    // Негайно при створенні встановлюємо коректну статичну висоту банера,
-    // щоб Clutter не задавав йому гігантську unallocated-висоту (0x100000000)
-    // і Центр сповіщень не стрибав при відкритті:
+
+
+
     const initialH = computeCardTargetHeight(false);
     banner.set_height(initialH);
     banner.min_height = initialH;
@@ -731,7 +731,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         } catch (_) {}
     }
 
-    // Внутрішні стілі для споживачів (пілюля → картка морф у tahoeNotifications)
+
     cardData.baseStyle = CARD_BASE_STYLE;
     cardData.hoverStyle = CARD_HOVER_STYLE;
     cardData.pillStyle = CARD_PILL_STYLE;

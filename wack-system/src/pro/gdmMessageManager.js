@@ -181,9 +181,9 @@ export class GdmMessageManager {
         const isLegacy = this._gdm._selectedPromptMode === 'wack' || effectiveMetadata?.lockscreenMode === 'wack';
         const selectedUserName = this._gdm._dialog?._user?.get_user_name() ?? null;
         const themeStore = this._gdm._wallpaperManager?.themeStore;
-        // A named account with no manifest falls back to the entry theme for
-        // wallpaper and chrome. Its lockscreen message must not inherit that
-        // other account's personal text, however.
+
+
+
         const hasSelectedUserMetadata = selectedUserName === null ||
             themeStore?.hasUser(selectedUserName) === true;
 

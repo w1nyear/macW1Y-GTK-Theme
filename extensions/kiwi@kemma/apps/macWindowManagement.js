@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macW1Y-Style Window Management & Fullscreen Edge Reveals
-//
-// 1. Dragging a window flush against the top menubar and releasing ->
-//    TRUE FULLSCREEN (win.make_fullscreen()) with smooth expansion animation,
-//    hiding menubar and dock.
-// 2. Clicking the window's green button ("квадратик") ->
-//    MAXIMIZE to monitor work area (win.maximize()), keeping menubar and dock VISIBLE (macW1Y Zoom).
-//    Clicking it again restores to unmaximized mode.
-// 3. Smooth Clutter snapshot expansion/contraction animations on entering and exiting fullscreen.
-// 4. While in fullscreen mode:
-//    - Hovering top edge reveals / slides down the top menubar smoothly.
-//    - Hovering bottom edge reveals / slides up the dock smoothly.
-//    - Moving pointer away smoothly hides them back.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import Meta from 'gi://Meta';
 import Clutter from 'gi://Clutter';
@@ -31,14 +31,14 @@ const LEAVE_DEBOUNCE_MS = 260;
 let _enabled = false;
 let _signals = [];
 
-// Drag-to-top tracking state
+
 let _draggingWindow = null;
 let _dragPollTimer = null;
 let _showingTilePreview = false;
 let _snapWindow = null;
 let _lastDragEndTime = 0;
 
-// Fullscreen monitoring state
+
 let _hasFullscreen = false;
 let _topTriggerActor = null;
 let _bottomTriggerActor = null;
@@ -176,9 +176,9 @@ function _setPanelSolidDarkStyle(enable) {
     } catch (_) {}
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Drag Window Flush Against Menubar -> True Fullscreen (with Expansion Anim)
-// ─────────────────────────────────────────────────────────────────────────────
+
+
+
 
 export function animateEnterFullscreen(win, startRect = null) {
     if (!win || win.window_type !== Meta.WindowType.NORMAL)
@@ -207,7 +207,7 @@ export function animateEnterFullscreen(win, startRect = null) {
         height: mon.height,
     };
 
-    // Store starting frame so exiting fullscreen knows where to return
+
     win._macFullscreenFromRect = { ...fromRect };
 
     let clone = null;
@@ -235,7 +235,7 @@ export function animateEnterFullscreen(win, startRect = null) {
     }
     win._fullscreenAnimClone = clone;
 
-    // Hide underlying live actor during animation so Mutter buffer reallocation/flicker is hidden
+
     if (clone) {
         actor.opacity = 0;
     }
@@ -245,7 +245,7 @@ export function animateEnterFullscreen(win, startRect = null) {
         win.make_fullscreen();
     } catch (_) {}
 
-    // Safety timeout to guarantee actor opacity is restored
+
     GLib.timeout_add(GLib.PRIORITY_DEFAULT, 350, () => {
         try {
             if (actor && !actor.is_finalized?.() && actor.opacity === 0) {
@@ -306,7 +306,7 @@ export function animateExitFullscreen(win, onComplete = null, targetRectOverride
     const mon = Main.layoutManager.monitors[monIndex] || Main.layoutManager.primaryMonitor;
     const wa = Main.layoutManager.getWorkAreaForMonitor(monIndex);
 
-    // Determine target unfullscreen geometry
+
     let targetRect = targetRectOverride || win._macFullscreenFromRect;
     if (!targetRect || targetRect.width < 200 || targetRect.height < 150) {
         const defaultW = Math.min(1280, Math.round(mon.width * 0.75));
@@ -353,12 +353,12 @@ export function animateExitFullscreen(win, onComplete = null, targetRectOverride
         win.unmaximize();
     } catch (_) {}
 
-    // Apply target position to unfullscreened window
+
     try {
         win.move_resize_frame(true, targetRect.x, targetRect.y, targetRect.width, targetRect.height);
     } catch (_) {}
 
-    // Safety timeout to guarantee actor opacity is restored
+
     GLib.timeout_add(GLib.PRIORITY_DEFAULT, 350, () => {
         try {
             if (actor && !actor.is_finalized?.() && actor.opacity === 0) {
@@ -414,7 +414,7 @@ function _onGrabOpBegin(_display, window, op) {
     _restoreShrunkActors(false);
     _setPanelSolidDarkStyle(false);
 
-    // If dragging a fullscreen window, smoothly exit fullscreen
+
     if (window.is_fullscreen()) {
         try {
             animateExitFullscreen(window);
@@ -442,7 +442,7 @@ function _onGrabOpBegin(_display, window, op) {
             const wa = Main.layoutManager.getWorkAreaForMonitor(monitor);
             const menubarBottom = wa.y;
 
-            // When top of window approaches menubar bottom (or pointer is near menubar)
+
             const isNearMenubar = (frame.y <= menubarBottom + 14 || py <= menubarBottom + 16) && py >= 0;
 
             if (isNearMenubar) {
@@ -492,9 +492,9 @@ function _onGrabOpEnd(_display, window, _op) {
     _snapWindow = null;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Window Size Change -> Manage Fullscreen & Work Area Maximize State
-// ─────────────────────────────────────────────────────────────────────────────
+
+
+
 
 function _onSizeChange(_wm, actor, whichChange, _oldFrameRect) {
     if (!_enabled || !actor) return;
@@ -528,9 +528,9 @@ function _onSizeChange(_wm, actor, whichChange, _oldFrameRect) {
     _queueRecomputeFullscreen();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Fullscreen Mode: Edge Hover Reveals (Menubar on Top, Dock on Bottom)
-// ─────────────────────────────────────────────────────────────────────────────
+
+
+
 
 function _cancelPanelHide() {
     if (_panelHideTimer) {
@@ -562,10 +562,10 @@ function _startFullscreenWatcher() {
             const primaryMonitor = Main.layoutManager.primaryMonitor;
             const panelHeight = _getPanelHeight();
 
-            // ─── Headerbar / Tabbar LMB Drag to Unfullscreen & Move ───
+
             if (isLmbDown) {
                 if (!_fsDragState) {
-                    // Check if initial press occurred in the header/tabbar/menubar zone
+
                     const maxHeaderY = (_panelRevealed ? panelHeight : 0) + 75;
                     if (py >= 0 && py <= maxHeaderY) {
                         _fsDragState = {
@@ -580,7 +580,7 @@ function _startFullscreenWatcher() {
                 } else if (!_fsDragState.isDragging) {
                     const dy = py - _fsDragState.startY;
                     const dx = px - _fsDragState.startX;
-                    // Trigger drag if pulled down by > 12px or moved significantly
+
                     if (dy > 12 || Math.hypot(dx, dy) > 16) {
                         const ws = global.workspace_manager?.get_active_workspace();
                         let win = global.display.focus_window;
@@ -591,7 +591,7 @@ function _startFullscreenWatcher() {
                             _fsDragState.isDragging = true;
                             _fsDragState.win = win;
 
-                            // Restore any visual shrinking and panel hiding
+
                             _restoreShrunkActors(false);
                             _cancelPanelHide();
                             _cancelDockHide();
@@ -620,7 +620,7 @@ function _startFullscreenWatcher() {
                         }
                     }
                 } else if (_fsDragState.isDragging && _fsDragState.win) {
-                    // Actively dragging window with LMB held
+
                     const targetX = px - _fsDragState.offsetX;
                     const targetY = py - _fsDragState.offsetY;
                     try { _fsDragState.win.move_frame(true, targetX, targetY); } catch (_) {}
@@ -637,7 +637,7 @@ function _startFullscreenWatcher() {
                         const wa = Main.layoutManager.getWorkAreaForMonitor(primaryMonitor.index);
                         const menubarBottom = wa.y;
 
-                        // If dropped flush near top menubar, re-fullscreen with expand animation
+
                         if (py <= menubarBottom + 16 && py >= 0) {
                             animateEnterFullscreen(win, win.get_frame_rect());
                         }
@@ -647,7 +647,7 @@ function _startFullscreenWatcher() {
                 }
             }
 
-            // Edge trigger reveals (guard against immediate trigger right after drag release)
+
             if (!_fsDragState?.isDragging) {
                 if (py <= 2 && !_panelRevealed && (Date.now() - _lastDragEndTime > 300)) {
                     _showPanelAnimated();
@@ -657,7 +657,7 @@ function _startFullscreenWatcher() {
                 }
             }
 
-            // 1. Panel hide watch
+
             if (_panelRevealed && (!_fsDragState || !_fsDragState.isDragging)) {
                 if (py <= panelHeight + 8) {
                     _cancelPanelHide();
@@ -674,7 +674,7 @@ function _startFullscreenWatcher() {
                 }
             }
 
-            // 2. Dock hide watch
+
             if (_dockRevealed && (!_fsDragState || !_fsDragState.isDragging)) {
                 const dockHeight = 95;
                 const dockTop = primaryMonitor.y + primaryMonitor.height - dockHeight - 20;
@@ -710,7 +710,7 @@ function _showPanelAnimated() {
     panelBox.visible = true;
     _panelRevealed = true;
 
-    // Apply 100% solid dark/black styling
+
     _setPanelSolidDarkStyle(true);
 
     const h = _getPanelHeight();
@@ -730,7 +730,7 @@ function _showPanelAnimated() {
         },
     });
 
-    // Shrink fullscreen window actor(s) so window yields space to menubar
+
     const targetActors = _getFullscreenActors(primaryMonitor.index);
     for (const actor of targetActors) {
         try {
@@ -771,7 +771,7 @@ function _hidePanelAnimated() {
         },
     });
 
-    // Restore fullscreen window(s) back to original height
+
     _restoreShrunkActors(true);
 }
 
@@ -801,9 +801,9 @@ function _hideDockAnimated() {
     _dockRevealed = false;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Hover Edge Trigger Actors
-// ─────────────────────────────────────────────────────────────────────────────
+
+
+
 
 function _createEdgeTriggers() {
     _destroyEdgeTriggers();
@@ -811,7 +811,7 @@ function _createEdgeTriggers() {
     const monitor = Main.layoutManager.primaryMonitor;
     if (!monitor) return;
 
-    // Top hover edge
+
     _topTriggerActor = new Clutter.Actor({
         name: 'mac-top-edge-hover',
         reactive: true,
@@ -826,7 +826,7 @@ function _createEdgeTriggers() {
             _showPanelAnimated();
     });
 
-    // Bottom hover edge
+
     _bottomTriggerActor = new Clutter.Actor({
         name: 'mac-bottom-edge-hover',
         reactive: true,
@@ -890,10 +890,10 @@ function _recomputeFullscreen() {
             _createEdgeTriggers();
         _startFullscreenWatcher();
 
-        // Ensure dock is hidden when entering fullscreen
+
         _hideDockAnimated();
 
-        // Ensure menubar is hidden in fullscreen unless overview is open, a menu is open, or panel was revealed
+
         if (!Main.overview?.visible && !_isAnyPanelMenuOpen() && !_panelRevealed) {
             _cancelPanelHide();
             _panelHiding = false;
@@ -908,7 +908,7 @@ function _recomputeFullscreen() {
             try { Main.layoutManager?._updateVisibility?.(); } catch (_) {}
         }
 
-        // Clean up any tracked shrunk actors that are no longer fullscreen
+
         for (const actor of _shrunkActors) {
             try {
                 const win = actor.meta_window;
@@ -932,10 +932,10 @@ function _recomputeFullscreen() {
             _fullscreenWatcherTimer = null;
         }
 
-        // Restore any shrunk actors immediately
+
         _restoreShrunkActors(false);
 
-        // Restore menubar
+
         const panelBox = _getPanelBox();
         if (panelBox) {
             panelBox.remove_all_transitions();
@@ -948,7 +948,7 @@ function _recomputeFullscreen() {
         _panelRevealed = false;
         _panelHiding = false;
 
-        // Restore dock
+
         const dc = _getDockContainer();
         if (dc && typeof dc._animateIn === 'function') {
             try { dc._animateIn(0.3, 0.1); } catch (_) {}
@@ -957,9 +957,9 @@ function _recomputeFullscreen() {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Enable / Disable Lifecycle
-// ─────────────────────────────────────────────────────────────────────────────
+
+
+
 
 export function enable() {
     if (_enabled) return;
@@ -970,7 +970,7 @@ export function enable() {
         animateExitFullscreen,
     };
 
-    // Connect display and window manager signals
+
     try {
         _signals.push([global.display, global.display.connect('grab-op-begin', _onGrabOpBegin)]);
         _signals.push([global.display, global.display.connect('grab-op-end', _onGrabOpEnd)]);
@@ -1049,13 +1049,13 @@ export function disable() {
     _restoreShrunkActors(false);
     _setPanelSolidDarkStyle(false);
 
-    // Disconnect signals
+
     for (const [obj, id] of _signals) {
         try { obj.disconnect(id); } catch (_) {}
     }
     _signals = [];
 
-    // Restore panel
+
     const panelBox = _getPanelBox();
     if (panelBox) {
         panelBox.remove_all_transitions();
@@ -1065,7 +1065,7 @@ export function disable() {
     _setPanelTrackFullscreen(true);
     try { Main.layoutManager?._updateVisibility?.(); } catch (_) {}
 
-    // Restore dock
+
     const dc = _getDockContainer();
     if (dc && typeof dc._animateIn === 'function') {
         try { dc._animateIn(0.3, 0.1); } catch (_) {}

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Kiwi Extension - Media playback cards and MPRIS players
+
 
 import * as MessageList from 'resource:///org/gnome/shell/ui/messageList.js';
 import Clutter from 'gi://Clutter';
@@ -21,7 +21,7 @@ const ARTWORK_SIZE = 112;
 const SECONDARY_OPACITY = Math.round(255 * 0.9);
 const METADATA_REFRESH_ATTEMPTS = 5;
 const HANDLE_FADE_DURATION = 140;
-// Ignore bogus remote positions for this long after our own seek
+
 const SEEK_SETTLE_TIME = 10 * 1000000;
 
 Gio._promisify(Gio.File.prototype, 'read_async', 'read_finish');
@@ -45,7 +45,7 @@ class MediaProgressSlider extends Slider {
         this._handleOpacity = new St.Adjustment({ actor: this, lower: 0, upper: 1, value: 0 });
         this._handleOpacityChangedId = this._handleOpacity.connect(
             'notify::value', () => this.queue_repaint());
-        // Slider updates its handle radius after DrawingArea's style repaint.
+
         this.connect_after('style-changed', () => this.queue_repaint());
         this.connect('notify::hover', () => this._syncHandle());
         this.connect('notify::reactive', () => this._syncHandle());
@@ -81,7 +81,7 @@ class MediaProgressSlider extends Slider {
     }
 
     vfunc_repaint() {
-        // Paint the bar normally, then fade only the handle.
+
         BarLevel.prototype.vfunc_repaint.call(this);
         const opacity = this._handleOpacity?.value ?? 0;
         if (opacity === 0)
@@ -107,8 +107,8 @@ export class MediaItem extends MessageList.Message {
     constructor(player, requestRedraw) {
         super(player.source);
         this.add_style_class_name('media-message');
-        // Only the controls are clickable; the inherited message button must
-        // not compete with them for pointer presses.
+
+
         this.reactive = false;
         this.can_focus = false;
         this.track_hover = false;
@@ -206,7 +206,7 @@ export class MediaItem extends MessageList.Message {
             const stride = pixbuf.get_rowstride();
             const pixels = pixbuf.get_pixels();
             const radius = Math.min(6 * scale, width / 2, height / 2);
-            // Clip the image itself; a widget border radius does not clip children.
+
             for (let y = 0; y < Math.ceil(radius); y++) {
                 for (let x = 0; x < Math.ceil(radius); x++) {
                     const alpha = Math.max(0, Math.min(1,
@@ -243,8 +243,8 @@ export class MediaItem extends MessageList.Message {
         this.titleLabel.y_align = Clutter.ActorAlign.CENTER;
         this.titleLabel.set_position(0, 0);
 
-        // The marquee doubles the title inside this single label, so the
-        // loop wrap shows identical glyphs at identical positions.
+
+
         this._titleTrack = new St.Widget({ layout_manager: new Clutter.FixedLayout() });
         this._titleTrack.add_child(this.titleLabel);
         this._titleTrack.connect('notify::translation-x', () => this._requestRedraw());
@@ -288,7 +288,7 @@ export class MediaItem extends MessageList.Message {
         contentBox.insert_child_at_index(this._artistRow, index);
         this._soundWave.connect('notify::mapped', this._syncVisualizer.bind(this));
         this._soundWave.connect('style-changed', () => {
-            // St does not resolve currentColor for widget backgrounds.
+
             const color = this._soundWave.get_theme_node().get_foreground_color();
             const style = `background-color: rgba(${color.red}, ${color.green}, ${color.blue}, ${color.alpha / 255});`;
             for (const bar of this._soundWave.get_children()) {
@@ -307,7 +307,7 @@ export class MediaItem extends MessageList.Message {
         if (this._soundWaveTimerId)
             return;
 
-        // A compact playback indicator; transform the bars without relayout.
+
         const bars = this._soundWave.get_children();
         const levels = [0.3, 0.85, 0.5, 1, 0.65];
         let phase = 0;
@@ -428,8 +428,8 @@ export class MediaItem extends MessageList.Message {
         this._positionPending = true;
         const player = this._player;
         const request = this._positionRequest;
-        // Some players publish duration/capabilities late without notifying
-        // clients. Retry briefly using the existing progress timer.
+
+
         if (this._metadataRetries > 0 && (!(player.length > 0) || !player.canSeek)) {
             this._metadataRetries--;
             await player.refresh();
@@ -440,11 +440,11 @@ export class MediaItem extends MessageList.Message {
             return;
         if (!Number.isFinite(position) || position === this._lastRemotePosition)
             return;
-        // Players like Firefox report an uninitialized zero right after a
-        // seek; keep the locally tracked position instead.
+
+
         const justSeeked = GLib.get_monotonic_time() - this._lastSeekTime < SEEK_SETTLE_TIME;
-        // Firefox can keep returning zero even after confirming a non-zero
-        // seek. Its next Seeked signal or track change remains authoritative.
+
+
         if (position === 0 && this._lastRemotePosition > 0 &&
             player.busName.startsWith('org.mpris.MediaPlayer2.firefox.'))
             return;
@@ -468,14 +468,14 @@ export class MediaItem extends MessageList.Message {
                 return GLib.SOURCE_CONTINUE;
             });
         }
-        // The mapped notification fires before children are mapped, so
-        // defer the marquee start until the title track can animate.
+
+
         this._queueTitleScroll();
     }
 
-    // Players like Firefox report a stale Position, so advance the local
-    // position while playing and let the remote value correct it when it
-    // actually changes.
+
+
+
     _advancePosition() {
         const now = GLib.get_monotonic_time();
         const elapsed = this._tickTime ? now - this._tickTime : 0;
@@ -530,15 +530,15 @@ export class MediaItem extends MessageList.Message {
             if (!transition)
                 this._scrollTitleCycle(false);
         } else if (transition) {
-            // Removing a running ease transition releases Shell's animation
-            // bookkeeping; pausing its timeline would bypass that cleanup.
+
+
             this._titleTrack.remove_all_transitions();
         }
     }
 
-    // Endless marquee: the title is doubled inside one label and the track
-    // translates by exactly one period, so the wrap shows identical glyphs
-    // at identical positions.
+
+
+
     _scrollTitle() {
         if (!this.mapped || !this._titleViewport.has_allocation())
             return;
@@ -565,8 +565,8 @@ export class MediaItem extends MessageList.Message {
         this._scrollTitleWidth = titleWidth;
         this.titleLabel.text = this._marqueeText();
         const [, fullWidth] = this.titleLabel.get_preferred_width(-1);
-        // Run widths are additive in one Pango layout, so the difference
-        // is exactly the period of the repeated text.
+
+
         this._scrollDistance = fullWidth - titleWidth;
         this._scrollTitleCycle();
     }
@@ -597,9 +597,9 @@ export class MediaItem extends MessageList.Message {
         } finally {
             this._titleCycleStarting = false;
         }
-        // No transition means onComplete already ran synchronously (ease
-        // skips transitions for unmapped actors or disabled animations);
-        // stop instead of restarting in a loop.
+
+
+
         if (!this._titleTrack.get_transition('translation-x'))
             this._stopTitleScroll();
     }
@@ -608,8 +608,8 @@ export class MediaItem extends MessageList.Message {
         this._advancePosition();
         const trackArtists = this._player.trackArtists?.join(', ') ?? '';
         const title = (this._player.trackTitle ?? '').replace(/\n/g, ' ');
-        // Playback/capability updates must not rewrite the marquee text and
-        // invalidate the popup layout when the track information is unchanged.
+
+
         if (title !== this._titleText || trackArtists !== this._displayedArtists) {
             this.set({ title: this._player.trackTitle, body: trackArtists, icon: null });
             this._titleText = title;
@@ -798,21 +798,21 @@ class Player extends GObject.Object {
             return false;
         const length = Number.isFinite(this._length) && this._length > 0 ? this._length : null;
         const target = Math.round(length ? Math.min(length, Math.max(0, value)) : Math.max(0, value));
-        // Wait for an applied seek before reading the next relative offset,
-        // and discard targets superseded while a request was in flight.
+
+
         const pending = (this._seekPending ?? Promise.resolve()).then(async () => {
             if (!this.canSeek || proxy !== this._playerProxy || trackKey !== this.trackKey ||
                 request !== this._seekRequest)
                 return false;
             try {
                 if (this._trackId === WEBKIT_TRACK_ID) {
-                    // WebKit advertises SetPosition but rejects it, and its Seek
-                    // method interprets the argument as an absolute position.
+
+
                     await proxy.SeekAsync(target);
                 } else if (this._trackId && this._trackId !== '/org/mpris/MediaPlayer2/TrackList/NoTrack') {
                     await proxy.SetPositionAsync(this._trackId, target);
                 } else {
-                    // Players without a track id (e.g. Gapless) only support relative seeks.
+
                     const current = await this.position;
                     if (!Number.isFinite(current) || !this.canSeek || proxy !== this._playerProxy ||
                         trackKey !== this.trackKey || request !== this._seekRequest)
@@ -853,7 +853,7 @@ class Player extends GObject.Object {
             if (changed)
                 this._update();
         } catch {
-            // Keep the cached state when a player cannot refresh its properties.
+
         }
     }
 
@@ -866,7 +866,7 @@ class Player extends GObject.Object {
     get trackCoverUrl() { return this._trackCoverUrl; }
     get app() { return this._app; }
     get canControl() { return !!this._playerProxy && this._playerProxy.CanControl !== false; }
-    // WebKit advertises navigation unconditionally, even without page handlers.
+
     get canGoNext() { return this.canControl && this.trackKey !== null && this.trackId !== WEBKIT_TRACK_ID && !!this._playerProxy.CanGoNext; }
     get canGoPrevious() { return this.canControl && this.trackKey !== null && this.trackId !== WEBKIT_TRACK_ID && !!this._playerProxy.CanGoPrevious; }
     get status() { return this._playerProxy?.PlaybackStatus; }
@@ -886,11 +886,11 @@ class Player extends GObject.Object {
         const title = metadata['xesam:title']?.deepUnpack();
         const url = metadata['xesam:url']?.deepUnpack();
         const hasTrackDetails = !!title || !!url || (Number.isFinite(length) && length > 0);
-        // Decibels uses NoTrack for loaded audio. Only treat it as idle when
-        // neither the track details nor the playback state indicate media.
+
+
         const noTrack = trackId === '/org/mpris/MediaPlayer2/TrackList/NoTrack' &&
             !hasTrackDetails && this.status !== 'Playing' && this.status !== 'Paused';
-        // Gapless omits track ids and WebKit reuses one id for every track.
+
         const trackKey = noTrack ? null
             : JSON.stringify([trackId, url, title, metadata['xesam:artist']?.deepUnpack()]);
         if (this._trackKey !== trackKey)
@@ -963,7 +963,7 @@ class Player extends GObject.Object {
     isPlaying() { return this.status === 'Playing'; }
 
     _ready() {
-        // destroy() cancels pending proxy lookups, so they never arrive here
+
         if (!this._mprisProxy || !this._playerProxy)
             return;
 
@@ -1093,7 +1093,7 @@ export class Source extends GObject.Object {
 
         try {
             const [names] = await proxy.ListNamesAsync();
-            // stop(), or stop() and start() again, while the call was out
+
             if (this._proxy !== proxy)
                 return;
             for (const name of names) {

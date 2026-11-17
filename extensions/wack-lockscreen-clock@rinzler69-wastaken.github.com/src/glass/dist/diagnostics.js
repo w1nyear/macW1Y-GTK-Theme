@@ -10,16 +10,16 @@ import { setFrameSyncFrozen, isFrameSyncFrozen, setAdaptiveColorMode, getAdaptiv
 import { setDiffWritesEnabled, isDiffWritesEnabled, setWindowActorRescueMode, getWindowActorRescueMode, isActorValid } from './actors.js';
 import { diagnosticLog } from './logger.js';
 import { paintNodeWithContext, safeRegisterClass } from './shellVersion.js';
-// Every live glass registers here so its last frame can be inspected from
+
 // Looking Glass through global._lgGlass (installed by enable(), removed by
-// disable()).
+
 const _liveGlasses = new Set();
-// A rolling in-memory record of the application glasses, written to the
-// journal only when flushed. It exists for rare animation stalls: a capture
-// started after the stall is noticed misses the frames leading up to it, and
-// logging continuously from the compositor thread can stall the shell itself.
-// A sample is stored only when a window's line changes, and RING_MAX caps
-// the memory.
+
+
+
+
+
+
 const RING_MAX = 4000;
 const _ring = [];
 let _ringLast = new Map();
@@ -37,8 +37,8 @@ function _ringLine(glass) {
     if (!wa)
         return null;
     const mw = wa.get_meta_window();
-    // A stranded window has the glass, the window actor and the window group
-    // all waiting for an allocation, so the group's state is recorded too.
+
+
     const wg = wa.get_parent();
     const wgAllocated = wg?.has_allocation() ? 1 : 0;
     return `${glass._diagOwnerLabel || '?'}|sc=${wa.scale_x.toFixed(3)},${wa.scale_y.toFixed(3)}` +
@@ -71,11 +71,11 @@ function _ringSampleOnce() {
     }
 }
 
-// Whether the shell's own animation is still attached to the window actor.
-// A stall at a fixed scale/opacity looks the same from outside whether the
-// timeline is not being ticked (playing, progress stuck; `clock=NULL` when no
-// stage view reaches the actor), was stopped early (present, not playing), or
-// has already been removed (absent).
+
+
+
+
+
 function _dumpTransitions(wa, live) {
     for (const prop of ['opacity', 'scale-x']) {
         const tr = wa.get_transition(prop);
@@ -88,9 +88,9 @@ function _dumpTransitions(wa, live) {
     }
 }
 
-// The window actor around a window's glass, next to the glass's own row: a
-// frozen paint counter alone cannot tell minimised, unallocated and stuck
-// apart.
+
+
+
 function _dumpWindowState(glass) {
     const wa = glass.get_parent();
     if (!wa)
@@ -128,9 +128,9 @@ export function dumpGlassState() {
     return out;
 }
 
-// While the recorder is armed, flush it automatically the first few times a
-// window actor becomes stranded. Capped, because each flush writes to the
-// journal.
+
+
+
 let _autoCaptures = 0;
 const AUTO_CAPTURE_LIMIT = 6;
 
@@ -146,7 +146,7 @@ export function noteStrandEntry(label, detail) {
 }
 
 // The recorder is off unless armed through global._lgGlass.ring(true), and
-// its timer only exists while it is armed.
+
 let _ringArmed = false;
 let _ringSamplerEnabled = false;
 let _ringSamplerId = 0;
@@ -180,10 +180,10 @@ export function isGlassRingArmed() {
     return _ringArmed;
 }
 
-/**
- * Lets the sampler run whenever the recorder is armed. Pair with
- * stopGlassRingSampler() in disable().
- */
+
+
+
+
 export function startGlassRingSampler(intervalMs = 50) {
     _ringSamplerInterval = intervalMs;
     _ringSamplerEnabled = true;
@@ -195,7 +195,7 @@ export function stopGlassRingSampler() {
     setGlassRingArmed(false);
 }
 
-/** Writes the ring buffer out and clears it. */
+
 export function flushGlassRing() {
     if (!_ring.length) {
         diagnosticLog('[Liquid Glass][ring] empty');
@@ -208,8 +208,8 @@ export function flushGlassRing() {
         const ms = Math.round((parseInt(r.slice(0, sp), 10) - t0) / 1000);
         return `+${String(ms).padStart(6)}ms ${r.slice(sp + 1)}`;
     });
-    // Medium-sized chunks: journald truncates a very long message, and a flood
-    // of small ones can block the compositor thread.
+
+
     const CHUNK = 150;
     const total = Math.ceil(lines.length / CHUNK);
     diagnosticLog(`[Liquid Glass][ring] BEGIN ${lines.length} samples spanning ` +
@@ -232,7 +232,7 @@ function onOff(enabled) {
     return enabled ? 'ENABLED' : 'DISABLED';
 }
 
-// Applies a setter to every live glass and returns how many it reached.
+
 function onEveryGlass(apply) {
     for (const glass of _liveGlasses)
         apply(glass);
@@ -243,28 +243,28 @@ function createDebugApi() {
     return {
         count: () => _liveGlasses.size,
         dump: () => dumpGlassState(),
-        // 0 = normal, 1 = red where the shader computes the drop shadow and green
-        // where it computes the glass shape, 2 = raw values.
+
+
         debugView: (mode) => report(`debug_view = ${mode} on ${onEveryGlass(fx => fx.setDebugView(mode))} instance(s)`),
-        // Every tick of every per-frame sync loop does nothing while frozen, so
-        // the cost of the polling itself can be measured. The glass stops
-        // following anything that moves.
+
+
+
         freezeSync: (frozen) => {
             setFrameSyncFrozen(frozen);
             return report(`per-frame sync ${frozen ? 'FROZEN' : 'RUNNING'}`);
         },
         syncFrozen: () => isFrameSyncFrozen(),
-        // 'cross-fade' (default) dissolves through alpha so a white/black flip
-        // never sits at mid-grey; 'rgb-lerp' interpolates the channels.
+
+
         textColorMode: (mode) => {
             const m = mode === 'rgb-lerp' ? 'rgb-lerp' : 'cross-fade';
             setAdaptiveColorMode(m);
             return report(`adaptive text color mode = ${m}`);
         },
         textColorModeName: () => getAdaptiveColorMode(),
-        // 'two-stage' (default) asks the window group to relayout first and only
-        // then remaps the window actor; 'remap' goes straight to hide()/show();
-        // 'off' never touches the window actor.
+
+
+
         windowRescue: (mode) => {
             setWindowActorRescueMode(mode);
             return report(`window-actor rescue = ${getWindowActorRescueMode()}`);
@@ -276,15 +276,15 @@ function createDebugApi() {
         },
         ringArmed: () => isGlassRingArmed(),
         ringFlush: () => { flushGlassRing(); return 'flushed'; },
-        // Compare-then-write in the per-frame sync loops. Changes how often the
-        // stage is damaged, not what is drawn.
+
+
         diffWrites: (enabled) => {
             setDiffWritesEnabled(enabled);
             return report(`diff writes ${onOff(enabled)}`);
         },
         diffWritesEnabled: () => isDiffWritesEnabled(),
-        // The rect each glass is drawing with right now, straight from its
-        // uniforms, for per-frame tracking probes.
+
+
         geom: (owner) => {
             const out = [];
             const add = (glassOwner, u) => {
@@ -297,11 +297,11 @@ function createDebugApi() {
                 add(glass._owner, glass.uniformValues);
             return out;
         },
-        // The live glass actors themselves, for scripted checks.
+
         glassObjects: () => [..._liveGlasses],
-        // One journal line per second with what is on screen, every shown glass's
-        // work and the GPU's busy percentage (see startGlassMonitor()).
-        // 0 runs until monitorStop().
+
+
+
         monitor: (seconds = 30) => {
             startGlassMonitor(() => _liveGlasses, seconds);
             return report(`monitor running${seconds > 0 ? ` for ${seconds}s` : ''}; see journalctl -o cat | grep '\[monitor\]'`);
@@ -314,7 +314,7 @@ function createDebugApi() {
         monitorLabel: (label) => setGlassMonitorLabel(label),
         blurRect: (enabled) => report(`blur sub-rect ${onOff(enabled)} on ${onEveryGlass(fx => fx.setBlurRectEnabled(enabled))} instance(s)`),
         compositeRect: (enabled) => report(`composite sub-rect ${onOff(enabled)} on ${onEveryGlass(fx => fx.setCompositeRectEnabled(enabled))} instance(s)`),
-        // false = the plain four-tap pattern along the edge.
+
         edgeTaps: (enabled) => report(`edge footprint taps ${onOff(enabled)} on ${onEveryGlass(fx => fx.setEdgeTapsEnabled(enabled))} instance(s)`),
         earlyExit: (enabled) => report(`early exits ${onOff(enabled)} on ${onEveryGlass(fx => fx.setEarlyExitEnabled(enabled))} instance(s)`),
     };
@@ -326,7 +326,7 @@ export function installGlassDiagnostics() {
     startGlassRingSampler(50);
 }
 
-/** Called from disable(). */
+
 export function removeGlassDiagnostics() {
     stopGlassMonitor();
     stopGlassRingSampler();
@@ -345,10 +345,10 @@ const INTERVAL_MS = 100;
 const TICKS = 600;
 const KEYBINDING = 'dump-loop-keybinding';
 
-/**
- * An optional shortcut (enable-dump-shortcut, off by default) that writes the state of every glass to the journal
- * for a minute, for bug reports. Pressed again, it stops early.
- */
+
+
+
+
 export class DumpShortcut {
     _settings;
     _settingId = 0;
@@ -385,7 +385,7 @@ export class DumpShortcut {
         }
     }
 
-    // The accelerator as the user sees it, for the notifications.
+
     _label() {
         const accel = this._settings.get_strv(KEYBINDING)[0];
         if (!accel)
@@ -407,12 +407,12 @@ export class DumpShortcut {
             Main.notify('Liquid Glass', 'Diagnostic dump stopped');
             return;
         }
-        // The ring buffer holds the frames before the key press, which the loop that starts now cannot capture.
+
         flushGlassRing();
         const seconds = (TICKS * INTERVAL_MS) / 1000;
         const endsAt = new Date(Date.now() + seconds * 1000);
         const hhmmss = (d) => [d.getHours(), d.getMinutes(), d.getSeconds()].map(n => String(n).padStart(2, '0')).join(':');
-        // Marks where the capture starts in the journal.
+
         diagnosticLog(`[Liquid Glass][dump-loop] STARTED ${TICKS} ticks @ ${INTERVAL_MS}ms, ends ${hhmmss(endsAt)}`);
         Main.notify('Liquid Glass', `Diagnostic dump running ${seconds}s — ends at ${hhmmss(endsAt)} (${this._label()} to stop)`);
         let count = 0;
@@ -426,22 +426,22 @@ export class DumpShortcut {
     }
 }
 
-// A once-a-second journal line comparing the glass's work with the GPU's and
+
 // the shell's in a real session: global._lgGlass.monitor(). It has amdgpu's
-// busy percentage, shader clock and power (busy alone depends on the clock the
-// driver picked; an APU's power includes the CPU), the shell's CPU time, the
-// frames painted and how many redrew a whole monitor, a scene worked out from
-// what is on screen, and each glass's copies and paints. A benchmark can label
-// the lines. tools/perf/glass-monitor.sh averages them per scene or label.
+
+
+
+
+
 const SAMPLE_MS = 100;
 const REPORT_MS = 1000;
 const BUSY_DAMAGE = 10;
 const MAX_ACTIVE_WINDOWS = 4;
-// /proc reports CPU time in USER_HZ, which is 100 on every Linux architecture.
+
 const USER_HZ = 100;
-// Paints nothing; notes whether a frame redrew its whole monitor. Registered
-// on first use, so the type exists only once someone monitors. Offscreen
-// paints (clones, screenshots) have no redraw clip and are not counted.
+
+
+
 let _probeClass = null;
 
 function createProbe(rect) {
@@ -474,7 +474,7 @@ function displayName(owner) {
     return owner;
 }
 
-// Popups, tooltips and the like are not counted as windows.
+
 function isCountedWindow(window) {
     const type = window.get_window_type();
     return type === Meta.WindowType.NORMAL || type === Meta.WindowType.DIALOG || type === Meta.WindowType.MODAL_DIALOG;
@@ -485,8 +485,8 @@ function windowName(window) {
     return (name.split('.').pop() ?? name).toLowerCase().replace(/[^a-z0-9_-]/g, '') || '?';
 }
 
-// The glass shape in stage coordinates: the shader's rect scaled from the
-// shader's resolution onto the actor's box.
+
+
 function glassStageRect(actor, u) {
     const ext = actor.get_transformed_extents();
     const { x, y } = ext.origin;
@@ -497,7 +497,7 @@ function glassStageRect(actor, u) {
     const resH = u.get('resolution_y') ?? 0;
     const w = u.get('dock_w') ?? 0;
     const h = u.get('dock_h') ?? 0;
-    // Toggle mode draws regions and leaves the rect empty.
+
     if (!(resW >= 1) || !(resH >= 1) || !(w > 0) || !(h > 0))
         return [x, y, width, height].map(Math.round);
     const kx = width / resW;
@@ -522,12 +522,12 @@ class GlassMonitor {
     _busy = new Gauge();
     _clock = new Gauge();
     _power = new Gauge();
-    // The shell's CPU ticks at the last report, and as last read.
+
     _cpuTicks = null;
     _cpuTime = 0;
     _latestTicks = null;
     _latestTicksAt = 0;
-    // Cancels the file reads still in flight when the record stops.
+
     _cancellable = new Gio.Cancellable();
     _label = null;
     _labelChanged = false;
@@ -539,7 +539,7 @@ class GlassMonitor {
     _locked = false;
     _workspaceSwitched = false;
     _last = new Map();
-    // Per-second totals for the summary.
+
     _totals = { seconds: 0, gpu: 0, power: 0, cpu: 0, frames: 0, full: 0 };
 
     constructor(_sources, _duration) {
@@ -551,7 +551,7 @@ class GlassMonitor {
         this._sensors = findGpuSensors();
         for (const m of Main.layoutManager.monitors) {
             const probe = createProbe([m.x, m.y, m.width, m.height]);
-            // Painted last, after everything that can redraw.
+
             global.stage.add_child(probe);
             this._probes.push(probe);
         }
@@ -577,7 +577,7 @@ class GlassMonitor {
             `gpu sensors: ${[...this._sensors.busy, ...this._sensors.clock, ...this._sensors.power].join(', ') || 'none'}`);
     }
 
-    // Lines from the next whole second on carry the label.
+
     setLabel(label) {
         const clean = label ? label.replace(/[^\w./-]/g, '') || null : null;
         if (clean === this._label)
@@ -631,8 +631,8 @@ class GlassMonitor {
             this._fullscreen ||= global.display.get_monitor_in_fullscreen(i);
     }
 
-    // The GPU sensors and the shell's CPU time, read without blocking the
-    // compositor.
+
+
     async _readCounters() {
         const cancellable = this._cancellable;
         const [busy, hz, microwatts, ticks] = await Promise.all([
@@ -673,7 +673,7 @@ class GlassMonitor {
             track.rect = rect;
             track.look = look;
         }
-        // A destroyed window actor took its handler with it.
+
         for (const actor of this._windows.keys()) {
             if (!seen.has(actor))
                 this._windows.delete(actor);
@@ -716,8 +716,8 @@ class GlassMonitor {
             this._last.set(glass, this._counters(glass));
     }
 
-    // Kept as the scene's first field, which tools/perf/glass-monitor.sh groups
-    // the summary by.
+
+
     _mode() {
         return this._glass.size > 0 ? 'stage' : 'no-glass';
     }
@@ -739,7 +739,7 @@ class GlassMonitor {
         return names.length ? names.join(' ') : 'no glass';
     }
 
-    // The glass a window overlaps, leaving out its own window glass.
+
     _behind(actor, rect) {
         const names = new Set();
         for (const track of this._glass.values()) {
@@ -781,10 +781,10 @@ class GlassMonitor {
         return `${shown} win${listed.length ? `: ${listed.join(', ')}` : ''}`;
     }
 
-    // Whether there is glass at all; the glass on screen (~ when it moved); the
-    // windows shown and the busy (damaged BUSY_DAMAGE times), moving or
-    // animating ones, with @ for each glass they overlap; then overview,
-    // ws-switch, fullscreen and locked.
+
+
+
+
     _scene() {
         const parts = [this._mode(), this._glassScene(), this._windowScene()];
         if (this._overview)
@@ -851,7 +851,7 @@ class GlassMonitor {
         this._workspaceSwitched = false;
     }
 
-    // The shell's CPU time since the last report, as a percentage of one core.
+
     _cpuPercent() {
         const ticks = this._latestTicks;
         const at = this._latestTicksAt;
@@ -905,7 +905,7 @@ function listDir(path) {
     return names;
 }
 
-// amdgpu's busy percentage, and its hwmon shader clock and power, per card.
+
 function findGpuSensors() {
     const sensors = { busy: [], clock: [], power: [] };
     const exists = (file) => GLib.file_test(file, GLib.FileTest.EXISTS);
@@ -946,8 +946,8 @@ async function readSum(files, cancellable) {
     return result;
 }
 
-// load_contents_finish() throws a GError when the file cannot be read or the
-// read was cancelled.
+
+
 function readText(path, cancellable) {
     return new Promise(resolve => {
         const file = Gio.File.new_for_path(path);
@@ -963,8 +963,8 @@ function readText(path, cancellable) {
     });
 }
 
-// utime + stime of the whole process; the command name before them is in
-// parentheses and may contain spaces.
+
+
 async function readProcessTicks(cancellable) {
     const stat = await readText('/proc/self/stat', cancellable);
     if (!stat)
@@ -984,7 +984,7 @@ async function readNumber(file, cancellable) {
 
 let _monitor = null;
 
-/** Starts the record for `seconds` (0: until stopped), replacing a running one. */
+
 export function startGlassMonitor(sources, seconds) {
     stopGlassMonitor();
     _monitor = new GlassMonitor(sources, Math.max(0, Math.floor(seconds)));
@@ -996,7 +996,7 @@ export function stopGlassMonitor() {
     _monitor = null;
 }
 
-/** Labels the running record's lines (a benchmark's scenario); null clears it. */
+
 export function setGlassMonitorLabel(label) {
     _monitor?.setLabel(label);
 }

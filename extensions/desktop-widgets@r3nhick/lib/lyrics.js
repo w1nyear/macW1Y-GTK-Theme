@@ -1,27 +1,27 @@
-// Lyrics resolver for the music widget's lyrics overlay.
-//
-// Chain, in order:
-//   1. local .lrc next to the track file (xesam:url is file://),
-//   2. cached result from a previous lookup (data dir /lyrics),
-//   3. lrclib.net (free, keyless) — synced LRC or plain text,
-//   4. the video's own YouTube captions, streamed through a local
-//      yt-dlp when installed (direct anonymous downloads are walled
-//      upstream; the direct timedtext crawl stays as the fallback),
-//   5. nothing on any failure — the overlay stays on the folder art.
+
+
+
+
+
+
+
+
+
+
 
 import Soup from 'gi://Soup?version=3.0';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
-// Shared keyless session, the same pattern the github widget uses. Timeouts
-// keep a dead-network lookup from pinning the shell; look up happens off the
-// paint path and its result arrives when it arrives.
+
+
+
 let sharedSession = null;
 function getSession() {
 	if (!sharedSession) {
-		// NOTE: Soup 3 has no io_timeout — unknown constructor properties
-		// throw, which (before the fix) silently killed the whole lyrics
-		// chain right after the request started.
+
+
+
 		sharedSession = new Soup.Session({
 			user_agent: 'desktop-widgets@r3nhick',
 			timeout: 6,
@@ -30,24 +30,24 @@ function getSession() {
 	return sharedSession;
 };
 
-// ── LRC parsing ────────────────────────────────────────────────────────────
 
-// "[mm:ss.xx] line" and multi-stamped "…[mm:ss.xx][mm:ss.yy] …"; metadata
-// tags ([ar:], [ti:], [by:]...) hold letters and fall through the digits-only
-// pattern. [offset:±N] shifts all timestamps by N milliseconds (some editors
-// bake this in, others leave it for runtime). Returned sorted by time.
+
+
+
+
+
 export function parseLrc(text) {
 	const lines = [];
 	const pattern = /\[(\d+):(\d+(?:\.\d+)?)\]/g;
 	const offsetPattern = /\[offset:\s*([+-]?\d+)\]/i;
 	let offsetSeconds = 0;
 
-	// same "[mm:ss.xx] line" and multi-stamp LRC lines
+
 	for (const raw of String(text ?? '').split(/\r\n|\r|\n/)) {
-		// Check for [offset:±milliseconds] metadata tag
+
 		const offsetMatch = raw.match(offsetPattern);
 		if (offsetMatch) {
-			offsetSeconds = Number(offsetMatch[1]) / 1000;  // ms → seconds
+			offsetSeconds = Number(offsetMatch[1]) / 1000;
 			continue;
 		};
 
@@ -60,9 +60,9 @@ export function parseLrc(text) {
 		};
 
 		const content = raw.replace(pattern, '').trim();
-		// Empty stamped lines ARE kept: they mark instrumental stretches,
-		// rendered as breathing pause dots the way isle@zickrian's lyrics
-		// pane does (a full-stop skip would glue sung lines together).
+
+
+
 		if (!stamp) continue;
 
 		for (const time of stamp)
@@ -73,7 +73,7 @@ export function parseLrc(text) {
 	return lines;
 };
 
-// Synced take: index = the last stamped line at or before `positionUs`.
+
 export function lineIndexAt(lines, positionUs) {
 	if (!lines || lines.length === 0) return -1;
 	const seconds = (Number(positionUs) || 0) / 1e6;
@@ -92,18 +92,18 @@ export function lineIndexAt(lines, positionUs) {
 	return found;
 };
 
-// ── Streaming-title cleanup (YouTube browser players etc.) ─────────────────
+
 
 const JUNK_PATTERNS = [
-	// "(Official Music Video)", "[Lyrics]", "(HD)", "(MV)", "(2024 Mix)"...
+
 	/\((?:[^()]*(?:official|video|audio|lyrics|music video|hd|hq|visualizer|instrumental|remaster|mv|4k|store full)[^()]*)\)/gi,
 	/\[(?:[^\[\]]*(?:official|video|audio|lyrics|hd|hq|visualizer|instrumental|mv|4k|full)[^\[\]]*)\]/gi,
 ];
 
-// Turns "Artist - Song (Official Video)" into {artist: "Artist",
-// title: "Song"}. When the player supplies no artist (browsers), the dash
-// split supplies both; with a real artist a dash inside the title is usually
-// meaningful, so it stays.
+
+
+
+
 export function cleanTrackQuery(title, artist) {
 	let t = String(title ?? '').trim();
 	let a = String(artist ?? '').trim();
@@ -125,28 +125,28 @@ export function cleanTrackQuery(title, artist) {
 	return {artist: a || null, title: t || null};
 };
 
-// ── Resolver ───────────────────────────────────────────────────────────────
 
-// 10-minute negative cache: known misses skip the network entirely (a
-// mix/track without lyrics at the source would otherwise hit the busy API
-// again on every overlay open).
+
+
+
+
 const MISS_TTL_MS = 10 * 60 * 1000;
 const missCache = new Map();
 
-// ── YouTube captions lane (dormant behind the upstream wall) ───────────────
-// Walks search -> watch page -> captionTracks -> timedtext. Every step is
-// probe-logged; any wall (downloads currently empty for anonymous clients)
-// resolves null and the chain just misses.
 
-// Safari/macW1Y persona — the same signature the VISIONOS player client
-// declares; captions unlock only for this coherent session.
+
+
+
+
+
+
 const YT_UA = 'Mozilla/5.0 (Macintosh; Intel macW1Y X 15_7_3) macW1YWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15';
 let ytSession = null;
 
 function getYtSession() {
 	if (!ytSession) {
-		// A cookie jar keeps the contact realistic; upstream may still gate
-		// the timedtext download — the lane stays dormant until allowed.
+
+
 		ytSession = new Soup.Session({user_agent: YT_UA, timeout: 8});
 		ytSession.add_feature(new Soup.CookieJar({
 			read_only: false,
@@ -256,9 +256,9 @@ async function searchYouTubeVideoId(title, artist, durationSeconds) {
 		return null;
 	};
 
-	// The captions of "the same song" cannot run 40+ minutes when the
-	// track is 1:09 (or vice versa): reject a video whose own length
-	// disagrees with the player's, both known, by more than 10 s.
+
+
+
 	const bestSeconds = lengthTextToSeconds(best.video.lengthText?.simpleText ?? null);
 	if (durationSeconds > 0 && bestSeconds > 0 && Math.abs(bestSeconds - durationSeconds) > 10) {
 		return null;
@@ -313,10 +313,10 @@ function json3ToLines(raw) {
 	return lines.length > 0 ? lines : null;
 };
 
-// Shared caption-text cleanup: strip ASR noise tokens ([music],
-// [applause]) and speaker-turn marks so the feed carries real speech.
-// srv1 rows sometimes arrive double-encoded ("&amp;gt;"), so decode
-// runs twice before the pattern sweep.
+
+
+
+
 function cleanCaptionText(text) {
 	let out = decodeEntities(String(text));
 	out = decodeEntities(out);
@@ -345,7 +345,7 @@ function xml3ToLines(raw) {
 	return lines.length > 0 ? lines : null;
 };
 
-// Synthetic LRC so a cached payload re-uses the regular parser everywhere.
+
 function linesToLrcText(lines) {
 	return lines.map((entry) => {
 		const total = Math.max(0, Number(entry.time) || 0);
@@ -355,15 +355,15 @@ function linesToLrcText(lines) {
 	}).join('\n');
 };
 
-// ── YouTube captions, pure keyless flow ────────────────────────────
-// One coherent "device" session unlocks everything (verified live):
-// the watch page (Safari/macW1Y UA) hands out visitorData, the VISIONOS
-// player client (RealityDevice) accepts it with playability OK, and the
-// caption baseUrl then serves real timedtext to that same UA. Chrome
-// contexts and visitor-less calls stay walled with empty bodies.
+
+
+
+
+
+
 async function fetchYouTubeCaptionLines(videoId) {
-	// Step 1 — the watch page in the same "device" persona; its
-	// INNERTUBE visitorData is what makes the player call accepted.
+
+
 	const pageBytes = await ytRequest('GET', `https://www.youtube.com/watch?v=${videoId}&hl=en`);
 	if (!pageBytes) {
 		return null;
@@ -376,8 +376,8 @@ async function fetchYouTubeCaptionLines(videoId) {
 		return null;
 	};
 
-	// Step 2 — VISIONOS player client (RealityDevice). Chrome contexts
-	// and visitor-less calls get UNPLAYABLE/LOGIN_REQUIRED here.
+
+
 	const payload = JSON.stringify({
 		videoId,
 		context: {client: {
@@ -413,11 +413,11 @@ async function fetchYouTubeCaptionLines(videoId) {
 		return null;
 	};
 
-	// Show the caption YouTube itself opens by default — the media's own
-	// language (a Russian video must not drift into English auto-subs the
-	// user never asked for). Priority: an explicit default index, then the
-	// first entry of the audio track's caption ordering, then the first
-	// ASR/manual track, then plain tracks[0].
+
+
+
+
+
 	const renderer = player?.captions?.playerCaptionsTracklistRenderer ?? {};
 	const audioTracks = renderer.audioTracks ?? [];
 	const defaultIdx = audioTracks.find(audio => typeof audio?.defaultCaptionTrackIndex === 'number')
@@ -431,8 +431,8 @@ async function fetchYouTubeCaptionLines(videoId) {
 		?? tracks.find(entry => !entry.kind)
 		?? tracks[0];
 
-	// Step 3 — the same-UA download of the timedtext itself; the session
-	// cookie jar carries the consent state from step 1.
+
+
 	const captionBytes = await ytRequest('GET', track.baseUrl);
 	const captionRaw = captionBytes ? new TextDecoder().decode(captionBytes.get_data()) : '';
 
@@ -457,11 +457,11 @@ function lyricsCachePath(dir, artist, title) {
 	return GLib.build_filenamev([dir, `${hash.toString(36)}.json`]);
 };
 
-// Cache generation: the pick rules changed (exact endpoint + look gate),
-// Cache generation: the pick rules changed twice (exact endpoint + look
-// gate, then the artist-required attempt list) — every pre-gate entry is
-// ignored once. A previously cached wrong song's lyrics ("СПАСАТЕЛЬНЫЙ
-// КРУГ" won the bare "face" attempt) would otherwise keep showing forever.
+
+
+
+
+
 const CACHE_GATE = 3;
 
 function loadCached(dir, artist, title) {
@@ -495,7 +495,7 @@ function saveCached(dir, artist, title, payload) {
 			(_f, res) => { try { _f.replace_contents_finish(res); } catch (_e) {} },
 		);
 	} catch (_e) {
-		// Cache is best-effort only.
+
 	};
 };
 
@@ -513,8 +513,8 @@ function localLrcPath(trackUrl) {
 	};
 };
 
-// Brackets in stream titles are almost always decorative junk absent from
-// the indexed song name ("… (outsider house)", "[NCS Release]").
+
+
 function stripAllBrackets(title) {
 	return String(title ?? '')
 		.replace(/\([^()]*\)|\[[^\[\]]*\]|\{[^{}]*\}/g, ' ')
@@ -522,11 +522,11 @@ function stripAllBrackets(title) {
 		.trim();
 };
 
-// ── Match-shape helpers: never hand the overlay a lookalike ────────────────
-// LRCLIB's free-text search is a fuzz engine — a totally unrelated track
-// with synced lyrics ("Мне не надо друзей…" picked for a phonk remix) can
-// outscore nothing at all. These helpers score how much a candidate's OWN
-// names resemble the query that was sent.
+
+
+
+
+
 function normalizedKey(text) {
 	return String(text ?? '')
 		.replace(/\([^()]*\)|\[[^\[\]]*\]|\{[^{}]*\}/g, ' ')
@@ -539,13 +539,13 @@ function nameTokens(text) {
 	return normalizedKey(text).split(/\s+/).filter(Boolean);
 };
 
-// A candidate passes only when the query genuinely lives inside its names:
-// ≥60% of the attempt's title tokens (substring level, inflection-tolerant)
-// in the candidate's track name, most of the attempt's artist tokens in the
-// candidate's artist name, and — where both sides know it — a duration that
-// can actually be the same recording (file players report a real length; a
-// wrong song almost never lands within ±10 s even for a slowed mix of the
-// same track).
+
+
+
+
+
+
+
 function queryFits(entry, attempt, durationSeconds) {
 	const candTrack = normalizedKey(entry.trackName);
 	const candArtist = normalizedKey(entry.artistName);
@@ -572,13 +572,13 @@ function queryFits(entry, attempt, durationSeconds) {
 	return true;
 };
 
-// Ordered query attempts for a track. LRCLIB's search matches properly
-// indexed names well but fogs through complete file-fallback titles
-// ("face - vlone remix by salem slut"), so the list walks from the
-// canonical (tagged artist + cleaned title) to the dash parse (filename
-// shape: first segment is the artist). Raw strings became {artist, title}
-// pairs so each attempt knows what it claims to be — the match gate reads
-// both fields.
+
+
+
+
+
+
+
 function queryAttempts(query) {
 	const attempts = [];
 	const push = (candidate) => {
@@ -591,28 +591,28 @@ function queryAttempts(query) {
 
 	const plainTitle = stripAllBrackets(query.title);
 	push({artist: query.artist, title: plainTitle});
-	// A tagged file never drops its artist: an artist-less attempt for
-	// "Jeqaly — face…" degenerated into the bare "face" attempt and the
-	// Russian rapper FACE won it (name collision + synced lyrics + a
-	// perfect same-length match). Untagged (browser/stream) tracks keep
-	// the artist-less variants.
+
+
+
+
+
 	if (!query.artist)
 		push({artist: null, title: plainTitle});
 
 	const dash = query.title.split(/\s+[-–—]\s+/).map(part => stripAllBrackets(part).trim()).filter(Boolean);
 	if (dash.length >= 2) {
 		push({artist: dash[0], title: dash.slice(1).join(' - ')});
-		// Never a bare dash-FIRST segment as a title attempt: it is the
-		// artist by construction (and collides with real track names).
+
+
 		push({artist: null, title: dash.slice(1).join(' - ')});
 	};
 
 	return attempts;
 };
 
-// LRCLIB's exact-match endpoint: authoritative for properly tagged files
-// (tagged artist + exact title). A 404 here just continues the chain —
-// unlike the fuzzy search, whatever this endpoint returns IS the song.
+
+
+
 async function getExactLyrics(attempt) {
 	const url = `https://lrclib.net/api/get`
 		+ `?artist_name=${encodeURIComponent(attempt.artist)}`
@@ -651,13 +651,13 @@ async function getExactLyrics(attempt) {
 
 async function fetchLyricsHttp(query, durationSeconds) {
 	for (const attempt of queryAttempts(query)) {
-		// Exact first — a tagged file should never even reach the fuzzy
-		// search (the exact endpoint cannot return a different song).
-		// Needs a real artist: ?artist_name=null once looked like a query.
+
+
+
 		const exact = attempt.artist ? await getExactLyrics(attempt) : null;
 		if (exact) {
-			// The exact endpoint matched artist+title, but the duration the
-			// player reports still has to be plausibly the same recording.
+
+
 			const exactDur = Number(exact.duration) || 0;
 			const durationOk = !(durationSeconds > 0 && exactDur > 0)
 				|| Math.abs(exactDur - durationSeconds) <= 10;
@@ -670,8 +670,8 @@ async function fetchLyricsHttp(query, durationSeconds) {
 		const q = [attempt.title, attempt.artist].filter(Boolean).join(' ');
 		const url = `https://lrclib.net/api/search?q=${encodeURIComponent(q)}`;
 
-		// Per-attempt scope: a dead attempt continues the chain, the loop
-		// itself may not fail wholesale.
+
+
 		for (let tryIndex = 0; tryIndex < 2; tryIndex += 1) {
 			const message = Soup.Message.new('GET', url);
 			if (!message) {
@@ -698,8 +698,8 @@ async function fetchLyricsHttp(query, durationSeconds) {
 			};
 
 			if (message.get_status() !== Soup.Status.OK) {
-				// The API self-reports overload (503 busy) — one cautious
-				// retry of the same query before moving on.
+
+
 				if (message.get_status() === 503 && tryIndex === 0) {
 					// eslint-disable-next-line no-await-in-loop
 					await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1200, () => {
@@ -723,9 +723,9 @@ async function fetchLyricsHttp(query, durationSeconds) {
 				break;
 			};
 
-			// Synced LRC beats plain text; then text affinity to this
-			// attempt's words; duration drift as the tie-breaker. The look
-			// gate afterwards is what keeps a synced stranger out.
+
+
+
 			const qWords = q.toLowerCase().split(/\s+/).filter(Boolean);
 			const usable = parsed.filter(entry => entry
 				&& ((entry.syncedLyrics && entry.syncedLyrics.trim())
@@ -760,14 +760,14 @@ async function fetchLyricsHttp(query, durationSeconds) {
 	return null;
 };
 
-// Resolves lyrics for the current track. Returns null when nothing exists.
-// @param {object} opts
-// @param {string|null} opts.artist
-// @param {string|null} opts.title
-// @param {number} [opts.durationUs] MPRIS length in microseconds
-// @param {string|null} [opts.trackUrl] xesam:url (file:// enables the
-//     local-lrc lane, http addresses from streaming players are ignored there)
-// @param {string} opts.dir  cache directory (e.g. getDataDir('lyrics'))
+
+
+
+
+
+
+
+
 export async function resolveLyrics({artist, title, durationUs = 0, trackUrl = null, dir = null}) {
 	if (!title || !dir) return null;
 
@@ -796,19 +796,19 @@ export async function resolveLyrics({artist, title, durationUs = 0, trackUrl = n
 		};
 	};
 
-	// A placeholder track line (tagless playlist row: "Unknown title")
-	// resolves nothing — every fuzzy lane over it is a coin toss, and the
-	// YouTube lane once handed such a row 4 lines of a random video's
-	// captions. The local .lrc above stays reachable: it keys on the file,
-	// not on the missing tag.
+
+
+
+
+
 	if (/^(?:unknown (?:title|track)|untitled|title unknown|track unknown|no title)$/i.test(query.title)) {
 		return null;
 	};
 
 	const cached = await loadCached(dir, query.artist, query.title);
 	if (cached && typeof cached.linesAsText === 'string' && cached.linesAsText.trim()) {
-		// YouTube entries without an explicit lang tag are stale
-		// (from the en-first rule before 09a073c); ignore them once.
+
+
 		const isStaleYt = cached.source === 'youtube' && !cached.lang;
 
 		if (!isStaleYt) {
@@ -818,7 +818,7 @@ export async function resolveLyrics({artist, title, durationUs = 0, trackUrl = n
 				if (lines.length > 0) {
 					return {synced: true, query, lines};
 				};
-				// Unparseable cached LRC — fall through and refresh from network.
+
 			} else {
 				const plain = cached.linesAsText.split(/\r\n|\r|\n/).filter(Boolean);
 				if (plain.length > 0) {
@@ -837,8 +837,8 @@ export async function resolveLyrics({artist, title, durationUs = 0, trackUrl = n
 	const hit = await fetchLyricsHttp(query, durationSeconds);
 
 	if (!hit) {
-		// Last lane: the video's own captions. Local files skip it —
-		// searching a streaming platform for an owned file would be wrong.
+
+
 		if (!(trackUrl ?? '').startsWith('file://')) {
 			const videoId = await searchYouTubeVideoId(query.title, query.artist, durationSeconds);
 

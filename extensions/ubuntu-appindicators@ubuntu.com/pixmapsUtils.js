@@ -1,18 +1,18 @@
-// This file is part of the AppIndicator/KStatusNotifierItem GNOME Shell extension
-//
-// This program is free software; you can redistribute it and/or
+
+
+
 // modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
+
 // of the License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+
+
+
+
 // GNU General Public License for more details.
-//
+
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+
 
 export function argbToRgba(src) {
     const dest = new Uint8Array(src.length);
@@ -20,10 +20,10 @@ export function argbToRgba(src) {
     for (let j = 0; j < src.length; j += 4) {
         const srcAlpha = src[j];
 
-        dest[j] = src[j + 1]; /* red */
-        dest[j + 1] = src[j + 2]; /* green */
-        dest[j + 2] = src[j + 3]; /* blue */
-        dest[j + 3] = srcAlpha; /* alpha */
+        dest[j] = src[j + 1];
+        dest[j + 1] = src[j + 2];
+        dest[j + 2] = src[j + 3];
+        dest[j + 3] = srcAlpha;
     }
 
     return dest;
@@ -54,7 +54,7 @@ export function getBestPixmap(pixmapsVariant, preferredSize) {
             return areaA - areaB;
         });
 
-    // we prefer any pixmap that is equal or bigger than our requested size
+
     const qualifiedIconPixmapArray = sortedIconPixmapArray.filter(({width, height}) =>
         width >= preferredSize && height >= preferredSize);
 
@@ -62,7 +62,7 @@ export function getBestPixmap(pixmapsVariant, preferredSize) {
         ? qualifiedIconPixmapArray[0] : sortedIconPixmapArray.pop();
 
     const pixmapVariant = pixmapsVariantsArray[index].get_child_value(2);
-    const rowStride = width * 4; // hopefully this is correct
+    const rowStride = width * 4;
 
     return {pixmapVariant, width, height, rowStride};
 }

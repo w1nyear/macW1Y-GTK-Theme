@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Tahoe Edit Controls menu: opens when the "Edit Controls" pill is clicked
-// instead of Settings. 1:1 with macW1Y Tahoe:
-//   left sidebar (search + category list), right pane (section headers +
-//   control tiles), footer (hint + blue "Done" button).
-// Drag a tile into the Control Center to add it; drag CC elements to
-// reorder; "−" badge removes; click cycles size (small/large).
+
+
+
+
+
+
 
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
@@ -18,23 +18,23 @@ const MENU_W = 660;
 const MENU_H = 700;
 const SIDEBAR_W = 200;
 const FOOTER_H = 52;
-const TILE_R = 31;           // tile circle radius
+const TILE_R = 31;
 const TILE_ICON = 22;
 const SECT_GAP = 18;
 
-let _menu = null;            // {overlay, win, sidebar, content, footer, ...}
-let _onDone = null;          // callback when Done is pressed
-let _catalog = null;         // array of control defs (set by QS)
+let _menu = null;
+let _onDone = null;
+let _catalog = null;
 
-// ── catalog ──────────────────────────────────────────────────────────
-// Each control: {id, title, icon, gicon?, category, size}
-// size = current default size in CC ('small'|'half'|'wide')
+
+
+
 export function setCatalog(items) {
     _catalog = items;
 }
 
 function _categories() {
-    // sidebar categories, order matches macW1Y Tahoe reference
+
     return [
         {id: 'all', title: 'All Controls', icon: 'view-grid-symbolic', color: '#8e8e93'},
         {id: 'battery', title: 'Battery', icon: 'battery-symbolic', color: '#30d158'},
@@ -56,7 +56,7 @@ function _categories() {
     ];
 }
 
-// ── helpers ──────────────────────────────────────────────────────────
+
 function _gicon(name) {
     try {
         return Gio.Icon.new_for_string(name);
@@ -66,7 +66,7 @@ function _gicon(name) {
 }
 
 function _makeTile(ctrl) {
-    // circle tile with icon + label below (macW1Y Tahoe edit menu tile)
+
     const wrap = new St.BoxLayout({vertical: true, x_expand: false,
         y_expand: false, style_class: 'tahoe-qse-tile-wrap'});
     const circle = new St.Bin({
@@ -95,7 +95,7 @@ function _makeTile(ctrl) {
         label.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         label.clutter_text.line_wrap = true;
         label.clutter_text.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
-    } catch (_) { /* no text */ }
+    } catch (_) {   }
     wrap.add_child(label);
     wrap._ctrl = ctrl;
     wrap._circle = circle;
@@ -110,7 +110,7 @@ function _makeSection(title, controls) {
         sect.add_child(h);
     }
     const grid = new St.BoxLayout({x_expand: true, style_class: 'tahoe-qse-grid'});
-    // pack tiles into rows of 3
+
     let row = new St.BoxLayout({x_expand: true, style_class: 'tahoe-qse-grid-row'});
     let col = 0;
     for (const c of controls) {
@@ -129,12 +129,12 @@ function _makeSection(title, controls) {
     return sect;
 }
 
-// ── sidebar ──────────────────────────────────────────────────────────
+
 function _buildSidebar() {
     const sb = new St.BoxLayout({vertical: true, x_expand: false, y_expand: true,
         style_class: 'tahoe-qse-sidebar', width: SIDEBAR_W});
 
-    // search entry
+
     const searchBox = new St.BoxLayout({x_expand: true, style_class: 'tahoe-qse-search-box'});
     const searchIcon = new St.Icon({icon_name: 'system-search-symbolic', icon_size: 14,
         y_align: Clutter.ActorAlign.CENTER, style_class: 'tahoe-qse-search-icon'});
@@ -144,19 +144,19 @@ function _buildSidebar() {
     searchBox.add_child(searchText);
     sb.add_child(searchBox);
 
-    // category list
+
     const cats = _categories();
     for (let i = 0; i < cats.length; i++) {
         const cat = cats[i];
         const row = new St.BoxLayout({x_expand: true, reactive: true, can_focus: true,
             style_class: 'tahoe-qse-cat-row' + (i === 0 ? ' selected' : '')});
-        // colored square icon
+
         const sq = new St.Bin({style_class: 'tahoe-qse-cat-sq',
             width: 22, height: 22, x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER});
         try {
             sq.set_style(`background-color: ${cat.color}; border-radius: 5px;`);
-        } catch (_) { /* css */ }
+        } catch (_) {   }
         const sqIcon = new St.Icon({icon_name: cat.icon, icon_size: 13,
             style_class: 'tahoe-qse-cat-icon'});
         sq.set_child(sqIcon);
@@ -171,7 +171,7 @@ function _buildSidebar() {
     return sb;
 }
 
-// ── content pane ─────────────────────────────────────────────────────
+
 function _buildContent() {
     const scroll = new St.ScrollView({style_class: 'tahoe-qse-scroll',
         style: '-st-vfade-offset: 36px;',
@@ -180,28 +180,28 @@ function _buildContent() {
         style_class: 'tahoe-qse-content'});
     scroll.set_child(content);
 
-    // group catalog controls by category into sections
+
     const cats = _categories().filter(c => c.id !== 'all');
     const byCat = {};
     for (const c of (_catalog ?? [])) {
         const k = c.category || 'other';
         (byCat[k] = byCat[k] ?? []).push(c);
     }
-    // show sections for categories that have controls
+
     for (const cat of cats) {
         const items = byCat[cat.id];
         if (!items?.length)
             continue;
         content.add_child(_makeSection(cat.title, items));
     }
-    // uncategorized bucket
+
     if (byCat.other?.length)
         content.add_child(_makeSection(null, byCat.other));
 
     return {scroll, content};
 }
 
-// ── footer ───────────────────────────────────────────────────────────
+
 function _buildFooter() {
     const f = new St.BoxLayout({x_expand: true, height: FOOTER_H,
         style_class: 'tahoe-qse-footer'});
@@ -221,7 +221,7 @@ function _buildFooter() {
     return {f, done};
 }
 
-// ── open / close ─────────────────────────────────────────────────────
+
 export function openEditMenu(catalog, onDone) {
     if (_menu)
         closeEditMenu();
@@ -229,7 +229,7 @@ export function openEditMenu(catalog, onDone) {
     _onDone = onDone;
 
     const monitor = Main.layoutManager.primaryMonitor;
-    const ccX = monitor.x + monitor.width - 320 - 12;   // CC panel x
+    const ccX = monitor.x + monitor.width - 320 - 12;
     const x = ccX - MENU_W - 16;
     const y = monitor.y + (monitor.height - MENU_H) / 2;
 
@@ -253,12 +253,12 @@ export function openEditMenu(catalog, onDone) {
         return Clutter.EVENT_PROPAGATE;
     });
 
-    // window
+
     const win = new St.BoxLayout({vertical: true, x_expand: false, y_expand: false,
         style_class: 'tahoe-qse-win', width: MENU_W, height: MENU_H});
     win.set_position(x - monitor.x, y - monitor.y);
 
-    // body: sidebar + content
+
     const body = new St.BoxLayout({x_expand: true, y_expand: true});
     const sidebar = _buildSidebar();
     const {scroll, content} = _buildContent();
@@ -266,16 +266,16 @@ export function openEditMenu(catalog, onDone) {
     body.add_child(scroll);
     win.add_child(body);
 
-    // footer
+
     const {f: footer, done} = _buildFooter();
     win.add_child(footer);
 
     overlay.add_child(win);
 
-    // Done → close menu (keep CC open in normal mode)
+
     done.connect('clicked', () => closeEditMenu());
 
-    // drag start on tiles: button-press on a tile → begin drag
+
     content.connect('button-press-event', (actor, ev) => {
         let target = ev.get_source();
         while (target && target !== content && !target._ctrl)
@@ -290,7 +290,7 @@ export function openEditMenu(catalog, onDone) {
     try {
         Main.layoutManager.uiGroup.set_child_below_sibling(
             overlay, Main.layoutManager.panelBox);
-    } catch (_) { /* on top */ }
+    } catch (_) {   }
 
     overlay.opacity = 0;
     overlay.ease({opacity: 255, duration: 140, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
@@ -304,9 +304,9 @@ export function closeEditMenu() {
         return;
     const m = _menu;
     _menu = null;
-    try { m.overlay.destroy(); } catch (_) { /* gone */ }
-    // any close (Done, X, Escape) leaves CC edit mode
-    try { _onDone?.(); } catch (_) { /* no cb */ }
+    try { m.overlay.destroy(); } catch (_) {   }
+
+    try { _onDone?.(); } catch (_) {   }
     _onDone = null;
     console.log('[tahoe-qse] edit menu closed');
 }
@@ -315,7 +315,7 @@ export function isEditMenuOpen() {
     return !!_menu;
 }
 
-// ── drag tile → CC ───────────────────────────────────────────────────
+
 function _startDrag(tile, ev, overlay) {
     const ctrl = tile._ctrl;
     let ghost = null;
@@ -324,7 +324,7 @@ function _startDrag(tile, ev, overlay) {
     const onMotion = (_a, mev) => {
         const [mx, my] = mev.get_coords();
         if (!moved) {
-            // threshold: only start ghost after 6px movement
+
             const [sx, sy] = ev.get_coords();
             if (Math.abs(mx - sx) < 6 && Math.abs(my - sy) < 6)
                 return Clutter.EVENT_PROPAGATE;
@@ -350,19 +350,19 @@ function _startDrag(tile, ev, overlay) {
         if (!moved)
             return Clutter.EVENT_PROPAGATE;
         const [mx, my] = rev.get_coords();
-        // check drop over CC panel
+
         try {
             import('./tahoeQuickSettings.js').then(qs => {
                 if (qs.tryDropControl?.(ctrl, mx, my))
                     console.log(`[tahoe-qse] dropped ${ctrl.id} into CC`);
             }).catch(() => {});
-        } catch (_) { /* no qs */ }
+        } catch (_) {   }
         return Clutter.EVENT_STOP;
     };
 
     const cMotion = global.stage.connect('captured-event', onMotion);
     const cRelease = global.stage.connect('button-release-event', onRelease);
-    // auto-cleanup after 5s safety
+
     GLib.timeout_add(GLib.PRIORITY_DEFAULT, 5000, () => {
         try { global.stage.disconnect(cMotion); } catch (_) {}
         try { global.stage.disconnect(cRelease); } catch (_) {}

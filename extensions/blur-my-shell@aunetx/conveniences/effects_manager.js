@@ -1,6 +1,6 @@
 import { get_supported_effects } from '../effects/effects.js';
 
-/// An object to manage effects (by not destroying them all the time)
+
 export const EffectsManager = class EffectsManager {
     constructor(connections) {
         this.connections = connections;
@@ -8,10 +8,10 @@ export const EffectsManager = class EffectsManager {
         this.SUPPORTED_EFFECTS = get_supported_effects();
 
         Object.keys(this.SUPPORTED_EFFECTS).forEach(effect_name => {
-            // init the arrays containing each unused effect
+
             this[effect_name + '_effects'] = [];
 
-            // init the functions for each effect
+
             this['new_' + effect_name + '_effect'] = function (params) {
                 let effect;
                 if (this[effect_name + '_effects'].length > 0) {

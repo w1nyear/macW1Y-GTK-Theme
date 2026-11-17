@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Tahoe volume/brightness OSD (macW1Y Tahoe / Sequoia style):
-// A dark glass pill under the Control Center button with title, icons,
-// and a sleek segmented bar with subtle dots.
-// Intercepts Main.osdWindowManager to completely suppress stock OSD.
+
+
+
+
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -17,9 +17,9 @@ import { t } from './mac_i18n.js';
 import {isNCOpen as isNCPanelOpen} from './tahoeNotifications.js';
 import {getTopbarInk} from './tahoeInk.js';
 
-// Liquid-glass helpers live in another extension. Static
-// `import ... from 'file://' + ...` is a SyntaxError (module specifiers must
-// be string literals), so load them dynamically at runtime.
+
+
+
 let ensureGlassAllocated = () => {};
 let setClipIfChanged = () => {};
 let syncGlassCaptureClip = () => {};
@@ -64,15 +64,15 @@ function _getAccentColor() {
         const iface = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
         const name = iface.get_string('accent-color') || 'blue';
         const ACCENT_MAP = {
-            'blue':   [0.05, 0.56, 1.00], // #0c8eff / #007aff macW1Y vibrant blue
+            'blue':   [0.05, 0.56, 1.00],
             'teal':   [0.13, 0.56, 0.64],
-            'green':  [0.20, 0.78, 0.35], // #34c759
-            'yellow': [1.00, 0.80, 0.00], // #ffcc00
-            'orange': [1.00, 0.58, 0.00], // #ff9500
-            'red':    [1.00, 0.23, 0.19], // #ff3b30
-            'pink':   [1.00, 0.18, 0.33], // #ff2d55
-            'purple': [0.69, 0.32, 0.87], // #af52de
-            'slate':  [0.56, 0.56, 0.58], // #8e8e93
+            'green':  [0.20, 0.78, 0.35],
+            'yellow': [1.00, 0.80, 0.00],
+            'orange': [1.00, 0.58, 0.00],
+            'red':    [1.00, 0.23, 0.19],
+            'pink':   [1.00, 0.18, 0.33],
+            'purple': [0.69, 0.32, 0.87],
+            'slate':  [0.56, 0.56, 0.58],
         };
         return ACCENT_MAP[name] || ACCENT_MAP['blue'];
     } catch (_) {
@@ -89,8 +89,8 @@ function _isOverampAllowed() {
     }
 }
 
-// Tahoe OSD slider: smooth solid bar centered vertically without dots beneath.
-// Aligned with 16 discrete steps of volume/brightness.
+
+
 const TahoeSegSlider = GObject.registerClass({
     GTypeName: `TahoeSegSlider_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
 }, class TahoeSegSlider extends St.DrawingArea {
@@ -145,12 +145,12 @@ const TahoeSegSlider = GObject.registerClass({
             const barY = Math.round((h - barH) / 2);
             const r = barH / 2;
 
-            // 1. Draw solid background track across full width
+
             cr.setSourceRGBA(1, 1, 1, 0.22);
             this._rr(cr, 0, barY, w, barH, r);
             cr.fill();
 
-            // 2. Active fill
+
             const RED = [1.00, 0.23, 0.19];
             const WHITE = [1.00, 1.00, 1.00];
             const [colorR, colorG, colorB] = isOveramp ? RED : WHITE;
@@ -169,15 +169,15 @@ const TahoeSegSlider = GObject.registerClass({
                 cr.restore();
             }
 
-            // 3. Cut vertical dividers between segments
-            cr.setOperator(0); // CAIRO_OPERATOR_CLEAR
+
+            cr.setOperator(0);
             const segW = w / n;
             for (let i = 1; i < n; i++) {
                 const gx = i * segW - gap / 2.0;
                 cr.rectangle(gx, barY - 1, gap, barH + 2);
                 cr.fill();
             }
-            cr.setOperator(2); // CAIRO_OPERATOR_OVER
+            cr.setOperator(2);
 
             cr.restore();
         } finally {
@@ -301,14 +301,14 @@ function _computeTargetCoordinates(fsOverride = null, kind = 'volume') {
 
     let targetX;
     if (_isFullscreenOrPanelHidden(monitor, fsOverride)) {
-        // Fullscreen application: centered horizontally across the screen
+
         targetX = Math.round(monitor.x + (monitor.width - OSD_W) / 2);
     } else {
-        // Desktop or non-fullscreen window with visible menubar: on the right, directly under the Control Center item
+
         const anchorCenter = _anchorX(monitor, kind);
         const margin = 16;
         const cx = Math.round(anchorCenter - OSD_W / 2);
-        // Ensure within monitor boundaries with margin
+
         targetX = Math.max(monitor.x + margin, Math.min(monitor.x + monitor.width - OSD_W - margin, cx));
     }
     const targetY = monitor.y + panelH + 12;
@@ -339,7 +339,7 @@ function _animateReposition(targetX, targetY) {
     }
 
     const startTime = GLib.get_monotonic_time();
-    const durationUs = 200 * 1000; // 200ms buttery smooth macW1Y physics
+    const durationUs = 200 * 1000;
 
     _animTimerId = GLib.timeout_add(GLib.PRIORITY_HIGH, 10, () => {
         const elapsed = GLib.get_monotonic_time() - startTime;
@@ -369,7 +369,7 @@ function _animateReposition(targetX, targetY) {
 
 function _applyPredictedPosition(smoothIfVisible = true, fsOverride = null) {
     if (!_box || _box.visible)
-        return; // Etap 651: Never shift or drift OSD position while it is visible on screen
+        return;
     const coords = _computeTargetCoordinates(fsOverride);
     if (!coords)
         return;
@@ -976,7 +976,7 @@ function _show(kind, title, iconL, iconR, value) {
     if (!_box)
         return;
 
-    // Never over an open Control Center or Notification Center
+
     try {
         const ccOpen = !!globalThis._tahoeQSOpen || (typeof isPanelOpen === 'function' && isPanelOpen());
         const ncOpen = !!globalThis._tahoeNCOpen || (typeof isNCPanelOpen === 'function' && isNCPanelOpen());
@@ -1021,7 +1021,7 @@ function _show(kind, title, iconL, iconR, value) {
     let nameL = safeIconName(iconL);
     let nameR = safeIconName(iconR);
 
-    // Compute dynamic icon based on level
+
     let dynamicIcon = 'audio-volume-high-symbolic';
     if (kind === 'volume') {
         const isMuted = (value <= 0.001 || nameL.includes('muted') || nameR.includes('muted'));
@@ -1058,7 +1058,7 @@ function _show(kind, title, iconL, iconR, value) {
     try {
         let boxX, boxY;
         if (_box.visible) {
-            // Etap 651: While OSD is visible, keep position strictly stable - no drifting during volume adjustment
+
             boxX = _box.x;
             boxY = _box.y;
         } else {
@@ -1299,7 +1299,7 @@ export function enable() {
     _interceptStockOsd();
     globalThis._hideTahoeOSD = _hideNow;
 
-    // volume backend
+
     try {
         _control = new Gvc.MixerControl({name: 'Tahoe OSD'});
         _control.open();
@@ -1322,7 +1322,7 @@ export function enable() {
         _control = null;
     }
 
-    // brightness backend 1: shell brightnessManager
+
     try {
         const bm = Main.brightnessManager;
         if (bm?.globalScale) {
@@ -1335,7 +1335,7 @@ export function enable() {
         }
     } catch (_) {}
 
-    // brightness backend 2: gsd-power D-Bus fallback
+
     if (!_brightScale) {
         try {
             _screenProxy = Gio.DBusProxy.new_sync(
@@ -1357,7 +1357,7 @@ export function enable() {
         }
     }
 
-    // Proactive tracking of window state and panel changes
+
     _trackSignal(global.display, 'in-fullscreen-changed', () => _applyPredictedPosition(true));
     _trackSignal(global.display, 'notify::focus-window', () => _applyPredictedPosition(true));
     _trackSignal(global.window_manager, 'size-changed', () => _applyPredictedPosition(true));

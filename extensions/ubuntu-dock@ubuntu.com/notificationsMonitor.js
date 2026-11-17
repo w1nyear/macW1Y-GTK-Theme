@@ -1,4 +1,4 @@
-// -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
+
 
 import {Gio} from './dependencies/gi.js';
 import {Main} from './dependencies/shell/ui.js';

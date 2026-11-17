@@ -41,7 +41,7 @@ export function buildConfigPage(extensionPreferences, window, settings, _, setti
     );
     animPage.add(extrasGroup);
 
-    // Responsive breakpoint handling for linked buttons vs dropdowns
+
     const cond = Adw.BreakpointCondition.parse('max-width: 450px');
     const breakpoint = new Adw.Breakpoint({ condition: cond });
     breakpoint.add_setter(linkedBox, 'visible', false);

@@ -105,7 +105,7 @@ export class UnlockDialogController {
     }
 
     install(dialog, lockDialogGroup) {
-        // Disable fullscreen ClickGesture so clicking wallpaper/clock does not reveal prompt
+
         this._disabledClickGestures = [];
         for (const action of dialog.get_actions()) {
             if (action instanceof Clutter.ClickGesture) {
@@ -114,7 +114,7 @@ export class UnlockDialogController {
             }
         }
 
-        // Intercept keypresses in rest mode: arbitrary keys must not show prompt on wake from sleep
+
         if (dialog.vfunc_key_press_event) {
             this.origKeyPressEvent = dialog.vfunc_key_press_event.bind(dialog);
             dialog.vfunc_key_press_event = (event) => {
@@ -143,7 +143,7 @@ export class UnlockDialogController {
             };
         }
 
-        // Manage top menu bar for authentic macW1Y lockscreen (Battery, Control Center, DateMenu)
+
         if (!this._menuBarManager) {
             try {
                 const MBClass = _LockscreenMenuBarManagerClass || LockscreenMenuBarManager;
@@ -154,7 +154,7 @@ export class UnlockDialogController {
             }
         }
 
-        // AuthPrompt lifecycle & PAM message intercept
+
         if (dialog._ensureAuthPrompt) {
             this.origEnsureAuthPrompt = dialog._ensureAuthPrompt.bind(dialog);
             dialog._ensureAuthPrompt = () => {
@@ -169,7 +169,7 @@ export class UnlockDialogController {
             this._setupAuthPrompt(dialog._authPrompt);
         }
 
-        // Background effects override
+
         if (dialog._updateBackgroundEffects) {
             this.origUpdateBgEffects = dialog._updateBackgroundEffects.bind(dialog);
             dialog._updateBackgroundEffects = () => {
@@ -184,7 +184,7 @@ export class UnlockDialogController {
             dialog._updateBackgroundEffects();
         }
 
-        // User switch visibility override
+
         this.origUpdateUserSwitchVisibility = dialog._updateUserSwitchVisibility.bind(dialog);
         dialog._updateUserSwitchVisibility = () => {
             this.origUpdateUserSwitchVisibility();
@@ -194,7 +194,7 @@ export class UnlockDialogController {
         };
         dialog._updateUserSwitchVisibility();
 
-        // Finish intercept for Cupertino fade-out
+
         this.origFinish = dialog.finish.bind(dialog);
         dialog.finish = (onComplete) => {
             const isCupertino = this._extension._lockscreenMode === 'cupertino';
@@ -235,7 +235,7 @@ export class UnlockDialogController {
                         panel.opacity = 255;
                     }
 
-                    // Animate dock and Liquid Glass smoothly and synchronously fading in at resting position
+
                     const d2d = Main.layoutManager.uiGroup?.get_children()?.find(c => c.name === 'dashtodockContainer');
                     const dockH = (d2d && d2d.height > 0) ? d2d.height : 92;
                     if (d2d) {
@@ -263,7 +263,7 @@ export class UnlockDialogController {
                         });
                     }
 
-                    // Synchronize Liquid Glass background actor
+
                     try { global._liquidGlassDockSync?.(); } catch (_) {}
                     const lgActors = Main.layoutManager.uiGroup?.get_children()?.filter(c => c.name === 'liquid-glass-bg-actor') || [];
                     for (const lg of lgActors) {
@@ -324,7 +324,7 @@ export class UnlockDialogController {
                             });
                         });
                     } else if (global.window_group) {
-                        // Smoothly fade in desktop windows upon unlock
+
                         global.window_group.remove_all_transitions();
                         global.window_group.visible = true;
                         if (global.window_group.opacity < 255) {
@@ -349,7 +349,7 @@ export class UnlockDialogController {
                         }
                     }
 
-                    // Animate desktop icons (DING) and uiGroup widgets smoothly fading in
+
                     for (const child of Main.layoutManager.uiGroup.get_children()) {
                         if (child !== Main.layoutManager._backgroundGroup &&
                             child !== Main.layoutManager._systemBackground &&
@@ -369,7 +369,7 @@ export class UnlockDialogController {
                         }
                     }
 
-                    // Animate desktop widgets layer (desktop-widgets@r3nhick) smoothly fading in
+
                     const widgetsExt = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
                     const widgetLayer = widgetsExt?.stateObj?._controller?._layer ||
                         Main.layoutManager._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer') || c.name === 'widget-layer');
@@ -390,7 +390,7 @@ export class UnlockDialogController {
 
                     const clockWrapper = this._extension._clockLayoutManager?.clockWrapper;
                     const hintContainer = this._extension._clockLayoutManager?.hintContainer;
-                    // Keep wallpaper overlay steady at opacity 255 to eliminate black flash/flicker
+
                     const actorsToFade = [clockWrapper, hintContainer, this._extension._mainBox].filter(a => a != null);
                     actorsToFade.forEach(actor => {
                         actor.ease({ opacity: 0, duration, mode });
@@ -423,7 +423,7 @@ export class UnlockDialogController {
                             if (global.wack_window_snapshots)
                                 delete global.wack_window_snapshots;
 
-                            // Guarantee desktop windows and dock visibility 100%
+
                             if (global.window_group) {
                                 global.window_group.remove_all_transitions();
                                 global.window_group.visible = true;
@@ -488,7 +488,7 @@ export class UnlockDialogController {
             }
         };
 
-        // NotificationsBox changes tracking
+
         if (dialog._notificationsBox) {
             dialog._notificationsBox.connectObject(
                 'notify::height', () => {
@@ -507,7 +507,7 @@ export class UnlockDialogController {
             );
         }
 
-        // Core transition logic intercept
+
         this.origSetTransitionProgress = dialog._setTransitionProgress.bind(dialog);
         dialog._setTransitionProgress = (progress) => {
             this.origSetTransitionProgress(progress);

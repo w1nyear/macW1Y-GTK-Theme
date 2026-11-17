@@ -221,8 +221,8 @@ const REFRACTION_EFFECT_META = {
                 0.0, Number.MAX_SAFE_INTEGER,
                 0.0,
             ),
-            // See corner.js: this is backed by an array setter, but represented
-            // as a dummy property so pipeline parameter assignment can reach it.
+
+
             'clip': GObject.ParamSpec.double(
                 `clip`,
                 `Clip`,
@@ -393,7 +393,7 @@ const RefractionEffectClass = utils.IS_IN_PREFERENCES ? null : class RefractionE
             }
         }
 
-        // Deprecated no-op compatibility properties for old saved pipelines.
+
         get webcam_gloss() {
             return this._webcam_gloss;
         }

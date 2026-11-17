@@ -1,7 +1,7 @@
-/**
- * Build the System Main menu (leftmost in menu bar).
- * Always present regardless of focused app.
- */
+
+
+
+
 import { _ } from '../i18n.js';
 
 export function buildmacW1YMenu(_statusChildren = []) {

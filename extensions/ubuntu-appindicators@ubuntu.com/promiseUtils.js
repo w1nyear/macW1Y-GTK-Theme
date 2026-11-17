@@ -1,4 +1,4 @@
-// -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
+
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
@@ -75,13 +75,13 @@ export class CancellablePromise extends Promise {
     then(...args) {
         const ret = super.then(...args);
 
-        /* Every time we call then() on this promise we'd get a new
-         * CancellablePromise however that won't have the properties that the
-         * root one has set, and then it won't be possible to cancel a promise
-         * chain from the last one.
-         * To allow this we keep track of the root promise, make sure that
-         * the same method on the root object is called during cancellation
-         * or any destruction method if you want this to work. */
+
+
+
+
+
+
+
         if (ret instanceof CancellablePromise)
             ret._root = this._chainRoot;
 

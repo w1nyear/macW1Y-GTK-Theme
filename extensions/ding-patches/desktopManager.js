@@ -51,12 +51,12 @@ var DesktopManager = class {
         this._lastSelected = null;
         this.using_X11 = Gdk.Display.get_default().constructor.$gtype.name === 'GdkX11Display';
         if (asDesktop) {
-            this.mainApp.hold(); // Don't close the application if there are no desktops
+            this.mainApp.hold();
             this._hold_active = true;
             if (this.using_X11) {
                 let usingWayland = GLib.getenv('XDG_SESSION_TYPE') == 'wayland';
                 if (usingWayland) {
-                    // the system is using Wayland, but GTK is using X11!!!!!!
+
                     DBusUtils.extensionControl.activate_action('disableTimer', null);
                     if (Prefs.desktopSettings.get_boolean('check-x11wayland')) {
                         this._notifyX11UnderWayland = new NotifyX11UnderWayland.NotifyX11UnderWayland(doNotShowAnymore => {
@@ -68,7 +68,7 @@ var DesktopManager = class {
                     }
                 }
             } else {
-                // if the problem is fixed and appears again, DING should show the message
+
                 Prefs.desktopSettings.set_boolean('check-x11wayland', true);
             }
         }
@@ -244,7 +244,7 @@ var DesktopManager = class {
         this.ignoreKeys = [Gdk.KEY_space, Gdk.KEY_Shift_L, Gdk.KEY_Shift_R, Gdk.KEY_Control_L, Gdk.KEY_Control_R, Gdk.KEY_Caps_Lock, Gdk.KEY_Shift_Lock, Gdk.KEY_Meta_L, Gdk.KEY_Meta_R, Gdk.KEY_Alt_L, Gdk.KEY_Alt_R, Gdk.KEY_Super_L, Gdk.KEY_Super_R, Gdk.KEY_ISO_Level3_Shift, Gdk.KEY_ISO_Level5_Shift];
 
 
-        // Check if Nautilus is available
+
         try {
             DesktopIconsUtil.trySpawn(null, ['nautilus', '--version']);
         } catch (e) {
@@ -309,13 +309,13 @@ var DesktopManager = class {
             }
         });
         DBusUtils.extensionControl.connect('action-added', (actionGroup, actionName) => {
-            // this signal allows us to know when the action is available and we can read the initial value
+
             if (actionName == 'desktopGeometry') {
                 let data = DBusUtils.extensionControl.get_action_state('desktopGeometry');
                 this.updateGridWindows(data.recursiveUnpack());
             }
         });
-        // This is required to trigger the 'action-added' signal
+
         DBusUtils.extensionControl.list_actions();
     }
 
@@ -388,7 +388,7 @@ var DesktopManager = class {
             let desktop = this._desktopList[desktopIndex];
             let desktopName;
             if (this._asDesktop) {
-                // this name must match the one used in emulateX11WindowType
+
                 desktopName = `Desktop Icons ${desktop.monitorIndex + 1}`;
             } else {
                 desktopName = `DING ${desktop.monitorIndex + 1}`;
@@ -430,9 +430,9 @@ var DesktopManager = class {
         };
         this.selectColor = accentMap[accent] || new Gdk.RGBA({red: 0.98, green: 0.43, blue: 0.04, alpha: 1.0});
         const highContrast = !!Prefs.a11YInterface?.get_boolean('high-contrast');
-        // FIXME: In Gtk3 there's no such thing as dark mode and high contrast,
-        // so we consider it always light if high contrast is set.
-        // This can change when gtk4 will be used.
+
+
+
         const darkMode = !highContrast && Prefs.schemaGnomeInterface?.get_string('color-scheme') === 'prefer-dark';
         this.borderColor = darkMode ?
             new Gdk.RGBA({red: 0, green: 0, blue: 0, alpha: highContrast ? 0.9 : 0.5}) :
@@ -596,7 +596,7 @@ var DesktopManager = class {
         let hx = keepArranged ? 0 : (this.dragHotspotX || 0);
         let hy = keepArranged ? 0 : (this.dragHotspotY || 0);
         if (keepArranged) {
-            // Find the grid where the destination lies and aim towards the positive side, middle of grid to ensure drop in the grid
+
             for (let desktop of this._desktops) {
                 let grid = desktop.getGridAt(xDestination, yDestination, true);
                 if (grid !== null) {
@@ -612,7 +612,7 @@ var DesktopManager = class {
         let deltaX = xDestination - xOrigin;
         let deltaY = yDestination - yOrigin;
 
-        // Ensure target position doesn't collide with any desktop widgets
+
         for (let item of this._fileList) {
             if (item.isSelected) {
                 let [x, y] = item.getCoordinates();
@@ -656,7 +656,7 @@ var DesktopManager = class {
                 }
             }
         }
-        // force to store the new coordinates
+
         this._addFilesToDesktop(fileItems, Enums.StoredCoordinates.OVERWRITE);
         fileItems = undefined;
         if (this.keepArranged) {
@@ -792,10 +792,10 @@ var DesktopManager = class {
     }
 
     detectURLorText(fileList, dropCoordinates) {
-        /**
-         *
-         * @param str
-         */
+
+
+
+
         function isValidURL(str) {
             var pattern = new RegExp('^(https|http|ftp|rtsp|mms)?:\\/\\/?' +
             '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' +
@@ -878,7 +878,7 @@ var DesktopManager = class {
             let shiftPressed = !!(state & Gdk.ModifierType.SHIFT_MASK);
             let controlPressed = !!(state & Gdk.ModifierType.CONTROL_MASK);
             if (!shiftPressed && !controlPressed) {
-                // clear selection
+
                 this.unselectAll();
             }
             this._startRubberband(x, y);
@@ -909,24 +909,24 @@ var DesktopManager = class {
         this._isCut = false;
         this._clipboardFiles = null;
         let text = null;
-        /*
-            * Before Gnome Shell 40, St API couldn't access binary data in the clipboard, only text data. Also, the
-            * original Desktop Icons was a pure extension, so it was limited to what Clutter and St offered. That was
-            * the reason why Nautilus accepted a text format for CUT and COPY operations in the form
-            *
-            *     x-special/nautilus-clipboard
-            *     OPERATION
-            *     FILE_URI
-            *     [FILE_URI]
-            *     [...]
-            *
-            * In Gnome Shell 40, St was enhanced and now it supports binary data; that's why Nautilus migrated to a
-            * binary format identified by the atom 'x-special/gnome-copied-files', where the CUT or COPY operation is
-            * shared.
-            *
-            * To maintain compatibility, we first check if there's binary data in that atom, and if not, we check if
-            * there is text data in the old format.
-            */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         if (clipboard.wait_is_target_available(atom2)) {
             let data = clipboard.wait_for_contents(atom2);
             text = `x-special/nautilus-clipboard\n${ByteArray.toString(data.get_data())}\n`;
@@ -1063,15 +1063,15 @@ var DesktopManager = class {
         if ((symbol == Gdk.KEY_Left) || (symbol == Gdk.KEY_Right) ||
            (symbol == Gdk.KEY_Up) || (symbol == Gdk.KEY_Down)) {
             let selected = this._getCurrentKeyboardIcon();
-            // if there is no selected icon, select the last selected icon
+
             if (!selected) {
                 selected = this._getLastKeyboardIcon();
                 if (selected) {
                     return false;
                 }
             }
-            // if there is no last selected, or the last selected isn't in the desktop
-            // (for example, because it was deleted), select the top-left icon.
+
+
             if (!selected) {
                 selected = this._getTopLeftIcon();
                 if (selected) {
@@ -1185,12 +1185,12 @@ var DesktopManager = class {
             return true;
         } else if (symbol == Gdk.KEY_F2) {
             if (selection && (selection.length == 1)) {
-                // Support renaming other grids file items.
+
                 this.doRename(selection[0], false);
                 return true;
             }
         } else if (selection && symbol == Gdk.KEY_space) {
-            // Support previewing other grids file items.
+
             DBusUtils.RemoteFileOperations.ShowFileRemote(selection[0].uri, 0, true);
             return true;
         } else if (isCtrl && ((symbol == Gdk.KEY_A) || (symbol == Gdk.KEY_a))) {
@@ -1273,8 +1273,8 @@ var DesktopManager = class {
             this.keypressTimeoutID = null;
         }
         if (Prefs.a11YKeyboard) {
-            // if the user has enabled any keyboard assistive technology,
-            // disable the timeout to hide the search window
+
+
             if (Prefs.a11YKeyboard.get_boolean('stickykeys-enable') ||
                 Prefs.a11YKeyboard.get_boolean('slowkeys-enable') ||
                 Prefs.a11YKeyboard.get_boolean('bouncekeys-enable') ||
@@ -1283,8 +1283,8 @@ var DesktopManager = class {
             }
         }
         if (Prefs.a11YApplications) {
-            // if the user has enabled the screen reader,
-            // disable the timeout to hide the search window
+
+
             if (Prefs.a11YApplications.get_boolean('screen-reader-enabled')) {
                 return;
             }
@@ -1511,11 +1511,11 @@ var DesktopManager = class {
         }
         let isCut = action == 'cut';
 
-        /* Last line is empty due to the split */
+
         if (files.length <= 1) {
             return [false, false, null];
         }
-        /* Remove last line */
+
         files.pop();
 
         return [true, isCut, files];
@@ -1621,7 +1621,7 @@ var DesktopManager = class {
 
     async _updateDesktop() {
         if (this._readingDesktopFiles) {
-            // just notify that the files changed while being read from the disk.
+
             this._desktopFilesChanged = true;
             if (this._desktopEnumerateCancellable && !this._forceDraw) {
                 this._desktopEnumerateCancellable.cancel();
@@ -1705,12 +1705,12 @@ var DesktopManager = class {
                                 Enums.FileType.NONE,
                                 null);
                             if (fileItem.isHidden && !this._showHidden) {
-                                /* if there are hidden files in the desktop and the user doesn't want to
-                                    show them, remove the coordinates. This ensures that if the user enables
-                                    showing them, they won't fight with other icons for the same place
-                                */
+
+
+
+
                                 if (fileItem.savedCoordinates) {
-                                    // only overwrite them if needed
+
                                     fileItem.savedCoordinates = null;
                                 }
                                 continue;
@@ -1748,13 +1748,13 @@ var DesktopManager = class {
     _drawDesktop(fileList) {
         this._selectedFiles = this.getCurrentSelection(true);
         if (this._renameWindow) {
-            // disconnect the popup from the fileItem to avoid it being
-            // destroyed when the fileItem is removed from the desktop
+
+
             this._renameWindow.updateFileItem(null);
         }
         this._removeAllFilesFromGrids();
         this._fileList = fileList;
-        // Select the files that were selected before the repaint
+
         if (this._selectedFiles) {
             for (let fileItem of fileList) {
                 if (this._selectedFiles.includes(fileItem.uri)) {
@@ -1763,7 +1763,7 @@ var DesktopManager = class {
             }
         }
         if (this._renameWindow) {
-            // assign the popover to the new fileItem
+
             let file = fileList.filter(f => f.fileName == this._renamingFile)[0];
             if (file) {
                 file.setRenamePopup(this._renameWindow);
@@ -1796,7 +1796,7 @@ var DesktopManager = class {
         let outOfDesktops = [];
         let notAssignedYet = [];
 
-        // First, add those icons that fit in the current desktops
+
         for (let fileItem of fileList) {
             if (fileItem.savedCoordinates == null) {
                 notAssignedYet.push(fileItem);
@@ -1823,8 +1823,8 @@ var DesktopManager = class {
                 outOfDesktops.push(fileItem);
             }
         }
-        // Now, assign those icons that are outside the current desktops,
-        // but have assigned coordinates
+
+
         for (let fileItem of outOfDesktops) {
             let minDistance = -1;
             let [itemX, itemY] = fileItem.savedCoordinates;
@@ -1846,7 +1846,7 @@ var DesktopManager = class {
                 newDesktop.addFileItemCloseTo(fileItem, itemX, itemY, storeMode);
             }
         }
-        // Finally, assign those icons that still don't have coordinates
+
         for (let fileItem of notAssignedYet) {
             let x, y;
             if (fileItem.dropCoordinates == null) {
@@ -1866,7 +1866,7 @@ var DesktopManager = class {
                 fileItem.dropCoordinates = null;
                 storeMode = Enums.StoredCoordinates.OVERWRITE;
             }
-            // try first in the designated desktop
+
             let assigned = false;
             for (let desktop of this._desktops) {
                 if (desktop.getDistance(x, y) == 0) {
@@ -1878,7 +1878,7 @@ var DesktopManager = class {
             if (assigned) {
                 continue;
             }
-            // if there is no space in the designated desktop, try in another
+
             for (let desktop of this._desktops) {
                 if (desktop.getDistance(x, y) != -1) {
                     desktop.addFileItemCloseTo(fileItem, x, y, storeMode);
@@ -1907,12 +1907,12 @@ var DesktopManager = class {
 
     _updateDesktopIfChanged(file, otherFile, eventType) {
         if (eventType == Gio.FileMonitorEvent.CHANGED) {
-            // use only CHANGES_DONE_HINT
+
             return;
         }
         if (!this._showHidden && (file.get_basename()[0] == '.')) {
-            // If the file is not visible, we don't need to refresh the desktop
-            // Unless it is a hidden file being renamed to visible
+
+
             if (!otherFile || (otherFile.get_basename()[0] == '.')) {
                 return;
             }
@@ -1920,17 +1920,17 @@ var DesktopManager = class {
         switch (eventType) {
         case Gio.FileMonitorEvent.MOVED_IN:
         case Gio.FileMonitorEvent.MOVED_CREATED:
-            /* Remove the coordinates that could exist to avoid conflicts between
-                   files that are already in the desktop and the new one
-                 */
+
+
+
             try {
                 let info = new Gio.FileInfo();
                 info.set_attribute_string('metadata::nautilus-icon-position', '');
                 file.set_attributes_from_info(info, Gio.FileQueryInfoFlags.NONE, null);
-            } catch (e) {} // can happen if a file is created and deleted very fast
+            } catch (e) {}
             break;
         case Gio.FileMonitorEvent.ATTRIBUTE_CHANGED:
-            /* The desktop is what changed, and not a file inside it */
+
             if (file.get_uri() == this._desktopDir.get_uri()) {
                 if (this._updateWritableByOthers()) {
                     this._updateDesktop().catch(e => {
@@ -1955,18 +1955,18 @@ var DesktopManager = class {
         }
     }
 
-    /*
-     * Due to a problem in the Clipboard API in Gtk3, it is not possible to do the CUT/COPY operation from
-     * dynamic languages like Javascript, because one of the methods needed is marked as NOT INTROSPECTABLE
-     *
-     * https://discourse.gnome.org/t/missing-gtk-clipboard-set-with-data-in-gtk-3/6920
-     *
-     * The right solution is to migrate DING to Gtk4, where the whole API is available, but that is a very
-     * big task, so in the meantime, we take advantage of the fact that the St API, in Gnome Shell, can put
-     * binary contents in the clipboard, so we use DBus to notify that we want to do a CUT or a COPY operation,
-     * passing the URIs as parameters, and delegate that to the DING Gnome Shell extension. This is easily done
-     * with a GLib.SimpleAction.
-     */
+
+
+
+
+
+
+
+
+
+
+
+
     doCopy() {
         DBusUtils.extensionControl.activate_action('doCopy', this._getClipboardText());
     }
@@ -2300,9 +2300,9 @@ var DesktopManager = class {
     }
 
     _sortAllFilesFromGridsByKindStacked(restack) {
-        /**
-         *
-         */
+
+
+
         function determineStackTopSizeOrTime() {
             for (let item of otherFiles) {
                 if (item.isStackMarker) {
@@ -2393,19 +2393,19 @@ var DesktopManager = class {
         otherFiles.push(...validDesktopFiles);
         otherFiles.push(...directoryFiles);
         otherFiles.push(...stackTopMarkerFolderList);
-        /**
-         *
-         * @param a
-         * @param b
-         */
+
+
+
+
+
         function bySize(a, b) {
             return  a.fileSize - b.fileSize;
         }
-        /**
-         *
-         * @param a
-         * @param b
-         */
+
+
+
+
+
         function byTime(a, b) {
             return  a._modifiedTime - b._modifiedTime;
         }
@@ -2457,26 +2457,26 @@ var DesktopManager = class {
     }
 
     _sortByName(fileList) {
-        /**
-         *
-         * @param a
-         * @param b
-         */
+
+
+
+
+
         function byName(a, b) {
-            // sort by label name instead of the the fileName or displayName so that the "Home" folder is sorted in the correct order
-            // alphabetical sort taking into account accent characters & locale, natural language sort for numbers, ie 10.etc before 2.etc
-            // other options for locale are best fit, or by specifying directly in function below for translators
+
+
+
             return a._label.get_text().localeCompare(b._label.get_text(), {sensitivity: 'accent', numeric: 'true', localeMatcher: 'lookup'});
         }
         fileList.sort(byName);
     }
 
     _sortByKindByName(fileList) {
-        /**
-         *
-         * @param a
-         * @param b
-         */
+
+
+
+
+
         function byKindByName(a, b) {
             return a.attributeContentType.localeCompare(b.attributeContentType) ||
              a._label.get_text().localeCompare(b._label.get_text(), {sensitivity: 'accent', numeric: 'true', localeMatcher: 'lookup'});
@@ -2570,11 +2570,11 @@ var DesktopManager = class {
     }
 
     _sortAllFilesFromGridsByModifiedTime() {
-        /**
-         *
-         * @param a
-         * @param b
-         */
+
+
+
+
+
         function byTime(a, b) {
             return  a._modifiedTime - b._modifiedTime;
         }
@@ -2583,11 +2583,11 @@ var DesktopManager = class {
     }
 
     _sortAllFilesFromGridsBySize() {
-        /**
-         *
-         * @param a
-         * @param b
-         */
+
+
+
+
+
         function bySize(a, b) {
             return  a.fileSize - b.fileSize;
         }

@@ -1,9 +1,9 @@
-/*
- * Credits:
- * This file is based on code from the Dash to Panel extension by Jason DeRose
- * and code from the Taskbar extension by Zorin OS
- * Some code was also adapted from the upstream Gnome Shell source code.
- */
+
+
+
+
+
+
 
 import {
     Clutter,
@@ -38,7 +38,7 @@ export class WindowPreviewMenu extends PopupMenu.PopupMenu {
     constructor(source) {
         super(source, 0.5, Utils.getPosition());
 
-        // We want to keep the item hovered while the menu is up
+
         this.blockSourceEvents = true;
 
         this._source = source;
@@ -53,7 +53,7 @@ export class WindowPreviewMenu extends PopupMenu.PopupMenu {
             `max-height: ${Math.round(workArea.height / scaleFactor) - MENU_MARGINS}px;`);
         this.actor.hide();
 
-        // Chain our visibility and lifecycle to that of the source
+
         this._mappedId = this._source.connect('notify::mapped', () => {
             if (!this._source.mapped)
                 this.close();
@@ -129,18 +129,18 @@ class WindowPreviewList extends PopupMenu.PopupMenuSection {
     }
 
     _onScrollEvent(actor, event) {
-        // Event coordinates are relative to the stage but can be transformed
-        // as the actor will only receive events within his bounds.
+
+
         const [stageX, stageY] = event.get_coords();
         const [,, eventY] = actor.transform_stage_point(stageX, stageY);
         const [, actorH] = actor.get_size();
 
-        // If the scroll event is within a 1px margin from
-        // the relevant edge of the actor, let the event propagate.
+
+
         if (eventY >= actorH - 2)
             return Clutter.EVENT_PROPAGATE;
 
-        // Skip to avoid double events mouse
+
         if (event.is_pointer_emulated())
             return Clutter.EVENT_STOP;
 
@@ -188,12 +188,12 @@ class WindowPreviewList extends PopupMenu.PopupMenuSection {
             return actor._window;
         });
 
-        // Windows currently on the menu
+
         const oldWin = children.map(actor => {
             return actor._window;
         });
 
-        // All app windows with a static order
+
         const newWin = this._source.getInterestingWindows().sort((a, b) =>
             a.get_stable_sequence() > b.get_stable_sequence());
 
@@ -207,21 +207,21 @@ class WindowPreviewList extends PopupMenu.PopupMenuSection {
             const currentOldWin = oldWin[oldIndex];
             const currentNewWin = newWin[newIndex];
 
-            // No change at oldIndex/newIndex
+
             if (currentOldWin === currentNewWin) {
                 oldIndex++;
                 newIndex++;
                 continue;
             }
 
-            // Window removed at oldIndex
+
             if (currentOldWin && !newWin.includes(currentOldWin)) {
                 removedActors.push(children[oldIndex]);
                 oldIndex++;
                 continue;
             }
 
-            // Window added at newIndex
+
             if (currentNewWin && !oldWin.includes(currentNewWin)) {
                 addedItems.push({
                     item: this._createPreviewItem(currentNewWin),
@@ -231,7 +231,7 @@ class WindowPreviewList extends PopupMenu.PopupMenuSection {
                 continue;
             }
 
-            // Window moved
+
             const insertHere = newWin[newIndex + 1] &&
                              newWin[newIndex + 1] === currentOldWin;
             const alreadyRemoved = removedActors.reduce((result, actor) =>
@@ -262,8 +262,8 @@ class WindowPreviewList extends PopupMenu.PopupMenuSection {
                 item.actor.destroy();
         }
 
-        // Skip animations on first run when adding the initial set
-        // of items, to avoid all items zooming in at once
+
+
         const animate = this._shownInitially;
 
         if (!this._shownInitially)
@@ -272,19 +272,19 @@ class WindowPreviewList extends PopupMenu.PopupMenuSection {
         for (let i = 0; i < addedItems.length; i++)
             addedItems[i].item.show(animate);
 
-        // Workaround for https://bugzilla.gnome.org/show_bug.cgi?id=692744
-        // Without it, StBoxLayout may use a stale size cache
+
+
         this.box.queue_relayout();
 
         if (newWin.length < 1)
             this._getTopMenu().close(~0);
 
-        // As for upstream:
-        // St.ScrollView always requests space horizontally for a possible vertical
-        // scrollbar if in AUTOMATIC mode. Doing better would require implementation
-        // of width-for-height in St.BoxLayout and St.ScrollView. This looks bad
-        // when we *don't* need it, so turn off the scrollbar when that's true.
-        // Dynamic changes in whether we need it aren't handled properly.
+
+
+
+
+
+
         const needsScrollbar = this._needsScrollbar();
         const scrollbarPolicy = needsScrollbar
             ? St.PolicyType.AUTOMATIC : St.PolicyType.NEVER;
@@ -331,22 +331,22 @@ class WindowPreviewMenuItem extends PopupMenu.PopupBaseMenuItem {
         this._destroyId = 0;
         this._windowAddedId = 0;
 
-        // We don't want this: it adds spacing on the left of the item.
+
         this.remove_child(this._ornamentIcon);
         this.add_style_class_name('dashtodock-app-well-preview-menu-item');
         this.add_style_class_name(Theming.PositionStyleClass[position]);
         if (Docking.DockManager.settings.customThemeShrink)
             this.add_style_class_name('shrink');
 
-        // Now we don't have to set PREVIEW_MAX_WIDTH and PREVIEW_MAX_HEIGHT as
-        // preview size - that made all kinds of windows either stretched or
-        // squished (aspect ratio problem)
+
+
+
         this._cloneBin = new St.Bin();
 
         this._updateWindowPreviewSize();
 
-        // TODO: improve the way the closebutton is layout. Just use some padding
-        // for the moment.
+
+
         this._cloneBin.set_style('padding-bottom: 0.5em');
 
         const buttonLayout = Meta.prefs_get_button_layout();
@@ -405,9 +405,9 @@ class WindowPreviewMenuItem extends PopupMenu.PopupBaseMenuItem {
     vfunc_style_changed() {
         super.vfunc_style_changed();
 
-        // For some crazy clutter / St reason we can't just have this handled
-        // automatically or here via vfunc_allocate + vfunc_get_preferred_*
-        // because if we do so, the St paddings on first / last child are lost
+
+
+
         const themeNode = this.get_theme_node();
         let [minWidth, naturalWidth] = this._box.get_preferred_width(-1);
         let [minHeight, naturalHeight] = this._box.get_preferred_height(naturalWidth);
@@ -429,32 +429,32 @@ class WindowPreviewMenuItem extends PopupMenu.PopupBaseMenuItem {
 
         let {previewSizeScale: scale} = Docking.DockManager.settings;
         if (!scale) {
-            // a simple example with 1680x1050:
-            // * 250/1680 = 0,1488
-            // * 150/1050 = 0,1429
-            // => scale is 0,1429
+
+
+
+
             scale = Math.min(1.0, PREVIEW_MAX_WIDTH / width, PREVIEW_MAX_HEIGHT / height);
         }
 
         scale *= St.ThemeContext.get_for_stage(global.stage).scaleFactor;
 
-        // width and height that we wanna multiply by scale
+
         return [width, height, scale];
     }
 
     _updateWindowPreviewSize() {
-        // This gets the actual windows size for the preview
+
         [this._width, this._height, this._scale] = this._getWindowPreviewSize();
         this._cloneBin.set_size(this._width * this._scale, this._height * this._scale);
     }
 
     _cloneTexture(metaWin) {
-        // Newly-created windows are added to a workspace before
-        // the compositor finds out about them...
+
+
         if (!this._width || !this._height) {
             this._cloneTextureLater = Utils.laterAdd(Meta.LaterType.BEFORE_REDRAW, () => {
-                // Check if there's still a point in getting the texture,
-                // otherwise this could go on indefinitely
+
+
                 this._updateWindowPreviewSize();
 
                 if (this._width && this._height) {
@@ -478,12 +478,12 @@ class WindowPreviewMenuItem extends PopupMenu.PopupBaseMenuItem {
             height: this._height * this._scale,
         });
 
-        // when the source actor is destroyed, i.e. the window closed, first destroy the clone
-        // and then destroy the menu item (do this animating out)
+
+
         this._destroyId = mutterWindow.connect('destroy', () => {
             clone.destroy();
-            this._destroyId = 0; // avoid to try to disconnect this signal from mutterWindow in _onDestroy(),
-            // as the object was just destroyed
+            this._destroyId = 0;
+
             this._animateOutAndDestroy();
         });
 
@@ -508,10 +508,10 @@ class WindowPreviewMenuItem extends PopupMenu.PopupBaseMenuItem {
     _closeWindow() {
         this._workspace = this._window.get_workspace();
 
-        // This mechanism is copied from the workspace.js upstream code
-        // It forces window activation if the windows don't get closed,
-        // for instance because asking user confirmation, by monitoring the opening of
-        // such additional confirmation window
+
+
+
+
         this._windowAddedId = this._workspace.connect('window-added',
             this._onWindowAdded.bind(this));
 
@@ -519,8 +519,8 @@ class WindowPreviewMenuItem extends PopupMenu.PopupBaseMenuItem {
     }
 
     deleteAllWindows() {
-        // Delete all windows, starting from the bottom-most (most-modal) one
-        // let windows = this._window.get_compositor_private().get_children();
+
+
         const windows = this._clone.get_children();
         for (let i = windows.length - 1; i >= 1; i--) {
             const realWindow = windows[i].source;
@@ -539,8 +539,8 @@ class WindowPreviewMenuItem extends PopupMenu.PopupBaseMenuItem {
             workspace.disconnect(this._windowAddedId);
             this._windowAddedId = 0;
 
-            // use an idle handler to avoid mapping problems -
-            // see comment in Workspace._windowAdded
+
+
             const activationEvent = Clutter.get_current_event();
             this._windowAddedLater = Utils.laterAdd(Meta.LaterType.BEFORE_REDRAW, () => {
                 delete this._windowAddedLater;
@@ -551,7 +551,7 @@ class WindowPreviewMenuItem extends PopupMenu.PopupBaseMenuItem {
     }
 
     _hasAttachedDialogs() {
-        // count transient windows
+
         let n = 0;
         this._window.foreach_transient(() => {
             n++;

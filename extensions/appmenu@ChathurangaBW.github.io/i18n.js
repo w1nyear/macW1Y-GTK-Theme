@@ -1,8 +1,8 @@
-/**
- * AppMenu i18n — Universal macW1Y Menu Localization Engine.
- * Supports Ukrainian, Polish, Russian, English, German, French, Spanish, Italian, etc.
- * Dynamically resolves active system language and translates all static and dynamic menu items.
- */
+
+
+
+
+
 import GLib from 'gi://GLib';
 
 export const TRANSLATIONS = {
@@ -649,25 +649,25 @@ export function _(str) {
     const dict = TRANSLATIONS[lang];
     if (!dict) return str;
 
-    // 1. Direct exact match
+
     if (dict[str] !== undefined) {
         return dict[str];
     }
 
-    // 2. Cleaned / normalized match (strip underscores, accelerators)
+
     const clean = _cleanLabel(str);
     if (dict[clean] !== undefined) {
         return dict[clean];
     }
 
-    // 3. Normalized without trailing ellipsis
+
     const withoutDots = clean.replace(/\.{3}$|…$/g, '').trim();
     if (dict[withoutDots] !== undefined) {
         const hasEllipsis = str.endsWith('...') || str.endsWith('…');
         return hasEllipsis ? dict[withoutDots] + '…' : dict[withoutDots];
     }
 
-    // 4. Case-insensitive lookup
+
     const lower = clean.toLowerCase();
     for (const [k, v] of Object.entries(dict)) {
         if (k.toLowerCase() === lower) {
@@ -675,7 +675,7 @@ export function _(str) {
         }
     }
 
-    // 5. Fallback to gettext domain
+
     if (_origTranslate) {
         try {
             const res = _origTranslate(str);

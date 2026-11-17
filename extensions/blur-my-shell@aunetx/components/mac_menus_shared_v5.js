@@ -261,9 +261,9 @@ function addItemToContainer(container, item) {
     }
 }
 
-/**
- * Universal Wi-Fi Menu Builder
- */
+
+
+
 export function populateUniversalWifiContent(container, options = {}) {
     const {
         nmClient,
@@ -279,7 +279,7 @@ export function populateUniversalWifiContent(container, options = {}) {
     const activeAp = wifiDevice?.get_active_access_point();
     const activeSsid = activeAp?.get_ssid() ? NM.utils_ssid_to_utf8(activeAp.get_ssid().get_data()) : null;
 
-    // 1. Header Row
+
     const headerItem = new PopupMenu.PopupBaseMenuItem({
         reactive: false,
         can_focus: false,
@@ -302,7 +302,7 @@ export function populateUniversalWifiContent(container, options = {}) {
     headerItem.add_child(headerBox);
 
     if (isControlCenter) {
-        // Left: Back button (fixed 82px)
+
         const leftSlot = new St.BoxLayout({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
@@ -331,7 +331,7 @@ export function populateUniversalWifiContent(container, options = {}) {
         leftSlot.add_child(backBtn);
         headerBox.add_child(leftSlot);
 
-        // Center: Title
+
         const titleLbl = new St.Label({
             text: 'Wi-Fi',
             style_class: 'mac-menu-header-title',
@@ -342,7 +342,7 @@ export function populateUniversalWifiContent(container, options = {}) {
         });
         headerBox.add_child(titleLbl);
 
-        // Right: Toggle Switch (fixed 82px)
+
         const rightSlot = new St.BoxLayout({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
@@ -353,7 +353,7 @@ export function populateUniversalWifiContent(container, options = {}) {
         rightSlot.add_child(sw.actor);
         headerBox.add_child(rightSlot);
     } else {
-        // Menubar style: Title left, Switch right
+
         const titleLbl = new St.Label({
             text: 'Wi-Fi',
             style_class: 'mac-menu-header-title',
@@ -370,9 +370,9 @@ export function populateUniversalWifiContent(container, options = {}) {
     addItemToContainer(container, headerItem);
     addItemToContainer(container, createMacSeparator());
 
-    // 2. Networks List
+
     if (isEnabled && wifiDevice) {
-        // Active / Known network
+
         if (activeSsid) {
             const knownHeader = createMacSectionHeader(t('known_network', 'Відома мережа'));
             addItemToContainer(container, knownHeader);
@@ -428,7 +428,7 @@ export function populateUniversalWifiContent(container, options = {}) {
             addItemToContainer(container, createMacSeparator());
         }
 
-        // Other networks
+
         const otherHeader = createMacSectionHeader(t('other_networks', 'Інші мережі'));
         addItemToContainer(container, otherHeader);
 
@@ -519,7 +519,7 @@ export function populateUniversalWifiContent(container, options = {}) {
 
     addItemToContainer(container, createMacSeparator());
 
-    // 3. Settings Footer
+
     const settingsItem = createMacFooterButton(t('wifi_settings', 'Параметри Wi-Fi...'), () => {
         if (onClose) onClose();
         if (onOpenSettings) onOpenSettings('wifi');
@@ -527,9 +527,9 @@ export function populateUniversalWifiContent(container, options = {}) {
     addItemToContainer(container, settingsItem);
 }
 
-/**
- * Universal Bluetooth Menu Builder
- */
+
+
+
 export function populateUniversalBluetoothContent(container, options = {}) {
     const {
         btClient,
@@ -541,7 +541,7 @@ export function populateUniversalBluetoothContent(container, options = {}) {
         onOpenSettings = null,
     } = options;
 
-    // 1. Header Row
+
     const headerItem = new PopupMenu.PopupBaseMenuItem({
         reactive: false,
         can_focus: false,
@@ -564,7 +564,7 @@ export function populateUniversalBluetoothContent(container, options = {}) {
     headerItem.add_child(headerBox);
 
     if (isControlCenter) {
-        // Left: Back button (fixed 82px)
+
         const leftSlot = new St.BoxLayout({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
@@ -593,7 +593,7 @@ export function populateUniversalBluetoothContent(container, options = {}) {
         leftSlot.add_child(backBtn);
         headerBox.add_child(leftSlot);
 
-        // Center: Title
+
         const titleLbl = new St.Label({
             text: 'Bluetooth',
             style_class: 'mac-menu-header-title',
@@ -604,7 +604,7 @@ export function populateUniversalBluetoothContent(container, options = {}) {
         });
         headerBox.add_child(titleLbl);
 
-        // Right: Toggle Switch (fixed 82px)
+
         const rightSlot = new St.BoxLayout({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
@@ -615,7 +615,7 @@ export function populateUniversalBluetoothContent(container, options = {}) {
         rightSlot.add_child(sw.actor);
         headerBox.add_child(rightSlot);
     } else {
-        // Menubar style: Title left, Switch right
+
         const titleLbl = new St.Label({
             text: 'Bluetooth',
             style_class: 'mac-menu-header-title',
@@ -632,7 +632,7 @@ export function populateUniversalBluetoothContent(container, options = {}) {
     addItemToContainer(container, headerItem);
     addItemToContainer(container, createMacSeparator());
 
-    // 2. Devices List
+
     if (isPowered) {
         const devList = [];
         try {
@@ -722,7 +722,7 @@ export function populateUniversalBluetoothContent(container, options = {}) {
         addItemToContainer(container, createMacSeparator());
     }
 
-    // 3. Settings Footer
+
     const settingsItem = createMacFooterButton(t('bluetooth_settings', 'Параметри Bluetooth...'), () => {
         if (onClose) onClose();
         if (onOpenSettings) onOpenSettings('bluetooth');

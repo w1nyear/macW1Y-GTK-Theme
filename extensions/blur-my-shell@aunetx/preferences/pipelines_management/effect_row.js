@@ -117,9 +117,9 @@ export const EffectRow = GObject.registerClass({
                             page_increment: param.big_increment
                         })
                     });
-                    // TODO check if it's a good idea to set the default parameter, as the "good"
-                    // value really change depending on the user wallpaper... if so, do for dynamic
-                    // blur too
+
+
+
                     scale.add_mark(
                         this.get_default_effect_param(param_key), Gtk.PositionType.BOTTOM, null
                     );
@@ -157,14 +157,14 @@ export const EffectRow = GObject.registerClass({
                         use_alpha: param.use_alpha
                     });
                     row.add_suffix(color_button);
-                    // set original color
+
                     let c = color_button.get_rgba().copy();
                     if (param.use_alpha)
                         [c.red, c.green, c.blue, c.alpha] = this.get_effect_param(param_key);
                     else
                         [c.red, c.green, c.blue] = this.get_effect_param(param_key);
                     color_button.set_rgba(c);
-                    // update on on 'color-set'
+
                     color_button.connect(
                         'color-set', () => {
                             let c = color_button.get_rgba();
@@ -201,8 +201,8 @@ export const EffectRow = GObject.registerClass({
     }
 
     set_effect_param(key, value) {
-        // we must pay attention not to change the effects in the pipelines manager before updating
-        // it in gsettings, else it won't be updated (or every effect will be)
+
+
         let effects = this.pipelines_manager.pipelines[this.pipeline_id].effects;
         const effect_index = effects.findIndex(e => e.id == this.effect.id);
 

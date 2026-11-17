@@ -1,7 +1,7 @@
-/*
- * Timer widget (Countdown Timer)
- * Countdown timer with manual time adjustment and clean running view
- */
+
+
+
+
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -47,9 +47,9 @@ function textOnAccentColor(accent) {
 	return lum > 0.55 ? 'rgba(30,30,30,0.92)' : 'rgba(255,255,255,0.92)';
 }
 
-// Control glyphs come from the shared music icon set (icons/widgets_settings/
-// music/dw-<name>.svg, with -black/-white variants for painting on light or
-// dark surfaces). Same files, same look as the music widget's buttons.
+
+
+
 function controlIcon(iconName, suffix = '') {
 	const file = widgetResourcePath('music', `dw-${iconName}${suffix}.svg`);
 
@@ -59,15 +59,15 @@ function controlIcon(iconName, suffix = '') {
 }
 
 function iconOnAccentSuffix(accent) {
-	// Same luminance rule as textOnAccentColor: a light accent surface takes
-	// the black glyph, a dark one the white glyph.
+
+
 	const { r, g, b } = parseCssColor(accent);
 	const lum = 0.299 * r + 0.587 * g + 0.114 * b;
 	return lum > 0.55 ? '-black' : '-white';
 }
 
-// Bundled dw glyph with the symbolic icon as a fallback so the button never
-// paints empty if the SVG file is missing.
+
+
 function dwControlIcon(iconName, suffix, size, fallbackName, fallbackColor) {
 	const icon = new St.Icon({ icon_size: size });
 	const gicon = controlIcon(iconName, suffix);
@@ -82,9 +82,9 @@ function dwControlIcon(iconName, suffix, size, fallbackName, fallbackColor) {
 	return icon;
 }
 
-// Ghost controls read against the surface: the white wash was invisible
-// on light cards, so light mode draws an ink wash plus a visible outline;
-// dark keeps the tuned look.
+
+
+
 function ghostBorderColor(theme) {
 	return theme?.dark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.18)';
 }
@@ -106,13 +106,13 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	let timerId = null;
 	let tickCount = 0;
 
-	/*
-	 * The countdown lives in render-closure variables, so a theme or style
-	 * switch (every widget gets rebuilt) used to wipe a running timer.
-	 * The per-instance JSON file survives those rebuilds — and the
-	 * wall-clock stamp even carries a running countdown across a
-	 * GNOME relogin.
-	 */
+
+
+
+
+
+
+
 	const statePath = widgetStatePath('timer', widget);
 
 	const snapshot = () => ({
@@ -130,7 +130,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 		if (savedSeconds <= 0) {
 			return;
 		}
-		// A running countdown keeps ticking from wall-clock truth.
+
 		remainingSeconds = saved.running
 			? Math.max(0, savedSeconds - elapsedSinceWall(saved.wall) / 1000)
 			: savedSeconds;
@@ -150,7 +150,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	});
 	body.add_child(container);
 
-	// Setup view (when not running)
+
 	const setupBox = new St.BoxLayout({
 		orientation: Clutter.Orientation.HORIZONTAL,
 		x_expand: true,
@@ -161,7 +161,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	});
 	container.add_child(setupBox);
 
-	// Left: circular progress
+
 	const leftBox = new St.Widget({
 		width: px(120),
 		height: px(120),
@@ -184,7 +184,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	});
 	leftBox.add_child(setupCircleTimeLabel);
 
-	// Center: big time with +/- controls
+
 	const centerBox = new St.BoxLayout({
 		orientation: Clutter.Orientation.HORIZONTAL,
 		x_expand: true,
@@ -194,12 +194,12 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	});
 	setupBox.add_child(centerBox);
 
-	// Stepper columns. Ubuntu digits are tabular (measured: two digits at
-	// 72px bold = exactly 80px), so every row gets one exact width: the
-	// digits slot is 88px (80 ink + 4px padding each side) and the button
-	// rows are 42 + 4 + 42 = 88px. Zero slack anywhere means the GNOME 51
-	// BoxLayout cross-axis rule (children get full cross width, x_align
-	// ignored) cannot misplace anything — all three rows align by design.
+
+
+
+
+
+
 	const buildStepper = () => {
 		const makeRowButton = (text, big) => new St.Button({
 			reactive: true,
@@ -218,11 +218,11 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 		plusRow.add_child(plus10Btn);
 		plusRow.add_child(plus1Btn);
 
-		// Keep a fixed slot width so the two columns stay aligned, but don't
-		// squeeze the label to the glyph ink height: the round zero's black
-		// counterform needs extra vertical room or it gets clipped at the top
-		// and bottom edges. font-family is pinned to the Ubuntu digit set so the
-		// numbers stay visually centered and consistent across theme changes.
+
+
+
+
+
 		const label = new St.Label({
 			text: '00',
 			x_align: Clutter.ActorAlign.CENTER,
@@ -258,10 +258,10 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	} = buildStepper();
 	centerBox.add_child(minutesBox);
 
-	// Colon. Paint-only nudge: the ':' glyph's ink sits a couple of px right
-	// of the midpoint between the two digit groups, so shift the painting
-	// only — translation does not touch the layout (same trick as the
-	// system-widget icon alignment).
+
+
+
+
 	const colonLabel = new St.Label({
 		text: ':',
 		y_align: Clutter.ActorAlign.CENTER,
@@ -280,7 +280,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	} = buildStepper();
 	centerBox.add_child(secondsBox);
 
-	// Right: Play button (in setup view)
+
 	const setupRightBox = new St.BoxLayout({
 		orientation: Clutter.Orientation.VERTICAL,
 		x_align: Clutter.ActorAlign.END,
@@ -299,7 +299,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 
 	setupBox.add_child(setupRightBox);
 
-	// Running view (when timer is running)
+
 	const runningBox = new St.BoxLayout({
 		orientation: Clutter.Orientation.HORIZONTAL,
 		x_expand: true,
@@ -311,7 +311,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	});
 	container.add_child(runningBox);
 
-	// Left: circular progress (running)
+
 	const runningLeftBox = new St.Widget({
 		width: px(140),
 		height: px(140),
@@ -334,7 +334,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	});
 	runningLeftBox.add_child(runningCircleTimeLabel);
 
-	// Big time display (center)
+
 	const runningTimeLabel = new St.Label({
 		text: '00:00',
 		x_expand: true,
@@ -344,7 +344,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	});
 	runningBox.add_child(runningTimeLabel);
 
-	// Right: Pause and Stop buttons
+
 	const runningRightBox = new St.BoxLayout({
 		orientation: Clutter.Orientation.VERTICAL,
 		x_align: Clutter.ActorAlign.END,
@@ -382,13 +382,13 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 		const lineWidth = canvas === runningCircleCanvas ? px(10) : px(8);
 		const radius = Math.min(w, h) / 2 - lineWidth;
 
-		// Background circle
+
 		ctx.setSourceRGBA(0.5, 0.5, 0.5, 0.2);
 		ctx.setLineWidth(lineWidth);
 		ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
 		ctx.stroke();
 
-		// Progress arc
+
 		if (progress > 0) {
 			const accentRgb = parseCssColor(accentHex);
 			ctx.setSourceRGBA(accentRgb.r, accentRgb.g, accentRgb.b, 1.0);
@@ -413,17 +413,17 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 		setupCircleTimeLabel.set_text(`${time.minutes}:${time.seconds}`);
 		runningCircleTimeLabel.set_text(`${time.minutes}:${time.seconds}`);
 		runningTimeLabel.set_text(`${time.minutes}:${time.seconds}`);
-		
+
 		if (totalSeconds > 0) {
 			progress = Math.max(0, Math.min(1, remainingSeconds / totalSeconds));
 		} else {
 			progress = 0;
 		}
-		
+
 		setupCircleCanvas.queue_repaint();
 		runningCircleCanvas.queue_repaint();
 
-		// Show/hide views based on running state
+
 		if (isRunning) {
 			setupBox.visible = false;
 			runningBox.visible = true;
@@ -445,14 +445,14 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	const startTimer = () => {
 		if (isRunning || remainingSeconds <= 0) return;
 		isRunning = true;
-		totalSeconds = remainingSeconds; // Lock in the total time
+		totalSeconds = remainingSeconds;
 		const startTime = GLib.get_monotonic_time() / 1000;
 		const targetEndTime = startTime + (remainingSeconds * 1000);
 		timerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, TICK_INTERVAL_MS, () => {
 			const now = GLib.get_monotonic_time() / 1000;
 			remainingSeconds = Math.max(0, (targetEndTime - now) / 1000);
 			updateDisplay();
-			// Keep the wall stamp fresh (≤ ~1s stale) for surprise teardowns.
+
 			if (++tickCount % 10 === 0) {
 				saveState();
 			}
@@ -486,13 +486,13 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 		saveState();
 	};
 
-	// Minutes controls
+
 	minutesPlus10Btn.connect('clicked', () => setTimer(remainingSeconds + 600));
 	minutesPlus1Btn.connect('clicked', () => setTimer(remainingSeconds + 60));
 	minutesMinus10Btn.connect('clicked', () => setTimer(remainingSeconds - 600));
 	minutesMinus1Btn.connect('clicked', () => setTimer(remainingSeconds - 60));
 
-	// Seconds controls
+
 	secondsPlus10Btn.connect('clicked', () => setTimer(remainingSeconds + 10));
 	secondsPlus1Btn.connect('clicked', () => setTimer(remainingSeconds + 1));
 	secondsMinus10Btn.connect('clicked', () => setTimer(remainingSeconds - 10));
@@ -507,7 +507,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	pauseBtn.connect('clicked', () => pauseTimer());
 	stopBtn.connect('clicked', () => stopTimerInternal());
 
-	// Squash-and-spring feedback (shared with music) on every control.
+
 	for (const button of [minutesPlus10Btn, minutesPlus1Btn, minutesMinus10Btn, minutesMinus1Btn,
 		secondsPlus10Btn, secondsPlus1Btn, secondsMinus10Btn, secondsMinus1Btn,
 		startBtn, pauseBtn, stopBtn]) {
@@ -519,7 +519,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 			GLib.Source.remove(timerId);
 			timerId = null;
 		}
-		// Exact snapshot for in-process rebuilds and logout teardowns.
+
 		flushState();
 	});
 

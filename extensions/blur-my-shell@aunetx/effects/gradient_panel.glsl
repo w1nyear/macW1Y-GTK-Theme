@@ -13,10 +13,10 @@ uniform float clip_height;
 void main() {
     vec2 uv = cogl_tex_coord_in[0].st;
 
-    // Calculate current vertical position in actor space
+
     float pos_y = uv.y * max(1.0, height);
 
-    // Calculate normalized vertical position t across the panel (0.0 = top, 1.0 = bottom)
+
     float t = 0.0;
     if (clip_height > 0.0) {
         t = clamp((pos_y - clip_y0) / clip_height, 0.0, 1.0);
@@ -24,7 +24,7 @@ void main() {
         t = clamp(pos_y / max(1.0, height), 0.0, 1.0);
     }
 
-    // Interpolate darkness and blur
+
     float cur_dim = clamp(mix(top_darkness, bottom_darkness, t), 0.0, 1.0);
     float cur_blur = max(0.0, mix(top_blur, bottom_blur, t));
 
@@ -37,7 +37,7 @@ void main() {
         col = texture2D(tex, uv);
         float total_weight = 1.0;
 
-        // 16 sampling points on a Fibonacci spiral for smooth isotropic blur
+
         for (int i = 1; i <= 16; i++) {
             float fi = float(i);
             float r = sqrt(fi / 16.0);
@@ -53,6 +53,6 @@ void main() {
         col /= total_weight;
     }
 
-    // Blur layer blurs ONLY the wallpaper; gradient darkening is overlaid cleanly on top
+
     cogl_color_out = col;
 }

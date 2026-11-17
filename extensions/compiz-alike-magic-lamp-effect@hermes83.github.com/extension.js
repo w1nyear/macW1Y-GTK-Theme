@@ -88,9 +88,9 @@ function removeSnapshotOverlay(actor) {
 function resetWindowActorForMagicLamp(actor) {
     if (!actor?.meta_window) return;
 
-    // GNOME Shell starts its own icon-geometry ease before extension signal
-    // handlers run. Stop that transition and restore the real window geometry
-    // before attaching the deform effect, otherwise the two motions stack.
+
+
+
     actor.remove_all_transitions();
     actor.set_scale(1, 1);
     actor.set_opacity(255);
@@ -105,7 +105,7 @@ export default class CompizMagicLampEffectExtension extends Extension {
     enable() {
         this.settingsData = new SettingsData(this.getSettings());
 
-        // https://github.com/GNOME/gnome-shell/blob/master/js/ui/windowManager.js
+
 
         if (Main.wm._minimizeWindow && !this._origWmMinimizeWindow) {
             this._origWmMinimizeWindow = Main.wm._minimizeWindow;
@@ -131,7 +131,7 @@ export default class CompizMagicLampEffectExtension extends Extension {
             return;
         };
 
-        // Continuous snapshot tracking for focused windows
+
         this._lastFocusWindow = null;
         this._focusNotifyId = global.display.connect('notify::focus-window', () => {
             if (this._lastFocusWindow && !this._lastFocusWindow.minimized) {
@@ -170,8 +170,8 @@ export default class CompizMagicLampEffectExtension extends Extension {
         this.minimizeId = global.window_manager.connect("minimize", (e, actor) => {
             if (actor) {
                 captureWindowSnapshot(actor);
-                // A full-size snapshot child stays fixed while the parent is
-                // deformed, which looks like a second curtain animation.
+
+
                 removeSnapshotOverlay(actor);
             }
 
@@ -196,8 +196,8 @@ export default class CompizMagicLampEffectExtension extends Extension {
 
         this.unminimizeId = global.window_manager.connect("unminimize", (e, actor) => {
             if (actor) {
-                // Reveal and deform the real window actor; the cached snapshot
-                // is only needed while the window is parked in the dock.
+
+
                 removeSnapshotOverlay(actor);
             }
 
@@ -269,7 +269,7 @@ export default class CompizMagicLampEffectExtension extends Extension {
             global.window_manager.disconnect(this.unminimizeId);
             this.unminimizeId = null;
         }
-    
+
         global.get_window_actors().forEach((actor) => {
             if (actor.meta_window) {
                 actor.meta_window.disconnectObject(this);
@@ -278,7 +278,7 @@ export default class CompizMagicLampEffectExtension extends Extension {
             removeSnapshotOverlay(actor);
             this.destroyActorEffect(actor);
         });
-        
+
         if (this._origWmMinimizeWindow && Main.wm) {
             Main.wm._minimizeWindow = this._origWmMinimizeWindow;
             this._origWmMinimizeWindow = null;
@@ -292,7 +292,7 @@ export default class CompizMagicLampEffectExtension extends Extension {
             Main.wm._shellwm.original_completed_minimize = null;
         }
         if (Main.wm._shellwm.original_completed_unminimize) {
-            Main.wm._shellwm.completed_unminimize = Main.wm._shellwm.original_completed_unminimize;    
+            Main.wm._shellwm.completed_unminimize = Main.wm._shellwm.original_completed_unminimize;
             Main.wm._shellwm.original_completed_unminimize = null;
         }
     }
@@ -301,8 +301,8 @@ export default class CompizMagicLampEffectExtension extends Extension {
         let [success, icon] = actor.meta_window.get_icon_geometry();
         if (success) {
             return icon;
-        } 
-    
+        }
+
         let monitor = Main.layoutManager.monitors[actor.meta_window.get_monitor()];
         if (monitor && Main.overview.dash) {
             let dashIcon = null;
@@ -330,7 +330,7 @@ export default class CompizMagicLampEffectExtension extends Extension {
             return {x: monitor.x + monitor.width / 2, y: monitor.y + monitor.height, width: 0, height: 0};
         }
 
-        return {x: 0, y: 0, width: 0, height: 0};    
+        return {x: 0, y: 0, width: 0, height: 0};
     }
 
     destroyActorEffect(actor) {
@@ -353,7 +353,7 @@ export default class CompizMagicLampEffectExtension extends Extension {
 class AbstractCommonMagicLampEffect extends Clutter.DeformEffect {
     static {
         GObject.registerClass(this);
-    }    
+    }
 
     _init(params = {}) {
         super._init();
@@ -365,7 +365,7 @@ class AbstractCommonMagicLampEffect extends Clutter.DeformEffect {
         this.isMinimizeEffect = false;
         this.newFrameEvent = null;
         this.completedEvent = null;
-        
+
         this.timerId = null;
         this.msecs = 0;
 
@@ -373,7 +373,7 @@ class AbstractCommonMagicLampEffect extends Clutter.DeformEffect {
         this.iconMonitor = {x: 0, y: 0, width: 0, height: 0};
         this.window = {x: 0, y: 0, width: 0, height: 0, scale: 1};
         this.icon = params.icon;
-        
+
         this.progress = 0;
         this.split = 0.3;
         this.k = 0;
@@ -392,11 +392,11 @@ class AbstractCommonMagicLampEffect extends Clutter.DeformEffect {
         this.effectY = 0;
         this.iconPosition = null;
 
-        this.toTheBorder = true;   // true
-        this.maxIconSize = null;    // 48
-        this.alignIcon = 'center';  // 'left-top'
+        this.toTheBorder = true;
+        this.maxIconSize = null;
+        this.alignIcon = 'center';
 
-        this.EFFECT = this.settingsData.EFFECT.get(); //'default' - 'sine'
+        this.EFFECT = this.settingsData.EFFECT.get();
         this.DURATION = this.settingsData.DURATION.get();
         this.X_TILES = this.settingsData.X_TILES.get();
         this.Y_TILES = this.settingsData.Y_TILES.get();
@@ -416,12 +416,12 @@ class AbstractCommonMagicLampEffect extends Clutter.DeformEffect {
         }
 
         this.initialized = true;
-        
+
         this.monitor = Main.layoutManager.monitors[actor.meta_window.get_monitor()];
 
         [this.window.x, this.window.y] = [this.actor.get_x() - this.monitor.x, this.actor.get_y() - this.monitor.y];
         [this.window.width, this.window.height] = actor.get_size();
-        
+
         if (!this.icon || (this.icon.x == 0 && this.icon.y == 0 && this.icon.width == 0 && this.icon.height == 0)) {
             this.icon.x = this.monitor.x + this.monitor.width / 2;
             this.icon.y = this.monitor.height + this.monitor.y;
@@ -439,8 +439,8 @@ class AbstractCommonMagicLampEffect extends Clutter.DeformEffect {
         });
         if (this.iconMonitor.x == 0 && this.iconMonitor.y == 0 && this.iconMonitor.width == 0 && this.iconMonitor.height == 0) {
             this.iconMonitor = this.monitor;
-            // this.icon.x = this.monitor.x + this.monitor.width / 2;
-            // this.icon.y = this.monitor.height + this.monitor.y;
+
+
         }
 
         [this.icon.x, this.icon.y, this.icon.width, this.icon.height] = [this.icon.x - this.monitor.x, this.icon.y - this.monitor.y, this.icon.width, this.icon.height];
@@ -478,7 +478,7 @@ class AbstractCommonMagicLampEffect extends Clutter.DeformEffect {
         }
 
         this.set_n_tiles(this.X_TILES, this.Y_TILES);
-        
+
         this.timerId = new Clutter.Timeline({ actor: this.actor, duration: this.DURATION + (this.monitor.width * this.monitor.height) / (this.window.width * this.window.height) });
         this.newFrameEvent = this.timerId.connect('new-frame', this.on_tick_elapsed.bind(this));
         this.completedEvent = this.timerId.connect('completed', this.destroy.bind(this));
@@ -596,8 +596,8 @@ class AbstractCommonMagicLampEffect extends Clutter.DeformEffect {
             v.x = (x + this.offsetX) * propX;
             v.y = (y + offsetY + effectY) * propY;
         } else if (this.iconPosition == St.Side.LEFT) {
-            const x = (this.width - this.j * this.width) * v.tx;  
-            const y = v.ty * this.window.height * (x + (this.width - x) * this.oneMinusK) * this.invWidth + 
+            const x = (this.width - this.j * this.width) * v.tx;
+            const y = v.ty * this.window.height * (x + (this.width - x) * this.oneMinusK) * this.invWidth +
                     v.ty * this.icon.height * (this.width - x) * this.invWidth;
 
             const offsetY = this.diffIconWinY * ((this.width - x) * this.invWidth) * this.k;
@@ -612,7 +612,7 @@ class AbstractCommonMagicLampEffect extends Clutter.DeformEffect {
             v.y = (y + offsetY + effectY) * propY;
         } else if (this.iconPosition == St.Side.TOP) {
             const y = (this.height - this.j * this.height) * v.ty;
-            const x = v.tx * this.window.width * (y + (this.height - y) * this.oneMinusK) * this.invHeight + 
+            const x = v.tx * this.window.width * (y + (this.height - y) * this.oneMinusK) * this.invHeight +
                     v.tx * this.icon.width * (this.height - y) * this.invHeight;
 
             const offsetX = this.diffIconWinX * ((this.height - y) * this.invHeight) * this.k;
@@ -662,7 +662,7 @@ class MagicLampMinimizeEffect extends AbstractCommonMagicLampEffect {
     static {
         GObject.registerClass(this);
     }
-       
+
     _init(params = {}) {
         super._init(params);
 
@@ -703,7 +703,7 @@ class MagicLampMinimizeEffect extends AbstractCommonMagicLampEffect {
         this.invalidate();
     }
 }
-    
+
 class MagicLampUnminimizeEffect extends AbstractCommonMagicLampEffect {
     static {
         GObject.registerClass(this);
@@ -716,7 +716,7 @@ class MagicLampUnminimizeEffect extends AbstractCommonMagicLampEffect {
         this.j = 1;
         this.isMinimizeEffect = false;
     }
-    
+
     destroy_actor(actor) {
         Main.wm._shellwm.original_completed_unminimize(actor);
         GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
@@ -731,7 +731,7 @@ class MagicLampUnminimizeEffect extends AbstractCommonMagicLampEffect {
         if (Main.overview.visible) {
             this.destroy();
             return;
-        }   
+        }
 
         this.progress = timer.get_progress();
         this.k = 1 - (this.progress > (1 - this.split) ? (this.progress - (1 - this.split)) * (1 / (1 - (1 - this.split))) : 0);

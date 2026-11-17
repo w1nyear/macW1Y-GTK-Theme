@@ -1,10 +1,10 @@
-/*
- * Kiwi is not macW1Y – macW1Y-inspired enhancements for GNOME Shell.
- * Customized for macW1Y Tahoe Transformation Suite.
- */
+
+
+
+
 
 import Gio from 'gi://Gio';
-/*[MODULE-MARK]*/ try { globalThis.__kiwiModuleMark = (globalThis.__kiwiModuleMark ?? 0) + 1; } catch (_) {}
+  try { globalThis.__kiwiModuleMark = (globalThis.__kiwiModuleMark ?? 0) + 1; } catch (_) {}
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';

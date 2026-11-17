@@ -5,9 +5,9 @@ import { BackdropGlass } from './rendering/backdropGlass.js';
 import { reportFrameLoopError } from './logger.js';
 import { ensureGlassAllocated, setClipIfChanged, isActorValid, placeScreenGlass, GLASS_SHADOW_MAX_RADIUS } from './actors.js';
 import { isFrameSyncFrozen, SAME_FRAME_WINDOW_US, startStageLoop, stopStageLoop, hexToColorArray } from './animation.js';
-// Room around the glass rect for the shader's edge effects.
+
 export const SHADER_PADDING = 20;
-// The dock glass's look, from the dock-* settings, for every kind of dock.
+
 const DOCK_MATERIAL = [
     ['dock-tint-color', (g, s) => g.setTintColor(...hexToColorArray(s.get_string('dock-tint-color')))],
     ['dock-tint-strength', (g, s) => g.setTintStrength(s.get_double('dock-tint-strength'))],
@@ -27,7 +27,7 @@ export function createDockGlass(extensionPath, settings, logger, owner) {
     return glass;
 }
 
-/** Keeps the glass `glass()` returns, if any, in the dock's look. Returns the ids of the signals on `settings`. */
+
 export function followDockMaterial(settings, glass) {
     return DOCK_MATERIAL.map(([key, apply]) => settings.connect(`changed::${key}`, () => {
         const current = glass();
@@ -40,7 +40,7 @@ export class DashManager {
     extensionPath;
     targetActor;
     _settings;
-    // Monitor-sized; see _syncDockGlass().
+
     glass = null;
     _lastScreenW;
     _lastScreenH;
@@ -67,10 +67,10 @@ export class DashManager {
     _lastBaseW;
     _lastBaseH;
     _marginValue = 0;
-    // Tracks the hide/show transition so the reason is logged once, not per frame.
+
     _lastHidden;
-    // What the last _syncGeometry() based the glass rect on; see
-    // _syncGlassGeometryLive().
+
+
     _liveRef = null;
     _logger;
 
@@ -79,7 +79,7 @@ export class DashManager {
         this.targetActor = targetActor;
         this._settings = settings;
         this._logger = logger;
-        // Pixels added around the dock's own rect.
+
         this._glassExpand = 0;
         this._signals = [];
         this._settingsSignals = [];
@@ -124,8 +124,8 @@ export class DashManager {
         this._settingsSignals.push(...followDockMaterial(this._settings, () => this.glass));
     }
 
-    // Moves the dock away from the screen edge it is closest to by
-    // dock-margin-bottom.
+
+
     _applyMargin() {
         if (!this.targetActor)
             return;
@@ -191,21 +191,21 @@ export class DashManager {
                 break;
             dockRoot = p;
         }
-        // Below the dock, so the glass reads the stage before the dock is drawn.
+
         if (dockRoot && dockRoot.get_parent() === Main.layoutManager.uiGroup) {
             Main.layoutManager.uiGroup.insert_child_below(glass, dockRoot);
         }
         else {
             Main.layoutManager.uiGroup.add_child(glass);
         }
-        // Dash to Dock slides by relayout, so the frame tick sees last frame's
-        // position; the paint-time hook corrects it.
+
+
         glass.setLiveGeometryHook(() => this._syncGlassGeometryLive());
         glass.show();
-        // Follows the stage's own frames (startStageLoop()), so it costs nothing
-        // while nothing changes. Errors are reported rate-limited instead of
-        // logged every frame; SAME_FRAME_WINDOW_US keeps two stage views from
-        // stepping it twice in one frame.
+
+
+
+
         let frameTick = () => {
             if (!this._isEffectActive || !this.glass || !this.targetActor.mapped)
                 return;
@@ -216,7 +216,7 @@ export class DashManager {
                 return;
             this._lastTickUs = nowUs;
             try {
-                // Checked before this frame's sync dirties anything.
+
                 ensureGlassAllocated(this.glass);
                 this._syncGeometry();
             }
@@ -229,8 +229,8 @@ export class DashManager {
                 return;
             startStageLoop(this._frameSignalSlot, this._frameSlot, frameTick);
         };
-        // The glass is the dock's sibling, so it stays up when the dock is
-        // hidden as a whole (for instance over a fullscreen window).
+
+
         let mapSignalId = this.targetActor.connect('notify::mapped', () => {
             if (this.targetActor.mapped) {
                 startFrameSync();
@@ -246,10 +246,10 @@ export class DashManager {
         }
     }
 
-    // Runs at paint time (see GlassActor.setLiveGeometryHook()), when the
-    // dock's allocation is current. _syncGeometry() keeps per-frame state and
-    // must run once per frame, so only the glass rect's position is corrected
-    // here, by how far the dock moved since the tick.
+
+
+
+
     _syncGlassGeometryLive() {
         const ref = this._liveRef;
         if (!ref || !this.glass)
@@ -311,7 +311,7 @@ export class DashManager {
         let [absX, absY] = sourceActor.get_transformed_position();
         if (Number.isNaN(absX) || Number.isNaN(absY))
             return null;
-        // The uncorrected position, which _syncGlassGeometryLive() compares against.
+
         this._liveSource = { actor: sourceActor, rawX: absX, rawY: absY };
         const bounds = { absX, absY, baseW, baseH };
         return sourceActor === this.targetActor ? bounds : clipDockBounds(bounds, this._actorBounds(this.targetActor));
@@ -322,8 +322,8 @@ export class DashManager {
         const { minCenterDist, distTopCenter, distBottomCenter } = edges;
         if (this._lastBaseW !== undefined && this._lastBaseH !== undefined) {
             let isHorizontalDock = (minCenterDist === distTopCenter || minCenterDist === distBottomCenter);
-            // The dock's thickness can jump by exactly the margin for a frame;
-            // such a jump is ignored.
+
+
             if (isHorizontalDock) {
                 if (Math.abs(Math.abs(baseH - this._lastBaseH) - this._marginValue) <= 1)
                     baseH = this._lastBaseH;
@@ -343,8 +343,8 @@ export class DashManager {
         if (!monitor || !(marginValue > 0))
             return bounds;
         const { absX, absY, baseW, baseH } = bounds;
-        // No margin correction while the dock slides in or out from its screen edge. A move along the edge
-        // is a centered dock growing or shrinking as icons come and go, which still needs it.
+
+
         let isMoving = false;
         if (this._lastAbsX !== undefined && this._lastAbsY !== undefined) {
             const horizontal = edges.minCenterDist === edges.distTopCenter || edges.minCenterDist === edges.distBottomCenter;
@@ -369,8 +369,8 @@ export class DashManager {
     _syncDockVisibility(bounds, monitor) {
         const { absX, absY, baseW, baseH } = bounds;
         const [visibleW, visibleH] = visibleDockSize(bounds, monitor);
-        // Only a degenerate box hides the glass: a dock flush against the screen
-        // edge is only a few pixels wide on screen. Logged on transition.
+
+
         if (visibleW <= 1 || visibleH <= 1) {
             if (this._lastHidden !== true) {
                 this._lastHidden = true;
@@ -397,11 +397,11 @@ export class DashManager {
         let bgH = Math.max(1.0, h + (SHADER_PADDING * 2) + (this._glassExpand * 2));
         let bgX = absX - SHADER_PADDING - this._glassExpand;
         let bgY = absY - SHADER_PADDING - this._glassExpand;
-        // The glass covers the whole monitor; the shader draws only the glass
-        // rect, in monitor-local coordinates.
+
+
         let screenW = monitor.width;
         let screenH = monitor.height;
-        // Monitor-local, as the shader uses them.
+
         let localBgX = bgX - monitor.x;
         let localBgY = bgY - monitor.y;
         if (this._lastBgW !== bgW || this._lastBgH !== bgH ||
@@ -421,8 +421,8 @@ export class DashManager {
             this._lastScreenW = screenW;
             this._lastScreenH = screenH;
         }
-        // Limit drawing to the dock plus room for its shadow (not
-        // clip_to_allocation, which would cut the shadow off).
+
+
         const CLIP_PADDING = 200;
         setClipIfChanged(this.glass, localBgX - CLIP_PADDING, localBgY - CLIP_PADDING, bgW + CLIP_PADDING * 2, bgH + CLIP_PADDING * 2);
         const SHADOW_MAX_RADIUS = CLIP_PADDING - 20;
@@ -435,7 +435,7 @@ export class DashManager {
             rawX: source.rawX, rawY: source.rawY,
             rect: [localBgX, localBgY, bgW, bgH],
         } : null;
-        // After the geometry setters, so the relays cover this frame's rect.
+
         this.glass.syncSources();
     }
 
@@ -447,7 +447,7 @@ export class DashManager {
         return { get: () => this._frameSignalId, set: (id) => { this._frameSignalId = id; } };
     }
 
-    // The next sync shows it again and updates everything.
+
     _hideGlass() {
         this.glass?.hide();
         this._lastBgW = undefined;
@@ -466,7 +466,7 @@ export class DashManager {
         this._isEffectActive = false;
         this._currentMarginStyle = undefined;
         this._stopFrameSync();
-        // The dock may already have been destroyed by Dash to Dock.
+
         const dockAlive = isActorValid(this.targetActor);
         for (const id of this._signals) {
             if (dockAlive)
@@ -504,8 +504,8 @@ export class DashManager {
         this._settingsSignals = [];
     }
 
-    // The first running-app indicator inside the dock (Dash to Dock's
-    // IndicatorDrawingArea), used to balance the gaps around the icons.
+
+
     _findReferenceActor(actor) {
         if (!actor)
             return null;
@@ -523,7 +523,7 @@ export class DashManager {
 export function clipDockBounds(bounds, target) {
     let { absX, absY, baseW, baseH } = bounds;
     const { absX: tX, absY: tY, baseW: tW, baseH: tH } = target;
-    // Cut off whatever sticks out of the target.
+
     if (absX < tX) {
         baseW -= (tX - absX);
         absX = tX;
@@ -554,9 +554,9 @@ export function dockEdges(bounds, monitor) {
     return { minCenterDist, distLeftCenter, distRightCenter, distTopCenter, distBottomCenter };
 }
 
-// The gaps before and after the reference rect. On a flipped axis (a dock
-// placed at the top, or a mirrored left/right dock) the reference's origin is
-// at its far edge, so its real start is refStart - refSize.
+
+
+
 function referenceGaps(start, size, refStart, refSize) {
     let before = refStart - start;
     let after = start + size - (refStart + refSize);
@@ -576,9 +576,9 @@ export function balanceDockBounds(bounds, reference, edges) {
     const [topGap, bottomGap] = referenceGaps(absY, baseH, refY, refH);
     const [leftGap, rightGap] = referenceGaps(absX, baseW, refX, refW);
     if (baseW >= baseH) {
-        // Horizontal dock (top or bottom). A difference larger than half the
-        // height is bogus and ignored. Trim the larger gap: the bottom by
-        // shrinking, the top by also moving the start down.
+
+
+
         const diff = Math.abs(bottomGap - topGap);
         if (diff > 0 && diff < baseH / 2) {
             if (!(bottomGap > topGap))
@@ -587,8 +587,8 @@ export function balanceDockBounds(bounds, reference, edges) {
         }
     }
     else {
-        // Vertical dock. Only the gap facing the screen center is trimmed: for a
-        // left dock that is the right gap, and the start is never moved right.
+
+
         const diff = Math.abs(rightGap - leftGap);
         if (diff > 0 && diff < baseW / 2 &&
             (edges.minCenterDist !== edges.distLeftCenter || rightGap > leftGap)) {
@@ -600,7 +600,7 @@ export function balanceDockBounds(bounds, reference, edges) {
     return { absX, absY, baseW, baseH };
 }
 
-// Trims the dock to `margin` from the screen edge it is closest to.
+
 export function insetDockBounds(bounds, monitor, edges, margin, stableBaseW, stableBaseH) {
     let { absX, absY, baseW, baseH } = bounds;
     const { minCenterDist, distBottomCenter, distTopCenter, distRightCenter } = edges;
@@ -629,7 +629,7 @@ function insetSpan(start, size, edge, stableSize, leading) {
     else if (start + size > edge) {
         size -= (start + size) - edge;
     }
-    // Never grow past the last stable size.
+
     if (size > stableSize)
         size = stableSize;
     return [start, size];
@@ -651,13 +651,13 @@ export function visibleDockSize(bounds, monitor) {
     return [visibleW, visibleH];
 }
 
-/**
- * The glass of a Dhruva dock (dhruva@narkagni). Dhruva draws the dock's
- * background as one widget, DhruvaBackground, and while the pointer magnifies
- * the icons it widens that widget with a scale and a translation rather than
- * a new size. The glass takes the widget's rect on screen every frame, and
- * the widget is left in place, transparent, as Dhruva's drop target.
- */
+
+
+
+
+
+
+
 export class DhruvaDock {
     _path;
     _container;
@@ -699,14 +699,14 @@ export class DhruvaDock {
             this._background.opacity = 0;
         const glass = createDockGlass(this._path, this._settings, this._logger, 'dock:dhruva');
         this._glass = glass;
-        // Below the dock, so the glass reads the stage before the dock is drawn.
+
         const uiGroup = Main.layoutManager.uiGroup;
         if (this._container.get_parent() === uiGroup)
             uiGroup.insert_child_below(glass, this._container);
         else
             uiGroup.add_child(glass);
         glass.setShadowMaxRadius(GLASS_SHADOW_MAX_RADIUS);
-        // Dhruva's animations move the background between the frame tick and the paint.
+
         glass.setLiveGeometryHook(() => this._place(false));
         this._mapId = this._container.connect('notify::mapped', () => {
             if (this._container.mapped) {
@@ -728,7 +728,7 @@ export class DhruvaDock {
             const glass = this._glass;
             if (!glass || !this._container.mapped || isFrameSyncFrozen())
                 return;
-            // Two stage views would step it twice in one frame.
+
             const nowUs = GLib.get_monotonic_time();
             if (nowUs - this._lastTickUs < SAME_FRAME_WINDOW_US)
                 return;
@@ -743,9 +743,9 @@ export class DhruvaDock {
         });
     }
 
-    // Puts the glass where the background is on screen. With `sync`, also
-    // places the glass on its monitor and its sample area, which must happen
-    // in the frame tick; the paint-time call only moves the glass rect.
+
+
+
     _place(sync) {
         const glass = this._glass;
         if (!glass)
@@ -765,20 +765,20 @@ export class DhruvaDock {
         const rect = { x: x - pad - monitor.x, y: y - pad - monitor.y, w: w + pad * 2, h: h + pad * 2 };
         if (sync) {
             glass.show();
-            // Dhruva fades the whole dock in and out as it hides.
+
             glass.opacity = this._container.get_paint_opacity();
             placeScreenGlass(glass, monitor.x, monitor.y, monitor.width, monitor.height, rect);
             glass.setResolution(monitor.width, monitor.height);
         }
         glass.setGlassGeometry(rect.x, rect.y, rect.w, rect.h);
-        // After the geometry setters, so the relays cover this frame's rect.
+
         if (sync)
             glass.syncSources();
     }
 
     _remove() {
         stopStageLoop(this._frameSignalSlot, this._frameSlot);
-        // Dhruva may have destroyed its dock already.
+
         if (this._mapId && isActorValid(this._container))
             this._container.disconnect(this._mapId);
         this._mapId = 0;
@@ -813,14 +813,14 @@ export class DhruvaDock {
 const SEARCH_DELAY_MS = 2000;
 const RESCAN_IDLE_TICKS = 2;
 const RESCAN_INTERVAL_MS = 2000;
-// The actors Dash to Dock and Dhruva add to the UI group for each dock.
+
 const DOCK_ROOTS = ['dashtodockContainer', 'DhruvaContainer'];
 
-/**
- * Finds Dash to Dock's and Dhruva's docks and gives each its glass. Either may create its dock after we are enabled,
- * and recreates it when monitors change, when it is enabled again and for some of its settings, so it is looked for
- * after a delay and again whenever one may have appeared.
- */
+
+
+
+
+
 export class DockWatcher {
     _path;
     _settings;
@@ -886,7 +886,7 @@ export class DockWatcher {
         return found;
     }
 
-    // True when a dock was found that had no glass yet.
+
     _find() {
         let added = 0;
         for (const { container, dhruva } of this._containers()) {
@@ -920,7 +920,7 @@ export class DockWatcher {
         this._icons.unwatchDock(entry.container);
     }
 
-    // Keeps looking until RESCAN_IDLE_TICKS scans in a row find nothing new.
+
     _scheduleRescan() {
         if (this._rescanId)
             GLib.Source.remove(this._rescanId);

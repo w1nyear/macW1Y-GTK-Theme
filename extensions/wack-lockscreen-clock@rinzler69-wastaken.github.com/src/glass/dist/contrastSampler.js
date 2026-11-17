@@ -9,41 +9,41 @@ import { utilsLog } from './logger.js';
 import { createTarget } from './rendering/backdropGlass.js';
 import { coglContext, paintStageToContent } from './shellVersion.js';
 import { adaptiveColorTweener, hexToRgb, resolveCrossFade } from './animation.js';
-// How much better the other color has to score before the decision flips.
-// With a preferred color set, flipping towards it is easy and away from it
-// hard.
+
+
+
 const SWITCH_ADVANTAGE = 1.2;
 const SWITCH_ADVANTAGE_TOWARD_PREFERRED = 1.02;
 const SWITCH_ADVANTAGE_AGAINST_PREFERRED = 1.6;
-// Contrast ratios this close mean the background favours neither color; a
-// preferred color then applies outright (see decideTextColor()).
+
+
 const AMBIGUOUS_RATIO = 1.15;
-// Measurements are ignored this long after a flip: the samples cover the text
-// itself, and the color tween (about 380ms) would be measured as a change.
+
+
 const SWITCH_SETTLE_MS = 600;
 const MIN_READABLE_CONTRAST = 4.5;
 const BACKDROP_COVERS_GLASS_ALPHA = 190;
 const READABILITY_FLIP_COOLDOWN = 3;
 const BACKGROUND_REALLY_MOVED = 0.15;
 const BACKDROP_SEARCH_DEPTH = 8;
-// With preferredMinContrast set, the preferred color comes back once it
-// reads this many times better than that.
+
+
 const PREFERRED_RETURN = 1.15;
 export const AdaptiveContrastConfig = {
     enabled: true,
-    // Sample each text actor separately instead of one merged rect (costlier).
+
     samplePerElement: false,
     sampleIntervalMs: 200,
     lightTextColor: '#f2f2f2',
     darkTextColor: '#1a1a1a',
-    // 'light'/'dark' name the text color to favour; 'auto' favours neither.
+
     preference: 'auto',
-    // When above 0, the preferred color is kept while its contrast ratio is
-    // at least this, not only when the background favours neither color.
+
+
     preferredMinContrast: 0,
 };
 
-// Anything unrecognised in the setting counts as 'auto'.
+
 export function sanitizeColorPreference(value) {
     return (value === 'light' || value === 'dark') ? value : 'auto';
 }
@@ -87,7 +87,7 @@ function _getActorRect(actor) {
     const [x, y, w, h] = getTransformedRect(actor);
     if (![x, y, w, h].every(Number.isFinite) || w <= 0 || h <= 0)
         return null;
-    // Shell.Screenshot expects stage coordinates, including ancestor scale.
+
     const left = Math.max(0, Math.floor(x));
     const top = Math.max(0, Math.floor(y));
     const right = Math.min(global.stage.width, Math.ceil(x + w));
@@ -119,12 +119,12 @@ function _mergeRects(rects) {
     };
 }
 
-// The samples are textures read through Shell.Screenshot.composite_to_stream(),
-// whose result comes with the pixels. A direct GPU read-back
-// (Stage.paint_to_buffer(), Cogl.Texture.get_data()) is not usable from GJS:
-// their output buffers are annotated as input arrays, so GJS passes a
-// temporary copy and the pixels never come back. Decoding a screenshot's PNG
-// is avoided too: from GdkPixbuf 2.44 on, that starts a sandboxed loader.
+
+
+
+
+
+
 let _capturePathLogged = false;
 
 function _reportCapturePath(msg) {
@@ -134,17 +134,17 @@ function _reportCapturePath(msg) {
     utilsLog(`[Liquid Glass][contrast] ${msg}`);
 }
 
-// Pixels are sampled on a grid of about this many steps per edge.
+
 const SAMPLE_MAX_EDGE = 48;
 
-/**
- * Reads a texture into memory, only to measure the brightness behind the
- * text. Nothing is written to disk or kept after the measurement.
- */
+
+
+
+
 function _readTexture(texture, width, height) {
     return new Promise(resolve => {
         Shell.Screenshot.composite_to_stream(texture, 0, 0, width, height, 1, null, 0, 0, 1, Gio.MemoryOutputStream.new_resizable(), (_obj, res) => {
-            // The finish call throws a GError on failure.
+
             try {
                 resolve(_imageOf(Shell.Screenshot.composite_to_stream_finish(res)));
             }
@@ -155,12 +155,12 @@ function _readTexture(texture, width, height) {
     });
 }
 
-/**
- * Draws the part [s0, t0]-[s1, t1] of `texture` into a new texture of
- * width x height and reads that. Drawing with `texture` also flushes what is
- * still queued for it, which GNOME 46 leaves queued after painting the stage
- * into one.
- */
+
+
+
+
+
+
 function _drawAndRead(texture, s0, t0, s1, t1, width, height) {
     const target = createTarget(width, height);
     if (!target)
@@ -172,25 +172,25 @@ function _drawAndRead(texture, s0, t0, s1, t1, width, height) {
     fb.orthographic(0, 0, width, height, -1, 1);
     fb.clear4f(Cogl.BufferBit.COLOR, 0, 0, 0, 0);
     fb.draw_textured_rectangle(pipeline, 0, 0, width, height, s0, t0, s1, t1);
-    // The read goes through a sub-texture, which does not flush the drawing
-    // queued on this framebuffer.
+
+
     fb.flush();
     return _readTexture(target.texture, width, height);
 }
 
-/**
- * Paints the stage under `rect` into a texture of about SAMPLE_MAX_EDGE
- * pixels a side, as the screen shows it now, and reads that.
- */
+
+
+
+
 function _captureViaStage(rect) {
     const x = Math.floor(rect.x);
     const y = Math.floor(rect.y);
     const width = Math.max(1, Math.floor(rect.width));
     const height = Math.max(1, Math.floor(rect.height));
-    // The short side is kept at a pixel at least, or a long thin rect would be painted at no height.
+
     const scale = Math.min(1, Math.max(SAMPLE_MAX_EDGE / Math.max(width, height), 1 / Math.min(width, height)));
     let content;
-    // Painting into an offscreen throws a GError when it cannot be allocated.
+
     try {
         content = paintStageToContent(new Mtk.Rectangle({ x, y, width, height }), scale);
     }
@@ -218,7 +218,7 @@ function _imageOf(pixbuf) {
     };
 }
 
-// The z of glass.frag's light direction, normalize(cos a, sin a, 0.38).
+
 const LIGHT_FACING = 0.38 / Math.sqrt(1 + 0.38 * 0.38);
 
 export function glassToneOf(values) {
@@ -250,7 +250,7 @@ export function tonedLuminance(r, g, b, tone) {
     cr = finish(cr, tone.tint[0]);
     cg = finish(cg, tone.tint[1]);
     cb = finish(cb, tone.tint[2]);
-    // The shader scales an overbright color down by its largest channel.
+
     const peak = Math.max(1, cr, cg, cb);
     return _luminanceFromRgb(_clamp(cr / peak, 0, 1) * 255, _clamp(cg / peak, 0, 1) * 255, _clamp(cb / peak, 0, 1) * 255);
 }
@@ -265,11 +265,11 @@ function _overlap(copyRect, rect) {
     return { x, y, width: right - x, height: bottom - y };
 }
 
-/**
- * Reads the part of a glass's backdrop copy under `rect`. The copy is first
- * drawn into a texture of about SAMPLE_MAX_EDGE pixels a side, so only that
- * much is read back.
- */
+
+
+
+
+
 function _captureViaBackdrop(copy, rect) {
     const area = _overlap(copy.rect, rect);
     if (!area)
@@ -279,7 +279,7 @@ function _captureViaBackdrop(copy, rect) {
     return _drawAndRead(copy.texture, (area.x - x0) / (x1 - x0), (area.y - y0) / (y1 - y0), (area.x + area.width - x0) / (x1 - x0), (area.y + area.height - y0) / (y1 - y0), Math.max(1, Math.round(area.width * k)), Math.max(1, Math.round(area.height * k)));
 }
 
-// The parts of `rect` outside the stage rect [x0, y0, x1, y1]: above, below, and left and right between them.
+
 function _outside(rect, [x0, y0, x1, y1]) {
     const right = rect.x + rect.width, bottom = rect.y + rect.height;
     const top = Math.max(rect.y, Math.min(y0, bottom)), base = Math.min(bottom, Math.max(y1, top));
@@ -292,7 +292,7 @@ function _outside(rect, [x0, y0, x1, y1]) {
     return strips.filter(r => r.width >= 1 && r.height >= 1);
 }
 
-// The drawn glass whose backdrop copy holds most of `rect`.
+
 function _bestCopy(rect, drawn) {
     let best = null;
     let bestArea = 0;
@@ -310,7 +310,7 @@ function _bestCopy(rect, drawn) {
 export function backdropLuminance(actor, root = null) {
     let node = actor;
     for (let depth = 0; node && depth < BACKDROP_SEARCH_DEPTH; depth++) {
-        // Only St widgets have a theme node; plain Clutter actors are skipped.
+
         const color = node.get_theme_node?.().get_background_color();
         if (color && color.alpha >= BACKDROP_COVERS_GLASS_ALPHA) {
             return {
@@ -350,7 +350,7 @@ function _readSignature(paintSignature) {
     return Number.isFinite(v) ? v : null;
 }
 
-// The decision also depends on the configuration, not only on pixels.
+
 function _skipKey(rects, config) {
     return rects
         .map(r => `${Math.round(r.x)},${Math.round(r.y)},${Math.round(r.width)},${Math.round(r.height)}`)
@@ -366,13 +366,13 @@ function _pixelLuminance(data, idx, channels, tone) {
         return null;
     if (a >= 255)
         return measure(data[idx], data[idx + 1], data[idx + 2]);
-    // Un-premultiply semi-transparent pixels before measuring.
+
     const inv = 255.0 / a;
     const unpremultiply = (c) => _clamp(Math.round(c * inv), 0, 255);
     return measure(unpremultiply(data[idx]), unpremultiply(data[idx + 1]), unpremultiply(data[idx + 2]));
 }
 
-/** @param tone When given, each pixel is measured as the glass would show it. */
+
 export function luminanceSamples(shot, tone) {
     const { data, width, height, stride, channels, step } = shot;
     const values = [];
@@ -390,44 +390,44 @@ export function luminanceSamples(shot, tone) {
 export class StageContrastSampler {
     _lastLuma = null;
     _lastIsBright = null;
-    // Monotonic time of the last flip; see SWITCH_SETTLE_MS.
+
     _lastSwitchAt = null;
-    // The configuration the hold started under; a change ends it.
+
     _holdConfig = '';
     _roundsSinceFlip = READABILITY_FLIP_COOLDOWN;
     _lastRawLuma = null;
     _lastRect = null;
     _lastDecided = null;
-    // The caller's paint counter after the last capture, and the rects and
-    // configuration it measured; see chooseColorsForActors().
+
+
     _unchangedSignature = null;
     _unchangedKey = '';
-    // Advanced by chooseColorFor(), so that a merged decision measured meanwhile is dropped.
+
     _epoch = 0;
-    // Advanced by invalidate(), so that a measurement still running does not freeze what it measured
-    // before the content changed.
+
+
     _generation = 0;
 
-    // The next call always samples.
+
     invalidate() {
         this._generation++;
         this._unchangedSignature = null;
         this._unchangedKey = '';
     }
 
-    // Forgets the decisions so far, for a surface that is shown again and may be
-    // over something else now: the next decision is not smoothed towards the
-    // last one.
+
+
+
     reset() {
         this.invalidate();
         this._lastRect = null;
     }
 
-    /**
-     * Measures the screen under `rect`.
-     * @param tone Set when no glass is drawn there yet: the screen then shows
-     *   the bare backdrop, and the tone predicts the glass over it.
-     */
+
+
+
+
+
     async sampleLuminance(rect, tone) {
         if (!rect || rect.width <= 0 || rect.height <= 0)
             return null;
@@ -439,7 +439,7 @@ export class StageContrastSampler {
         return this._meanOf(shot, tone);
     }
 
-    /** Measures a glass's backdrop under `rect`, as the glass shows it. */
+
     async sampleBackdropLuminance(copy, rect, tone) {
         const shot = await _captureViaBackdrop(copy, rect);
         if (!shot) {
@@ -455,17 +455,17 @@ export class StageContrastSampler {
             _reportCapturePath('capture produced no usable pixels (everything below the alpha cutoff)');
             return null;
         }
-        // A screenshot contains the text itself, whose color is what is being
-        // decided. Trimming 30% from each end (an interquartile mean) keeps the
-        // glyphs from moving the result, so a flip cannot flip itself back.
+
+
+
         return _trimmedMean(values, 0.30);
     }
 
-    /**
-     * The glass's backdrop when one of `sources` is drawn over `rect` and has
-     * copied it, so that the text, the highlights and the bars on the glass are
-     * not measured; the screen otherwise.
-     */
+
+
+
+
+
     _measure(rect, sources) {
         if (sources.length === 0)
             return this.sampleLuminance(rect);
@@ -476,8 +476,8 @@ export class StageContrastSampler {
         return this.sampleLuminance(rect, drawn.length === 0 ? glassToneOf(sources[0].uniformValues) : undefined);
     }
 
-    // Like _measure(), for a rect the glass is about to grow over: the part its backdrop copy does not hold yet is
-    // measured on the screen, which shows no glass there, as the glass will show it.
+
+
     async _measureGrowing(rect, sources) {
         const drawn = sources.filter(source => source.mapped && source.get_paint_opacity() > 0);
         const best = _bestCopy(rect, drawn);
@@ -516,22 +516,22 @@ export class StageContrastSampler {
         const preference = config.preference ?? 'auto';
         const hasPreference = preference !== 'auto';
         const preferDark = preference === 'dark';
-        // From the raw contrasts, so it reflects what is on screen now.
+
         const ambiguous = Math.max(rawLight, rawDark) < Math.min(rawLight, rawDark) * AMBIGUOUS_RATIO;
         const floor = hasPreference ? config.preferredMinContrast : 0;
-        // The contrast a color needs to be called readable.
+
         const readableAt = (bright) => floor > 0 && bright === preferDark ? floor : MIN_READABLE_CONTRAST;
-        // Per-element decisions keep no history, so the preference is the only
-        // stabiliser.
+
+
         if (config.samplePerElement) {
             const preferredReads = floor > 0 && (preferDark ? rawDark : rawLight) >= floor;
             if ((ambiguous || preferredReads) && hasPreference)
                 return preferDark ? config.darkTextColor : config.lightTextColor;
             return rawDark > rawLight ? config.darkTextColor : config.lightTextColor;
         }
-        // Hold the decision for SWITCH_SETTLE_MS after a flip, unless the held
-        // color is unreadable and the other one is not. A configuration change
-        // ends the hold: it should apply at once.
+
+
+
         const now = GLib.get_monotonic_time();
         const holdConfig = `${preference}|${floor}|${config.lightTextColor}|${config.darkTextColor}`;
         if (holdConfig !== this._holdConfig) {
@@ -557,11 +557,11 @@ export class StageContrastSampler {
             isBright = preferred >= (onPreferred ? floor : floor * PREFERRED_RETURN) ? preferDark : !preferDark;
         }
         else if (ambiguous && hasPreference) {
-            // Decided by the measurement alone, so it cannot oscillate.
+
             isBright = preferDark;
         }
         else if (this._lastIsBright === null) {
-            // First decision for this surface.
+
             isBright = darkContrast > lightContrast;
         }
         else {
@@ -574,8 +574,8 @@ export class StageContrastSampler {
             if (alternative > current * advantage)
                 isBright = !isBright;
         }
-        // Readability wins over smoothing and over the preference: switch at once
-        // when the current color is unreadable and the other is not.
+
+
         const rawCurrent = isBright ? rawDark : rawLight;
         const rawAlternative = isBright ? rawLight : rawDark;
         const jumped = this._lastRawLuma === null ||
@@ -603,14 +603,14 @@ export class StageContrastSampler {
         return this.decideTextColor(backdrop.luminance, { ...config, samplePerElement: true });
     }
 
-    /**
-     * @param paintSignature Optional counter that advances whenever the glass
-     *   under the text is painted. Anything that changes under the text
-     *   repaints that glass, so while the counter stands still the capture is
-     *   skipped and an empty map returned (the applied colors stay).
-     * @param backdrops The glasses under the text, whose backdrops are measured
-     *   in place of the screen; see _measure().
-     */
+
+
+
+
+
+
+
+
     async chooseColorsForActors(actors, config = AdaptiveContrastConfig, root = null, paintSignature, backdrops) {
         const { targets, rects } = _visibleTargets(actors);
         if (targets.length === 0)
@@ -623,10 +623,10 @@ export class StageContrastSampler {
         const generation = this._generation;
         if (before !== null && before === this._unchangedSignature && key === this._unchangedKey)
             return new Map();
-        // Only a converged decision may be frozen: the merged path smooths over
-        // samples and holds after a flip. The capture itself paints the region,
-        // so it may advance the counter by one per screenshot; more means the
-        // screen changed meanwhile.
+
+
+
+
         const settle = (stable) => {
             const after = _readSignature(paintSignature);
             if (stable && generation === this._generation && before !== null && after !== null &&
@@ -643,17 +643,17 @@ export class StageContrastSampler {
             return this._choosePerElement(targets, rects, config, settle, sources);
         if (!merged)
             return new Map();
-        // Text that is not laid out yet, as in a menu opening for the first time,
-        // takes the same color, so it does not show up in the old one.
+
+
         return this._chooseMerged(actors, merged, config, settle, sources);
     }
 
-    /**
-     * The color for text that is about to cover `rect`, decided at once from this measurement alone: the current
-     * color stays unless the other one reads clearly better. A merged decision measured meanwhile is dropped, and
-     * the next one goes on from this one while it is over the same rect. Null when it could not be measured, or when
-     * a later call took over.
-     */
+
+
+
+
+
+
     async chooseColorFor(rect, config, sources) {
         const epoch = ++this._epoch;
         const luma = await this._measureGrowing(rect, sources);
@@ -713,7 +713,7 @@ export class StageContrastSampler {
             if (color)
                 result.set(targets[i], color);
         }
-        // Per-element decisions are stateless.
+
         settle(true);
         return result;
     }
@@ -721,13 +721,13 @@ export class StageContrastSampler {
 
 const COLOR_TWEEN_MS = 380;
 
-/**
- * Keeps the labels and icons under `roots` readable on their glass: every
- * `intervalMs` it measures what is behind them and colors them light or
- * dark. For surfaces that stay on screen (the top bar, desktop widgets,
- * the launcher); a measurement is skipped while nothing behind them was
- * repainted.
- */
+
+
+
+
+
+
+
 export class AdaptiveTextColor {
     _roots;
     _glasses;
@@ -739,9 +739,9 @@ export class AdaptiveTextColor {
     _timerId = 0;
     _inFlight = false;
     _first = true;
-    // colorFor() calls still measuring; the periodic measurement waits for them.
+
     _pending = 0;
-    // Each colored actor's own inline style, put back by clear().
+
     _styled = new Map();
 
     constructor(_roots, _glasses, _logger, _label, _options = {}) {
@@ -752,10 +752,10 @@ export class AdaptiveTextColor {
         this._options = _options;
     }
 
-    /**
-     * @param preferredMinContrast When above 0, `preference` is kept while it
-     *   reads at least this well; see AdaptiveContrastConfig.
-     */
+
+
+
+
     start(intervalMs, preference, preferredMinContrast = 0) {
         this._config.sampleIntervalMs = intervalMs;
         this._config.preference = preference;
@@ -777,13 +777,13 @@ export class AdaptiveTextColor {
         }
     }
 
-    // Measures again at the next update, for a surface whose content changed.
+
     invalidate() {
         this._sampler.invalidate();
     }
 
-    // True while any of this surface's text actors are being recolored. Layouts
-    // that derive geometry from those actors can hold their last stable bounds.
+
+
     isAnimating() {
         for (const actor of this._styled.keys()) {
             if (adaptiveColorTweener.isAnimating(actor))
@@ -818,10 +818,10 @@ export class AdaptiveTextColor {
             .finally(() => { this._inFlight = false; });
     }
 
-    /**
-     * Colors the roots at once, without a tween, for what is behind `rect` (stage coordinates): for a surface with
-     * ownColor about to take that size, whose new part has no glass under it yet. Does nothing unless started.
-     */
+
+
+
+
     colorFor(rect) {
         if (!this._timerId)
             return;
@@ -850,7 +850,7 @@ export class AdaptiveTextColor {
             });
             this._styled.set(actor, entry);
         }
-        // A style that went back to the actor's own was reset by someone else; the color is put on again.
+
         const reset = entry.color !== '' && (actor.get_style() ?? '') === entry.style && !adaptiveColorTweener.isAnimating(actor);
         if (entry.color === color && !skip && !reset)
             return;
@@ -879,7 +879,7 @@ export class AdaptiveTextColor {
         }, batch);
     }
 
-    /** Stops measuring and gives every actor its own style back. */
+
     clear() {
         this.stop();
         for (const [actor, entry] of this._styled) {

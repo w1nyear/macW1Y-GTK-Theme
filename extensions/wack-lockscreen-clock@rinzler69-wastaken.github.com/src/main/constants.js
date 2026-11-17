@@ -4,70 +4,70 @@ import Clutter from 'gi://Clutter';
 
 let _cachedWallClock = null;
 
-export const HINT_TIMEOUT = 4; // Seconds before the "swipe to unlock" hint appears
-export const CROSSFADE_TIME = 500; // Animation duration for transitions
+export const HINT_TIMEOUT = 4;
+export const CROSSFADE_TIME = 500;
 
-// Visual positioning constants
-export const DATETIME_TOP_FRACTION = 0.07; // Date/Time offset from the top
-export const HINT_VERTICAL_FRACTION = 0.875; // Hint offset from the top
-export const HINT_NOTIF_MARGIN = 16; // Minimum vertical gap between hint and notifications
-export const FADE_OUT_SCALE = 0.3; // Scale factor when the clock shrinks during unlock transition
 
-// Date label height/gap from the clock
+export const DATETIME_TOP_FRACTION = 0.07;
+export const HINT_VERTICAL_FRACTION = 0.875;
+export const HINT_NOTIF_MARGIN = 16;
+export const FADE_OUT_SCALE = 0.3;
+
+
 export const DATE_LABEL_HEIGHT = 24;
-export const TIME_LABEL_HEIGHT_FALLBACK = 128; // Fallback natural height for the time label in logical px
+export const TIME_LABEL_HEIGHT_FALLBACK = 128;
 
-// Background blur settings when entering the password prompt
+
 export const PROMPT_BLUR_RADIUS = 50;
 export const PROMPT_BLUR_BRIGHTNESS = 1.0;
 
-// Cancel button sampling constants (for lockscreen)
+
 export const CANCEL_BUTTON_HOVER_OVERLAY_ALPHA = 0.12;
 export const CANCEL_BUTTON_ACTIVE_OVERLAY_ALPHA = 0.24;
-export const CANCEL_BUTTON_WIDTH = 34; // px
-export const CANCEL_BUTTON_HEIGHT = 34; // px
-export const CANCEL_BUTTON_X_OFFSET = 0; // px
-export const CANCEL_BUTTON_Y_OFFSET = 0; // px
-
-// Avatar button sampling constants (for lockscreen)
-export const AVATAR_BUTTON_WIDTH = 56; // px
-export const AVATAR_BUTTON_HEIGHT = 56; // px
-export const AVATAR_BUTTON_X_OFFSET = 0; // px
-export const AVATAR_BUTTON_Y_OFFSET = 0; // px
-
-// Accessibility button sampling constants (for lockscreen)
-export const A11Y_BUTTON_WIDTH = 34; // px
-export const A11Y_BUTTON_HEIGHT = 34; // px
-export const A11Y_BUTTON_X_OFFSET = 0; // px
-export const A11Y_BUTTON_Y_OFFSET = 0; // px
-
-// Desktop Environment / Session select button sampling constants (for lockscreen)
-export const SESSION_BUTTON_WIDTH = 34; // px
-export const SESSION_BUTTON_HEIGHT = 34; // px
-export const SESSION_BUTTON_X_OFFSET = 0; // px
-export const SESSION_BUTTON_Y_OFFSET = 0; // px
+export const CANCEL_BUTTON_WIDTH = 34;
+export const CANCEL_BUTTON_HEIGHT = 34;
+export const CANCEL_BUTTON_X_OFFSET = 0;
+export const CANCEL_BUTTON_Y_OFFSET = 0;
 
 
-// Individual notification card blur settings
+export const AVATAR_BUTTON_WIDTH = 56;
+export const AVATAR_BUTTON_HEIGHT = 56;
+export const AVATAR_BUTTON_X_OFFSET = 0;
+export const AVATAR_BUTTON_Y_OFFSET = 0;
+
+
+export const A11Y_BUTTON_WIDTH = 34;
+export const A11Y_BUTTON_HEIGHT = 34;
+export const A11Y_BUTTON_X_OFFSET = 0;
+export const A11Y_BUTTON_Y_OFFSET = 0;
+
+
+export const SESSION_BUTTON_WIDTH = 34;
+export const SESSION_BUTTON_HEIGHT = 34;
+export const SESSION_BUTTON_X_OFFSET = 0;
+export const SESSION_BUTTON_Y_OFFSET = 0;
+
+
+
 export const NOTIF_BLUR_RADIUS = 50;
 export const NOTIF_BLUR_BRIGHTNESS = 1.0;
 export const NOTIF_BLUR_NAME = 'wack-notif-blur';
 export const NOTIF_CARD_RADIUS = 12;
 
-// Cupertino mode prompt positioning
-export const CUPERTINO_PROMPT_VERTICAL_FRACTION = 0.9575; // Prompt center Y as fraction of screen height
-export const CUPERTINO_CHIP_VERTICAL_FRACTION = 0.9025; // Prompt chip actual center Y as fraction of screen height (offset lower than stack)
+
+export const CUPERTINO_PROMPT_VERTICAL_FRACTION = 0.9575;
+export const CUPERTINO_CHIP_VERTICAL_FRACTION = 0.9025;
 export { CUPERTINO_PROMPT_WHITE_BLEND_ALPHA } from './colorUtils.js';
 
-// UI limits
-export const MAX_VISIBLE_CARDS = 3; // Maximum number of notification cards to show simultaneously
 
-// Cupertino unlock transition timings
-export const CUPERTINO_UNLOCK_PANEL_FADE = 0;  // ms — panel fades out before the override fires
-export const CUPERTINO_UNLOCK_TSO_DELAY = 0;   // ms — wait after panel fade before session mode override + slide-in
-export const CUPERTINO_UNLOCK_FADE_DURATION = 400; // ms — duration of the actors fade-out + panel slide-in
+export const MAX_VISIBLE_CARDS = 3;
 
-// Crossfade speed presets (ms) for the unlock transition
+
+export const CUPERTINO_UNLOCK_PANEL_FADE = 0;
+export const CUPERTINO_UNLOCK_TSO_DELAY = 0;
+export const CUPERTINO_UNLOCK_FADE_DURATION = 400;
+
+
 export const CROSSFADE_SPEED_SLOW = 400;
 export const CROSSFADE_SPEED_FAST = 300;
 
@@ -99,7 +99,7 @@ export function getPrettyDate(style = 'full', wallClock = null, explicitLocale =
         if (clock) {
             const now = GLib.DateTime.new_now_local();
             const full = clock.string_for_datetime(now, 0, true, true, false);
-            // In GnomeDesktop.WallClock, the date part is separated from time by an en-space (\u2002)
+
             const datePart = full ? full.split('\u2002')[0].trim() : '';
             if (datePart)
                 return datePart;
@@ -109,7 +109,7 @@ export function getPrettyDate(style = 'full', wallClock = null, explicitLocale =
         return dtf.format(new Date());
     }
 
-    // Full style: verbose date presentation (e.g. "Wednesday, September 16" / "Mittwoch, 16. September")
+
     const dtf = new Intl.DateTimeFormat(targetLocale, { weekday: 'long', month: 'long', day: 'numeric' });
     const parts = dtf.formatToParts(new Date());
     let result = '';
@@ -126,17 +126,17 @@ export function getPrettyDate(style = 'full', wallClock = null, explicitLocale =
     return result;
 }
 
-/**
- * Parses a GNOME background XML slideshow and returns the active slide file path and transition metadata for the current time.
- * @param {string} xmlText The raw XML content of the slideshow
- * @param {number} [colorScheme] Optional color scheme enum (1=dark) for fallback
- * @returns {{filePath: string, isTransition: boolean, from: string, to: string, progress: number}|null} The resolved wallpaper details or null
- */
+
+
+
+
+
+
 export function resolveSlideshowXmlContent(xmlText, colorScheme = 0) {
     if (!xmlText)
         return null;
 
-    // Parse starttime
+
     const yearMatch = xmlText.match(/<year>\s*(\d+)\s*<\/year>/);
     const monthMatch = xmlText.match(/<month>\s*(\d+)\s*<\/month>/);
     const dayMatch = xmlText.match(/<day>\s*(\d+)\s*<\/day>/);
@@ -160,7 +160,7 @@ export function resolveSlideshowXmlContent(xmlText, colorScheme = 0) {
     const nowMs = Date.now();
     const elapsedSeconds = Math.max(0, Math.floor((nowMs - startMs) / 1000));
 
-    // Parse elements
+
     const items = [];
     const blockRegex = /<(static|transition)[^>]*>([\s\S]*?)<\/\1>/g;
     let match;
@@ -237,7 +237,7 @@ export function resolveSlideshowXmlContent(xmlText, colorScheme = 0) {
         }
     }
 
-    // Fallback if parsing or math fails: pick based on color scheme
+
     const files = [];
     for (const item of items) {
         if (item.file) files.push(item.file);
@@ -261,11 +261,11 @@ export function resolveSlideshowXmlContent(xmlText, colorScheme = 0) {
     return null;
 }
 
-/**
- * Centrally manages the horizontal centering constraint for clock labels.
- * @param {Clutter.Actor} label Clock label actor
- * @param {Clutter.Actor} wrapper Parent/source wrapper actor
- */
+
+
+
+
+
 export function centerClockLabel(label, wrapper) {
     if (!label || !wrapper) return;
     const constraintName = 'wack-clock-center-x';
@@ -280,4 +280,3 @@ export function centerClockLabel(label, wrapper) {
         factor: 0.5,
     }));
 }
-

@@ -1,8 +1,8 @@
-// -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
-// This file is part of Dash2Dock Motion, a modified copy of Dash to Dock
-// (https://github.com/micheleg/dash-to-dock) by Michele Gaio and
+
+
+
 // contributors. Distributed under the GNU General Public License,
-// version 2 or later.
+
 
 
 import {
@@ -165,8 +165,8 @@ export class AppIconsDecorator {
                 if (this.isEmpty())
                     return;
 
-                // Temporarily hide all the menu items a part the Pinning and
-                // the details one while we're updating.
+
+
                 const validItems = [
                     this._toggleFavoriteItem,
                     this._detailsItem,

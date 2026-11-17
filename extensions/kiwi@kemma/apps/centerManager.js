@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// centerManager.js — macW1Y Tahoe Mutual Exclusion Coordinator
-// Guarantees that only ONE center (Control Center, Notification Center,
-// Spotlight, Clipboard, or Panel Menu) is open at any given moment.
+
+
+
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
@@ -63,7 +63,7 @@ export function closeAllCenters(except = null) {
 
 globalThis._macCloseAllCenters = closeAllCenters;
 
-// Hook Main.panel.menuManager so opening any menu closes other centers
+
 try {
     const mm = Main.panel?.menuManager;
     if (mm && !mm._macMutualExclusionInstalled) {
@@ -87,7 +87,7 @@ try {
     }
 } catch (_) {}
 
-// Automatically close all centers when a system modal (e.g. Screenshot UI, lock screen, auth dialog) opens
+
 try {
     if (!globalThis._macSystemModalHooked) {
         globalThis._macSystemModalHooked = true;

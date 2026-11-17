@@ -21,7 +21,7 @@ export const PipelineChooseRow = GObject.registerClass({
 
         this.create_pipelines_list();
 
-        // display the correct pipeline name in the drop-down instead of their ids
+
         const closure_func = string_object => {
             const pipeline_id = string_object.get_string();
             if (pipeline_id == 'create_new')
@@ -35,7 +35,7 @@ export const PipelineChooseRow = GObject.registerClass({
         const expression = new Gtk.ClosureExpression(GObject.TYPE_STRING, closure_func, []);
         this._pipeline_choose.expression = expression;
 
-        // TODO fix the expression not being re-evaluated other than by setting it again
+
         this.pipelines_manager.connect(
             'pipeline-names-changed',
             () => this._pipeline_choose.expression = new Gtk.ClosureExpression(
@@ -71,8 +71,8 @@ export const PipelineChooseRow = GObject.registerClass({
     on_settings_pipeline_changed() {
         for (let i = 0; i < this._pipeline_model.n_items; i++) {
             const pipeline_id = this._pipeline_model.get_string(i);
-            // if we have more pipelines than we should have: rebuild...
-            // that is the case when resetting the preferences for example
+
+
             if (
                 pipeline_id !== 'create_new'
                 && !(pipeline_id in this.pipelines_manager.pipelines)
@@ -86,13 +86,13 @@ export const PipelineChooseRow = GObject.registerClass({
     }
 
     create_pipelines_list() {
-        // prevent the pipeline selector from being updated while re-creating the list
+
         this._is_creating_pipelines_list = true;
 
-        // remove ancient items
+
         this._pipeline_model.splice(0, this._pipeline_model.n_items, null);
 
-        // add new ones
+
         let i = 0;
         for (let pipeline_id in this.pipelines_manager.pipelines) {
             this._pipeline_model.append(pipeline_id);
@@ -102,7 +102,7 @@ export const PipelineChooseRow = GObject.registerClass({
         }
         this._pipeline_model.append('create_new');
 
-        // now update the drop-down selector
+
         this._is_creating_pipelines_list = false;
         this.on_selected_pipeline_changed();
     }

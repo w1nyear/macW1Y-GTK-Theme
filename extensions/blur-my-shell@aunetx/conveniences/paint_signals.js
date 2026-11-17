@@ -2,9 +2,9 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 
-// 60 FPS max update rate (16,666 microseconds = 1/60s).
-// Ensures blur updates smoothly at up to 60 FPS while dragging/resizing,
-// while avoiding excessive redraws on 165Hz high-refresh displays.
+
+
+
 const MIN_INTERVAL_US = 16666;
 
 export const PaintSignals = class PaintSignals {
@@ -36,7 +36,7 @@ export const PaintSignals = class PaintSignals {
 
             const moved = (cur_x !== last_x || cur_y !== last_y || cur_w !== last_w || cur_h !== last_h);
             if (!moved) {
-                // Window geometry is unchanged; do NOT trigger redundant repaints!
+
                 return;
             }
 

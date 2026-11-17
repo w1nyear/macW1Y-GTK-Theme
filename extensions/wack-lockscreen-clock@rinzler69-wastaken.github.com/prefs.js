@@ -9,7 +9,7 @@ export default class WackLockscreenClockPreferences extends ExtensionPreferences
         const settingsSignalIds = [];
         const cleanupCallbacks = [];
 
-        // Set default window size (width, height)
+
         window.set_default_size(700, 800);
 
         const homePage = buildHomePage(this, window, _);
@@ -25,8 +25,8 @@ export default class WackLockscreenClockPreferences extends ExtensionPreferences
         );
         window.add(configPage);
 
-        // Disconnect all settings signals and run directory monitor cleanups
-        // when the window is destroyed, preventing stale closures.
+
+
         window.connect('destroy', () => {
             for (const id of settingsSignalIds)
                 settings.disconnect(id);

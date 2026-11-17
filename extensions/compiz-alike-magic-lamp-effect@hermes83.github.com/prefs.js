@@ -82,7 +82,7 @@ export default class Prefs extends ExtensionPreferences {
         button.set_icon_name('edit-clear');
         return button;
     }
-    
+
     newRow(labelText, field) {
         const row = Adw.ActionRow.new();
         row.set_title(labelText);
@@ -95,10 +95,10 @@ export default class Prefs extends ExtensionPreferences {
             digits: decimalDigits,
             adjustment: new Gtk.Adjustment({lower: lower, upper: upper}),
             value_pos: Gtk.PositionType.RIGHT,
-            hexpand: true, 
+            hexpand: true,
             halign: Gtk.Align.END
         });
-        scale.set_draw_value(true);    
+        scale.set_draw_value(true);
         scale.set_value(settingsData.get());
         scale.connect('value-changed', (sw) => {
             var newval = sw.get_value();
@@ -133,10 +133,10 @@ export default class Prefs extends ExtensionPreferences {
                 settingsData.set(newval);
             }
         });
-        
+
         return gtkComboBoxText;
     }
-    
+
     addBooleanSwitch(settingsData) {
         const gtkSwitch = new Gtk.Switch({hexpand: true, halign: Gtk.Align.END});
         gtkSwitch.set_active(settingsData.get());
@@ -147,7 +147,7 @@ export default class Prefs extends ExtensionPreferences {
                 settingsData.set(newval);
             }
         });
-        
+
         return gtkSwitch;
     }
 

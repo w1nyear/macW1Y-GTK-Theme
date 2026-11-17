@@ -1,7 +1,7 @@
-// Redraws application icons in the dock (Dash to Dock or Dhruva), the launcher and the
-// overview's app grid as glass plates under a symbol (see IconStyleEffect), for
-// the applications the settings pick. Clear icons read what is behind them
-// from one backdrop per actor that holds them (IconBackdrop).
+
+
+
+
 import Cogl from 'gi://Cogl';
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -20,22 +20,22 @@ import { WorkerProcess } from '../workers/workerProcess.js';
 import { rectInOffscreen, configureSamplerLayer, splitShader } from '../rendering/pipelines.js';
 import { GlassRenderer } from '../rendering/glassRenderer.js';
 import { RelaySet, SAMPLE_MARGIN, relayHolder, StageCopier } from '../rendering/backdropGlass.js';
-// The id the Show Apps button goes by in the application lists.
+
 export const SHOW_APPS_ID = 'show-apps';
-// Icons are looked up at the size their maps are taken from.
+
 const LOOKUP_SIZE = 128;
 const STYLE_EFFECT_NAME = 'liquid-glass-icon-style';
-// After the extension starts or what is styled changes, the icons not in the cache yet are made after this wait,
-// so that the session's start is not slowed.
+
+
 const PREPARE_DELAY_S = 5;
 const FALLBACK_ICON = 'application-x-executable';
-// How long a clear icons' backdrop is kept once its last icon has gone. Dhruva rebuilds every button whenever an
-// indicator changes; a new backdrop would leave the new icons without glass until it has loaded and copied.
+
+
 const HOST_KEEP_MS = 1000;
 
-// The actor a backdrop goes on for icons in `holder`. One painted into an ancestor's offscreen, which Dash to Dock
-// keeps its dash in, cannot read the stage, so it goes above that ancestor. The offscreen keeps what was drawn
-// until something in it changes, so `cached` says the icons have to be redrawn whenever the backdrop is copied again.
+
+
+
 function backdropHost(holder) {
     let host = holder, cached = false;
     for (let actor = holder; actor; actor = actor.get_parent()) {
@@ -48,17 +48,17 @@ function backdropHost(holder) {
     return { host, cached };
 }
 
-// Keys that decide which icons are styled, and keys that only change how they look.
+
 const KEYS = ['icon-style-dock', 'icon-style-launcher', 'icon-style-app-grid', 'icon-style-all-apps', 'icon-style-whitelist', 'icon-style-blacklist'];
 const COLOR_KEYS = ['icon-style-use-accent', 'icon-style-color', 'icon-style-tint-variant',
     'icon-style-tint-strength', 'icon-style-symbol-opacity', 'icon-style-tuning'];
 
 function appIdOf(icon) {
-    // The shell's and Dash to Dock's Show Apps buttons, whatever icon they show.
+
     if (icon.has_style_class_name('show-apps-icon'))
         return SHOW_APPS_ID;
     for (let actor = icon.get_parent(); actor; actor = actor.get_parent()) {
-        // Dhruva keeps a button's app on its delegate.
+
         const app = actor.app ?? actor._delegate?.app;
         if (app instanceof Shell.App)
             return app.get_id();
@@ -66,7 +66,7 @@ function appIdOf(icon) {
     return folderAppIdOf(icon);
 }
 
-// A folder's icon shows its first apps in a grid of bins, one icon each, laid out in the folder's order.
+
 function folderAppIdOf(icon) {
     const bin = icon.get_parent();
     const grid = bin?.get_parent();
@@ -92,11 +92,11 @@ export class IconStyler {
     _pipeline = null;
     _glassPipeline = null;
     _hosts = new Map();
-    // The views of the app grid's folders, which their dialogs show over the grid.
+
     _folderViews = new WeakSet();
     _theme = new St.IconTheme();
     _styled = new Map();
-    // Per dock and app grid, the actors in it watched for children, by the handlers on each.
+
     _roots = new Map();
     _scanId = 0;
     _prepareId = 0;
@@ -182,7 +182,7 @@ export class IconStyler {
         this._glassPipeline = null;
     }
 
-    /** Styles the application icons in a Dash to Dock or Dhruva dock, and those it adds later. */
+
     watchDock(dock) {
         this._watch(dock, 'dock');
     }
@@ -207,15 +207,15 @@ export class IconStyler {
         this._scanSoon();
     }
 
-    /**
-     * Styles a launcher result's icon, which goes away with its row; `host` is painted just before the rows, over the
-     * glass, and covers them.
-     */
+
+
+
+
     styleLauncherIcon(icon, appId, host) {
         this._style(icon, appId, 'launcher', null, host);
     }
 
-    // Before the next frame, so that icons a dock adds are not drawn as they are first.
+
     _scanSoon() {
         if (this._scanId)
             return;
@@ -242,7 +242,7 @@ export class IconStyler {
         }
         for (const child of actor.get_children())
             this._scan(child, root, surface, watched);
-        // A folder's apps are laid out in a view of their own, which goes into a dialog over the overview once it opens.
+
         const folder = actor.view;
         if (surface === 'app-grid' && folder instanceof Clutter.Actor) {
             this._folderViews.add(folder);
@@ -253,7 +253,7 @@ export class IconStyler {
     _style(icon, appId, surface, root = null, host = root) {
         if (!this._styled.has(icon)) {
             const restyle = () => this._apply(icon);
-            // A folder's icons sit in its dialog, over the grid.
+
             for (let actor = icon.get_parent(); actor && actor !== root; actor = actor.get_parent()) {
                 if (this._folderViews.has(actor)) {
                     host = actor;
@@ -286,16 +286,16 @@ export class IconStyler {
         this._leaveHost(icon, styled);
     }
 
-    /**
-     * Makes the backdrop of the clear icons the launcher is about to show over `host`, so that its shaders are loaded
-     * by the first frame they are shown in.
-     */
+
+
+
+
     prepareLauncherHost(host) {
         if (this._settings.get_boolean('icon-style-launcher') && this._settings.get_string('icon-style-mode') === 'clear')
             this._hostFor(host, 'launcher');
     }
 
-    // The backdrop of `host`'s clear icons, made with its first.
+
     _backdropFor(icon, styled) {
         if (!styled.host)
             return null;
@@ -356,7 +356,7 @@ export class IconStyler {
         entry.backdrop.cleanup();
     }
 
-    // The stage rect [x0, y0, x1, y1] the shown icons of a backdrop cover, as drawn (scaled) now.
+
     _extentsOf(icons) {
         let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
         for (const icon of icons) {
@@ -386,7 +386,7 @@ export class IconStyler {
         return this._fileOf([icon.gicon ?? named(icon.icon_name), icon.fallback_gicon ?? named(icon.fallback_icon_name)]);
     }
 
-    // The file an icon is drawn from, falling back the way St.Icon does when its own icon is not in the theme.
+
     _fileOf(gicons) {
         for (const gicon of gicons) {
             if (gicon instanceof Gio.FileIcon)
@@ -408,7 +408,7 @@ export class IconStyler {
         });
     }
 
-    // Makes the maps of every installed application's icon that will be styled, before any is shown.
+
     _prepare() {
         const s = this._settings;
         if (!['dock', 'launcher', 'app-grid'].some(surface => s.get_boolean(`icon-style-${surface}`))) {
@@ -464,8 +464,8 @@ export class IconStyler {
             this._unstyle(icon, styled);
             return;
         }
-        // A dock that rebuilds its buttons (Dhruva does whenever an indicator changes) would show each new icon
-        // unstyled for a frame if styling waited for the promises, which resolve after the frame is drawn.
+
+
         const textures = this._maps.loaded(file);
         if (textures && this._shaderSource) {
             this._applyMaps(icon, styled, textures, this._shaderSource);
@@ -500,7 +500,7 @@ export class IconStyler {
         this._resize(icon);
     }
 
-    // Scaled as an actor rather than drawn past its box, so that Clutter keeps what it redraws and culls right.
+
     _resize(icon) {
         const size = this._settings.get_double('icon-style-size');
         icon.set_pivot_point(0.5, 0.5);
@@ -535,13 +535,13 @@ export class IconStyler {
     }
 }
 
-// The style maps of icon files, made by the icon worker (iconWorker.ts) and
-// kept in the user's cache directory, so that an icon is taken apart once.
-// Changes whenever the maps would come out differently, so that older ones are made again.
+
+
+
 const MAP_VERSION = 10;
-// Workers that take icons apart side by side; one more starts only while the others are all busy.
+
 const MAX_WORKERS = 4;
-// Icons asked for one after another (an app grid page, a folder) make one run of work, not one each.
+
 const IDLE_DELAY_MS = 1500;
 
 function loadFile(file, cancellable) {
@@ -595,11 +595,11 @@ export class IconMaps {
     _logger;
     _onBusy;
     _workers;
-    // By icon file: its map's, tones' and lens map's textures.
+
     _maps = new Map();
-    // The maps already loaded, for an icon that has to be drawn styled in the frame it appears in.
+
     _loaded = new Map();
-    // By cache file: the map being made into it.
+
     _making = new Map();
     _jobs = 0;
     _busy = false;
@@ -608,7 +608,7 @@ export class IconMaps {
     _cancellable = new Gio.Cancellable();
     _dir = `${GLib.get_user_cache_dir()}/liquid-glass/icon-maps`;
 
-    /** @param _onBusy Called when maps start being made, and once they all are. */
+
     constructor(extensionPath, _logger, _onBusy) {
         this._logger = _logger;
         this._onBusy = _onBusy;
@@ -616,28 +616,28 @@ export class IconMaps {
         this._workers = Array.from({ length: count }, () => new WorkerProcess(`${extensionPath}/dist/workers/iconWorker.js`, 'icon worker', _logger));
     }
 
-    /** The map of the icon in `path`. Rejects when it cannot be made. */
+
     get(path) {
         let map = this._maps.get(path);
         if (!map) {
             map = this._load(path);
             map.then(textures => this._loaded.set(path, textures),
-            // A failure is not kept: the file may be readable later.
+
             () => this._maps.delete(path));
             this._maps.set(path, map);
         }
         return map;
     }
 
-    /** The map of the icon in `path` if it is loaded already. */
+
     loaded(path) {
         return this._loaded.get(path) ?? null;
     }
 
-    /**
-     * Makes the maps of the icons in `paths` that are not in the cache yet, without loading them, one per worker at
-     * a time so that icons asked for meanwhile wait little. A later call takes the place of this one.
-     */
+
+
+
+
     prepare(paths) {
         const serial = ++this._prepareSerial;
         const queue = [...new Set(paths)];
@@ -657,7 +657,7 @@ export class IconMaps {
         this._workers.forEach(() => next());
     }
 
-    // The cache file of the icon in `path`, made first if it is not there.
+
     async _cached(path) {
         const time = await modified(Gio.File.new_for_path(path), this._cancellable);
         const key = GLib.compute_checksum_for_string(GLib.ChecksumType.SHA1, `${MAP_VERSION}|${MAP_SIZE}|${path}|${time}`, -1);
@@ -682,7 +682,7 @@ export class IconMaps {
             this._busy = true;
             this._onBusy(true);
         }
-        // The least busy worker, the first of equals, so that a second one starts only when the first has work.
+
         const usable = this._workers.filter(worker => worker.available);
         const worker = (usable.length ? usable : this._workers).reduce((a, b) => (b.pending < a.pending ? b : a));
         try {
@@ -725,26 +725,26 @@ export class IconMaps {
     }
 }
 
-// Redraws an St.Icon from its style map with shaders/icon-style.frag: glass
-// plates under a symbol, or, while a clone draws it (the launch
-// animation), the icon's own picture in the style's color. In the clear look
-// the plates are glass that refracts what is behind the icon (IconBackdrop, below).
-// The glass settings the clear look's plates are drawn with, by glass.frag's uniform names; icon-style.frag has
-// each as glass_<name>.
+
+
+
+
+
+
 const MATERIAL = ['max_z', 'displacement_scale', 'edge_smoothing', 'profile_shape_n', 'ior', 'chroma_strength',
     'specular_intensity', 'shininess', 'rim_width', 'rim_intensity', 'rim_directional_power', 'rim_power',
     'rim_light_color_intensity', 'sheen_intensity', 'light_angle_deg', 'ao_intensity', 'ao_radius',
     'highlight_backdrop_color', 'surface_light_enabled', 'brightness', 'contrast', 'saturation'];
 
-/**
- * The pipeline every icon's is copied from, so that they share one program; with `glass`, the clear look's, which
- * also reads the lens map (layer 3) and what is behind the icon (layer 4).
- */
+
+
+
+
 export function iconStylePipeline(source, glass = false) {
     const pipeline = Cogl.Pipeline.new(coglContext());
     configureSamplerLayer(pipeline, 0);
     pipeline.set_layer_wrap_mode(1, Cogl.PipelineWrapMode.CLAMP_TO_EDGE);
-    // The map is drawn much smaller than it is; its mipmaps keep the symbol's edges smooth.
+
     pipeline.set_layer_filters(1, Cogl.PipelineFilter.LINEAR_MIPMAP_LINEAR, Cogl.PipelineFilter.LINEAR);
     const layers = glass ? [2, 3, 4] : [2];
     for (const layer of layers) {
@@ -760,14 +760,14 @@ export function iconStylePipeline(source, glass = false) {
     return pipeline;
 }
 
-/** A style map's, its tones' or its lens map's pixels (RGBA) as a texture. */
+
 export function iconStyleTexture(data, width = MAP_SIZE, height = MAP_SIZE) {
-    // Declared premultiplied so that Cogl keeps the channels as they are: they are distances, not a color.
+
     return Cogl.Texture2D.new_from_data(coglContext(), width, height, Cogl.PixelFormat.RGBA_8888_PRE, width * 4, data);
 }
 
-// Where an St.Icon draws its image: in a child, centerd in its content box. While the image is still
-// loading the child has no size, and the square in the middle of the content box stands for it.
+
+
 function imageRect(actor) {
     const image = actor.get_first_child()?.get_allocation_box();
     if (image && image.get_width() >= 1 && image.get_height() >= 1)
@@ -790,10 +790,10 @@ export const IconStyleEffect = safeRegisterClass({ GTypeName: 'WackGlass_IconSty
         this._materialSerial = -1;
     }
 
-    /**
-     * @param pipeline A copy of iconStylePipeline(), for this effect alone.
-     * @param backdrop For a glass pipeline, what is behind the icon.
-     */
+
+
+
+
     prepare(pipeline, textures, colors, backdrop = null) {
         this._pipeline = pipeline;
         this._locations.clear();
@@ -852,7 +852,7 @@ export const IconStyleEffect = safeRegisterClass({ GTypeName: 'WackGlass_IconSty
         this._set('box_y0', y0);
         this._set('box_x1', x1);
         this._set('box_y1', y1);
-        // The offscreen is in the actor's px, which its scale enlarges on screen.
+
         this._set('map_px', MAP_SIZE / Math.max((x1 - x0) * texture.get_width() * actor.scale_x, 1));
         this._set('clone', actor.is_in_clone_paint() ? 1 : 0);
         this._set('opacity', actor.get_paint_opacity() / 255);
@@ -864,12 +864,12 @@ export const IconStyleEffect = safeRegisterClass({ GTypeName: 'WackGlass_IconSty
         drawNode.add_rectangle(new Clutter.ActorBox({ x1: 0, y1: 0, x2: texture.get_width(), y2: texture.get_height() }));
     }
 
-    // Where the icon's square is in what is behind it, or the look without glass while that is not known there:
-    // before it is first copied, and while the icon is drawn away from it (being dragged). An icon partly off the
-    // screen, where the copy stops, reads its edge.
+
+
+
     _bindBackdrop(backdrop, actor, [x, y, w, h]) {
         const current = backdrop.current();
-        // Icons are only moved and scaled, so their extents on the stage say where the image is.
+
         const ext = actor.get_transformed_extents();
         const kx = ext.get_width() / Math.max(actor.get_width(), 1), ky = ext.get_height() / Math.max(actor.get_height(), 1);
         const sx0 = ext.get_x() + x * kx, sy0 = ext.get_y() + y * ky, sx1 = sx0 + w * kx, sy1 = sy0 + h * ky;
@@ -901,16 +901,16 @@ export const IconStyleEffect = safeRegisterClass({ GTypeName: 'WackGlass_IconSty
     }
 });
 
-// What is behind the icons of one dock, app grid, folder or launcher, for the
-// glass of clear icons (IconStyleEffect). It is copied from the stage once for
-// all of them, just before the actor that holds them is painted, so it holds
-// that surface's own glass, and blurred once. Relays (rendering/backdropGlass.ts) redraw the
-// whole copied area whenever anything behind it changes, so the copy follows
-// a backdrop that moves or plays.
+
+
+
+
+
+
 const BACKDROP_EFFECT_NAME = 'liquid-glass-icon-backdrop';
-// Room (px) around the icons for the samples spread around each pixel.
+
 const MARGIN = 8;
-// The copy's size is rounded up to this (px), so that icons coming and going do not make new textures every frame.
+
 const QUANTUM = 32;
 
 export const IconBackdrop = safeRegisterClass({ GTypeName: 'WackGlass_IconBackdrop' }, class IconBackdrop extends Clutter.Effect {
@@ -961,11 +961,11 @@ export const IconBackdrop = safeRegisterClass({ GTypeName: 'WackGlass_IconBackdr
             return;
         }
         this._loaded = true;
-        // The relays are hidden until now, so the host is what asks for the frame that copies.
+
         this._host?.queue_redraw();
     }
 
-    /** Goes on `host`, the actor painted right over what the icons' glass shows. */
+
     attach(host) {
         this._host = host;
         host.add_effect_with_name(BACKDROP_EFFECT_NAME, this);
@@ -991,8 +991,8 @@ export const IconBackdrop = safeRegisterClass({ GTypeName: 'WackGlass_IconBackdr
         });
     }
 
-    // The rect to copy, [x0, y0, x1, y1] on the stage: around the icons, inside the host, which leaves out the
-    // icons of an app grid's other pages. Inside the host, a redraw of the host redraws all of it.
+
+
     _rect() {
         const r = this._params.rect();
         const box = this._host?.get_transformed_extents();
@@ -1006,8 +1006,8 @@ export const IconBackdrop = safeRegisterClass({ GTypeName: 'WackGlass_IconBackdr
         return x1 - x0 >= 1 && y1 - y0 >= 1 ? [x0, y0, x1, y1] : null;
     }
 
-    // Before every frame: the relays follow what is behind the icons, and the area is redrawn whole when it moves,
-    // so that the copy is taken again in that frame.
+
+
     _sync() {
         const rect = this._loaded ? this._paintedRect ?? this._rect() : null;
         const relays = this._relays;
@@ -1038,7 +1038,7 @@ export const IconBackdrop = safeRegisterClass({ GTypeName: 'WackGlass_IconBackdr
         this._renderer.prepare(ctx);
         const serial = this._copier.lastCopy?.serial;
         const { copy, missed } = this._copier.take(host, node, paintContext, rect);
-        // Nothing to draw with yet; the next frame redraws the whole area. The relays may not be shown yet.
+
         if (missed)
             host.queue_redraw();
         if (copy && copy.serial !== serial)
@@ -1058,7 +1058,7 @@ export const IconBackdrop = safeRegisterClass({ GTypeName: 'WackGlass_IconBackdr
         return true;
     }
 
-    /** What is behind the icons now, or null until it has been copied since the host was last shown. */
+
     current() {
         const copy = this._copier.lastCopy;
         if (!copy?.rect || copy.serial <= this._serialAtMap)
@@ -1067,7 +1067,7 @@ export const IconBackdrop = safeRegisterClass({ GTypeName: 'WackGlass_IconBackdr
         return { texture: blur.passCount > 0 && blur.result ? blur.result : copy.texture, rect: copy.rect };
     }
 
-    /** The glass settings and this surface's color adjustments, by glass.frag's uniform names. */
+
     material() {
         return this._renderer.uniforms.values;
     }

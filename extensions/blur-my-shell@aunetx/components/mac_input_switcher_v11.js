@@ -92,7 +92,7 @@ function getOsdLabel(source) {
 }
 
 function getActiveCaret() {
-    // 1. Clutter / St focus (GNOME Shell internal entries: Spotlight, Rename, App search, etc.)
+
     const stageFocus = global.stage.get_key_focus();
     if (stageFocus && (stageFocus instanceof Clutter.Text || stageFocus.clutter_text)) {
         const text = stageFocus instanceof Clutter.Text ? stageFocus : stageFocus.clutter_text;
@@ -111,7 +111,7 @@ function getActiveCaret() {
         }
     }
 
-    // 2. Wayland / X11 application text focus via Main.inputMethod
+
     const im = Main.inputMethod;
     const focusWin = global.display.focus_window;
     if (!focusWin || focusWin.minimized || focusWin.is_override_redirect())
@@ -144,10 +144,10 @@ function getActiveCaret() {
     const now = GLib.get_monotonic_time();
     const age = im._cursorRectTime ? (now - im._cursorRectTime) : Infinity;
 
-    // Freshness check: cursor rect must have been updated recently (within 2.5 seconds)
+
     const isFresh = age < 2500000;
 
-    // Strict boundary check: must be inside client area (not titlebar or out-of-bounds)
+
     const isInsideClient = (
         r.x >= fr.x + 8 && r.x <= fr.x + fr.width - 8 &&
         r.y >= fr.y + 32 && r.y <= fr.y + fr.height - 8
@@ -233,13 +233,13 @@ export const MacInputSourcePopup = GObject.registerClass({
         }
 
         const N = this._items.length;
-        const M = 3;            // 3px margin from capsule edge on all 4 sides
-        const W_pill = 32;      // Width of each language pill/slot
-        const H_pill = 22;      // Height of blue pill
-        const H_capsule = 28;   // Height of capsule: (28 - 22) / 2 = 3px vertical margin
-        const G = 2;            // Gap between slots
+        const M = 3;
+        const W_pill = 32;
+        const H_pill = 22;
+        const H_capsule = 28;
+        const G = 2;
 
-        // Total width: 2 * 3px margin + N * 32px + (N - 1) * 2px gap
+
         const W_capsule = 2 * M + N * W_pill + (N - 1) * G;
 
         const monitor = Main.layoutManager.currentMonitor || Main.layoutManager.primaryMonitor;
@@ -254,7 +254,7 @@ export const MacInputSourcePopup = GObject.registerClass({
             capsuleY = caretY + this._caretInfo.h + 8;
         }
 
-        // Clamp pillScreenX and capsuleY so capsule stays fully within monitor bounds
+
         const minPillX = monitor.x + 10 + M + (N - 1) * (W_pill + G);
         const maxPillX = monitor.x + monitor.width - 10 - (W_capsule - M - W_pill);
         if (minPillX <= maxPillX) {
@@ -274,7 +274,7 @@ export const MacInputSourcePopup = GObject.registerClass({
         const initialPillRelX = M + this._currentIndex * (W_pill + G);
         const initialCapsuleX = this._pillScreenX - initialPillRelX;
 
-        // 1. Single unified capsule widget with LQ-Visual glass
+
         this._capsuleBox = new St.Widget({
             style: 'background-color: transparent !important; ' +
                    'border-radius: 14px !important; ' +
@@ -294,7 +294,7 @@ export const MacInputSourcePopup = GObject.registerClass({
         this._targetBox = this._capsuleBox;
         this._targetCornerRadius = 14.0;
 
-        // 2. Inner blue pill (stays stationary in screen space while capsule slides)
+
         const accent = getSystemAccentColor();
         this._orangePill = new St.Widget({
             style: `background-color: ${accent}; border-radius: 11px; padding: 0 !important; margin: 0 !important;`,
@@ -305,7 +305,7 @@ export const MacInputSourcePopup = GObject.registerClass({
         });
         this._capsuleBox.add_child(this._orangePill);
 
-        // 3. Language labels centered inside each slot
+
         this._labels = [];
         this._items.forEach((item, i) => {
             const isSelected = (i === this._currentIndex);
@@ -363,8 +363,8 @@ export const MacInputSourcePopup = GObject.registerClass({
 
     _buildOsdUI() {
         const N = this._items.length;
-        // Етап 646: екранне меню зміни мови (OSD switcher) збільшено в 1.5 рази
-        // (попередня конфігурація після Етапу 669 була компактною: 155x58).
+
+
         this._paddingX = 6;
         this._paddingY = 6;
         this._itemH = 36;
@@ -378,7 +378,7 @@ export const MacInputSourcePopup = GObject.registerClass({
         this._osdX = monitor.x + Math.round((monitor.width - this._osdW) / 2);
         this._osdY = monitor.y + Math.round((monitor.height - osdH) / 2);
 
-        // 1. Unified box with Liquid Glass backdrop
+
         this._osdBox = new St.Widget({
             style: 'background-color: transparent !important; ' +
                    'border-radius: 21px !important; ' +
@@ -398,7 +398,7 @@ export const MacInputSourcePopup = GObject.registerClass({
         this._targetBox = this._osdBox;
         this._targetCornerRadius = 21.0;
 
-        // 2. Selection pill (wide rounded rectangle, vertical movement)
+
         const pillW = this._osdW - 2 * this._paddingX;
         this._selectionPill = new St.Widget({
             style: 'background-color: rgba(255, 255, 255, 0.26) !important; ' +
@@ -413,7 +413,7 @@ export const MacInputSourcePopup = GObject.registerClass({
         });
         this._osdBox.add_child(this._selectionPill);
 
-        // 3. Language labels centered in vertical rows
+
         this._labels = [];
         this._items.forEach((item, i) => {
             const isSelected = (i === this._currentIndex);
@@ -540,7 +540,7 @@ export const MacInputSourcePopup = GObject.registerClass({
             this._stageSignalId = global.stage.connect('before-update', this._syncGlass);
         }
 
-        // Smooth appearance animation for OSD box
+
         if (this._osdBox) {
             this._osdBox.ease({
                 opacity: 255,
@@ -551,12 +551,12 @@ export const MacInputSourcePopup = GObject.registerClass({
             });
         }
 
-        // Slide into next index and activate immediately
+
         this._select(this._nextIndex, true);
         try { this._items[this._selectedIndex]?.activate(true); } catch (_) {}
         _notifyDialogsInputSwitched();
 
-        // Non-modal HUD: linger gracefully then smoothly fade out
+
         this._scheduleFade(1000);
 
         return true;
@@ -631,7 +631,7 @@ export const MacInputSourcePopup = GObject.registerClass({
             return Clutter.EVENT_STOP;
         }
 
-        // If any other key is pressed, dismiss
+
         this.fadeAndDestroy();
         return Clutter.EVENT_PROPAGATE;
     }
@@ -716,7 +716,7 @@ export const MacInputSourcePopup = GObject.registerClass({
         const duration = 180;
         const mode = Clutter.AnimationMode.EASE_OUT_QUAD;
 
-        // Synchronously animate the container and fade the entire composite offscreen together
+
         const target = this._capsuleBox || this._osdBox;
         if (target) {
             target.ease({
@@ -817,8 +817,8 @@ export class MacInputSwitcher {
                 };
             }
 
-            // Re-bind switch-input-source and switch-input-source-backward directly on Main.wm
-            // so Mutter routes Win+Space directly to our custom MacInputSwitcher
+
+
             const Gio = (await import('gi://Gio')).default || imports.gi.Gio;
             const Meta = (await import('gi://Meta')).default || imports.gi.Meta;
             const Shell = (await import('gi://Shell')).default || imports.gi.Shell;
@@ -877,7 +877,7 @@ export class MacInputSwitcher {
             enumerable: true
         });
 
-        // When focused window changes, clear stale cursorRect so it never leaks across windows
+
         this._focusWindowId = global.display.connect('notify::focus-window', () => {
             currentRect = null;
             im._cursorRectTime = 0;
@@ -892,11 +892,11 @@ export class MacInputSwitcher {
         if (!this._ism) return;
         if (this._ism._keyboardManager?.isLocked?.()) return;
 
-        // Use configured sources sorted by index
+
         const sources = Object.values(this._ism.inputSources).sort((a, b) => a.index - b.index);
         if (sources.length < 2) return;
 
-        // If a popup is already active and visible, simply cycle to the next language
+
         if (this._activePopup) {
             if (!this._activePopup._isDestroying && this._activePopup.visible) {
                 this._activePopup.cycle(binding ? binding.is_reversed() : false);

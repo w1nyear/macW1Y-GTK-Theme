@@ -34,7 +34,7 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
             });
             this.add_child(this._userWell);
 
-            // Inline hint box
+
             this._hintBox = new St.BoxLayout({
                 style_class: 'wack-cupertino-hint',
                 x_align: Clutter.ActorAlign.CENTER,
@@ -47,7 +47,7 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
                 y_align: Clutter.ActorAlign.CENTER,
             });
 
-            // Prevent layout shift by ensuring consistent line metrics
+
             this._hintLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
             this._hintLabel.clutter_text.line_wrap = true;
             this._hintBox.add_child(this._hintLabel);
@@ -108,9 +108,9 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
                     reactive: true,
                 });
                 userWidget.insert_child_at_index(this._avatarButton, 0);
-                /* ВАЖЛИВО (fix recursion): avatar.update() НІКОЛИ не перезаписується.
-                   Нативний Avatar.update() сам рендерить фото icon-file та
-                   фолбек person-icon; наші кольори — лише на this._avatarButton. */
+
+
+
 
                 this._avatarButton.connectObject('clicked', () => {
                     if (!this._extension?._promptActive) {
@@ -184,8 +184,8 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
             return null;
         }
 
-        /* Файл має бути не лише наявним, а й читабельним для gdm-процесу,
-           інакше St не намалює фото і користувач побачить порожнє коло. */
+
+
         _pathReadable(candidatePath) {
             try {
                 if (!candidatePath || !GLib.file_test(candidatePath, GLib.FileTest.EXISTS))
@@ -198,11 +198,11 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
             }
         }
 
-        /* Вібраність (fix recursion 23.10.2026): кольори ставимо ЛИШЕ на
-           this._avatarButton (St.Button). Актcr Avatar чіпаємо хіба що для
-           visibility/opacity — більше жодних avatar.set_style/child=null,
-           бо нативний vfunc_style_changed → update() перетворює такий
-           обмін стилями на «too much recursion». */
+
+
+
+
+
         updateAvatarVibrancy(avatarColor) {
             if (avatarColor)
                 this._lastAvatarColor = avatarColor;
@@ -217,7 +217,7 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
 
             try {
                 if (iconFile) {
-                    // Фото рендериться нативно — кнопка лишається прозорою.
+
                     this._avatarButton.remove_style_class_name('wack-vibrancied');
                     if (this._avatarButton.get_style() !== TRANSPARENT_WELL)
                         this._avatarButton.set_style(TRANSPARENT_WELL);
@@ -270,16 +270,16 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
         _updateHintLabel() {
             if (!this._hintLabel) return;
 
-            // Invalidate StLabel's cached shadow pipeline (st_label_set_text clears text_shadow_pipeline)
+
             this._hintLabel.text = '';
 
-            // Escape the text to prevent markup injection errors
+
             const safeText = GLib.markup_escape_text(this._currentText, -1);
 
-            // Always use the same markup structure so Pango's line metrics are
-            // constant whether or not the bell emoji is present. Without this,
-            // switching between "N 🔔 · hint" and plain hint nudges the widget
-            // by ~2 px because the emoji has taller ascent/descent metrics.
+
+
+
+
             if (this._currentCount > 0) {
                 this._hintLabel.clutter_text.use_markup = true;
                 this._hintLabel.clutter_text.set_markup(
@@ -291,4 +291,3 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
             }
         }
     });
-

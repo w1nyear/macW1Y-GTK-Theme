@@ -25,10 +25,10 @@ export const PipelineGroup = GObject.registerClass({
         this._pipelines_page = pipelines_page;
         this._pipeline_id = pipeline_id;
 
-        // set the description
+
         this.set_description(_(`Pipeline id: "${pipeline_id}"`));
 
-        // set the title and connect it to the text entry
+
         this.set_title(pipeline.name.length > 0 ? pipeline.name : " ");
         this._title.set_text(pipeline.name);
         this._title.connect(
@@ -36,12 +36,12 @@ export const PipelineGroup = GObject.registerClass({
             () => pipelines_manager.rename_pipeline(pipeline_id, this._title.get_text())
         );
 
-        // the bin containing the actions
+
         let prefix_bin = new Gtk.Box;
         prefix_bin.add_css_class('linked');
         this._title.add_prefix(prefix_bin);
 
-        // add a 'remove' button if we are not the default pipeline
+
         if (pipeline_id != "pipeline_default") {
             let remove_button = new Gtk.Button({
                 'icon-name': 'remove-row-symbolic',
@@ -54,7 +54,7 @@ export const PipelineGroup = GObject.registerClass({
             prefix_bin.append(remove_button);
             remove_button.connect('clicked', () => pipelines_manager.delete_pipeline(pipeline_id));
         }
-        // add a 'duplicate' button
+
         let duplicate_button = new Gtk.Button({
             'icon-name': 'duplicate-row-symbolic',
             'width-request': 38,

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Mission Control overview: static sharp wallpaper, no zoom-out,
-// hidden panel and dock. Windows float above like macW1Y.
-//
-// The stock overview hides the real desktop background and shows a
-// per-workspace wallpaper copy that shrinks with the workspace card.
-// Here a static fullscreen copy sits at the bottom of overviewGroup
-// while those scaling copies (and the panel + dock) stay hidden.
+
+
+
+
+
+
+
 
 import Meta from 'gi://Meta';
 import St from 'gi://St';
@@ -29,7 +29,7 @@ function _disconnect(list) {
         try {
             obj.disconnect(id);
         } catch (_) {
-            // actor already gone
+
         }
     }
     list.length = 0;
@@ -48,7 +48,7 @@ function _walkCopies(root, out) {
                 child.has_style_class_name('workspace-background'))
                 out.push(child);
         } catch (_) {
-            // gone mid-walk
+
         }
         _walkCopies(child, out);
     }
@@ -59,19 +59,19 @@ function _setCopiesVisible(visible) {
     try {
         _walkCopies(Main.layoutManager.overviewGroup, found);
     } catch (_) {
-        // overview not built
+
     }
     for (const actor of found) {
         try {
             actor.visible = visible;
         } catch (_) {
-            // destroyed with its workspace
+
         }
     }
 }
 
-// WindowPreview icons: hide icon actors directly (CSS opacity is
-// unreliable here); titles are already killed via transparent color.
+
+
 function _setPreviewChromeHidden() {
     const previews = [];
     const walk = root => {
@@ -86,7 +86,7 @@ function _setPreviewChromeHidden() {
                 if (child.metaWindow !== undefined && child._icon)
                     previews.push(child);
             } catch (_) {
-                // plain actor
+
             }
             walk(child);
         }
@@ -100,20 +100,20 @@ function _setPreviewChromeHidden() {
         try {
             preview._icon.visible = false;
         } catch (_) {
-            // gone
+
         }
     }
 }
 
 function _setChromeVisible(visible) {
-    // macW1Y Mission Control: no top bar. The dock stays visible.
+
     try {
         if (visible)
             Main.panel.show();
         else
             Main.panel.hide();
     } catch (_) {
-        // no panel in this session mode
+
     }
 }
 
@@ -123,7 +123,7 @@ function _teardownBg() {
         try {
             manager.destroy();
         } catch (_) {
-            // already gone
+
         }
     });
     _managers = [];
@@ -134,7 +134,7 @@ function _teardownBg() {
             _group.destroy_all_children();
             _group.destroy();
         } catch (_) {
-            // already gone
+
         }
         _group = null;
     }
@@ -163,13 +163,13 @@ function _build() {
     const overviewGroup = Main.layoutManager.overviewGroup;
     overviewGroup.insert_child_at_index(_group, 0);
 
-    // Anything the shell adds later must stay above our wallpaper.
+
     _groupSignals.push([overviewGroup, overviewGroup.connect('child-added', (group, child) => {
         if (child !== _group) {
             try {
                 group.set_child_below_sibling(_group, null);
             } catch (_) {
-                // tearing down
+
             }
         }
     })]);
@@ -226,7 +226,7 @@ export function disable() {
             try {
                 Main.overview.disconnect(id);
             } catch (_) {
-                // already gone
+
             }
         }
     }

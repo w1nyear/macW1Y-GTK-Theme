@@ -26,7 +26,7 @@ function _isActorValid(actor) {
     }
 }
 
-// Меню відкриваються строго на своєму фіксованому місці з нативним масштабуванням (1.12 -> 1.0) без зсувів і підстрибувань
+
 function _saveMorphFrom() {
     try {
         globalThis._macMorphFrom = null;
@@ -59,15 +59,15 @@ const DIALOG_HEIGHT = 530;
 const COLUMNS = 7;
 const COLUMN_WIDTH = 94;
 const ICON_SIZE = 52;
-const ICON_OVERSAMPLE = 2; // 2x supersampling for high-DPI smooth anti-aliased curves
+const ICON_OVERSAMPLE = 2;
 const CORNER_RADIUS = 26.0;
 const TINT_STRENGTH = 0.04;
 const BLUR_RADIUS = 8.0;
 
-/**
- * Enable hardware anti-aliasing (trilinear filtering with mipmaps) on an actor and all its children.
- * This completely eliminates pixel staircasing ("драбинки") on rounded corners and diagonal lines.
- */
+
+
+
+
 function applyActorSmoothing(actor) {
     if (!actor) return actor;
     try {
@@ -104,9 +104,9 @@ function applyActorSmoothing(actor) {
     return actor;
 }
 
-/**
- * Creates an application icon with 2x supersampling and trilinear anti-aliasing filtering.
- */
+
+
+
 function createSmoothAppIcon(app, targetSize = ICON_SIZE) {
     const renderSize = targetSize * ICON_OVERSAMPLE;
 
@@ -156,7 +156,7 @@ const CATEGORIES = [
     }
 ];
 
-// Ensure Dash can resolve apps from custom drag sources
+
 function _ensureDashGetAppHook() {
     if (Dash && !Dash._macthemeGetAppHooked) {
         const origGetAppFromSource = Dash.getAppFromSource;
@@ -206,13 +206,13 @@ function _ensureDockDragMonitor() {
                 );
 
                 if (!isInsideDock) {
-                    // Dropped outside dock area -> unpin from favorites
+
                     const favs = getAppFavorites();
                     if (favs.isFavorite(appId)) {
                         favs.removeFavorite(appId);
                     }
 
-                    // Authentic macW1Y "poof" animation
+
                     if (dropEvent.dropActor) {
                         dropEvent.dropActor.remove_all_transitions();
                         dropEvent.dropActor.ease({
@@ -245,7 +245,7 @@ function _ensureDockDragMonitor() {
     }
 }
 
-// Hook dock icons to record active drag
+
 function _hookDockIconsForDrag() {
     try {
         const dock = Main.layoutManager.uiGroup.get_children().find(c => c.constructor.name === 'DashToDock');
@@ -302,7 +302,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         _ensureDockDragMonitor();
         _hookDockIconsForDrag();
 
-        // 1. Transparent Backdrop Click-Catcher (closes on click outside)
+
         this._backdrop = new Clutter.Actor({
             name: 'mac-applications-backdrop',
             reactive: true,
@@ -326,7 +326,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             }, this);
         }
 
-        // 2. Main Floating Applications Container (LQ-Visual Glass)
+
         this._box = new St.BoxLayout({
             name: 'mac-applications-box',
             style_class: 'mac-applications-box',
@@ -399,7 +399,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             }
         } catch (_) {}
 
-        // 3. Header Row: App Store 'A' icon, search field "| Програми", and "..." menu button
+
         this._headerRow = new St.BoxLayout({
             vertical: false,
             y_align: Clutter.ActorAlign.CENTER,
@@ -408,7 +408,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         });
         this._box.add_child(this._headerRow);
 
-        // Glyph icon 'A' (simple line SVG as on the macW1Y Tahoe reference photo)
+
         let appIconGIcon = null;
         try {
             let extDirPath = null;
@@ -439,7 +439,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         applyActorSmoothing(this._appLogo);
         this._headerRow.add_child(this._appLogo);
 
-        // Search Entry
+
         this._entry = new St.Entry({
             name: 'mac-applications-search',
             hint_text: t('applications', 'Програми'),
@@ -469,7 +469,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         }
         this._headerRow.add_child(this._entry);
 
-        // Overflow "..." icon
+
         this._moreIcon = new St.Icon({
             icon_name: 'view-more-symbolic',
             icon_size: 20,
@@ -478,21 +478,21 @@ export const MacApplicationsDialog = GObject.registerClass({
         });
         this._headerRow.add_child(this._moreIcon);
 
-        // Вирівнювання шапки по середині висоти: іконку/три крапки/набір тексту трохи підняти вгору
+
         try {
             this._appLogo.translation_y = -3;
             this._entry.translation_y = -3;
             this._moreIcon.translation_y = -3;
         } catch (_) {}
 
-        // Тонка лінія-розділювач під полем вводу (як на фото‑референсі)
+
         this._headerDivider = new St.Widget({
             x_expand: true,
             style: 'height: 1px; min-height: 1px; background-color: rgba(255, 255, 255, 0.10); margin-left: 18px; margin-right: 18px; margin-bottom: 12px;',
         });
         this._box.add_child(this._headerDivider);
 
-        // 4. Category Filter Bar (4 rounded pills matching reference image)
+
         this._categoryRow = new St.BoxLayout({
             vertical: false,
             x_expand: true,
@@ -501,7 +501,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._box.add_child(this._categoryRow);
         this._buildCategoryButtons();
 
-        // 5. Scroll Wrapper with BinLayout containing ScrollView and Bottom Fade Overlay
+
         this._scrollWrapper = new St.Widget({
             layout_manager: new Clutter.BinLayout(),
             x_expand: true,
@@ -530,7 +530,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         });
         this._scrollView.add_child(this._gridContainer);
 
-        // Transparent bottom spacer without darkening gradient overlay
+
         this._bottomFade = new St.Widget({
             style: 'background: none !important; background-color: transparent !important;',
             height: 0,
@@ -540,7 +540,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         });
         this._scrollWrapper.add_child(this._bottomFade);
 
-        // 6. Connect Input & Keyboard Navigation
+
         const ct = this._entry.clutter_text;
         ct.connect('text-changed', () => {
             if (this._searchTimeoutId) {
@@ -696,7 +696,7 @@ export const MacApplicationsDialog = GObject.registerClass({
 
             btn.connect('clicked', () => {
                 if (this._selectedCategory === cat.id) {
-                    this._selectedCategory = null; // Toggle off to show all
+                    this._selectedCategory = null;
                 } else {
                     this._selectedCategory = cat.id;
                 }
@@ -981,7 +981,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             catStr = (info.get_categories?.() || '').toLowerCase();
         } catch (_) {}
 
-        // Match priority: communication -> productivity -> utility -> other
+
         const priorityOrder = ['communication', 'productivity', 'utility'];
         for (const catId of priorityOrder) {
             const cat = CATEGORIES.find(c => c.id === catId);
@@ -1033,7 +1033,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             }
         }
 
-        // If fewer than COLUMNS, supplement with favorite/top apps
+
         if (recent.length < COLUMNS) {
             const favs = getAppFavorites().getFavorites();
             for (const app of favs) {
@@ -1046,7 +1046,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             }
         }
 
-        // Pad from allApps if still needed
+
         if (recent.length < COLUMNS) {
             for (const app of allApps) {
                 const id = app.get_id();
@@ -1066,7 +1066,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         const query = this._currentQuery.toLowerCase();
         const category = this._selectedCategory;
 
-        // If search query is present
+
         if (query) {
             return allApps.filter(app => {
                 const name = (app.get_name() || '').toLowerCase();
@@ -1091,13 +1091,13 @@ export const MacApplicationsDialog = GObject.registerClass({
             }).sort((a, b) => a.get_name().localeCompare(b.get_name()));
         }
 
-        // If category is selected without search query
+
         if (category) {
             return allApps.filter(app => this._getAppCategory(app) === category)
                           .sort((a, b) => a.get_name().localeCompare(b.get_name()));
         }
 
-        // Normal state: Row 1 has 7 Recent Apps, followed by all remaining installed apps
+
         const recentApps = this._getRecentApps(allApps);
         const recentIds = new Set(recentApps.map(a => a.get_id()));
 
@@ -1161,7 +1161,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         }
         box.add_child(label);
 
-        // Hover & Focus Styling
+
         const baseStyle = `width: ${COLUMN_WIDTH}px; min-width: ${COLUMN_WIDTH}px; max-width: ${COLUMN_WIDTH}px; height: 82px; min-height: 82px; max-height: 82px; margin: 0 1px; padding: 6px 2px 4px 2px; border-radius: 12px;`;
 
         item.connect('notify::hover', () => {
@@ -1195,12 +1195,12 @@ export const MacApplicationsDialog = GObject.registerClass({
             }
         });
 
-        // Launch app on click
+
         item.connect('clicked', () => {
             this._launchApp(app);
         });
 
-        // DND Support to Dock
+
         item._delegate = item;
         item.app = app;
         item.is_window_backed = () => false;
@@ -1245,7 +1245,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             });
         });
 
-        // Keyboard navigation across 7 columns
+
         item.connect('key-press-event', (_actor, event) => {
             const symbol = event.get_key_symbol();
             if (symbol === Clutter.KEY_Escape) {
@@ -1311,7 +1311,7 @@ export const MacApplicationsDialog = GObject.registerClass({
                     this._gridButtons.push(item);
                     appIdx++;
                 } else {
-                    // Transparent placeholder to maintain identical 7-column spacing
+
                     const spacer = new St.Widget({
                         x_expand: false,
                         style: `width: ${COLUMN_WIDTH}px; min-width: ${COLUMN_WIDTH}px; max-width: ${COLUMN_WIDTH}px; margin: 0 1px;`,
@@ -1324,7 +1324,7 @@ export const MacApplicationsDialog = GObject.registerClass({
 
             this._gridContainer.add_child(rowBox);
 
-            // Друга тонка лінія — під сімома останніми програмами (лише у звичайному стані)
+
             if (r === 0 && !this._currentQuery && !this._selectedCategory && apps.length > 0) {
                 const gridDivider = new St.Widget({
                     x_expand: true,
@@ -1346,7 +1346,7 @@ export const MacApplicationsDialog = GObject.registerClass({
             return;
         }
 
-        // Smooth transition animation when typing search or toggling categories
+
         this._gridContainer.remove_all_transitions();
         this._gridContainer.ease({
             opacity: 0,
@@ -1530,7 +1530,7 @@ export const MacApplicationsDialog = GObject.registerClass({
     close(immediate = false) {
         if (!this._isOpen && !this._isClosing) return;
         this._isOpen = false;
-        // Запам'ятати геометрію для морф-переходу в інше меню (діє 900мс)
+
         _saveMorphFrom('applications', this);
 
         this._backdrop.visible = false;
@@ -1710,7 +1710,7 @@ export function toggleApplicationsDialog(options = {}) {
         globalThis.toggleMacSpotlight('apps');
         return;
     }
-    import('./searchDialog_v5.js')
+    import('./searchDialog.js')
         .then(mod => mod.toggleSearchDialog('apps'))
         .catch(e => console.error('[ApplicationsMenu] Failed to toggle spotlight apps:', e));
 }

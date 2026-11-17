@@ -7,7 +7,7 @@ import { isActorValid, ensureGlassAllocated, getTransformedRect, resolveMonitorG
 import { addFrameTicker, removeFrameTicker, addBeforeRedraw, removeBeforeRedraw, startSyncLoop, stopStageLoop, resolveCrossFade, adaptiveColorTweener, hexToColorArray, hexToRgb } from './animation.js';
 import { StageContrastSampler, AdaptiveContrastConfig, sanitizeColorPreference } from './contrastSampler.js';
 import { BANNER_TRANSPARENT_CLASS } from './shellVersion.js';
-// Room around the glass rect for the shader's edge effects.
+
 const SHADER_PADDING = 20;
 
 export class NotificationManager {
@@ -16,7 +16,7 @@ export class NotificationManager {
     _logger;
     tray;
     currentBanner = null;
-    // Monitor-sized; see _syncGeometry().
+
     glass = null;
     _signals;
     _settingsSignals;
@@ -44,7 +44,7 @@ export class NotificationManager {
     _lastBgY;
     _lastScreenW;
     _lastScreenH;
-    // The monitor origin from the last _syncGeometry(), for _syncGlassGeometryLive().
+
     _liveMonitorOrigin = null;
     _contrastSampler;
     _adaptiveConfig;
@@ -186,13 +186,13 @@ export class NotificationManager {
         this._signals.push(bannerBin.connect('child-added', (container, actor) => {
             if (actor.get_name() === 'liquid-glass-bg-actor')
                 return;
-            // Before the banner's first frame: an idle can wait until its slide-in has ended.
+
             removeBeforeRedraw(this._bannerLaterId);
             this._pendingBanner = actor;
             this._bannerLaterId = addBeforeRedraw(() => {
                 this._bannerLaterId = 0;
                 this._pendingBanner = null;
-                // A queued setup may outlive the notification or the effect toggle.
+
                 if (!this._isEffectActive || actor.get_parent() !== bannerBin)
                     return GLib.SOURCE_REMOVE;
                 if (actor !== this.currentBanner) {
@@ -240,7 +240,7 @@ export class NotificationManager {
         glass.set_size(1.0, 1.0);
         glass.hide();
         glass.set_pivot_point(0.0, 0.0);
-        // The banner's ancestor that is a direct child of uiGroup.
+
         // @ts-expect-error: _bannerBin is an internal property
         let bannerBin = this.tray._bannerBin;
         let bannerRoot = bannerBin ?? targetActor;
@@ -250,8 +250,8 @@ export class NotificationManager {
                 break;
             bannerRoot = p;
         }
-        // Below the banner, so the glass reads the stage before the banner is
-        // drawn.
+
+
         if (bannerRoot.get_parent() === Main.layoutManager.uiGroup) {
             Main.layoutManager.uiGroup.insert_child_below(glass, bannerRoot);
         }
@@ -275,10 +275,10 @@ export class NotificationManager {
         glass.setSaturation(saturation);
         glass.setContrast(contrast);
         glass.setBlurRadius(blurRadius);
-        // The banner slides in by relayout, so the frame tick sees last frame's
-        // position; the paint-time hook corrects it.
+
+
         glass.setLiveGeometryHook(() => this._syncGlassGeometryLive());
-        // The first geometry sync shows the glass.
+
         stopStageLoop(this._frameSignalSlot, this._frameSlot);
         startSyncLoop(this._frameSignalSlot, this._frameSlot, {
             alive: () => !!this.glass && !!this.currentBanner,
@@ -286,7 +286,7 @@ export class NotificationManager {
             errorTag: 'NotificationManager',
             step: () => this._syncFrame(),
         });
-        // The loop's first step would wait for the next frame when this runs from a later.
+
         this._syncFrame();
         this._isFirstAdaptiveRun = true;
         this._contrastSampler.reset();
@@ -294,7 +294,7 @@ export class NotificationManager {
     }
 
     _syncFrame() {
-        // Checked before this frame's sync dirties anything.
+
         ensureGlassAllocated(this.glass);
         this._syncGeometry();
         this._syncHoverTint();
@@ -304,9 +304,9 @@ export class NotificationManager {
         return this.currentBanner?.hover ? this._baseTint + 0.1 : this._baseTint;
     }
 
-    // Slightly stronger tint while hovered, eased over a few frames. The sync
-    // loop only runs on frames something else asked for, so the easing keeps
-    // its own ticker until it settles.
+
+
+
     _syncHoverTint() {
         if (this._tintTickId || Math.abs(this._currentTint - this._hoverTint()) <= 0.001)
             return;
@@ -332,22 +332,22 @@ export class NotificationManager {
         this._tintTickId = 0;
     }
 
-    // Every frame. The glass covers the banner's monitor; the shader draws only
-    // the glass rect.
+
+
     _syncGeometry() {
         if (!this.glass || !this.currentBanner)
             return;
-        // Keep the offset on the same parent GNOME animates, never on the glass
-        // alone. Written only on change: Clutter queues a redraw even for the
-        // same value, and this runs in before-update, so every write would ask
-        // for another frame.
+
+
+
+
         // @ts-expect-error: shell-owned container
         const bannerBin = this.tray._bannerBin;
         const offset = Math.fround(this._originalBannerOffset + this._notificationYOffset);
         if (bannerBin.translation_y !== offset)
             bannerBin.translation_y = offset;
-        // GNOME animates opacity and scale on _bannerBin, not on the banner.
-        // Both the origin and size must include that ancestor transform.
+
+
         const [absX, absY, w, h] = getTransformedRect(this.currentBanner);
         const opacity = this.currentBanner.get_paint_opacity();
         if (!this.currentBanner.mapped || !this.tray.visible || opacity === 0 ||
@@ -357,7 +357,7 @@ export class NotificationManager {
         }
         this.glass.opacity = opacity;
         this.glass.show();
-        // The first colors, as soon as the banner is laid out; see _updateAdaptiveTextColors().
+
         if (this._isFirstAdaptiveRun)
             this._updateAdaptiveTextColors();
         const bgW = w + this._glassExpand * 2 + SHADER_PADDING * 2;
@@ -369,10 +369,10 @@ export class NotificationManager {
         let monitorY = monitor?.y ?? 0;
         let screenW = Math.max(1, monitor?.width ?? 1);
         let screenH = Math.max(1, monitor?.height ?? 1);
-        // Monitor-local, as the shader uses them.
+
         let localBgX = bgX_abs - monitorX;
         let localBgY = bgY_abs - monitorY;
-        // The only part of the rect the paint-time hook cannot derive on its own.
+
         this._liveMonitorOrigin = [monitorX, monitorY];
         if (this._lastBgW !== bgW || this._lastBgH !== bgH ||
             this._lastBgX !== bgX_abs || this._lastBgY !== bgY_abs ||
@@ -383,7 +383,7 @@ export class NotificationManager {
             this.glass.set_size(screenW, screenH);
             this.glass.remove_transition('size');
             this.glass.remove_transition('position');
-            // Limit drawing to the glass plus room for its shadow.
+
             const CLIP_PADDING = 200;
             setClipIfChanged(this.glass, localBgX - CLIP_PADDING, localBgY - CLIP_PADDING, bgW + CLIP_PADDING * 2, bgH + CLIP_PADDING * 2);
             const SHADOW_MAX_RADIUS = CLIP_PADDING - 20;
@@ -397,13 +397,13 @@ export class NotificationManager {
             this._lastScreenW = screenW;
             this._lastScreenH = screenH;
         }
-        // After the geometry setters, so the relays cover this frame's rect.
+
         this.glass.syncSources();
     }
 
-    // Runs at paint time (see GlassActor.setLiveGeometryHook()), when the
-    // banner's allocation is current. Only the shader's glass rect is updated;
-    // actors must not change mid-paint.
+
+
+
     _syncGlassGeometryLive() {
         const banner = this.currentBanner;
         const origin = this._liveMonitorOrigin;
@@ -439,7 +439,7 @@ export class NotificationManager {
         this.glass = null;
         if (glass) {
             glass.cleanup();
-            // At shell shutdown the stage may have destroyed it already.
+
             if (isActorValid(glass))
                 glass.destroy();
         }
@@ -484,7 +484,7 @@ export class NotificationManager {
     }
 
     _setActorColor(actor, color, skipAnimations = false, batchStart) {
-        // Clutter.Text targets have no St style.
+
         if (!(actor instanceof St.Widget))
             return;
         if (!this._styledActors.has(actor)) {
@@ -512,7 +512,7 @@ export class NotificationManager {
     _applyAdaptiveColorMap(colorMap, skipAnimations = false) {
         if (!colorMap || colorMap.size === 0)
             return;
-        // One timestamp for the whole map, so every label in the banner flips together.
+
         const batchStart = GLib.get_monotonic_time();
         for (const [actor, color] of colorMap.entries()) {
             this._setActorColor(actor, color, skipAnimations, batchStart);
@@ -556,8 +556,8 @@ export class NotificationManager {
         return foundActors;
     }
 
-    // The banner's rect once the shell has slid it in: its bin comes down from
-    // above to its final y and grows from 90% to its size.
+
+
     _restRect() {
         const banner = this.currentBanner;
         // @ts-expect-error: shell-owned container
@@ -579,11 +579,11 @@ export class NotificationManager {
         return !!(bin.get_transition('y') || bin.get_transition('scale-x'));
     }
 
-    /**
-     * The first colors are chosen where the banner will stay, before it has
-     * slid in, and applied without a tween; the banner is not measured again
-     * while it moves, where it would be over something else on every sample.
-     */
+
+
+
+
+
     _updateAdaptiveTextColors() {
         if (!this._adaptiveConfig.enabled || this._adaptiveInFlight)
             return;
@@ -631,8 +631,8 @@ export class NotificationManager {
     }
 
     _animateActorColor(actor, targetHexColor, durationMs = 380, skipAnimations = false, batchStart) {
-        // An existing tween is not cancelled: add() restarts from the color it
-        // last applied.
+
+
         const originalStyle = (this._styledActors.get(actor) || '').trim();
         const stylePrefix = originalStyle ? `${originalStyle.replace(/;$/, '')}; ` : '';
         let themeNode = actor.get_theme_node();

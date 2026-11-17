@@ -1,4 +1,4 @@
-// -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
+
 
 
 import {
@@ -161,8 +161,8 @@ export class AppIconsDecorator {
                 if (this.isEmpty())
                     return;
 
-                // Temporarily hide all the menu items a part the Pinning and
-                // the details one while we're updating.
+
+
                 const validItems = [
                     this._toggleFavoriteItem,
                     this._detailsItem,

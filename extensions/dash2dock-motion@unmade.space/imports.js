@@ -1,7 +1,7 @@
-// This file is part of Dash2Dock Motion, a modified copy of Dash to Dock
-// (https://github.com/micheleg/dash-to-dock) by Michele Gaio and
+
+
 // contributors. Distributed under the GNU General Public License,
-// version 2 or later.
+
 export * as AppIconIndicators from './appIconIndicators.js';
 export * as AppIcons from './appIcons.js';
 export * as AppIconsDecorator from './appIconsDecorator.js';

@@ -39,7 +39,7 @@ function variantValue(props, name, fallback = null) {
 	return props[name] ? props[name].deep_unpack() : fallback;
 };
 
-// Storage-independent color helper for the accent accent pass-through.
+
 function hexToRgb(color) {
 	const str = String(color ?? '').trim();
 	const hex = str.replace('#', '');
@@ -184,8 +184,8 @@ function isBatteryLike(props) {
 
 Gio._promisify(Gio.DBusConnection.prototype, 'call', 'call_finish');
 
-// GJS returns the reply variant wrapped in a tuple for the sync path but
-// unwrapped for the promisified async path; normalize both.
+
+
 function unwrapReply(reply) {
 	return Array.isArray(reply) ? reply[0] : reply;
 };
@@ -283,8 +283,8 @@ async function readBlueZDevices() {
 			const iconName = bluezIconName(icon);
 			const isAudioOrPeripheral = iconName.includes('head') || iconName.includes('audio') || iconName.includes('mouse') || iconName.includes('keyboard');
 
-			// If battery interface is not yet present on BlueZ or doesn't report percentage,
-			// but device is a connected audio or peripheral device, default to 100% so it shows up.
+
+
 			if (!Number.isFinite(percentage)) {
 				if (isAudioOrPeripheral) {
 					percentage = 100;
@@ -349,9 +349,9 @@ function devicesSignature(devices) {
 		.join(';');
 };
 
-// Renders read this synchronously (never touching DBus), so the shell composer
-// is never blocked; a background refresh updates the cache and notifies once
-// the data actually changed.
+
+
+
 export function getCachedBatteryDevices() {
 	return cachedDevices;
 };
@@ -409,8 +409,8 @@ const BatteryRing = GObject.registerClass(
 			super._init({style_class: 'widget-battery-ring'});
 			this._percentage = device?.percentage ?? null;
 			if (useAccent && theme?.accent) {
-				// Accent pass-through: system accent or the user's custom
-				// accent color (the theme object already resolves it).
+
+
 				const rgb = hexToRgb(theme.accent);
 				this._ringColor = [rgb.r, rgb.g, rgb.b];
 			} else {
@@ -459,12 +459,12 @@ const ICON_RATIOS = {
 	large: 0.46,
 };
 
-// The original look (ring + centered icon + % label below), scaled so the
-// rings fill the available area instead of overflowing or hanging in free space.
+
+
 function batteryPlan(width, height, iconRatio, count) {
 	count = Math.max(1, count);
 	const gap = 12;
-	const padV = 18; // 8px top + 10px bottom from the widget's inline padding
+	const padV = 18;
 	const border = 2;
 	const slotSpacing = 6;
 	const usableHeight = Math.max(0, height - padV - border);

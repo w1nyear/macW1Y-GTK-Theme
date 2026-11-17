@@ -33,7 +33,7 @@ const GRADIENT_BLUR_FADE_SHADER = `
     void main() {
         vec2 uv = cogl_tex_coord_in[0].st;
         float y = uv.y * max(1.0, height);
-        
+
         float t = 0.0;
         if (fade_edges_top > 0.5 && y < fade_offset_top && fade_offset_top > 0.0) {
             float dist_top = y;
@@ -86,8 +86,8 @@ const GRADIENT_BLUR_FADE_SHADER = `
 
 function _setFloat(effect, name, val) {
     try {
-        // GJS converts whole numbers to G_TYPE_INT which fails in Cogl against GLSL 'uniform float'.
-        // Adding 0.0001 forces GJS to pass G_TYPE_DOUBLE / float.
+
+
         effect.set_uniform_value(name, parseFloat(val) + 0.0001);
     } catch (_) {}
 }
@@ -229,7 +229,7 @@ EffectClass.prototype.attachTo = function(actor, scrollView = null) {
 
                 const now = GLib.get_monotonic_time();
 
-                // Touchpad finger release / gesture end
+
                 if (isTouchpad && dx === 0 && dy === 0) {
                     if (isFingerDragging) {
                         isFingerDragging = false;
@@ -245,12 +245,12 @@ EffectClass.prototype.attachTo = function(actor, scrollView = null) {
 
                 if (delta === 0) return Clutter.EVENT_PROPAGATE;
 
-                // Immediate directional turnaround: if reversing scroll direction, snap target to current
+
                 if ((delta > 0 && targetValue < currentValue) || (delta < 0 && targetValue > currentValue)) {
                     targetValue = currentValue;
                 }
 
-                // If idle for more than 350ms, re-sync target and current from adj.value
+
                 if ((now - lastScrollTime) > 350000) {
                     currentValue = adj.value;
                     targetValue = adj.value;
@@ -284,7 +284,7 @@ EffectClass.prototype.attachTo = function(actor, scrollView = null) {
                         const dt = Math.min(0.04, Math.max(0.001, (tNow - lastTickTime) / 1000000));
                         lastTickTime = tNow;
 
-                        // Timeout detection for touchpad: if no event received for 50ms, fingers stopped/lifted
+
                         if (isFingerDragging && (tNow - lastTrackpadTime) > 50000) {
                             isFingerDragging = false;
                             const dtSince = (tNow - lastTrackpadTime) / 1000000;
@@ -295,7 +295,7 @@ EffectClass.prototype.attachTo = function(actor, scrollView = null) {
                             trackpadVelocity = 0.0;
                         }
 
-                        // Responsive decay during active finger drag; gentle decay for mouse wheel & momentum glide
+
                         const decay = isFingerDragging ? 26.0 : 15.0;
                         const alpha = 1.0 - Math.exp(-decay * dt);
                         currentValue += (targetValue - currentValue) * alpha;
@@ -392,7 +392,7 @@ const HORIZONTAL_GRADIENT_FADE_SHADER = `
     void main() {
         vec2 uv = cogl_tex_coord_in[0].st;
         float x = uv.x * max(1.0, width);
-        
+
         float t = 0.0;
         if (fade_edges_left > 0.5 && x < fade_offset_left && fade_offset_left > 0.0) {
             float dist_left = x;

@@ -1,7 +1,7 @@
-// Liquid-glass backdrop for GNOME Shell desktop widgets.
-// Uses the macW1Y physical liquid-glass pipeline (LiquidEffect with glass.frag)
-// powered by Dual Kawase blur, Snell refraction, chromatic dispersion, physical specular rim,
-// ambient occlusion and wallpaper mirror.
+
+
+
+
 
 import Clutter from 'gi://Clutter';
 import St from 'gi://St';
@@ -38,19 +38,19 @@ let LiquidEffect = null;
 let createBackgroundMirror = null;
 
 try {
-    const effMod = await import('file://' + LG_EXT_DIR + '/dist/liquidEffect.js');
-    const utilMod = await import('file://' + LG_EXT_DIR + '/dist/utils.js');
+    const effMod = await import('file://' + LG_EXT_DIR + '/dist/liquidEffect.js?v=fix3');
+    const utilMod = await import('file://' + LG_EXT_DIR + '/dist/utils.js?v=fix3');
     LiquidEffect = effMod?.LiquidEffect ?? null;
     createBackgroundMirror = utilMod?.createBackgroundMirror ?? null;
 } catch (e) {
     console.warn('[desktop-widgets] Error importing LiquidEffect from liquid-glass:', e);
 }
 
-const GLASS_CLASS_KEY = '__DW_LiquidGlass_v6__';
+const GLASS_CLASS_KEY = '__DW_LiquidGlass_v7__';
 if (!globalThis[GLASS_CLASS_KEY]) {
     globalThis[GLASS_CLASS_KEY] = GObject.registerClass(
         {
-            GTypeName: 'DW_LiquidGlass_Actor_V6',
+            GTypeName: 'DW_LiquidGlass_Actor_V7',
         },
         class LiquidGlass extends St.Widget {
             _init() {
@@ -182,7 +182,7 @@ if (!globalThis[GLASS_CLASS_KEY]) {
                     const blur = typeof p.blurRadius === 'number' ? Math.max(0, p.blurRadius) : 0;
                     this._effect.setBlurRadius(blur);
 
-                    // Normalize tint colors (0..1)
+
                     let r = 0.0, g = 0.0, b = 0.0;
                     if (p.tint) {
                         r = (typeof p.tint.r === 'number' && p.tint.r <= 1) ? p.tint.r : (p.tint.r / 255 || 0.0);
@@ -195,8 +195,8 @@ if (!globalThis[GLASS_CLASS_KEY]) {
                     this._effect.setTintStrength(tintAlpha);
                     this._effect.setSurfaceLightEnabled(true);
 
-                    // Outer drop shadow is rendered with CSS box-shadow and border-radius on the wrapper actor.
-                    // Keep shader shadow at 0.0 so glass.frag strictly respects corner rounding with zero square corner leakage.
+
+
                     this._effect.setShadowIntensity(0.0);
                     this._effect.setShadowMaxRadius(0.0);
 

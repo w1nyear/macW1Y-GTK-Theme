@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Kiwi Extension - Quick Settings Notifications
+
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as MessageList from 'resource:///org/gnome/shell/ui/messageList.js';
@@ -26,7 +26,7 @@ const DATE_MENU_PLACEHOLDER_MIN_WIDTH = 280;
 const DATE_MENU_PLACEHOLDER_DEFAULT_WIDTH = 360;
 const HAS_MESSAGE_LIST_SECTION = MessageList && typeof MessageList.MessageListSection === 'function';
 
-// State holders
+
 let enabled = false;
 let gettextFunc = (message) => message;
 let notificationWidget = null;
@@ -51,7 +51,7 @@ let _kiwiSettings = null;
 let _kiwiSettingsChangedId = null;
 
 
-// Get QuickSettings grid
+
 function getQuickSettingsGrid() {
     if (!quickSettingsGrid) {
         const quickSettings = Main.panel.statusArea.quickSettings;
@@ -98,7 +98,7 @@ function syncDndButtonState() {
     const tooltip = dndActive ? gettextFunc('Disable Do Not Disturb') : gettextFunc('Enable Do Not Disturb');
     _dndButton.set_tooltip_text?.(tooltip);
 
-    // Always hide the date menu DND indicator in the panel; we provide our own.
+
     hideDateMenuIndicator();
     ensurePanelMoonIcon(dndActive);
 }
@@ -117,13 +117,13 @@ function ensureDndButton() {
     if (!container || !settings)
         return false;
 
-    // Suppress quick settings DND toggle only on GNOME 49+ where it exists
+
     const toggleSuppressed = SHELL_HAS_SYSTEM_DND ? suppressBuiltinDndToggle() : true;
-    // Always suppress panel DND indicator; we replace it with our own moon icon
+
     const indicatorSuppressed = suppressBuiltinDndIndicator();
 
     if (!_dndButton) {
-        // Attempt to inherit styling from an existing button for consistency
+
         const existingButtons = container.get_children();
         const templateButton = existingButtons.find(button => button && button.style_class) ?? null;
         const templateStyle = templateButton?.style_class ?? 'system-menu-action';
@@ -299,7 +299,7 @@ function restoreDateMenuMessageList() {
     _dateMenuMessageListPlaceholder = null;
 }
 
-// #region Notification Classes
+
 let NotificationList;
 
 if (HAS_MESSAGE_LIST_SECTION) {
@@ -535,12 +535,12 @@ if (HAS_MESSAGE_LIST_SECTION) {
 } else {
     NotificationList = GObject.registerClass(
     class NotificationList extends MessageList.MessageView {
-        // Prevent unexpected media integration on legacy shells
+
         _setupMpris() {}
     });
 }
 
-// Notification Header
+
 class NotificationHeader extends St.BoxLayout {
     constructor() {
         super({ style_class: 'kiwi-header' });
@@ -567,7 +567,7 @@ class NotificationHeader extends St.BoxLayout {
 }
 GObject.registerClass(NotificationHeader);
 
-// Notification Widget
+
 class NotificationWidget extends St.BoxLayout {
     constructor() {
         super({
@@ -624,7 +624,7 @@ class NotificationWidget extends St.BoxLayout {
 }
 GObject.registerClass(NotificationWidget);
 
-// #endregion Notification Classes
+
 
 function _applyCustomDndSetting() {
     if (!enabled)
@@ -649,11 +649,11 @@ export function enable(gettext, settings) {
     _kiwiSettings = settings ?? null;
     if (enabled) return;
 
-    // Delay to ensure quicksettings is fully loaded
+
     _initTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
         const grid = getQuickSettingsGrid();
         if (!grid)
-            return GLib.SOURCE_CONTINUE; // Retry if grid not ready
+            return GLib.SOURCE_CONTINUE;
 
         const quickSettings = Main.panel.statusArea.quickSettings;
         if (quickSettings && quickSettings.menu) {
@@ -663,16 +663,16 @@ export function enable(gettext, settings) {
             quickSettings.menu.actor.set_style(`max-height: ${newHeight}px;`);
         }
 
-        // Create notification widget
+
         if (!notificationWidget) {
             notificationWidget = new NotificationWidget();
             grid.add_child(notificationWidget);
             grid.layout_manager.child_set_property(grid, notificationWidget, 'column-span', 2);
 
-            // Dismiss the quick settings popup when a notification shown inside it is
-            // activated, so the menu does not overlay (and block focus of) the launched
-            // window. Notifications emit 'activated' on click; cleanup is tied to the
-            // widget's lifetime via connectObject's owner.
+
+
+
+
             const closeMenuOnActivate = () => {
                 const qs = Main.panel.statusArea.quickSettings;
                 if (qs?.menu?.isOpen)
@@ -695,7 +695,7 @@ export function enable(gettext, settings) {
             _dateMenuSuppressed = false;
         }
 
-        // Conditionally suppress built-in DND UI and add custom button
+
         if (_kiwiSettings?.get_boolean('custom-dnd-button') !== false) {
             if (SHELL_HAS_SYSTEM_DND)
                 suppressBuiltinDndToggle();
@@ -727,7 +727,7 @@ export function disable() {
     }
 
     destroyDndButton();
-    // Always restore panel indicator; restore quick settings toggle on GNOME 49+
+
     restoreBuiltinDndIndicator();
     if (SHELL_HAS_SYSTEM_DND)
         restoreBuiltinDndToggle();

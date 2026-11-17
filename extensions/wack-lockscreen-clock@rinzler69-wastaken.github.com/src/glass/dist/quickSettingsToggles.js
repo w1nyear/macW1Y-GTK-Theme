@@ -9,10 +9,10 @@ import { QS_MENU_TOGGLE_CLASS, offscreenFormat, paintNodeWithContext, setUniform
 import { GlassActor, StageCopier, addBlit, createTarget, isPaintingView, RelaySet, localToStage } from './rendering/backdropGlass.js';
 import { configureSamplerLayer } from './rendering/pipelines.js';
 import { setTranslationIfChanged, setScaleIfChanged, isActorValid } from './actors.js';
-// Quick Settings' toggle-button mode: every toggle pod gets its own piece of
-// glass. This finds the pods, samples each pod's own color (it changes with
-// ON/OFF and hover) for the glass's base color, and makes the pod's own
-// backgrounds transparent so the glass shows through.
+
+
+
+
 const TRANSPARENT_OVERRIDE = 'background-color: transparent !important;';
 
 function _withOverride(origStyle) {
@@ -47,35 +47,35 @@ export class ToggleStyles {
         return this._toggleRegions.get(actor);
     }
 
-    // Logs the sampled colors for the next few passes (with logging on).
+
     resetDiagnostics() {
         this._debugToggleColorLogFrames = 15;
     }
 
-    // How often each pod's color is re-read, i.e. how quickly the glass
-    // follows a toggle's ON/OFF and hover state. Pods whose state is unchanged
-    // are skipped, so a steady tick is cheap.
+
+
+
     static TOGGLE_COLOR_SAMPLE_MS = 100;
-    // Every Nth pass re-samples every pod anyway, to catch a theme change,
-    // which changes colors without changing any state.
+
+
     static TOGGLE_COLOR_FULL_PASS_EVERY = 8;
-    // Pod -> its sampled color and the actors whose backgrounds were made
-    // transparent, with their original inline styles.
+
+
     _toggleRegions = new Map();
     _toggleColorTimerId = 0;
     _resamplePassCount = 0;
     _debugToggleColorLogFrames = 15;
 
-    // Finds the pods under `actor`, without descending into a pod:
-    //  - a `.quick-toggle-has-menu` wrapper (`.quick-menu-toggle` before GNOME
-    //    48; Wi-Fi, Bluetooth): the main button, the separator and the arrow
-    //    button together form one shape;
-    //  - a standalone `.quick-toggle` (Night Light, Do Not Disturb, ...);
-    //  - an `.icon-button` inside `.quick-settings-system-item` (screenshot,
-    //    settings, lock, power), which themes also draw as pills. Elsewhere
-    //    `.icon-button` is also used by slider and submenu buttons;
-    //  - a `.quick-slider` row, but only on themes that paint a pill around it
-    //    (see _paintsOwnBackground()).
+
+
+
+
+
+
+
+
+
+
     _findAllToggleContainers(actor, found = [], inSystemItem = false) {
         if (!actor)
             return found;
@@ -104,7 +104,7 @@ export class ToggleStyles {
             return 'toggle';
         if (actor.has_style_class_name('quick-toggle'))
             return 'toggle';
-        // Screenshot, settings, lock and power.
+
         if (inSystemItem && actor.has_style_class_name('icon-button'))
             return 'toggle';
         if (actor.has_style_class_name('quick-slider'))
@@ -112,10 +112,10 @@ export class ToggleStyles {
         return null;
     }
 
-    // Whether a slider row paints its own pill. An adopted pod carries our
-    // transparency override, so its theme node would say no; it keeps its
-    // verdict here, and _releaseIfSliderLostPill() re-checks it while the
-    // override is lifted.
+
+
+
+
     _paintsOwnBackground(actor) {
         if (this._toggleRegions.has(actor))
             return true;
@@ -123,9 +123,9 @@ export class ToggleStyles {
         return !!(bg && bg.a > 0.02);
     }
 
-    // Every St.Widget in the pod, at any depth. All of them get the
-    // transparency override, which is harmless for icons and labels and does
-    // not depend on the theme's exact structure.
+
+
+
     _getStylableSubActors(pod) {
         const found = [];
         const walk = (actor) => {
@@ -138,8 +138,8 @@ export class ToggleStyles {
         return found;
     }
 
-    // The actor whose color represents the pod: for a has-menu pod, its main
-    // `.quick-toggle` button, which may sit more than one level down.
+
+
     _getPrimaryToggleButton(pod) {
         if (pod instanceof St.Widget && pod.has_style_class_name(QS_MENU_TOGGLE_CLASS)) {
             let found = null;
@@ -163,7 +163,7 @@ export class ToggleStyles {
         return pod;
     }
 
-    // Some themes put a toggle's ON/OFF color on its `.quick-toggle-icon`.
+
     _getToggleIconActors(root) {
         const found = [];
         const walk = (actor) => {
@@ -178,8 +178,8 @@ export class ToggleStyles {
         return found;
     }
 
-    // The theme background as normalized {r, g, b, a}, falling back to the
-    // average of a background gradient when the flat color is transparent.
+
+
     _readThemeBg(actor) {
         if (!(actor instanceof St.Widget))
             return null;
@@ -203,12 +203,12 @@ export class ToggleStyles {
         return { r: bg.red / 255, g: bg.green / 255, b: bg.blue / 255, a: bg.alpha / 255 };
     }
 
-    // What is actually visible at `actor`: its own background composited over
-    // its ancestors' until opaque. A transparent background still reports RGB
-    // (usually black) that the theme never paints; this replaces it with the
+
+
+
     // color really showing there. `a` is the accumulated coverage.
     _compositeOverAncestors(actor, own) {
-        // Front-to-back "over" accumulation.
+
         let outR = 0, outG = 0, outB = 0, outA = 0;
         const add = (c) => {
             if (!c || !(c.a > 0))
@@ -221,7 +221,7 @@ export class ToggleStyles {
         };
         add(own);
         let node = actor ? actor.get_parent() : null;
-        // Bounds the walk, which runs on every sampling pass.
+
         let guard = 32;
         while (node && outA < 0.995 && guard-- > 0) {
             if (node instanceof St.Widget)
@@ -233,12 +233,12 @@ export class ToggleStyles {
         return { r: outR / outA, g: outG / outA, b: outB / outA, a: outA };
     }
 
-    // The pod's visible color. Themes put a toggle's state color in different
-    // places: Adwaita on the inner `.quick-toggle`, macW1Y on the has-menu
-    // wrapper (whose inner button is `background: none`) or only on the
-    // `.quick-toggle-icon`. Every candidate is read, the most opaque wins
-    // (ties go to the earlier one), and the result is composited over what is
-    // behind it. `a` only tells the caller whether any real paint was found.
+
+
+
+
+
+
     _samplePodColor(pod, primary) {
         let isHasMenu = pod instanceof St.Widget && pod.has_style_class_name(QS_MENU_TOGGLE_CLASS);
         let candidates = [primary];
@@ -262,22 +262,22 @@ export class ToggleStyles {
         if (bestOwn && bestOwn.a > 0.02) {
             return this._compositeOverAncestors(bestActor, bestOwn);
         }
-        // Nothing in the pod paints; its color is whatever shows through.
+
         return this._compositeOverAncestors(pod, null);
     }
 
-    // Tracks every pod and keeps the transparency override on each of its
-    // current sub-actors. Runs every frame, and checks each actor's own style
-    // rather than remembering a pod as done, because the shell rebuilds the
-    // inner actors of has-menu pods (on connection changes, for example).
+
+
+
+
     _ensureToggleStyles(toggles) {
         for (let pod of toggles) {
             if (!(pod instanceof St.Widget))
                 continue;
             const entry = this._ensureEntry(pod);
             const primary = this._getPrimaryToggleButton(pod);
-            // Once overridden the theme reports our transparency, so only a fresh
-            // actor is sampled here.
+
+
             if (primary instanceof St.Widget && !this._hasOverride(primary))
                 this._updateBaseColor(entry, pod, primary);
             this._overrideSubStyles(entry, pod);
@@ -288,7 +288,7 @@ export class ToggleStyles {
         let entry = this._toggleRegions.get(pod);
         if (entry)
             return entry;
-        // baseAlpha 0 until a real color has been sampled.
+
         entry = { destroyId: 0, baseColor: [1.0, 1.0, 1.0], baseAlpha: 0, styledSubs: [], stateKey: '' };
         this._toggleRegions.set(pod, entry);
         entry.destroyId = pod.connect('destroy', () => {
@@ -304,7 +304,7 @@ export class ToggleStyles {
 
     _updateBaseColor(entry, pod, primary) {
         const sampled = this._samplePodColor(pod, primary);
-        // A near-transparent sample says nothing about the color.
+
         if (sampled.a > 0.02) {
             entry.baseColor = [sampled.r, sampled.g, sampled.b];
             entry.baseAlpha = sampled.a;
@@ -324,8 +324,8 @@ export class ToggleStyles {
         }
     }
 
-    // Re-samples each pod's color: lifts the override from its sub-actors,
-    // reads the theme color, and puts the override back.
+
+
     _resampleToggleColors() {
         let forceFull = (this._resamplePassCount++ % ToggleStyles.TOGGLE_COLOR_FULL_PASS_EVERY) === 0;
         for (const [pod, entry] of this._toggleRegions.entries())
@@ -357,11 +357,11 @@ export class ToggleStyles {
         }
     }
 
-    // A theme switch does not rebuild the Quick Settings actors, so a slider
-    // adopted under a theme that draws a pill would stay glassed after
-    // switching to one that does not. While the override is lifted its real
-    // theme is readable: if it no longer paints a pill, it is released (its
-    // styles are already restored).
+
+
+
+
+
     _releaseIfSliderLostPill(pod, entry) {
         if (!(pod instanceof St.Widget) || !pod.has_style_class_name('quick-slider'))
             return false;
@@ -381,7 +381,7 @@ export class ToggleStyles {
         let podCls = pod instanceof St.Widget ? (pod.get_style_class_name() || '') : '';
         let primaryCls = primary.get_style_class_name() || '';
         let checked = primary.has_style_pseudo_class('checked');
-        // Every candidate, not only the winner (see _samplePodColor()).
+
         let wrapperBg = isHasMenu ? this._readThemeBg(pod) : null;
         let iconBgs = this._getToggleIconActors(pod !== primary ? primary : pod)
             .map(a => JSON.stringify(this._readThemeBg(a))).join(' ');
@@ -408,7 +408,7 @@ export class ToggleStyles {
         });
     }
 
-    // The pseudo-classes of the actors _samplePodColor() can pick from.
+
     _podStateKey(pod, primary) {
         const STATES = ['checked', 'hover', 'active', 'insensitive', 'focus', 'selected'];
         let actors = [pod];
@@ -436,7 +436,7 @@ export class ToggleStyles {
         }
     }
 
-    // Restores the original inline styles and forgets every pod.
+
     clear() {
         this.stop();
         for (const [pod, entry] of this._toggleRegions.entries())
@@ -445,23 +445,23 @@ export class ToggleStyles {
     }
 }
 
-// Quick Settings' toggle mode puts a piece of glass behind each toggle, inside
-// the menu: over the panel's own background and under the toggles' labels.
-// The menu (a BoxPointer) is always drawn through an offscreen, where the
-// glass cannot read the stage, so the work is split in two:
-//
-// - BackdropReader sits outside the menu, just below it in uiGroup. It draws
-//   nothing; it copies the stage behind the toggles while the stage is
-//   painted, before the menu is.
-// - ToggleBackdropGlass sits inside the menu. It copies the panel background
-//   already drawn into the menu's offscreen, lays it over the reader's copy,
-//   blurs that and draws the toggles' glass.
-//
-// The glass holds the relays. A change behind the toggles then both puts the
-// area into the redraw clip, so the reader copies it, and dirties the menu,
-// whose offscreen would otherwise be reused without painting the glass.
-// The reader's fixed size; it is fitted to its rect by translation and scale
-// for the same reason as the sample area (rendering/backdropGlass.ts).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const READER_BASE = 256;
 
 export const BackdropReader = safeRegisterClass({ GTypeName: 'WackGlass_BackdropReader' }, paintNodeWithContext(class BackdropReader extends Clutter.Actor {
@@ -475,11 +475,11 @@ export const BackdropReader = safeRegisterClass({ GTypeName: 'WackGlass_Backdrop
     vfunc_pick(_pickContext) {
     }
 
-    // The stage rect [x0, y0, x1, y1] to copy. The actor covers it, so it is
-    // painted whenever the rect is redrawn.
+
+
     setStageRect(rect) {
-        // The glass maps its rect through its own transform, which is not
-        // finite before its first allocation.
+
+
         if (!rect.every(Number.isFinite))
             return;
         this._rect = rect;
@@ -500,8 +500,8 @@ export const BackdropReader = safeRegisterClass({ GTypeName: 'WackGlass_Backdrop
     }
 }));
 
-// "Over" for premultiplied colors: the panel material (layer 1) over the
-// desktop (layer 0). Each layer has its own rect within the composed quad.
+
+
 const COMPOSE_DECL = 'uniform vec4 d_rect;\nuniform vec4 m_rect;\n';
 const COMPOSE_BODY = 'vec2 uv = cogl_tex_coord_in[0].st;\n' +
     'vec4 d = texture2D(cogl_sampler0, mix(d_rect.xy, d_rect.zw, uv));\n' +
@@ -523,8 +523,8 @@ export const ToggleBackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_Tog
         this._composeBase = null;
     }
 
-    // The reader works only while the glass is shown, and nothing behind it
-    // was tracked while it was hidden.
+
+
     vfunc_map() {
         super.vfunc_map();
         this.reader.show();
@@ -541,7 +541,7 @@ export const ToggleBackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_Tog
         this._relays.redrawArea();
     }
 
-    /** See BackdropGlass.syncSources(); also places the reader. */
+
     syncSources() {
         const area = this._sampleAreaRect();
         if (!area)
@@ -567,7 +567,7 @@ export const ToggleBackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_Tog
         const local = [s[0] * kx, s[1] * ky, (s[0] + s[2]) * kx, (s[1] + s[3]) * ky];
         const desktop = this.reader.copier.lastCopy;
         if (!desktop?.rect) {
-            // Nothing copied yet; the next frame redraws the whole area.
+
             this._relays.redrawArea();
             return;
         }
@@ -592,7 +592,7 @@ export const ToggleBackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_Tog
         });
     }
 
-    // The nearest ancestor drawn through an offscreen: the menu's BoxPointer.
+
     _offscreenAncestor() {
         for (let a = this.get_parent(); a; a = a.get_parent()) {
             if (a.get_offscreen_redirect() & Clutter.OffscreenRedirect.ALWAYS)
@@ -601,14 +601,14 @@ export const ToggleBackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_Tog
         return null;
     }
 
-    /**
-     * Copies the panel background behind `local` [x0, y0, x1, y1] out of the
-     * menu's offscreen, which at this point holds everything the menu drew
-     * before the glass. ClutterOffscreenEffect renders the actor in its own
-     * coordinates, offset by its enlarged paint box and scaled by the ceiled
-     * resource scale; the same arithmetic finds the rect in the offscreen.
-     * Any other paint (on stage, in a clone, a screenshot) keeps the last copy.
-     */
+
+
+
+
+
+
+
+
     _takeMaterial(root, paintContext, local) {
         if (this.is_in_clone_paint() || !isPaintingView())
             return;
@@ -619,7 +619,7 @@ export const ToggleBackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_Tog
         const pv = menu?.get_paint_volume();
         if (!menu || !pv)
             return;
-        // _clutter_actor_box_enlarge_for_effects()
+
         const origin = pv.get_origin();
         const width = Math.round(pv.get_width());
         const height = Math.round(pv.get_height());
@@ -651,8 +651,8 @@ export const ToggleBackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_Tog
         this._materialCopies++;
     }
 
-    // The material over the desktop, for the blur, at the material's
-    // resolution and covering exactly the sample rect `local`.
+
+
     _compose(root, ctx, desktop, desktopRect, local) {
         const material = this._material;
         const w = material.width;
@@ -674,7 +674,7 @@ export const ToggleBackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_Tog
         const pipeline = this._renderer.passes.pipeline('toggle-compose', this._composeBase);
         pipeline.set_layer_texture(0, desktop);
         pipeline.set_layer_texture(1, material.texture);
-        // Where the sample rect lies in the desktop copy, by stage position.
+
         const st = localToStage(this, local[0], local[1], local[2], local[3]);
         const dw = desktopRect[2] - desktopRect[0];
         const dh = desktopRect[3] - desktopRect[1];
@@ -688,7 +688,7 @@ export const ToggleBackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_Tog
         return this._composed;
     }
 
-    /** Counters for the test driver and the dump. */
+
     get stats() {
         const c = this.reader.copier;
         return {
@@ -707,8 +707,8 @@ export const ToggleBackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_Tog
         };
     }
 
-    // The reader lives outside the glass (in uiGroup), so it goes here; at
-    // shell shutdown the stage may have destroyed it already.
+
+
     cleanup() {
         super.cleanup();
         this._relays.clear();

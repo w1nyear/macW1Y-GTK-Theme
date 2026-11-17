@@ -1,12 +1,12 @@
 import Gdk from 'gi://Gdk';
 import Gtk from 'gi://Gtk';
 
-/**
- * Check if the given keyval is forbidden.
- *
- * @param {number} keyval The keyval number.
- * @returns {boolean} `true` if the keyval is forbidden.
- */
+
+
+
+
+
+
 export function isKeyvalForbidden(keyval) {
     const forbiddenKeyvals = [
         Gdk.KEY_Home,
@@ -26,13 +26,13 @@ export function isKeyvalForbidden(keyval) {
     return forbiddenKeyvals.includes(keyval);
 }
 
-/**
- * Check if the given key combo is a valid binding
- *
- * @param {{mask: number, keycode: number, keyval:number}} combo An object
- * representing the key combo.
- * @returns {boolean} `true` if the key combo is a valid binding.
- */
+
+
+
+
+
+
+
 export function isBindingValid({mask, keycode, keyval}) {
     if ((mask === 0 || mask === Gdk.SHIFT_MASK) && keycode !== 0) {
         if (
@@ -54,13 +54,13 @@ export function isBindingValid({mask, keycode, keyval}) {
     return true;
 }
 
-/**
-* Check if the given key combo is a valid accelerator.
-*
-* @param {{mask: number, keyval:number}} combo An object representing the key
-* combo.
-* @returns {boolean} `true` if the key combo is a valid accelerator.
-*/
+
+
+
+
+
+
+
 export function isAccelValid({mask, keyval}) {
     return Gtk.accelerator_valid(keyval, mask) || (keyval === Gdk.KEY_Tab && mask !== 0);
 }

@@ -20,24 +20,24 @@ const SLIDE_DISTANCE = 450;
 const ANIM_IN_DURATION = 320;
 const ANIM_OUT_DURATION = 260;
 
-/**
- * Sanitizes and converts markdown and HTML tags into valid Pango markup.
- * Properly decodes HTML entities, strips orphan/malformed tags (like </b>),
- * balances open/close tags, and ensures formatting characters are never leaked into notification text.
- */
+
+
+
+
+
 export function safePangoMarkup(rawText) {
     if (!rawText || typeof rawText !== 'string') return '';
     let text = rawText.replace(/\r\n/g, '\n');
 
-    // 1. Unescape HTML tags if entity-encoded (e.g. &lt;b&gt; or &lt;/b&gt; from Telegram/Discord/browsers)
+
     text = text.replace(/&lt;(\/?[a-zA-Z0-9]+(?:\s+[^&>]*)?)&gt;/gi, '<$1>');
     text = text.replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#39;/g, "'");
 
-    // 2. Normalize <br> and <p>
+
     text = text.replace(/<br\s*\/?>/gi, '\n');
     text = text.replace(/<p\b[^>]*>/gi, '').replace(/<\/p>/gi, '\n');
 
-    // 3. Convert rich-text HTML tags to valid Pango tags
+
     text = text.replace(/<strong\b[^>]*>(.*?)<\/strong>/gi, '<b>$1</b>');
     text = text.replace(/<em\b[^>]*>(.*?)<\/em>/gi, '<i>$1</i>');
     text = text.replace(/<code\b[^>]*>(.*?)<\/code>/gi, '<tt>$1</tt>');
@@ -46,20 +46,20 @@ export function safePangoMarkup(rawText) {
     text = text.replace(/<del\b[^>]*>(.*?)<\/del>/gi, '<s>$1</s>');
     text = text.replace(/<a\b[^>]*>(.*?)<\/a>/gi, '<u>$1</u>');
 
-    // 4. Markdown conversions:
-    // **bold** or __bold__
+
+
     text = text.replace(/(\*\*|__)(.*?)\1/g, '<b>$2</b>');
-    // ~~strikethrough~~
+
     text = text.replace(/(~~)(.*?)\1/g, '<s>$2</s>');
-    // `inline code`
+
     text = text.replace(/`([^`]+)`/g, '<tt>$1</tt>');
-    // *italic* or _italic_ (not inside word identifiers)
+
     text = text.replace(/(^|[^\w])(\*|_)([^\*_]+?)\2([^\w]|$)/g, '$1<i>$3</i>$4');
 
-    // 5. Remove any remaining unsupported HTML tags, keeping only allowed pango tags
+
     text = text.replace(/<\/?(?!b\b|i\b|u\b|s\b|tt\b|span\b|sub\b|sup\b|big\b|small\b)[a-zA-Z0-9_-]+(?:\s+[^>]*)?>/gi, '');
 
-    // 6. Balance allowed tags and strip orphan closing tags (e.g. </b> without <b>)
+
     const allowedTags = ['b', 'i', 'u', 's', 'tt', 'span', 'sub', 'sup', 'big', 'small'];
     for (const tag of allowedTags) {
         const openMatches = text.match(new RegExp('<' + tag + '(?:\\s+[^>]*)?>', 'gi')) || [];
@@ -84,14 +84,14 @@ export function safePangoMarkup(rawText) {
         }
     }
 
-    // 7. Escape stray & that is not an existing XML entity
+
     text = text.replace(/&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9a-fA-F]+;)/g, '&amp;');
 
     try {
         Pango.parse_markup(text, -1, '');
         return text;
     } catch (e) {
-        // Fallback: completely strip tags, entity-tags, and markdown markers so formatting tokens never leak to user
+
         let stripped = rawText
             .replace(/&lt;(\/?[a-zA-Z0-9_-]+(?:\s+[^&>]*)?)&gt;/gi, '')
             .replace(/<[^>]+>/g, '')
@@ -116,13 +116,13 @@ export function setLabelMarkup(label, rawText) {
     }
 }
 
-/**
- * Formats notification timestamp:
- * - Today: HH:mm (e.g. "14:31")
- * - Yesterday: "Вчора, 14:31"
- * - Older (same year): "16.10, 14:31"
- * - Older (previous year): "16.10.2025, 14:31"
- */
+
+
+
+
+
+
+
 export function formatNotificationTimestamp(datetime) {
     let dt = datetime;
     if (!dt) {
@@ -152,9 +152,9 @@ export function formatNotificationTimestamp(datetime) {
 }
 
 
-// ── Новий вигляд повідомлень (адаптовано з MacShell / MacBar.qml NotifBody) ──
-// Розкладка: іконка-тайл 44×44 (radius 10), текстова колона, правий рейл
-// з відносним часом («тільки що», «5 хв тому») або круглою кнопкою ✕ при наведенні.
+
+
+
 export function formatRelativeNotifAge(datetime) {
     const now = GLib.DateTime.new_now_local();
     let dt = datetime;
@@ -182,7 +182,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         onClick = null,
     } = options;
 
-    // Канонічні стилі картки: напівпрозоре скло (macW1Y Tahoe liquid glass)
+
     let isDark = true;
     try {
         const iface = new Gio.Settings({ schema: 'org.gnome.desktop.interface' });
@@ -203,7 +203,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     const CARD_HOVER_STYLE = isDark
         ? 'background-color: rgba(45, 45, 48, 0.50) !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; border-radius: 16px !important; box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35) !important;'
         : 'background-color: rgba(255, 255, 255, 0.52) !important; border: 1px solid rgba(255, 255, 255, 0.45) !important; border-radius: 16px !important; box-shadow: 0 6px 22px rgba(0, 0, 0, 0.16) !important;';
-    // Пілюля → картка (морф банерів)
+
     const CARD_PILL_STYLE = CARD_BASE_STYLE.replace('border-radius: 16px !important;', 'border-radius: 9999px !important;');
     const CARD_MID_STYLE = CARD_BASE_STYLE.replace('border-radius: 16px !important;', 'border-radius: 22px !important;');
 
@@ -243,7 +243,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         console.warn(`[notifications_v4] Error adding BlurEffect to banner: ${e}`);
     }
 
-    // Головна розкладка в стилі macW1Y: [іконка 44×44] [тексти] [правий рейл]
+
     const mainBox = new St.BoxLayout({
         orientation: Clutter.Orientation.HORIZONTAL,
         x_expand: true,
@@ -253,7 +253,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     });
     banner.set_child(mainBox);
 
-    // 1. Тайл іконки 44×44, заокруглення 10 (новий вигляд MacShell)
+
     const gicon = notification.gicon || source?.icon || source?.app?.get_app_info()?.get_icon() || null;
     const iconBin = new St.Bin({
         style_class: 'mac-notification-icon-bin',
@@ -283,7 +283,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     const railW = 76;
     const contentW = Math.max(120, bannerWidth - padH - iconW - railW);
 
-    // 2. Колона текстів
+
     const contentBox = new St.BoxLayout({
         orientation: Clutter.Orientation.VERTICAL,
         x_expand: false,
@@ -296,7 +296,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     contentBox.max_width = contentW;
     mainBox.add_child(contentBox);
 
-    // Рядок заголовка: [Ім'я програми / ТЕРМІНОВО] [Лічильник стопки]
+
     const appHeaderBox = new St.BoxLayout({
         orientation: Clutter.Orientation.HORIZONTAL,
         x_expand: true,
@@ -304,7 +304,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     });
     contentBox.add_child(appHeaderBox);
 
-    const isUrgent = (notification.urgency === 2); // MessageTray.Urgency.CRITICAL
+    const isUrgent = (notification.urgency === 2);
 
     const appLabel = new St.Label({
         text: isUrgent ? t('urgent', 'ТЕРМІНОВО') : (source?.title || t('notification', 'Повідомлення')),
@@ -323,8 +323,8 @@ export function buildNotificationCard(source, notification, options = {}) {
     });
     appHeaderBox.add_child(countBadge);
 
-    // 3. Правий рейл: відносний час («тільки що», «5 хв тому») вгорі; при наведенні
-    // на його місці — кругла кнопка закриття ✕ (22px), як у MacShell.
+
+
     const rightRail = new St.Widget({
         layout_manager: new Clutter.BinLayout(),
         y_align: Clutter.ActorAlign.START,
@@ -377,7 +377,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     rightRail.add_child(timeLabel);
     banner.add_child(closeBtn);
 
-    // Заголовок (тільки якщо відрізняється від імені застосунку — як у macW1Y)
+
     const rawTitle = (notification.title || '').trim();
     const appName = (source?.title || '').trim();
     const isDuplicateTitle = rawTitle.toLowerCase() === appName.toLowerCase();
@@ -396,7 +396,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         titleLabel.visible = false;
     }
 
-    // Тіло: багаторядкове перенесення, ніколи не обрізається трикрапкою (канон!)
+
     const bodyText = notification.bannerBodyText || notification.body || '';
     const bodyLabel = new St.Label({
         style_class: 'mac-notification-body',
@@ -409,7 +409,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     bodyLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
     contentBox.add_child(bodyLabel);
 
-    // 4. Кнопки дій (внизу ліворуч від тексту) — канонічні капсули 7px
+
     let actionsBox = null;
     if (notification.actions && notification.actions.length > 0) {
         actionsBox = new St.BoxLayout({
@@ -447,7 +447,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         contentBox.add_child(actionsBox);
     }
 
-    // Живе оновлення відносного часу кожні 30с
+
     let agoTimerId = 0;
     const updateAgo = () => {
         try {
@@ -503,7 +503,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         return false;
     };
 
-    // При наведенні час м'яко поступається місцем кнопці закриття (канон) — 150мс
+
     const updateHoverState = () => {
         if (cardData.isClosing)
             return;
@@ -522,7 +522,7 @@ export function buildNotificationCard(source, notification, options = {}) {
                 duration: 150,
                 mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             });
-            // "напис щойно приховуватись не має" - timeLabel stays visible
+
             timeLabel.opacity = 255;
             timeLabel.visible = true;
         } else {
@@ -558,7 +558,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         }
     });
 
-    // Внутрішні стилі для споживачів (пілюля → картка морф у tahoeNotifications)
+
     cardData.baseStyle = CARD_BASE_STYLE;
     cardData.hoverStyle = CARD_HOVER_STYLE;
     cardData.pillStyle = CARD_PILL_STYLE;
@@ -574,18 +574,18 @@ export function buildNotificationCard(source, notification, options = {}) {
 }
 globalThis._macBuildNotificationCard = buildNotificationCard;
 
-/**
- * MacNotificationGroup:
- * Manages multiple notifications belonging to the same application or conversation.
- * In collapsed state: shows top card with macW1Y layered card stack underneath.
- * On click: cascades downwards to show all notifications with smooth staggered animation.
- */
+
+
+
+
+
+
 export class MacNotificationGroup {
     constructor(groupKey, options = {}) {
         this.groupKey = groupKey;
         this.options = options;
         this.isExpanded = false;
-        this.items = []; // [{ source, notification, cardData, banner }] newest first
+        this.items = [];
         this.isClosing = false;
         this.hovered = false;
         this.timeoutId = 0;
@@ -601,7 +601,7 @@ export class MacNotificationGroup {
         this.actor.getGlassSubcards = () => this.getGlassSubcards();
         this.actor.getGlassRegions = (mon) => this.getGlassRegions(mon);
 
-        // Collapsed container: overlays layer2, layer1, and topCardBox with Clutter.BinLayout
+
         this.collapsedContainer = new St.Widget({
             layout_manager: new Clutter.BinLayout(),
             x_expand: true,
@@ -611,7 +611,7 @@ export class MacNotificationGroup {
         });
         this.actor.add_child(this.collapsedContainer);
 
-        // Spacer to provide exact allocation height for BinLayout without negative margins
+
         this.spacer = new St.Widget({
             x_expand: true,
             x_align: Clutter.ActorAlign.FILL,
@@ -621,7 +621,7 @@ export class MacNotificationGroup {
         });
         this.collapsedContainer.add_child(this.spacer);
 
-        // Click to expand from stack layers
+
         const handleExpandClick = () => {
             if (!this.isExpanded && this.items.length > 1) {
                 this.expand();
@@ -644,7 +644,7 @@ export class MacNotificationGroup {
             isDark = true;
         }
 
-        // Layer 2 (bottom-most stack card for 3+ items)
+
         this.layer2 = new St.Widget({
             x_expand: true,
             x_align: Clutter.ActorAlign.FILL,
@@ -659,7 +659,7 @@ export class MacNotificationGroup {
         this.layer2.connect('button-press-event', handleExpandClick);
         this.collapsedContainer.add_child(this.layer2);
 
-        // Layer 1 (middle stack card for 2+ items)
+
         this.layer1 = new St.Widget({
             x_expand: true,
             x_align: Clutter.ActorAlign.FILL,
@@ -687,7 +687,7 @@ export class MacNotificationGroup {
             }
         } catch (_) {}
 
-        // Top card container (placed in front of layer 1 & 2 in z-order)
+
         this.topCardBox = new St.Widget({
             layout_manager: new Clutter.BinLayout(),
             x_expand: true,
@@ -705,7 +705,7 @@ export class MacNotificationGroup {
         });
         this.collapsedContainer.add_child(this.topCardBox);
 
-        // Expanded cards box
+
         this.expandedCardsBox = new St.BoxLayout({
             orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
@@ -715,7 +715,7 @@ export class MacNotificationGroup {
         });
         this.actor.add_child(this.expandedCardsBox);
 
-        // Collapse button
+
         this.collapseBtn = new St.Button({
             style_class: 'mac-notification-collapse-btn',
             label: t('collapse', 'Згорнути'),
@@ -851,7 +851,7 @@ export class MacNotificationGroup {
             this.options.onGeometryChanged();
         }
 
-        // 1. Old banner smoothly scales down to 0.95, moves down 8px, and fades into the stack
+
         oldBanner.ease({
             scale_x: 0.95,
             scale_y: 0.95,
@@ -861,7 +861,7 @@ export class MacNotificationGroup {
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
         });
 
-        // 2. New banner slides in from the right to the primary position
+
         newBanner.ease({
             translation_x: 0,
             opacity: 255,
@@ -891,9 +891,9 @@ export class MacNotificationGroup {
 
         try {
             if (userDismissed) {
-                notification.destroy(2); // DISMISSED
+                notification.destroy(2);
             } else if (notification.isTransient) {
-                notification.destroy(1); // EXPIRED
+                notification.destroy(1);
             }
         } catch (_) {}
 
@@ -1035,7 +1035,7 @@ export class MacNotificationGroup {
         this.expandedCardsBox.visible = true;
         this.expandedCardsBox.remove_all_children();
 
-        // Cascading waterfall entrance
+
         for (let i = 0; i < this.items.length; i++) {
             const item = this.items[i];
             const banner = item.banner;
@@ -1194,7 +1194,7 @@ export const NotificationsController = class NotificationsController {
         this.enabled = false;
         this._stackBox = null;
         this._glass = null;
-        this._activeGroups = new Map(); // groupKey -> MacNotificationGroup
+        this._activeGroups = new Map();
         this._pendingQueue = [];
         this._origOnRequestBanner = null;
         this._origAddSource = null;
@@ -1216,7 +1216,7 @@ export const NotificationsController = class NotificationsController {
         this.enabled = true;
         globalThis._macNotificationsController = this;
 
-        // Create the vertical stack box in top-right of primary monitor work area
+
         this._stackBox = new St.BoxLayout({
             name: 'mac-notification-stack',
             style_class: 'mac-notification-stack',
@@ -1232,45 +1232,45 @@ export const NotificationsController = class NotificationsController {
             clip_to_allocation: false,
         });
 
-        // Constrain to primary monitor work area (below top panel)
+
         const constraint = new Layout.MonitorConstraint({ primary: true });
         Main.layoutManager.panelBox.bind_property('visible',
             constraint, 'work-area',
             GObject.BindingFlags.SYNC_CREATE);
         this._stackBox.add_constraint(constraint);
 
-        // Add above all windows as top chrome
+
         Main.layoutManager.addTopChrome(this._stackBox, {
             trackFullscreen: true,
         });
 
-        // Hide GNOME default banner bin so it never shows in center
+
         if (Main.messageTray?._bannerBin) {
             Main.messageTray._bannerBin.visible = false;
         }
 
-        // Intercept banner requests from MessageTray
+
         this._origOnRequestBanner = Main.messageTray._onNotificationRequestBanner.bind(Main.messageTray);
         Main.messageTray._onNotificationRequestBanner = (source, notification) => {
             this._handleNotificationRequest(source, notification);
         };
 
-        // Hook _addSource on MessageTray for newly added sources
+
         this._origAddSource = Main.messageTray._addSource.bind(Main.messageTray);
         Main.messageTray._addSource = (source) => {
             this._origAddSource(source);
             this._hookSource(source);
         };
 
-        // Re-hook all existing sources
+
         for (const source of Main.messageTray.getSources()) {
             this._hookSource(source);
         }
 
-        // Initialize Liquid Glass for floating notification banners
+
         this._initGlass();
 
-        // Real-time sigma change listener
+
         if (this.settings?.notification?.settings) {
             this.connections.connect(
                 this.settings.notification.settings,
@@ -1302,8 +1302,8 @@ export const NotificationsController = class NotificationsController {
         }
 
         const tintVal = isDark ? 0.0 : 1.0;
-        const baseStrength = 0.02; // Exactly 2% as requested by user
-        const tintStrength = 0.02; // Exactly 2% as requested by user
+        const baseStrength = 0.02;
+        const tintStrength = 0.02;
         return { isDark, tintVal, baseStrength, tintStrength };
     }
 
@@ -1435,7 +1435,7 @@ export const NotificationsController = class NotificationsController {
         const notifCenter = globalThis._macNotificationCenter ||
             Main.extensionManager?.lookup?.('blur-my-shell@aunetx')?.stateObj?._menubar_controller;
 
-        // Check Do Not Disturb (Не турбувати)
+
         let showBanners = true;
         try {
             const notifSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.notifications' });
@@ -1450,13 +1450,13 @@ export const NotificationsController = class NotificationsController {
             return;
         }
 
-        // If Notification Center is open, animate into Notification Center directly
+
         const isCenterOpen = (notifCenter?._notifCenterOpen ?? false) ||
             (notifCenter?.isOpen ?? false) ||
             (Main.panel?.statusArea?.dateMenu?.menu?.isOpen ?? false);
         if (isCenterOpen) {
             notification.acknowledged = true;
-            try { notification.playSound(); } catch (_e) { /* ignore */ }
+            try { notification.playSound(); } catch (_e) {   }
 
             if (notifCenter && typeof notifCenter.addNotificationAnimated === 'function') {
                 notifCenter.addNotificationAnimated(source, notification);
@@ -1464,12 +1464,12 @@ export const NotificationsController = class NotificationsController {
             return;
         }
 
-        // Validate policy & state
+
         if (notification.acknowledged)
             return;
-        if (notification.urgency === 0) // LOW
+        if (notification.urgency === 0)
             return;
-        if (!notification.source?.policy?.showBanners && notification.urgency !== 2) // CRITICAL
+        if (!notification.source?.policy?.showBanners && notification.urgency !== 2)
             return;
         if (Main.sessionMode.isLocked && !notification.source?.policy?.showInLockScreen)
             return;
@@ -1477,18 +1477,18 @@ export const NotificationsController = class NotificationsController {
             return;
 
         notification.acknowledged = true;
-        try { notification.playSound(); } catch (_e) { /* ignore */ }
+        try { notification.playSound(); } catch (_e) {   }
 
         if (!this._glass) {
             this._initGlass();
         }
 
-        // Grouping key: by application / source
+
         const groupKey = source?.id || source?.title || 'app';
         let group = this._activeGroups.get(groupKey);
 
         if (group) {
-            // Group already active: add new notification to group
+
             group.addNotification(source, notification, true);
             this._startGroupTimer(group, DEFAULT_TIMEOUT_MS);
             this._syncGlass();

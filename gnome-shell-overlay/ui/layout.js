@@ -22,11 +22,11 @@ import {logErrorUnlessCancelled} from '../misc/errorUtils.js';
 export const STARTUP_ANIMATION_TIME = 500;
 export const BACKGROUND_FADE_ANIMATION_TIME = 1000;
 
-const HOT_CORNER_PRESSURE_THRESHOLD = 100; // pixels
-const HOT_CORNER_PRESSURE_TIMEOUT = 1000; // ms
+const HOT_CORNER_PRESSURE_THRESHOLD = 100;
+const HOT_CORNER_PRESSURE_TIMEOUT = 1000;
 
-const SCREEN_TRANSITION_DELAY = 250; // ms
-const SCREEN_TRANSITION_DURATION = 500; // ms
+const SCREEN_TRANSITION_DELAY = 250;
+const SCREEN_TRANSITION_DURATION = 500;
 
 function _safeSetStageBlack() {
     try {
@@ -232,11 +232,11 @@ export const LayoutManager = GObject.registerClass({
             Main.sessionMode.hasOverview &&
             global.settings.get_boolean('start-in-overview');
 
-        // Set up stage hierarchy to group all UI actors under one container.
+
         this.uiGroup = new UiActor({name: 'uiGroup'});
         this.uiGroup.set_no_layout(true);
 
-        // Immediate black stage background to prevent any Ubuntu grey (#2e3436) flash (safe Cogl API for GNOME 50.1+)
+
         _safeSetStageBlack();
         global.stage.add_child(this.uiGroup);
 
@@ -262,10 +262,10 @@ export const LayoutManager = GObject.registerClass({
             this.uiGroup.destroy();
         });
 
-        // Using addChrome() to add actors to uiGroup will position actors
-        // underneath the top_window_group.
-        // To insert actors at the top of uiGroup, we use addTopChrome() or
-        // add the actor directly using uiGroup.add_child().
+
+
+
+
         global.stage.remove_child(global.top_window_group);
         this.uiGroup.add_child(global.top_window_group);
 
@@ -323,8 +323,8 @@ export const LayoutManager = GObject.registerClass({
         });
         this.addTopChrome(this.screenshotUIGroup);
 
-        // A dummy actor that tracks the mouse or text cursor, based on the
-        // position and size set in setDummyCursorGeometry.
+
+
         this.dummyCursor = new St.Widget({width: 0, height: 0, opacity: 0, name: 'Dummy Cursor'});
         this.uiGroup.add_child(this.dummyCursor);
 
@@ -344,7 +344,7 @@ export const LayoutManager = GObject.registerClass({
         this._interfaceSettings.connect('changed::enable-hot-corners',
             this._updateHotCorners.bind(this));
 
-        // Need to update struts on new workspaces when they are added
+
         const workspaceManager = global.workspace_manager;
         workspaceManager.connect('notify::n-workspaces',
             this._queueUpdateRegions.bind(this));
@@ -369,7 +369,7 @@ export const LayoutManager = GObject.registerClass({
         }));
     }
 
-    // This is called by Main after everything else is constructed
+
     init() {
         Main.sessionMode.connect('updated', this._sessionUpdated.bind(this));
 
@@ -422,8 +422,8 @@ export const LayoutManager = GObject.registerClass({
         } else if (nMonitors === 1) {
             this.primaryIndex = this.bottomIndex = 0;
         } else {
-            // If there are monitors below the primary, then we need
-            // to split primary from bottom.
+
+
             this.primaryIndex = this.bottomIndex = display.get_primary_monitor();
             for (let i = 0; i < this.monitors.length; i++) {
                 const monitor = this.monitors[i];
@@ -450,7 +450,7 @@ export const LayoutManager = GObject.registerClass({
     }
 
     _updateHotCorners() {
-        // destroy old hot corners
+
         this._destroyHotCorners();
 
         if (!this._interfaceSettings.get_boolean('enable-hot-corners')) {
@@ -460,7 +460,7 @@ export const LayoutManager = GObject.registerClass({
 
         const size = this.panelBox.height;
 
-        // build new hot corners
+
         for (let i = 0; i < this.monitors.length; i++) {
             const monitor = this.monitors[i];
             const cornerX = this._rtl ? monitor.x + monitor.width : monitor.x;
@@ -469,8 +469,8 @@ export const LayoutManager = GObject.registerClass({
             let haveTopLeftCorner = true;
 
             if (i !== this.primaryIndex) {
-                // Check if we have a top left (right for RTL) corner.
-                // I.e. if there is no monitor directly above or to the left(right)
+
+
                 const besideX = this._rtl ? monitor.x + 1 : cornerX - 1;
                 const besideY = cornerY;
                 const aboveX = cornerX;
@@ -747,20 +747,20 @@ export const LayoutManager = GObject.registerClass({
         await promise;
     }
 
-    // Startup Animations
-    //
-    // We have two different animations, depending on whether we're a greeter
-    // or a normal session.
-    //
-    // In the greeter, we want to animate the panel from the top, and smoothly
-    // fade the login dialog on top of whatever plymouth left on screen which
-    // we get as a still frame background before drawing anything else.
-    //
-    // Here we just have the code to animate the panel, and fade up the background.
-    // The login dialog animation is handled by modalDialog.js
-    //
-    // When starting a normal user session, we want to grow it out of the middle
-    // of the screen.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     async _prepareStartupAnimation() {
         await this._ensurePrimaryMonitor();
@@ -777,7 +777,7 @@ export const LayoutManager = GObject.registerClass({
             } catch (_) {}
         }
 
-        // Wallpaper cover pane (holds solid desktop appearance during silent background loading)
+
         this._coverPane = new St.Widget({
             name: 'macStartupCoverPane',
             style: Main.sessionMode.isGreeter
@@ -796,7 +796,7 @@ export const LayoutManager = GObject.registerClass({
         this._updateRegions();
 
         if (Main.sessionMode.isGreeter) {
-            // Hide panelBox immediately so default unstyled greeter items never flash
+
             if (this.panelBox) {
                 this.panelBox.remove_all_transitions();
                 const panelH = this.panelBox.height > 0 ? this.panelBox.height : 34;
@@ -804,7 +804,7 @@ export const LayoutManager = GObject.registerClass({
                 this.panelBox.opacity = 0;
             }
 
-            // Solid black boot cover matching Plymouth background 1:1 (no squished logo)
+
             if (!this._gdmBootCover) {
                 this._gdmBootCover = new St.Widget({
                     name: 'gdmBootCover',
@@ -822,17 +822,17 @@ export const LayoutManager = GObject.registerClass({
         } else {
             this.keyboardBox.hide();
 
-            // Set black stage background color to eliminate Ubuntu grey (#2e3436) flash (safe Cogl API for GNOME 50.1+)
+
             _safeSetStageBlack();
 
-            // Wallpaper monolithic (100% scale, zero flicker/gap)
+
             this._showSecondaryBackgrounds();
             this.uiGroup.set_pivot_point(0, 0);
             this.uiGroup.scale_x = 1.0;
             this.uiGroup.scale_y = 1.0;
             this.uiGroup.opacity = 255;
 
-            // Hide panelBox above top edge
+
             if (this.panelBox) {
                 this.panelBox.remove_all_transitions();
                 const panelH = this.panelBox.height > 0 ? this.panelBox.height : 34;
@@ -843,13 +843,13 @@ export const LayoutManager = GObject.registerClass({
                 }
             }
 
-            // Hide open windows
+
             if (global.window_group) {
                 global.window_group.remove_all_transitions();
                 global.window_group.opacity = 0;
             }
 
-            // Immediately hide any dock containers or liquid glass actors present
+
             for (const child of this.uiGroup.get_children()) {
                 if (child.name === 'dashtodockContainer' || child.name === 'liquid-glass-bg-actor') {
                     child.remove_all_transitions();
@@ -862,7 +862,7 @@ export const LayoutManager = GObject.registerClass({
                 }
             }
 
-            // Trap any newly added dock or glass actors to keep them completely hidden behind cover
+
             if (!this._macUiGroupChildAddedId) {
                 this._macUiGroupChildAddedId = this.uiGroup.connect('child-added', (_group, child) => {
                     if (!this._startingUp) return;
@@ -886,7 +886,7 @@ export const LayoutManager = GObject.registerClass({
                 });
             }
 
-            // Trap desktop-widgets layer to keep it completely hidden
+
             if (this._backgroundGroup && !this._macBgChildAddedId) {
                 this._macBgChildAddedId = this._backgroundGroup.connect('child-added', (_group, child) => {
                     if (!this._startingUp) return;
@@ -908,8 +908,8 @@ export const LayoutManager = GObject.registerClass({
             await this._updateBackgrounds();
         }
 
-        // Only emit startup-prepared in user session mode here.
-        // In Greeter mode, startup-prepared is emitted in _startupAnimationGreeter AFTER extensions are ready.
+
+
         if (!Main.sessionMode.isGreeter) {
             this.emit('startup-prepared');
         }
@@ -965,7 +965,7 @@ export const LayoutManager = GObject.registerClass({
 
         await waitForGreeterExtensions();
 
-        // Ensure wack-lockscreen-clock and user-theme are enabled and ready for GDM
+
         const wackUuid = 'wack-lockscreen-clock@rinzler69-wastaken.github.com';
         if (Main.extensionManager) {
             const wackExt = Main.extensionManager.lookup(wackUuid);
@@ -994,10 +994,10 @@ export const LayoutManager = GObject.registerClass({
             wackAttempts++;
         }
 
-        // Emit startup-prepared so Main.screenShield.showDialog() creates/presents the ALREADY-STYLED dialog
+
         this.emit('startup-prepared');
 
-        // Stabilization barrier for GDM layout & clock styles to settle offscreen
+
         await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, () => {
             resolve();
             return GLib.SOURCE_REMOVE;
@@ -1006,7 +1006,7 @@ export const LayoutManager = GObject.registerClass({
         const DURATION = 650;
         const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
 
-        // Smoothly dissolve black boot cover into GDM wallpaper & lockscreen clock
+
         if (this._gdmBootCover) {
             const cover = this._gdmBootCover;
             this._gdmBootCover = null;
@@ -1019,7 +1019,7 @@ export const LayoutManager = GObject.registerClass({
             });
         }
 
-        // Slide down top bar
+
         if (this.panelBox) {
             this.panelBox.remove_all_transitions();
             this.panelBox.ease({
@@ -1057,8 +1057,8 @@ export const LayoutManager = GObject.registerClass({
         this.uiGroup.set_pivot_point(0, 0);
         this.uiGroup.opacity = 255;
 
-        // 1. Parallel Startup Barrier: Concurrently await extensions, dock, liquid-glass, widgets
-        // with a strict 1200ms timeout race to eliminate prolonged black screen.
+
+
         const STARTUP_TIMEOUT_MS = 1200;
 
         const checkExtensions = async () => {
@@ -1137,20 +1137,20 @@ export const LayoutManager = GObject.registerClass({
             });
         });
 
-        // Trigger prewarming during the startup barrier
+
         try {
             if (typeof globalThis._macPrewarmSpotlight === 'function') {
                 globalThis._macPrewarmSpotlight();
             }
         } catch (_) {}
 
-        // Race parallel ready checks against timeout barrier
+
         await Promise.race([
             Promise.all([checkExtensions(), checkDock(), checkLiquidGlass(), checkWidgets()]),
             timeoutBarrier
         ]);
 
-        // Dock initial state: zero opacity for synchronized reveal
+
         let dockContainer = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
         if (dockContainer) {
             dockContainer.remove_all_transitions();
@@ -1160,7 +1160,7 @@ export const LayoutManager = GObject.registerClass({
             }
         }
 
-        // Clean up listeners
+
         if (this._macBgChildAddedId && this._backgroundGroup) {
             try { this._backgroundGroup.disconnect(this._macBgChildAddedId); } catch (_) {}
             this._macBgChildAddedId = null;
@@ -1170,11 +1170,11 @@ export const LayoutManager = GObject.registerClass({
             this._macUiGroupChildAddedId = null;
         }
 
-        // 2. NOW TRIGGER SYNCHRONIZED REVEAL (Crisp 380ms Ease-Out Cubic)
+
         const DURATION = 380;
         const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
 
-        // Menubar slides down from top
+
         if (this.panelBox) {
             this.panelBox.remove_all_transitions();
             const panelH = this.panelBox.height > 0 ? this.panelBox.height : 34;
@@ -1217,7 +1217,7 @@ export const LayoutManager = GObject.registerClass({
             Main.panel.opacity = 255;
         }
 
-        // Cover pane fades out smoothly
+
         if (this._coverPane) {
             const cover = this._coverPane;
             this._coverPane = null;
@@ -1230,7 +1230,7 @@ export const LayoutManager = GObject.registerClass({
             });
         }
 
-        // Widgets smoothly fade in
+
         const widgetsExt = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
         const widgetLayer = widgetsExt?.stateObj?._controller?._layer ||
             this._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer'));
@@ -1249,7 +1249,7 @@ export const LayoutManager = GObject.registerClass({
             }
         }
 
-        // Window group smoothly fades in
+
         if (global.window_group) {
             global.window_group.remove_all_transitions();
             global.window_group.opacity = 0;
@@ -1260,7 +1260,7 @@ export const LayoutManager = GObject.registerClass({
             });
         }
 
-        // Dock & Liquid Glass reveal:
+
         const dockContainers = this.uiGroup.get_children().filter(c => c.name === 'dashtodockContainer');
         const glassActors = this.uiGroup.get_children().filter(c => c.name === 'liquid-glass-bg-actor');
 
@@ -1287,7 +1287,7 @@ export const LayoutManager = GObject.registerClass({
                     mode: MODE,
                 });
             }
-            // Explicitly ensure the inner dash and icons are fully visible and at resting coordinates
+
             const dock = dc._dock;
             if (dock) {
                 dock.translation_y = -dockH;
@@ -1297,7 +1297,7 @@ export const LayoutManager = GObject.registerClass({
                     dock.dash.translation_x = 0;
                     dock.dash.translation_y = 0;
                 }
-                dock._dockState = 2; // State.SHOWN
+                dock._dockState = 2;
                 dock._startupAnimationRan = true;
                 if (dock._slider) {
                     dock._slider.slide_x = 1;
@@ -1316,10 +1316,10 @@ export const LayoutManager = GObject.registerClass({
             });
         }
 
-        // Emit startup-complete so Dash to Dock and other listeners run their entrance animation
+
         this._startingUp = false;
 
-        // Clear watchdog launch marker to signal healthy startup completion
+
         try {
             const runtimeDir = GLib.getenv('XDG_RUNTIME_DIR');
             const paths = [
@@ -1340,7 +1340,7 @@ export const LayoutManager = GObject.registerClass({
             this.emit('startup-complete');
         }
 
-        // Wait for entrance animation to complete
+
         await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, DURATION, () => {
             resolve();
             return GLib.SOURCE_REMOVE;
@@ -1363,7 +1363,7 @@ export const LayoutManager = GObject.registerClass({
 
         this._startingUp = false;
 
-        // Clear watchdog launch marker to signal healthy startup completion
+
         try {
             const runtimeDir = GLib.getenv('XDG_RUNTIME_DIR');
             const paths = [
@@ -1395,39 +1395,39 @@ export const LayoutManager = GObject.registerClass({
         }
     }
 
-    // setDummyCursorGeometry:
-    //
-    // The cursor dummy is a standard widget commonly used for popup
-    // menus and box pointers to track, as the box pointer API only
-    // tracks actors. If you want to pop up a menu based on where the
-    // user clicked, or where the text cursor is, the cursor dummy
-    // is what you should use. Given that the menu should not track
-    // the actual mouse pointer as it moves, you need to call this
-    // function before you show the menu to ensure it is at the right
-    // position and has the right size.
+
+
+
+
+
+
+
+
+
+
     setDummyCursorGeometry(x, y, w, h) {
         this.dummyCursor.set_position(Math.round(x), Math.round(y));
         this.dummyCursor.set_size(Math.round(w), Math.round(h));
     }
 
-    // addChrome:
-    // @actor: an actor to add to the chrome
-    // @params: (optional) additional params
-    //
-    // Adds @actor to the chrome.
-    // Changes in @actor's size, position, and visibility will
-    // automatically result in appropriate changes to the input
-    // region.
-    //
-    // If %affectsStruts in @params is %true (and @actor is along a
-    // screen edge), then @actor's size and position will also affect
-    // the window manager struts. Changes to @actor's visibility will
-    // NOT affect whether or not the strut is present, however.
-    //
-    // If %trackFullscreen in @params is %true, the actor's visibility
-    // will be bound to the presence of fullscreen windows on the same
-    // monitor (it will be hidden whenever a fullscreen window is visible,
-    // and shown otherwise)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     addChrome(actor, params) {
         this.uiGroup.add_child(actor);
         if (this.uiGroup.contains(global.top_window_group))
@@ -1435,26 +1435,26 @@ export const LayoutManager = GObject.registerClass({
         this._trackActor(actor, params);
     }
 
-    // addTopChrome:
-    // @actor: an actor to add to the chrome
-    // @params: (optional) additional params
-    //
-    // Like addChrome(), but adds @actor above all windows, including popups.
+
+
+
+
+
     addTopChrome(actor, params) {
         this.uiGroup.add_child(actor);
         this._trackActor(actor, params);
     }
 
-    // trackChrome:
-    // @actor: a descendant of the chrome to begin tracking
-    // @params: parameters describing how to track @actor
-    //
-    // Tells the chrome to track @actor. This can be used to extend the
-    // struts or input region to cover specific children.
-    //
-    // @params can have any of the same values as in addChrome(),
-    // though some possibilities don't make sense. By default, @actor has
-    // the same params as its chrome ancestor.
+
+
+
+
+
+
+
+
+
+
     trackChrome(actor, params = {}) {
         let ancestor = actor.get_parent();
         let index = this._findActor(ancestor);
@@ -1466,8 +1466,8 @@ export const LayoutManager = GObject.registerClass({
         const ancestorData = ancestor
             ? this._trackedActors[index]
             : defaultParams;
-        // We can't use Params.parse here because we want to drop
-        // the extra values like ancestorData.actor
+
+
         for (const prop in defaultParams) {
             if (!Object.prototype.hasOwnProperty.call(params, prop))
                 params[prop] = ancestorData[prop];
@@ -1476,18 +1476,18 @@ export const LayoutManager = GObject.registerClass({
         this._trackActor(actor, params);
     }
 
-    // untrackChrome:
-    // @actor: an actor previously tracked via trackChrome()
-    //
-    // Undoes the effect of trackChrome()
+
+
+
+
     untrackChrome(actor) {
         this._untrackActor(actor);
     }
 
-    // removeChrome:
-    // @actor: a chrome actor
-    //
-    // Removes @actor from the chrome
+
+
+
+
     removeChrome(actor) {
         this.uiGroup.remove_child(actor);
         this._untrackActor(actor);
@@ -1512,8 +1512,8 @@ export const LayoutManager = GObject.registerClass({
             'notify::visible', this._queueUpdateRegions.bind(this),
             'notify::allocation', this._queueUpdateRegions.bind(this),
             'destroy', this._untrackActor.bind(this), this);
-        // Note that destroying actor will unset its parent, so we don't
-        // need to connect to 'destroy' too.
+
+
 
         this._trackedActors.push(actorData);
         this._updateActorVisibility(actorData);
@@ -1552,8 +1552,8 @@ export const LayoutManager = GObject.registerClass({
     }
 
     getWorkAreaForMonitor(monitorIndex) {
-        // Assume that all workspaces will have the same
-        // struts and pick the first one.
+
+
         const workspaceManager = global.workspace_manager;
         const ws = workspaceManager.get_workspace_by_index(0);
         return ws.get_work_area_for_monitor(monitorIndex);
@@ -1569,8 +1569,8 @@ export const LayoutManager = GObject.registerClass({
         return global.display.get_monitor_index_for_rect(rect);
     }
 
-    // This call guarantees that we return some monitor to simplify usage of it
-    // In practice all tracked actors should be visible on some monitor anyway
+
+
     findIndexForActor(actor) {
         const [x, y] = actor.get_transformed_position();
         const [w, h] = actor.get_transformed_size();
@@ -1644,21 +1644,21 @@ export const LayoutManager = GObject.registerClass({
                 monitor = this.findMonitorForActor(actorData.actor);
 
             if (monitor) {
-                // Limit struts to the size of the screen
+
                 const x1 = Math.max(x, 0);
                 const x2 = Math.min(x + w, global.screen_width);
                 const y1 = Math.max(y, 0);
                 const y2 = Math.min(y + h, global.screen_height);
 
-                // Metacity wants to know what side of the monitor the
-                // strut is considered to be attached to. First, we find
-                // the monitor that contains the strut. If the actor is
-                // only touching one edge, or is touching the entire
-                // border of that monitor, then it's obvious which side
-                // to call it. If it's in a corner, we pick a side
-                // arbitrarily. If it doesn't touch any edges, or it
-                // spans the width/height across the middle of the
-                // screen, then we don't create a strut for it at all.
+
+
+
+
+
+
+
+
+
 
                 let side;
                 if (x1 <= monitor.x && x2 >= monitor.x + monitor.width) {
@@ -1705,17 +1705,17 @@ export const LayoutManager = GObject.registerClass({
     }
 
     modalEnded() {
-        // We don't update the stage input region while in a modal,
-        // so queue an update now.
+
+
         this._queueUpdateRegions();
     }
 });
 
 
-// HotCorner:
-//
-// This class manages a "hot corner" that can toggle switching to
-// overview.
+
+
+
+
 export const HotCorner = GObject.registerClass(
 class HotCorner extends Clutter.Actor {
     _init(layoutManager, monitor, x, y) {
@@ -1882,9 +1882,9 @@ export class PressureBarrier extends Signals.EventEmitter {
     }
 
     _trimBarrierEvents() {
-        // Events are guaranteed to be sorted in time order from
-        // oldest to newest, so just look for the first old event,
-        // and then chop events after that off.
+
+
+
         let i = 0;
         const threshold = this._lastTime - this._timeout;
 
@@ -1922,15 +1922,15 @@ export class PressureBarrier extends Signals.EventEmitter {
     _onBarrierHit(barrier, event) {
         barrier._isHit = true;
 
-        // If we've triggered the barrier, wait until the pointer has the
-        // left the barrier hitbox until we trigger it again.
+
+
         if (this._isTriggered)
             return;
 
         if (this._eventFilter && this._eventFilter(event))
             return;
 
-        // Throw out all events not in the proper keybinding mode
+
         if (!(this._actionMode & Main.actionMode))
             return;
 
@@ -1942,9 +1942,9 @@ export class PressureBarrier extends Signals.EventEmitter {
             return;
         }
 
-        // Throw out events where the cursor is move more
-        // along the axis of the barrier than moving with
-        // the barrier.
+
+
+
         if (slide > distance)
             return;
 

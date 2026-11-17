@@ -1,6 +1,6 @@
 import Gio from "gi://Gio"
 
-// Logger class. Used by other classes and initialized in extension.js.
+
 export class Logger {
   private _settings: Gio.Settings;
   private _outputLogs: boolean;

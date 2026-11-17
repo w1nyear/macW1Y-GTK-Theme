@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Tahoe Quick Settings v5: 1:1 macW1Y Tahoe Control Center.
-//   panel 320, padding 14, col gap 18, column 137
-//   St adds CSS padding ON TOP of forced sizes (content-box), so the grid
-//   below targets RENDERED sizes, not forced ones:
-//   pills: forced 60 + pad 20 = 80 tall; music 152; circles 62;
-//   cards: forced 72 + pad 20 = 96; Focus 137x62 (forced 127x50);
-//   bottom Settings pill 36.
-// Panel bg = its own actor BELOW the glass stacks:
-//   'pill' (r40), 'disc' (r31), 'card' (r26), 'music' (r26), 'edit' (r18).
+
+
+
+
+
+
+
+
+
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -49,10 +49,10 @@ function getSystemAccentColor() {
     }
 }
 
-// Liquid-glass helpers live in another extension. Static
-// `import ... from 'file://' + ...` is a SyntaxError (module specifiers must
-// be string literals), so load them dynamically at runtime. Until loaded,
-// glass stacks are skipped and the panel works without blur.
+
+
+
+
 let LiquidEffect = null;
 let UnpickableActor = null;
 let UILayerSampler = null;
@@ -126,51 +126,51 @@ export async function ensureLgReady() {
 const PANEL_W = 320;
 const PAD = 14;
 const COLGAP = 18;
-const COL_W = (PANEL_W - PAD * 2 - COLGAP) / 2;   // 137
+const COL_W = (PANEL_W - PAD * 2 - COLGAP) / 2;
 const GAP = 12;
-const PILL_H = 60;                                // renders 80 with padding
+const PILL_H = 60;
 const CIRCLE = 62;
-const MUSIC_H = PILL_H * 2 + GAP;                 // 132 forced, 152 rendered
-const CARD_H = 63;                                // forced matching OSD 1:1 (63 rendered)
-const EDIT_H = 28;                                // same as privacy pill
+const MUSIC_H = PILL_H * 2 + GAP;
+const CARD_H = 63;
+const EDIT_H = 28;
 
 const LG_SCHEMA = 'org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com';
 const SHADER_PADDING = 20;
 const GLASS_EXPAND = 2;
 const CLIP_PADDING = 36;
 
-// per-region fill colors (painted by the shader under each element):
-// light tint in the light theme, dark tint in the dark one. Subtle.
+
+
 const SURF_LIGHT = {c: [0.16, 0.16, 0.18], a: 0.10};
 const SURF_DARK = {c: [0.05, 0.05, 0.07], a: 0.10};
 const CIRCLE_ON = {c: [1, 1, 1], a: 0.45};
 
-// glass stacks (radius must match the RENDERED element shape):
-// pills 137x80 (r40), discs 62 / Focus 137x62 (r31), cards (r26),
-// music (r26), privacy + Edit Controls pills (r16).
+
+
+
 const GLASS_GROUPS = [
     {name: 'pill', radius: 40},
     {name: 'disc', radius: 31},
     {name: 'card', radius: 22},
     {name: 'music', radius: 22},
     {name: 'priv', radius: 18},
-    // edit button has its own stack: shallower corners than the pill
+
     {name: 'edit', radius: 15},
-    // backdrop LAST: index-1 inserts paint it deepest, right above panelBg.
-    // Pure backdrop blur under the whole panel + shadow, fading out at the
-    // edges (edge_smoothing gradient, no tint/refraction/rim at all).
+
+
+
     {name: 'backdrop', radius: 82},
 ];
 export const BACKDROP_PAD = 60;
-// backdrop region margin: covers the whole panel shadow (blur 22 + glow 70),
-// while the fade gradient stays BACKDROP_PAD - full blur under panel+shadow,
-// dissipation beyond.
+
+
+
 export const BACKDROP_REGION = 80;
-// vertical margin is tighter: height shrinks, width untouched.
-// (must stay >= BACKDROP_PAD, else the fade eats into the panel itself)
+
+
 export const BACKDROP_REGION_Y = 60;
 
-// custom Tahoe artwork (icons/): moon, mute rings, transport glyphs
+
 const ICON_DIR = GLib.get_home_dir() +
     '/.local/share/gnome-shell/extensions/kiwi@kemma/icons';
 function _fileGicon(name) {
@@ -186,9 +186,9 @@ function _fileGicon(name) {
 }
 let _G = null;
 function _gicons() {
-    // adaptive ink: dark glyphs (-light variants) on light backgrounds,
-    // white glyphs on dark ones. Hardcoded SVG fills can't follow CSS color,
-    // so the cache is keyed on ink (luminance), not on theme.
+
+
+
     const light = getPanelInk() !== 'light';
     if (!_G || _G._light !== light) {
         const suf = light ? '-light' : '';
@@ -201,17 +201,17 @@ function _gicons() {
             pause: _fileGicon(`tahoe-pause${suf}.svg`),
             prev: _fileGicon(`tahoe-prev${suf}.svg`),
             next: _fileGicon(`tahoe-next${suf}.svg`),
-            // user glyphs (raster, not SVG): screenshot button, monochrome pair
+
             shot: _fileGicon(`tahoe-shot4${suf}.png`),
-            // user logout glyph, monochrome pair
+
             logout: _fileGicon(`tahoe-logout${suf}.png`),
-            // user glyphs (raster, not SVG): theme toggle + lock,
-            // monochrome ink-following pair each
+
+
             theme: _fileGicon(`tahoe-theme${suf}.png`),
             themeDark: _fileGicon('tahoe-theme-light.png'),
             lock: _fileGicon(`tahoe-lock2${suf}.png`),
-            // AirDrop: user's own glyph (AirDrop_2019) - monochrome
-            // ink-following when OFF, original blue when ON.
+
+
             airdrop: _fileGicon(`tahoe-airdrop${suf}.png`),
             airdropBlue: _fileGicon('tahoe-airdrop-blue.png'),
         };
@@ -219,7 +219,7 @@ function _gicons() {
     return _G;
 }
 
-// QS glass tuning (Kiwi prefs -> Control Center Glass)
+
 function _qsGlassBlur() {
     try {
         return _settings?.get_int?.('tahoe-qs-glass-blur') ?? 8;
@@ -234,7 +234,7 @@ function _qsGlassBrightness() {
         return 1.0;
     }
 }
-// int setting with fallback (glass tuning sliders)
+
 function _qsInt(key, dflt) {
     try {
         return _settings?.get_int?.(key) ?? dflt;
@@ -270,7 +270,7 @@ function _qsGlassGlare() {
         return 0;
     }
 }
-// panel shadow from settings (reproduces the CSS default at stock values)
+
 function _qsPanelShadow() {
     let blur = 22, op = 15, glow = 70;
     try {
@@ -278,7 +278,7 @@ function _qsPanelShadow() {
         op = _settings?.get_int?.('tahoe-qs-shadow-opacity') ?? 15;
         glow = _settings?.get_int?.('tahoe-qs-shadow-glow') ?? 70;
     } catch (_) {
-        // defaults above
+
     }
     const a1 = (op / 100).toFixed(2);
     let shadow = `box-shadow: 0 4px ${blur}px rgba(0, 0, 0, ${a1})`;
@@ -291,7 +291,7 @@ function _qsPanelShadow() {
 
 let _enabled = false;
 let _settings = null;
-// gettext hook (wired in enable()): English msgids, ru .mo ships translations
+
 let _ = (m) => m;
 let _origOpen = null;
 let _origClose = null;
@@ -648,7 +648,7 @@ async function _openSoundSubmenu(sourceActor, state) {
         const control = state.control;
         const currentSink = control?.get_default_sink();
 
-        // 1. Output Device Section Header
+
         const secHeader = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
         const headerLbl = new St.Label({
             text: t('output_device', 'Вихідний пристрій'),
@@ -709,7 +709,7 @@ async function _openSoundSubmenu(sourceActor, state) {
 
         menu.addMenuItem(sharedMod.createMacSeparator());
 
-        // Settings item
+
         const settItem = new PopupMenu.PopupBaseMenuItem({reactive: true, can_focus: false, style_class: 'mac-menu-item-row'});
         sharedMod.setupMacMenuItem(settItem);
         const settLbl = new St.Label({
@@ -773,7 +773,7 @@ export async function _openDisplaySubmenu(sourceActor, state) {
         menu.box.add_style_class_name('tahoe-submenu-glass-box');
         menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; padding: 10px !important;';
 
-        // 1. Header
+
         const secHeader = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
         const headerLbl = new St.Label({
             text: t('display_header', 'Дисплей'),
@@ -783,7 +783,7 @@ export async function _openDisplaySubmenu(sourceActor, state) {
         secHeader.add_child(headerLbl);
         menu.addMenuItem(secHeader);
 
-        // 2. Brightness Slider in Submenu
+
         const sliderItem = new PopupMenu.PopupBaseMenuItem({reactive: true, can_focus: false, activate: false});
         sliderItem.style = 'padding: 8px 10px !important; margin: 2px 0 !important;';
         const sliderRow = new St.BoxLayout({ x_expand: true, y_align: Clutter.ActorAlign.CENTER });
@@ -813,7 +813,7 @@ export async function _openDisplaySubmenu(sourceActor, state) {
 
         menu.addMenuItem(sharedMod.createMacSeparator());
 
-        // 3. Toggles: Dark Mode & Night Light
+
         const iface = _ifaceSettings();
         const isDark = iface ? (iface.get_string('color-scheme') === 'prefer-dark') : true;
         const darkItem = new PopupMenu.PopupBaseMenuItem({
@@ -848,7 +848,7 @@ export async function _openDisplaySubmenu(sourceActor, state) {
         });
         menu.addMenuItem(darkItem);
 
-        // Night Light
+
         let colorSettings = null;
         try {
             colorSettings = new Gio.Settings({ schema_id: 'org.gnome.settings-daemon.plugins.color' });
@@ -887,7 +887,7 @@ export async function _openDisplaySubmenu(sourceActor, state) {
 
         menu.addMenuItem(sharedMod.createMacSeparator());
 
-        // Footer: Display Settings
+
         const settItem = new PopupMenu.PopupBaseMenuItem({reactive: true, can_focus: false, style_class: 'mac-menu-item-row'});
         sharedMod.setupMacMenuItem(settItem);
         const settLbl = new St.Label({
@@ -951,7 +951,7 @@ export async function _openFocusSubmenu(sourceActor, state) {
         menu.box.add_style_class_name('tahoe-submenu-glass-box');
         menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; padding: 10px !important;';
 
-        // 1. Header
+
         const secHeader = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
         const headerLbl = new St.Label({
             text: t('focus', 'Зосередження'),
@@ -961,7 +961,7 @@ export async function _openFocusSubmenu(sourceActor, state) {
         secHeader.add_child(headerLbl);
         menu.addMenuItem(secHeader);
 
-        // 2. Do Not Disturb item
+
         let notifSettings = null;
         try {
             notifSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.notifications' });
@@ -1017,7 +1017,7 @@ export async function _openFocusSubmenu(sourceActor, state) {
 
         menu.addMenuItem(sharedMod.createMacSeparator());
 
-        // 3. Focus Settings footer
+
         const settItem = new PopupMenu.PopupBaseMenuItem({reactive: true, can_focus: false, style_class: 'mac-menu-item-row'});
         sharedMod.setupMacMenuItem(settItem);
         const settLbl = new St.Label({
@@ -1065,8 +1065,8 @@ function _lgSettings() {
     try {
         return new Gio.Settings({schema_id: LG_SCHEMA});
     } catch (_) {
-        // Schema not in the default source — load it from the
-        // liquid-glass extension's own schemas/ dir.
+
+
     }
     try {
         const dir = GLib.build_filenamev([GLib.get_home_dir(),
@@ -1078,14 +1078,14 @@ function _lgSettings() {
         if (schema)
             return new Gio.Settings({settings_schema: schema});
     } catch (_) {
-        // liquid-glass not installed
+
     }
     return null;
 }
 
 function _isDark() {
-    // same theme resolution as the Tahoe Launchpad: explicit override,
-    // else system scheme + GTK theme name.
+
+
     try {
         const mode = _settings?.get_string('tahoe-theme') ?? 'auto';
         if (mode === 'dark')
@@ -1109,7 +1109,7 @@ function _isDark() {
 
 const _surf = () => (_isDark() ? SURF_DARK : SURF_LIGHT);
 
-// ------------------------------------------------------------- UI atoms
+
 function _setActive(widget, on) {
     try {
         if (on)
@@ -1117,13 +1117,13 @@ function _setActive(widget, on) {
         else
             widget.remove_style_class_name('tahoe-qs-on');
     } catch (_) {
-        // gone
+
     }
 }
 
-// capsule pill: [circle glyph] Title / subtitle   (Wi-Fi, Bluetooth, AirDrop, Focus)
-// expandTexts=false packs the content strictly left (unused by Focus now:
-// it shares the exact Wi-Fi geometry, single title line, no subtitle).
+
+
+
 function _makePill(iconName, title, subtitle, expandTexts = true, withEndBtn = false) {
     const btn = new St.Button({
         style_class: 'tahoe-qs-pill',
@@ -1134,15 +1134,15 @@ function _makePill(iconName, title, subtitle, expandTexts = true, withEndBtn = f
     });
     const box = new St.BoxLayout({
         y_align: Clutter.ActorAlign.CENTER,
-        // BinLayout centers an undersized child: pin the box left so the
-        // circle+text can never drift right (measured 20px drift otherwise).
-        // x_expand requests full button width; Focus additionally gets an
-        // explicit width below, so centering becomes a no-op either way.
+
+
+
+
         x_align: Clutter.ActorAlign.START,
         x_expand: true,
     });
-    // StBin = ClutterBinLayout: the ONLY container that honours the child's
-    // x_align/y_align (ClutterBoxLayout ignores them -> icons slid left).
+
+
     const icon = new St.Icon({
         style_class: 'tahoe-qs-pill-glyph',
         icon_name: iconName,
@@ -1158,7 +1158,7 @@ function _makePill(iconName, title, subtitle, expandTexts = true, withEndBtn = f
     });
     box.add_child(circle);
     const texts = new St.BoxLayout({vertical: true, x_expand: expandTexts});
-    // BoxLayout packs from the top: expandable spacers center the stack
+
     const spTop = new St.BoxLayout({y_expand: true});
     texts.add_child(spTop);
     const t = new St.Label({
@@ -1169,7 +1169,7 @@ function _makePill(iconName, title, subtitle, expandTexts = true, withEndBtn = f
     try {
         t.clutter_text.ellipsize = Pango.EllipsizeMode.END;
     } catch (_) {
-        // no clutter text
+
     }
     texts.add_child(t);
     let s = null;
@@ -1182,7 +1182,7 @@ function _makePill(iconName, title, subtitle, expandTexts = true, withEndBtn = f
         try {
             s.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         } catch (_) {
-            // no clutter text
+
         }
         texts.add_child(s);
     }
@@ -1214,7 +1214,7 @@ function _makePill(iconName, title, subtitle, expandTexts = true, withEndBtn = f
     return {btn, icon, circle, title: t, subtitle: s, box, texts, endBtn};
 }
 
-// slim centered privacy pill with a fixed colored dot (one per source)
+
 function _makePrivPill(iconName, dotClass) {
     const pill = _makePill(iconName, '', null);
     pill.btn.visible = false;
@@ -1225,8 +1225,8 @@ function _makePrivPill(iconName, dotClass) {
     return pill;
 }
 
-// single pill for every active source at once (macW1Y Tahoe): extra dots
-// are appended after the main circle, names are joined with commas.
+
+
 function _makeComboPrivPill() {
     const pill = _makePrivPill('camera-web-symbolic', 'tahoe-qs-priv-green');
     const extras = [];
@@ -1256,21 +1256,21 @@ function _setPrivDot(ref, cls, iconName) {
             try {
                 (ref.dot ?? ref.circle).remove_style_class_name(c);
             } catch (_) {
-                // gone
+
             }
         }
         (ref.dot ?? ref.circle).add_style_class_name(cls);
     } catch (_) {
-        // gone
+
     }
     try {
         ref.icon.icon_name = iconName;
     } catch (_) {
-        // gone
+
     }
 }
 
-// round button, always fixed 60x60
+
 function _makeCircle(iconName) {
     const btn = new St.Button({
         style_class: 'tahoe-qs-circle',
@@ -1289,13 +1289,13 @@ function _makeCircle(iconName) {
     return {btn, icon};
 }
 
-// small icon button (music transport)
+
 function _makeGlyph(iconName) {
     const btn = new St.Button({
         style_class: 'tahoe-qs-glyphbtn',
         reactive: true,
         can_focus: true,
-        x_expand: true,   // even thirds = Tahoe control row
+        x_expand: true,
     });
     const icon = new St.Icon({
         style_class: 'tahoe-qs-glyphicon',
@@ -1307,10 +1307,10 @@ function _makeGlyph(iconName) {
     return {btn, icon};
 }
 
-// Tahoe slider: exact macW1Y Sequoia / Tahoe OSD segmented slider.
-// Features a 5px track, solid filled bar (turns red when overamplified > 100%),
-// and a row of 17 discrete dots beneath aligned with the 16 volume/brightness steps.
-// Handleless design matching macW1Y OSD, with smooth drag, click-to-position, and scroll.
+
+
+
+
 const TahoeSlider = GObject.registerClass({
     GTypeName: `TahoeSlider_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
 }, class TahoeSlider extends Slider {
@@ -1404,31 +1404,31 @@ const TahoeSlider = GObject.registerClass({
                     isDark = (fg.red > 0.4 && fg.green > 0.4 && fg.blue > 0.4);
             }
 
-            // solid background track (5px tall, matching OSD: pure translucent white)
+
             const barY = 5, barH = 5;
             const r = barH / 2;
             cr.setSourceRGBA(1.0, 1.0, 1.0, 0.20);
             this._rr(cr, 0, barY, w, barH, r);
             cr.fill();
 
-            // Colors: RED if overamplified (100%+), solid pure opaque WHITE if <= 100% (matching OSD)
+
             const RED = [1.00, 0.23, 0.19];
             const WHITE = [1.00, 1.00, 1.00];
             const [colorR, colorG, colorB] = isOveramp ? RED : WHITE;
 
-            // Step snapping for 16 segments (matching volume/brightness stops)
+
             const n = 16;
             const stepIdx = Math.max(0, Math.min(n, Math.round(v * n)));
             if (v <= 1.0001 && Math.abs(v - stepIdx / n) <= 0.038)
                 v = stepIdx / n;
 
-            // 17 dots (i = 0 to 16): dot 0 at the start of slider, dot 16 at the end
+
             const dotXs = [];
             for (let i = 0; i <= n; i++) {
                 dotXs.push(r + i * (w - 2 * r) / n);
             }
 
-            // filled bar: stops exactly where the dot is
+
             let fillW = 0;
             if (isOveramp) {
                 fillW = w;
@@ -1446,7 +1446,7 @@ const TahoeSlider = GObject.registerClass({
                 cr.fill();
             }
 
-            // dots row beneath: 17 dots precisely aligned, dot 0 at start
+
             const dy = barY + barH + 3.5;
             for (let i = 0; i <= n; i++) {
                 const dotX = dotXs[i];
@@ -1473,10 +1473,10 @@ const TahoeSlider = GObject.registerClass({
     }
 });
 
-// full-width card matching macW1Y OSD inside:
-// [ Title (bold) ]
-// [ (icon 15px)   ====================....   (icon 20px) ]
-// [                 .  .  .  .  .  .  .                  ]
+
+
+
+
 function _makeSliderCard(title, leftIcon, rightIcon, withEndBtn) {
     const outer = new St.BoxLayout({style_class: 'tahoe-qs-card', vertical: true});
     outer.set_height(CARD_H);
@@ -1551,7 +1551,7 @@ function _makeSliderCard(title, leftIcon, rightIcon, withEndBtn) {
     return {box: outer, slider, iconL: li, icon: ri, iconR: ri, label, endBtn, endIcon};
 }
 
-// row: [left][expanding spacer][right]
+
 function _makeSpacerRow(left, right) {
     const row = new St.BoxLayout({style_class: 'tahoe-qs-row', x_expand: true});
     const spacer = new St.BoxLayout({x_expand: true});
@@ -1561,7 +1561,7 @@ function _makeSpacerRow(left, right) {
     return row;
 }
 
-// ------------------------------------------------------------- panel
+
 function _buildPanel() {
     const monitor = Main.layoutManager.primaryMonitor;
     const panelH = Main.layoutManager.panelBox?.height ?? 32;
@@ -1587,8 +1587,8 @@ function _buildPanel() {
         } catch (_) {
             return Clutter.EVENT_PROPAGATE;
         }
-        // non-modal click-through dismissal: close, then let the same click
-        // reach the window below (system stays usable while open)
+
+
         _closePanel();
         return Clutter.EVENT_PROPAGATE;
     });
@@ -1596,12 +1596,12 @@ function _buildPanel() {
     const isDark = _isDark();
     const darkCls = isDark ? ' tahoe-qs-dark' : '';
 
-    // panel background actor (BELOW the glass stacks, like the Tahoe window)
+
     const panelBg = new St.Widget({style_class: `tahoe-qs-panelbg${darkCls}`});
     try {
         panelBg.set_style(_qsPanelShadow());
     } catch (_) {
-        // stylesheet default shadow stays
+
     }
     panelBg.set_position(X, Y);
     panelBg.width = W;
@@ -1611,12 +1611,12 @@ function _buildPanel() {
     overlay.add_child(panelBg);
 
     const box = new St.BoxLayout({style_class: `tahoe-qs-panel${darkCls}`, vertical: true});
-    // adaptive ink class (luminance, not theme); refined after allocation
+
     try {
         if (getPanelInk() === 'light')
             box.add_style_class_name('tahoe-qs-inklight');
     } catch (_) {
-        // base (dark) ink stays
+
     }
     box.set_position(X, Y);
     box.width = W;
@@ -1632,9 +1632,9 @@ function _buildPanel() {
         micApp: '', camApp: '', privTimer: 0, camMon: null, camId: 0,
         shareInd: null, shareId: 0, racHandles: null, micViaPW: false, micLogged: false};
 
-    // No modal grab: the panel floats while the session stays fully usable
-    // (pointer + keyboard go to apps; toggle via button/shortcut anytime).
-    // Dismissal is click-through (see button-press above).
+
+
+
     overlay.connect('key-press-event', (_a, event) => {
         if (event.get_key_symbol() === Clutter.KEY_Escape) {
             _closePanel();
@@ -1643,8 +1643,8 @@ function _buildPanel() {
         return Clutter.EVENT_PROPAGATE;
     });
 
-    // ======================= privacy pill (top, hidden when idle) =======================
-    // ONE compact centered pill for every active source at once (macW1Y Tahoe)
+
+
     const privPill = _makeComboPrivPill();
     const privRow = new St.BoxLayout({x_expand: true});
     privRow.add_child(new St.BoxLayout({x_expand: true}));
@@ -1652,7 +1652,7 @@ function _buildPanel() {
     privRow.add_child(new St.BoxLayout({x_expand: true}));
     box.add_child(privRow);
 
-    // ======================= row A-C: two columns =======================
+
     const cols = new St.BoxLayout({style_class: 'tahoe-qs-cols'});
     box.add_child(cols);
     const leftCol = new St.BoxLayout({vertical: true, style_class: 'tahoe-qs-col', x_expand: true});
@@ -1662,7 +1662,7 @@ function _buildPanel() {
     cols.add_child(leftCol);
     cols.add_child(rightCol);
 
-    // -- left: Wi-Fi, Bluetooth, Power pills (60 each) with chevrons and glass submenus
+
     const wifi = _makePill('network-wireless-symbolic', _('Wi-Fi'), '…', true, true);
     wifi.circle.connect('clicked', () => {
         try {
@@ -1760,12 +1760,12 @@ function _buildPanel() {
     _refreshPowerMode(modePill);
     const air = modePill;
 
-    // -- right: music card (132) + [Dark][Lock] circles row (60)
+
     const music = new St.Button({style_class: 'tahoe-qs-music', reactive: true, x_expand: true});
     music.set_height(MUSIC_H);
     const mbox = new St.BoxLayout({vertical: true, style_class: 'tahoe-qs-music-box'});
     music.set_child(mbox);
-    // vertical BoxLayout stretches children full width -> wrap the square art
+
     const artWrap = new St.BoxLayout({x_expand: true});
     const artIcon = new St.Icon({
         style_class: 'tahoe-qs-music-articon',
@@ -1787,7 +1787,7 @@ function _buildPanel() {
     try {
         mTitle.clutter_text.ellipsize = Pango.EllipsizeMode.END;
     } catch (_) {
-        // no clutter text
+
     }
     mbox.add_child(mTitle);
     const mArtist = new St.Label({
@@ -1799,10 +1799,10 @@ function _buildPanel() {
     try {
         mArtist.clutter_text.ellipsize = Pango.EllipsizeMode.END;
     } catch (_) {
-        // no clutter text
+
     }
     mbox.add_child(mArtist);
-    // push transport controls to the card bottom (Tahoe: art, title, ctl at bottom)
+
     mbox.add_child(new St.BoxLayout({y_expand: true}));
     const mctl = new St.BoxLayout({style_class: 'tahoe-qs-music-ctl'});
     const prev = _makeGlyph('media-skip-backward-symbolic');
@@ -1817,7 +1817,7 @@ function _buildPanel() {
         if (g.next)
             next.icon.gicon = g.next;
     } catch (_) {
-        // stock glyphs stay
+
     }
     prev.btn.connect('clicked', () => _mprisCall(state, 'Previous'));
     play.btn.connect('clicked', () => _mprisCall(state, 'PlayPause'));
@@ -1839,7 +1839,7 @@ function _buildPanel() {
                 cur === 'prefer-dark' ? 'prefer-light' : 'prefer-dark');
             _refreshDarkCircle(dark);
         } catch (_) {
-            // unavailable
+
         }
     });
     const lock = _makeCircle('system-lock-screen-symbolic');
@@ -1855,13 +1855,13 @@ function _buildPanel() {
         if (g0.lock)
             lock.icon.gicon = g0.lock;
     } catch (_) {
-        // stock glyphs stay
+
     }
     const darkRow = _makeSpacerRow(dark.btn, lock.btn);
     rightCol.add_child(darkRow);
     _refreshDarkCircle(dark);
 
-    // ======================= row D: [Logout][Screenshot] | Focus =======================
+
     const rowd = new St.BoxLayout({style_class: 'tahoe-qs-rowd'});
     box.add_child(rowd);
     const logout = _makeCircle('system-log-out-symbolic');
@@ -1874,14 +1874,14 @@ function _buildPanel() {
         if (_gicons().logout)
             logout.icon.gicon = _gicons().logout;
     } catch (_) {
-        // stock glyph stays
+
     }
     const shot = _makeCircle('camera-photo-symbolic');
     try {
         if (_gicons().shot)
             shot.icon.gicon = _gicons().shot;
     } catch (_) {
-        // stock glyph stays
+
     }
     shot.btn.connect('clicked', () => {
         _closePanel();
@@ -1941,7 +1941,7 @@ function _buildPanel() {
     rowd.add_child(focus.btn);
     _refreshFocus(focus);
 
-    // ======================= Display card =======================
+
     const disp = _makeSliderCard(t('display', 'Дисплей'),
         'display-brightness-symbolic', 'display-brightness-symbolic', true);
     disp.box.reactive = true;
@@ -1963,7 +1963,7 @@ function _buildPanel() {
     }
     box.add_child(disp.box);
 
-    // display backend 1: brightnessManager (stock)
+
     let haveBrightness = false;
     try {
         const bm = Main.brightnessManager;
@@ -1984,7 +1984,7 @@ function _buildPanel() {
             try {
                 state.brightScale.connect('notify::value', upd);
             } catch (_) {
-                // static
+
             }
             disp.slider.connect('notify::value', () => {
                 if (state.dispGuard || !state.brightScale)
@@ -1992,14 +1992,14 @@ function _buildPanel() {
                 try {
                     state.brightScale.value = disp.slider.value;
                 } catch (_) {
-                    // read-only
+
                 }
             });
         }
     } catch (_) {
-        // no brightnessManager
+
     }
-    // display backend 2: gsd-power D-Bus fallback
+
     if (!haveBrightness) {
         try {
             const proxy = Gio.DBusProxy.new_sync(
@@ -2018,14 +2018,14 @@ function _buildPanel() {
                     if (b !== null)
                         disp.slider.value = b.unpack() / 100;
                 } catch (_) {
-                    // unreadable yet
+
                 }
                 disp.slider.connect('notify::value', () => {
                     try {
                         proxy.set('org.gnome.SettingsDaemon.Power.Screen', 'Brightness',
                             GLib.Variant.new_int32(Math.round(disp.slider.value * 100)));
                     } catch (_) {
-                        // read-only
+
                     }
                 });
                 try {
@@ -2040,29 +2040,29 @@ function _buildPanel() {
                                 state.dispGuard = false;
                             }
                         } catch (_) {
-                            // gone
+
                         }
                     });
                 } catch (_) {
-                    // static
+
                 }
             }
         } catch (_) {
-            // no backlight
+
         }
     }
     if (!haveBrightness) {
-        // keep the grid intact, just dead
+
         disp.box.opacity = 140;
         try {
             disp.slider.reactive = false;
             disp.slider.can_focus = false;
         } catch (_) {
-            // gone
+
         }
     }
 
-    // ======================= Sound card =======================
+
     const snd = _makeSliderCard(t('sound', 'Звук'),
         'audio-volume-low-symbolic', 'audio-volume-high-symbolic', true);
     snd.box.reactive = true;
@@ -2094,7 +2094,7 @@ function _buildPanel() {
     }
     box.add_child(snd.box);
 
-    // sound backend: shared Gvc pattern from stock volume.js
+
     try {
         const control = new Gvc.MixerControl({name: 'Tahoe Quick Settings'});
         state.control = control;
@@ -2165,13 +2165,13 @@ function _buildPanel() {
                         try {
                             state.sink = control.get_default_sink();
                         } catch (_) {
-                            // gone
+
                         }
                         updateSinkTitle();
                         syncVol();
                     });
                 } catch (_) {
-                    // static
+
                 }
                 snd.slider.connect('notify::value', () => {
                     if (state.sndGuard || !state.sink)
@@ -2183,20 +2183,20 @@ function _buildPanel() {
                             state.sink.is_muted = false;
                         state.sink.push_volume();
                     } catch (_) {
-                        // gone
+
                     }
                 });
                 syncVol();
             } catch (_) {
-                // no sink
+
             }
         });
     } catch (_) {
         snd.box.visible = false;
     }
 
-    // ======================= bottom: Edit Controls pill =======================
-    // same geometry as the privacy pill above (forced 28 + pad 8)
+
+
     const edit = new St.Button({
         style_class: 'tahoe-qs-edit tahoe-qs-pill-priv',
         reactive: true,
@@ -2209,9 +2209,9 @@ function _buildPanel() {
         try {
             Shell.AppSystem.get_default()
                 .lookup_app('org.gnome.Settings.desktop')?.activate();
-        } catch (_) { /* no settings */ }
+        } catch (_) {   }
     });
-    // BoxLayout stretches full width and ignores x_align -> center by spacers
+
     const editRow = new St.BoxLayout({x_expand: true});
     const esp1 = new St.BoxLayout({x_expand: true});
     const esp2 = new St.BoxLayout({x_expand: true});
@@ -2220,7 +2220,7 @@ function _buildPanel() {
     editRow.add_child(esp2);
     box.add_child(editRow);
 
-    // extra control: never parented until the user drags it into the CC
+
     const setg = _makePill('preferences-system-symbolic', t('settings', 'Параметри'), null);
     setg.btn.visible = false;
     setg.btn.connect('clicked', () => {
@@ -2228,10 +2228,10 @@ function _buildPanel() {
         try {
             Shell.AppSystem.get_default()
                 .lookup_app('org.gnome.Settings.desktop')?.activate();
-        } catch (_) { /* no settings */ }
+        } catch (_) {   }
     });
 
-    // layout-edit registry: every droppable/resizable/movable control
+
     state.leftCol = leftCol;
     state.rightCol = rightCol;
     state.editRow = editRow;
@@ -2252,14 +2252,14 @@ function _buildPanel() {
     for (const u of state.units) {
         try {
             u.actor.connect('button-press-event', (_a, ev) => _editPress(u, ev));
-        } catch (_) { /* static */ }
+        } catch (_) {   }
     }
 
     Main.layoutManager.uiGroup.add_child(overlay);
     try {
         Main.layoutManager.uiGroup.set_child_below_sibling(overlay, Main.layoutManager.panelBox);
     } catch (_) {
-        // stays on top
+
     }
     for (const child of Main.layoutManager.uiGroup.get_children()) {
         if (child && (child.has_style_class_name?.('corner-decoration') || child.name?.includes('corner'))) {
@@ -2272,11 +2272,11 @@ function _buildPanel() {
         mNextIcon: next.icon, artBin: art, artIcon, artUrl: '',
         priv: privPill, glass: null};
 
-    // ======================= glass regions =======================
-    // The theme circle paints its ON white wash in-shader (same mask as the
-    // glass, so wash and glass are exactly the same size - a CSS background
-    // would stop at the actor rect and read smaller). Other circles never
-    // go ON, they keep the base fill.
+
+
+
+
+
     const circleSurf = _surf;
     const darkSurf = () => {
         try {
@@ -2287,7 +2287,7 @@ function _buildPanel() {
             if (isDark)
                 return {c: [1, 1, 1], a: 1};
         } catch (_) {
-            // fall through to base
+
         }
         return _surf();
     };
@@ -2306,11 +2306,11 @@ function _buildPanel() {
         {g: 'music', actor: music, colorFn: _surf},
         {g: 'card', actor: disp.box, colorFn: _surf},
         {g: 'card', actor: snd.box, colorFn: _surf},
-        // backdrop: whole panel rect, zero surface fill (pure blur layer)
+
         {g: 'backdrop', actor: box, colorFn: () => ({c: [0, 0, 0], a: 0})},
     ];
 
-    // NM backend
+
     try {
         NM.Client.new_async(null, (o, res) => {
             try {
@@ -2324,18 +2324,18 @@ function _buildPanel() {
                     client.connect('notify::primary-connection', sync);
                     client.connect('notify::active-connections', sync);
                 } catch (_) {
-                    // static
+
                 }
                 _refreshWifi(wifi);
             } catch (_) {
-                // no NM
+
             }
         });
     } catch (_) {
-        // no NM
+
     }
 
-    // BT backend (stock-correct: GnomeBluetooth.Client)
+
     try {
         state.bt = new GnomeBluetooth.Client();
         const bsync = () => _refreshBt(btPill);
@@ -2343,14 +2343,14 @@ function _buildPanel() {
             state.bt.connect('notify::default-adapter-powered', bsync);
             state.bt.connect('notify::default-adapter', bsync);
         } catch (_) {
-            // static
+
         }
         _refreshBt(btPill);
     } catch (_) {
         btPill.btn.visible = false;
     }
 
-    // MPRIS polling
+
     _mprisSync(state);
     try {
         state.mprisTimer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 2, () => {
@@ -2363,10 +2363,10 @@ function _buildPanel() {
         state.mprisTimer = 0;
     }
 
-    // privacy pill monitors (mic/camera/share)
+
     _privacyStart(state);
 
-    // panel bg + glass AFTER allocation (region math needs a real layout)
+
     try {
         const allocId = box.connect('notify::allocation', () => {
             if (box.width > 0 && box.height > 0) {
@@ -2374,7 +2374,7 @@ function _buildPanel() {
                     panelBg.set_position(box.x, box.y);
                     panelBg.set_size(box.width, box.height);
                 } catch (_) {
-                    // geometry unchanged
+
                 }
             }
             if (_panel?.inkSampleDone)
@@ -2382,21 +2382,21 @@ function _buildPanel() {
             if (box.height <= 0)
                 return;
             _panel.inkSampleDone = true;
-            // adaptive ink: sample the real background behind the panel,
-            // apply, and follow it while open (open animation covers a flip)
+
+
             try {
                 const px = box.x;
                 const py = box.y;
                 notePanelRect({x: px, y: py, w: box.width, h: box.height});
             } catch (_) {
-                // unsampled: theme fallback ink stays
+
             }
             _applyPanelInk();
             try {
                 if (state.inkUnwatch)
                     state.inkUnwatch();
             } catch (_) {
-                // unwatched
+
             }
             try {
                 state.inkUnwatch = watchInk(() => _applyPanelInk());
@@ -2449,8 +2449,8 @@ function _buildPanel() {
     });
 }
 
-// adaptive ink application: class + custom-glyph repaint (runs at open
-// and on every background flip while open)
+
+
 function _applyPanelInk() {
     const p = _panel;
     if (!p)
@@ -2461,19 +2461,19 @@ function _applyPanelInk() {
         else
             p.box.remove_style_class_name('tahoe-qs-inklight');
     } catch (_) {
-        // class stays
+
     }
-    // _gicons() re-resolves by ink (cache keyed on it); repaint the glyphs
+
     try {
         _refreshFocus(p.focus);
     } catch (_) {
-        // gone
+
     }
     try {
         if (p.snd?.endIcon)
             p.snd.endIcon.gicon = _gicons().mute;
     } catch (_) {
-        // gone
+
     }
     try {
         if (p.mPlayIcon) {
@@ -2481,12 +2481,12 @@ function _applyPanelInk() {
             p.mPlayIcon.gicon = p.state?.playing ? (g.pause ?? g.play) : g.play;
         }
     } catch (_) {
-        // gone
+
     }
     try {
         _refreshPowerMode(p.mode || p.air);
     } catch (_) {
-        // gone
+
     }
     try {
         const g = _gicons();
@@ -2495,7 +2495,7 @@ function _applyPanelInk() {
         if (p.mNextIcon && g.next)
             p.mNextIcon.gicon = g.next;
     } catch (_) {
-        // gone
+
     }
     try {
         const g = _gicons();
@@ -2512,12 +2512,12 @@ function _applyPanelInk() {
         if (p.logout?.icon && g.logout)
             p.logout.icon.gicon = g.logout;
     } catch (_) {
-        // gone
+
     }
 }
 
-// Capsule glass radii track the RENDERED shape (wifi/dark heights).
-// One-shot passes only: per-frame setCornerRadius would rebuild pipelines.
+
+
 function _syncCapsuleRadii() {
     try {
         const p = _panel;
@@ -2532,16 +2532,16 @@ function _syncCapsuleRadii() {
                 else if (s.group === 'disc' && discH > 0)
                     s.effect.setCornerRadius(Math.round(discH / 2));
             } catch (_) {
-                // effect gone
+
             }
         }
     } catch (_) {
-        // panel gone
+
     }
 }
 
-// one-shot geometry dump to the journal for remote diagnosis:
-// real allocations + text direction of every QS row element.
+
+
 function _dumpGeometry() {
     try {
         const p = _panel;
@@ -2559,7 +2559,7 @@ function _dumpGeometry() {
         try {
             dir = `${p.box.text_direction} dflt=${Clutter.get_default_text_direction()}`;
         } catch (_) {
-            // no api
+
         }
         console.log(`[tahoe-qs-geo] dir=${dir} box=${pos(p.box)}`);
         console.log(`[tahoe-qs-geo] wifi=${pos(p.wifi.btn)} music=${pos(p.music)}`);
@@ -2570,15 +2570,15 @@ function _dumpGeometry() {
             console.log(`[tahoe-qs-geo] focusCircleX=${Math.round(cx)} focusTextX=${Math.round(tx)} circleW=${Math.round(p.focus.circle.width)} textsW=${Math.round(p.focus.title.width)}`);
             console.log(`[tahoe-qs-geo] focusBox=${pos(p.focus.box)} wifiBox=${pos(p.wifi.box)}`);
         } catch (_) {
-            // gone
+
         }
     } catch (_) {
-        // panel gone
+
     }
 }
 
 function _scheduleFocusFix() {
-    // radii passes land inside the 160ms fade-in (invisible) + verify pass
+
     for (const ms of [60, 350, 600]) {
         try {
             GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
@@ -2590,12 +2590,12 @@ function _scheduleFocusFix() {
                 return GLib.SOURCE_REMOVE;
             });
         } catch (_) {
-            // no clock
+
         }
     }
 }
 
-// ------------------------------------------------------------- refresh
+
 function _refreshWifi(wifi) {
     try {
         const s = _panel?.state?.nm;
@@ -2611,7 +2611,7 @@ function _refreshWifi(wifi) {
             else if (on)
                 name = t('on', 'Увімкнено');
         } catch (_) {
-            // no active connection
+
         }
         if (wifi.subtitle)
             wifi.subtitle.text = name;
@@ -2619,7 +2619,7 @@ function _refreshWifi(wifi) {
         wifi.icon.icon_name = on
             ? 'network-wireless-symbolic' : 'network-wireless-disabled-symbolic';
     } catch (_) {
-        // gone
+
     }
 }
 
@@ -2640,7 +2640,7 @@ function _refreshBt(pill) {
         pill.icon.icon_name = on
             ? 'bluetooth-active-symbolic' : 'bluetooth-disabled-symbolic';
     } catch (_) {
-        // gone
+
     }
 }
 
@@ -2766,7 +2766,7 @@ export async function _openPowerModeSubmenu(sourceActor, state) {
 
         const curProfile = _getPowerProfile();
 
-        // 1. Header
+
         const secHeader = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
         const headerLbl = new St.Label({
             text: t('power_mode', 'Режим живлення'),
@@ -2846,7 +2846,7 @@ export async function _openPowerModeSubmenu(sourceActor, state) {
 
         menu.addMenuItem(sharedMod.createMacSeparator());
 
-        // Settings footer
+
         const settItem = new PopupMenu.PopupBaseMenuItem({reactive: true, can_focus: false, style_class: 'mac-menu-item-row'});
         sharedMod.setupMacMenuItem(settItem);
         const settLbl = new St.Label({
@@ -2889,16 +2889,16 @@ function _refreshFocus(focus) {
         if (focus.subtitle)
             focus.subtitle.text = dnd ? t('on', 'Увімкнено') : t('off', 'Вимкнено');
         _setActive(focus.btn, dnd);
-        // custom moon: blue on white when Focus is on (white-on-white is invisible)
+
         try {
             const g = _gicons();
             if (g.focus && g.focusOn)
                 focus.icon.gicon = dnd ? g.focusOn : g.focus;
         } catch (_) {
-            // stock glyph stays
+
         }
     } catch (_) {
-        // unavailable
+
     }
 }
 
@@ -2907,18 +2907,18 @@ function _refreshDarkCircle(dark) {
         const iface = _ifaceSettings();
         const isDark = iface ? iface.get_string('color-scheme') === 'prefer-dark' : _isDark();
         _setActive(dark.btn, isDark);
-        // ON circle is always the white wash (both themes): dark glyph.
-        // OFF circle: ink-following glyph. (Custom PNGs ignore CSS color,
-        // so white-on-white must be avoided here explicitly.)
+
+
+
         try {
             const g = _gicons();
             if (g.theme)
                 dark.icon.gicon = (isDark && g.themeDark) ? g.themeDark : g.theme;
         } catch (_) {
-            // glyph stays
+
         }
     } catch (_) {
-        // unavailable
+
     }
 }
 
@@ -2938,22 +2938,22 @@ function _systemAction(kind) {
                 'org.gnome.SessionManager', 'Shutdown', null, null,
                 Gio.DBusCallFlags.NONE, -1, null, null);
         } else if (kind === 'screenshot') {
-            // system screenshot UI (area select + capture)
+
             Gio.DBus.session.call('org.gnome.Shell.Screenshot', '/org/gnome/Shell/Screenshot',
                 'org.gnome.Shell.Screenshot', 'InteractiveScreenshot', null, null,
                 Gio.DBusCallFlags.NONE, -1, null, null);
         }
     } catch (_) {
-        // unavailable
+
     }
 }
 
-// ------------------------------------------------- privacy pill (mic/camera/share)
-// macW1Y-style pill on top: colored dot + app name. Camera green, mic
-// orange, share blue. Hidden when nothing is in use.
-// Sources: Shell.CameraMonitor (camera), the stock screen-sharing
-// indicator (share, initial-state-correct), pactl source-outputs (mic
-// WITH the real application name).
+
+
+
+
+
+
 function _findShareIndicator() {
     try {
         const area = Main.panel.statusArea ?? {};
@@ -2962,17 +2962,17 @@ function _findShareIndicator() {
                 if (area[k]?.has_style_class_name?.('screen-sharing-indicator'))
                     return area[k];
             } catch (_) {
-                // next
+
             }
         }
     } catch (_) {
-        // no panel
+
     }
     return null;
 }
 
-// stream owner name: the real binary beats the engine name
-// (Discord-desktop is Electron -> application.name lies "chromium").
+
+
 function _streamName(app, bin) {
     try {
         const base = (bin ?? '').split('/').pop() ?? '';
@@ -2983,7 +2983,7 @@ function _streamName(app, bin) {
         if (base)
             return base.charAt(0).toUpperCase() + base.slice(1);
     } catch (_) {
-        // fall through
+
     }
     return '';
 }
@@ -3001,14 +3001,14 @@ function _parseMicApp(out) {
                 return name;
         }
     } catch (_) {
-        // unparsable
+
     }
     return '';
 }
 
 function _parseCamApp(out) {
-    // PIDs holding /dev/video* -> /proc/PID/comm (real app name).
-    // fuser exits non-zero when idle — caller treats that as empty.
+
+
     try {
         const SKIP = new Set(['pipewire', 'wireplumber', 'pipewire-pulse',
             'xdg-desktop-portal', 'xdg-desktop-por', 'gnome-shell']);
@@ -3031,7 +3031,7 @@ function _parseCamApp(out) {
             return comm.charAt(0).toUpperCase() + comm.slice(1);
         }
     } catch (_) {
-        // unparsable
+
     }
     return '';
 }
@@ -3045,7 +3045,7 @@ function _privacyCamPoll() {
                 if (GLib.file_test(dev, GLib.FileTest.EXISTS))
                     devs.push(dev);
             } catch (_) {
-                // next
+
             }
         }
         if (!devs.length)
@@ -3060,7 +3060,7 @@ function _privacyCamPoll() {
                     return;
                 p.state.camApp = _parseCamApp(out ?? '');
             } catch (_) {
-                // fuser idle exit / no devices: no direct grabbers
+
                 const p = _panel;
                 if (p)
                     p.state.camApp = '';
@@ -3068,7 +3068,7 @@ function _privacyCamPoll() {
             _privacySync();
         });
     } catch (_) {
-        // no fuser
+
     }
 }
 
@@ -3081,8 +3081,8 @@ function _privacySync() {
         const mic = st.micApp || '';
         const share = !!(st.shareInd ? st.shareInd.visible
             : (st.racHandles?.size > 0));
-        // camera: direct V4L2 grabbers (fuser, with the real app name)
-        // fall back to the portal monitor (generic label)
+
+
         const camApp = st.camApp || '';
         let camMon = false;
         try {
@@ -3103,7 +3103,7 @@ function _privacySync() {
             priv.btn.visible = false;
             return;
         }
-        // main dot + up to 2 extra dots, names joined with commas
+
         _setPrivDot(priv, act[0].cls, act[0].icon);
         for (let i = 0; i < priv.dots.length; i++) {
             const slot = priv.dots[i];
@@ -3118,12 +3118,12 @@ function _privacySync() {
         try {
             priv.title.text = act.map(a => a.label).join(', ').slice(0, 30);
         } catch (_) {
-            // gone
+
         }
         priv.btn.visible = true;
         console.log(`[tahoe-qs-priv] ${act.map(a => a.label).join(' + ')}`);
     } catch (_) {
-        // panel gone
+
     }
 }
 
@@ -3131,7 +3131,7 @@ function _privacyMicSync() {
     const q0 = _panel;
     if (!q0)
         return;
-    // no pactl on PipeWire-only systems -> PipeWire native dump
+
     if (q0.state.micViaPW) {
         _privacyMicPwDump();
         return;
@@ -3148,7 +3148,7 @@ function _privacyMicSync() {
                 p.state.micApp = _parseMicApp(out ?? '');
                 _privacySync();
             } catch (e) {
-                // no pactl: switch to pw-dump permanently
+
                 const p = _panel;
                 if (!p)
                     return;
@@ -3158,7 +3158,7 @@ function _privacyMicSync() {
             }
         });
     } catch (_) {
-        // no pactl binary at all
+
         const q = _panel;
         if (!q)
             return;
@@ -3167,7 +3167,7 @@ function _privacyMicSync() {
     }
 }
 
-// PipeWire-native mic users: running Stream/Output/Audio nodes + app name.
+
 function _privacyMicPwDump() {
     try {
         const proc = Gio.Subprocess.new(['pw-dump'],
@@ -3189,7 +3189,7 @@ function _privacyMicPwDump() {
             }
         });
     } catch (_) {
-        // no pipewire cli
+
     }
 }
 
@@ -3209,8 +3209,8 @@ function _parsePwMic(out) {
                 props['application.process.binary'] ?? '');
             if (!name || /portal|wireplumber|^pipewire/i.test(name))
                 continue;
-            // a specific app wins at once; browsers are kept as fallback
-            // (a browser tab can legitimately hold the mic)
+
+
             if (!/^(chromium|chrome|google-chrome|firefox)$/i.test(name))
                 return name;
             cands.push(name);
@@ -3218,30 +3218,30 @@ function _parsePwMic(out) {
         if (cands.length)
             return cands[0];
     } catch (_) {
-        // not json (yet)
+
     }
     return '';
 }
 
 function _privacyStart(state) {
-    // camera (native)
+
     try {
         state.camMon = new Shell.CameraMonitor();
         state.camId = state.camMon.connect('notify::cameras-in-use', _privacySync);
     } catch (_) {
         state.camMon = null;
     }
-    // screen share: reuse the stock indicator (it tracks since shell start)
+
     const shareInd = _findShareIndicator();
     if (shareInd) {
         state.shareInd = shareInd;
         try {
             state.shareId = shareInd.connect('notify::visible', _privacySync);
         } catch (_) {
-            // static
+
         }
     } else {
-        // fallback: track remote-access handles opened from now on
+
         try {
             const ctl = global.backend.get_remote_access_controller();
             state.racHandles = new Set();
@@ -3254,21 +3254,21 @@ function _privacyStart(state) {
                         try {
                             state.racHandles.delete(h);
                         } catch (_) {
-                            // gone
+
                         }
                         _privacySync();
                     });
                 } catch (_) {
-                    // gone
+
                 }
                 _privacySync();
             });
         } catch (_) {
-            // no controller
+
         }
     }
-    // mic app name (pactl) + direct camera grabbers (fuser),
-    // refreshed while the panel is open
+
+
     try {
         state.privTimer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 4, () => {
             if (!_panel)
@@ -3285,8 +3285,8 @@ function _privacyStart(state) {
     _privacySync();
 }
 
-// ------------------------------------------------------------- MPRIS
-// Album art: file:// locally, http(s) downloaded once to the user cache.
+
+
 function _setArt(p, url) {
     try {
         url = url ?? '';
@@ -3319,7 +3319,7 @@ function _setArt(p, url) {
                     try {
                         const bytes = src.read_bytes_finish(res);
                         if (!_panel || p.artUrl !== want)
-                            return;   // track changed meanwhile
+                            return;
                         const dir = GLib.build_filenamev(
                             [GLib.get_user_cache_dir(), 'tahoe-qs']);
                         GLib.mkdir_with_parents(dir, 0o755);
@@ -3342,7 +3342,7 @@ function _setArt(p, url) {
         try {
             p.artBin.set_child(p.artIcon);
         } catch (__) {
-            // panel gone
+
         }
     }
 }
@@ -3372,7 +3372,7 @@ function _mprisSync(state) {
                 if (_gicons().play)
                     p.mPlayIcon.gicon = _gicons().play;
             } catch (_) {
-                // icon stays
+
             }
             _setArt(p, '');
             return;
@@ -3393,7 +3393,7 @@ function _mprisSync(state) {
         try {
             _panel.state.playing = (status === 'Playing');
         } catch (_) {
-            // panel gone
+
         }
         try {
             const md = proxy.get_cached_property('Metadata')?.deep_unpack() ?? {};
@@ -3406,7 +3406,7 @@ function _mprisSync(state) {
             const artUrl = (rawArt?.unpack?.() ?? rawArt ?? '').toString();
             _setArt(p, artUrl);
         } catch (_) {
-            // no metadata
+
         }
         p.mTitle.text = title || bus.replace('org.mpris.MediaPlayer2.', '');
         p.mArtist.text = artist;
@@ -3426,7 +3426,7 @@ function _mprisSync(state) {
                 ? 'media-playback-pause-symbolic' : 'media-playback-start-symbolic';
         }
     } catch (_) {
-        // no player
+
     }
 }
 
@@ -3442,11 +3442,11 @@ function _mprisCall(state, method) {
             return GLib.SOURCE_REMOVE;
         });
     } catch (_) {
-        // player gone
+
     }
 }
 
-// ------------------------------------------------------------ glass (2 stacks)
+
 export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0) {
     if (!_lgReady())
         throw new Error('liquid-glass modules not loaded yet');
@@ -3461,7 +3461,7 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
     liquidBox.set_clip_to_allocation(true);
     bgActor.add_child(liquidBox);
 
-    // prevents the BMS black-screen optimization bug (same as stock toggles)
+
     const dummy = new UnpickableActor();
     dummy.set_name('optimization-breaker');
     dummy.set_size(1, 1);
@@ -3493,11 +3493,11 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
     effect.setIsDock(false);
     effect.setMultiRegionMode(true);
     effect.setBlurRadius(_qsGlassBlur());
-    // launchpad-style tint: dark glass sheet vs white sheet
+
     if (pure) {
-        // backdrop: pure blur, nothing else. No tint wash, no brightness/
-        // saturation shift, no refraction, no rim/specular/sheen - and a
-        // wide edge_smoothing so the blur fades out gradually (macW1Y 26).
+
+
+
         effect.setTintColor(0, 0, 0);
         effect.setTintStrength(0);
         effect.setBrightness(1.0);
@@ -3512,18 +3512,18 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
         effect.setContrast(1.0);
         effect.setSaturation(_qsGlassSaturation());
     }
-    // glare: broad specular sheen from the slider (0 = clean glass);
-    // full rim/specular rig from the sliders (defaults = clean edges)
+
+
     effect.setSurfaceLightEnabled(true);
     try {
         if (pure) {
             effect._setFloat('sheen_intensity', 0);
             effect._setFloat('rim_intensity', 0);
-            // rim_width 0 kills edgeBand entirely (step-gated in the shader),
-            // which also kills the hardcoded idleRim outline - otherwise a
-            // faint bright rect stays visible at the region edge.
+
+
+
             effect._setFloat('rim_width', 0);
-            // inner-edge AO darkening is independent of the rim rig.
+
             effect._setFloat('ao_intensity', 0);
             effect._setFloat('specular_intensity', 0);
             effect._setFloat('displacement_scale', 0);
@@ -3545,14 +3545,14 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
             effect._setFloat('max_z', _qsInt('tahoe-qs-depth', 25));
         }
     } catch (_) {
-        // older liquid-glass without the uniforms
+
     }
     liquidBox.add_effect(effect);
 
     const wcm = new WindowCloneManager(liquidBox, cloneContainer, `lg-${name}`);
-    // panelBox (topbar icons) must never be cloned into QS glass: the backdrop
-    // region overlaps the topbar, otherwise blurred icon ghosts land in it.
-    // Ancestor source (not fixed actor) so rebuilds of the panel stay excluded.
+
+
+
     const exclusions = [global.windowGroup, global.window_group];
     if (_panel?.overlay) exclusions.push(_panel.overlay);
     if (_activeSubmenu?.actor) exclusions.push(_activeSubmenu.actor);
@@ -3584,7 +3584,7 @@ async function _startGlass() {
             group: g.name,
             ..._makeGlassStack(monitor, g.radius, g.name, g.name === 'backdrop'),
         }));
-        // index 1: above panelBg (0), below the content box
+
         for (const s of stacks) {
             _panel.overlay.insert_child_at_index(s.bgActor, 1);
             try {
@@ -3593,9 +3593,9 @@ async function _startGlass() {
                 if (_activeSubmenu?.actor) s.uiSampler?.addExclusion?.(_activeSubmenu.actor);
             } catch (_) {}
         }
-        // Layer cake, self-verified (no journal): the shadow must paint OVER
-        // the backdrop blur, never under it. panelBg sits right above the
-        // backdrop actor, below the element stacks.
+
+
+
         try {
             const ov = _panel.overlay;
             const bd = stacks.find(s => s.group === 'backdrop');
@@ -3604,19 +3604,19 @@ async function _startGlass() {
                 try {
                     ov.set_child_above_sibling(_panel.panelBg, bd.bgActor);
                 } catch (_) {
-                    // fall through to index repair
+
                 }
                 if (ov.get_children().indexOf(_panel.panelBg) !== place() + 1) {
                     try {
                         ov.remove_child(_panel.panelBg);
                     } catch (_) {
-                        // already out
+
                     }
                     ov.insert_child_at_index(_panel.panelBg, place() + 1);
                 }
             }
         } catch (_) {
-            // order unchanged
+
         }
         const glass = {stacks, frameId: 0, torndown: false, tickN: 0};
         _panel.glass = glass;
@@ -3714,17 +3714,17 @@ function _syncStack(s, monitor) {
         const [ax, ay, w, h] = getTransformedRect(a);
         if (!(w > 0) || !(h > 0) || Number.isNaN(ax) || Number.isNaN(ay))
             continue;
-        // backdrop region covers panel + shadow with room for the fade
-        // (tighter vertically); element regions keep the tight margin.
+
+
         const mx = s.group === 'backdrop' ? BACKDROP_REGION : GLASS_EXPAND + SHADER_PADDING;
         const my = s.group === 'backdrop' ? BACKDROP_REGION_Y : GLASS_EXPAND + SHADER_PADDING;
         let rx = (ax - monitorX) - mx;
         let ry = (ay - monitorY) - my;
         let rw = w + mx * 2;
         let rh = h + my * 2;
-        // backdrop stays UNDER the topbar: the panel is transparent, so an
-        // unclamped fade would bleed blurred glass through the bar. Clamp
-        // the region top to just under panelBox (topbarBlur owns that band).
+
+
+
         if (s.group === 'backdrop') {
             let topEdge = 0;
             try {
@@ -3800,15 +3800,15 @@ function _syncStack(s, monitor) {
     }
     ensureGlassAllocated(s.bgActor);
 
-    // [GPU-SAVE] Extras: кліп-границі регіонів (перетворення hover-accordion
-    // або тумблера миттєво рахуються як зміна).
+
+
     const extraH = (((clip[0] || 0) * 73856093) ^ ((clip[1] || 0) * 19349663) ^
         ((clip[2] || 0) * 83492791) ^ ((clip[3] || 0) * 2654435761)) | 0;
-    // [GPU-SAVE] Важку частину (клони + семпли UI + capture-clip) виконуємо
-    // лише коли фон дійсно змінився, з жорсткою межею 60 FPS. У спокої
-    // Control Center скло не перемалюється взагалі; пульс 1 Гц забезпечує
-    // узгодежність; під час анімації (виїзду/закриття) важкі перемальовки
-    // блокуються, щоб забезпечити 60 FPS і не ламати віджети робочого столу.
+
+
+
+
+
     const isAnimating = (p.box?.translation_x !== 0) || (p.box?.scale_x !== 1.0) || _closing;
     let doHeavy = true;
     if (isAnimating) {
@@ -3850,7 +3850,7 @@ function _destroyGlass() {
         try {
             global.compositor.get_laters().remove(g.frameId);
         } catch (_) {
-            // already gone
+
         }
         g.frameId = 0;
     }
@@ -3858,27 +3858,27 @@ function _destroyGlass() {
         try {
             s.effect?.cleanup?.();
         } catch (_) {
-            // already cleaned
+
         }
         try {
             s.uiSampler?.destroy?.();
         } catch (_) {
-            // gone
+
         }
         try {
             s.wcm?.destroy?.();
         } catch (_) {
-            // gone
+
         }
         try {
             s.bgActor?.destroy?.();
         } catch (_) {
-            // gone
+
         }
     }
 }
 
-// ------------------------------------------------------------ open/close
+
 function _teardownPanel(p) {
     if (!p)
         return;
@@ -3888,7 +3888,7 @@ function _teardownPanel(p) {
     _panelOpening = false;
     globalThis._tahoeQSOpen = false;
 
-    // leave edit mode: badges die with the overlay, menu closes too
+
     _editMode = false;
     if (_editBadgeTimer) {
         try {
@@ -4002,7 +4002,7 @@ function _openPanel() {
             return;
         }
     }
-    // Only one center can be open at a time
+
     if (typeof globalThis._macCloseAllCenters === 'function') {
         globalThis._macCloseAllCenters('qs');
     } else {
@@ -4031,8 +4031,8 @@ function _openPanel() {
     _buildPanel();
 }
 
-// direct entry for external triggers (topbar buttons, shortcuts):
-// same toggle semantics, no synthetic keys involved.
+
+
 export function togglePanel() {
     try {
         _openPanel();
@@ -4042,7 +4042,7 @@ export function togglePanel() {
 }
 globalThis._tahoeQSToggle = togglePanel;
 
-// true while the Control Center panel is open (OSD suppresses itself then)
+
 export function isPanelOpen() {
     try {
         return !!_panel && !_closing;
@@ -4051,7 +4051,7 @@ export function isPanelOpen() {
     }
 }
 
-// Panel box actor for topbarBlur cut-outs (band never smears over it)
+
 export function getQSPanelBox() {
     try {
         return _panel?.box ?? null;
@@ -4060,7 +4060,7 @@ export function getQSPanelBox() {
     }
 }
 
-// Fullscreen overlay actor for topbarBlur layering (band stays above it)
+
 export function getQSOverlay() {
     try {
         return _panel?.overlay ?? null;
@@ -4069,10 +4069,10 @@ export function getQSOverlay() {
     }
 }
 
-// ------------------------------------------------------------- edit mode
-// "Edit Controls" opens the Tahoe menu (tahoeQSEdit.js); the CC itself
-// enters edit mode: every control gets a "−" badge (remove), a resize
-// badge (half <-> full width), and can be dragged to a new slot.
+
+
+
+
 
 function _editCatalog() {
     const g = (() => { try { return _gicons(); } catch (_) { return {}; } })();
@@ -4103,13 +4103,13 @@ function _editResize(u) {
     try {
         const cur = u.actor.get_parent();
         if (u.wide) {
-            // full width -> back home (narrow slot)
+
             cur?.remove_child(u.actor);
             u.home.add_child(u.actor);
             u.actor.set_width(u.id === 'focus' ? COL_W : (u.kind === 'card' ? COL_W : -1));
             u.wide = false;
         } else {
-            // narrow -> full content width (own row above the edit pill)
+
             cur?.remove_child(u.actor);
             const idx = p.box.get_children().indexOf(p.state.editRow);
             p.box.insert_child_at_index(u.actor, idx < 0 ? p.box.get_children().length : idx);
@@ -4128,17 +4128,17 @@ function _editRemove(u) {
         return;
     try {
         u.actor.visible = false;
-    } catch (_) { /* gone */ }
+    } catch (_) {   }
     _syncEditBadges();
 }
 
-// place `unit` so it lands at stage point (mx, my) inside the panel
+
 function _editPlaceAt(unit, mx, my) {
     const p = _panel;
     if (!p || !unit)
         return false;
     const a = unit.actor;
-    // drop outside the CC panel -> ignore (stage coords everywhere)
+
     let ox = 0, oy = 0, bx = 0, by = 0, bw = 0, bh = 0;
     try {
         [ox, oy] = p.overlay.get_transformed_position();
@@ -4162,7 +4162,7 @@ function _editPlaceAt(unit, mx, my) {
                 tAfter = my > ty + th / 2;
                 break;
             }
-        } catch (_) { /* gone */ }
+        } catch (_) {   }
     }
     try {
         if (target) {
@@ -4173,7 +4173,7 @@ function _editPlaceAt(unit, mx, my) {
             par.insert_child_at_index(a, idx + (tAfter ? 1 : 0));
             unit.home = par;
         } else {
-            // empty area: own row for wide units, nearest column otherwise
+
             if (a.get_parent())
                 a.get_parent().remove_child(a);
             if (unit.wide || unit.kind === 'card') {
@@ -4200,7 +4200,7 @@ function _editPlaceAt(unit, mx, my) {
     }
 }
 
-// menu -> CC drop (called by tahoeQSEdit.js, stage coordinates)
+
 export function tryDropControl(ctrl, mx, my) {
     const p = _panel;
     if (!p || !ctrl)
@@ -4216,7 +4216,7 @@ export function tryDropControl(ctrl, mx, my) {
     return ok;
 }
 
-// drag an existing control to a new slot (edit mode only)
+
 function _editPress(u, ev) {
     if (!_editMode)
         return Clutter.EVENT_PROPAGATE;
@@ -4234,7 +4234,7 @@ function _editPress(u, ev) {
             u.actor.translation_x = 0;
             u.actor.translation_y = 0;
             u.actor.opacity = 255;
-        } catch (_) { /* gone */ }
+        } catch (_) {   }
     };
 
     cMotion = global.stage.connect('captured-event', (_s, mev) => {
@@ -4252,7 +4252,7 @@ function _editPress(u, ev) {
             u.actor.translation_y = my - sy;
             void ax; void ay;
             u.actor.opacity = 200;
-        } catch (_) { /* gone */ }
+        } catch (_) {   }
         return Clutter.EVENT_STOP;
     });
 
@@ -4272,14 +4272,14 @@ function _editPress(u, ev) {
     return Clutter.EVENT_STOP;
 }
 
-// overlay badges: "−" remove, "⇄" resize (resizable units only)
+
 let _editBadges = [];
 let _editBadgeTimer = 0;
 let _editBadgeSig = '';
 
 function _syncEditBadges() {
     const p = _panel;
-    // signature: rebuild only when the layout actually changed
+
     let sig = '';
     if (_editMode && p) {
         try {
@@ -4296,7 +4296,7 @@ function _syncEditBadges() {
     }
     _editBadgeSig = sig;
     for (const b of _editBadges) {
-        try { b.destroy(); } catch (_) { /* gone */ }
+        try { b.destroy(); } catch (_) {   }
     }
     _editBadges = [];
     if (!_editMode || !p)
@@ -4330,7 +4330,7 @@ function _syncEditBadges() {
                 rz.set_position(bx + u.actor.width + 4, by);
                 rz.add_style_class_name('tahoe-qs-editbadge-resize');
             }
-        } catch (_) { /* unit gone */ }
+        } catch (_) {   }
     }
 }
 
@@ -4339,7 +4339,7 @@ function _setEditMode(on) {
     _editMode = !!on;
     _syncEditBadges();
     if (_editMode) {
-        // layout settles after reparent passes -> re-stamp badges
+
         for (const ms of [160, 420]) {
             try {
                 GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
@@ -4347,9 +4347,9 @@ function _setEditMode(on) {
                         _syncEditBadges();
                     return GLib.SOURCE_REMOVE;
                 });
-            } catch (_) { /* no clock */ }
+            } catch (_) {   }
         }
-        // keep badges glued to their controls while the layout animates
+
         if (!_editBadgeTimer) {
             try {
                 _editBadgeTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 400, () => {
@@ -4360,12 +4360,12 @@ function _setEditMode(on) {
                     _syncEditBadges();
                     return GLib.SOURCE_CONTINUE;
                 });
-            } catch (_) { /* no clock */ }
+            } catch (_) {   }
         }
     } else if (prev && _editBadgeTimer) {
         try {
             GLib.source_remove(_editBadgeTimer);
-        } catch (_) { /* gone */ }
+        } catch (_) {   }
         _editBadgeTimer = 0;
     }
 }
@@ -4374,7 +4374,7 @@ export function isEditMode() {
     return _editMode;
 }
 
-// ------------------------------------------------------------ enable
+
 export function enable(settings, gettextFunc) {
     if (_enabled)
         return;
@@ -4417,7 +4417,7 @@ export function enable(settings, gettextFunc) {
             });
         } catch (_) {}
     } catch (_) {
-        // no quick settings here
+
     }
 }
 
@@ -4446,7 +4446,7 @@ export function disable() {
             }
         }
     } catch (_) {
-        // already gone
+
     }
     _closePanel();
     _settings = null;

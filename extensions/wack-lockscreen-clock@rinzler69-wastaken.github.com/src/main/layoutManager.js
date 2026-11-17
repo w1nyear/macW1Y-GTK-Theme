@@ -27,29 +27,29 @@ class WackLayout extends Clutter.LayoutManager {
 
     vfunc_allocate(container, box) {
         const [width, height] = box.get_size();
-        
+
         const [, , stackWidth, stackHeight] = this._stack.get_preferred_size();
         const [, , notifWidth, notifHeight] = this._notifications.get_preferred_size();
 
-        // Allocate notifications with independent width to prevent auth prompt stretching
+
         const notifBox = new Clutter.ActorBox();
         const maxNotifHeight = Math.min(notifHeight, height - (height * NOTIF_MIN_TOP_MARGIN_FRACTION) - stackHeight);
-        
+
         notifBox.x1 = Math.floor((width - notifWidth) / 2.0);
         notifBox.y1 = height - maxNotifHeight;
         notifBox.x2 = notifBox.x1 + notifWidth;
         notifBox.y2 = notifBox.y1 + maxNotifHeight;
         this._notifications.allocate(notifBox);
 
-        // Allocate authentication prompt stack
+
         const stackBox = new Clutter.ActorBox();
         let stackY;
 
         if (this._extension._lockscreenMode === 'cupertino') {
-            // Anchor well height to allocation or preferred size with stack fallback
+
             const restPrompt = this._extension._cupertinoRestPrompt;
             const userWell = restPrompt?._userWell;
-            
+
             let wellH = userWell?.get_height() ?? 0;
             if (wellH === 0) {
                 const [, , , preferredH] = userWell ? userWell.get_preferred_size() : [0, 0, 0, 0];
@@ -95,7 +95,7 @@ class WackLayout extends Clutter.LayoutManager {
             }
         }
 
-        // Allocate switch user button if present
+
         if (this._switchUserButton?.visible) {
             const [, , natWidth, natHeight] = this._switchUserButton.get_preferred_size();
             const switchBox = new Clutter.ActorBox();
@@ -105,7 +105,7 @@ class WackLayout extends Clutter.LayoutManager {
             switchBox.y1 = box.y2 - natHeight - SWITCH_USER_MARGIN;
             switchBox.x2 = switchBox.x1 + natWidth;
             switchBox.y2 = switchBox.y1 + natHeight;
-            
+
             this._switchUserButton.allocate(switchBox);
         }
     }

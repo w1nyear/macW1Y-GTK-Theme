@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Generates GTK CSS imports for window controls and titlebar tweaks based on settings.
-//
-// Imports are written only to the user's ~/.config/gtk-{3,4}.0/gtk.css so the
-// extension never writes inside its own installation directory. This keeps
-// system-wide installs (e.g. /usr/share/gnome-shell/extensions, owned by root)
-// working. See https://github.com/kem-a/kiwi-kemma/issues/86
+
+
+
+
+
+
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
@@ -14,11 +14,11 @@ Gio._promisify(Gio.File.prototype, 'load_contents_async', 'load_contents_finish'
 const MARKER_BEGIN = '/* Kiwi Component Suite - managed imports: begin */';
 const MARKER_END = '/* Kiwi Component Suite - managed imports: end */';
 
-// Matches the whole managed block, including the markers themselves.
+
 const MANAGED_BLOCK_REGEX = /\/\* Kiwi \(is not macW1Y\) - managed imports: begin \*\/[\s\S]*?\/\* Kiwi \(is not macW1Y\) - managed imports: end \*\/\n?/g;
 
-// Matches any single-line @import pointing into the extension, in any quoting
-// style. Cleans up the unmarked imports written by versions <= 1.9.1.
+
+
 const LEGACY_IMPORT_REGEX = /^[^\n]*@import[^\n]*kiwi@kemma[^\n]*\n?/gm;
 
 let gtkThemeManager = null;
@@ -30,13 +30,13 @@ class GtkThemeManager {
         this._settingsChangedId = null;
     }
 
-    // Absolute file:// URI for a stylesheet shipped in the extension's css folder.
+
     _cssUri(name) {
         const path = GLib.build_filenamev([this._extension.path, 'css', name]);
         return Gio.File.new_for_path(path).get_uri();
     }
 
-    // Stylesheets to pull in for a given GTK major version ('3' or '4').
+
     _stylesheetsFor(version) {
         const enableAppButtons = this._settings.get_boolean('enable-app-window-buttons');
         const showControlsOnPanel = this._settings.get_boolean('show-window-controls');
@@ -47,7 +47,7 @@ class GtkThemeManager {
 
         const sheets = [];
 
-        // Titlebutton styling only if app window buttons are enabled
+
         if (enableAppButtons) {
             if (buttonType === 'titlebuttons-alt')
                 sheets.push(`titlebuttons-alt${version}.css`);
@@ -58,7 +58,7 @@ class GtkThemeManager {
                 sheets.push(`titlebuttons-size-small${version}.css`);
         }
 
-        // Hide the titlebar when window controls live in the panel
+
         if (showControlsOnPanel) {
             if (fullscreenOnly)
                 sheets.push(`hide-titlebar-fullscreen${version}.css`);
@@ -66,7 +66,7 @@ class GtkThemeManager {
                 sheets.push(`hide-titlebar${version}.css`);
         }
 
-        // App fixes go last so they can override the above
+
         if (appFixes)
             sheets.push(`fixes${version}.css`);
 
@@ -98,8 +98,8 @@ class GtkThemeManager {
         }
     }
 
-    // Replaces our managed block in the user's gtk.css, leaving their own rules
-    // untouched. An empty block removes our imports entirely.
+
+
     async processUserGtkFile(filePath, managedBlock) {
         try {
             const file = Gio.File.new_for_path(filePath);
@@ -114,16 +114,16 @@ class GtkThemeManager {
                 existingContent = new TextDecoder().decode(contents);
             }
 
-            // Strip any previous block, plus unmarked imports from older versions
+
             existingContent = existingContent
                 .replace(MANAGED_BLOCK_REGEX, '')
                 .replace(LEGACY_IMPORT_REGEX, '');
 
-            // Our imports come first so user rules can still override them
+
             const newContent = managedBlock + existingContent;
 
             if (!newContent.trim()) {
-                // Nothing but our own content was in there
+
                 if (exists)
                     file.delete(null);
                 return;
@@ -159,7 +159,7 @@ class GtkThemeManager {
                 }
             });
 
-            // Initial update
+
             this.updateGtkCss().catch(error => {
                 console.error(`[Kiwi] Error in initial update: ${error}`);
             });
@@ -173,7 +173,7 @@ class GtkThemeManager {
             this._settings = null;
         }
 
-        // Remove our imports from user GTK config files
+
         this.removeUserGtkConfig().catch(error => {
             console.error(`[Kiwi] Error in disable cleanup: ${error}`);
         });

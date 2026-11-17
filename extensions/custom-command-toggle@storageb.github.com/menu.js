@@ -15,14 +15,14 @@ export function createMenuItemsUI(menuGroup, settings, settingName) {
     menuGroup.add(emptyMenuRow);
 
     let savedItems;
-    
+
     try {
         savedItems = JSON.parse(settings.get_string(settingName));
     } catch (e) {
         console.log(`[Custom Command Toggle] Failed to load ${settingName}: ${e}`);
         savedItems = [];
     }
-    
+
     if (Array.isArray(savedItems)) {
         savedItems.forEach(item => {
             if (item && typeof item === 'object')

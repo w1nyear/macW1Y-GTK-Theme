@@ -1,18 +1,18 @@
-// This file is part of the AppIndicator/KStatusNotifierItem GNOME Shell extension
-//
-// This program is free software; you can redistribute it and/or
+
+
+
 // modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
+
 // of the License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+
+
+
+
 // GNU General Public License for more details.
-//
+
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+
 
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
@@ -41,7 +41,7 @@ Gio._promisify(GdkPixbuf.Pixbuf, 'new_from_stream_at_scale_async',
 Gio._promisify(St.IconInfo.prototype, 'load_symbolic_async');
 Gio._promisify(Gio.DBusConnection.prototype, 'call');
 
-const MAX_UPDATE_FREQUENCY = 30; // In ms
+const MAX_UPDATE_FREQUENCY = 30;
 const FALLBACK_ICON_NAME = 'image-loading-symbolic';
 const PIXMAPS_FORMAT = imports.gi.Cogl.PixelFormat.ARGB_8888;
 
@@ -197,7 +197,7 @@ class AppIndicatorProxy extends DBusProxy {
         return null;
     }
 
-    // The Author of the spec didn't like the PropertiesChanged signal, so he invented his own
+
     async _refreshOwnProperties(prop) {
         await Promise.all(
             [prop, `${prop}Name`, `${prop}Pixmap`, `${prop}AccessibleDesc`].filter(p =>
@@ -235,7 +235,7 @@ class AppIndicatorProxy extends DBusProxy {
         const cancellable = this._cancellable;
 
         if (!params.get_type().equal(AppIndicatorProxy.TUPLE_TYPE)) {
-            // If the property includes arguments, we can just queue the signal emission
+
             const [value] = params.unpack();
             try {
                 await this._queuePropertyUpdate(property, value);
@@ -296,7 +296,7 @@ class AppIndicatorProxy extends DBusProxy {
                     })));
         } catch (e) {
             if (!e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)) {
-                // the property may not even exist, silently ignore it
+
                 Util.Logger.debug(`While refreshing all properties: ${e}`);
 
                 this.get_cached_property_names().forEach(propertyName =>
@@ -327,7 +327,7 @@ class AppIndicatorProxy extends DBusProxy {
                 Object.assign(params, {cancellable}));
         } catch (e) {
             if (!e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)) {
-                // the property may not even exist, silently ignore it
+
                 Util.Logger.debug(`Error when calling 'Get(${propertyName})' ` +
                     `in ${this.gName}, ${this.gObjectPath}, ` +
                     `org.freedesktop.DBus.Properties, ${this.gInterfaceName} ` +
@@ -357,7 +357,7 @@ class AppIndicatorProxy extends DBusProxy {
 
         this.set_cached_property(propertyName, value);
 
-        // synthesize a batched property changed event
+
         this._changedProperties[propertyName] = value;
 
         if (!this._propertiesEmitTimeout || !this._propertiesEmitTimeout.pending()) {
@@ -412,10 +412,10 @@ class AppIndicatorProxy extends DBusProxy {
     }
 });
 
-/**
- * the AppIndicator class serves as a generic container for indicator information and functions common
- * for every displaying implementation (IndicatorMessageSource and IndicatorStatusIcon)
- */
+
+
+
+
 export class AppIndicator extends Signals.EventEmitter {
     static get NEEDED_PROPERTIES() {
         return ['Id', 'Menu'];
@@ -462,7 +462,7 @@ export class AppIndicator extends Signals.EventEmitter {
             }
         }
 
-        // We try to lookup the activate method to see if the app supports it
+
         try {
             const introspectionVariant = await this._proxy.gConnection.call(
                 this._proxy.gNameOwner, this._proxy.gObjectPath,
@@ -593,7 +593,7 @@ export class AppIndicator extends Signals.EventEmitter {
         this.emit('name-owner-changed');
     }
 
-    // public property getters
+
     get title() {
         return this._proxy.Title;
     }
@@ -670,10 +670,10 @@ export class AppIndicator extends Signals.EventEmitter {
     }
 
     async checkAlive() {
-        // Some applications (hey electron!) just remove the indicator object
-        // from bus after hiding it, without closing its bus name, so we are
-        // not able to understand whe they're gone.
-        // Thus we just kill it when an expected well-known method is failing.
+
+
+
+
         if (this.status !== SNIStatus.PASSIVE && this._checkIfReady()) {
             if (this._checkAliveTimeout) {
                 this._checkAliveTimeout.cancel();
@@ -692,8 +692,8 @@ export class AppIndicator extends Signals.EventEmitter {
             Util.Logger.debug(`${this.uniqueId}: may not respond, checking...`);
             await this._checkAliveTimeout;
 
-            // We should call the Ping method instead but in some containers
-            // such as snaps that's not accessible, so let's just use our own
+
+
             await this._proxy.getProperty('Status', cancellable);
         } catch (e) {
             if (e.matches(Gio.DBusError, Gio.DBusError.NAME_HAS_NO_OWNER) ||
@@ -724,27 +724,27 @@ export class AppIndicator extends Signals.EventEmitter {
         };
 
         props.forEach(property => {
-            // some property changes require updates on our part,
-            // a few need to be passed down to the displaying code
+
+
             if (property === 'Id')
                 checkIfReadyChanged();
 
-            // all these can mean that the icon has to be changed
+
             if (property.startsWith('Icon') ||
                 property.startsWith('AttentionIcon'))
                 signalsToEmit.add('icon');
 
-            // same for overlays
+
             if (property.startsWith('OverlayIcon'))
                 signalsToEmit.add('overlay-icon');
 
-            // this may make all of our icons invalid
+
             if (property === 'IconThemePath') {
                 signalsToEmit.add('icon');
                 signalsToEmit.add('overlay-icon');
             }
 
-            // the label will be handled elsewhere
+
             if (property === 'XAyatanaLabel') {
                 signalsToEmit.add('label');
                 signalsToEmit.add('accessible-name');
@@ -760,7 +760,7 @@ export class AppIndicator extends Signals.EventEmitter {
                 property === 'Title')
                 signalsToEmit.add('accessible-name');
 
-            // status updates may cause the indicator to be hidden
+
             if (property === 'Status') {
                 signalsToEmit.add('icon');
                 signalsToEmit.add('overlay-icon');
@@ -842,10 +842,10 @@ export class AppIndicator extends Signals.EventEmitter {
 
     async open(x, y, timestamp) {
         const cancellable = this._cancellable;
-        // we can't use WindowID because we're not able to get the x11 window id from a MetaWindow
-        // nor can we call any X11 functions. Luckily, the Activate method usually works fine.
-        // parameters are "an hint to the item where to show eventual windows" [sic]
-        // ... and don't seem to have any effect.
+
+
+
+
 
         try {
             await this.provideActivationToken(timestamp);
@@ -916,17 +916,17 @@ const StTextureCacheSkippingFileIcon = GObject.registerClass({
     Implements: [Gio.Icon],
 }, class StTextureCacheSkippingFileIconImpl extends Gio.EmblemedIcon {
     _init(params) {
-        // FIXME: We can't just inherit from Gio.FileIcon for some reason
+
         super._init({gicon: new Gio.FileIcon(params)});
     }
 
     vfunc_to_tokens() {
-        // Disables the to_tokens() vfunc so that the icon to_string()
-        // method won't work and thus can't be kept forever around by
-        // StTextureCache, see the awesome debugging session in this thread:
-        //   https://twitter.com/mild_sunrise/status/1458739604098621443
-        // upstream bug is at:
-        //   https://gitlab.gnome.org/GNOME/gnome-shell/-/issues/4944
+
+
+
+
+
+
         return [false, [], 0];
     }
 });
@@ -1123,7 +1123,7 @@ class AppIndicatorsIconActor extends St.Icon {
     }
 
     _getResourceScale() {
-        // Remove this when we remove support for versions earlier than 3.38
+
         const resourceScale = this.get_resource_scale();
         if (Array.isArray(resourceScale))
             return resourceScale[0] ? resourceScale[1] : 1.0;
@@ -1131,8 +1131,8 @@ class AppIndicatorsIconActor extends St.Icon {
         return resourceScale;
     }
 
-    // Will look the icon up in the cache, if it's found
-    // it will return it. Otherwise, it will create it and cache it.
+
+
     async _cacheOrCreateIconByName(iconType, iconSize, iconScaling, iconName, themePath) {
         const id = `${iconType}:${iconName}@${iconSize * iconScaling}:${themePath || ''}`;
         let gicon = this._iconCache.get(id);
@@ -1221,12 +1221,12 @@ class AppIndicatorsIconActor extends St.Icon {
             }
 
             if (width >= height * 1.5) {
-                /* Hello indicator-multiload! */
+
                 await this._loadCustomImage(file,
                     width, height, iconSize, iconScaling, cancellable);
                 return null;
             } else {
-                /* We'll wrap the icon so that it won't be cached forever by the shell */
+
                 return new StTextureCacheSkippingFileIcon({file});
             }
         } catch (e) {
@@ -1279,8 +1279,8 @@ class AppIndicatorsIconActor extends St.Icon {
     }
 
     _isFileInWritableArea(file) {
-        // No need to use IO here, we can just do some assumptions
-        // print('Writable paths', IconActor.USER_WRITABLE_PATHS)
+
+
         const path = file.get_path();
         return IconActor.USER_WRITABLE_PATHS.some(writablePath =>
             path.startsWith(writablePath));
@@ -1301,8 +1301,8 @@ class AppIndicatorsIconActor extends St.Icon {
             return emptyIconData;
         }
 
-        // HACK: icon is a path name. This is not specified by the API,
-        // but at least indicator-sensors uses it.
+
+
         if (name[0] === '/') {
             delete this._iconTheme;
 
@@ -1321,10 +1321,10 @@ class AppIndicatorsIconActor extends St.Icon {
             themePath = null;
 
         if (themePath) {
-            // If a theme path is provided, we need to lookup the icon ourself
-            // as St won't be able to do it unless we mess with default theme
-            // that is something we prefer not to do, as it would imply lots of
-            // St.TextureCache cleanups.
+
+
+
+
 
             const newSearchPath = [themePath];
             if (!this._iconTheme) {
@@ -1336,7 +1336,7 @@ class AppIndicatorsIconActor extends St.Icon {
                     this._iconTheme.set_search_path(newSearchPath);
             }
 
-            // try to look up the icon in the icon theme
+
             const iconInfo = this._iconTheme.lookup_icon_for_scale(`${name}`,
                 size, scale, this._getIconLookupFlags(this.get_theme_node()) |
                 St.IconLookupFlags.GENERIC_FALLBACK);
@@ -1381,7 +1381,7 @@ class AppIndicatorsIconActor extends St.Icon {
             preferredHeight: height,
         });
 
-        // Remove this dynamic check when we depend on GNOME 48.
+
         const coglContext = [];
         const mutterBackend = global.stage?.context?.get_backend?.();
         if (imageContent.set_bytes.length === 6 && mutterBackend?.get_cogl_context)
@@ -1397,12 +1397,12 @@ class AppIndicatorsIconActor extends St.Icon {
 
         const cancellable = this._getIconLoadingCancellable(iconType, id);
         try {
-            // FIXME: async API results in a gray icon for some reason
+
             const [inputStream] = imageContent.load(iconSize, cancellable);
             return await GdkPixbuf.Pixbuf.new_from_stream_at_scale_async(
                 inputStream, -1, iconSize * iconScaling, true, cancellable);
         } catch (e) {
-            // the image data was probably bogus. We don't really know why, but it _does_ happen.
+
             if (!e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
                 Util.Logger.warn(`${this.debugId}, Impossible to create image from data: ${e}`);
             throw e;
@@ -1411,10 +1411,10 @@ class AppIndicatorsIconActor extends St.Icon {
         }
     }
 
-    // The icon cache Active flag will be set to true if the used gicon matches
-    // the cached one (as in some cases it may be equal, but not the same object).
-    // So when it's not need anymore we make sure to check the active state
-    // and set it to false so that it can be picked up by the garbage collector.
+
+
+
+
     _setGicon(iconType, gicon) {
         if (iconType !== SNIconType.OVERLAY) {
             if (gicon) {
@@ -1500,7 +1500,7 @@ class AppIndicatorsIconActor extends St.Icon {
             this._setGicon(iconType, gicon);
 
             if (pixmap && this.gicon) {
-                // The pixmap has been saved, we can free the variants memory
+
                 this._indicator.invalidatePixmapProperty(iconType);
             }
 
@@ -1511,13 +1511,13 @@ class AppIndicatorsIconActor extends St.Icon {
         }
     }
 
-    // updates the base icon
+
     async _createIcon(name, pixmap, theme, iconType, iconSize) {
         const {scaleFactor} = St.ThemeContext.get_for_stage(global.stage);
         const resourceScale = this._getResourceScale();
         const iconScaling = Math.ceil(resourceScale * scaleFactor);
 
-        // From now on we consider them the same thing, as one replaces the other
+
         if (iconType === SNIconType.ATTENTION)
             iconType = SNIconType.NORMAL;
 
@@ -1536,7 +1536,7 @@ class AppIndicatorsIconActor extends St.Icon {
         return null;
     }
 
-    // updates the base icon
+
     async _updateIcon() {
         if (this._indicator.status === SNIStatus.PASSIVE)
             return;
@@ -1546,7 +1546,7 @@ class AppIndicatorsIconActor extends St.Icon {
             this._iconCache.updateActive(SNIconType.NORMAL, gicon, false);
         }
 
-        // we might need to use the AttentionIcon*, which have precedence over the normal icons
+
         const iconType = this._indicator.status === SNIStatus.NEEDS_ATTENTION
             ? SNIconType.ATTENTION : SNIconType.NORMAL;
 
@@ -1568,9 +1568,9 @@ class AppIndicatorsIconActor extends St.Icon {
             this._iconCache.updateActive(SNIconType.OVERLAY, icon, false);
         }
 
-        // KDE hardcodes the overlay icon size to 10px (normal icon size 16px)
-        // we approximate that ratio for other sizes, too.
-        // our algorithms will always pick a smaller one instead of stretching it.
+
+
+
         const iconSize = Math.floor(this._iconSize / 1.6);
 
         try {
@@ -1598,7 +1598,7 @@ class AppIndicatorsIconActor extends St.Icon {
         }
     }
 
-    // called when the icon theme changes
+
     _invalidateIcon() {
         this._iconCache.clear();
         this._cancellable.cancel();

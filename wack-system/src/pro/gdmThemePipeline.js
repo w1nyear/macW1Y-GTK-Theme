@@ -69,10 +69,10 @@ export function isManifestVersionSupported(meta) {
 const isSolidMode = mode => mode === 'tonal' || mode === 'less';
 
 export class GdmThemeStore {
-    /**
-     * @param {Extension} extension Extension instance
-     * @param {(userName: string) => void} onChanged Notification callback on theme updates
-     */
+
+
+
+
     constructor(extension, onChanged) {
         this._onChanged = onChanged;
         this._cancellable = new Gio.Cancellable();
@@ -138,7 +138,7 @@ export class GdmThemeStore {
 
     get vibrancy() { return this._vibrancy; }
 
-    // ---- read side: the only thing the click path may call -----------------
+
     hasUser(userName) {
         return userName !== null && this._themes.has(userName);
     }
@@ -155,10 +155,10 @@ export class GdmThemeStore {
         return this._fallback;
     }
 
-    // ---- write side --------------------------------------------------------
+
     setLayout(layout) {
-        // layout = { key, wellH, yCenterFraction, bounds: {prompt,cancel,avatar,a11y,session} }
-        // Captured ONCE after first allocation and again on monitors-changed. Never on click.
+
+
         if (this._layout !== null && this._layout.key === layout.key)
             return;
         this._layout = layout;
@@ -252,7 +252,7 @@ export class GdmThemeStore {
         this._armSlideClock();
     }
 
-    /** Also called by the file-monitor handler, debounced per user by the caller. */
+
     async loadUser(userName, file = null) {
         let metaFile = file ?? Gio.File.new_for_path(`${SHARED_DIR}/${PREFIX}${userName}.json`);
         if (!metaFile.query_exists(null)) {
@@ -283,7 +283,7 @@ export class GdmThemeStore {
         this._onChanged(effectiveName);
     }
 
-    // ---- internals ---------------------------------------------------------
+
     _userVibrancy(meta) {
         return meta?.promptVibrancyMode ?? this._vibrancy;
     }
@@ -333,14 +333,14 @@ export class GdmThemeStore {
         const userVibrancy = this._userVibrancy(meta);
         const paletteKey = this._paletteKey(image, userVibrancy);
 
-        // Prefer: cached-by-key > palette shipped by the user session (if it
-        // matches current slide) > previous palette (stale fallback for display only if matching image).
+
+
         const previous = this._themes.get(userName);
         let palette = this._paletteCache.get(paletteKey) ?? null;
-        // For ACRYLIC palettes the visual result depends on a PNG file artifact.
-        // If that artifact was deleted (e.g. by the sibling Light/Dark variant's
-        // pruning pass) while the in-memory entry survived, treat it as a miss so
-        // the generation pipeline is triggered to recreate the file.
+
+
+
+
         if (palette !== null && !isSolidMode(palette.mode) &&
             !(palette.value?.imagePath && Gio.File.new_for_path(palette.value.imagePath).query_exists(null))) {
             this._paletteCache.delete(paletteKey);
@@ -365,9 +365,9 @@ export class GdmThemeStore {
             meta,
             rawMeta,
             xmlText,
-            slide,          // null for static wallpapers
-            image,          // the single image the palette is sampled from
-            palette,        // { mode, image, layoutKey, isShipped, value } | null
+            slide,
+            image,
+            palette,
             clockAlpha,
         });
         this._themes.set(userName, theme);
@@ -419,7 +419,7 @@ export class GdmThemeStore {
         if (!isSolid && !hasImg)
             return null;
 
-        // If this is a slideshow, ensure the shipped palette matches the current slide
+
         if (slide !== null) {
             const shippedPath = meta.resolved_slide_path ?? null;
             if (!shippedPath)
@@ -464,7 +464,7 @@ export class GdmThemeStore {
         if (this._idleId !== 0 || this._busy || this._pending.length === 0)
             return;
         if (this._layout === null)
-            return;   // cannot sample without the canonical layout
+            return;
         this._idleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
             this._idleId = 0;
             this._drainOne().catch(e => _logError(`[WACK/ThemeStore] drain: ${e}`));
@@ -521,8 +521,8 @@ export class GdmThemeStore {
             if (this._cancellable.is_cancelled())
                 return;
 
-            // The theme may have been replaced (slide advanced, file changed) while
-            // we awaited. Write only into the same image; never into "current".
+
+
             const current = this._themes.get(userName);
             if (current === undefined || current.image !== snapshot.image || value === null) {
                 if (current !== undefined && current.image !== snapshot.image)
@@ -547,7 +547,7 @@ export class GdmThemeStore {
         }
     }
 
-    // ---- slideshow: one timer for the whole store --------------------------
+
     _resolveSlide(meta, xmlText) {
         if (xmlText === null || meta.is_color)
             return null;
@@ -580,7 +580,7 @@ export class GdmThemeStore {
         this._slideTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, next, () => {
             this._slideTimerId = 0;
             this._advanceSlides();
-            this._armSlideClock();   // re-derived from wall clock, so no drift accumulates
+            this._armSlideClock();
             return GLib.SOURCE_REMOVE;
         });
         GLib.Source.set_name_by_id(this._slideTimerId, '[WACK] GdmThemeStore.slideClock');
@@ -591,7 +591,7 @@ export class GdmThemeStore {
             if (theme.slide === null)
                 continue;
             const raw = theme.rawMeta ?? theme.meta;
-            this._install(name, raw, theme.xmlText);   // keeps the old palette until replaced
+            this._install(name, raw, theme.xmlText);
             const updated = this._themes.get(name);
             if (updated && this._isPaletteValid(updated)) {
                 this._onChanged(name);
@@ -623,7 +623,7 @@ export class GdmThemeStore {
         }
     }
 
-    // ---- async file helpers ------------------------------------------------
+
     async _listUserFiles() {
         const out = [];
         for (const dPath of [SHARED_DIR, LEGACY_SHARED_DIR]) {
@@ -646,7 +646,7 @@ export class GdmThemeStore {
                             continue;
                         const userName = name.slice(PREFIX.length, -'.json'.length);
                         if (userName === 'gdm' || out.some(e => e.name === userName))
-                            continue;   // GDM's own file is output, not input
+                            continue;
                         out.push({
                             name: userName,
                             mtime: info.get_attribute_uint64('time::modified'),
@@ -679,11 +679,11 @@ export class GdmThemeStore {
 
     _pickDefaultUser(entries) {
         if (this._defaultUser === null && entries.length > 0)
-            this._defaultUser = entries[0].name;   // newest mtime, chosen once
+            this._defaultUser = entries[0].name;
     }
 
     _buildFallbackTheme() {
-        // Built once from org.gnome.desktop.background. Not on any hot path.
+
         const bg = new Gio.Settings({ schema_id: 'org.gnome.desktop.background' });
         const iface = this._interfaceSettings ?? new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
         const dark = iface.get_enum('color-scheme') === 1;
@@ -780,7 +780,7 @@ export class GdmWallpaperView {
         this._group.visible = true;
         parent.add_child(this._group);
         parent.set_child_below_sibling(this._group, sibling);
-        this._monitors = [];   // { container, stacks: Map(stackKey -> {root, base, overlay}), topKey, dimmer }
+        this._monitors = [];
         this._presentedRevision = -1;
         this._presentedUser = null;
         this._dimmerEnabled = false;
@@ -819,7 +819,7 @@ export class GdmWallpaperView {
         }
     }
 
-    /** Called at idle after the dialog fade-in: forces first paint of each texture early. */
+
     warm(theme) {
         for (const m of this._monitors) {
             const key = this._stackKey(theme);
@@ -834,13 +834,13 @@ export class GdmWallpaperView {
         }
     }
 
-    /** Click path: property writes only. No I/O, no decode, no sampling. */
+
     present(theme, animate) {
         const dim = Boolean(theme.meta?.backgroundDimmer);
         this.setDimmer(dim, animate);
 
         if (theme.userName === this._presentedUser && theme.revision === this._presentedRevision)
-            return;   // idempotent: return-to-picker + onReset both call this safely
+            return;
         this._presentedUser = theme.userName;
         this._presentedRevision = theme.revision;
 
@@ -854,15 +854,15 @@ export class GdmWallpaperView {
             const key = this._stackKey(theme);
             let stack = m.stacks.get(key);
             if (stack === undefined) {
-                stack = this._createStack(m, theme);   // cold path; warm() should have run
+                stack = this._createStack(m, theme);
                 m.stacks.set(key, stack);
             }
 
             if (stack.overlay !== null && theme.slide !== null)
-                stack.overlay.opacity = Math.round(theme.slide.progress * 255);   // step = one property write
+                stack.overlay.opacity = Math.round(theme.slide.progress * 255);
 
             if (m.topKey === key)
-                continue;   // same stack, only the overlay step changed
+                continue;
 
             stack.root.remove_all_transitions();
             m.container.set_child_above_sibling(stack.root, null);
@@ -993,7 +993,7 @@ export class GdmWallpaperView {
 
     destroy() {
         if (this._group) {
-            this._group.destroy();   // destroys containers, stacks and effects with it
+            this._group.destroy();
             this._group = null;
         }
         this._monitors = [];

@@ -26,8 +26,8 @@ import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/
 
 const D2D_UUIDS = ['dash-to-dock@micxgx.gmail.com', 'ubuntu-dock@ubuntu.com'];
 const EXTENSION_ACTIVE = 1;
-// The shell's own end of the extensions interface. Prefs runs in the process
-// that owns org.gnome.Shell.Extensions, so asking that name is asking ourselves.
+
+
 const SHELL = {
     name: 'org.gnome.Shell',
     path: '/org/gnome/Shell',
@@ -66,14 +66,14 @@ export default class KiwiPreferences extends ExtensionPreferences {
         });
     }
 
-    /**
-     * Hand back whether Dash-to-Dock is installed and running. The question goes
-     * to the shell, and it is asked rather than waited for: a call of our own is
-     * what would answer it if it went to the name this process owns. An answer
-     * that never comes leaves the options alone rather than greying them out.
-     *
-     * @param callback called with true while the dock is there
-     */
+
+
+
+
+
+
+
+
     _withDockActive(callback) {
         Gio.DBus.session.call(
             SHELL.name, SHELL.path, SHELL.iface, 'ListExtensions', null, null,
@@ -90,7 +90,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
             });
     }
 
-    // Dropdown row for a string-enum setting; values[] maps list position to key value.
+
     _createEnumComboRow(settings, title, subtitle, key, values, labels) {
         const row = new Adw.ComboRow({
             title,
@@ -114,29 +114,29 @@ export default class KiwiPreferences extends ExtensionPreferences {
         const extensionTitle = _('Kiwi Component Suite');
         window.title = extensionTitle;
         window.set_default_size(510, 710);
-        // Enable built-in libadwaita search (adds search button automatically)
+
         window.set_search_enabled(true);
 
-        // Add custom icons path to GTK icon theme search path
+
         const iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
         const iconsPath = GLib.build_filenamev([this.path, 'icons']);
         iconTheme.add_search_path(iconsPath);
 
-        // Custom CSS for the version pill
+
         const cssProvider = new Gtk.CssProvider();
         cssProvider.load_from_path(GLib.build_filenamev([this.path, 'css', 'prefs.css']));
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), cssProvider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
 
-        //
-        // About Page (First Page)
-        //
+
+
+
         const aboutPage = new Adw.PreferencesPage({
             title: _('About'),
             icon_name: 'help-about-symbolic',
         });
         window.add(aboutPage);
 
-        // Header group with centered logo, title, author, and version
+
         const headerGroup = new Adw.PreferencesGroup();
         const headerBox = new Gtk.Box({
             orientation: Gtk.Orientation.VERTICAL,
@@ -148,7 +148,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
             halign: Gtk.Align.CENTER,
         });
 
-        // Logo centered — Gtk.Picture scales with the window (matches kiwi-menu)
+
         headerBox.append(new Gtk.Picture({
             file: Gio.File.new_for_path(`${this.path}/icons/kiwi_logo.png`),
             width_request: 128,
@@ -157,7 +157,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
             halign: Gtk.Align.CENTER,
         }));
 
-        // Title
+
         const titleLabel = new Gtk.Label({
             label: `<span size="xx-large" weight="bold">${GLib.markup_escape_text(extensionTitle, -1)}</span>`,
             use_markup: true,
@@ -165,15 +165,15 @@ export default class KiwiPreferences extends ExtensionPreferences {
         });
         headerBox.append(titleLabel);
 
-        // Author
+
         const authorLabel = new Gtk.Label({
             label: 'Arnis Kemlers (kem-a)',
             halign: Gtk.Align.CENTER,
         });
         headerBox.append(authorLabel);
 
-        // Version pill
-        // EGO adds the numeric version on upload; local installs only have version-name
+
+
         const versionName = this.metadata['version-name'];
         const version = this.metadata.version;
         const versionButton = new Gtk.Button({
@@ -192,8 +192,8 @@ export default class KiwiPreferences extends ExtensionPreferences {
         headerGroup.add(headerBox);
         aboutPage.add(headerGroup);
 
-        // Content group with two columns: links (left) and QR + coffee (right)
-        // Uses a horizontal Box that flips to vertical via Adw.Breakpoint when narrow.
+
+
         const contentGroup = new Adw.PreferencesGroup();
         const contentBox = new Gtk.Box({
             orientation: Gtk.Orientation.HORIZONTAL,
@@ -206,7 +206,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
             homogeneous: true,
         });
 
-        // Left column: link groups styled with ActionRows
+
         const leftColumn = new Gtk.Box({
             orientation: Gtk.Orientation.VERTICAL,
             spacing: 12,
@@ -214,7 +214,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
             halign: Gtk.Align.FILL,
         });
 
-        // Separate cards: Website and Report an Issue
+
         const websiteCard = new Adw.PreferencesGroup();
         websiteCard.add(this._createLinkRow(_('Website'), 'https://github.com/kem-a/kiwi-kemma'));
         leftColumn.append(websiteCard);
@@ -223,7 +223,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         issueCard.add(this._createLinkRow(_('Report an Issue'), 'https://github.com/kem-a/kiwi-kemma/issues'));
         leftColumn.append(issueCard);
 
-        // Combined Credits & Legal group
+
         const infoGroup = new Adw.PreferencesGroup();
         infoGroup.add(this._createLinkRow(_('Credits'), 'https://github.com/kem-a/kiwi-kemma/graphs/contributors'));
 
@@ -233,7 +233,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         });
         legalRow.add_suffix(new Gtk.Image({ icon_name: 'go-next-symbolic' }));
         legalRow.connect('activated', () => {
-            // Create a dialog with slide-up presentation
+
             const legalDialog = new Adw.Dialog({
                 content_width: 420,
                 content_height: 560,
@@ -276,7 +276,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
             legalToolbar.set_content(scroller);
             legalDialog.set_child(legalToolbar);
 
-            // Present the dialog
+
             legalDialog.present(window);
         });
         infoGroup.add(legalRow);
@@ -285,7 +285,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
 
         contentBox.append(leftColumn);
 
-        // Right column: QR + coffee button
+
         const rightColumn = new Gtk.Box({
             orientation: Gtk.Orientation.VERTICAL,
             spacing: 12,
@@ -295,7 +295,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
             hexpand: true,
         });
 
-        // QR code button linking to Ko-fi
+
         const qrButton = new Gtk.Button({
             halign: Gtk.Align.CENTER,
             tooltip_text: 'Ko-fi',
@@ -347,7 +347,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         contentGroup.add(contentBox);
         aboutPage.add(contentGroup);
 
-        // Responsive breakpoint: stack columns vertically when window is narrow.
+
         const aboutBreakpoint = new Adw.Breakpoint({
             condition: Adw.BreakpointCondition.parse('max-width: 500sp'),
         });
@@ -356,9 +356,9 @@ export default class KiwiPreferences extends ExtensionPreferences {
         aboutBreakpoint.add_setter(rightColumn, 'margin-top', 0);
         window.add_breakpoint(aboutBreakpoint);
 
-        //
-        // Panel Page
-        //
+
+
+
         const panelPage = new Adw.PreferencesPage({
             title: _('Panel'),
             icon_name: 'focus-top-bar-symbolic',
@@ -371,7 +371,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         });
         panelPage.add(transparencyGroup);
 
-        // Panel transparency expander with sub-options
+
         const transparencyHasNonDefault =
             settings.get_int('panel-transparency-level') !== 50 ||
             settings.get_boolean('panel-opaque-on-window') ||
@@ -385,7 +385,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
             show_enable_switch: true,
         });
 
-        // Transparency level spinbox
+
         const transparencySpinRow = new Adw.SpinRow({
             title: _("Transparency Level"),
             subtitle: _("Set panel transparency (0-100)"),
@@ -400,7 +400,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         });
         transparencyExpander.add_row(transparencySpinRow);
 
-        // Opaque on maximized window switch
+
         const opaqueOnWindowSwitch = new Adw.SwitchRow({
             title: _("Opaque When Window Maximized"),
             subtitle: _("Make panel opaque when a maximized window touches it"),
@@ -409,7 +409,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         });
         transparencyExpander.add_row(opaqueOnWindowSwitch);
 
-        // Panel blur
+
         const panelBlurRow = new Adw.SwitchRow({
             title: _("Panel Blur"),
             subtitle: _("Blur the background behind the panel"),
@@ -418,7 +418,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         });
         transparencyExpander.add_row(panelBlurRow);
 
-        // Panel color inherit fix
+
         const panelColorFixRow = new Adw.SwitchRow({
             title: _("Panel Color Fix"),
             subtitle: _("Fix white panel on some themes (e.g., Ubuntu Yaru)"),
@@ -426,7 +426,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         });
         transparencyExpander.add_row(panelColorFixRow);
 
-        // Tray icon inversion for light wallpapers
+
         const invertTrayIconsRow = new Adw.SwitchRow({
             title: _("Invert Tray Icons on Light Wallpapers"),
             subtitle: _("Darken white monochrome tray icons when the panel adapts to a light wallpaper. Colored icons are left untouched"),
@@ -437,11 +437,11 @@ export default class KiwiPreferences extends ExtensionPreferences {
 
         transparencyGroup.add(transparencyExpander);
 
-        // Bindings for expander
+
         settings.bind('panel-transparency', transparencyExpander, 'enable-expansion',
             Gio.SettingsBindFlags.DEFAULT);
 
-        // Bindings for sub-options
+
         settings.bind('panel-transparency-level', transparencySpinRow, 'value',
             Gio.SettingsBindFlags.DEFAULT);
         settings.bind('panel-transparency', transparencySpinRow, 'sensitive',
@@ -471,8 +471,8 @@ export default class KiwiPreferences extends ExtensionPreferences {
             { key: 'panel-hover-fullscreen', title: _("Show Panel in Fullscreen on Hover"), subtitle: _("Show panel when mouse is near top edge in fullscreen. Bugged for GTK4 apps.") },
         ]);
 
-        // Tiling lives under the window title because the layouts are reached from its
-        // menu; without the title in the panel there is no way to open them.
+
+
         const windowTitleExpander = new Adw.ExpanderRow({
             title: _("Show Window Title"),
             subtitle: _("Display current window title in the top panel"),
@@ -482,7 +482,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         settings.bind('show-window-title', windowTitleExpander, 'enable-expansion',
             Gio.SettingsBindFlags.DEFAULT);
 
-        // The sub-options are stored as positive keys, so their rows invert them.
+
         const titleIconRow = new Adw.SwitchRow({
             title: _("Hide App Icon"),
             subtitle: _("Do not show the application icon next to the window title"),
@@ -507,7 +507,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         settings.bind('show-tiling-title-menu', tilingTitleMenuRow, 'active',
             Gio.SettingsBindFlags.DEFAULT | Gio.SettingsBindFlags.INVERT_BOOLEAN);
 
-        // Keep the expander closed while all sub-options sit at their default (off) state.
+
         const syncWindowTitleExpansion = () => {
             const titleEnabled = settings.get_boolean('show-window-title');
             const hasSubOption = !settings.get_boolean('show-window-title-icon') ||
@@ -522,7 +522,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         settings.connect('changed::show-window-subtitle', syncWindowTitleExpansion);
         settings.connect('changed::show-tiling-title-menu', syncWindowTitleExpansion);
 
-        // Expander with notification indicator style sub-option
+
         const calendarHasNonDefault =
             settings.get_boolean('keep-notification-panel') ||
             settings.get_string('notification-indicator-style') !== 'default';
@@ -554,7 +554,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         calendarExpander.add_row(indicatorStyleRow);
         calendarExpander.add_row(keepPanelRow);
 
-        // Battery percentage synchronized with GNOME Settings (org.gnome.desktop.interface show-battery-percentage)
+
         const interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
         window._kiwiInterfaceSettings = interfaceSettings;
 
@@ -594,7 +594,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
             { key: 'popup-menu-styling', title: _("Menu and App Styling"), subtitle: _("Narrower shell menu items with accent-colored hover and selection, plus the GTK app fixes") },
         ]);
 
-        // Keyboard indicator feature with sub-options
+
         const kbHasNonDefault = settings.get_boolean('hide-keyboard-indicator');
         const kbExpander = new Adw.ExpanderRow({
             title: _("Style Keyboard Indicator"),
@@ -603,7 +603,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
             show_enable_switch: true,
         });
 
-        // We need individual child rows for toggles
+
         const hideRow = new Adw.SwitchRow({
             title: _("Hide keyboard indicator"),
             subtitle: _("Completely hide the indicator from the panel"),
@@ -616,7 +616,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         settings.bind('keyboard-indicator', kbExpander, 'enable-expansion',
             Gio.SettingsBindFlags.DEFAULT);
 
-        // Sub-options
+
         settings.bind('hide-keyboard-indicator', hideRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         settings.bind('keyboard-indicator', hideRow, 'sensitive', Gio.SettingsBindFlags.GET);
 
@@ -630,18 +630,18 @@ export default class KiwiPreferences extends ExtensionPreferences {
         settings.connect('changed::keyboard-indicator', syncKeyboardIndicatorExpansion);
         settings.connect('changed::hide-keyboard-indicator', syncKeyboardIndicatorExpansion);
 
-        //
-        // Dock Page
-        //
+
+
+
         const dockPage = new Adw.PreferencesPage({
             title: _('Dock'),
             icon_name: 'kiwi-dock-symbolic',
         });
         window.add(dockPage);
 
-        // Everything here but the Launchpad app hangs off Dash-to-Dock, and does
-        // nothing at all while it is not there. Those rows are held shut rather
-        // than left looking as though they still do something.
+
+
+
         const dockBanner = new Adw.Banner({
             title: _("These options need the Dash to Dock extension installed and enabled"),
         });
@@ -677,7 +677,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         downloadsExpander.add_row(downloadsBehindRow);
         settings.bind('downloads-behind-folder', downloadsBehindRow, 'active', Gio.SettingsBindFlags.DEFAULT);
 
-        // Nothing to show once the only sub-option is off, so keep the expander closed.
+
         const syncDownloadsExpansion = () => {
             downloadsExpander.expanded = settings.get_boolean('downloads-in-dock') &&
                 settings.get_boolean('downloads-behind-folder');
@@ -687,7 +687,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         settings.connect('changed::downloads-in-dock', syncDownloadsExpansion);
         settings.connect('changed::downloads-behind-folder', syncDownloadsExpansion);
 
-        // Launchpad Application with custom icon option
+
         const launchpadHasNonDefault = settings.get_string('launchpad-app-custom-icon') !== '';
         const launchpadExpander = new Adw.ExpanderRow({
             title: _("Launchpad Application"),
@@ -754,7 +754,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
                         return;
                     }
 
-                    // Validate PNG dimensions
+
                     if (lowerPath.endsWith('.png')) {
                         try {
                             const pixbuf = GdkPixbuf.Pixbuf.new_from_file(filePath);
@@ -775,7 +775,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
 
                     settings.set_string('launchpad-app-custom-icon', filePath);
                 } catch (e) {
-                    // User cancelled the dialog
+
                 }
             });
         });
@@ -804,7 +804,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
             { key: 'dock-adaptive-colors', title: _("Adaptive Dock Colors"), subtitle: _("Flip the running indicators and separators to suit whatever is behind the dock, wallpaper or window") },
         ]));
 
-        // The dock can be installed or turned on while this window is open
+
         const syncDockRows = () => this._withDockActive((active) => {
             dockBanner.revealed = !active;
             dockRows.forEach(row => (row.sensitive = active));
@@ -820,9 +820,9 @@ export default class KiwiPreferences extends ExtensionPreferences {
             });
         window.connect('close-request', () => Gio.DBus.session.signal_unsubscribe(dockStateId));
 
-        //
-        // Window Controls Page
-        //
+
+
+
         const windowControlsPage = new Adw.PreferencesPage({
             title: _('Buttons'),
             icon_name: 'kiwi-buttons-symbolic',
@@ -835,9 +835,9 @@ export default class KiwiPreferences extends ExtensionPreferences {
         });
         windowControlsPage.add(buttonTypeGroup);
 
-        // Main toggle as an expander with sub-options. The button type and size
-        // pickers are the point of this page, so the expander stays open for as
-        // long as the feature is on, whatever the sub-options are set to.
+
+
+
         const buttonsExpander = new Adw.ExpanderRow({
             title: _("Enable macW1Y Window Buttons"),
             subtitle: _("Replace window control buttons in application windows with macW1Y style"),
@@ -879,7 +879,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         );
         buttonsExpander.add_row(buttonSizeRow);
 
-        // Firefox styling switch
+
         const firefoxStylingSwitch = new Adw.SwitchRow({
             title: _("Firefox Styling"),
             subtitle: _("Apply macW1Y window control styling for Firefox. Recommended to use with vertical tabs."),
@@ -888,7 +888,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         buttonsExpander.add_row(firefoxStylingSwitch);
         settings.bind('enable-firefox-styling', firefoxStylingSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
 
-        // Thunderbird styling switch
+
         const thunderbirdStylingSwitch = new Adw.SwitchRow({
             title: _("Thunderbird Styling"),
             subtitle: _("Apply macW1Y window control styling for Thunderbird."),
@@ -896,9 +896,9 @@ export default class KiwiPreferences extends ExtensionPreferences {
         });
         buttonsExpander.add_row(thunderbirdStylingSwitch);
         settings.bind('enable-thunderbird-styling', thunderbirdStylingSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
-        // No need to manage visibility; expander controls reveal
 
-        // When the main switch is turned off, also turn off Firefox styling
+
+
         settings.connect('changed::enable-app-window-buttons', () => {
             const enabled = settings.get_boolean('enable-app-window-buttons');
             if (!enabled) {
@@ -909,7 +909,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
             }
         });
 
-        // Panel window controls with "Only when Fullscreen" sub-option
+
         const panelControlsGroup = new Adw.PreferencesGroup();
         windowControlsPage.add(panelControlsGroup);
 
@@ -936,9 +936,9 @@ export default class KiwiPreferences extends ExtensionPreferences {
         controlsExpander.add_row(fullscreenOnlyRow);
         settings.bind('show-window-controls-fullscreen-only', fullscreenOnlyRow, 'active', Gio.SettingsBindFlags.DEFAULT);
 
-        //
-        // Options Page
-        //
+
+
+
         const settingsPage = new Adw.PreferencesPage({
             title: _('Options'),
             icon_name: 'preferences-other-symbolic',
@@ -963,16 +963,16 @@ export default class KiwiPreferences extends ExtensionPreferences {
             { key: 'transparent-move', title: _("Transparent Move"), subtitle: _("Move window with transparency") },
         ]);
 
-        //
-        // Advanced Page
-        //
+
+
+
         const advancedPage = new Adw.PreferencesPage({
             title: _('Advanced'),
             icon_name: 'applications-utilities-symbolic',
         });
         window.add(advancedPage);
 
-        // Advanced Page Content
+
         const advancedGroup = new Adw.PreferencesGroup();
         advancedPage.add(advancedGroup);
 
@@ -985,7 +985,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
             margin_end: 15,
         });
 
-        // Warning icon and title
+
         const warningHeaderBox = new Gtk.Box({
             orientation: Gtk.Orientation.HORIZONTAL,
             spacing: 10,
@@ -1008,7 +1008,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
 
         advancedInfoBox.append(warningHeaderBox);
 
-        // Explanation text
+
         const explanationLabel = new Gtk.Label({
             label: _('The titlebuttons hover module provides macW1Y-like hover effects for window controls in GTK3 applications. GTK3 apps cannot natively show hover effects on all three window controls simultaneously, requiring this custom library to achieve the desired behavior.\n\nThis binary code cannot be distributed through the GNOME Extensions platform due to security policies regarding native libraries, but manual installation is possible.'),
             wrap: true,
@@ -1018,8 +1018,8 @@ export default class KiwiPreferences extends ExtensionPreferences {
         advancedInfoBox.append(explanationLabel);
         advancedGroup.add(advancedInfoBox);
 
-        // Installation instructions
-        // Link row in libadwaita style (like GTK4 "Website" row)
+
+
         const githubGicon = new Gio.FileIcon({
             file: Gio.File.new_for_path(`${this.path}/icons/github-symbolic.svg`),
         });
@@ -1062,7 +1062,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         const recommendedExtensions = [
             { title: 'Dash to Dock', author: 'michele_g', url: 'https://extensions.gnome.org/extension/307/' },
             { title: 'Superbar', author: 'Furkan-rgb', url: 'https://github.com/Furkan-rgb/superbar' },
-            { title: 'Compiz alike magic lamp effect', author: 'hermes83', url: 'https://extensions.gnome.org/extension/3740/' }, 
+            { title: 'Compiz alike magic lamp effect', author: 'hermes83', url: 'https://extensions.gnome.org/extension/3740/' },
             { title: 'AppIndicator Support', author: '3v1n0', url: 'https://extensions.gnome.org/extension/615/' },
             { title: 'Blur My Shell', author: 'aunetx', url: 'https://github.com/aunetx/blur-my-shell' },
             { title: 'Light Style', author: 'fmuellner', url: 'https://extensions.gnome.org/extension/6198/' },

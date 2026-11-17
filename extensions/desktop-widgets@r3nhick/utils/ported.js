@@ -4,12 +4,12 @@ import GLib from 'gi://GLib';
 
 import { warn } from '../logger.js';
 
-/**
- * Helpers ported from the upstream Widgets project, kept here so widget
- * modules can share them: per-extension data dir + JSON persistence
- * (loadJsonFromFileAsync / saveJsonToFile), actor-death checks, and CSS
- * color parsing used to recolor rendered content to the theme.
- */
+
+
+
+
+
+
 const DATA_DIR_NAME = 'desktop-widgets@r3nhick';
 const ensuredDirectories = new Set();
 
@@ -82,9 +82,9 @@ function encodeJson(data) {
 	return new TextEncoder().encode(JSON.stringify(data, null, 2));
 }
 
-// Synchronous counterpart for tiny per-widget files: a render that must
-// *start* on the saved page (system monitor swipe position) can't afford
-// the one-frame default-page flip the async loader lets through.
+
+
+
 export function loadJsonFromFileSync(filePath) {
 	try {
 		const [, bytes] = Gio.File.new_for_path(filePath).load_contents(null);
@@ -108,9 +108,9 @@ function ensureParent(filePath) {
 	}
 }
 
-// Per-file write queues: while an async write is in flight, later saves
-// coalesce into a single follow-up with the latest payload, so writes stay
-// ordered (last write wins) and the main loop never blocks on disk I/O.
+
+
+
 const writeQueues = new Map();
 
 function flushWriteQueue(filePath) {

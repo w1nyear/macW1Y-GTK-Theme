@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Shows the focused window's title in the panel with an optional app menu.
+
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -18,22 +18,22 @@ import { createTileGrid, canTile, canRestore, restoreAllWindows, toggleFullscree
 let indicator = null;
 let _extension = null;
 
-const ACCEL_OPACITY = 110; // 0-255. CSS opacity is not applied here; set it on the actor.
+const ACCEL_OPACITY = 110;
 
-// GNOME 51 replaced PopupMenu.close()'s PopupAnimation bitmask with a parameters
-// object. The bitmask has no object spelling for the animation used up to 50, so
-// 51 gets the closest one: the same slide, with a fade added.
+
+
+
 const MENU_CLOSE_ARGS = parseInt(Config.PACKAGE_VERSION) >= 51
     ? { animate: true } : true;
 
-// Kiwi's own entries in the app menu, in the order they are added.
+
 const KIWI_MENU_ITEMS = [
     '_tilingMenuItem', '_tilingSeparator', '_fullscreenMenuItem',
     '_restoreMenuItem', '_alwaysOnTopMenuItem', '_restoreSeparator',
 ];
 
-// 'F11' -> 'F11', '<Super>Up' -> 'Super+Up'. GTK's accelerator_get_label is not available
-// in the shell process, and only modifier names need rewriting for our purposes.
+
+
 function formatAccel(accel) {
     return accel
         .replace(/<Super>/g, 'Super+')
@@ -42,8 +42,8 @@ function formatAccel(accel) {
         .replace(/<Alt>/g, 'Alt+');
 }
 
-// Show the accelerator on the right of a menu item, dimmed, the way GNOME does.
-// Guarded because the AppMenu's own items outlive a single menu open.
+
+
 function addAccelLabel(item, accel) {
     if (!item || !accel || item._kiwiAccelAdded)
         return;
@@ -60,8 +60,8 @@ function addAccelLabel(item, accel) {
     item.add_child(label);
 }
 
-// The pointer lands on a child of an overview preview (the clone, the icon, the
-// caption), so walk up until an ancestor names the window it stands for.
+
+
 function windowForActor(actor) {
     for (let a = actor; a; a = a.get_parent()) {
         if (a.metaWindow)
@@ -86,7 +86,7 @@ class WindowTitleIndicator extends PanelMenu.Button {
         Main.panel.menuManager.addMenu(this._menu);
 
         this._box = new St.BoxLayout({style_class: 'panel-button'});
-        
+
         this._icon = new St.Icon({
             style_class: 'app-menu-icon kiwi-window-title-icon',
             icon_size: 16,
@@ -111,8 +111,8 @@ class WindowTitleIndicator extends PanelMenu.Button {
 
         this._overviewShowingId = Main.overview.connect('showing',
             () => this._startHoverTracking());
-        // Stop on 'hiding' rather than 'hidden': once the previews are gone the
-        // pointer would resolve to the real window actors underneath.
+
+
         this._overviewHidingId = Main.overview.connect('hiding', () => {
             this._stopHoverTracking();
             this._setHoverWindow(null);
@@ -135,9 +135,9 @@ class WindowTitleIndicator extends PanelMenu.Button {
             () => this._onOverviewHidden());
     }
 
-    // Nothing exposes which overview preview is under the pointer, so watch the
-    // stage in the capture phase and resolve the actor the event landed on.
-    // Window previews and workspace thumbnail clones both carry their window.
+
+
+
     _startHoverTracking() {
         if (this._stageEventId)
             return;
@@ -168,9 +168,9 @@ class WindowTitleIndicator extends PanelMenu.Button {
     _onFocusedWindowChanged() {
         let window = global.display.focus_window;
 
-        // The overview takes the input focus, leaving no focus window at all. Keep
-        // the last one instead of blanking the panel; 'hidden' re-syncs from the
-        // real focus once the overview is done.
+
+
+
         if (!window && (Main.overview.visible || (this.menu && this.menu.isOpen)))
             return;
 
@@ -181,7 +181,7 @@ class WindowTitleIndicator extends PanelMenu.Button {
 
         if (window) {
             this._focusWindow = window;
-            this._titleSignal = window.connect('notify::title', 
+            this._titleSignal = window.connect('notify::title',
                 this._updateWindowTitle.bind(this));
             this._updateWindowTitle();
             this.show();
@@ -190,9 +190,9 @@ class WindowTitleIndicator extends PanelMenu.Button {
         }
     }
 
-    // The overview only drops its grab after 'hidden' is emitted, so the display
-    // still has no focus window at that point and reading it here would blank the
-    // panel until the next focus change. Let the focus land first.
+
+
+
     _onOverviewHidden() {
         if (this._focusSyncIdleId)
             GLib.Source.remove(this._focusSyncIdleId);
@@ -204,20 +204,20 @@ class WindowTitleIndicator extends PanelMenu.Button {
         });
     }
 
-    // A hovered overview preview wins over the focused window.
+
     _updateWindowTitle() {
         const titleWindow = this._hoverWindow ?? this._focusWindow;
         if (!titleWindow) return;
 
         let windowTitle = titleWindow.get_title();
 
-        // Handle null window title
+
         if (!windowTitle) {
             this._clearDisplay();
             return;
         }
 
-        // Exclude window titles that start with "com." or "gjs"
+
         const normalizedTitle = windowTitle.trim().toLowerCase();
         if (normalizedTitle.startsWith('com.') || normalizedTitle.startsWith('gjs') || normalizedTitle.includes('@!0,0')) {
             this._clearDisplay();
@@ -255,8 +255,8 @@ class WindowTitleIndicator extends PanelMenu.Button {
         this._queueMenuAlignment();
     }
 
-    // The menu can only be aligned once it has a width, which it gets after the
-    // layout pass that follows the title or the menu contents changing.
+
+
     _queueMenuAlignment() {
         if (this._syncMenuIdleId)
             GLib.Source.remove(this._syncMenuIdleId);
@@ -268,10 +268,10 @@ class WindowTitleIndicator extends PanelMenu.Button {
         });
     }
 
-    // AppMenu hides its built-in New Window item when the app's desktop file declares a
-    // new-window action, because that action is then listed in _actionSection instead
-    // (appMenu.js _updateNewWindowItem). Nautilus and Text Editor both do this, so the
-    // real item has to be looked up rather than assumed.
+
+
+
+
     _newWindowItem() {
         const menu = this._menu;
         if (menu._newWindowItem && menu._newWindowItem.visible)
@@ -281,25 +281,25 @@ class WindowTitleIndicator extends PanelMenu.Button {
         if (!appInfo || !appInfo.list_actions().includes('new-window'))
             return null;
 
-        // Match on the action's own name so this works in any locale.
+
         const name = appInfo.get_action_name('new-window');
         return menu._actionSection._getMenuItems()
             .find(item => item.label && item.label.text === name) || null;
     }
 
-    // Ctrl+Q and Ctrl+N are application conventions rather than WM keybindings, so unlike
-    // toggle-fullscreen there is nothing to read them from; they are the near universal
-    // defaults for GTK apps. Re-checked on every open because _actionSection items are
-    // destroyed and rebuilt whenever the focused app changes; addAccelLabel is idempotent.
+
+
+
+
     _updateAppMenuAccels() {
         addAccelLabel(this._menu._quitItem, '<Control>Q');
         addAccelLabel(this._newWindowItem(), '<Control>N');
     }
 
-    // Kiwi's items sit at the top of the menu, ahead of the app's own entries:
-    //   tiling grid | separator | Fullscreen | Restore Window | Always on Top | separator | New Window ...
-    // Rebuilt on every open so the tiles and the sensitivity of Restore reflect the current
-    // state. The running counter keeps the order right when the grid is absent.
+
+
+
+
     _updateKiwiMenuItems() {
         this._destroyKiwiMenuItems();
 
@@ -314,7 +314,7 @@ class WindowTitleIndicator extends PanelMenu.Button {
             const grid = createTileGrid(this._gettext, () => this._menu.close());
             grid.sync(win);
 
-            // A non-reactive row so the grid does not fight the menu's own hover highlight.
+
             this._tilingMenuItem = new PopupMenu.PopupBaseMenuItem({
                 reactive: false,
                 can_focus: false,
@@ -327,14 +327,14 @@ class WindowTitleIndicator extends PanelMenu.Button {
             this._menu.addMenuItem(this._tilingSeparator, position++);
         }
 
-        // Fullscreen owns the fullscreen state, so Restore only deals with tiled and
-        // maximized windows.
+
+
         const isFullscreen = win.is_fullscreen();
         this._fullscreenMenuItem = new PopupMenu.PopupMenuItem(
             isFullscreen ? _('Leave Fullscreen') : _('Fullscreen'));
         this._fullscreenMenuItem.connect('activate', () => toggleFullscreen(win));
-        // Our entry does exactly what Mutter's toggle-fullscreen binding does, so show
-        // whatever the user actually has bound rather than assuming F11.
+
+
         addAccelLabel(this._fullscreenMenuItem,
             this._wmKeybindings.get_strv('toggle-fullscreen')[0]);
         this._menu.addMenuItem(this._fullscreenMenuItem, position++);
@@ -346,8 +346,8 @@ class WindowTitleIndicator extends PanelMenu.Button {
         this._menu.addMenuItem(this._restoreMenuItem, position++);
 
         this._alwaysOnTopMenuItem = new PopupMenu.PopupMenuItem(_('Always on Top'));
-        // A check on the right rather than an ornament: the ornament indents the label and
-        // leaves this entry out of line with the rest of the menu.
+
+
         if (win.is_above()) {
             this._alwaysOnTopMenuItem.label.x_expand = true;
             this._alwaysOnTopMenuItem.add_child(new St.Icon({
@@ -366,7 +366,7 @@ class WindowTitleIndicator extends PanelMenu.Button {
             this._wmKeybindings.get_strv('toggle-above')[0]);
         this._menu.addMenuItem(this._alwaysOnTopMenuItem, position++);
 
-        // Untitled, so GNOME collapses it against the app menu's own next separator.
+
         this._restoreSeparator = new PopupMenu.PopupSeparatorMenuItem();
         this._menu.addMenuItem(this._restoreSeparator, position++);
     }
@@ -378,9 +378,9 @@ class WindowTitleIndicator extends PanelMenu.Button {
         }
     }
 
-    // Never touch this.reactive here: hide() already blocks input, and every
-    // reactive change re-syncs St's hover state from an enter/leave count that
-    // an actor hidden under the pointer leaves stuck, latching the hover pill on.
+
+
+
     _clearDisplay(resetMenu = true) {
         this._label.text = '';
         this._icon.gicon = null;

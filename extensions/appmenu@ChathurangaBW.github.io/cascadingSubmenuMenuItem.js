@@ -1,7 +1,7 @@
-/*
- * cascadingSubmenuMenuItem.js - macW1Y-style flyout cascading submenu for the AppMenu menubar.
- * Submenus appear to the right (St.Side.RIGHT) as a new context menu, rather than expanding inline.
- */
+
+
+
+
 
 import GObject from 'gi://GObject';
 import St from 'gi://St';
@@ -36,7 +36,7 @@ export const CascadingSubmenuMenuItem = GObject.registerClass(
             this._menuManager = menuManager ?? null;
             this._managerRegistered = false;
 
-            // State
+
             this.menu = null;
             this._menuHoverActor = null;
             this._hoverCloseTimeoutId = 0;
@@ -50,7 +50,7 @@ export const CascadingSubmenuMenuItem = GObject.registerClass(
             this._pointerEntered = false;
             this._outsideTicks = 0;
 
-            // Build UI
+
             this._label = new St.Label({
                 text: title || '',
                 x_expand: true,
@@ -66,7 +66,7 @@ export const CascadingSubmenuMenuItem = GObject.registerClass(
             });
             this.add_child(this._arrowIcon);
 
-            // Create flyout menu
+
             this._setupSubmenu();
             this._connectEvents();
         }
@@ -96,7 +96,7 @@ export const CascadingSubmenuMenuItem = GObject.registerClass(
             Main.layoutManager.addTopChrome(this.menu.actor);
             this._chromeAdded = true;
 
-            // Only register top-level submenus in the manager to avoid auto-closing nested menus
+
             if (!this._managerRegistered && this._menuManager && !this._parentMenu?._parentMenu) {
                 this._menuManager.addMenu(this.menu);
                 this._managerRegistered = true;

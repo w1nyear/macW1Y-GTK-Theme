@@ -100,7 +100,7 @@ vec3 get_blend(vec3 base, vec3 _blend) {
         vec3 blend_hsl = rgb_to_hsl(_blend);
         return hsl_to_rgb(vec3(base_hsl.x, base_hsl.y, blend_hsl.z));
     }
-    return _blend; // For NORMAL
+    return _blend;
 }
 
 void main() {

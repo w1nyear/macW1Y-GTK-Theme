@@ -1,5 +1,5 @@
-// Heavily based on https://github.com/yilozt/rounded-window-corners
-// Enhanced with exact branchless SDF and subpixel antialiasing for macW1Y
+
+
 
 uniform sampler2D tex;
 uniform float radius;
@@ -14,9 +14,9 @@ uniform float clip_y0;
 uniform float clip_width;
 uniform float clip_height;
 
-// Signed Distance Function for a 2D rounded rectangle
-// Mathematically exact, branchless C1 continuity across both straight edges and corner arcs.
-// Prevents GPU 2x2 fragment quad derivative divergence (fwidth) that causes horizontal slits.
+
+
+
 float sdRoundRect(vec2 p, vec2 center, vec2 half_size, float r_top, float r_bottom) {
     vec2 local_p = p - center;
     float r = (local_p.y < 0.0) ? r_top : r_bottom;
@@ -43,7 +43,7 @@ void main(void) {
     vec2 half_size = vec2(bounds.z - bounds.x, bounds.w - bounds.y) * 0.5;
     vec2 center = vec2(bounds.x + bounds.z, bounds.y + bounds.w) * 0.5;
 
-    // Safety clamp
+
     half_size = max(half_size, vec2(1.0));
     float max_r = min(half_size.x, half_size.y);
     float r_val = (straight_corners != 0) ? 0.0 : clamp(radius, 0.0, max_r);
@@ -52,7 +52,7 @@ void main(void) {
 
     float dist = sdRoundRect(pos, center, half_size, r_top, r_bottom);
 
-    // Adaptive subpixel antialiasing
+
     float fw = max(fwidth(dist), 1.0);
     float alpha = 1.0 - smoothstep(-0.5 * fw, 0.5 * fw, dist);
 

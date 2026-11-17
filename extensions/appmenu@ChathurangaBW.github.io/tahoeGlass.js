@@ -1,6 +1,6 @@
-// tahoeGlass.js — macW1Y Tahoe Refractive Liquid Glass engine integration
-// Based on GNOME-Tahoe-main liquid-glass and spotlight@nin engine.
-// Provides live refractive liquid glass with window+wallpaper cloning and mutual exclusion.
+
+
+
 
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
@@ -130,7 +130,7 @@ export class TahoeGlass {
         this._liquidBox.set_clip_to_allocation(true);
         this._bgActor.add_child(this._liquidBox);
 
-        // 1px guard against black-screen bug
+
         const dummy = new UnpickableActor();
         dummy.set_size(1, 1);
         dummy.set_opacity(0);
@@ -201,7 +201,7 @@ export class TahoeGlass {
             this._uiSampler?.rebindSelf?.();
         } catch (_) {}
 
-        // Mutual exclusions with other liquid-glass sheets
+
         try {
             for (const child of Main.layoutManager.uiGroup.get_children()) {
                 if (child === this._bgActor) continue;
@@ -237,12 +237,12 @@ export class TahoeGlass {
                     .add(Meta.LaterType.BEFORE_REDRAW, tick);
                 return GLib.SOURCE_REMOVE;
             }
-            // [GPU-SAVE] Дешевими щотіка лишаються: rescue аллокації та
-            // геометрія (треба, щоб скло «клейлося» до своєї цілі під час твенів).
-            // Дорожня частина (семпли UI + клони вікон + capture-clip) виконується
-            // ТІЛЬКИ коли фон дійсно змінився (будьяка зміна вікон/вмісту/скла),
-            // з жорсткою межею 60 FPS. В спокої — нуль GPU-роботи; пульс 1 Гц
-            // братній догнає будь-який застряглий стан.
+
+
+
+
+
+
             try {
                 this._utils.ensureGlassAllocated?.(this._bgActor);
             } catch (_) {}
@@ -329,9 +329,9 @@ export class TahoeGlass {
 
         if (key !== this._last) {
             this._last = key;
-            // [GPU-SAVE] bump версії geometry: glassRefreshDue() бачить extras,
-            // тож capture-clip / cull rect синхронізуються миттєво при зміні
-            // положення/розміру цільової поверхі скла.
+
+
+
             this._geoVersion = ((this._geoVersion || 0) + 1) >>> 0;
             this._bgActor.set_position(this._monX, this._monY);
             this._bgActor.set_size(this._monW, this._monH);
@@ -380,7 +380,7 @@ export class TahoeGlass {
             this._startTick();
             this._syncGeometry();
             this._bgActor?.show();
-            // [GPU-SAVE] наступний тік мусить дати повний рефреш одразу.
+
             this._utils?.glassForceRefresh?.(this._bgActor);
         } catch (_) {}
     }

@@ -1,18 +1,18 @@
-// This file is part of the AppIndicator/KStatusNotifierItem GNOME Shell extension
-//
-// This program is free software; you can redistribute it and/or
+
+
+
 // modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
+
 // of the License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+
+
+
+
 // GNU General Public License for more details.
-//
+
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -193,7 +193,7 @@ class IndicatorBaseStatusIcon extends PanelMenu.Button {
     static get DEFAULT_STYLE() {
         const settings = SettingsManager.getDefaultGSettings();
         if (!settings.get_boolean('compact-mode-enabled'))
-            return null; // drop to default -natural-hpadding.
+            return null;
 
         return '-natural-hpadding: 7px; min-width: 30px';
     }
@@ -238,16 +238,16 @@ class IndicatorBaseStatusIcon extends PanelMenu.Button {
     }
 });
 
-/*
- * IndicatorStatusIcon implements an icon in the system status area
- */
+
+
+
 export const IndicatorStatusIcon = GObject.registerClass(
 class IndicatorStatusIcon extends BaseStatusIcon {
     _init(indicator) {
         super._init(0.5, indicator.accessibleName,
             new AppIndicator.IconActor(indicator, DEFAULT_ICON_SIZE));
 
-        // Disable upstream's click gesture and fall back to vfunc_button_press_event etc.
+
         // eslint-disable-next-line no-unused-expressions
         this._clickGesture?.set_enabled(false);
 
@@ -307,7 +307,7 @@ class IndicatorStatusIcon extends BaseStatusIcon {
             }
             this._label.set_text(label);
             if (!this._box.contains(this._labelBin))
-                Util.addActor(this._box, this._labelBin); // FIXME: why is it suddenly necessary?
+                Util.addActor(this._box, this._labelBin);
         } else if (this._label) {
             this._labelBin.destroy_all_children();
             Util.removeActor(this._box, this._labelBin);
@@ -408,7 +408,7 @@ class IndicatorStatusIcon extends BaseStatusIcon {
         if (this._waitDoubleClickPromise)
             this._waitDoubleClickPromise.cancel();
 
-        // if middle mouse button clicked send SecondaryActivate dbus event and do not show appindicator menu
+
         if (event.get_button() === Clutter.BUTTON_MIDDLE) {
             if (Main.panel.menuManager.activeMenu)
                 Main.panel.menuManager._closeMenu(true, Main.panel.menuManager.activeMenu);
@@ -432,10 +432,10 @@ class IndicatorStatusIcon extends BaseStatusIcon {
     }
 
     vfunc_scroll_event(event) {
-        // Since Clutter 1.10, clutter will always send a smooth scrolling event
-        // with explicit deltas, no matter what input device is used
-        // In fact, for every scroll there will be a smooth and non-smooth scroll
-        // event, and we can choose which one we interpret.
+
+
+
+
         if (event.get_scroll_direction() === Clutter.ScrollDirection.SMOOTH) {
             const [dx, dy] = event.get_scroll_delta();
 
@@ -526,7 +526,7 @@ class IndicatorTrayIcon extends BaseStatusIcon {
     }
 
     vfunc_touch_event(event) {
-        // Under X11 we rely on emulated pointer events
+
         if (!imports.gi.Meta.is_wayland_compositor())
             return Clutter.EVENT_PROPAGATE;
 

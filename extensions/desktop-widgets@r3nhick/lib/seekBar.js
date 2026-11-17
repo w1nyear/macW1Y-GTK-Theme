@@ -1,7 +1,7 @@
-// Port of the SeekBar from liquidglass-widgets (widgets/music.js): a reactive
-// drawing area that paints the seek bar and its time labels, animates its
-// thickness on hover (3 -> 8 px, ease-out-cubic), and lets the user drag to
-// seek with a stage grab. Positions are in microseconds, like MPRIS.
+
+
+
+
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
@@ -9,9 +9,9 @@ import Pango from 'gi://Pango';
 import PangoCairo from 'gi://PangoCairo';
 import St from 'gi://St';
 
-// Register once: GType registrations persist for the whole shell process, so a
-// re-import after disable/enable must reuse the existing class, and the
-// explicit GTypeName avoids a collision with liquidglass-widgets.
+
+
+
 const SEEK_BAR_KEY = 'DesktopWidgets_SeekBar_class';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -34,11 +34,11 @@ function roundedRect(cr, x, y, w, h, r) {
     cr.closePath();
 }
 
-// Real pixel line height of the painted time markup. The markup `size=` is in
-// POINTS (1/1024 pt), which renders ~1.33× larger in pixels at 96dpi — any
-// fixed 1.25× guess undersizes the widget and the drawing surface then shaves
-// the digits' bottoms. Probed once against the same font map/resolution the
-// shell paints with.
+
+
+
+
+
 function measureTimeHeight(fontSize) {
     try {
         const context = PangoCairo.FontMap.get_default().create_context();
@@ -58,22 +58,22 @@ export const SeekBar = (globalThis[SEEK_BAR_KEY] ??= GObject.registerClass({
             GObject.ParamFlags.READWRITE, 0, 100, 3),
     },
 }, class SeekBar extends St.DrawingArea {
-    /**
-     * @param {object} opts
-     * @param {[number, number, number]|null} opts.accent RGB 0..1 fill color
-     * @param {[number, number, number]|null} opts.fg     RGB 0..1 bar/text color
-     * @param {number} [opts.fontSize]
-     * @param {number} [opts.trackAlpha]  rgba alpha of the idle track (default 0.2)
-     * @param {number} [opts.disabledOpacity] actor opacity while not seekable (default 90)
-     * @param {function(number): void} [opts.onSeek] called on release with a 0..1 fraction
-     */
+
+
+
+
+
+
+
+
+
     _init({accent = null, fg = null, fontSize = 10, trackAlpha = 0.2, disabledOpacity = 90, onSeek = null} = {}) {
         super._init({reactive: true, track_hover: true, can_focus: false});
         this._thickness = 3;
         this._dragging = false;
-        this._dragPos = 0;   // µs while dragging
-        this._position = 0;  // current playback position (µs)
-        this._length = 0;    // track length (µs)
+        this._dragPos = 0;
+        this._position = 0;
+        this._length = 0;
         this._enabled = true;
         this._trackAlpha = trackAlpha;
         this._disabledOpacity = disabledOpacity;
@@ -97,8 +97,8 @@ export const SeekBar = (globalThis[SEEK_BAR_KEY] ??= GObject.registerClass({
         return this._thickness;
     }
 
-    // Real pixel height of the time labels painted below the bar; callers
-    // size the widget from this so the digits never run past the surface.
+
+
     get timeLabelHeight() {
         return this._timePixelH;
     }
@@ -109,7 +109,7 @@ export const SeekBar = (globalThis[SEEK_BAR_KEY] ??= GObject.registerClass({
         this.queue_repaint();
     }
 
-    // Playback state; queue a repaint so the bar follows every tick.
+
     setPosition(us) {
         const v = Math.max(0, Number(us) || 0);
         if (v !== this._position) {
@@ -127,7 +127,7 @@ export const SeekBar = (globalThis[SEEK_BAR_KEY] ??= GObject.registerClass({
         }
     }
 
-    // Dim/hide the bar when the player cannot seek.
+
     setEnabled(enabled) {
         this._enabled = Boolean(enabled);
         this.opacity = this._enabled ? 255 : this._disabledOpacity;
@@ -199,21 +199,21 @@ export const SeekBar = (globalThis[SEEK_BAR_KEY] ??= GObject.registerClass({
         const length = this._length;
         const position = this._dragging ? this._dragPos : this._position;
 
-        // Track
+
         cr.setSourceRGBA(this._fg[0], this._fg[1], this._fg[2], this._trackAlpha);
         roundedRect(cr, 0, barY, Math.max(t, w), t, t / 2);
         cr.fill();
 
-        // Fill
+
         if (length > 0) {
             cr.setSourceRGBA(this._accent[0], this._accent[1], this._accent[2], 1);
             roundedRect(cr, 0, barY, Math.max(t, w * clamp(position / length, 0, 1)), t, t / 2);
             cr.fill();
         }
 
-        // Times: 16px below the bar top when the surface is tall enough,
-        // otherwise anchored flush to the bottom — a cairo surface clips at
-        // its own bounds, so an undersized allocation must not shave glyphs.
+
+
+
         const timeY = Math.min(16, Math.max(0, surfaceH - this._timePixelH));
         cr.setSourceRGBA(this._fg[0], this._fg[1], this._fg[2], 0.5);
         this._drawTime(cr, formatTime(position), 0, timeY, 0);

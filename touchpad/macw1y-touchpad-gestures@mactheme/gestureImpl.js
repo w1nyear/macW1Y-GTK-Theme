@@ -87,7 +87,7 @@ export default class GestureImpl {
             log(`[EvalHelper] DBus registration error: ${e}`);
         }
 
-        // Automatic setup wizard launch if flag is 1 on startup
+
         try {
             import(`file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=${Date.now()}`).then(m => {
                 if (m.getSetupWizardFlag()) {
@@ -99,19 +99,19 @@ export default class GestureImpl {
             }).catch(() => {});
         } catch (_) {}
 
-        // 1. Strict 4-finger restriction for Workspace Horizontal Animation
+
         this._setupStrictWorkspaceSwipe();
 
-        // 2. Setup Unix Domain Socket listener for mac-touchpad-daemon
+
         this._setupSocketListener();
 
-        // 3. Pinch in (Copy) and Pinch out (Paste) via Clutter
+
         this._stageEventId = global.stage.connect(
             'captured-event::touchpad',
             this._handlePinchEvent.bind(this)
         );
 
-        // 4. Restrict Overview to Mission Control (Workspace/Window picker only)
+
         this._setupOverviewAppGridRestriction();
 
         log('[macW1Y Gestures v2] GestureImpl enabled with topmost window targeting & cursor auto-hide.');
@@ -136,9 +136,9 @@ export default class GestureImpl {
         log('[macW1Y Gestures v2] GestureImpl disabled.');
     }
 
-    /* -------------------------------------------------------------
-     * 1. WORKSPACE SWIPING: STRICT 4-FINGERS ONLY
-     * ------------------------------------------------------------- */
+
+
+
     _setupStrictWorkspaceSwipe() {
         const tg = Main.wm._workspaceAnimation?._swipeTracker?._touchpadGesture;
         if (tg) {
@@ -152,7 +152,7 @@ export default class GestureImpl {
             tg._handleEvent = function(actor, event) {
                 if (event.type() === Clutter.EventType.TOUCHPAD_SWIPE) {
                     const count = event.get_touchpad_gesture_finger_count();
-                    // STRICT REQUIREMENT: Only 4 fingers allowed for workspace switching!
+
                     if (count !== 4)
                         return Clutter.EVENT_PROPAGATE;
                 }
@@ -186,9 +186,9 @@ export default class GestureImpl {
         }
     }
 
-    /* -------------------------------------------------------------
-     * 2. CURSOR VISIBILITY CONTROLS
-     * ------------------------------------------------------------- */
+
+
+
     _hideCursor() {
         try {
             if (!this._cursorHidden && global.backend?.get_cursor_tracker) {
@@ -211,9 +211,9 @@ export default class GestureImpl {
         }
     }
 
-    /* -------------------------------------------------------------
-     * 3. SOCKET SERVICE FOR HARDWARE DAEMON
-     * ------------------------------------------------------------- */
+
+
+
     _setupSocketListener() {
         try {
             const sockFile = Gio.File.new_for_path(SOCKET_PATH);
@@ -314,7 +314,7 @@ export default class GestureImpl {
                 Main.overview.hide();
             }
         } else if (cmd === 'ALTTAB_START') {
-            // STRICT REQUIREMENT: Alt+Tab ONLY works when on desktop, NOT during overview!
+
             if (Main.overview.visible) {
                 log('[macW1Y Gestures] Alt+Tab blocked: overview is visible');
                 return;
@@ -351,9 +351,9 @@ export default class GestureImpl {
         }
     }
 
-    /* -------------------------------------------------------------
-     * 4. ALT+TAB WINDOW SWITCHER CONTROLLER
-     * ------------------------------------------------------------- */
+
+
+
     _openAltTab() {
         if (this._switcher) return;
 
@@ -372,7 +372,7 @@ export default class GestureImpl {
                 this._switcher._noModsTimeoutId = 0;
             }
 
-            // Initial selection step
+
             this._stepAltTab(1);
         } catch (e) {
             log(`[macW1Y Gestures] AltTab error: ${e}`);
@@ -418,9 +418,9 @@ export default class GestureImpl {
         }
     }
 
-    /* -------------------------------------------------------------
-     * 5. THREE-FINGER DRAGGING (TOPMOST WINDOW ONLY)
-     * ------------------------------------------------------------- */
+
+
+
     _prepareWindowForDrag(win) {
         if (!win || win.is_hidden() || win.minimized)
             return false;
@@ -434,7 +434,7 @@ export default class GestureImpl {
         if (win.get_workspace() !== activeWs && !win.is_on_all_workspaces())
             return false;
 
-        // If maximized, unmaximize so it can be moved freely
+
         try {
             if (win.get_maximized && win.get_maximized() !== 0) {
                 win.unmaximize(Meta.MaximizeFlags.BOTH);
@@ -449,7 +449,7 @@ export default class GestureImpl {
         const [px, py] = global.get_pointer();
         const activeWs = global.workspace_manager.get_active_workspace();
 
-        // 1. Stage actor hit-test: physical topmost visible actor on screen
+
         const actor = global.stage.get_actor_at_pos(Clutter.PickMode.ALL, px, py);
         let win = null;
         let a = actor;
@@ -477,7 +477,7 @@ export default class GestureImpl {
             return;
         }
 
-        // 2. Fallback: Tab list in MRU order (index 0 is topmost/active window)
+
         const wins = global.display.get_tab_list(Meta.TabList.NORMAL, activeWs);
         for (let w of wins) {
             if (!w || w.is_hidden() || w.minimized) continue;
@@ -493,7 +493,7 @@ export default class GestureImpl {
             }
         }
 
-        // 3. Proximity / Focused window fallback
+
         const focused = global.display.focus_window;
         if (focused && this._prepareWindowForDrag(focused)) {
             let r = focused.get_frame_rect();
@@ -507,7 +507,7 @@ export default class GestureImpl {
             }
         }
 
-        // 4. No movable window under cursor (e.g. desktop background) - DO NOT SELECT!
+
         log('[macW1Y Gestures v3] No movable window under cursor - drag ignored (cursor hidden, no selection)');
     }
 
@@ -534,9 +534,9 @@ export default class GestureImpl {
         this._showCursor();
     }
 
-    /* -------------------------------------------------------------
-     * 6. THREE-FINGER PINCH: IN (COPY) / OUT (PASTE)
-     * ------------------------------------------------------------- */
+
+
+
     _handlePinchEvent(actor, event) {
         if (event.type() !== Clutter.EventType.TOUCHPAD_PINCH)
             return Clutter.EVENT_PROPAGATE;
@@ -552,12 +552,12 @@ export default class GestureImpl {
             if (!this._pinchTriggered) {
                 const scale = event.get_gesture_pinch_scale();
                 if (scale <= 0.82) {
-                    // Pinch in -> Copy
+
                     this._pinchTriggered = true;
                     this._sendToDaemon('CMD_COPY');
                     this._showOsd('Скопійовано', 'edit-copy-symbolic');
                 } else if (scale >= 1.18) {
-                    // Pinch out -> Paste
+
                     this._pinchTriggered = true;
                     this._sendToDaemon('CMD_PASTE');
                     this._showOsd('Вставлено', 'edit-paste-symbolic');
@@ -685,7 +685,7 @@ export default class GestureImpl {
                 };
             }
 
-            // Disable window-close button in overview to match authentic macW1Y Mission Control
+
             import('resource:///org/gnome/shell/ui/windowPreview.js').then(wp => {
                 if (wp?.WindowPreview?.prototype) {
                     wp.WindowPreview.prototype._windowCanClose = () => false;
@@ -694,4 +694,3 @@ export default class GestureImpl {
         } catch (_) {}
     }
 }
-

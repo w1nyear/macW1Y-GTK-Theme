@@ -1,18 +1,18 @@
-// This file is part of the AppIndicator/KStatusNotifierItem GNOME Shell extension
-//
-// This program is free software; you can redistribute it and/or
+
+
+
 // modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
+
 // of the License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+
+
+
+
 // GNU General Public License for more details.
-//
+
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+
 
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
@@ -31,14 +31,14 @@ import {DBusProxy} from './dbusProxy.js';
 
 Gio._promisify(GdkPixbuf.Pixbuf, 'new_from_stream_async');
 
-// ////////////////////////////////////////////////////////////////////////
-// PART ONE: "ViewModel" backend implementation.
-// Both code and design are inspired by libdbusmenu
-// ////////////////////////////////////////////////////////////////////////
 
-/**
- * Saves menu property values and handles type checking and defaults
- */
+
+
+
+
+
+
+
 export class PropertyStore {
     constructor(initialProperties) {
         this._props = new Map();
@@ -70,7 +70,7 @@ export class PropertyStore {
     }
 }
 
-// we list all the properties we know and use here, so we won' have to deal with unexpected type mismatches
+
 PropertyStore.MandatedTypes = {
     'visible': GLib.VariantType.new('b'),
     'enabled': GLib.VariantType.new('b'),
@@ -88,14 +88,14 @@ PropertyStore.DefaultValues = {
     'enabled': GLib.Variant.new_boolean(true),
     'label': GLib.Variant.new_string(''),
     'type': GLib.Variant.new_string('standard'),
-    // elements not in here must return null
+
 };
 
-/**
- * Represents a single menu item
- */
+
+
+
 export class DbusMenuItem extends Signals.EventEmitter {
-    // will steal the properties object
+
     constructor(client, id, properties, childrenIds) {
         super();
 
@@ -136,7 +136,7 @@ export class DbusMenuItem extends Signals.EventEmitter {
     }
 
     getChildrenIds() {
-        return this._children_ids.concat(); // clone it!
+        return this._children_ids.concat();
     }
 
     addChild(pos, childId) {
@@ -145,7 +145,7 @@ export class DbusMenuItem extends Signals.EventEmitter {
     }
 
     removeChild(childId) {
-        // find it
+
         let pos = -1;
         for (let i = 0; i < this._children_ids.length; ++i) {
             if (this._children_ids[i] === childId) {
@@ -163,7 +163,7 @@ export class DbusMenuItem extends Signals.EventEmitter {
     }
 
     moveChild(childId, newPos) {
-        // find the old position
+
         let oldPos = -1;
         for (let i = 0; i < this._children_ids.length; ++i) {
             if (this._children_ids[i] === childId) {
@@ -209,9 +209,9 @@ export class DbusMenuItem extends Signals.EventEmitter {
 }
 
 
-/**
- * The client does the heavy lifting of actually reading layouts and distributing events
- */
+
+
+
 
 export const DBusClient = GObject.registerClass({
     Signals: {'ready-changed': {}},
@@ -247,11 +247,11 @@ export const DBusClient = GObject.registerClass({
         this._items.set(0, new DbusMenuItem(this, 0, DBusClient.baseItems, []));
         this._flagItemsUpdateRequired = false;
 
-        // will be set to true if a layout update is needed once active
+
         this._flagLayoutUpdateRequired = false;
 
-        // property requests are queued
-        this._propertiesRequestedFor = new Set(/* ids */);
+
+        this._propertiesRequestedFor = new Set( );
 
         this._layoutUpdated = false;
         this._active = false;
@@ -291,7 +291,7 @@ export const DBusClient = GObject.registerClass({
         if (this._propertiesRequest && this._propertiesRequest.pending())
             return;
 
-        // if we don't have any requests queued, we'll need to add one
+
         this._propertiesRequest = new PromiseUtils.IdlePromise(
             GLib.PRIORITY_DEFAULT_IDLE, cancellable);
         await this._propertiesRequest;
@@ -313,8 +313,8 @@ export const DBusClient = GObject.registerClass({
         });
     }
 
-    // Traverses the list of cached menu items and removes everyone that is not in the list
-    // so we don't keep alive unused items
+
+
     _gcItems() {
         const tag = new Date().getTime();
 
@@ -331,8 +331,8 @@ export const DBusClient = GObject.registerClass({
         });
     }
 
-    // the original implementation will only request partial layouts if somehow possible
-    // we try to save us from multiple kinds of race conditions by always requesting a full layout
+
+
     _beginLayoutUpdate(cancellable) {
         this._layoutUpdateUpdateAsync(cancellable).catch(e => {
             if (!e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
@@ -340,11 +340,11 @@ export const DBusClient = GObject.registerClass({
         });
     }
 
-    // the original implementation will only request partial layouts if somehow possible
-    // we try to save us from multiple kinds of race conditions by always requesting a full layout
+
+
     async _layoutUpdateUpdateAsync(cancellable) {
-        // we only read the type property, because if the type changes after reading all properties,
-        // the view would have to replace the item completely which we try to avoid
+
+
         if (this._layoutUpdateCancellable)
             this._layoutUpdateCancellable.cancel();
 
@@ -382,21 +382,21 @@ export const DBusClient = GObject.registerClass({
         const childrenUnpacked = children.map(c => c.deep_unpack());
         const childrenIds = childrenUnpacked.map(([c]) => c);
 
-        // make sure all our children exist
+
         childrenUnpacked.forEach(c => this._doLayoutUpdate(c, cancellable));
 
-        // make sure we exist
+
         const menuItem = this._items.get(id);
 
         if (menuItem) {
-            // we do, update our properties if necessary
+
             for (const [prop, value] of Object.entries(properties))
                 menuItem.propertySet(prop, value);
 
-            // make sure our children are all at the right place, and exist
+
             const oldChildrenIds = menuItem.getChildrenIds();
             for (let i = 0; i < childrenIds.length; ++i) {
-                // try to recycle an old child
+
                 let oldChild = -1;
                 for (let j = 0; j < oldChildrenIds.length; ++j) {
                     if (oldChildrenIds[j] === childrenIds[i]) {
@@ -406,22 +406,22 @@ export const DBusClient = GObject.registerClass({
                 }
 
                 if (oldChild < 0) {
-                    // no old child found, so create a new one!
+
                     menuItem.addChild(i, childrenIds[i]);
                 } else {
-                    // old child found, reuse it!
+
                     menuItem.moveChild(childrenIds[i], i);
                 }
             }
 
-            // remove any old children that weren't reused
+
             oldChildrenIds.forEach(c => menuItem.removeChild(c));
 
             if (!this._flagItemsUpdateRequired)
                 return id;
         }
 
-        // we don't, so let's create us
+
         let newMenuItem = menuItem;
 
         if (!newMenuItem) {
@@ -504,13 +504,13 @@ export const DBusClient = GObject.registerClass({
         return item || null;
     }
 
-    // we don't need to cache and burst-send that since it will not happen that frequently
+
     async sendAboutToShow(id) {
         if (this._hasAboutToShow === false)
             return;
 
-        /* Some indicators (you, dropbox!) don't use the right signature
-         * and don't return a boolean, so we need to support both cases */
+
+
         try {
             const ret = await this.gConnection.call(this.gName, this.gObjectPath,
                 this.gInterfaceName, 'AboutToShow', new GLib.Variant('(i)', [id]),
@@ -566,26 +566,26 @@ export const DBusClient = GObject.registerClass({
     }
 });
 
-// ////////////////////////////////////////////////////////////////////////
-// PART TWO: "View" frontend implementation.
-// ////////////////////////////////////////////////////////////////////////
 
-// https://bugzilla.gnome.org/show_bug.cgi?id=731514
-// GNOME 3.10 and 3.12 can't open a nested submenu.
-// Patches have been written, but it's not clear when (if?) they will be applied.
-// We also don't know whether they will be backported to 3.10, so we will work around
-// it in the meantime. Offending versions can be clearly identified:
+
+
+
+
+
+
+
+
 const NEED_NESTED_SUBMENU_FIX = '_setOpenedSubMenu' in PopupMenu.PopupMenu.prototype;
 
-/**
- * Creates new wrapper menu items and injects methods for managing them at runtime.
- *
- * Many functions in this object will be bound to the created item and executed as event
- * handlers, so any `this` will refer to a menu item create in createItem
- */
+
+
+
+
+
+
 const MenuItemFactory = {
     createItem(client, dbusItem) {
-        // first, decide whether it's a submenu or not
+
         let shellItem;
         if (dbusItem.propertyGet('children-display') === 'submenu')
             shellItem = new PopupMenu.PopupSubMenuMenuItem('FIXME');
@@ -606,20 +606,20 @@ const MenuItemFactory = {
             shellItem.label.x_expand = true;
         }
 
-        // initialize our state
+
         MenuItemFactory._updateLabel.call(shellItem);
         MenuItemFactory._updateOrnament.call(shellItem);
         MenuItemFactory._updateImage.call(shellItem);
         MenuItemFactory._updateVisible.call(shellItem);
         MenuItemFactory._updateSensitive.call(shellItem);
 
-        // initially create children
+
         if (shellItem instanceof PopupMenu.PopupSubMenuMenuItem) {
             dbusItem.getChildren().forEach(c =>
                 shellItem.menu.addMenuItem(MenuItemFactory.createItem(client, c)));
         }
 
-        // now, connect various events
+
         Util.connectSmart(dbusItem, 'property-changed',
             shellItem, MenuItemFactory._onPropertyChanged);
         Util.connectSmart(dbusItem, 'child-added',
@@ -651,11 +651,11 @@ const MenuItemFactory = {
     _onOpenStateChanged(menu, open) {
         if (open) {
             if (NEED_NESTED_SUBMENU_FIX) {
-                // close our own submenus
+
                 if (menu._openedSubMenu)
                     menu._openedSubMenu.close(false);
 
-                // register ourselves and close sibling submenus
+
                 if (menu._parent._openedSubMenu && menu._parent._openedSubMenu !== menu)
                     menu._parent._openedSubMenu.close(true);
 
@@ -666,7 +666,7 @@ const MenuItemFactory = {
             this._dbusItem.sendAboutToShow();
         } else {
             if (NEED_NESTED_SUBMENU_FIX) {
-                // close our own submenus
+
                 if (menu._openedSubMenu)
                     menu._openedSubMenu.close(false);
             }
@@ -733,7 +733,7 @@ const MenuItemFactory = {
             Util.Logger.warn('Tried to remove a child from non-submenu item. Better recreate it as whole');
             MenuItemFactory._replaceSelf.call(this);
         } else {
-            // find it!
+
             this.menu._getMenuItems().forEach(item => {
                 if (item._dbusItem === child)
                     item.destroy();
@@ -753,13 +753,13 @@ const MenuItemFactory = {
     _updateLabel() {
         const label = this._dbusItem.propertyGet('label').replace(/_([^_])/, '$1');
 
-        if (this.label) // especially on GS3.8, the separator item might not even have a hidden label
+        if (this.label)
             this.label.set_text(label);
     },
 
     _updateOrnament() {
         if (!this.setOrnament)
-            return; // separators and alike might not have gotten the polyfill
+            return;
 
         const toggleType = this._dbusItem.propertyGet('toggle-type');
         const toggleState = this._dbusItem.propertyGetInt('toggle-state');
@@ -771,8 +771,8 @@ const MenuItemFactory = {
         } else if (toggleType === 'checkmark' || toggleType === 'radio') {
             this.setOrnament(PopupMenu.Ornament.NONE);
         } else {
-            // Plain item with NO toggle-type.
-            // Check if any sibling in parent menu has a toggle-type
+
+
             let hasToggleSibling = false;
             try {
                 const parent = this._parent;
@@ -792,7 +792,7 @@ const MenuItemFactory = {
 
     async _updateImage() {
         if (!this._icon)
-            return; // might be missing on submenus / separators
+            return;
 
         const iconName = this._dbusItem.propertyGet('icon-name');
         const iconData = this._dbusItem.propertyGetVariant('icon-data');
@@ -825,11 +825,11 @@ const MenuItemFactory = {
     },
 
     _replaceSelf(newSelf) {
-        // create our new self if needed
+
         if (!newSelf)
             newSelf = MenuItemFactory.createItem(this._dbusClient, this._dbusItem);
 
-        // first, we need to find our old position
+
         let pos = -1;
         const family = this._parent._getMenuItems();
         for (let i = 0; i < family.length; ++i) {
@@ -841,35 +841,35 @@ const MenuItemFactory = {
             throw new Error("DBusMenu: can't replace non existing menu item");
 
 
-        // add our new self while we're still alive
+
         this._parent.addMenuItem(newSelf, pos);
 
-        // now destroy our old self
+
         this.destroy();
     },
 };
 
-/**
- * Utility functions not necessarily belonging into the item factory
- */
+
+
+
 const MenuUtils = {
     moveItemInMenu(menu, dbusItem, newpos) {
-        // HACK: we're really getting into the internals of the PopupMenu implementation
 
-        // First, find our wrapper. Children tend to lie. We do not trust the old positioning.
+
+
         const family = menu._getMenuItems();
         for (let i = 0; i < family.length; ++i) {
             if (family[i]._dbusItem === dbusItem) {
-                // now, remove it
+
                 menu.box.remove_child(family[i]);
 
-                // and add it again somewhere else
+
                 if (newpos < family.length && family[newpos] !== family[i])
                     menu.box.insert_child_below(family[i], family[newpos]);
                 else
                     menu.box.add(family[i]);
 
-                // skip the rest
+
                 return;
             }
         }
@@ -877,11 +877,11 @@ const MenuUtils = {
 };
 
 
-/**
- * Processes DBus events, creates the menu items and handles the actions
- *
- * Something like a mini-god-object
- */
+
+
+
+
+
 export class Client extends Signals.EventEmitter {
     constructor(busName, path, indicator) {
         super();
@@ -889,8 +889,8 @@ export class Client extends Signals.EventEmitter {
         this._busName  = busName;
         this._busPath  = path;
         this._client   = new DBusClient(busName, path);
-        this._rootMenu = null; // the shell menu
-        this._rootItem = null; // the DbusMenuItem for the root
+        this._rootMenu = null;
+        this._rootItem = null;
         this.indicator = indicator;
         this.cancellable = new Util.CancellableChild(this.indicator.cancellable);
 
@@ -907,20 +907,20 @@ export class Client extends Signals.EventEmitter {
         return this._client.isReady;
     }
 
-    // this will attach the client to an already existing menu that will be used as the root menu.
-    // it will also connect the client to be automatically destroyed when the menu dies.
+
+
     attachToMenu(menu) {
         this._rootMenu = menu;
         this._rootItem = this._client.getRoot();
         this._itemsBeingAdded = new Set();
 
-        // cleanup: remove existing children (just in case)
+
         this._rootMenu.removeAll();
 
         if (NEED_NESTED_SUBMENU_FIX)
             menu._setOpenedSubMenu = this._setOpenedSubmenu.bind(this);
 
-        // connect handlers
+
         Util.connectSmart(menu, 'open-state-changed', this, this._onMenuOpenStateChanged);
         Util.connectSmart(menu, 'destroy', this, this.destroy);
 
@@ -928,10 +928,10 @@ export class Client extends Signals.EventEmitter {
         Util.connectSmart(this._rootItem, 'child-removed', this, this._onRootChildRemoved);
         Util.connectSmart(this._rootItem, 'child-moved', this, this._onRootChildMoved);
 
-        // Dropbox requires us to call AboutToShow(0) first
+
         this._rootItem.sendAboutToShow();
 
-        // fill the menu for the first time
+
         const children = this._rootItem.getChildren();
         children.forEach(child =>
             this._onRootChildAdded(this._rootItem, child));
@@ -954,7 +954,7 @@ export class Client extends Signals.EventEmitter {
     }
 
     _onRootChildAdded(dbusItem, child, position) {
-        // Menu additions can be expensive, so let's do it in different chunks
+
         const basePriority = this.isOpen ? GLib.PRIORITY_DEFAULT : GLib.PRIORITY_LOW;
         const idlePromise = new PromiseUtils.IdlePromise(
             basePriority + this._itemsBeingAdded.size, this.cancellable);
@@ -973,8 +973,8 @@ export class Client extends Signals.EventEmitter {
     }
 
     _onRootChildRemoved(dbusItem, child) {
-        // children like to play hide and seek
-        // but we know how to find it for sure!
+
+
         const item = this._rootMenu._getMenuItems().find(it =>
             it._dbusItem === child);
 
@@ -1003,8 +1003,8 @@ export class Client extends Signals.EventEmitter {
         } else {
             this._rootItem.handleEvent('closed', null, 0).catch(e => {
                 if (e.matches(Gio.DBusError, Gio.DBusError.UNKNOWN_OBJECT)) {
-                    // The menu hay have been removed at this point, thus do not
-                    // spam the users about this if it happens.
+
+
                     return;
                 }
 

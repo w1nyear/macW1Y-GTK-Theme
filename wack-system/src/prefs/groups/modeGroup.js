@@ -35,7 +35,7 @@ export function buildModeGroup(settings, window, _, settingsSignalIds, cleanupCa
     modeBox.append(dropdown);
     modeRow.add_suffix(modeBox);
 
-    // -- Cupertino options ----------------------------------------------
+
     const alwaysShowUserRow = new Adw.ActionRow({
         title: _('Always Show User Widget'),
         subtitle: _('Hides notifications by default. Press Shift+N to show notifications.'),
@@ -218,7 +218,7 @@ export function buildModeGroup(settings, window, _, settingsSignalIds, cleanupCa
 
                 let text = buffer.get_text(start, end, false);
 
-                // Hard cap at 250 characters
+
                 if (text.length > 250)
                     text = text.substring(0, 250);
 
@@ -233,7 +233,7 @@ export function buildModeGroup(settings, window, _, settingsSignalIds, cleanupCa
 
         dialog.present();
 
-        // Focus the editor immediately
+
         GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
             textView.grab_focus();
             return GLib.SOURCE_REMOVE;
@@ -264,21 +264,21 @@ export function buildModeGroup(settings, window, _, settingsSignalIds, cleanupCa
     unlockFadeRow.add_suffix(unlockFadeSwitch);
     unlockFadeRow.activatable_widget = unlockFadeSwitch;
 
-    // -- Crossfade Speed child row --------------------------------------
+
     const speedRow = new Adw.ActionRow({
         title: _('Crossfade Speed'),
     });
 
     const speedBox = new Gtk.Box({ valign: Gtk.Align.CENTER });
 
-    // Linked buttons (wide layout) — Slower is active by default
+
     const speedLinkedBox = new Gtk.Box({ css_classes: ['linked'] });
     const btnSlow = new Gtk.ToggleButton({ label: _('Slower'), active: true });
     const btnFast = new Gtk.ToggleButton({ label: _('Faster'), group: btnSlow });
     speedLinkedBox.append(btnSlow);
     speedLinkedBox.append(btnFast);
 
-    // Dropdown fallback (narrow layout)
+
     const speedDropdown = new Gtk.DropDown({
         valign: Gtk.Align.CENTER,
         model: Gtk.StringList.new([_('Slower'), _('Faster')]),
@@ -293,7 +293,7 @@ export function buildModeGroup(settings, window, _, settingsSignalIds, cleanupCa
     const syncSpeedButtons = () => {
         const v = settings.get_string('cupertino-crossfade-speed') || 'slow';
         selfChangeSpeed = true;
-        btnSlow.active = (v !== 'fast');   // default to Slower for any non-'fast' value
+        btnSlow.active = (v !== 'fast');
         btnFast.active = (v === 'fast');
         speedDropdown.selected = (v === 'fast') ? 1 : 0;
         selfChangeSpeed = false;
@@ -327,7 +327,7 @@ export function buildModeGroup(settings, window, _, settingsSignalIds, cleanupCa
         if (!selfChangeSpeed) syncSpeedButtons();
     }));
 
-    // Responsive: hide linked buttons, show dropdown on narrow windows
+
     speedDropdown.visible = false;
     speedLinkedBox.visible = true;
 
@@ -335,7 +335,7 @@ export function buildModeGroup(settings, window, _, settingsSignalIds, cleanupCa
     modeRow.add_row(speedRow);
     modeRow.add_row(messageEnableRow);
 
-    // -- Animation options (Legacy mode sub-settings) --------------------
+
     const clockAnimRow = buildComboRow(
         settings,
         'clock-animation',
@@ -420,10 +420,10 @@ export function buildModeGroup(settings, window, _, settingsSignalIds, cleanupCa
             modeRow.subtitle = _('macW1Y Sonoma-style clock over the classic, GNOME-compliant layout and flow.');
         }
 
-        // Always keep it expandable since both modes now have sub-settings, but do not auto-expand
+
         modeRow.enable_expansion = true;
 
-        // Cupertino visibility/sensitivity
+
         alwaysShowUserRow.visible = isCup;
         alwaysShowUserRow.sensitive = isCup;
         promptVibrancyRow.visible = isCup;
@@ -433,7 +433,7 @@ export function buildModeGroup(settings, window, _, settingsSignalIds, cleanupCa
         unlockFadeRow.visible = isCup;
         refreshUnlockFadeAvailability();
 
-        // Legacy visibility/sensitivity
+
         clockAnimRow.visible = !isCup;
         clockAnimRow.sensitive = !isCup;
         promptAnimRow.visible = !isCup;

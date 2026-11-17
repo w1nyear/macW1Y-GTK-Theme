@@ -1,4 +1,4 @@
-// Writes only while the `output-logs` setting is on.
+
 export class Logger {
     _settings;
     _outputLogs;
@@ -20,7 +20,7 @@ export class Logger {
         });
     }
 
-    // Check this before building an expensive message only to log it.
+
     get enabled() {
         return this._outputLogs;
     }
@@ -66,17 +66,17 @@ export function utilsLog(msg) {
     _utilsLogger?.log(msg);
 }
 
-/**
- * Output the user asked for explicitly (Looking Glass diagnostics, the dump
- * shortcut), so it is not gated on `output-logs`.
- */
+
+
+
+
 export function diagnosticLog(msg) {
     console.log(msg);
 }
 
-// Reports an exception that escaped a per-frame sync loop. Not gated on
-// `output-logs`, since it means a glass stopped following its target, and
-// rate-limited per tag, since the cause usually repeats every frame.
+
+
+
 const _frameLoopErrorLastLogged = new Map();
 const FRAME_LOOP_ERROR_LOG_INTERVAL_MS = 5000;
 

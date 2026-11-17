@@ -17,65 +17,65 @@
 #include "mac_i18n.h"
 
 typedef struct {
-    int menubar_tint;   /* 0 - 100 */
-    int menubar_blur;   /* 0 - 100 */
+    int menubar_tint;
+    int menubar_blur;
 
-    int liquid_shape;      /* 0 - 2 (0=RoundRect, 1=Circle, 2=Capsule) */
-    int liquid_refraction; /* 0 - 100 */
-    int liquid_blur;       /* 0 - 50 */
-    int liquid_tint;       /* 0 - 100 */
-    int liquid_chroma;     /* 0 - 100 */
-    int liquid_rim;        /* 0 - 100 */
-    int liquid_specular;   /* 0 - 100 */
-    int liquid_shadow;     /* 0 - 100 */
+    int liquid_shape;
+    int liquid_refraction;
+    int liquid_blur;
+    int liquid_tint;
+    int liquid_chroma;
+    int liquid_rim;
+    int liquid_specular;
+    int liquid_shadow;
 
-    int spotlight_blur;    /* 0 - 50 */
-    int spotlight_tint;    /* 0 - 100 */
-    int spotlight_shadow;  /* 0 - 100 */
+    int spotlight_blur;
+    int spotlight_tint;
+    int spotlight_shadow;
 
-    int blur_sigma;     /* 0 - 100 */
-    int blur_tint;      /* 0 - 100 */
+    int blur_sigma;
+    int blur_tint;
 
-    int menu_tint;      /* 0 - 100 */
-    int menu_blur;      /* 0 - 100 */
-    int menu_shadow_blur;     /* 0 - 100 (radius px) */
-    int menu_shadow_strength; /* 0 - 100 (intensity %) */
+    int menu_tint;
+    int menu_blur;
+    int menu_shadow_blur;
+    int menu_shadow_strength;
 
-    int widget_radius;  /* 0 - 40 px */
-    int widget_blur;    /* 0 - 50 px */
-    int widget_tint;    /* 0 - 100 % */
-    int widget_shadow;  /* 0 - 100 % */
+    int widget_radius;
+    int widget_blur;
+    int widget_tint;
+    int widget_shadow;
 
-    /* Group: Dock */
-    int dock_tint;          /* 0 - 100 % */
-    int dock_blur;          /* 0 - 50 px */
-    int dock_shadow;        /* 0 - 100 % */
-    int dock_edge_distance; /* 0 - 24 px, distance between dock and bottom of screen (default 0) */
-    int dock_size;          /* 0 - 24 px, vertical padding (default 12) */
-    int dock_icon_size;     /* 24 - 96 px, app icon size (default 54) */
-    int dock_spacing;       /* 0 - 24 px, icon spacing (default 4) */
 
-    /* Group: Alerts / Dialogs */
-    int alert_tint;     /* 0 - 100 % */
-    int alert_blur;     /* 0 - 50 px */
-    int alert_shadow;   /* 0 - 100 % */
+    int dock_tint;
+    int dock_blur;
+    int dock_shadow;
+    int dock_edge_distance;
+    int dock_size;
+    int dock_icon_size;
+    int dock_spacing;
 
-    /* Group: Notifications */
-    int notification_blur;   /* 0 - 50 px */
-    int notification_tint;   /* 0 - 100 % */
-    int notification_shadow; /* 0 - 100 % */
 
-    /* Group: Labels (Бірки) */
-    int label_blur;          /* 0 - 50 px */
-    int label_tint;          /* 0 - 100 % */
-    int label_shadow;        /* 0 - 100 % */
+    int alert_tint;
+    int alert_blur;
+    int alert_shadow;
 
-    /* Group: OSD (Екранні індикатори) */
-    int osd_blur;            /* 0 - 50 px */
-    int osd_tint;            /* 0 - 100 % */
-    int osd_shadow;          /* 0 - 100 % */
 
-    /* Legacy fields for backward compatibility */
+    int notification_blur;
+    int notification_tint;
+    int notification_shadow;
+
+
+    int label_blur;
+    int label_tint;
+    int label_shadow;
+
+
+    int osd_blur;
+    int osd_tint;
+    int osd_shadow;
+
+
     int dock_sigma;
     int dock_radius;
     int panel_blur;
@@ -219,7 +219,7 @@ static void load_config(void) {
         if (JSON_NODE_HOLDS_OBJECT(root)) {
             JsonObject *obj = json_node_get_object(root);
 
-            /* Group 1: Menubar */
+
             if (json_object_has_member(obj, "menubar_tint"))
                 state.menubar_tint = (int)json_object_get_int_member(obj, "menubar_tint");
             else if (json_object_has_member(obj, "panel_tint"))
@@ -230,7 +230,7 @@ static void load_config(void) {
             else if (json_object_has_member(obj, "panel_sigma"))
                 state.menubar_blur = (int)json_object_get_int_member(obj, "panel_sigma");
 
-            /* Group 2: Liquid Glass */
+
             if (json_object_has_member(obj, "liquid_shape"))
                 state.liquid_shape = (int)CLAMP((int)json_object_get_int_member(obj, "liquid_shape"), 0, 2);
             else
@@ -275,7 +275,7 @@ static void load_config(void) {
             else
                 state.liquid_shadow = 49;
 
-            /* Group 3: Spotlight */
+
             if (json_object_has_member(obj, "spotlight_blur")) {
                 int val = (int)json_object_get_int_member(obj, "spotlight_blur");
                 state.spotlight_blur = (val <= 1) ? 25 : val;
@@ -293,7 +293,7 @@ static void load_config(void) {
             else
                 state.spotlight_shadow = 35;
 
-            /* Group 3: Blur */
+
             if (json_object_has_member(obj, "blur_sigma"))
                 state.blur_sigma = (int)json_object_get_int_member(obj, "blur_sigma");
             else if (json_object_has_member(obj, "dock_sigma"))
@@ -304,7 +304,7 @@ static void load_config(void) {
             else if (json_object_has_member(obj, "dock_tint"))
                 state.blur_tint = (int)round(json_object_get_double_member(obj, "dock_tint") * 100.0);
 
-            /* Group 4: Context Menu */
+
             if (json_object_has_member(obj, "menu_tint"))
                 state.menu_tint = (int)json_object_get_int_member(obj, "menu_tint");
             else
@@ -325,7 +325,7 @@ static void load_config(void) {
             else
                 state.menu_shadow_strength = 30;
 
-            /* Group 5: Widgets */
+
             if (json_object_has_member(obj, "widget_radius"))
                 state.widget_radius = (int)json_object_get_int_member(obj, "widget_radius");
             else
@@ -346,7 +346,7 @@ static void load_config(void) {
             else
                 state.widget_shadow = 30;
 
-            /* Group: Dock */
+
             if (json_object_has_member(obj, "dock_tint")) {
                 JsonNode *node = json_object_get_member(obj, "dock_tint");
                 if (json_node_get_value_type(node) == G_TYPE_INT64) {
@@ -402,7 +402,7 @@ static void load_config(void) {
             else
                 state.dock_spacing = 0;
 
-            /* Group: Labels (Бірки) */
+
             if (json_object_has_member(obj, "label_blur"))
                 state.label_blur = (int)json_object_get_int_member(obj, "label_blur");
             else
@@ -418,7 +418,7 @@ static void load_config(void) {
             else
                 state.label_shadow = 25;
 
-            /* Group: Alerts / Dialogs */
+
             if (json_object_has_member(obj, "alert_tint"))
                 state.alert_tint = (int)json_object_get_int_member(obj, "alert_tint");
             else
@@ -434,7 +434,7 @@ static void load_config(void) {
             else
                 state.alert_shadow = 35;
 
-            /* Group: Notifications */
+
             if (json_object_has_member(obj, "notification_blur"))
                 state.notification_blur = (int)json_object_get_int_member(obj, "notification_blur");
             else
@@ -450,7 +450,7 @@ static void load_config(void) {
             else
                 state.notification_shadow = 35;
 
-            /* Group: OSD */
+
             if (json_object_has_member(obj, "osd_blur"))
                 state.osd_blur = (int)json_object_get_int_member(obj, "osd_blur");
             else
@@ -466,7 +466,7 @@ static void load_config(void) {
             else
                 state.osd_shadow = 25;
 
-            /* Legacy */
+
             if (json_object_has_member(obj, "dock_sigma"))
                 state.dock_sigma = (int)json_object_get_int_member(obj, "dock_sigma");
             else
@@ -757,7 +757,7 @@ static void apply_liquid_glass(void) {
     double rim = (double)state.liquid_rim / 100.0;
     double specular = (double)state.liquid_specular / 100.0;
 
-    /* Base Liquid Glass blur for quick-settings, notifications, applications, osd */
+
     const char *blur_keys[] = {
         "quick-settings-blur-radius",
         "notification-blur-radius",
@@ -770,7 +770,7 @@ static void apply_liquid_glass(void) {
         safe_set_int(lg, schema, blur_keys[i], radius);
     }
 
-    /* Base Liquid Glass tint for quick-settings, notifications, applications, osd */
+
     const char *tint_keys[] = {
         "quick-settings-tint-strength",
         "quick-settings-toggle-tint-strength",
@@ -792,7 +792,7 @@ static void apply_liquid_glass(void) {
     safe_set_double(lg, schema, "glass-rim-intensity", rim);
     safe_set_double(lg, schema, "glass-specular-intensity", specular);
 
-    /* Preserve Dock configuration (from Dock group) - do not stomp with liquid_* values */
+
     safe_set_int(lg, schema, "dock-blur-radius", state.dock_blur);
     double dock_tint_val = (double)state.dock_tint / 100.0;
     if (dock_tint_val < 0.0) dock_tint_val = 0.0;
@@ -804,7 +804,7 @@ static void apply_liquid_glass(void) {
     safe_set_double(lg, schema, "dock-brightness", dock_brightness);
     safe_set_string(lg, schema, "dock-tint-color", dock_col);
 
-    /* Preserve Context Menu configuration (from Group 4) - do not stomp with liquid_* values */
+
     int menu_radius = (state.menu_blur > 0) ? (int)round((double)state.menu_blur * 30.0 / 100.0) : 0;
     if (state.menu_blur > 0 && menu_radius < 1) menu_radius = 1;
     safe_set_int(lg, schema, "menu-blur-radius", menu_radius);
@@ -841,10 +841,10 @@ static void apply_liquid_glass(void) {
     if (schema) g_settings_schema_unref(schema);
     g_object_unref(lg);
 
-    /* Preserve desktop widgets configuration (from Group 5) */
+
     apply_widget_settings();
 
-    /* Preserve dock configuration (from Dock group) */
+
     apply_dock_settings();
 }
 
@@ -865,7 +865,7 @@ static void schedule_liquid_glass_apply(void) {
 
 static void apply_spotlight_settings(void) {
     save_styling_json();
-    /* Notify GNOME Shell via D-Bus to reload spotlight styling in real-time */
+
     GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
     if (bus) {
         g_dbus_connection_call(bus,
@@ -903,7 +903,7 @@ static guint dock_timer_id = 0;
 static guint alert_timer_id = 0;
 
 static void apply_alert_settings(void) {
-    /* Notify GNOME Shell via D-Bus to reload alert styling in real-time */
+
     GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
     if (bus) {
         g_dbus_connection_call(bus,
@@ -965,7 +965,7 @@ static void apply_notification_settings(void) {
         }
     }
 
-    /* Notify GNOME Shell via D-Bus to reload notification styling in real-time */
+
     GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
     if (bus) {
         g_dbus_connection_call(bus,
@@ -1049,7 +1049,7 @@ static void apply_dock_settings(void) {
 
     gboolean is_light = mac_is_light_mode();
 
-    /* 1. Apply to Liquid Glass */
+
     const char *lg_schema = "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com";
     if (g_settings_schema_source_lookup(src, lg_schema, TRUE)) {
         GSettings *lg = g_settings_new(lg_schema);
@@ -1090,7 +1090,7 @@ static void apply_dock_settings(void) {
         }
     }
 
-    /* 2. Apply to blur-my-shell dash-to-dock */
+
     const char *bms_dock_schema = "org.gnome.shell.extensions.blur-my-shell.dash-to-dock";
     if (g_settings_schema_source_lookup(src, bms_dock_schema, TRUE)) {
         GSettings *bms = g_settings_new(bms_dock_schema);
@@ -1113,7 +1113,7 @@ static void apply_dock_settings(void) {
         }
     }
 
-    /* 3. Apply icon size to dash2dock-motion and dash-to-dock */
+
     const char *motion_schema = "org.gnome.shell.extensions.dash2dock-motion";
     if (g_settings_schema_source_lookup(src, motion_schema, TRUE)) {
         GSettings *ds = g_settings_new(motion_schema);
@@ -1151,7 +1151,7 @@ static void apply_dock_settings(void) {
         }
     }
 
-    /* 4. Trigger live DBus sync for EvalHelper */
+
     save_styling_json();
     GError *dbus_err = NULL;
     GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &dbus_err);
@@ -1336,7 +1336,7 @@ static void schedule_blur_tint_apply(void) {
     }
 }
 
-/* Group 4: Context Menu (apply to liquid-glass & blur-my-shell) */
+
 static void apply_menu_blur(void) {
     GSettingsSchemaSource *src = g_settings_schema_source_get_default();
     if (!src) return;
@@ -1448,9 +1448,9 @@ static void schedule_menu_shadow_apply(void) {
     }
 }
 
-/* Initialization signals from GtkBuilder (realize) */
 
-/* Group 1: Меню-бар */
+
+
 void init_menubar_tint(void *widget, gpointer data) {
     (void)data;
     load_config();
@@ -1489,9 +1489,9 @@ void on_menubar_blur_changed(void *widget, gpointer data) {
     schedule_json_save();
 }
 
-/* ========================================================================= */
-/* Interactive Liquid Glass Live Preview Widget (GTK4 + Cairo + Wallpapers)  */
-/* ========================================================================= */
+
+
+
 
 static void draw_rounded_rect_path(cairo_t *cr, double x, double y, double w, double h, double r) {
     if (w < 2.0 * r) r = w / 2.0;
@@ -1512,7 +1512,7 @@ static double g_glass_drag_start_y = 0;
 static gboolean g_glass_is_dragging = FALSE;
 
 static void get_system_accent_color(double *r, double *g, double *b) {
-    *r = 1.0; *g = 0.416; *b = 0.0; /* default mac accent #ff6a00 */
+    *r = 1.0; *g = 0.416; *b = 0.0;
     AdwStyleManager *sm = adw_style_manager_get_default();
     if (sm) {
         const GdkRGBA *sm_rgba = adw_style_manager_get_accent_color_rgba(sm);
@@ -1619,8 +1619,8 @@ static void ensure_master_wallpaper_pixbuf_unlocked(void) {
     g_mkdir_with_parents(mactheme_dir, 0755);
 
     typedef struct {
-        uint32_t magic;       /* 0x4D414357 = 'MACW' */
-        uint32_t version;     /* 1 */
+        uint32_t magic;
+        uint32_t version;
         int32_t  width;
         int32_t  height;
         int32_t  rowstride;
@@ -1715,7 +1715,7 @@ static cairo_surface_t *get_cached_wallpaper_surface(int target_w, int target_h)
 
     g_mutex_lock(&g_wallpaper_mutex);
 
-    /* Check if already in cache */
+
     for (int i = 0; i < g_wallpaper_cache_count; i++) {
         if (g_wallpaper_cache[i].w == target_w && g_wallpaper_cache[i].h == target_h && g_wallpaper_cache[i].surf) {
             cairo_surface_t *surf = g_wallpaper_cache[i].surf;
@@ -1779,7 +1779,7 @@ static cairo_surface_t *get_cached_wallpaper_surface(int target_w, int target_h)
     g_object_unref(cropped);
     g_object_unref(scaled);
 
-    /* Store in cache */
+
     if (g_wallpaper_cache_count >= WALLPAPER_CACHE_SIZE) {
         if (g_wallpaper_cache[0].surf) {
             cairo_surface_destroy(g_wallpaper_cache[0].surf);
@@ -1799,9 +1799,9 @@ static cairo_surface_t *get_cached_wallpaper_surface(int target_w, int target_h)
     return surf;
 }
 
-/* ========================================================================= */
-/* Fast Multi-Pass Separable Box Blur Engine & Blurred Wallpaper Cache       */
-/* ========================================================================= */
+
+
+
 
 static void box_blur_horizontal(uint32_t *src, uint32_t *dst, int w, int h, int r) {
     if (r <= 0) { memcpy(dst, src, (size_t)w * h * sizeof(uint32_t)); return; }
@@ -1941,11 +1941,11 @@ static cairo_surface_t *get_cached_blurred_wallpaper_surface(int target_w, int t
         memcpy(buf1 + y * target_w, s_data + y * s_stride, (size_t)target_w * sizeof(uint32_t));
     }
 
-    // Pass 1
+
     box_blur_horizontal(buf1, buf2, target_w, target_h, r);
     box_blur_vertical(buf2, buf1, target_w, target_h, r);
 
-    // Pass 2 for smooth Gaussian roll-off
+
     int r2 = (int)(r * 0.7);
     if (r2 > 0) {
         box_blur_horizontal(buf1, buf2, target_w, target_h, r2);
@@ -1989,7 +1989,7 @@ static void draw_frosted_glass_card(cairo_t *cr, cairo_surface_t *blurred_bg,
                                     double tint_alpha, double shadow_alpha, double sheen) {
     if (w <= 0.0 || h <= 0.0) return;
 
-    // 1. Soft multi-pass drop shadow behind the card
+
     if (shadow_alpha > 0.01) {
         for (int i = 5; i >= 1; i--) {
             double exp = i * 2.5;
@@ -2000,12 +2000,12 @@ static void draw_frosted_glass_card(cairo_t *cr, cairo_surface_t *blurred_bg,
         }
     }
 
-    // 2. Clip card shape to paint blurred wallpaper
+
     cairo_save(cr);
     draw_rounded_rect_path(cr, x, y, w, h, r);
     cairo_clip(cr);
 
-    // Blurred wallpaper underneath
+
     if (blurred_bg) {
         cairo_set_source_surface(cr, blurred_bg, 0, 0);
         cairo_paint(cr);
@@ -2014,7 +2014,7 @@ static void draw_frosted_glass_card(cairo_t *cr, cairo_surface_t *blurred_bg,
         cairo_paint(cr);
     }
 
-    // Glass tint overlay (Reversible: bright white frosted glass in light mode, dark tint in dark mode)
+
     double ta = CLAMP(tint_alpha, 0.12, 0.92);
     if (mac_is_light_mode()) {
         cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, ta * 0.85);
@@ -2023,7 +2023,7 @@ static void draw_frosted_glass_card(cairo_t *cr, cairo_surface_t *blurred_bg,
     }
     cairo_paint(cr);
 
-    // Top-down specular reflection / sheen
+
     cairo_pattern_t *pat = cairo_pattern_create_linear(x, y, x, y + h);
     double sh = CLAMP(sheen, 0.04, 0.35);
     cairo_pattern_add_color_stop_rgba(pat, 0.0, 1.0, 1.0, 1.0, sh + 0.08);
@@ -2035,7 +2035,7 @@ static void draw_frosted_glass_card(cairo_t *cr, cairo_surface_t *blurred_bg,
 
     cairo_restore(cr);
 
-    // 3. Specular rim highlight border
+
     draw_rounded_rect_path(cr, x + 0.5, y + 0.5, w - 1.0, h - 1.0, r);
     cairo_pattern_t *rim_pat = cairo_pattern_create_linear(x, y, x + w, y + h);
     if (mac_is_light_mode()) {
@@ -2231,11 +2231,11 @@ static void on_liquid_drag_end(GtkGestureDrag *gesture, double offset_x, double 
     gtk_widget_set_cursor_from_name(widget, "grab");
 }
 
-/* ========================================================================= */
-/* Exact GLSL glass.frag shader simulation from ryohsuke1231/liquid-glass    */
-/* with multi-shape geometry support:                                        */
-/* 0 = Rounded Rect, 1 = Circle, 2 = Capsule                                 */
-/* ========================================================================= */
+
+
+
+
+
 
 static inline double glsl_sdRoundRect(double px, double py, double bx, double by, double r) {
     double dx = fabs(px) - bx + r;
@@ -2298,17 +2298,17 @@ static inline void glsl_sdShapeDir(double px, double py, double bx, double by, d
 }
 
 static void draw_shape_path(cairo_t *cr, double gx, double gy, double gw, double gh, double gr, int shape) {
-    if (shape == 1) { // Circle
+    if (shape == 1) {
         double r = fmin(gw, gh) * 0.5;
         double cx = gx + gw * 0.5;
         double cy = gy + gh * 0.5;
         cairo_new_sub_path(cr);
         cairo_arc(cr, cx, cy, r, 0.0, 2.0 * M_PI);
         cairo_close_path(cr);
-    } else if (shape == 2) { // Capsule
+    } else if (shape == 2) {
         double r = fmin(gw, gh) * 0.5;
         draw_rounded_rect_path(cr, gx, gy, gw, gh, r);
-    } else { // 0: Rounded Rect
+    } else {
         draw_rounded_rect_path(cr, gx, gy, gw, gh, gr);
     }
 }
@@ -2396,7 +2396,7 @@ static void draw_repo_glass_element(cairo_t *cr, cairo_surface_t *bg, int width,
                                     double gx, double gy, double gw, double gh, double gr, int shape) {
     if (!bg) return;
 
-    // 1. Drop shadow with true shape contour
+
     double shadow_val = (double)state.liquid_shadow / 100.0;
     if (shadow_val > 0.02) {
         for (int i = 4; i >= 1; i--) {
@@ -2435,7 +2435,7 @@ static void draw_repo_glass_element(cairo_t *cr, cairo_surface_t *bg, int width,
     double ior = 2.40;
     double eta = 1.0 / fmax(ior, 1.001);
 
-    // Upstream repo shader parameters:
+
     double disp_scale = ((double)state.liquid_refraction / 60.0) * 18.0;
     double chroma_str = ((double)state.liquid_chroma / 30.0) * 2.0;
     double tint_strength = ((double)state.liquid_tint / 100.0);
@@ -2450,7 +2450,7 @@ static void draw_repo_glass_element(cairo_t *cr, cairo_surface_t *bg, int width,
     double ao_intensity = 0.30;
     double ao_radius = 8.0;
 
-    double light_angle_rad = 1.5707963267948966; // 90 deg
+    double light_angle_rad = 1.5707963267948966;
     double lx_dir = cos(light_angle_rad);
     double ly_dir = sin(light_angle_rad);
     double lz_dir = 0.38;
@@ -2471,13 +2471,13 @@ static void draw_repo_glass_element(cairo_t *cr, cairo_surface_t *bg, int width,
             double outsideTransition = glsl_smoothstep(-edgeFeather, edgeFeather, d);
             double insideMask = 1.0 - outsideTransition;
 
-            // 1. Height gradient & 3D normal vector
+
             double grad_x, grad_y;
             glsl_heightGradient(px, py, bx, by, gr, max_z, edge_smoothing, profile_n, 0.5, shape, &grad_x, &grad_y);
             double nx, ny, nz;
             glsl_getNormal(grad_x, grad_y, &nx, &ny, &nz);
 
-            // 2. Snell refraction ray
+
             double dot_NI = -nz;
             double k = 1.0 - eta * eta * (1.0 - dot_NI * dot_NI);
             double disp_x = 0.0, disp_y = 0.0;
@@ -2516,20 +2516,20 @@ static void draw_repo_glass_element(cairo_t *cr, cairo_surface_t *bg, int width,
                 cr_b = b_val;
             }
 
-            // 3. Tint
+
             double tint_r = 41.0, tint_g = 41.0, tint_b = 46.0;
             double base_r = cr_r * (1.0 - tint_strength) + tint_r * tint_strength;
             double base_g = cr_g * (1.0 - tint_strength) + tint_g * tint_strength;
             double base_b = cr_b * (1.0 - tint_strength) + tint_b * tint_strength;
 
-            // 4. Ambient Occlusion (inner edge darkening)
+
             double aoMask = 1.0 - glsl_smoothstep(0.0, fmax(ao_radius, 0.001), -d);
             double aoFactor = 1.0 - aoMask * ao_intensity;
             base_r *= aoFactor;
             base_g *= aoFactor;
             base_b *= aoFactor;
 
-            // 5. Lighting: Rim, Specular, Sheen
+
             double safeRimWidth = fmax(rim_width, 0.001);
             double edgeBand = (1.0 - glsl_smoothstep(0.0, safeRimWidth, fabs(d))) * (rim_width >= 0.0005 ? 1.0 : 0.0);
             double rimDot = 1.0 - fmax(nz, 0.0);
@@ -2539,14 +2539,14 @@ static void draw_repo_glass_element(cairo_t *cr, cairo_surface_t *bg, int width,
             double rimShape = (pow(edgeBand, 0.85) * 0.45 + rimFresnel * 0.55) * edgeBand;
             double finalRimLight = rimShape * lightMask * rim_intensity * rim_light_color_intensity * 255.0;
 
-            // Specular reflection
+
             double r_dir_z = 2.0 * dotNL * nz - lz_dir;
             double specDot = fmax(r_dir_z, 0.0);
             double specLight = pow(specDot, shininess) * spec_intensity * 255.0;
             double specMask = (0.25 * (1.0 - insideMask) + insideMask) * CLAMP(edgeBand + insideMask * 0.65, 0.0, 1.0);
             specLight *= specMask;
 
-            // Sheen
+
             double sheenFacing = fmax(dotNL, 0.0);
             double surfaceSheen = pow(sheenFacing, 1.65) * (1.0 * (1.0 - edgeBand) + 0.55 * edgeBand);
             double sheenLight = surfaceSheen * sheen_intensity * 255.0;
@@ -2570,7 +2570,7 @@ static void draw_repo_glass_element(cairo_t *cr, cairo_surface_t *bg, int width,
     cairo_paint(cr);
     cairo_surface_destroy(glass_surf);
 
-    // Center icon/dots for repo element
+
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.65);
     for (int d = -1; d <= 1; d++) {
         cairo_arc(cr, gx + gw / 2.0 + d * 9.0, gy + gh / 2.0, 2.2, 0, 2 * G_PI);
@@ -2584,12 +2584,12 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     (void)area; (void)user_data;
     if (width <= 0 || height <= 0) return;
 
-    // 1. Clip preview container with rounded corners
+
     cairo_save(cr);
     draw_rounded_rect_path(cr, 0, 0, width, height, 14.0);
     cairo_clip(cr);
 
-    // 2. Wallpaper background
+
     cairo_surface_t *bg = get_cached_wallpaper_surface(width, height);
     if (bg) {
         cairo_set_source_surface(cr, bg, 0, 0);
@@ -2603,11 +2603,11 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
         cairo_pattern_destroy(fallback);
     }
 
-    // 3. Interactive Liquid Glass Shape Element
+
     double gw = 150.0, gh = 110.0, gr = 24.0;
-    if (state.liquid_shape == 1) { // Circle
+    if (state.liquid_shape == 1) {
         gw = 116.0; gh = 116.0; gr = 58.0;
-    } else if (state.liquid_shape == 2) { // Capsule
+    } else if (state.liquid_shape == 2) {
         gw = 160.0; gh = 92.0; gr = 46.0;
     }
 
@@ -2618,16 +2618,16 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     double gx = CLAMP(g_glass_x, 6.0, width - gw - 6.0);
     double gy = CLAMP(g_glass_y, 6.0, height - gh - 6.0);
 
-    // Frosted liquid glass background if liquid_blur > 0
+
     cairo_surface_t *bg_for_glass = bg;
     if (state.liquid_blur > 0) {
         cairo_surface_t *bl = get_cached_blurred_wallpaper_surface(width, height, CLAMP(state.liquid_blur * 2, 1, 40));
         if (bl) bg_for_glass = bl;
     }
-    // Render using the physical repo shader with the active shape
+
     draw_repo_glass_element(cr, bg_for_glass, width, height, gx, gy, gw, gh, gr, state.liquid_shape);
 
-    // Floating shape badge above element
+
     const char *shape_names[] = {
         "Заокруглений прямокутник",
         "Коло",
@@ -2657,7 +2657,7 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
     cairo_show_text(cr, badge_text);
 
-    // Outer preview border
+
     cairo_restore(cr);
     draw_rounded_rect_path(cr, 0.5, 0.5, width - 1.0, height - 1.0, 14.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
@@ -2680,9 +2680,9 @@ void init_liquid_preview(void *widget, gpointer data) {
     gtk_widget_set_cursor_from_name(GTK_WIDGET(widget), "grab");
 }
 
-/* ========================================================================= */
-/* Live Preview: Menubar Preview                                            */
-/* ========================================================================= */
+
+
+
 
 static GtkWidget *g_menubar_preview_w = NULL;
 static void redraw_menubar_preview(void) {
@@ -2712,7 +2712,7 @@ static void menubar_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     int blur_r = CLAMP(state.menubar_blur, 6, 45);
     cairo_surface_t *blurred_bg = get_cached_blurred_wallpaper_surface(width, height, blur_r);
 
-    // Clip top bar for frosted glass
+
     cairo_save(cr);
     cairo_rectangle(cr, 0, 0, width, mb_h);
     cairo_clip(cr);
@@ -2730,7 +2730,7 @@ static void menubar_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_set_source_rgba(cr, 0.06, 0.07, 0.09, ta);
     cairo_paint(cr);
 
-    // Specular top-down gradient
+
     cairo_pattern_t *pat = cairo_pattern_create_linear(0, 0, 0, mb_h);
     cairo_pattern_add_color_stop_rgba(pat, 0.0, 1.0, 1.0, 1.0, 0.15);
     cairo_pattern_add_color_stop_rgba(pat, 1.0, 1.0, 1.0, 1.0, 0.02);
@@ -2740,14 +2740,14 @@ static void menubar_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
 
     cairo_restore(cr);
 
-    // Specular bottom border line
+
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.18);
     cairo_set_line_width(cr, 1.0);
     cairo_move_to(cr, 0, mb_h - 0.5);
     cairo_line_to(cr, width, mb_h - 0.5);
     cairo_stroke(cr);
 
-    // System Logo 
+
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
     cairo_arc(cr, 16.5, 14.5, 3.8, 0, 2 * G_PI);
     cairo_fill(cr);
@@ -2756,7 +2756,7 @@ static void menubar_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_arc(cr, 18.0, 10.5, 1.5, 0, 2 * G_PI);
     cairo_fill(cr);
 
-    // Menus
+
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.5);
     cairo_move_to(cr, 30.0, 17.5);
@@ -2773,11 +2773,11 @@ static void menubar_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_move_to(cr, 248.0, 17.5);
     cairo_show_text(cr, "Вікно");
 
-    // Right status items
+
     cairo_move_to(cr, width - 110.0, 17.5);
     cairo_show_text(cr, "Пн 2 лис 14:28");
 
-    // Wi-Fi
+
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.85);
     cairo_set_line_width(cr, 1.2);
     cairo_arc(cr, width - 130.0, 16.0, 5.5, -G_PI * 0.75, -G_PI * 0.25);
@@ -2787,7 +2787,7 @@ static void menubar_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_arc(cr, width - 130.0, 16.0, 1.0, 0, 2 * G_PI);
     cairo_fill(cr);
 
-    // Battery
+
     double bx_b = width - 156.0, by_b = 10.5;
     draw_rounded_rect_path(cr, bx_b, by_b, 17.0, 9.0, 2.5);
     cairo_set_line_width(cr, 1.0);
@@ -2811,9 +2811,9 @@ void init_menubar_preview(void *widget, gpointer data) {
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), menubar_preview_draw_func, NULL, NULL);
 }
 
-/* ========================================================================= */
-/* Live Preview: Dock Preview                                                */
-/* ========================================================================= */
+
+
+
 
 static GtkWidget *g_dock_preview_w = NULL;
 static void redraw_dock_preview(void) {
@@ -2866,7 +2866,7 @@ static void dock_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
 
     draw_frosted_glass_card(cr, blurred_bg, dx, dy, dw, dh, dr, tint_a, shadow_a, 0.16);
 
-    // Specular top rim line for dock shelf
+
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.35);
     cairo_set_line_width(cr, 1.0);
     cairo_move_to(cr, dx + dr, dy + 0.5);
@@ -2877,7 +2877,7 @@ static void dock_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
     double start_x = dx + 14.0;
     double icon_r = icon_sz * (8.0 / 34.0);
 
-    /* 1. Finder */
+
     double ix1 = start_x;
     draw_rounded_rect_path(cr, ix1, icon_y, icon_sz, icon_sz, icon_r);
     cairo_set_source_rgb(cr, 0.14, 0.55, 0.94);
@@ -2904,7 +2904,7 @@ static void dock_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
     cairo_arc(cr, ix1 + icon_sz / 2.0, dy + dh - 3.5, 1.6, 0, 2 * G_PI);
     cairo_fill(cr);
 
-    /* 2. Launchpad */
+
     double ix2 = ix1 + icon_sz + gap;
     draw_rounded_rect_path(cr, ix2, icon_y, icon_sz, icon_sz, icon_r);
     cairo_set_source_rgb(cr, 0.25, 0.27, 0.32);
@@ -2917,7 +2917,7 @@ static void dock_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
         }
     }
 
-    /* 3. Safari */
+
     double ix3 = ix2 + icon_sz + gap;
     draw_rounded_rect_path(cr, ix3, icon_y, icon_sz, icon_sz, icon_r);
     cairo_set_source_rgb(cr, 0.98, 0.98, 0.99);
@@ -2942,7 +2942,7 @@ static void dock_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
     cairo_arc(cr, cx_s, dy + dh - 3.5, 1.6, 0, 2 * G_PI);
     cairo_fill(cr);
 
-    /* 4. Settings */
+
     double ix4 = ix3 + icon_sz + gap;
     draw_rounded_rect_path(cr, ix4, icon_y, icon_sz, icon_sz, icon_r);
     cairo_set_source_rgb(cr, 0.48, 0.50, 0.54);
@@ -2959,7 +2959,7 @@ static void dock_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
     cairo_arc(cr, cx_g, dy + dh - 3.5, 1.6, 0, 2 * G_PI);
     cairo_fill(cr);
 
-    /* Separator groove */
+
     double sx_d = ix4 + icon_sz + sep_gap;
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.16);
     cairo_set_line_width(cr, 1.0);
@@ -2967,7 +2967,7 @@ static void dock_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
     cairo_line_to(cr, sx_d, icon_y + icon_sz - 4.0);
     cairo_stroke(cr);
 
-    /* 5. Trash */
+
     double ix5 = sx_d + sep_gap;
     draw_rounded_rect_path(cr, ix5, icon_y, icon_sz, icon_sz, icon_r);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.14);
@@ -2998,9 +2998,9 @@ void init_dock_preview(void *widget, gpointer data) {
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), dock_preview_draw_func, NULL, NULL);
 }
 
-/* ========================================================================= */
-/* Live Preview: Labels (Бірки) Preview                                      */
-/* ========================================================================= */
+
+
+
 
 static GtkWidget *g_labels_preview_w = NULL;
 static void redraw_labels_preview(void) {
@@ -3017,7 +3017,7 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     draw_rounded_rect_path(cr, 0, 0, width, height, 14.0);
     cairo_clip(cr);
 
-    // 1. Wallpaper background
+
     cairo_surface_t *bg = get_cached_wallpaper_surface(width, height);
     if (bg) {
         cairo_set_source_surface(cr, bg, 0, 0);
@@ -3027,7 +3027,7 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
         cairo_paint(cr);
     }
 
-    // 2. Dock shelf at bottom
+
     double dw = 210.0, dh = 48.0, dr = 16.0;
     double dx = (width - dw) / 2.0;
     double dy = height - dh - 8.0;
@@ -3038,7 +3038,7 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     double icon_sz = 34.0;
     double icon_y = dy + (dh - icon_sz) / 2.0;
 
-    // Terminal icon (dark square with prompt)
+
     double icon1_x = dx + 32.0;
     draw_rounded_rect_path(cr, icon1_x, icon_y, icon_sz, icon_sz, 8.0);
     cairo_set_source_rgb(cr, 0.10, 0.10, 0.12);
@@ -3047,7 +3047,7 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.18);
     cairo_set_line_width(cr, 1.0);
     cairo_stroke(cr);
-    // Terminal prompt > _
+
     cairo_set_source_rgb(cr, 0.20, 0.80, 0.95);
     cairo_set_line_width(cr, 2.0);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
@@ -3059,7 +3059,7 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_line_to(cr, icon1_x + 24.0, icon_y + 22.0);
     cairo_stroke(cr);
 
-    // Telegram / Messages icon (green rounded square with white speech bubble)
+
     double icon2_x = dx + dw - 32.0 - icon_sz;
     draw_rounded_rect_path(cr, icon2_x, icon_y, icon_sz, icon_sz, 8.0);
     cairo_pattern_t *tg_pat = cairo_pattern_create_linear(icon2_x, icon_y, icon2_x, icon_y + icon_sz);
@@ -3072,7 +3072,7 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.25);
     cairo_set_line_width(cr, 1.0);
     cairo_stroke(cr);
-    // Speech bubble
+
     double bx = icon2_x + 9.0, by = icon_y + 9.0, bw = 17.0, bh = 14.0;
     draw_rounded_rect_path(cr, bx, by, bw, bh, 5.0);
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
@@ -3083,12 +3083,12 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_close_path(cr);
     cairo_fill(cr);
 
-    // Active running dot under Telegram icon
+
     cairo_arc(cr, icon2_x + icon_sz / 2.0, dy + dh - 3.5, 1.8, 0, 2 * G_PI);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
     cairo_fill(cr);
 
-    // 3. Dock Label Pill above Telegram icon
+
     double lw = 80.0, lh = 26.0, lr = 13.0;
     double lx = icon2_x + (icon_sz - lw) / 2.0;
     double ly = icon_y - lh - 11.0;
@@ -3099,15 +3099,15 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     double tint_a = CLAMP((double)state.label_tint / 100.0, 0.05, 0.95);
     double shadow_a = CLAMP((double)state.label_shadow / 100.0, 0.0, 1.0);
 
-    // Draw frosted glass pill
+
     draw_frosted_glass_card(cr, lbl_blur_bg, lx, ly, lw, lh, lr, tint_a, shadow_a, 0.12);
 
-    // 4. Arrow tail pointing down toward icon
+
     double tcx = lx + lw / 2.0;
     double ty = ly + lh;
     double halfBase = 6.0, rise = 6.0;
 
-    // Tail shadow
+
     if (shadow_a > 0.05) {
         cairo_save(cr);
         cairo_move_to(cr, tcx - halfBase, ty - 0.5);
@@ -3119,7 +3119,7 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
         cairo_restore(cr);
     }
 
-    // Tail body (matching tint)
+
     cairo_move_to(cr, tcx - halfBase, ty - 0.5);
     cairo_line_to(cr, tcx + halfBase, ty - 0.5);
     cairo_line_to(cr, tcx, ty + rise);
@@ -3127,7 +3127,7 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_set_source_rgba(cr, 0.12, 0.12, 0.14, tint_a);
     cairo_fill(cr);
 
-    // Tail border contour
+
     cairo_move_to(cr, tcx - halfBase, ty - 0.5);
     cairo_line_to(cr, tcx, ty + rise);
     cairo_line_to(cr, tcx + halfBase, ty - 0.5);
@@ -3135,26 +3135,26 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_set_line_width(cr, 1.0);
     cairo_stroke(cr);
 
-    // 5. Label text: "Telegram"
+
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 12.0);
     cairo_text_extents_t te;
     cairo_text_extents(cr, "Telegram", &te);
-    // Subtle text shadow
+
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.55);
     cairo_move_to(cr, tcx - te.width / 2.0 - te.x_bearing, ly + (lh - te.height) / 2.0 - te.y_bearing + 1.0);
     cairo_show_text(cr, "Telegram");
-    // Text fill
+
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
     cairo_move_to(cr, tcx - te.width / 2.0 - te.x_bearing, ly + (lh - te.height) / 2.0 - te.y_bearing);
     cairo_show_text(cr, "Telegram");
 
-    // 6. Realistic mouse cursor arrow pointing at Telegram icon
+
     double mx = icon2_x + icon_sz / 2.0 + 4.0;
     double my = icon_y + icon_sz - 2.0;
     cairo_save(cr);
     cairo_translate(cr, mx, my);
-    // Cursor shadow
+
     cairo_move_to(cr, 1.0, 1.0);
     cairo_line_to(cr, 1.0, 13.0);
     cairo_line_to(cr, 4.0, 10.0);
@@ -3165,7 +3165,7 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_close_path(cr);
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.40);
     cairo_fill(cr);
-    // Cursor white body + dark outline
+
     cairo_move_to(cr, 0.0, 0.0);
     cairo_line_to(cr, 0.0, 12.0);
     cairo_line_to(cr, 3.0, 9.0);
@@ -3183,7 +3183,7 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
 
     cairo_restore(cr);
 
-    // Specular border on outer preview rectangle
+
     draw_rounded_rect_path(cr, 0.5, 0.5, width - 1.0, height - 1.0, 14.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
     cairo_set_line_width(cr, 1.0);
@@ -3196,9 +3196,9 @@ void init_labels_preview(void *widget, gpointer data) {
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), labels_preview_draw_func, NULL, NULL);
 }
 
-/* ========================================================================= */
-/* Live Preview: Alerts Preview                                              */
-/* ========================================================================= */
+
+
+
 
 static GtkWidget *g_alerts_preview_w = NULL;
 static void redraw_alerts_preview(void) {
@@ -3224,13 +3224,13 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
         cairo_paint(cr);
     }
 
-    // Modal background darkening over wallpaper
+
     double tint_val = (double)state.alert_tint / 100.0;
     double backdrop_alpha = CLAMP(0.25 + tint_val * 0.50, 0.18, 0.85);
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, backdrop_alpha);
     cairo_paint(cr);
 
-    // Modal alert card
+
     double cw = 246.0, ch = 140.0, cr_r = 18.0;
     double cx = (width - cw) / 2.0;
     double cy = (height - ch) / 2.0;
@@ -3243,7 +3243,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
 
     draw_frosted_glass_card(cr, blurred_bg, cx, cy, cw, ch, cr_r, card_tint_a, shadow_a, 0.16);
 
-    // Amber warning triangle icon (macW1Y Warning Badge)
+
     double tri_cx = cx + cw / 2.0;
     double tri_cy = cy + 24.0;
     double tri_sz = 14.0;
@@ -3254,7 +3254,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_set_source_rgb(cr, 0.98, 0.70, 0.12);
     cairo_fill(cr);
 
-    // Exclamation mark inside warning triangle
+
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 13.0);
     cairo_set_source_rgb(cr, 0.10, 0.10, 0.10);
@@ -3263,7 +3263,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_move_to(cr, tri_cx - ex_w.width / 2.0 - ex_w.x_bearing, tri_cy + ex_w.height / 2.0 + 1.0);
     cairo_show_text(cr, "!");
 
-    // Title
+
     cairo_set_font_size(cr, 11.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
     const char *title_txt = "Спорожнити Смітник?";
@@ -3271,7 +3271,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_move_to(cr, cx + (cw - ex_w.width) / 2.0, cy + 54.0);
     cairo_show_text(cr, title_txt);
 
-    // Subtitle
+
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.65);
@@ -3280,13 +3280,13 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_move_to(cr, cx + (cw - ex_w.width) / 2.0, cy + 70.0);
     cairo_show_text(cr, sub_txt);
 
-    // Button row
+
     double btn_y = cy + ch - 34.0;
     double btn_w = 98.0;
     double btn_h = 24.0;
     double btn_r = 7.0;
 
-    // Cancel button
+
     double b1_x = cx + 16.0;
     draw_rounded_rect_path(cr, b1_x, btn_y, btn_w, btn_h, btn_r);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.14);
@@ -3301,7 +3301,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_move_to(cr, b1_x + (btn_w - ex_w.width) / 2.0, btn_y + 15.5);
     cairo_show_text(cr, "Скасувати");
 
-    // Destructive Empty Trash button
+
     double b2_x = cx + cw - 16.0 - btn_w;
     draw_rounded_rect_path(cr, b2_x, btn_y, btn_w, btn_h, btn_r);
     cairo_set_source_rgb(cr, 0.88, 0.22, 0.20);
@@ -3327,9 +3327,9 @@ void init_alerts_preview(void *widget, gpointer data) {
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), alerts_preview_draw_func, NULL, NULL);
 }
 
-/* ========================================================================= */
-/* Live Preview: Notifications Preview                                       */
-/* ========================================================================= */
+
+
+
 
 static GtkWidget *g_notifications_preview_w = NULL;
 static void redraw_notifications_preview(void) {
@@ -3367,14 +3367,14 @@ static void notifications_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, i
 
     draw_frosted_glass_card(cr, blurred_bg, nx, ny, nw, nh, nr, tint_a, shadow_a, 0.15);
 
-    // Messages green squircle icon
+
     double icon_sz = 38.0;
     double ix = nx + 12.0;
     double iy = ny + (nh - icon_sz) / 2.0;
     draw_rounded_rect_path(cr, ix, iy, icon_sz, icon_sz, 9.0);
     cairo_set_source_rgb(cr, 0.19, 0.78, 0.35);
     cairo_fill(cr);
-    // Speech bubble
+
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
     cairo_arc(cr, ix + 19.0, iy + 17.5, 8.5, 0, 2 * G_PI);
     cairo_fill(cr);
@@ -3384,7 +3384,7 @@ static void notifications_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, i
     cairo_close_path(cr);
     cairo_fill(cr);
 
-    // Text content
+
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
@@ -3423,9 +3423,9 @@ void init_notifications_preview(void *widget, gpointer data) {
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), notifications_preview_draw_func, NULL, NULL);
 }
 
-/* ========================================================================= */
-/* Live Preview: Spotlight Preview & Interactive Easter Egg                  */
-/* ========================================================================= */
+
+
+
 
 static GtkWidget *g_spotlight_preview_w = NULL;
 static gboolean spotlight_input_active = FALSE;
@@ -3436,10 +3436,10 @@ static guint spotlight_cursor_timer_id = 0;
 static guint64 spotlight_last_click_time = 0;
 static int spotlight_consecutive_clicks = 0;
 
-/* Smooth Expansion / Collapse Animation Engine */
+
 static guint spotlight_anim_tick_id = 0;
 static gint64 spotlight_anim_last_time = 0;
-static double spotlight_anim_current_progress = 0.0; /* 0.0 = collapsed, 1.0 = expanded */
+static double spotlight_anim_current_progress = 0.0;
 static double spotlight_anim_target_progress = 0.0;
 
 static void redraw_spotlight_preview(void) {
@@ -3473,7 +3473,7 @@ static gboolean spotlight_anim_tick_cb(GtkWidget *widget G_GNUC_UNUSED,
         return G_SOURCE_REMOVE;
     }
 
-    /* Critically damped macW1Y-style fluid exponential easing */
+
     double speed = (spotlight_anim_target_progress > spotlight_anim_current_progress) ? 14.0 : 18.0;
     double factor = 1.0 - exp(-speed * dt);
     spotlight_anim_current_progress += diff * factor;
@@ -3512,27 +3512,27 @@ static gboolean spotlight_cursor_blink_cb(gpointer user_data) {
 static void draw_safari_compass_icon(cairo_t *cr, double cx, double cy, double radius) {
     cairo_save(cr);
 
-    // Drop shadow under Safari icon
+
     cairo_arc(cr, cx, cy + 1.0, radius + 0.5, 0, 2 * G_PI);
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.28);
     cairo_fill(cr);
 
-    // Outer Blue circular gradient
+
     cairo_pattern_t *bg_pat = cairo_pattern_create_linear(cx, cy - radius, cx, cy + radius);
-    cairo_pattern_add_color_stop_rgb(bg_pat, 0.0, 0.12, 0.65, 0.98); // #1FA6FA
-    cairo_pattern_add_color_stop_rgb(bg_pat, 1.0, 0.04, 0.40, 0.84); // #0A66D6
+    cairo_pattern_add_color_stop_rgb(bg_pat, 0.0, 0.12, 0.65, 0.98);
+    cairo_pattern_add_color_stop_rgb(bg_pat, 1.0, 0.04, 0.40, 0.84);
     cairo_arc(cr, cx, cy, radius, 0, 2 * G_PI);
     cairo_set_source(cr, bg_pat);
     cairo_fill(cr);
     cairo_pattern_destroy(bg_pat);
 
-    // White rim border
+
     cairo_arc(cr, cx, cy, radius - 0.5, 0, 2 * G_PI);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.35);
     cairo_set_line_width(cr, 1.0);
     cairo_stroke(cr);
 
-    // Subtle compass dial ticks (12 points)
+
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.45);
     cairo_set_line_width(cr, 0.8);
     for (int i = 0; i < 12; i++) {
@@ -3544,7 +3544,7 @@ static void draw_safari_compass_icon(cairo_t *cr, double cx, double cy, double r
         cairo_stroke(cr);
     }
 
-    // Compass Needle rotated -45 deg (pointing North-East / 01:30)
+
     cairo_save(cr);
     cairo_translate(cr, cx, cy);
     cairo_rotate(cr, -G_PI / 4.0);
@@ -3552,12 +3552,12 @@ static void draw_safari_compass_icon(cairo_t *cr, double cx, double cy, double r
     double needle_len = radius - 3.0;
     double needle_w = 3.2;
 
-    // Red half (North-East)
+
     cairo_move_to(cr, 0, -needle_len);
     cairo_line_to(cr, needle_w, 0);
     cairo_line_to(cr, 0, 0);
     cairo_close_path(cr);
-    cairo_set_source_rgb(cr, 1.0, 0.23, 0.19); // #FF3B30
+    cairo_set_source_rgb(cr, 1.0, 0.23, 0.19);
     cairo_fill(cr);
 
     cairo_move_to(cr, 0, -needle_len);
@@ -3567,7 +3567,7 @@ static void draw_safari_compass_icon(cairo_t *cr, double cx, double cy, double r
     cairo_set_source_rgb(cr, 0.90, 0.15, 0.12);
     cairo_fill(cr);
 
-    // White half (South-West)
+
     cairo_move_to(cr, 0, needle_len);
     cairo_line_to(cr, needle_w, 0);
     cairo_line_to(cr, 0, 0);
@@ -3584,7 +3584,7 @@ static void draw_safari_compass_icon(cairo_t *cr, double cx, double cy, double r
 
     cairo_restore(cr);
 
-    // Center pivot
+
     cairo_arc(cr, cx, cy, 1.8, 0, 2 * G_PI);
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     cairo_fill(cr);
@@ -3596,7 +3596,7 @@ static void on_spotlight_preview_clicked(GtkGestureClick *gesture, int n_press, 
     (void)gesture;
     GtkWidget *widget = GTK_WIDGET(user_data);
 
-    // If Easter Egg is revealed or expanding and user clicked on the "esc" close badge
+
     if (spotlight_anim_current_progress > 0.6 && g_spotlight_preview_w && GTK_IS_WIDGET(g_spotlight_preview_w)) {
         int width = gtk_widget_get_width(g_spotlight_preview_w);
         int height = gtk_widget_get_height(g_spotlight_preview_w);
@@ -3624,7 +3624,7 @@ static void on_spotlight_preview_clicked(GtkGestureClick *gesture, int n_press, 
     }
 
     guint64 now = g_get_monotonic_time();
-    if (now - spotlight_last_click_time < 1200000) { // within 1.2s
+    if (now - spotlight_last_click_time < 1200000) {
         spotlight_consecutive_clicks++;
     } else {
         spotlight_consecutive_clicks = 1;
@@ -3749,7 +3749,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
 
     double p = spotlight_anim_current_progress;
 
-    /* Animated dimensions interpolated continuously by the frame clock */
+
     double min_sw = 290.0, max_sw = CLAMP((double)width - 40.0, 360.0, 520.0);
     double sw = min_sw + p * (max_sw - min_sw);
     double min_sh = 46.0, max_sh = 286.0;
@@ -3759,14 +3759,14 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
     double sx = (width - sw) / 2.0;
     double sy = (height - sh) / 2.0;
 
-    // Draw frosted glass card
+
     draw_frosted_glass_card(cr, blurred_bg, sx, sy, sw, sh, sr, tint_a, shadow_a, 0.16 + p * 0.04);
     draw_rounded_rect_path(cr, sx + 0.5, sy + 0.5, sw - 1.0, sh - 1.0, sr);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12 + p * 0.10);
     cairo_set_line_width(cr, 1.0);
     cairo_stroke(cr);
 
-    // Magnifying glass icon (smoothly positions with card expansion)
+
     double icon_cx = sx + 22.0 + p * 3.0;
     double icon_cy = sy + 21.0 + p * 4.0;
     double icon_r = 6.0 + p * 1.0;
@@ -3778,7 +3778,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
     cairo_line_to(cr, icon_cx + icon_r * 0.72 + 4.5 + p * 1.5, icon_cy + icon_r * 0.72 + 4.5 + p * 1.5);
     cairo_stroke(cr);
 
-    // Search input text / placeholder
+
     double text_x = sx + 38.0 + p * 8.0;
     double text_y = sy + 27.5 + p * 3.5;
     double font_sz = 12.0 + p * 4.0;
@@ -3815,7 +3815,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
         cairo_show_text(cr, "Пошук у Spotlight...");
     }
 
-    // Shortcut badge "⌘ Пробіл" (fades out during expansion)
+
     if (p < 0.7 && !spotlight_input_active) {
         double badge_alpha = CLAMP((0.6 - p) / 0.6, 0.0, 1.0);
         if (badge_alpha > 0.02) {
@@ -3837,7 +3837,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
         }
     }
 
-    // Close "esc" badge (fades in as window expands)
+
     if (p > 0.15) {
         double esc_alpha = CLAMP((p - 0.15) / 0.85, 0.0, 1.0);
         if (esc_alpha > 0.02) {
@@ -3855,13 +3855,13 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
         }
     }
 
-    // Content area below search bar with fluid clipping and slide-in
+
     if (p > 0.08) {
         cairo_save(cr);
         draw_rounded_rect_path(cr, sx, sy, sw, sh, sr);
         cairo_clip(cr);
 
-        // Separator line
+
         cairo_move_to(cr, sx + 14.0, sy + 51.0);
         cairo_line_to(cr, sx + sw - 14.0, sy + 51.0);
         cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12 * p);
@@ -3875,7 +3875,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
             cairo_save(cr);
             cairo_translate(cr, 0, slide_y);
 
-            // Safari header row
+
             draw_safari_compass_icon(cr, sx + 34.0, sy + 76.0, 15.0);
 
             cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
@@ -3890,7 +3890,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
             cairo_move_to(cr, sx + 58.0, sy + 87.0);
             cairo_show_text(cr, "Safari — веб-пошук");
 
-            // Snippet description card
+
             double card_x = sx + 14.0;
             double card_y = sy + 102.0;
             double card_w = sw - 28.0;
@@ -3904,7 +3904,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
                 cairo_set_line_width(cr, 1.0);
                 cairo_stroke(cr);
 
-                // Pango formatted description
+
                 PangoLayout *layout = pango_cairo_create_layout(cr);
                 pango_layout_set_width(layout, (int)((card_w - 24.0) * PANGO_SCALE));
                 pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
@@ -3961,9 +3961,9 @@ void init_spotlight_preview(void *widget, gpointer data) {
     gtk_widget_add_controller(GTK_WIDGET(widget), key_ctrl);
 }
 
-/* ========================================================================= */
-/* Live Preview: OSD (On-Screen Display) Preview                             */
-/* ========================================================================= */
+
+
+
 
 static GtkWidget *g_osd_preview_w = NULL;
 static void redraw_osd_preview(void) {
@@ -3980,7 +3980,7 @@ static void osd_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width, 
     draw_rounded_rect_path(cr, 0, 0, width, height, 14.0);
     cairo_clip(cr);
 
-    // 1. Wallpaper background
+
     cairo_surface_t *bg = get_cached_wallpaper_surface(width, height);
     if (bg) {
         cairo_set_source_surface(cr, bg, 0, 0);
@@ -3990,10 +3990,10 @@ static void osd_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width, 
         cairo_paint(cr);
     }
 
-    // 2. Frosted glass OSD pill capsule (matching Photo 1 reference)
+
     double cw = 250.0;
     double ch = 46.0;
-    double cr_r = ch / 2.0; // 23.0px capsule radius
+    double cr_r = ch / 2.0;
     double cx = (width - cw) / 2.0;
     double cy = (height - ch) / 2.0;
 
@@ -4006,23 +4006,23 @@ static void osd_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width, 
 
     draw_frosted_glass_card(cr, blurred_bg, cx, cy, cw, ch, cr_r, card_tint_a, shadow_a, 0.16);
 
-    // Specular top highlight line for glass capsule
+
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.20);
     cairo_set_line_width(cr, 1.0);
     cairo_move_to(cr, cx + cr_r, cy + 0.5);
     cairo_line_to(cr, cx + cw - cr_r, cy + 0.5);
     cairo_stroke(cr);
 
-    // 3. Speaker icon (crisp vector rendering, enlarged, NO ghost arches)
+
     double spk_cx = cx + 22.0;
     double spk_cy = cy + ch / 2.0;
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
 
-    // Speaker base box
+
     cairo_rectangle(cr, spk_cx - 8.0, spk_cy - 4.5, 4.0, 9.0);
     cairo_fill(cr);
 
-    // Speaker cone (trapezoid)
+
     cairo_move_to(cr, spk_cx - 4.0, spk_cy - 4.5);
     cairo_line_to(cr, spk_cx + 1.0, spk_cy - 9.0);
     cairo_line_to(cr, spk_cx + 1.0, spk_cy + 9.0);
@@ -4030,26 +4030,26 @@ static void osd_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width, 
     cairo_close_path(cr);
     cairo_fill(cr);
 
-    // Sound arch 1 (medium volume: 1st arch active)
+
     cairo_set_line_width(cr, 2.0);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
     cairo_arc(cr, spk_cx - 1.0, spk_cy, 6.5, -0.68, 0.68);
     cairo_stroke(cr);
 
-    // Sound arch 2 (2nd arch active)
+
     cairo_arc(cr, spk_cx - 1.0, spk_cy, 11.0, -0.72, 0.72);
     cairo_stroke(cr);
 
-    // 4. Segmented progress bar (16 segments, stops right before right cap curvature)
+
     double bar_start_x = cx + 46.0;
-    double bar_end_x = cx + cw - cr_r - 2.0; // Exactly right before circular cap curve
+    double bar_end_x = cx + cw - cr_r - 2.0;
     double total_bar_w = bar_end_x - bar_start_x;
     int num_segs = 16;
     double seg_gap = 2.0;
     double seg_w = (total_bar_w - (num_segs - 1) * seg_gap) / (double)num_segs;
     double seg_h = 4.5;
     double seg_y = cy + (ch - seg_h) / 2.0;
-    int active_segs = 7; // ~44% volume matching Photo 1
+    int active_segs = 7;
 
     for (int i = 0; i < num_segs; i++) {
         double sx = bar_start_x + i * (seg_w + seg_gap);
@@ -4064,7 +4064,7 @@ static void osd_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width, 
 
     cairo_restore(cr);
 
-    // Border around preview card
+
     draw_rounded_rect_path(cr, 0.5, 0.5, width - 1.0, height - 1.0, 14.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
     cairo_set_line_width(cr, 1.0);
@@ -4077,9 +4077,9 @@ void init_osd_preview(void *widget, gpointer data) {
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), osd_preview_draw_func, NULL, NULL);
 }
 
-/* ========================================================================= */
-/* Live Preview: Blur Preview                                                */
-/* ========================================================================= */
+
+
+
 
 static GtkWidget *g_blur_preview_w = NULL;
 static void redraw_blur_preview(void) {
@@ -4167,9 +4167,9 @@ void init_blur_preview(void *widget, gpointer data) {
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), blur_preview_draw_func, NULL, NULL);
 }
 
-/* ========================================================================= */
-/* Live Preview: Context Menu Preview                                        */
-/* ========================================================================= */
+
+
+
 
 static GtkWidget *g_context_menu_preview_w = NULL;
 static void redraw_context_menu_preview(void) {
@@ -4210,9 +4210,9 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     double ar, ag, ab;
     get_system_accent_color(&ar, &ag, &ab);
 
-    // Top 3 quick action capsule buttons
+
     double pill_y = my + 8.0, pill_h = 22.0;
-    // Capsule 1: Grid [ ⊞ ]
+
     draw_rounded_rect_path(cr, mx + 10.0, pill_y, 28.0, pill_h, 7.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
     cairo_fill(cr);
@@ -4228,7 +4228,7 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
         }
     }
 
-    // Capsule 2: More [ ··· ]
+
     draw_rounded_rect_path(cr, mx + 44.0, pill_y, 28.0, pill_h, 7.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
     cairo_fill(cr);
@@ -4242,7 +4242,7 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
         cairo_fill(cr);
     }
 
-    // Capsule 3: Search [ ⌕ ]
+
     double p3_w = 30.0;
     double p3_x = mx + mw - 10.0 - p3_w;
     draw_rounded_rect_path(cr, p3_x, pill_y, p3_w, pill_h, 7.0);
@@ -4252,7 +4252,7 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.16);
     cairo_set_line_width(cr, 0.8);
     cairo_stroke(cr);
-    // Magnifier icon in capsule 3
+
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.85);
     cairo_set_line_width(cr, 1.2);
     cairo_arc(cr, p3_x + 13.0, pill_y + 10.0, 3.8, 0, 2 * G_PI);
@@ -4261,7 +4261,7 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     cairo_line_to(cr, p3_x + 19.5, pill_y + 16.5);
     cairo_stroke(cr);
 
-    // Row 1: "Режим редагування" with system accent orange toggle switch ON
+
     double r1_y = my + 36.0, r1_h = 28.0;
     draw_rounded_rect_path(cr, mx + 5.0, r1_y, mw - 10.0, r1_h, 7.0);
     cairo_set_source_rgba(cr, ar, ag, ab, 0.20);
@@ -4273,37 +4273,37 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     cairo_move_to(cr, mx + 14.0, r1_y + 18.0);
     cairo_show_text(cr, "Режим редагування");
 
-    // Toggle switch pill: accent colored
+
     double sw_w = 32.0, sw_h = 18.0, sw_r = 9.0;
     double sw_x = mx + mw - 12.0 - sw_w;
     double sw_y = r1_y + (r1_h - sw_h) / 2.0;
     draw_rounded_rect_path(cr, sw_x, sw_y, sw_w, sw_h, sw_r);
     cairo_set_source_rgb(cr, ar, ag, ab);
     cairo_fill(cr);
-    // Knob shadow
+
     cairo_arc(cr, sw_x + sw_w - sw_r, sw_y + sw_r + 0.5, 7.2, 0, 2 * G_PI);
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.30);
     cairo_fill(cr);
-    // Knob body
+
     cairo_arc(cr, sw_x + sw_w - sw_r, sw_y + sw_r, 7.0, 0, 2 * G_PI);
     cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
     cairo_fill(cr);
 
-    // Thin separator line
+
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
     cairo_set_line_width(cr, 0.8);
     cairo_move_to(cr, mx + 10.0, my + 71.0);
     cairo_line_to(cr, mx + mw - 10.0, my + 71.0);
     cairo_stroke(cr);
 
-    // Row 2: "Додати віджети..."
+
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88);
     cairo_move_to(cr, mx + 14.0, my + 92.0);
     cairo_show_text(cr, "Додати віджети...");
 
-    // Row 3: "Упорядкувати віджети" + chevron ›
+
     cairo_move_to(cr, mx + 14.0, my + 116.0);
     cairo_show_text(cr, "Упорядкувати віджети");
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
@@ -4312,7 +4312,7 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     cairo_move_to(cr, mx + mw - 20.0, my + 116.0);
     cairo_show_text(cr, "›");
 
-    // Row 4: "Змінити шпалери..."
+
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88);
@@ -4333,9 +4333,9 @@ void init_context_menu_preview(void *widget, gpointer data) {
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), context_menu_preview_draw_func, NULL, NULL);
 }
 
-/* ========================================================================= */
-/* Live Preview: Widgets Preview                                             */
-/* ========================================================================= */
+
+
+
 
 static GtkWidget *g_widgets_preview_w = NULL;
 static void redraw_widgets_preview(void) {
@@ -4348,12 +4348,12 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     (void)area; (void)user_data;
     if (width <= 0 || height <= 0) return;
 
-    // 1. Clip preview container with rounded corners
+
     cairo_save(cr);
     draw_rounded_rect_path(cr, 0, 0, width, height, 14.0);
     cairo_clip(cr);
 
-    // 2. Wallpaper background
+
     cairo_surface_t *bg = get_cached_wallpaper_surface(width, height);
     if (bg) {
         cairo_set_source_surface(cr, bg, 0, 0);
@@ -4367,7 +4367,7 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
         cairo_pattern_destroy(fb);
     }
 
-    // 3. Frosted Glass Widget Squircle Card
+
     double ww = 150.0, wh = 142.0;
     double wr = (double)CLAMP(state.widget_radius, 6, 44);
     double wx = (width - ww) / 2.0;
@@ -4381,12 +4381,12 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
 
     draw_frosted_glass_card(cr, blurred_bg, wx, wy, ww, wh, wr, tint_a, shadow_a, 0.14);
 
-    // 4. macW1Y World Clock inside the Frosted Card
+
     double cx = wx + ww / 2.0;
     double cy = wy + 52.0;
     double cr_dial = 34.0;
 
-    // Dial background: rich dark radial gradient (macW1Y dark mode)
+
     cairo_pattern_t *dial_pat = cairo_pattern_create_radial(cx, cy - 6.0, 2.0, cx, cy, cr_dial);
     cairo_pattern_add_color_stop_rgba(dial_pat, 0.0, 0.16, 0.17, 0.20, 0.95);
     cairo_pattern_add_color_stop_rgba(dial_pat, 1.0, 0.08, 0.09, 0.11, 0.98);
@@ -4395,13 +4395,13 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_fill(cr);
     cairo_pattern_destroy(dial_pat);
 
-    // Subtle dial inner bezel ring
+
     cairo_arc(cr, cx, cy, cr_dial, 0, 2 * G_PI);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
     cairo_set_line_width(cr, 0.8);
     cairo_stroke(cr);
 
-    // 12 Authentic macW1Y Clock Tick Marks
+
     for (int t = 0; t < 12; t++) {
         double ang = t * (G_PI / 6.0) - G_PI / 2.0;
         int is_q = (t % 3 == 0);
@@ -4416,14 +4416,14 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
         cairo_stroke(cr);
     }
 
-    // Hands with drop shadows
-    double h_ang = -G_PI * 0.65; // ~10:09
+
+    double h_ang = -G_PI * 0.65;
     double m_ang = -G_PI * 0.14;
     double ar, ag, ab;
     get_system_accent_color(&ar, &ag, &ab);
     double s_ang = G_PI * 0.58;
 
-    // Hour hand shadow + hand
+
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.40);
     cairo_set_line_width(cr, 2.6);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
@@ -4436,7 +4436,7 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_line_to(cr, cx + cos(h_ang) * 16.0, cy + sin(h_ang) * 16.0);
     cairo_stroke(cr);
 
-    // Minute hand shadow + hand
+
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.40);
     cairo_set_line_width(cr, 2.0);
     cairo_move_to(cr, cx + 0.8, cy + 1.2);
@@ -4448,18 +4448,18 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_line_to(cr, cx + cos(m_ang) * 24.0, cy + sin(m_ang) * 24.0);
     cairo_stroke(cr);
 
-    // Accent Second hand with circular counterweight
+
     cairo_set_source_rgb(cr, ar, ag, ab);
     cairo_set_line_width(cr, 1.2);
     cairo_move_to(cr, cx - cos(s_ang) * 6.5, cy - sin(s_ang) * 6.5);
     cairo_line_to(cr, cx + cos(s_ang) * 26.0, cy + sin(s_ang) * 26.0);
     cairo_stroke(cr);
 
-    // Counterweight circle
+
     cairo_arc(cr, cx - cos(s_ang) * 4.5, cy - sin(s_ang) * 4.5, 2.0, 0, 2 * G_PI);
     cairo_fill(cr);
 
-    // Metallic center pin
+
     cairo_arc(cr, cx, cy, 2.5, 0, 2 * G_PI);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
     cairo_fill(cr);
@@ -4467,7 +4467,7 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_set_source_rgb(cr, ar, ag, ab);
     cairo_fill(cr);
 
-    // Typography (macW1Y Cupertino World Clock)
+
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
@@ -4497,7 +4497,7 @@ void init_widgets_preview(void *widget, gpointer data) {
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), widgets_preview_draw_func, NULL, NULL);
 }
 
-/* Group 2: Liquid Glass Callbacks */
+
 void init_liquid_shape(void *widget, gpointer data) {
     (void)data;
     load_config();
@@ -4650,7 +4650,7 @@ void on_liquid_shadow_changed(void *widget, gpointer data) {
     schedule_json_save();
 }
 
-/* Group: Spotlight Callbacks */
+
 void init_spotlight_blur(void *widget, gpointer data) {
     (void)data;
     load_config();
@@ -4708,7 +4708,7 @@ void on_spotlight_shadow_changed(void *widget, gpointer data) {
     schedule_json_save();
 }
 
-/* Group: OSD Callbacks */
+
 void init_osd_blur(void *widget, gpointer data) {
     (void)data;
     load_config();
@@ -4766,7 +4766,7 @@ void on_osd_shadow_changed(void *widget, gpointer data) {
     schedule_json_save();
 }
 
-/* Group 3: Blur */
+
 void init_blur_sigma(void *widget, gpointer data) {
     (void)data;
     load_config();
@@ -4806,7 +4806,7 @@ void on_blur_tint_changed(void *widget, gpointer data) {
     schedule_json_save();
 }
 
-/* Group 4: Context Menu */
+
 void init_menu_tint(void *widget, gpointer data) {
     (void)data;
     load_config();
@@ -4883,7 +4883,7 @@ void on_menu_shadow_strength_changed(void *widget, gpointer data) {
     schedule_json_save();
 }
 
-/* Group 5: Widgets Callbacks */
+
 void init_widget_radius(void *widget, gpointer data) {
     (void)data;
     load_config();
@@ -4960,7 +4960,7 @@ void on_widget_shadow_changed(void *widget, gpointer data) {
     schedule_json_save();
 }
 
-/* Group: Dock Callbacks */
+
 void init_dock_tint(void *widget, gpointer data) {
     (void)data;
     load_config();
@@ -5094,7 +5094,7 @@ void on_dock_spacing_changed(void *widget, gpointer data) {
     schedule_json_save();
 }
 
-/* Group: Labels Callbacks */
+
 void init_label_blur(void *widget, gpointer data) {
     (void)data;
     load_config();
@@ -5152,7 +5152,7 @@ void on_label_shadow_changed(void *widget, gpointer data) {
     schedule_json_save();
 }
 
-/* Group: Alerts Callbacks */
+
 void init_alert_tint(void *widget, gpointer data) {
     (void)data;
     load_config();
@@ -5210,7 +5210,7 @@ void on_alert_shadow_changed(void *widget, gpointer data) {
     schedule_json_save();
 }
 
-/* Group: Notifications Callbacks */
+
 void init_notification_blur(void *widget, gpointer data) {
     (void)data;
     load_config();
@@ -5268,7 +5268,7 @@ void on_notification_shadow_changed(void *widget, gpointer data) {
     schedule_json_save();
 }
 
-/* Legacy stubs so unresolved symbol errors never occur */
+
 void init_dock_sigma(void *widget, gpointer data) { (void)widget; (void)data; }
 void on_dock_sigma_changed(void *widget, gpointer data) { (void)widget; (void)data; }
 void init_dock_radius(void *widget, gpointer data) { (void)widget; (void)data; }
@@ -5351,9 +5351,9 @@ void on_boot_grub_changed(void *widget, void *pspec, gpointer data) {
     g_spawn_command_line_async(cmd, NULL);
 }
 
-/* Fallback in case on_mac_styling_clicked is ever invoked directly */
+
 void on_mac_styling_clicked(void *row, void *user_data) {
-    /* If row or template triggered this, navigation is handled by navigation.push */
+
 }
 
 void on_run_diagnostics_clicked(void *widget, gpointer data) {
@@ -5415,7 +5415,7 @@ static void on_power_profiles_dbus_signal(GDBusConnection *connection,
 void init_game_mode(void *widget, gpointer data) {
     (void)data;
     g_game_mode_switch_w = widget;
-    
+
     char current_prof[32] = "balanced";
     GDBusConnection *sys_bus = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, NULL);
     if (sys_bus) {
@@ -5453,7 +5453,7 @@ void init_game_mode(void *widget, gpointer data) {
                 NULL, NULL);
         }
     }
-    
+
     update_game_mode_ui_for_profile(current_prof);
 }
 
@@ -5474,9 +5474,9 @@ void on_game_mode_changed(void *widget, void *pspec, gpointer data) {
     }
 }
 
-/* ========================================================================= */
-/* Dynamic Real GPU Allocation (System, Applications, Games) & Reboot Row   */
-/* ========================================================================= */
+
+
+
 
 typedef struct {
     char pretty_name[128];
@@ -5498,7 +5498,7 @@ static char *prettify_gpu_name(const char *raw) {
     char clean[256];
     g_strlcpy(clean, raw, sizeof(clean));
 
-    /* Strip multibyte trademark (™: \xe2\x84\xa2) and registered (®: \xc2\xae) */
+
     char *tm;
     while ((tm = strstr(clean, "\xe2\x84\xa2")) != NULL) {
         memmove(tm, tm + 3, strlen(tm + 3) + 1);
@@ -5507,7 +5507,7 @@ static char *prettify_gpu_name(const char *raw) {
         memmove(tm, tm + 2, strlen(tm + 2) + 1);
     }
 
-    /* Extract bracketed model name, e.g. [GeForce RTX 3050 6GB Laptop GPU] or [UHD Graphics] */
+
     char *bracket_start = strchr(clean, '[');
     char *bracket_end = bracket_start ? strchr(bracket_start, ']') : NULL;
     char model_extracted[128] = {0};
@@ -5546,7 +5546,7 @@ static char *prettify_gpu_name(const char *raw) {
 static void detect_system_gpus(void) {
     if (g_detected_gpu_count > 0) return;
 
-    /* 1. SwitcherooControl D-Bus */
+
     GError *err = NULL;
     GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, &err);
     if (bus) {
@@ -5590,7 +5590,7 @@ static void detect_system_gpus(void) {
         g_object_unref(bus);
     }
 
-    /* 2. Fallback: lspci */
+
     if (g_detected_gpu_count == 0) {
         FILE *fp = popen("lspci 2>/dev/null", "r");
         if (fp) {
@@ -5619,7 +5619,7 @@ static void detect_system_gpus(void) {
         }
     }
 
-    /* 3. Fallback: default entry */
+
     if (g_detected_gpu_count == 0) {
         g_strlcpy(g_detected_gpus[0].pretty_name, (strcmp(mac_get_locale(), "uk") == 0 ? "Інтегрована відеокарта" : "Integrated Graphics"), 128);
         g_detected_gpus[0].is_discrete = FALSE;
@@ -5932,13 +5932,13 @@ void init_gpu_reboot_row(void *widget, gpointer data) {
     gtk_widget_set_visible(GTK_WIDGET(widget), pending);
 }
 
-/* ========================================================================= */
-/* Power Mode Fan Speed Control & Dynamic Dual-Thumb Range Sliders          */
-/* ========================================================================= */
+
+
+
 
 typedef struct {
-    int min_val; /* lower fan speed % */
-    int max_val; /* upper fan speed % */
+    int min_val;
+    int max_val;
 } FanRange;
 
 typedef struct {
@@ -5947,11 +5947,11 @@ typedef struct {
 } ProfileFanConfig;
 
 static ProfileFanConfig g_fan_configs[3] = {
-    /* 0: Performance (Швидкодія) */
+
     { .cpu = {20, 40}, .gpu = {20, 40} },
-    /* 1: Balanced (Баланс) */
+
     { .cpu = {20, 30},  .gpu = {20, 30}  },
-    /* 2: Power Saver (Заощадження) */
+
     { .cpu = {20, 20},  .gpu = {20, 20}  }
 };
 
@@ -6156,7 +6156,7 @@ static void draw_dual_range_slider_cb(GtkDrawingArea *area,
         }
     }
 
-    /* 1. Base track */
+
     if (is_dark) {
         cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.16);
     } else {
@@ -6165,14 +6165,14 @@ static void draw_dual_range_slider_cb(GtkDrawingArea *area,
     draw_rounded_rect(cr, pad, track_y - track_h / 2.0, track_len, track_h, 3.0);
     cairo_fill(cr);
 
-    /* 2. Highlighted range bar */
+
     if (x_max > x_min) {
         cairo_set_source_rgba(cr, accent_rgba.red, accent_rgba.green, accent_rgba.blue, 1.0);
         draw_rounded_rect(cr, x_min, track_y - track_h / 2.0, x_max - x_min, track_h, 3.0);
         cairo_fill(cr);
     }
 
-    /* 3. Min Thumb Knob */
+
     double radius = 9.0;
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, is_dark ? 0.35 : 0.2);
     cairo_arc(cr, x_min, track_y + 1.2, radius, 0, 2 * G_PI);
@@ -6189,7 +6189,7 @@ static void draw_dual_range_slider_cb(GtkDrawingArea *area,
     cairo_arc(cr, x_min, track_y, 2.5, 0, 2 * G_PI);
     cairo_fill(cr);
 
-    /* 4. Max Thumb Knob */
+
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, is_dark ? 0.35 : 0.2);
     cairo_arc(cr, x_max, track_y + 1.2, radius, 0, 2 * G_PI);
     cairo_fill(cr);
@@ -6357,7 +6357,7 @@ static GtkWidget *create_fan_control_card(int profile_idx, gboolean is_gpu) {
     gtk_widget_set_margin_top(card, 4);
     gtk_widget_set_margin_bottom(card, 6);
 
-    /* 1. Header Box */
+
     GtkWidget *header_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
     gtk_widget_set_valign(header_box, GTK_ALIGN_CENTER);
 
@@ -6388,7 +6388,7 @@ static GtkWidget *create_fan_control_card(int profile_idx, gboolean is_gpu) {
     gtk_widget_set_hexpand(title_box, TRUE);
     gtk_box_append(GTK_BOX(header_box), title_box);
 
-    /* Badge Label */
+
     ProfileFanConfig *cfg = &g_fan_configs[profile_idx];
     FanRange *range = is_gpu ? &cfg->gpu : &cfg->cpu;
 
@@ -6404,7 +6404,7 @@ static GtkWidget *create_fan_control_card(int profile_idx, gboolean is_gpu) {
 
     gtk_box_append(GTK_BOX(card), header_box);
 
-    /* 2. Drawing Area Dual-Thumb Range Slider */
+
     GtkWidget *area = gtk_drawing_area_new();
     gtk_widget_set_hexpand(area, TRUE);
     gtk_widget_set_size_request(area, -1, 32);
@@ -6434,7 +6434,7 @@ static GtkWidget *create_fan_control_card(int profile_idx, gboolean is_gpu) {
 
     gtk_box_append(GTK_BOX(card), area);
 
-    /* 3. Min / Max Labels */
+
     GtkWidget *labels_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_widget_set_margin_start(labels_box, 12);
     gtk_widget_set_margin_end(labels_box, 12);
@@ -6490,13 +6490,13 @@ static GtkWidget *create_fan_subrow_for_profile(int profile_idx) {
 
     detect_fans();
 
-    /* CPU Fan */
+
     if (g_has_cpu_fan) {
         GtkWidget *cpu_card = create_fan_control_card(profile_idx, FALSE);
         gtk_box_append(GTK_BOX(container), cpu_card);
     }
 
-    /* Separator if both CPU and GPU fans exist */
+
     if (g_has_cpu_fan && g_has_gpu_fan) {
         GtkWidget *sep = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
         gtk_widget_set_opacity(sep, 0.4);
@@ -6505,7 +6505,7 @@ static GtkWidget *create_fan_subrow_for_profile(int profile_idx) {
         gtk_box_append(GTK_BOX(container), sep);
     }
 
-    /* GPU Fan */
+
     if (g_has_gpu_fan) {
         GtkWidget *gpu_card = create_fan_control_card(profile_idx, TRUE);
         gtk_box_append(GTK_BOX(container), gpu_card);
@@ -6641,28 +6641,28 @@ static double get_sidebar_panel_rank(GtkListBoxRow *row) {
     if (!id) return 999.0;
 
     static const char * const panel_order[] = {
-        /* Група 1: Мережа та зв'язок */
+
         "wifi", "bluetooth", "network", "wwan", "mobile-broadband",
 
-        /* Група 2: Акумулятор, Система, Доступність */
+
         "power", "system", "about", "datetime", "region", "universal-access",
 
-        /* Група 3: Дисплеї, Шпалери, Оформлення, Робочий стіл і Dock, Віджети, Spotlight */
+
         "display", "background", "ubuntu", "multitasking", "widgets", "search",
 
-        /* Група 4: Сповіщення, Звук, Фокусування / Екранний час */
+
         "notifications", "sound", "wellbeing",
 
-        /* Група 5: Конфіденційність і безпека */
+
         "privacy", "users",
 
-        /* Група 6: Облікові записи */
+
         "online-accounts",
 
-        /* Група 7: Пристрої та периферія */
+
         "keyboard", "mouse", "printers", "color", "sharing", "applications", "wacom",
 
-        /* Група 8: Mac стилізація (замість macFUSE в самому низу) */
+
         "mac-styling",
         NULL
     };
@@ -6676,13 +6676,13 @@ static double get_sidebar_panel_rank(GtkListBoxRow *row) {
 
 static gboolean is_sidebar_group_start_id(const char *id) {
     if (!id) return FALSE;
-    if (g_strcmp0(id, "power") == 0) return TRUE;           /* Група 2 */
-    if (g_strcmp0(id, "display") == 0) return TRUE;         /* Група 3 */
-    if (g_strcmp0(id, "notifications") == 0) return TRUE;   /* Група 4 */
-    if (g_strcmp0(id, "privacy") == 0) return TRUE;         /* Група 5 */
-    if (g_strcmp0(id, "online-accounts") == 0) return TRUE; /* Група 6 */
-    if (g_strcmp0(id, "keyboard") == 0) return TRUE;        /* Група 7 */
-    if (g_strcmp0(id, "mac-styling") == 0) return TRUE;     /* Група 8 (в самому низу замість macFUSE) */
+    if (g_strcmp0(id, "power") == 0) return TRUE;
+    if (g_strcmp0(id, "display") == 0) return TRUE;
+    if (g_strcmp0(id, "notifications") == 0) return TRUE;
+    if (g_strcmp0(id, "privacy") == 0) return TRUE;
+    if (g_strcmp0(id, "online-accounts") == 0) return TRUE;
+    if (g_strcmp0(id, "keyboard") == 0) return TRUE;
+    if (g_strcmp0(id, "mac-styling") == 0) return TRUE;
     return FALSE;
 }
 
@@ -6692,7 +6692,7 @@ static void update_sidebar_group_spacing(GtkListBox *listbox) {
         GtkListBoxRow *row = gtk_list_box_get_row_at_index(listbox, i);
         if (!row) break;
 
-        /* Примусово прибираємо будь-які GtkSeparator хедери, встановлені GNOME */
+
         gtk_list_box_row_set_header(row, NULL);
 
         if (GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_account_row"))) {
@@ -6761,7 +6761,7 @@ void gtk_list_box_set_sort_func(GtkListBox *box,
         return;
     }
 
-    /* Check sidebar main_listbox */
+
     gboolean is_sidebar_main_list = FALSE;
     if ((id && g_strcmp0(id, "main_listbox") == 0) ||
         (name && g_strcmp0(name, "main_listbox") == 0)) {
@@ -6818,7 +6818,7 @@ void gtk_list_box_set_header_func(GtkListBox *box,
     }
 
     if (is_sidebar_main_list) {
-        /* Disallow GNOME's hardcoded category separators inside macW1Y sidebar */
+
         if (orig_set_header_func) {
             orig_set_header_func(box, NULL, NULL, NULL);
         }
@@ -6891,7 +6891,7 @@ static gboolean attach_fan_subrow_idle(gpointer user_data) {
     g_object_set_data(G_OBJECT(sub_row), "is_fan_subrow", GINT_TO_POINTER(1));
     g_object_set_data(G_OBJECT(sub_row), "profile_idx", GINT_TO_POINTER(profile_idx));
 
-    /* Ensure listbox has safe sort func installed so it won't crash when sorting sub_row */
+
     static void (*orig_set_sort_func)(GtkListBox *, GtkListBoxSortFunc, gpointer, GDestroyNotify) = NULL;
     if (!orig_set_sort_func) orig_set_sort_func = dlsym(RTLD_NEXT, "gtk_list_box_set_sort_func");
     if (orig_set_sort_func) {
@@ -6945,12 +6945,12 @@ void mac_power_profile_fan_btn_toggled(GtkWidget *btn, gpointer user_data) {
 
     gboolean active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(btn));
     if (active) {
-        /* Mutually exclusive radio accordion: close any other open power profile sub-rows */
+
         static gboolean in_accordion_sync = FALSE;
         if (!in_accordion_sync) {
             in_accordion_sync = TRUE;
 
-            /* 1. Deselect other buttons in registered list */
+
             for (GList *l = g_fan_expand_buttons; l != NULL; l = l->next) {
                 GtkWidget *other = GTK_WIDGET(l->data);
                 if (other && other != btn && GTK_IS_TOGGLE_BUTTON(other)) {
@@ -6960,7 +6960,7 @@ void mac_power_profile_fan_btn_toggled(GtkWidget *btn, gpointer user_data) {
                 }
             }
 
-            /* 2. Fail-safe scan of parent listbox rows */
+
             GtkWidget *row = gtk_widget_get_ancestor(btn, GTK_TYPE_LIST_BOX_ROW);
             GtkWidget *listbox = row ? gtk_widget_get_ancestor(row, GTK_TYPE_LIST_BOX) : NULL;
             if (listbox) {
@@ -7003,8 +7003,8 @@ static void find_toggle_button_child(GtkWidget *widget, gpointer data) {
 
 static void setup_power_profile_row_fan_button(GtkWidget *row) {
     (void)row;
-    /* Feature removed per user request: switching power modes must not change fan speeds,
-     * and fan control UI is removed from Settings. */
+
+
     return;
 }
 
@@ -7022,7 +7022,7 @@ void gtk_widget_class_set_template_from_resource(GtkWidgetClass *widget_class, c
     if (orig_set_template) orig_set_template(widget_class, resource_name);
 }
 
-/* Stubs for backward compatibility if ever referenced */
+
 void init_gpu_mode(void *widget, gpointer data) {
     (void)widget; (void)data;
 }
@@ -7223,7 +7223,7 @@ static void find_navigation_views(GtkWidget *widget, GList **list)
 
 static void schedule_update_panel_headerbar(AdwNavigationSplitView *split_view);
 
-/* Fast instant navigation hooks: eliminate the 0.5s spring slide lag across Settings */
+
 void adw_navigation_view_push(AdwNavigationView *self, AdwNavigationPage *page)
 {
     static void (*orig_adw_nav_push)(AdwNavigationView *, AdwNavigationPage *) = NULL;
@@ -7651,9 +7651,9 @@ static void configure_toolbar_views_recursive(GtkWidget *widget, gboolean is_sid
     }
 }
 
-/* ========================================================================= */
-/* Desktop Widgets Settings Callbacks                                       */
-/* ========================================================================= */
+
+
+
 
 #define DW_SCHEMA "org.gnome.shell.extensions.desktop-widgets-r3nhick"
 
@@ -7693,7 +7693,7 @@ static GSettings *get_dw_settings(void) {
         if (src && g_settings_schema_source_lookup(src, DW_SCHEMA, TRUE)) {
             dw_settings = g_settings_new(DW_SCHEMA);
             if (dw_settings) {
-                /* Widgets follow system light/dark theme automatically */
+
                 g_settings_set_boolean(dw_settings, "use-custom-widget-theme", FALSE);
                 g_settings_set_int(dw_settings, "appearance", 2);
             }
@@ -7704,7 +7704,7 @@ static GSettings *get_dw_settings(void) {
 
 static GtkWidget *g_dw_edit_mode_row = NULL;
 
-/* Увімкнути / вимкнути режим редагування віджетів і оновити перемикач у Параметрах. */
+
 static void dw_set_edit_mode(gboolean active) {
     GSettings *s = get_dw_settings();
     if (!s) return;
@@ -7713,7 +7713,7 @@ static void dw_set_edit_mode(gboolean active) {
         adw_switch_row_set_active(ADW_SWITCH_ROW(g_dw_edit_mode_row), active);
 }
 
-/* При закритті вікна Параметрів режим редагування віджетів має вимкнутися. */
+
 static gboolean dw_settings_window_close_cb(GtkWindow *win, gpointer user_data) {
     (void)win; (void)user_data;
     dw_set_edit_mode(FALSE);
@@ -7839,7 +7839,7 @@ static void add_widget_to_desktop(GtkWidget *widget, const char *type, const cha
     if (json_str) g_free(json_str);
     g_free(widget_id);
 
-    /* Показуємо спливаюче сповіщення у вікні вибору віджетів */
+
     AdwToastOverlay *toast_overlay = global_widgets_picker_toast_overlay;
     if (!toast_overlay && widget && GTK_IS_WIDGET(widget)) {
         GtkWidget *anc = gtk_widget_get_ancestor(widget, ADW_TYPE_TOAST_OVERLAY);
@@ -8150,61 +8150,61 @@ static void bind_widgets_configurator_settings(GtkBuilder *builder) {
             g_settings_bind(s, key, w, "text", G_SETTINGS_BIND_DEFAULT); \
         }
 
-    /* 1. Clocks */
+
     BIND_SWITCH("cfg_digitalclock_show_seconds", "digitalclock-show-seconds");
     BIND_SWITCH("cfg_digitalclock_smooth_seconds", "digitalclock-smooth-seconds");
     BIND_SWITCH("cfg_clock_smooth_seconds", "clock-smooth-seconds");
     BIND_SWITCH("cfg_digitalclock_show_ampm", "digitalclock-show-ampm");
     BIND_SWITCH("cfg_binaryclock_use_accent", "binaryclock-use-accent-color");
 
-    /* 2. Calendar */
+
     BIND_SPIN("cfg_calendar_lookahead_row", "calendar-lookahead");
     BIND_SWITCH("cfg_calendar_use_accent", "calendar-use-accent-color");
     BIND_SWITCH("cfg_calendar_show_page_dots", "calendar-show-page-dots");
 
-    /* 3. Weather */
+
     BIND_SWITCH("cfg_weather_use_accent", "weather-use-accent-color");
     BIND_SWITCH("cfg_weather_show_page_dots", "weather-show-page-dots");
 
-    /* 4. Battery */
+
     BIND_SPIN("cfg_battery_slot_count_row", "battery-slot-count");
     BIND_SWITCH("cfg_battery_show_percent", "battery-show-percent");
     BIND_SWITCH("cfg_battery_use_accent", "battery-use-accent-color");
 
-    /* 5. Music */
+
     BIND_SWITCH("cfg_music_ignore_browsers", "music-ignore-browsers");
     BIND_ENTRY("cfg_music_custom_app_entry", "music-custom-app");
 
-    /* 6. System */
+
     BIND_SWITCH("cfg_system_page_indicator_accent", "system-page-indicator-accent");
     BIND_SWITCH("cfg_system_show_page_dashes", "system-show-page-dashes");
 
-    /* 7. Photos */
+
     BIND_ENTRY("cfg_custom_photo_entry", "custom-photo");
 
-    /* 8. Pomodoro */
+
     BIND_SPIN("cfg_pomodoro_work_row", "pomodoro-work-minutes");
     BIND_SPIN("cfg_pomodoro_short_break_row", "pomodoro-short-break-minutes");
     BIND_SPIN("cfg_pomodoro_long_break_row", "pomodoro-long-break-minutes");
     BIND_SPIN("cfg_pomodoro_sessions_row", "pomodoro-sessions-before-long-break");
 
-    /* 9. Notes */
+
     BIND_SPIN("cfg_notes_title_size_row", "notes-title-font-size");
     BIND_SPIN("cfg_notes_content_size_row", "notes-content-font-size");
 
-    /* 10. GitHub */
+
     BIND_ENTRY("cfg_github_username_entry", "github-username");
     BIND_SWITCH("cfg_github_use_green", "github-use-green");
 
-    /* 11. Folders */
+
     BIND_ENTRY("cfg_folder_file_manager_entry", "folder-file-manager");
     BIND_SWITCH("cfg_folder_show_names", "folder-show-names");
 
-    /* 12. Screen Time */
+
     BIND_SPIN("cfg_screentime_retention_row", "screentime-retention-days");
     BIND_SWITCH("cfg_screentime_show_nav_buttons", "screentime-show-nav-buttons");
 
-    /* 13. Lava Lamp */
+
     BIND_SWITCH("cfg_lava_use_accent", "lava-use-accent-color");
 
     #undef BIND_SWITCH
@@ -8253,26 +8253,26 @@ static char *mac_get_localized_ui_path(const char *basename)
     const char *home = g_get_home_dir();
     char *path = NULL;
 
-    /* 1. If locale is not Ukrainian, try localized overlay directory first */
+
     if (loc && strcmp(loc, "uk") != 0) {
-        /* System localized overlay */
+
         path = g_build_filename("/usr/share/mactheme/gnome-control-center-overlay/locales", loc, basename, NULL);
         if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
         g_free(path);
 
-        /* User localized overlay */
+
         if (home) {
             path = g_build_filename(home, ".local", "share", "gnome-control-center-overlay", "locales", loc, basename, NULL);
             if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
             g_free(path);
         }
 
-        /* Repo localized overlay */
+
         path = g_build_filename("/home/vitaliy/MACTHEMEFILES/control-center/locales", loc, basename, NULL);
         if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
         g_free(path);
 
-        /* Fallback to English localized overlay if language overlay missing */
+
         if (strcmp(loc, "en") != 0) {
             path = g_build_filename("/usr/share/mactheme/gnome-control-center-overlay/locales", "en", basename, NULL);
             if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
@@ -8290,7 +8290,7 @@ static char *mac_get_localized_ui_path(const char *basename)
         }
     }
 
-    /* Fallback to default overlay (Ukrainian / SSOT baseline) */
+
     path = g_build_filename("/usr/share/mactheme/gnome-control-center-overlay", basename, NULL);
     if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
     g_free(path);
@@ -8402,28 +8402,28 @@ static GtkWidget *get_mac_styling_page(void)
     return mac_styling_page;
 }
 
-/* ========================================================================= */
-/* Screenshot & Screencast Settings Panel                                    */
-/* ========================================================================= */
+
+
+
 
 typedef struct {
-    int image_format;        /* 0=PNG, 1=JPEG, 2=WebP */
-    int image_quality;       /* 70 - 100 */
-    gboolean show_cursor;    /* TRUE/FALSE */
-    gboolean shutter_sound;  /* TRUE/FALSE */
-    int timer_delay;         /* 0=0s, 1=3s, 2=5s, 3=10s */
+    int image_format;
+    int image_quality;
+    gboolean show_cursor;
+    gboolean shutter_sound;
+    int timer_delay;
 
-    int video_container;     /* 0=MP4, 1=WebM, 2=MKV */
-    int video_codec;         /* 0=H.264, 1=VP9, 2=AV1 */
-    int video_fps;           /* 0=60, 1=30 */
-    gboolean screencast_cursor; /* TRUE/FALSE */
-    gboolean record_audio;   /* TRUE/FALSE */
+    int video_container;
+    int video_codec;
+    int video_fps;
+    gboolean screencast_cursor;
+    gboolean record_audio;
 
-    gboolean processing_enabled; /* TRUE/FALSE */
-    int processing_target;       /* 0=native, 1=1080p, 2=2k, 3=4k */
-    int processing_algorithm;    /* 0=lanczos, 1=bicubic, 2=unsharp */
-    int processing_scope;        /* 0=both, 1=screenshots, 2=screencasts */
-    gboolean keep_original;      /* TRUE/FALSE */
+    gboolean processing_enabled;
+    int processing_target;
+    int processing_algorithm;
+    int processing_scope;
+    gboolean keep_original;
 } MacScreenshotData;
 
 static MacScreenshotData scr_state = {
@@ -8890,7 +8890,7 @@ static void init_mac_settings_css(void) {
     if (css_inited) return;
     css_inited = TRUE;
 
-    /* Sync slider glass SVGs to active accent color */
+
     GSettingsSchemaSource *source = g_settings_schema_source_get_default();
     if (source) {
         GSettingsSchema *schema = g_settings_schema_source_lookup(source, "org.gnome.desktop.interface", TRUE);
@@ -11105,7 +11105,7 @@ static GtkListBoxRow *create_account_row(AdwNavigationSplitView *split_view) {
 
     gtk_box_append(GTK_BOX(box), tbox);
 
-    /* Arrow removed per user request: only account */
+
 
     gtk_list_box_row_set_child(row, box);
     return row;
@@ -11622,7 +11622,7 @@ static void on_color_scheme_toggle_toggled(GtkToggleButton *btn, gpointer user_d
 static void polish_background_panel(GtkWidget *widget) {
     if (!widget) return;
 
-    /* 0. Tag CcBackgroundPreview widgets with explicit IDs and CSS classes */
+
     const char *type_name = G_OBJECT_TYPE_NAME(widget);
     if (type_name && g_strcmp0(type_name, "CcBackgroundPreview") == 0) {
         gboolean is_dark = FALSE;
@@ -11653,7 +11653,7 @@ static void polish_background_panel(GtkWidget *widget) {
         }
     }
 
-    /* 1. Find default_label and rename to 'Світла' (or 'Light') */
+
     const char *bid = GTK_IS_BUILDABLE(widget) ? gtk_buildable_get_buildable_id(GTK_BUILDABLE(widget)) : NULL;
     if (g_strcmp0(bid, "default_label") == 0 && GTK_IS_LABEL(widget)) {
         const char *loc = mac_get_locale();
@@ -11674,7 +11674,7 @@ static void polish_background_panel(GtkWidget *widget) {
         }
     }
 
-    /* 2. Wire default_toggle and dark_toggle to trigger mac-theme-sync */
+
     if (g_strcmp0(bid, "default_toggle") == 0 && GTK_IS_TOGGLE_BUTTON(widget)) {
         gtk_widget_set_name(widget, "default_toggle");
         gtk_widget_add_css_class(widget, "mac-light-toggle");
@@ -11768,7 +11768,7 @@ static void on_main_listbox_row_activated(GtkListBox *box, GtkListBoxRow *row, g
 
     gboolean is_widgets_row = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(row), "is_widgets_row"));
     if (!is_widgets_row) {
-        dw_set_edit_mode(FALSE);  /* вихід із розділу Віджети — вимкнути режим редагування */
+        dw_set_edit_mode(FALSE);
         if (global_widgets_nav_view) {
             adw_navigation_view_pop_to_tag(global_widgets_nav_view, "widgets_main");
         }
@@ -11789,7 +11789,7 @@ static void on_main_listbox_row_activated(GtkListBox *box, GtkListBoxRow *row, g
             gtk_list_box_select_row(box, row);
             update_window_active_panel_id(split_view, "widgets");
             schedule_update_panel_headerbar(split_view);
-            dw_attach_settings_close_handler(split_view);  /* закриття Параметрів — вимкнути режим редагування */
+            dw_attach_settings_close_handler(split_view);
         }
         return;
     }
@@ -11862,7 +11862,7 @@ static void mac_nav_push_history(AdwNavigationSplitView *split_view, const char 
         }
     }
 
-    /* Truncate history after idx */
+
     while (g_list_length(history) > (guint)(idx + 1)) {
         GList *last = g_list_last(history);
         g_free(last->data);
@@ -11931,7 +11931,7 @@ static void on_mac_nav_back_clicked(GtkButton *btn G_GNUC_UNUSED, gpointer user_
         g_list_free(nav_views);
     }
 
-    /* History back between panels */
+
     GList *history = g_object_get_data(G_OBJECT(split_view), "mac_panel_history");
     int idx = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(split_view), "mac_history_idx"));
     if (history && idx > 0) {
@@ -12162,11 +12162,11 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
         gtk_widget_add_css_class(GTK_WIDGET(target_hb), "mac-settings-content-headerbar");
         gtk_widget_set_margin_top(GTK_WIDGET(target_hb), 3);
 
-        /* Hide standard title and back button */
+
         adw_header_bar_set_show_title(target_hb, FALSE);
         adw_header_bar_set_show_back_button(target_hb, FALSE);
 
-        /* Ensure mac_nav_box with Nautilus < | > pill and title label */
+
         GtkWidget *nav_box = g_object_get_data(G_OBJECT(target_hb), "mac_nav_box");
         GtkWidget *back_btn = g_object_get_data(G_OBJECT(target_hb), "mac_back_btn");
         GtkWidget *fwd_btn = g_object_get_data(G_OBJECT(target_hb), "mac_fwd_btn");
@@ -12237,7 +12237,7 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
         }
         hide_unwanted_headerbar_buttons(GTK_WIDGET(target_hb), nav_box);
 
-        /* Update title */
+
         const char *header_title = NULL;
         if (is_subpage && vis_p) {
             header_title = adw_navigation_page_get_title(vis_p);
@@ -12271,7 +12271,7 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
         }
         gtk_label_set_text(GTK_LABEL(title_label), (header_title && header_title[0]) ? header_title : "Параметри");
 
-        /* Update sensitivity of back / fwd */
+
         GList *history = g_object_get_data(G_OBJECT(split_view), "mac_panel_history");
         int hist_idx = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(split_view), "mac_history_idx"));
         if (is_subpage) {
@@ -12505,7 +12505,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
         g_signal_connect(sm, "notify::dark", G_CALLBACK(on_style_manager_notify_dark), split_view);
     }
 
-    /* Lock sidebar width to 280px to match blur and prevent unblurred scrollbar gaps */
+
     adw_navigation_split_view_set_min_sidebar_width(split_view, 280.0);
     adw_navigation_split_view_set_max_sidebar_width(split_view, 280.0);
 
@@ -12520,7 +12520,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
     gtk_widget_add_css_class(GTK_WIDGET(sidebar), "mac-settings-sidebar");
     update_window_theme_class(GTK_WIDGET(sidebar));
 
-    /* Lock empty title on sidebar page */
+
     if (ADW_IS_NAVIGATION_PAGE(sidebar)) {
         adw_navigation_page_set_title(sidebar, "");
     }
@@ -12532,12 +12532,12 @@ static gboolean mac_fix_settings_window(gpointer user_data)
         gtk_widget_add_css_class(GTK_WIDGET(sidebar_hb), "mac-settings-sidebar-headerbar");
         gtk_widget_set_margin_top(GTK_WIDGET(sidebar_hb), 0);
 
-        /* 1. Hide title and any title labels in sidebar headerbar */
+
         adw_header_bar_set_show_title(sidebar_hb, FALSE);
         adw_header_bar_set_title_widget(sidebar_hb, NULL);
         hide_title_labels(GTK_WIDGET(sidebar_hb));
 
-        /* 2. Find and remove search_button and menu_button */
+
         GtkWidget *search_btn = g_object_get_data(G_OBJECT(split_view), "mac_search_btn");
         GtkWidget *menu_btn = g_object_get_data(G_OBJECT(split_view), "mac_menu_btn");
 
@@ -12558,7 +12558,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
         g_list_free(sidebar_bars);
     }
 
-    /* Ensure search bar is always visible and in search mode */
+
     GList *sb_list = NULL;
     find_search_bars_recursive(GTK_WIDGET(sidebar), &sb_list);
     for (GList *l = sb_list; l != NULL; l = l->next) {
@@ -12594,7 +12594,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
     }
     schedule_update_panel_headerbar(split_view);
 
-    /* Locate main_listbox in sidebar and inject Widgets, Account, and Alert rows */
+
     GList *list_boxes = NULL;
     find_list_boxes_recursive(GTK_WIDGET(sidebar), &list_boxes);
     GtkListBox *main_listbox = NULL;
@@ -12724,7 +12724,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
             g_object_set_data(G_OBJECT(main_listbox), "mac_listbox_connected", GINT_TO_POINTER(1));
         }
 
-        /* Style all rows inside main_listbox to ensure compact macW1Y heights */
+
         for (GtkWidget *ch = gtk_widget_get_first_child(GTK_WIDGET(main_listbox)); ch != NULL; ch = gtk_widget_get_next_sibling(ch)) {
             if (GTK_IS_LIST_BOX_ROW(ch)) {
                 if (!g_object_get_data(G_OBJECT(ch), "is_account_row")) {
@@ -12814,6 +12814,3 @@ void gtk_window_present_with_time(GtkWindow *window, guint32 timestamp)
         g_idle_add(mac_fix_settings_window, window);
     }
 }
-
-
-

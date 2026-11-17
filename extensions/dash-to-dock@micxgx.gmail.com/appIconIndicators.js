@@ -36,16 +36,16 @@ const RunningIndicatorStyle = Object.freeze({
 const MAX_WINDOWS_CLASSES = 4;
 
 
-/*
- * This is the main indicator class to be used. The desired behavior is
- * obtained by composing the desired classes below based on the settings.
- *
- */
+
+
+
+
+
 export class AppIconIndicator {
     constructor(source) {
         this._indicators = [];
 
-        // Choose the style for the running indicators
+
         let runningIndicator = null;
         let runningIndicatorStyle;
 
@@ -124,9 +124,9 @@ export class AppIconIndicator {
     }
 }
 
-/*
- * Base class to be inherited by all indicators of any kind
-*/
+
+
+
 class IndicatorBase {
     constructor(source) {
         this._source = source;
@@ -143,11 +143,11 @@ class IndicatorBase {
     }
 }
 
-/*
- * A base indicator class for running style, from which all other RunningIndicators should derive,
- * providing some basic methods, variables definitions and their update,  css style classes handling.
- *
- */
+
+
+
+
+
 class RunningIndicatorBase extends IndicatorBase {
     constructor(source) {
         super(source);
@@ -187,8 +187,8 @@ class RunningIndicatorBase extends IndicatorBase {
     }
 
     _hideDefaultDot() {
-        // I use opacity to hide the default dot because the show/hide function
-        // are used by the parent class.
+
+
         this._source._dot.opacity = 0;
     }
 
@@ -199,7 +199,7 @@ class RunningIndicatorBase extends IndicatorBase {
     _enableBacklight() {
         const colorPalette = this._dominantColorExtractor._getColorPalette();
 
-        // Fallback
+
         if (!colorPalette) {
             this._source._iconContainer.set_style(
                 'border-radius: 5px;' +
@@ -225,7 +225,7 @@ class RunningIndicatorBase extends IndicatorBase {
 
     destroy() {
         this._disableBacklight();
-        // Remove glossy background if the children still exists
+
         if (this._source._iconContainer.get_children().length > 1)
             this._source._iconContainer.get_children()[1].set_style(null);
         this._restoreDefaultDot();
@@ -234,8 +234,8 @@ class RunningIndicatorBase extends IndicatorBase {
     }
 }
 
-// We add a css class so third parties themes can limit their indicator customization
-// to the case we do nothing
+
+
 class RunningIndicatorDefault extends RunningIndicatorBase {
     constructor(source) {
         super(source);
@@ -254,7 +254,7 @@ class IndicatorDrawingArea extends St.DrawingArea {
         if (box.x1 !== 0 || box.y1 !== 0)
             return super.vfunc_allocate(box);
 
-        // We assume that the are is a rectangle in the operations below:
+
         const size = Math.min(box.get_width(), box.get_height());
         box.x2 = size;
         box.y2 = size;
@@ -275,8 +275,8 @@ class RunningIndicatorDots extends RunningIndicatorBase {
             y_expand: true,
         });
 
-        // We draw for the bottom case and rotate the canvas for other placements
-        // set center of rotations to the center
+
+
         this._area.set_pivot_point(0.5, 0.5);
 
         switch (this._side) {
@@ -285,7 +285,7 @@ class RunningIndicatorDots extends RunningIndicatorBase {
             break;
 
         case St.Side.BOTTOM:
-            // nothing
+
             break;
 
         case St.Side.LEFT:
@@ -316,9 +316,9 @@ class RunningIndicatorDots extends RunningIndicatorBase {
             );
         }, this);
 
-        // Apply glossy background
-        // TODO: move to enable/disableBacklit to apply it only to the running apps?
-        // TODO: move to css class for theming support
+
+
+
         const {extension} = Docking.DockManager;
         this._glossyBackgroundStyle = `background-image: url('${extension.path}/media/glossy.svg');` +
                                       'background-size: contain;';
@@ -327,7 +327,7 @@ class RunningIndicatorDots extends RunningIndicatorBase {
     update() {
         super.update();
 
-        // Enable / Disable the backlight of running apps
+
         if (!Docking.DockManager.settings.applyCustomTheme &&
             Docking.DockManager.settings.unityBacklitItems) {
             const [icon] = this._source._iconContainer.get_children();
@@ -352,8 +352,8 @@ class RunningIndicatorDots extends RunningIndicatorBase {
         this._width = height;
         this._height = width;
 
-        // By default re-use the style - background color, and border width and color -
-        // of the default dot
+
+
         const themeNode = this._source._dot.get_theme_node();
         this._borderColor = themeNode.get_border_color(this._side);
         this._borderWidth = themeNode.get_border_width(this._side);
@@ -361,37 +361,37 @@ class RunningIndicatorDots extends RunningIndicatorBase {
 
         const {settings} = Docking.DockManager;
         if (!settings.applyCustomTheme) {
-            // Adjust for the backlit case
+
             const Color = Clutter.Color ?? Cogl.Color;
 
             if (settings.unityBacklitItems) {
-                // Use dominant color for dots too if the backlit is enables
+
                 const colorPalette = this._dominantColorExtractor._getColorPalette();
 
-                // Slightly adjust the styling
+
                 this._borderWidth = 2;
 
                 if (colorPalette) {
                     [, this._borderColor] = Color.from_string(colorPalette.lighter);
                     [, this._bodyColor] = Color.from_string(colorPalette.darker);
                 } else {
-                    // Fallback
+
                     [, this._borderColor] = Color.from_string('white');
                     [, this._bodyColor] = Color.from_string('gray');
                 }
             }
 
-            // Apply dominant color if requested
+
             if (settings.runningIndicatorDominantColor) {
                 const colorPalette = this._dominantColorExtractor._getColorPalette();
                 if (colorPalette)
                     [, this._bodyColor] = Color.from_string(colorPalette.original);
                 else
-                    // Fallback
+
                     [, this._bodyColor] = Color.from_string(settings.customThemeRunningDotsColor);
             }
 
-            // Finally, use customize style if requested
+
             if (settings.customThemeCustomizeRunningDots) {
                 [, this._borderColor] = Color.from_string(settings.customThemeRunningDotsBorderColor);
                 this._borderWidth = settings.customThemeRunningDotsBorderWidth;
@@ -399,11 +399,11 @@ class RunningIndicatorDots extends RunningIndicatorBase {
             }
         }
 
-        // Define the radius as an arbitrary size, but keep large enough to account
-        // for the drawing of the border.
+
+
         this._radius = Math.max(this._width / 22, this._borderWidth / 2);
-        this._padding = 0; // distance from the margin
-        this._spacing = this._radius + this._borderWidth; // separation between the dots
+        this._padding = 0;
+        this._spacing = this._radius + this._borderWidth;
     }
 
     _updateIndicator() {
@@ -415,13 +415,13 @@ class RunningIndicatorDots extends RunningIndicatorBase {
     }
 
     _drawIndicator(cr) {
-        // Draw the required numbers of dots
+
         const n = this._number;
 
         cr.setLineWidth(this._borderWidth);
         Utils.cairoSetSourceColor(cr, this._borderColor);
 
-        // draw for the bottom case:
+
         cr.translate(
             (this._width - (2 * n) * this._radius - (n - 1) * this._spacing) / 2,
             this._height - this._padding);
@@ -445,16 +445,16 @@ class RunningIndicatorDots extends RunningIndicatorBase {
     }
 }
 
-// Adapted from dash-to-panel by Jason DeRose
-// https://github.com/jderose9/dash-to-panel
+
+
 class RunningIndicatorCiliora extends RunningIndicatorDots {
     _drawIndicator(cr) {
         if (this._source.running) {
             const size =  Math.max(this._width / 20, this._borderWidth);
-            const spacing = size; // separation between the dots
+            const spacing = size;
             const lineLength = this._width - (size * (this._number - 1)) - (spacing * (this._number - 1));
             let padding = this._borderWidth;
-            // For the backlit case here we don't want the outer border visible
+
             if (Docking.DockManager.settings.unityBacklitItems &&
                 !Docking.DockManager.settings.customThemeCustomizeRunningDots)
                 padding = 0;
@@ -478,16 +478,16 @@ class RunningIndicatorCiliora extends RunningIndicatorDots {
     }
 }
 
-// Adapted from dash-to-panel by Jason DeRose
-// https://github.com/jderose9/dash-to-panel
+
+
 class RunningIndicatorSegmented extends RunningIndicatorDots {
     _drawIndicator(cr) {
         if (this._source.running) {
             const size =  Math.max(this._width / 20, this._borderWidth);
-            const spacing = Math.ceil(this._width / 18); // separation between the dots
+            const spacing = Math.ceil(this._width / 18);
             const dashLength = Math.ceil((this._width - ((this._number - 1) * spacing)) / this._number);
             let padding = this._borderWidth;
-            // For the backlit case here we don't want the outer border visible
+
             if (Docking.DockManager.settings.unityBacklitItems &&
                 !Docking.DockManager.settings.customThemeCustomizeRunningDots)
                 padding = 0;
@@ -509,14 +509,14 @@ class RunningIndicatorSegmented extends RunningIndicatorDots {
     }
 }
 
-// Adapted from dash-to-panel by Jason DeRose
-// https://github.com/jderose9/dash-to-panel
+
+
 class RunningIndicatorSolid extends RunningIndicatorDots {
     _drawIndicator(cr) {
         if (this._source.running) {
             const size =  Math.max(this._width / 20, this._borderWidth);
             let padding = this._borderWidth;
-            // For the backlit case here we don't want the outer border visible
+
             if (Docking.DockManager.settings.unityBacklitItems &&
                 !Docking.DockManager.settings.customThemeCustomizeRunningDots)
                 padding = 0;
@@ -536,14 +536,14 @@ class RunningIndicatorSolid extends RunningIndicatorDots {
     }
 }
 
-// Adapted from dash-to-panel by Jason DeRose
-// https://github.com/jderose9/dash-to-panel
+
+
 class RunningIndicatorSquares extends RunningIndicatorDots {
     _drawIndicator(cr) {
         if (this._source.running) {
             const size =  Math.max(this._width / 11, this._borderWidth);
             const padding = this._borderWidth;
-            const spacing = Math.ceil(this._width / 18); // separation between the dots
+            const spacing = Math.ceil(this._width / 18);
             const yOffset = this._height - padding - size;
 
             cr.setLineWidth(this._borderWidth);
@@ -564,14 +564,14 @@ class RunningIndicatorSquares extends RunningIndicatorDots {
     }
 }
 
-// Adapted from dash-to-panel by Jason DeRose
-// https://github.com/jderose9/dash-to-panel
+
+
 class RunningIndicatorDashes extends RunningIndicatorDots {
     _drawIndicator(cr) {
         if (this._source.running) {
             const size =  Math.max(this._width / 20, this._borderWidth);
             const padding = this._borderWidth;
-            const spacing = Math.ceil(this._width / 18); // separation between the dots
+            const spacing = Math.ceil(this._width / 18);
             const dashLength = Math.floor(this._width / 4) - spacing;
             const yOffset = this._height - padding - size;
 
@@ -594,8 +594,8 @@ class RunningIndicatorDashes extends RunningIndicatorDots {
     }
 }
 
-// Adapted from dash-to-panel by Jason DeRose
-// https://github.com/jderose9/dash-to-panel
+
+
 class RunningIndicatorMetro extends RunningIndicatorDots {
     constructor(source) {
         super(source);
@@ -611,7 +611,7 @@ class RunningIndicatorMetro extends RunningIndicatorDots {
         if (this._source.running) {
             const size =  Math.max(this._width / 20, this._borderWidth);
             let padding = 0;
-            // For the backlit case here we don't want the outer border visible
+
             if (Docking.DockManager.settings.unityBacklitItems &&
                 !Docking.DockManager.settings.customThemeCustomizeRunningDots)
                 padding = 0;
@@ -625,7 +625,7 @@ class RunningIndicatorMetro extends RunningIndicatorDots {
                 cr.rectangle(0, 0, this._width, size);
                 cr.fill();
             } else {
-                // need to scale with the SVG for the stacked highlight
+
                 const blackenedLength = (1 / 48) * this._width;
                 const darkenedLength = this._source.focused
                     ? (2 / 48) * this._width : (10 / 48) * this._width;
@@ -653,7 +653,7 @@ class RunningIndicatorMetro extends RunningIndicatorDots {
 
 class RunningIndicatorBinary extends RunningIndicatorDots {
     _drawIndicator(cr) {
-        // Draw the required numbers of dots
+
         const n = Math.min(15, this._source.windowsCount);
 
         if (this._source.running) {
@@ -700,7 +700,7 @@ class RunningIndicatorDot extends RunningIndicatorDots {
         cr.setLineWidth(this._borderWidth);
         Utils.cairoSetSourceColor(cr, this._borderColor);
 
-        // draw from the bottom case:
+
         cr.translate(
             (this._width - 2 * this._radius) / 2,
             this._height - this._padding);
@@ -715,12 +715,12 @@ class RunningIndicatorDot extends RunningIndicatorDots {
     }
 }
 
-/*
- * Unity like notification and progress indicators
- */
+
+
+
 export class UnityIndicator extends IndicatorBase {
     static defaultProgressBar = {
-        // default values for the progress bar itself
+
         background: {
             colorStart: {red: 204, green: 204, blue: 204, alpha: 255},
             colorEnd: null,
@@ -732,7 +732,7 @@ export class UnityIndicator extends IndicatorBase {
     };
 
     static defaultProgressBarTrack = {
-        // default values for the progress bar track
+
         background: {
             colorStart: {red: 64, green: 64, blue: 64, alpha: 255},
             colorEnd: {red: 89, green: 89, blue: 89, alpha: 255},
@@ -812,7 +812,7 @@ export class UnityIndicator extends IndicatorBase {
             'dash-max-icon-size').unpack();
 
         if (!fontDesc.get_size_is_absolute()) {
-            // fontSize was expressed in points, so convert to pixel
+
             fontSize /= 0.75;
         }
 
@@ -915,20 +915,20 @@ export class UnityIndicator extends IndicatorBase {
             return;
 
         const accessibleName = count > 0
-            // TRANSLATORS: This is the accessible name for an app icon with unread
-            // notifications.
-            // %s is the name of the app and %d the number of unread notifications.
+
+
+
             ? N__('%s, %d unread notification', '%s, %d unread notifications', count)
                 .format(appName, count)
             : appName;
 
         if (this._source.labelActor === null) {
-            // Dock: name owned by parent DashItemContainer, see dash.js
+
             const itemContainer = this._source.get_parent?.();
             itemContainer?.set({accessibleName});
             this._source.set({accessibleName});
         } else {
-            // Overview: no per-icon parent, update icon and label directly
+
             this._source.set({accessibleName});
             this._source.labelActor?.set({accessibleName});
         }
@@ -1079,7 +1079,7 @@ export class UnityIndicator extends IndicatorBase {
             '-progress-bar',
             UnityIndicator.defaultProgressBar);
 
-        // Draw the track
+
         let lineWidth = baseLineWidth * progressBarTrack.lineWidth;
         cr.setLineWidth(lineWidth);
 
@@ -1093,7 +1093,7 @@ export class UnityIndicator extends IndicatorBase {
         Utils.drawRoundedLine(cr, x + lineWidth / 2.0,
             y + lineWidth / 2.0, width, height, true, true, stroke, fill);
 
-        // Draw the finished bar
+
         lineWidth = baseLineWidth * progressBar.lineWidth;
         cr.setLineWidth(lineWidth);
 
@@ -1151,45 +1151,45 @@ export class UnityIndicator extends IndicatorBase {
 
 // Global icon cache. Used for Unity7 styling.
 const iconCacheMap = new Map();
-// Max number of items to store
-// We don't expect to ever reach this number, but let's put an hard limit to avoid
-// even the remote possibility of the cached items to grow indefinitely.
+
+
+
 const MAX_CACHED_ITEMS = 1000;
-// When the size exceed it, the oldest 'n' ones are deleted
+
 const  BATCH_SIZE_TO_DELETE = 50;
-// The icon size used to extract the dominant color
+
 const DOMINANT_COLOR_ICON_SIZE = 64;
 
-// Compute dominant color from the app icon.
-// The color is cached for efficiency.
+
+
 class DominantColorExtractor {
     constructor(app) {
         this._app = app;
     }
 
-    /**
-     * Try to get the pixel buffer for the current icon, if not fail gracefully
-     */
+
+
+
     _getIconPixBuf() {
         let iconTexture = this._app.create_icon_texture(16);
         const themeLoader = Docking.DockManager.iconTheme;
 
-        // Unable to load the icon texture, use fallback
+
         if (iconTexture instanceof St.Icon === false)
             return null;
 
 
         iconTexture = iconTexture.get_gicon();
 
-        // Unable to load the icon texture, use fallback
+
         if (!iconTexture)
             return null;
 
         if (iconTexture instanceof Gio.FileIcon) {
-            // Use GdkPixBuf to load the pixel buffer from the provided file path
+
             return GdkPixbuf.Pixbuf.new_from_file(iconTexture.get_file().get_path());
         } else if (iconTexture instanceof Gio.ThemedIcon) {
-            // Get the first pixel buffer available in the icon theme
+
             const iconNames = iconTexture.get_names();
             const iconInfo = themeLoader.choose_icon(iconNames, DOMINANT_COLOR_ICON_SIZE, 0);
 
@@ -1199,23 +1199,23 @@ class DominantColorExtractor {
                 return null;
         }
 
-        // Use GdkPixBuf to load the pixel buffer from memory
-        // iconTexture.load is available unless iconTexture is not an instance of Gio.LoadableIcon
-        // this means that iconTexture is an instance of Gio.EmblemedIcon,
-        // which may be converted to a normal icon via iconTexture.get_icon?
+
+
+
+
         const [iconBuffer] = iconTexture.load(DOMINANT_COLOR_ICON_SIZE, null);
         return GdkPixbuf.Pixbuf.new_from_stream(iconBuffer, null);
     }
 
-    /**
-     * The backlight color choosing algorithm was mostly ported to javascript from the
-     * Unity7 C++ source of Canonicals:
-     * https://bazaar.launchpad.net/~unity-team/unity/trunk/view/head:/launcher/LauncherIcon.cpp
-     * so it more or less works the same way.
-     */
+
+
+
+
+
+
     _getColorPalette() {
         if (iconCacheMap.get(this._app.get_id())) {
-            // We already know the answer
+
             return iconCacheMap.get(this._app.get_id());
         }
 
@@ -1233,16 +1233,16 @@ class DominantColorExtractor {
         let resampleX = 1;
         let resampleY = 1;
 
-        // Resampling of large icons
-        // We resample icons larger than twice the desired size, as the resampling
-        // to a size s
-        // DOMINANT_COLOR_ICON_SIZE < s < 2*DOMINANT_COLOR_ICON_SIZE,
-        // most of the case exactly DOMINANT_COLOR_ICON_SIZE as the icon size is
-        // typically a multiple of it.
+
+
+
+
+
+
         const width = pixBuf.get_width();
         const height = pixBuf.get_height();
 
-        // Resample
+
         if (height >= 2 * DOMINANT_COLOR_ICON_SIZE)
             resampleY = Math.floor(height / DOMINANT_COLOR_ICON_SIZE);
 
@@ -1252,8 +1252,8 @@ class DominantColorExtractor {
         if (resampleX !== 1 || resampleY !== 1)
             pixels = this._resamplePixels(pixels, resampleX, resampleY);
 
-        // computing the limit outside the for (where it would be repeated at each iteration)
-        // for performance reasons
+
+
         const limit = pixels.length;
         for (let offset = 0; offset < limit; offset += 4) {
             const r = pixels[offset],
@@ -1285,7 +1285,7 @@ class DominantColorExtractor {
 
         const rgb = Utils.ColorUtils.HSVtoRGB(hsv.h, hsv.s, hsv.v);
 
-        // Cache the result.
+
         const backgroundColor = {
             lighter:  Utils.ColorUtils.ColorLuminance(rgb.r, rgb.g, rgb.b, 0.2),
             original: Utils.ColorUtils.ColorLuminance(rgb.r, rgb.g, rgb.b, 0),
@@ -1293,7 +1293,7 @@ class DominantColorExtractor {
         };
 
         if (iconCacheMap.size >= MAX_CACHED_ITEMS) {
-            // delete oldest cached values (which are in order of insertions)
+
             let ctr = 0;
             for (const key of iconCacheMap.keys()) {
                 if (++ctr > BATCH_SIZE_TO_DELETE)
@@ -1307,21 +1307,21 @@ class DominantColorExtractor {
         return backgroundColor;
     }
 
-    /**
-     * Downscale large icons before scanning for the backlight color to
-     * improve performance.
-     *
-     * @param pixBuf
-     * @param pixels
-     * @param resampleX
-     * @param resampleY
-     *
-     * @returns [];
-     */
+
+
+
+
+
+
+
+
+
+
+
     _resamplePixels(pixels, resampleX, resampleY) {
         const resampledPixels = [];
-        // computing the limit outside the for (where it would be repeated at each iteration)
-        // for performance reasons
+
+
         const limit = pixels.length / (resampleX * resampleY) / 4;
         for (let i = 0; i < limit; i++) {
             const pixel = i * resampleX * resampleY;

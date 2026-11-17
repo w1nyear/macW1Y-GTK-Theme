@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2011 Giovanni Campagna <gcampagna@src.gnome.org>
 // SPDX-FileCopyrightText: 2011 Elad Alfassa <el.il@doom.co.il>
 // SPDX-FileCopyrightText: 2014 Florian Müllner <fmuellner@gnome.org>
-//
+
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 import Gio from 'gi://Gio';

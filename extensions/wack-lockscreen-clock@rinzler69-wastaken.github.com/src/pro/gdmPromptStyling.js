@@ -309,9 +309,9 @@ export class GdmPromptStyling {
     _findMenuForButton(button) {
         if (!button)
             return null;
-        // Cancel has no menu. Do not fall through to the dialog-level session
-        // menu below, otherwise opening the session picker makes Cancel look
-        // pressed as well.
+
+
+
         if (button.has_style_class_name?.('cancel-button'))
             return null;
         if (button._menu)

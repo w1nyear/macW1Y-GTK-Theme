@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macW1Y-style top bar buttons: Battery (percentage + icon, opens
-// Settings -> Power) and Search (opens Spotlight, falls back to overview).
+
+
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -22,7 +22,7 @@ let _searchButton = null;
 let _interfaceSettings = null;
 let _interfaceChangedId = 0;
 let _currentBatteryPercentage = 100;
-let _currentBatteryState = 2; // discharging
+let _currentBatteryState = 2;
 let _inkUnwatch = null;
 
 function _onBatteryRepaint(area) {
@@ -72,7 +72,7 @@ function _onBatteryRepaint(area) {
         cr.closePath();
     }
 
-    // 1. Base uncharged capsule
+
     roundedRect(bx, by, bw, bh, br);
     if (isDarkInk) {
         cr.setSourceRGBA(0.0, 0.0, 0.0, 0.28);
@@ -81,7 +81,7 @@ function _onBatteryRepaint(area) {
     }
     cr.fill();
 
-    // 2. Terminal nipple
+
     cr.newSubPath();
     cr.arc(nx + nw - nr, ny + nr, nr, -Math.PI / 2, 0);
     cr.arc(nx + nw - nr, ny + nh - nr, nr, 0, Math.PI / 2);
@@ -95,7 +95,7 @@ function _onBatteryRepaint(area) {
     }
     cr.fill();
 
-    // 3. Charged level fill
+
     if (pct > 0.005) {
         cr.save();
         roundedRect(bx, by, bw, bh, br);
@@ -105,7 +105,7 @@ function _onBatteryRepaint(area) {
         cr.rectangle(bx, by, fillW, bh);
 
         if (charging) {
-            // macW1Y vivid green while charging (#28cd41)
+
             cr.setSourceRGBA(40 / 255, 205 / 255, 65 / 255, 1.0);
         } else if (pct <= 0.10) {
             cr.setSourceRGBA(255 / 255, 59 / 255, 48 / 255, 1.0);
@@ -120,7 +120,7 @@ function _onBatteryRepaint(area) {
         cr.restore();
     }
 
-    // 4. Lightning bolt if charging (solid white with contrast stroke, centered)
+
     if (charging) {
         cr.save();
         const cx = bx + bw / 2.0;
@@ -137,14 +137,14 @@ function _onBatteryRepaint(area) {
             cr.closePath();
         };
 
-        // Dark outline for contrast against green fill & translucent background
+
         boltPath();
         cr.setLineWidth(1.2);
         cr.setLineJoin(Cairo.LineJoin.ROUND);
         cr.setSourceRGBA(0.0, 0.0, 0.0, 0.75);
         cr.stroke();
 
-        // Crisp white lightning bolt fill
+
         boltPath();
         cr.setSourceRGBA(1.0, 1.0, 1.0, 1.0);
         cr.fill();
@@ -263,23 +263,23 @@ function _syncBatteryPercentageVisibility() {
 }
 
 function _openPowerSettings() {
-    // GNOME Settings -> Power panel (macW1Y: clicking battery opens settings)
+
     try {
         GLib.spawn_command_line_async('gnome-control-center power');
         return;
     } catch (_) {
-        // fall through
+
     }
     try {
         Gio.AppInfo.launch_default_for_uri('settings://power', null);
     } catch (_) {
-        // no settings app
+
     }
 }
 
 function _iconForLevel(percentage, state) {
-    // UPower states: 1 = charging, 2 = discharging, 4 = fully charged,
-    // 5 = pending charge. Everything else treats as on-battery.
+
+
     const charging = state === 1 || state === 5;
     const full = state === 4 || percentage >= 99.5;
     if (full)
@@ -323,7 +323,7 @@ function _updateBattery() {
         }
         _batteryDrawingArea.queue_repaint();
     } catch (_) {
-        // keep last value
+
     }
 }
 
@@ -373,7 +373,7 @@ function _initBatteryProxy() {
                             try {
                                 if (_batteryChangedId && _batteryProxy)
                                     _batteryProxy.disconnect(_batteryChangedId);
-                            } catch (_) { /* stale */ }
+                            } catch (_) {   }
                             _batteryChangedId = 0;
                             try {
                                 _batteryChangedId = _batteryProxy.connect('g-properties-changed', _updateBattery);
@@ -381,19 +381,19 @@ function _initBatteryProxy() {
                                 _batteryChangedId = 0;
                             }
                         } catch (_) {
-                            // BAT0 missing (desktop?) - try BAT1 once
+
                             if (path.endsWith('BAT0'))
                                 makeDevice('/org/freedesktop/UPower/devices/battery_BAT1');
                         }
                     });
                 } catch (_) {
-                    // no battery
+
                 }
             };
             makeDevice(batteryPath);
         });
     } catch (_) {
-        // UPower unavailable
+
     }
 }
 
@@ -408,12 +408,12 @@ function _toggleSpotlight() {
             return;
         }
     } catch (_) {
-        // fall through to the overview
+
     }
     try {
         Main.overview.toggle();
     } catch (_) {
-        // ignore
+
     }
 }
 
@@ -460,8 +460,8 @@ export function enable() {
             _openPowerSettings();
             return Clutter.EVENT_STOP;
         });
-        // NOTE: role id stays 'kiwi-wifi-button' - topbarStatusIcons.js anchors
-        // the airplane indicator to it, so renaming would orphan that icon.
+
+
         Main.panel.addToStatusArea('kiwi-wifi-button', _batteryButton, 0, 'right');
         if (!_interfaceSettings) {
             try {
@@ -532,7 +532,7 @@ export function enable() {
         _updateBattery();
     }
 
-    // Spotlight button removed per user request. Destroy if still in statusArea.
+
     if (Main.panel.statusArea['kiwi-search-button']) {
         try {
             Main.panel.statusArea['kiwi-search-button'].destroy();
@@ -558,7 +558,7 @@ export function disable() {
         try {
             _batteryProxy.disconnect(_batteryChangedId);
         } catch (_) {
-            // gone
+
         }
     }
     _batteryChangedId = 0;
@@ -568,13 +568,13 @@ export function disable() {
             if (_clickId)
                 _batteryButton.disconnect(_clickId);
         } catch (_) {
-            // gone
+
         }
         _clickId = 0;
         try {
             _batteryButton.destroy();
         } catch (_) {
-            // already gone
+
         }
         _batteryButton = null;
     }
@@ -589,7 +589,7 @@ export function disable() {
         try {
             _searchButton.destroy();
         } catch (_) {
-            // already gone
+
         }
         _searchButton = null;
     }

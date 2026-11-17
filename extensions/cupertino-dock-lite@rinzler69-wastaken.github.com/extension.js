@@ -99,7 +99,7 @@ export default class DashAnimatorExtension extends Extension {
                 } catch (_) {}
               }
 
-              // Authentic macW1Y "poof" puff animation on drop
+
               const actor = dropInfo.dropActor || this._draggedSourceActor;
               if (actor && actor.get_stage()) {
                 try {
@@ -292,24 +292,24 @@ export default class DashAnimatorExtension extends Extension {
       }
     }, this);
 
-    // hooks
+
     this.dashContainer.__animateIn = this.dashContainer._animateIn;
     this.dashContainer.__animateOut = this.dashContainer._animateOut;
 
     this.dashContainer._animateIn = (time, delay) => {
-      // Cancel any pending deferred hide — user showed the dock again
+
       this._pendingHide = null;
       this._isHidden = false;
-      // Resume urgent bounce if the matter is still unattended
+
       if (this.animator) this.animator.resumeUrgentBounce();
       this._startAnimation();
       this.dashContainer.__animateIn(time, delay);
     };
     this.dashContainer._animateOut = (time, delay) => {
-      // If any bounce is in progress (click or urgent), defer the hide:
-      // store args, keep dock visible, let the current arc finish landing.
-      // The animator will call _firePendingHide() once all jumps settle.
-      // The 3-cycle first-run gate for urgent is enforced inside the animator loop.
+
+
+
+
       const anyJumping = this.animator?.isJumping();
       const anyFirstRunPending = this._iconsContainer_firstRunPending();
       if (anyJumping || anyFirstRunPending) {
@@ -336,7 +336,7 @@ export default class DashAnimatorExtension extends Extension {
 
     const dashChildren = this.dash._box.get_children();
 
-    // hook on showApps
+
     if (this.dash.showAppsButton && !this.dash.showAppsButton._dashAnimatorHooked) {
       this.dash.showAppsButton._dashAnimatorHooked = true;
       this.dash.showAppsButton.connectObject(
@@ -364,7 +364,7 @@ export default class DashAnimatorExtension extends Extension {
         if (c._bin?.get_parent()?.clip_to_view) {
           c._bin.get_parent().clip_to_view = false;
         }
-        return; // Already processed
+        return;
       }
 
       const widget = appwell.first_child;
@@ -386,7 +386,7 @@ export default class DashAnimatorExtension extends Extension {
         c._icon = icon;
       }
 
-      // Hook notify::urgent on inner AppIcon so bounce + dock show fires immediately
+
       const appIcon = appwell.child && appwell.child._delegate;
       if (appIcon && !appIcon._dashAnimatorUrgentHooked) {
         appIcon._dashAnimatorUrgentHooked = true;
@@ -405,7 +405,7 @@ export default class DashAnimatorExtension extends Extension {
     const apps = Main.overview.dash?.last_child?.last_child;
     if (apps) {
       const widget = apps.child;
-      // account for JustPerfection & dash-to-dock hiding the app button
+
       if (widget && widget.width > 0 && widget.get_parent()?.visible) {
         const icongrid = widget.first_child;
         const boxlayout = icongrid.first_child;
@@ -419,7 +419,7 @@ export default class DashAnimatorExtension extends Extension {
           _bin: bin,
           _icon: icon,
           _label: widget._delegate?.label,
-          _appwell: widget, // ShowApps button acts as its own appwell here
+          _appwell: widget,
         };
         icons.push(c);
       }
@@ -521,7 +521,7 @@ export default class DashAnimatorExtension extends Extension {
         this.dash._box.insert_child_at_index(this._customPlaceholder, 0);
       }
 
-      // Ensure separator is placed strictly after the last favorite or placeholder
+
       if (this.dash._separator && this.dash._separator.get_parent() === this.dash._box) {
         const lastFav = visibleFavs[visibleFavs.length - 1];
         const refChild = (targetPos >= visibleFavs.length) ? this._customPlaceholder : lastFav;
@@ -532,7 +532,7 @@ export default class DashAnimatorExtension extends Extension {
 
       this._customPlaceholderPos = targetPos;
 
-      // Animate icons from targetPos onwards to smoothly slide right, opening the space
+
       for (let i = targetPos; i < visibleFavs.length; i++) {
         const item = visibleFavs[i];
         item.remove_transition('translation_x');
@@ -560,14 +560,14 @@ export default class DashAnimatorExtension extends Extension {
       const prevPos = this._customPlaceholderPos;
       this._customPlaceholderPos = targetPos;
 
-      // Reposition placeholder in the child list
+
       if (targetPos < visibleFavs.length) {
         this.dash._box.set_child_below_sibling(this._customPlaceholder, visibleFavs[targetPos]);
       } else if (visibleFavs.length > 0) {
         this.dash._box.set_child_above_sibling(this._customPlaceholder, visibleFavs[visibleFavs.length - 1]);
       }
 
-      // Ensure separator is strictly after all favorites or placeholder
+
       if (this.dash._separator && this.dash._separator.get_parent() === this.dash._box) {
         const lastFav = visibleFavs[visibleFavs.length - 1];
         const refChild = (targetPos >= visibleFavs.length) ? this._customPlaceholder : lastFav;
@@ -576,9 +576,9 @@ export default class DashAnimatorExtension extends Extension {
         }
       }
 
-      // Smooth side-to-side gliding animation for affected icons
+
       if (targetPos > prevPos) {
-        // Pointer moved to the right: icons between prevPos and targetPos - 1 slide LEFT into their slots
+
         for (let i = prevPos; i < targetPos && i < visibleFavs.length; i++) {
           const item = visibleFavs[i];
           const curTrans = item.translation_x || 0;
@@ -591,7 +591,7 @@ export default class DashAnimatorExtension extends Extension {
           });
         }
       } else {
-        // Pointer moved to the left: icons between targetPos and prevPos - 1 slide RIGHT into their slots
+
         for (let i = targetPos; i < prevPos && i < visibleFavs.length; i++) {
           const item = visibleFavs[i];
           const curTrans = item.translation_x || 0;
@@ -718,7 +718,7 @@ export default class DashAnimatorExtension extends Extension {
     };
 
     this.dash.handleDragOver = (source, actor, x, y, time) => {
-      // 1. Check if pointer is over Trash
+
       if (this._isPointerOverTrash()) {
         this._clearCustomPlaceholder(true);
         const app = this._getDraggedApp(source);
@@ -731,7 +731,7 @@ export default class DashAnimatorExtension extends Extension {
         return DND.DragMotionResult.NO_DROP;
       }
 
-      // Ensure magnification is paused during drag over dock so icons part visibly
+
       if (this.animator && this.animator._iconsContainer) {
         this.animator._pauseForDrag();
       }
@@ -755,12 +755,12 @@ export default class DashAnimatorExtension extends Extension {
 
       const isFromDash = this._isFromDash(source);
 
-      // Hide source container so no duplicate stands in the dock
+
       if (isFromDash) {
         this._hideDraggedSourceActor();
       }
 
-      // Gather visible favorite containers in dash._box
+
       const favs = AppFavorites.getAppFavorites().getFavorites();
       const favIds = favs.map(a => a.get_id());
       const children = this.dash._box.get_children();
@@ -774,7 +774,7 @@ export default class DashAnimatorExtension extends Extension {
         }
       }
 
-      // Exact coordinate calculation inside dash._box coordinate system
+
       const [pointerX, pointerY] = global.get_pointer();
       const [_, boxX] = this.dash._box.transform_stage_point(pointerX, pointerY);
 
@@ -796,7 +796,7 @@ export default class DashAnimatorExtension extends Extension {
     };
 
     this.dash.acceptDrop = (source, actor, x, y, time) => {
-      // 1. If over trash and an app is dropped, unpin favorite and trash local app launcher
+
       if (this._isPointerOverTrash()) {
         const app = this._getDraggedApp(source);
         if (app && app.get_id && !app.isTrash) {
@@ -881,7 +881,7 @@ export default class DashAnimatorExtension extends Extension {
         this._activeDndUris = [];
         if (uris.length === 0) return;
 
-        // 1. Released over Trash -> delete / uninstall
+
         if (this._isPointerOverTrash()) {
           for (const uri of uris) {
             try {
@@ -897,7 +897,7 @@ export default class DashAnimatorExtension extends Extension {
           return;
         }
 
-        // 2. Released over Dock -> Pin to favorites at targetPos
+
         if (this._isPointerOverDock(35)) {
           const targetPos = this._customPlaceholderPos;
           this._cleanUpDragState();
@@ -1049,7 +1049,7 @@ export default class DashAnimatorExtension extends Extension {
   }
 
   _onFullScreen() {
-    // Force-hide dock in fullscreen — macW1Y dock never shows in fullscreen
+
     const isFullscreen = global.display.get_monitor_in_fullscreen(
       global.display.get_current_monitor()
     );
@@ -1057,7 +1057,7 @@ export default class DashAnimatorExtension extends Extension {
       if (this.dashContainer && this.dashContainer._animateOut)
         this.dashContainer._animateOut(0.1, 0);
     } else {
-      // Exiting fullscreen (e.g. workspace switch) — slide in smoothly
+
       if (this.dashContainer && this.dashContainer._animateIn)
         this.dashContainer._animateIn(0.3, 0.1);
     }
@@ -1068,8 +1068,8 @@ export default class DashAnimatorExtension extends Extension {
       this.animator._startAnimation();
   }
 
-  // Returns true if any urgent icon still has first-run bounce cycles remaining.
-  // Used by _animateOut to decide whether to defer the hide.
+
+
   _iconsContainer_firstRunPending() {
     if (!this.animator?._iconsContainer) return false;
     return this.animator._iconsContainer.get_children()
@@ -1077,8 +1077,8 @@ export default class DashAnimatorExtension extends Extension {
       .some(c => (c._appwell?._dashAnimatorUrgentFirstRunRemaining ?? 0) > 0);
   }
 
-  // Called by the animator when the last first-run cycle completes,
-  // fires the deferred hide that was waiting for it.
+
+
   _firePendingHide() {
     if (!this._pendingHide) return;
     const { time, delay } = this._pendingHide;
@@ -1087,7 +1087,7 @@ export default class DashAnimatorExtension extends Extension {
     if (this.dashContainer?.__animateOut)
       this.dashContainer.__animateOut(time, delay);
   }
-  // ── Theme injection ──────────────────────────────────────────────────────
+
 
   _applyThemeOverride() {
     if (this._themeApplyTimeoutId) {
@@ -1143,8 +1143,8 @@ export default class DashAnimatorExtension extends Extension {
           themeContext.emit('changed');
           if (this.animator) this.animator.reloadIcons();
 
-          // Slide back in after theme is applied — use wrapper so _pendingHide
-          // is cleared and urgent bounce resumes if still active.
+
+
           this._themeInTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
             this._themeInTimeoutId = null;
             if (this.dashContainer && this.dashContainer._animateIn)
@@ -1153,7 +1153,7 @@ export default class DashAnimatorExtension extends Extension {
           });
         };
 
-        // Slide out first, apply theme after animation completes, then slide back in
+
         if (this.dashContainer && this.dashContainer.__animateOut) {
           this.dashContainer.__animateOut(0.2, 0);
           this._themeApplyTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, () => {
@@ -1181,7 +1181,7 @@ export default class DashAnimatorExtension extends Extension {
   _connectThemeSettings() {
     const s = this._settings;
 
-    // Re-apply whenever any relevant setting changes
+
     s.connectObject(
       'changed::override-theming', () => this._applyThemeOverride(),
       'changed::dock-theme', () => this._applyThemeOverride(),
@@ -1190,7 +1190,7 @@ export default class DashAnimatorExtension extends Extension {
       this
     );
 
-    // Follow system color-scheme changes
+
     this._desktopSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
     this._desktopSettings.connectObject('changed::color-scheme', () => this._applyThemeOverride(), this);
 

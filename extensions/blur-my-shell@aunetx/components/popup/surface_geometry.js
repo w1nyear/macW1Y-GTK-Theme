@@ -166,7 +166,7 @@ export const PopupBlurSurfaceGeometry = class PopupBlurSurfaceGeometry {
 
             return theme_node.get_margin(side);
         } catch (e) {
-            // get_theme_node() may throw when actor is not yet mapped to a stage
+
             return 0;
         }
     }
@@ -196,7 +196,7 @@ export const PopupBlurSurfaceGeometry = class PopupBlurSurfaceGeometry {
                 inset += theme_node.get_border_width(side);
             return inset;
         } catch (e) {
-            // get_theme_node() may throw when actor is not yet mapped to a stage
+
             return 0;
         }
     }

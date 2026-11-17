@@ -139,7 +139,7 @@ export async function resolveWallpaperSource(uri) {
             filePath = Gio.File.new_for_uri(uri).get_path();
         } else if (uri.startsWith('/')) {
             filePath = uri;
-            // Normalize targetUri to be a file:// URI for caching consistency
+
             targetUri = Gio.File.new_for_path(uri).get_uri();
         }
 
@@ -222,21 +222,21 @@ export async function loadScaledWallpaperPixbuf(targetFilePath, width, height, p
 }
 
 
-/**
- * Normalizes screen bounding boxes for Prompt chip and all peripheral chrome buttons
- * (Cancel, Avatar, Accessibility, Session) into [0, 1] relative screen coordinates.
- *
- * @param {object} params Parameter map containing bounds and alignment hints
- * @param {number} monitorWidth Primary monitor width
- * @param {number} monitorHeight Primary monitor height
- * @returns {{
- *   prompt: {x1: number, x2: number, y1: number, y2: number},
- *   cancel: {x1: number, x2: number, y1: number, y2: number},
- *   avatar: {x1: number, x2: number, y1: number, y2: number},
- *   a11y: {x1: number, x2: number, y1: number, y2: number},
- *   session: {x1: number, x2: number, y1: number, y2: number}
- * }}
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export function normalizePromptChromeBounds(params, monitorWidth = 1920, monitorHeight = 1080) {
     const {
         promptBounds = null,
@@ -248,7 +248,7 @@ export function normalizePromptChromeBounds(params, monitorWidth = 1920, monitor
         wellH = 0,
     } = params;
 
-    // Prompt bounds
+
     let normX1, normX2, normY1, normY2;
     if (promptBounds &&
         promptBounds.x1 != null &&
@@ -279,7 +279,7 @@ export function normalizePromptChromeBounds(params, monitorWidth = 1920, monitor
         normY2 = Math.min(1, targetY + halfH);
     }
 
-    // Cancel button bounds
+
     let normCancelX1, normCancelX2, normCancelY1, normCancelY2;
     const offsetX = CANCEL_BUTTON_X_OFFSET / monitorWidth;
     const offsetY = CANCEL_BUTTON_Y_OFFSET / monitorHeight;
@@ -304,7 +304,7 @@ export function normalizePromptChromeBounds(params, monitorWidth = 1920, monitor
         normCancelY2 = Math.max(0, Math.min(1, centerY + btnHalfH));
     }
 
-    // Avatar bounds
+
     let normAvatarX1, normAvatarX2, normAvatarY1, normAvatarY2;
     const avOffsetX = AVATAR_BUTTON_X_OFFSET / monitorWidth;
     const avOffsetY = AVATAR_BUTTON_Y_OFFSET / monitorHeight;
@@ -327,7 +327,7 @@ export function normalizePromptChromeBounds(params, monitorWidth = 1920, monitor
         normAvatarY2 = Math.min(1, ((targetStackY + AVATAR_BUTTON_HEIGHT) / monitorHeight) + avOffsetY);
     }
 
-    // A11y button bounds
+
     let normA11yX1, normA11yX2, normA11yY1, normA11yY2;
     const a11yHalfW = (A11Y_BUTTON_WIDTH / 2) / monitorWidth;
     const a11yHalfH = (A11Y_BUTTON_HEIGHT / 2) / monitorHeight;
@@ -352,7 +352,7 @@ export function normalizePromptChromeBounds(params, monitorWidth = 1920, monitor
         normA11yY2 = Math.max(0, Math.min(1, fallbackA11yCenterY + a11yHalfH));
     }
 
-    // Session button bounds
+
     let normSessionX1, normSessionX2, normSessionY1, normSessionY2;
     const sessionHalfW = (SESSION_BUTTON_WIDTH / 2) / monitorWidth;
     const sessionHalfH = (SESSION_BUTTON_HEIGHT / 2) / monitorHeight;
@@ -386,15 +386,15 @@ export function normalizePromptChromeBounds(params, monitorWidth = 1920, monitor
     };
 }
 
-/**
- * Calculates target load dimensions for a wallpaper image based on source dimensions and sizing options.
- *
- * @param {object|null} fileInfo Source image file metadata { width, height }
- * @param {string} pictureOptions Picture sizing option ('zoom', 'scaled', 'stretched', etc.)
- * @param {number} monitorWidth Primary monitor width
- * @param {number} monitorHeight Primary monitor height
- * @returns {{targetW: number, targetH: number}}
- */
+
+
+
+
+
+
+
+
+
 export function getWallpaperTargetDimensions(fileInfo, pictureOptions, monitorWidth = 1920, monitorHeight = 1080) {
     let targetW = monitorWidth;
     let targetH = monitorHeight;
@@ -410,7 +410,7 @@ export function getWallpaperTargetDimensions(fileInfo, pictureOptions, monitorWi
             targetW = Math.max(1, Math.round(origW * scale));
             targetH = Math.max(1, Math.round(origH * scale));
         } else {
-            // zoom / spanned / default: cover
+
             const scale = Math.max(monitorWidth / origW, monitorHeight / origH);
             targetW = Math.max(1, Math.round(origW * scale));
             targetH = Math.max(1, Math.round(origH * scale));
@@ -420,17 +420,17 @@ export function getWallpaperTargetDimensions(fileInfo, pictureOptions, monitorWi
     return { targetW, targetH };
 }
 
-/**
- * Computes the visible crop rectangle (offset and dimensions) of a wallpaper pixbuf
- * within the monitor viewport according to pictureOptions.
- *
- * @param {number} pbWidth Loaded pixbuf width
- * @param {number} pbHeight Loaded pixbuf height
- * @param {number} monitorWidth Monitor width
- * @param {number} monitorHeight Monitor height
- * @param {string} pictureOptions Sizing option ('zoom', 'scaled', etc.)
- * @returns {{visibleX: number, visibleY: number, visibleW: number, visibleH: number}}
- */
+
+
+
+
+
+
+
+
+
+
+
 export function getVisibleCoverViewport(pbWidth, pbHeight, monitorWidth, monitorHeight, pictureOptions) {
     const monitorAspect = monitorWidth / monitorHeight;
     const pbAspect = pbWidth / pbHeight;
@@ -458,19 +458,19 @@ export function getVisibleCoverViewport(pbWidth, pbHeight, monitorWidth, monitor
     return { visibleX, visibleY, visibleW, visibleH };
 }
 
-/**
- * Maps a normalized screen rectangle [0, 1] to pixel crop bounds and normalized [0, 1]
- * bounds relative to the loaded pixbuf dimensions.
- *
- * @param {{x1: number, x2: number, y1: number, y2: number}} normBounds
- * @param {number} pbWidth
- * @param {number} pbHeight
- * @param {{visibleX: number, visibleY: number, visibleW: number, visibleH: number}} visibleViewport
- * @returns {{
- *   x1: number, x2: number, y1: number, y2: number,
- *   xStart: number, xEnd: number, yStart: number, yEnd: number
- * }}
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
 export function mapNormalizedBoundsToPixbuf(normBounds, pbWidth, pbHeight, visibleViewport) {
     const { visibleX, visibleY, visibleW, visibleH } = visibleViewport;
 

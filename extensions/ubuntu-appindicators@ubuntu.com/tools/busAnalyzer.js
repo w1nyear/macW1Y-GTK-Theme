@@ -7,10 +7,10 @@ import GioUnix from 'gi://GioUnix';
 import * as DBusUtils from '../dbusUtils.js';
 
 async function seekStatusNotifierItems() {
-    // Some indicators (*coff*, dropbox, *coff*) do not re-register again
-    // when the plugin is enabled/disabled, thus we need to manually look
-    // for the objects in the session bus that implements the StatusNotifierItem
-    // interface...
+
+
+
+
     const cancellable = null;
     const bus = Gio.DBus.session;
     const uniqueNames = await DBusUtils.getBusNames(bus, cancellable);

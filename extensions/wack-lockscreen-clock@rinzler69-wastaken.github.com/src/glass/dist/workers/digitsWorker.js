@@ -1,7 +1,7 @@
-// Makes the glass clock's digits in a process of its own (gjs -m), so the
-// shell keeps drawing and following the pointer while they are made. Answers
-// a DigitsRequest by writing the texture's pixels to a temporary file:
-// {path, width, height, band, digitHeight}.
+
+
+
+
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import { DigitsMaker, fontKey } from '../desktop/glassText.js';
@@ -25,8 +25,8 @@ function save(bytes) {
     });
 }
 
-// The font the newest request is for. A request for another font waiting
-// behind it, or being worked on, is given up: only the newest is shown.
+
+
 let newest = '';
 await serveRequests(async (request) => {
     if (fontKey(request) !== newest)

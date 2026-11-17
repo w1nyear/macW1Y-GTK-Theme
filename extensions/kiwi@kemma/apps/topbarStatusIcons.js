@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macW1Y-style topbar status indicators: a moon left of the ydotool button
-// while Focus (Do Not Disturb) is on, and an airplane glyph next to the
-// Wi-Fi icon while Airplane Mode is on. Pure indicators: reactive=false,
-// no click handlers - they show state and nothing else.
+
+
+
+
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -43,15 +43,15 @@ function _makeBin(child) {
         child.x_align = Clutter.ActorAlign.CENTER;
         child.y_align = Clutter.ActorAlign.CENTER;
     } catch (_) {
-        // plain actor
+
     }
     bin.set_child(child);
     return bin;
 }
 
-// Insert bin next to the anchor indicator (the box is RTL: index 0 is the
-// rightmost). side 'left' (default) puts it left of the anchor, 'right'
-// right of it. Falls back to the far-right slot when the anchor is missing.
+
+
+
 function _place(bin, anchorRole, side) {
     try {
         const rightBox = Main.panel?._rightBox;
@@ -71,12 +71,12 @@ function _place(bin, anchorRole, side) {
         }
         rightBox.insert_child_at_index(bin, side === 'right' ? idx : idx + 1);
     } catch (_) {
-        // panel gone
+
     }
 }
 
-// black glyphs on light backgrounds, white on dark (adaptive ink,
-// not theme - see tahoeInk.js)
+
+
 function _syncIconTheme() {
     try {
         const dark = getTopbarInk() !== 'dark';
@@ -85,7 +85,7 @@ function _syncIconTheme() {
         if (_focusIcon)
             _focusIcon.gicon = Gio.icon_new_for_string(dark ? FOCUS_WHITE : FOCUS_BLACK);
     } catch (_) {
-        // icon stays
+
     }
 }
 
@@ -94,7 +94,7 @@ function _syncFocus() {
         if (_focusBin && _notifSettings)
             _focusBin.visible = !_notifSettings.get_boolean('show-banners');
     } catch (_) {
-        // unavailable
+
     }
 }
 
@@ -103,7 +103,7 @@ function _syncAir() {
     try {
         if (!_airBin)
             return;
-        // same definition as the QS Airplane pill: wifi off + bt off/absent
+
         let wifiOff = false;
         try {
             wifiOff = _nm ? !_nm.wireless_enabled : false;
@@ -118,7 +118,7 @@ function _syncAir() {
         }
         _airBin.visible = wifiOff && (_bt ? btOff : true);
     } catch (_) {
-        // unavailable
+
     }
 }
 
@@ -175,15 +175,15 @@ export function enable() {
                         _nmIds.push(client.connect('notify::wireless-enabled', _syncAir));
                         _nmIds.push(client.connect('notify::primary-connection', _syncAir));
                     } catch (_) {
-                        // static
+
                     }
                     _syncAir();
                 } catch (_) {
-                    // no NM
+
                 }
             });
         } catch (_) {
-            // no NM
+
         }
     }
     if (!_bt) {
@@ -193,7 +193,7 @@ export function enable() {
                 _btIds.push(_bt.connect('notify::default-adapter-powered', _syncAir));
                 _btIds.push(_bt.connect('notify::default-adapter', _syncAir));
             } catch (_) {
-                // static
+
             }
         } catch (_) {
             _bt = null;
@@ -206,7 +206,7 @@ export function disable() {
         try {
             _notifSettings.disconnect(_notifId);
         } catch (_) {
-            // gone
+
         }
     }
     _notifSettings = null;
@@ -215,7 +215,7 @@ export function disable() {
         try {
             _inkUnwatch();
         } catch (_) {
-            // gone
+
         }
     }
     _inkUnwatch = null;
@@ -226,7 +226,7 @@ export function disable() {
             try {
                 _nm.disconnect(id);
             } catch (_) {
-                // gone
+
             }
         }
         _nmIds.length = 0;
@@ -237,7 +237,7 @@ export function disable() {
             try {
                 _bt.disconnect(id);
             } catch (_) {
-                // gone
+
             }
         }
         _btIds.length = 0;
@@ -248,7 +248,7 @@ export function disable() {
             try {
                 b.destroy();
             } catch (_) {
-                // gone
+
             }
         }
     }

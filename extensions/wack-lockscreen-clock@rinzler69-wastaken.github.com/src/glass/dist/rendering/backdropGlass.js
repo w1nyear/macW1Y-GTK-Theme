@@ -1,7 +1,7 @@
-// Glass that reads what is behind it from the stage framebuffer while the
-// stage is painted (see StageCopier). Relays (RelaySet) put the whole sample
-// area into the redraw clip whenever anything behind it changes, so a reused
-// copy is never stale.
+
+
+
+
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import Cogl from 'gi://Cogl';
@@ -16,11 +16,11 @@ import { coglContext, paintNodeWithContext, canCloneSource, undoCloneScale, newR
 import { windowMayCover, UnpickableActor, setTranslationIfChanged, setScaleIfChanged } from '../actors.js';
 import { registerGlass, unregisterGlass } from '../diagnostics.js';
 
-/**
- * What every stage-reading glass shares: the renderer and its setters, the
- * shaders, the paint-time geometry hook, the sample rect and the composite.
- * Subclasses supply the backdrop texture.
- */
+
+
+
+
+
 export const GlassActor = safeRegisterClass({ GTypeName: 'WackGlass_GlassActor' }, class GlassActor extends Clutter.Actor {
     _init(params = {}) {
         super._init({ name: 'liquid-glass-bg-actor', reactive: false });
@@ -57,7 +57,7 @@ export const GlassActor = safeRegisterClass({ GTypeName: 'WackGlass_GlassActor' 
     }
 
     async _loadShaders() {
-        // Nothing has been drawn yet, so there is nothing for _onShadersLoaded() to redraw.
+
         if (this._renderer.pipelines.loadCached(this._extensionPath)) {
             this._shadersLoaded = true;
             return;
@@ -67,7 +67,7 @@ export const GlassActor = safeRegisterClass({ GTypeName: 'WackGlass_GlassActor' 
             await this._renderer.pipelines.load(this._extensionPath, this._shaderLoad);
         }
         catch (e) {
-            // Cancelled by cleanup(): the glass is gone.
+
             if (e instanceof GLib.Error && e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED))
                 return;
             this._logger?.error(`[Liquid Glass] Failed to load shaders: ${e}`);
@@ -79,12 +79,12 @@ export const GlassActor = safeRegisterClass({ GTypeName: 'WackGlass_GlassActor' 
         this._onShadersLoaded();
     }
 
-    // Nothing was copied while the shaders were missing.
+
     _onShadersLoaded() {
         this._queueRepaint();
     }
 
-    // The sample rect in shader space: the blur rect, or the whole glass.
+
     _sampleShaderRect() {
         const [resW, resH] = this._renderer.getResolution();
         if (!(resW >= 1) || !(resH >= 1))
@@ -92,8 +92,8 @@ export const GlassActor = safeRegisterClass({ GTypeName: 'WackGlass_GlassActor' 
         return this._renderer.geometry.blurRect() ?? [0, 0, resW, resH];
     }
 
-    // Shader space to actor space. The size requested this frame, which the
-    // allocation only catches up with in the relayout.
+
+
     _shaderScale() {
         const [resW, resH] = this._renderer.getResolution();
         const [w, h] = this.get_size();
@@ -102,7 +102,7 @@ export const GlassActor = safeRegisterClass({ GTypeName: 'WackGlass_GlassActor' 
         return [w / resW, h / resH];
     }
 
-    // The sample rect plus SAMPLE_MARGIN, [x, y, w, h] in actor space.
+
     _sampleAreaRect() {
         const s = this._sampleShaderRect();
         const k = this._shaderScale();
@@ -115,7 +115,7 @@ export const GlassActor = safeRegisterClass({ GTypeName: 'WackGlass_GlassActor' 
         return [x0, y0, x1 - x0, y1 - y0];
     }
 
-    // A stage rect [x0, y0, x1, y1] as [x, y, w, h] in shader space.
+
     _stageToShader(rect, kx, ky) {
         const [ok0, ax, ay] = this.transform_stage_point(rect[0], rect[1]);
         const [ok1, bx, by] = this.transform_stage_point(rect[2], rect[3]);
@@ -130,8 +130,8 @@ export const GlassActor = safeRegisterClass({ GTypeName: 'WackGlass_GlassActor' 
         return [x0, y0, x1 - x0, y1 - y0];
     }
 
-    // Shader space to actor space for this paint, from the allocation; null
-    // while there is nothing to draw.
+
+
     _paintScale() {
         const [resW, resH] = this._renderer.getResolution();
         const box = this.get_allocation_box();
@@ -152,12 +152,12 @@ export const GlassActor = safeRegisterClass({ GTypeName: 'WackGlass_GlassActor' 
         return ctx;
     }
 
-    /**
-     * Blurs `texture`, which holds `blurRect` (shader space) of the backdrop,
-     * unless `key` says the last blur is still current. The pool works in
-     * shader-space pixels, so the blur radius means the same at every
-     * monitor scale.
-     */
+
+
+
+
+
+
     _runBlur(root, ctx, texture, blurRect, key) {
         const blur = this._renderer.blur;
         if (blur.passCount <= 0)
@@ -176,7 +176,7 @@ export const GlassActor = safeRegisterClass({ GTypeName: 'WackGlass_GlassActor' 
         this._blurRuns++;
     }
 
-    // Draws glass.frag over the part of the glass that can be non-transparent.
+
     _composite(root, backdrop, blurRect, kx, ky, resW, resH) {
         this._renderer.bindBackdrop(backdrop, blurRect);
         const r = this._renderer.geometry.compositeRect() ?? [0, 0, resW, resH];
@@ -199,7 +199,7 @@ export const GlassActor = safeRegisterClass({ GTypeName: 'WackGlass_GlassActor' 
     }
 
     _queueRepaint() {
-        // Repainting from inside this paint would request a new frame every frame.
+
         if (this._inLiveGeometry)
             return;
         if (this._batchDepth) {
@@ -210,7 +210,7 @@ export const GlassActor = safeRegisterClass({ GTypeName: 'WackGlass_GlassActor' 
     }
 
     // The state behind global._lgGlass.dump(): every paint with diagnostics
-    // on, about once a second otherwise.
+
     _snapshot(fields) {
         const now = GLib.get_monotonic_time();
         if (!this._diagEnabled && now - this._diagLastSnapshotAt < 1000 * 1000)
@@ -245,12 +245,12 @@ export const GlassActor = safeRegisterClass({ GTypeName: 'WackGlass_GlassActor' 
         return this._renderer.uniforms.values;
     }
 
-    /**
-     * Runs `fn` at the start of every paint, when the allocation of whatever
-     * the glass follows is current, so it can correct the geometry the frame
-     * sync read before the relayout. Setters called from it do not queue
-     * another repaint.
-     */
+
+
+
+
+
+
     setLiveGeometryHook(fn) {
         this._liveGeometryHook = fn;
     }
@@ -271,7 +271,7 @@ export const GlassActor = safeRegisterClass({ GTypeName: 'WackGlass_GlassActor' 
 
     cleanup() {
         this._shaderLoad.cancel();
-        // The hook's closure holds the manager and its actors.
+
         this._liveGeometryHook = null;
         unregisterGlass(this);
         this._renderer.cleanup();
@@ -315,7 +315,7 @@ export const GlassActor = safeRegisterClass({ GTypeName: 'WackGlass_GlassActor' 
 
     setAnimationScale(scale) { this._renderer.setAnimationScale(scale); }
 
-    // The glass's size in shader space; normally its own size.
+
     setResolution(width, height) { this._renderer.setResolution(width, height); }
 
     setGlassGeometry(x, y, w, h) { this._renderer.setGlassGeometry(x, y, w, h); }
@@ -335,11 +335,11 @@ export const GlassActor = safeRegisterClass({ GTypeName: 'WackGlass_GlassActor' 
     setSaturation(saturation) { this._renderer.setSaturation(saturation); }
 });
 
-/**
- * A glass drawn straight onto the stage (dock, menus, notifications, OSDs,
- * Quick Settings' background mode): it copies its own backdrop from the
- * stage view it is painted on.
- */
+
+
+
+
+
 export const BackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_BackdropGlass' }, paintNodeWithContext(class BackdropGlass extends GlassActor {
     _init(params = {}) {
         super._init(params);
@@ -351,20 +351,20 @@ export const BackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_BackdropG
         this._copyDoubtful = false;
     }
 
-    // The relays are unmapped with the glass, so nothing behind it was
-    // tracked while it was hidden.
+
+
     vfunc_map() {
         super.vfunc_map();
         this._serialAtMap = this._copier.lastCopy?.serial ?? 0;
         this._relays.redrawArea();
     }
 
-    /**
-     * What is behind the glass without the glass or anything above it: the
-     * last stage copy and the stage rect [x0, y0, x1, y1] it holds. Null until
-     * the glass has copied its backdrop since it was last shown, because an
-     * older copy can show what was there before.
-     */
+
+
+
+
+
+
     backdropCopy() {
         const copy = this._copier.lastCopy;
         if (!copy?.rect || copy.serial <= this._serialAtMap)
@@ -377,20 +377,20 @@ export const BackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_BackdropG
         this._relays.redrawArea();
     }
 
-    /**
-     * Places the sample area and the relays for this frame. Call it every frame
-     * from before-update, after this frame's geometry setters: a redraw queued
-     * there lands in the same frame's clip. `moved` says an ancestor moved the
-     * glass on screen this frame. An X11 window actor's paint volume leaves out
-     * its children, so moving the window does not redraw the area by itself.
-     */
+
+
+
+
+
+
+
     syncSources(moved = false) {
         const area = this._sampleAreaRect();
         if (!area)
             return;
         const changed = this._relays.sync(area);
-        // A glass that was fully transparent was not painted when the backdrop
-        // changed, so its copy is old as well.
+
+
         const painted = this.get_paint_opacity() > 0;
         if (changed || moved || (painted && !this._wasPainted))
             this._relays.redrawArea();
@@ -408,17 +408,17 @@ export const BackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_BackdropG
             return;
         const { kx, ky, resW, resH } = scale;
         const stageRect = localToStage(this, s[0] * kx, s[1] * ky, (s[0] + s[2]) * kx, (s[1] + s[3]) * ky);
-        // Under a window, the framebuffer can hold that window where mutter left
-        // out what it covers, and the copy would show it once the window moves
-        // off. The last copy is kept meanwhile, and the area is copied again
-        // once no window is over it.
+
+
+
+
         const covered = this._underWindows && windowMayCover(this, stageRect);
         const { copy, missed, fresh } = this._copier.take(this, root, paintContext, stageRect, covered);
         if (covered)
             this._copyDoubtful = true;
         else if (fresh)
             this._copyDoubtful = false;
-        // Nothing to draw with yet, or a doubtful copy: the next frame redraws the whole area.
+
         if (missed || (this._copyDoubtful && !covered && !fresh))
             this._relays.redrawArea();
         if (!copy?.rect)
@@ -440,7 +440,7 @@ export const BackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_BackdropG
         });
     }
 
-    /** Counters for the test driver and the dump. */
+
     get stats() {
         const c = this._copier;
         return { paints: this._paints, copies: c.copyCount, reuses: c.reuseCount, misses: c.missCount, offStage: c.offStageCount };
@@ -456,8 +456,8 @@ export const BackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_BackdropG
         };
     }
 
-    // The relays go with the glass when the caller destroys it; at shell
-    // shutdown they can already be gone by the time this runs.
+
+
     cleanup() {
         super.cleanup();
         this._relays.clear();
@@ -465,33 +465,33 @@ export const BackdropGlass = safeRegisterClass({ GTypeName: 'WackGlass_BackdropG
     }
 }));
 
-// Relays keep a reused backdrop copy correct. Every actor painted before a
-// glass gets an invisible clone (a relay) whose paint volume is the glass's
-// sample area, so a redraw anywhere in that actor, which Clutter forwards to
-// its clones, puts the whole sample area into the same frame's redraw clip,
-// and the glass copies its backdrop again.
-// Room around the sample rect, so the rect can shift a little at paint time
-// (the live geometry hook) and still be inside the redrawn area.
+
+
+
+
+
+
+
 export const SAMPLE_MARGIN = 32;
-// The fixed size of the sample area actor and of every relay. The area is
-// fitted to the sample rect by translation and scale only: moving or resizing
-// an actor through its position or size goes through a relayout, and
-// redrawing an actor whose relayout is still pending redraws the whole stage.
+
+
+
+
 const SAMPLE_BASE = 256;
-// Room for a server-side shadow around a window that moved this frame, whose
-// paint volume is not known yet (see windowReaches()).
+
+
 const WINDOW_SHADOW_MARGIN = 80;
-// A relay is hidden only once its source is this much further away than it
-// had to come to be shown, so a source on the edge of a growing or moving
-// area does not toggle every frame. Kept small: a source inside the margin
-// still costs a copy whenever it redraws.
+
+
+
+
 const RELAY_KEEP_MARGIN = 16;
 
-/**
- * Its paint volume is its own box (the sample area), not the source's: a
- * redraw anywhere in the source then damages exactly the sample area,
- * whatever happens to the source's size in that frame.
- */
+
+
+
+
+
 const BackdropRelay = safeRegisterClass({ GTypeName: 'WackGlass_BackdropRelay' }, class BackdropRelay extends Clutter.Clone {
     _init(params) {
         super._init(params);
@@ -504,10 +504,10 @@ const BackdropRelay = safeRegisterClass({ GTypeName: 'WackGlass_BackdropRelay' }
         this._allocated = true;
     }
 
-    // A clone is relaid out whenever its source is, every frame for a
-    // dragged window, and the request climbs to the glass, which then waits
-    // for an allocation in every frame. A relay's box never changes, so once
-    // it has one the requests stop here.
+
+
+
+
     vfunc_queue_relayout() {
         if (!this._allocated)
             super.vfunc_queue_relayout();
@@ -524,15 +524,15 @@ const BackdropRelay = safeRegisterClass({ GTypeName: 'WackGlass_BackdropRelay' }
     }
 });
 
-// Actors that only carry relays for a backdrop read inside another actor's
-// paint (relayHolder()). They draw nothing, so no glass reads them.
+
+
 const holders = new WeakSet();
 
-/**
- * A parent for the relays of a RelaySet whose owner is not ours to add
- * children to. It goes on top of the UI group, which is at the stage's
- * origin, so its coordinates are the stage's.
- */
+
+
+
+
+
 export function relayHolder() {
     const holder = new UnpickableActor({ name: 'liquid-glass-relay-holder' });
     holders.add(holder);
@@ -543,15 +543,15 @@ export class RelaySet {
     _owner;
     _exclude;
     _holder;
-    // Parent of the relays, covering the sample rect (see SAMPLE_BASE). It
-    // draws nothing itself; it is painted (opacity 255) so that its children
-    // are visited and Clutter keeps forwarding their sources' redraws.
+
+
+
     area;
     _relays = new Map();
     changes = 0;
 
-    // `exclude` names actors painted before the owner that are not part of
-    // its backdrop. The relays go in `holder`, the owner itself by default.
+
+
     constructor(_owner, _exclude = () => false, _holder = _owner) {
         this._owner = _owner;
         this._exclude = _exclude;
@@ -560,20 +560,20 @@ export class RelaySet {
         _holder.add_child(this.area);
     }
 
-    /**
-     * Fits the sample area to `rect` [x, y, w, h] in the holder's coordinates
-     * and updates the relays. Returns whether the set of relayed actors
-     * changed, which changes the backdrop without necessarily redrawing all
-     * of it; the caller then redraws the area.
-     */
+
+
+
+
+
+
     sync(rect) {
         const [x, y, w, h] = rect;
         setTranslationIfChanged(this.area, x, y);
         setScaleIfChanged(this.area, w / SAMPLE_BASE, h / SAMPLE_BASE);
-        // A relay out of reach is hidden rather than destroyed, and shown again
-        // when its source comes back: Clutter redraws the whole stage for an
-        // actor's first frame on stage, since it has no previous paint volume to
-        // damage.
+
+
+
+
         const near = this._localToStage(x, y, x + w, y + h);
         const m = RELAY_KEEP_MARGIN;
         const keep = [near[0] - m, near[1] - m, near[2] + m, near[3] + m];
@@ -611,14 +611,14 @@ export class RelaySet {
         this.area.queue_redraw();
     }
 
-    // The relays go with the owner when it is destroyed; at shell shutdown they
-    // can already be gone by the time the owner is cleaned up.
+
+
     clear() {
         this._relays.clear();
     }
 
-    // The relayed actors, for the dump. Through the relay, whose source is
-    // null once the source is gone.
+
+
     names() {
         return [...this._relays.values()].filter(relay => relay.visible).map(relay => {
             const a = relay.source;
@@ -639,12 +639,12 @@ export class RelaySet {
         return localToStage(this._holder, x0, y0, x1, y1);
     }
 
-    // Everything painted before the owner, and whether it reaches the sample
-    // area (`near`) or the wider area a shown relay is kept for (`keep`): the
-    // earlier siblings of the owner and of each of its ancestors, and the
-    // children of the window group. Never an ancestor itself, whose paint
-    // volume would contain the relays. A window's glass meets the windows
-    // below it as earlier siblings of its own window.
+
+
+
+
+
+
     _collectSources(near, keep) {
         const wanted = new Map();
         let child = this._owner;
@@ -679,17 +679,17 @@ function sourceReach(actor, near, keep) {
     return { near: actorReaches(actor, near), keep: actorReaches(actor, keep) };
 }
 
-// The stage rect [x0, y0, x1, y1] of a rect in `actor`'s coordinates.
+
 export function localToStage(actor, x0, y0, x1, y1) {
     const a = actor.apply_transform_to_point(new Graphene.Point3D({ x: x0, y: y0, z: 0 }));
     const b = actor.apply_transform_to_point(new Graphene.Point3D({ x: x1, y: y1, z: 0 }));
     return [Math.min(a.x, b.x), Math.min(a.y, b.y), Math.max(a.x, b.x), Math.max(a.y, b.y)];
 }
 
-// Moving an actor queues its redraw at once but changes its allocation only
-// in the coming relayout, so an actor waiting for one may be about to enter
-// the area and counts as reaching it. Otherwise its paint volume (which
-// already includes this frame's transitions) tells.
+
+
+
+
 function actorReaches(actor, area) {
     if (!actor.has_allocation())
         return true;
@@ -703,9 +703,9 @@ function volumeReaches(pv, area) {
         o.y < area[3] && o.y + pv.get_height() > area[1];
 }
 
-// A window's paint volume includes the shadow mutter draws around it. A
-// window moved this frame has last frame's volume until the relayout, so
-// its buffer rect, already moved, decides, with room for a shadow.
+
+
+
 function windowReaches(actor, area) {
     if (actor.has_allocation()) {
         const pv = actor.get_transformed_paint_volume(global.stage);
@@ -720,9 +720,9 @@ function windowReaches(actor, area) {
         r.y - m < area[3] && r.y + r.height + m > area[1];
 }
 
-// An offscreen texture to render or blit into. A blit needs both sides fixed
-// point or both floating point, so `format` follows the source when that is
-// an offscreen (rotated or HDR views); null is the default RGBA8888_PRE.
+
+
+
 export function createTarget(width, height, format = null, logger) {
     const ctx = coglContext();
     const texture = format === null
@@ -739,9 +739,9 @@ export function createTarget(width, height, format = null, logger) {
     return { texture, framebuffer };
 }
 
-// Queues a blit of `rect` [x, y, w, h] of `source` to the origin of `target`.
-// A RootNode makes the target the blit's destination and, with no clear
-// flags, leaves it alone otherwise. Its color state must be the source's.
+
+
+
 export function addBlit(root, source, target, colorState, rect) {
     const node = newRootNode(target, colorState);
     root.add_child(node);
@@ -750,11 +750,11 @@ export function addBlit(root, source, target, colorState, rect) {
     node.add_child(blit);
 }
 
-// The stage view being painted, between the stage's before-paint and
-// after-paint. Outside them a paint goes to a screenshot, whose framebuffer
-// is not fetched: holding it from JS keeps it alive until a garbage
-// collection, and mutter 46 only flushes a screenshot's drawing when its
-// framebuffer is freed, so the picture would come out empty.
+
+
+
+
+
 let paintingView = null;
 let paintSignalIds = [];
 
@@ -785,7 +785,7 @@ export class StageCopier {
     _logger;
     _copies = new Map();
     _serial = 0;
-    // The copy an off-stage paint (screenshot, clone) draws with.
+
     lastCopy = null;
     copyCount = 0;
     reuseCount = 0;
@@ -796,9 +796,9 @@ export class StageCopier {
         this._logger = _logger;
     }
 
-    // The view a paint of `actor` draws to directly, or null for a paint that
-    // goes elsewhere (a clone, a screenshot, an ancestor's offscreen), where
-    // the framebuffer does not hold what is behind the actor.
+
+
+
     static liveView(actor, paintContext) {
         const view = paintingView;
         if (!view || actor.is_in_clone_paint() || !actor.peek_stage_views().includes(view))
@@ -806,14 +806,14 @@ export class StageCopier {
         return paintContext.get_framebuffer() === view.get_framebuffer() ? view : null;
     }
 
-    /**
-     * The copy to draw with for this paint of `actor`: a new one of the stage
-     * rect `stageRect` [x0, y0, x1, y1] when the clip covers it, otherwise the
-     * last one taken on this view. `missed` is set when there is nothing to
-     * draw with yet; the caller should get the rect redrawn in a later frame.
-     * `fresh` is set when this paint took a new copy. With `keep`, the last
-     * copy is drawn with even when the clip covers the rect.
-     */
+
+
+
+
+
+
+
+
     take(actor, root, paintContext, stageRect, keep = false) {
         const view = StageCopier.liveView(actor, paintContext);
         if (!view) {
@@ -833,12 +833,12 @@ export class StageCopier {
         const y1 = Math.min(stageRect[3], layout.y + layout.height);
         if (!(x1 > x0) || !(y1 > y0))
             return { copy, missed: false, fresh: false };
-        // Stage to framebuffer pixels, as Clutter lays the stage out on a view.
+
         const scale = view.get_scale();
         const ox = Math.round(-layout.x * scale);
         const oy = Math.round(-layout.y * scale);
-        // A fractional scale is stored a little above its value (1.3333334), so the
-        // view's far edge would round up to a pixel past the framebuffer, and past the clip.
+
+
         const fx0 = Math.max(Math.floor(x0 * scale) + ox, 0);
         const fy0 = Math.max(Math.floor(y0 * scale) + oy, 0);
         const fx1 = Math.min(Math.ceil(x1 * scale) + ox, fb.get_width());
@@ -883,7 +883,7 @@ export class StageCopier {
         return next;
     }
 
-    // Drops the copies of views the actor is no longer on.
+
     prune(views) {
         for (const view of this._copies.keys()) {
             if (!views.includes(view))

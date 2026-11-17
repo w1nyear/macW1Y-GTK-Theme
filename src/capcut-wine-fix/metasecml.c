@@ -16,13 +16,13 @@ static LONG WINAPI MetasecVehHandler(PEXCEPTION_POINTERS p) {
     if (p && p->ExceptionRecord) {
         DWORD code = p->ExceptionRecord->ExceptionCode;
         void* pc = p->ExceptionRecord->ExceptionAddress;
-        
+
         if (code == EXCEPTION_ACCESS_VIOLATION) {
             ULONG_PTR fault_addr = p->ExceptionRecord->ExceptionInformation[1];
             HMODULE hMod = NULL;
             GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCSTR)pc, &hMod);
             HMODULE hReal = g_hReal ? g_hReal : GetModuleHandleA("metasecml_real.dll");
-            
+
             if ((hMod && hReal && hMod == hReal) || fault_addr == (ULONG_PTR)-1) {
                 log_msg("[VEH] Intercepted metasec AV! Calling ExitThread(0)...");
                 ExitThread(0);

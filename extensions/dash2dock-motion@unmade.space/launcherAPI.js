@@ -1,8 +1,8 @@
-// -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
-// This file is part of Dash2Dock Motion, a modified copy of Dash to Dock
-// (https://github.com/micheleg/dash-to-dock) by Michele Gaio and
+
+
+
 // contributors. Distributed under the GNU General Public License,
-// version 2 or later.
+
 
 import {Gio} from './dependencies/gi.js';
 import {DBusMenuUtils} from './imports.js';
@@ -15,21 +15,21 @@ export class LauncherEntryRemoteModel {
         this._remoteMaps = new Map();
 
         this._launcher_entry_dbus_signal_id =
-            Gio.DBus.session.signal_subscribe(null, // sender
-                'com.canonical.Unity.LauncherEntry', // iface
-                'Update', // member
-                null, // path
-                null, // arg0
+            Gio.DBus.session.signal_subscribe(null,
+                'com.canonical.Unity.LauncherEntry',
+                'Update',
+                null,
+                null,
                 Gio.DBusSignalFlags.NONE,
                 (_connection, senderName, _objectPath, _interfaceName, _signalName, parameters) =>
                     this._onUpdate(senderName, ...parameters.deep_unpack()));
 
         this._dbus_name_owner_changed_signal_id =
-            Gio.DBus.session.signal_subscribe('org.freedesktop.DBus',  // sender
-                'org.freedesktop.DBus',  // interface
-                'NameOwnerChanged',      // member
-                '/org/freedesktop/DBus', // path
-                null,                    // arg0
+            Gio.DBus.session.signal_subscribe('org.freedesktop.DBus',
+                'org.freedesktop.DBus',
+                'NameOwnerChanged',
+                '/org/freedesktop/DBus',
+                null,
                 Gio.DBusSignalFlags.NONE,
                 (connection, _senderName, _objectPath, _interfaceName, _signalName, parameters) =>
                     this._onDBusNameChange(...parameters.deep_unpack().slice(1)));
@@ -130,7 +130,7 @@ export class LauncherEntryRemoteModel {
                         menuClient.disconnect(menuClient._rootChangedHandlerId);
                         menuClient.dbus_object = quicklistPath;
                     } else {
-                        // This property should not be enumerable
+
                         Object.defineProperty(remote, '_quicklistMenuClient', {
                             writable: true,
                             value: menuClient = new DBusMenu.Client({

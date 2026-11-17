@@ -1,29 +1,29 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Tahoe Notification Center (v5): замінює спливання календаря по кліку на дату.
-// ЕТАП 2 — банери-тости у вигляді MacShell-main (перенесено СИМЕТРИЧНО 1:1):
-//   • тост-колонка справа зверху під панеллю: 364px, відступ 10px зправа,
-//     8px під панеллю, інтервал між тостами 10px, максимум 4 тости;
-//   • картка тоста = точна копія NotifBody (MacShell): іконка 44×44
-//     в (14,15), текст-колонка з x=70, ✕-кнопка 22×22 (r11) праворуч
-//     зверху (10,10), з'являється при наведенні; шрифт Open Runde;
-//   • ПОЯВА: пілюля → картка, 770мс EASE_OUT_QUINT — ширина 0.42→1,
-//     зсув праворуч 46px→0, слот-висота 0.35→1, контент опак. pow 1.3;
-//   • ЗНИКНЕННЯ: 770мс EASE_OUT_CUBIC назад у пілюлю (истрок, ✕, merge);
-//   • життя 6с (критичні 10с, expireTimeout додатка враховано); наведення
-//     ПАУЗА з перезапуском таймера (як Timer running у QML);
-//   • стек: «великі» переміщення без стрибків — слот-висота тягне
-//     решту плавно; видалення — glide translation_y 770мс OutQuint;
-//   • MERGE у Центр: відкриття Центру при видимих тостах — тости
-//     миттєво зникають, картки в Центрі стартують з їх позицій
-//     (620мс EASE_OUT_QUINT, політ правого краю);
-//   • DnD: show-banners=false ховає звичайні тости (критичні показує);
-//   • активний клик = активація сповіщення + dismiss;
-//   • скло: наш LiquidEffect стек 'mac-toast-glass' (мультирегіон),
-//     тінт per-region, radius інтерполюється пілюлею.
-// Центр повідомлень залишено БЕЗ ЗМІН (етап 1): слайд панелі 480→0 320мс
-//     EASE_OUT_CUBIC / 260мс EASE_IN_CUBIC, каскад карток 240мс, каскад
-//     «Очистити все» 220мс EASE_IN_CUBIC зі стагером 35мс, фейд
-//     glass-бекдропів 320мс/260мс.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -97,8 +97,8 @@ function _getCardBaseStyle() {
     const shadowVal = _notifStyling.shadow / 100.0;
     const radius = _notifStyling.radius || 18;
 
-    // Скляний фон картки: щільність гармонійно поєднує шейдер Liquid Glass
-    // та надійно перекриває елементи й бордери нижніх шарів стосу
+
+
     const bgAlpha = Math.min(0.85, Math.max(0.35, 0.28 + tintVal * 0.40)).toFixed(2);
     let bg = `rgba(28, 30, 36, ${bgAlpha})`;
 
@@ -203,33 +203,33 @@ const NC_RADIUS = 82;
 const BACKDROP_PAD = 60;
 const SHADER_PADDING = 20;
 
-// --- Банери-тости (вигляд MacShell-main, етап 2) ---
-const TOAST_W = NC_W - 40;        /* = 484: та сама ширина, що в карток Центру (NC_W 524 - 40) */
-const TOAST_X_PAD = 10;           /* відступ від правого краю екрана */
-const TOAST_Y_PAD = 8;            /* відступ під панеллю */
-const TOAST_SPACING = 10;         /* інтервал між тостами */
-const TOAST_MAX = 4;              /* максимум видимих тостів одночасно */
-const TOAST_ANIM_MS = 770;        /* пілюля <-> картка (OutQuint вхід / OutCubic вихід) */
-const TOAST_TIMEOUT_MS = 6000;    /* звичайні 6с */
-const TOAST_TIMEOUT_CRITICAL_MS = 10000; /* критичні 10с */
-const TOAST_GONE_MS = 790;        /* слот живе стільки після початку зникнення (goneTimer) */
-const TOAST_PILL_CORNER = 40;     /* cornerR = min(24+(1-t)*40, h/2) */
+
+const TOAST_W = NC_W - 40;
+const TOAST_X_PAD = 10;
+const TOAST_Y_PAD = 8;
+const TOAST_SPACING = 10;
+const TOAST_MAX = 4;
+const TOAST_ANIM_MS = 770;
+const TOAST_TIMEOUT_MS = 6000;
+const TOAST_TIMEOUT_CRITICAL_MS = 10000;
+const TOAST_GONE_MS = 790;
+const TOAST_PILL_CORNER = 40;
 
 let _ = (m) => m;
 let _nc = null;
 let _trayWasBlocked = false;
 let _hooked = false;
 
-// Тост-стан
-let _toastBox = null;             /* St.BoxLayout колонка справа зверху */
-let _toastStack = null;           /* glass stack (mac-toast-glass) */
-let _toastTickId = 0;             /* BEFORE_REDRAW laters id */
-let _toastsEnabled = false;       /* тости підключено */
-let _hookedToastSrc = new Set();  /* джерела, на які вже підписані */
-let _toastHookIds = [];           /* [obj, id] для disconnect */
-let _toastPending = [];           /* черга тостів до готовності скла */
-let _toastTimers = new Map();     /* slot -> {id, baseMs} */
-let _toastGlassDead = false;      /* LG-модулі недоступні (fallback без скла) */
+
+let _toastBox = null;
+let _toastStack = null;
+let _toastTickId = 0;
+let _toastsEnabled = false;
+let _hookedToastSrc = new Set();
+let _toastHookIds = [];
+let _toastPending = [];
+let _toastTimers = new Map();
+let _toastGlassDead = false;
 let _toastGlassFailedAt = 0;
 
 function _lgSettings() {
@@ -327,10 +327,10 @@ function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0, noWin 
 
     liquidBox.add_effect(effect);
 
-    // noWin: без клонів вікон у протекторі шейдера (тости плавають на
-    // яскравому столі - фрагменти вікон з тінями виглядають сірими
-    // "елементами всередині скла" і перекривають сусідні тости;
-    // заломлення лишається на шпалерах-дзеркалі та ui-канві)
+
+
+
+
     const wcm = noWin
         ? null
         : new WindowCloneManager(liquidBox, cloneContainer, `lg-${name}`);
@@ -368,9 +368,9 @@ function _collect() {
                 items.push({source: src, n});
         }
     } catch (_) {}
-    // Sort items by time (newest first); datetime гранулярна до
-    // секунди, тому додаємо мікросекунди - иначе односекундні
-    // пари сортувались за порядком трея і новіша ставала піром
+
+
+
     const tOf = (it) => {
         const dt = it.n?.datetime;
         if (!dt)
@@ -415,7 +415,7 @@ function _makeMacCard(item, onCloseCb, width = NC_W - 40) {
         onClose: (data) => {
             const card = data.banner;
             card.remove_all_transitions();
-            // Card dismiss animation from our theme: slide out 480px with EASE_IN_CUBIC
+
             card.ease({
                 translation_x: 480,
                 opacity: 0,
@@ -445,7 +445,7 @@ function _clearAll() {
         return;
 
     let remaining = kids.length;
-    // Clear All animation from our theme: staggered cascade slide-out to right with 35ms delay
+
     kids.forEach((card, i) => {
         card.remove_all_transitions();
         card.ease({
@@ -491,14 +491,14 @@ function _animateEnter(actor, idx = 0) {
     } catch (_) {}
 }
 
-// ═════════════════════════════════════════════════════════════════════
-// БАНЕРИ-ТОСТИ (вигляд MacShell-main, перенесено 1:1)
-// ═════════════════════════════════════════════════════════════════════
 
-// ================================================================
 
-// Живе підвантаження стилів тостів (GNOME читає stylesheet розширення
-// тільки на reload, а тости оновлюються без-зло)
+
+
+
+
+
+
 let _toastCssLoaded = false;
 function _ensureToastStyles() {
     if (_toastCssLoaded)
@@ -533,12 +533,12 @@ function _clampText(s, n) {
     return t.length > n ? t.slice(0, n - 1).trimEnd() + '\u2026' : t;
 }
 
-// ---- Ink-палiтра тостiв за iOS-референсом (i expectation user) ----
+
 const TOAST_INK = '#ffffff';
 const TOAST_INK_SUB = 'rgba(255, 255, 255, 0.60)';
 const TOAST_INK_RED = '#ff453a';
 
-// ---- рядок тексту тоста (стANNEL inline) ----
+
 function _toastLabel(text, spec) {
     const l = new St.Label({
         text: _clampText(text, spec.max ?? 96),
@@ -561,7 +561,7 @@ function _ensureToastBox() {
         if (!monitor)
             return false;
         const panelH = Main.layoutManager.panelBox?.height ?? 32;
-        // GNOME 50: spacing у St.BoxLayout — тільки CSS-властивiсть
+
         _toastBox = new St.BoxLayout({
             vertical: true,
             reactive: true,
@@ -586,7 +586,7 @@ function _toastSlotT(slot) {
     return 1.0;
 }
 
-// Вiднсний час iOS: Щойно / N хв тому / N год тому
+
 function _toastRelTime(spawn) {
     try {
         const now = GLib.DateTime.new_now_local();
@@ -627,9 +627,9 @@ function _toastTimeStart(slot) {
     } catch (_) {}
 }
 
-// Картка тоста — вигляд за референсом iOS: свiтле frosted-скло,
-// темний текст, [⚠ ТЕРМIНОВО | застосунок] + час зверху, ✕ на
-// наведеннi на мiсцi часу; iконка 44×44 вертикально по центру.
+
+
+
 function _makeToastCard(item, noglass = false) {
     const {source, n} = item;
     const urgency = (() => {
@@ -642,8 +642,8 @@ function _makeToastCard(item, noglass = false) {
     });
     slot.set_width(TOAST_W);
 
-    // pill — контейнер з clip: карта-контент праворуч звужується/
-    // розкривається (механiка tslab + tcontent у MacShell)
+
+
     const pill = new Clutter.Actor({
         layout_manager: new Clutter.BinLayout(),
         clip_to_allocation: false,
@@ -669,15 +669,15 @@ function _makeToastCard(item, noglass = false) {
     slot._content = content;
     slot._noglass = noglass;
 
-    // --- iконка 44×44 (fallback: акцентна плитка + дзвоник), по центру ---
-    // іконка ХТО надіслав: gicon повідомлення -> source.icon ->
-    // додаток джерела -> createIcon джерела. Без іконки - нейтральна
-    // темна плитка (не акцентно-синя)
+
+
+
+
     let gicon = null;
     try { gicon = n.gicon ?? null; } catch (_) {}
     try { if (!gicon) gicon = source.icon ?? null; } catch (_) {}
     try { if (!gicon) gicon = source.app?.get_icon?.() ?? null; } catch (_) {}
-    // назва джерела -> застосунок (cover -a python, snap-назви тощо)
+
     try {
         if (!gicon) {
             const name = String(source?.title ?? '').trim();
@@ -725,7 +725,7 @@ function _makeToastCard(item, noglass = false) {
     try { iconTile.style += 'margin-right: 12px;'; } catch (_) {}
     content.add_child(iconTile);
 
-    // --- права колонка: [термiнове/застосунок .. час] + сумарi + тiло ---
+
     const COL_W = TOAST_W - 24 - 44 - 12;
     const textCol = new St.BoxLayout({
         vertical: true,
@@ -771,7 +771,7 @@ function _makeToastCard(item, noglass = false) {
         textCol.add_child(bodyLabel);
     }
 
-    // --- Кнопки дій тоста — приховані за замовчуванням, з'являються при hover ---
+
     let actionsBox = null;
     if (item.n.actions && item.n.actions.length > 0) {
         actionsBox = new St.BoxLayout({
@@ -805,7 +805,7 @@ function _makeToastCard(item, noglass = false) {
         textCol.add_child(actionsBox);
     }
 
-    // --- ✕ 22×22 оверлеєм прямо на куті без відступу, майже за межами елемента ---
+
     const closeBtn = new St.Button({
         opacity: 0,
         reactive: false,
@@ -848,24 +848,24 @@ function _makeToastCard(item, noglass = false) {
         try { _toastCloseClicked(item, slot); } catch (_) {}
     });
 
-    // --- висота картки: ручний height-for-width. St.BoxLayout рахує
-    // висоту за природною шириною лейблiв (до переносу), тому
-    // вимiрюємо рядки напряму через Clutter.Text (вiн коректно
-    // реалiзує height-for-width). Колонка = 344px - та сама, що в
-    // карток Центру (484 - паддiнги 14x2 - iконка 44 - маржа 12 -
-    // рейл 76), тому висоти тоста i картки збігаються. ---
-    // COL_W визначено вище: const COL_W = TOAST_W - 24 - 44 - 12 - 76;
-    // висоти через Pango layout: Clutter.Text тримає той самий
-    // лейаут, яким потім малює, тому висота піксельно збігається зі
-    // стабільним рендером (get_preferred_height на неприйнятому
-    // акторі повертає завищені значення -> зайвий висота картки)
+
+
+
+
+
+
+
+
+
+
+
     const pangoH = (l, w) => {
         try {
             if (!l || !l.clutter_text)
                 return 0;
-            // шрифт inline-стилю застосовується ліниво (на першому
-            // малярстві) — наступивимо стиль синхронно, інакше лейаут
-            // міряє дефолтним шрифтом (+~5px на рядок)
+
+
+
             try { l.ensure_style(); } catch (_) {}
             const lay = l.clutter_text.get_layout();
             try {
@@ -902,9 +902,9 @@ function _makeToastCard(item, noglass = false) {
     try { content.set_height(slot._bodyH); } catch (_) {}
     try { pill.set_height(slot._bodyH); } catch (_) {}
 
-    // створення-time pref лейаут ще дефолтного шрифту (стиль лінивий) -
-    // висоту перераховують ПІСЛЯ перших кадрів з фактичних prefH рядків
-    // (інакше під текстом лишалось ~20px порожнього скла)
+
+
+
     const remeasure = (hovered = null) => {
         try {
             if (!slot || !slot.get_parent())
@@ -915,9 +915,9 @@ function _makeToastCard(item, noglass = false) {
                 if (k === actionsBox && !isHover)
                     continue;
                 try {
-                    // строго по ширині колонки: get_preferred_height(-1)
-                    // міряє рядок БЕЗ переносу - тіло з 2+ рядків
-                    // стискається до одного -> еліпсис на кінці тексту
+
+
+
                     const [, h] = k.get_preferred_height(COL_W);
                     rows.push(isFinite(h) && h > 0 ? h : 0);
                 } catch (_) {
@@ -974,7 +974,7 @@ function _makeToastCard(item, noglass = false) {
         });
     } catch (_) {}
 
-    // --- клiк по картцi = активацiя сповiщення + dismiss ---
+
     try {
         content.connect('button-press-event', () => {
             try { _activate(item); } catch (_) {}
@@ -983,7 +983,7 @@ function _makeToastCard(item, noglass = false) {
         });
     } catch (_) {}
 
-    // --- наведення: ✕ на куті, напис часу не приховується, розкриття кнопок дій, пауза тоста ---
+
     try {
         const updateHover = () => {
             try {
@@ -994,7 +994,7 @@ function _makeToastCard(item, noglass = false) {
                     duration: 140,
                     mode: inM,
                 });
-                // Напис "Щойно" приховуватись не має
+
                 slot._timeLabel.opacity = 255;
                 slot._timeLabel.visible = true;
                 try { closeBtn.set_reactive(h); } catch (_) {}
@@ -1042,7 +1042,7 @@ function _toastLifeStart(slot) {
     }
     if (rec.id)
         _toastLifeStop(slot);
-    // Timer running: false -> true у QML перезапускає вiдлiк з нуля
+
     const base = rec.baseMs || (slot._critical ? TOAST_TIMEOUT_CRITICAL_MS : TOAST_TIMEOUT_MS);
     rec.baseMs = base;
     rec.id = GLib.timeout_add(GLib.PRIORITY_DEFAULT, base, () => {
@@ -1064,7 +1064,7 @@ function _toastLifeStop(slot) {
             rec.id = 0;
         }
     } catch (_) {}
-    // час НЕ призупиняється на паузi — вiн вiдбиває прiющий тост
+
 }
 
 function _toastClearTimers(slot) {
@@ -1109,8 +1109,8 @@ function _dismissToast(slot) {
     }
 }
 
-// Знищення слота + плавний glide решти стеку вгору
-// (MacShell: Column move-транзишн 770мс OutQuint)
+
+
 function _destroyToastSlot(slot, glide = true) {
     if (_toastBox && slot.get_parent() === _toastBox) {
         const kids = _toastBox.get_children();
@@ -1152,8 +1152,8 @@ function _showToast(item) {
     if (!_toastBox && !_ensureToastBox())
         return false;
     if (!_ensureToastGlass()) {
-        // скло ще не завантажилося — у чергу (як MacShell Loader);
-        // якщо скло мертве (LG відсутнє) — показуємо без скла
+
+
         if (!_toastGlassDead) {
             if (_toastPending.length < TOAST_MAX)
                 _toastPending.push(item);
@@ -1162,10 +1162,10 @@ function _showToast(item) {
         _toastGlassFailedAt = Date.now();
     }
 
-    // глибина стеку — максимум 4 (найстаріший миттєво зникає)
+
     const kids = _toastBox.get_children();
     if (kids.length >= TOAST_MAX) {
-        // діти: [найновіший ... найстаріший] — шукаємо найстаріший живий
+
         let oldest = null;
         for (let i = kids.length - 1; i >= 0; i--) {
             if (!kids[i]._leaving && !kids[i]._merging) { oldest = kids[i]; break; }
@@ -1185,7 +1185,7 @@ function _showToast(item) {
     slot._nItem = item;
     _toastBox.insert_child_at_index(slot, 0);
 
-    // ПОЯВА: виїзд з правої верхньої сторони (translation_x: TOAST_W + 30 -> 0)
+
     try {
         slot.translation_x = TOAST_W + 30;
         slot.opacity = 0;
@@ -1226,10 +1226,10 @@ function _flushToastQueue() {
     _toastTickStart();
 }
 
-// --- скло тостів: мультирегіон-стек LiquidEffect ---
 
 
-// === Скло тостів: Liquid Glass мультирегіон-стек
+
+
 function _applyWidgetGlassParams(effect) {
     if (!effect)
         return;
@@ -1266,7 +1266,7 @@ function _applyWidgetGlassParams(effect) {
     } catch (_) {}
 }
 
-// int-зчитування з партнерського schem'я (int/uint/double як є)
+
 function _readIntSetting(s, key, dflt) {
     try { return s.get_int(key); } catch (_) {}
     try { return s.get_uint(key); } catch (_) {}
@@ -1276,7 +1276,7 @@ function _readIntSetting(s, key, dflt) {
 }
 
 
-// стек скла тостів: LiquidEffect + WindowCloneManager + UILayerSampler
+
 function _ensureToastGlass() {
     if (_toastStack)
         return true;
@@ -1290,9 +1290,9 @@ function _ensureToastGlass() {
             return false;
         const s = _makeGlassStack(monitor, 24, 'mac-toast-glass', true, 0, false);
         _applyWidgetGlassParams(s.effect);
-        // тости НЕ мають заломлюватись у власному склі: UILayerSampler
-        // клонує всіх дітей uiGroup, тому без виключення самі слоти
-        // (іконка/текст) потрапляють у каптур і «сяють» у шейдері
+
+
+
         try { s.uiSampler?.addExclusion?.(_toastBox); } catch (_) {}
         _toastStack = s;
         Main.layoutManager.uiGroup.insert_child_below(s.bgActor, _toastBox);
@@ -1313,8 +1313,8 @@ function _destroyToastGlass() {
     try { s.bgActor?.destroy?.(); } catch (_) {}
 }
 
-// Екран тост-скла: регіон на кожен pill (схема _syncCards Центру)
-// + інтерполяція cornerR пілюлі спільним стеком
+
+
 function _syncToastGlass(monitor, s) {
     if (!s || !_toastBox)
         return;
@@ -1364,7 +1364,7 @@ function _syncToastGlass(monitor, s) {
         s.bgActor.opacity = alpha;
         s.bgActor.translation_x = _toastBox ? _toastBox.translation_x : 0;
         s.bgActor.translation_y = _toastBox ? _toastBox.translation_y : 0;
-        // чисте прозоре скло без білого тінту
+
         let glassTint = [0, 0, 0], glassStrength = 0;
         const fill = {c: glassTint, a: glassStrength};
         for (const r of regions) {
@@ -1373,11 +1373,11 @@ function _syncToastGlass(monitor, s) {
             r.tintB = fill.c[2];
             r.baseStrength = fill.a;
         }
-        // [GPU-SAVE] Extras-хеш регіонів тостів: зміщення тостів (висування/
-        // згортання стосу, злива HOSTING) та стан Overview миттєво рахуються як зміна скла.
-        // RIDE: поки злиті тости летять у Центр, їхні регіони змінюються
-        // щокадрово — рух тоста не рахуємо за «зміну сцени», важка частина
-        // повернеться одразу після settle.
+
+
+
+
+
         const riding = _mergingSlots().length > 0;
         let extraH = regions.length ^ (Main.overview?.visible ? 1337 : 42);
         try {
@@ -1398,9 +1398,9 @@ function _syncToastGlass(monitor, s) {
         s.liquidBox.set_size(monitor.width, monitor.height);
         setClipIfChanged(s.bgActor, 0, 0, monitor.width, monitor.height);
         ensureGlassAllocated(s.bgActor);
-        // [GPU-SAVE] Важку частину виконуємо тільки коли фон дійсно змінився
-        // (регіони/геометрія/opacity тост змінилися як extras), межа 60 FPS;
-        // у спокої скло тостів не перемалюється взагалі.
+
+
+
         let doHeavy = true;
         try {
             doHeavy = glassRefreshDue ? glassRefreshDue(s.bgActor, extraH) : true;
@@ -1453,9 +1453,9 @@ function _toastTick() {
                 } catch (_) {}
             }
         }
-        // коли останній тост зник - НЕ лишати скло висіти з
-        // застиглим регіоном/кадром (інакше на столі "сяє" привид
-        // останнього банера): чищаємо регіони і ховаємо стек
+
+
+
         if (_toastBox.get_children().length === 0) {
             try { _toastStack?.effect?.setGlassRegions?.([]); } catch (_) {}
             try { _toastStack?.bgActor?.hide?.(); } catch (_) {}
@@ -1479,7 +1479,7 @@ function _toastTickStart() {
     }
 }
 
-// --- підключення до MessageTray (notification-added -> тости) ---
+
 
 function _onTrayToastNotification(source) {
     try {
@@ -1564,10 +1564,10 @@ function _unhookToastTray() {
     try { _hookedToastSrc.clear(); } catch (_) {}
 }
 
-// --- MERGE у Центр: тости віддають позиції карткам Центру ---
-// RIDE: замість короткого ease «SHIFT_X/SHIFT_Y» тост-двійник летить
-// разом із панеллю Центру до позиції свого банера, в settle обмінюється
-// на банер за один кадр (без дрейфу/блимання окремого сповіщення).
+
+
+
+
 
 function _mergingSlots() {
     if (!_toastBox)
@@ -1597,9 +1597,9 @@ function _killMergingSlots() {
     }
 }
 
-// Банер Центру, що відповідає злитому тосту (за самим Notification).
-// Кеш у slot._rideBanner: _rebuild може перестворювати картки посеред
-// польоту, тоді кеш стає недійсним і шукаємо заново.
+
+
+
 function _rideFindBanner(p, slot) {
     try {
         const cached = slot._rideBanner;
@@ -1629,7 +1629,7 @@ function _rideFindBanner(p, slot) {
     return null;
 }
 
-// Показ злитих банерів, які тримали у прозорості на час польоту.
+
 function _commitMergedBanners(p) {
     try {
         if (!p?.list)
@@ -1664,7 +1664,7 @@ function _takeToastMerges() {
             merges.add(slot._nItem.n);
         merges.add(slot._nItem);
         try { slot.remove_all_transitions(); } catch (_) {}
-        // природна (стартова) позиція тоста — точка відліку польоту
+
         try {
             const [nx, ny] = slot.get_transformed_position();
             slot._rideNat = isFinite(nx) && isFinite(ny) ? { x: nx, y: ny } : null;
@@ -1673,8 +1673,8 @@ function _takeToastMerges() {
         }
         slot._rideBanner = null;
         slot._mergeAt = Date.now();
-        // fail-safe: якщо тик Центру не завершить політ (ease відмінено,
-        // панель не відкрилась, сповіщення зникло) — прибираємо самі
+
+
         GLib.timeout_add(GLib.PRIORITY_DEFAULT, 420, () => {
             try {
                 if (slot?._merging && !slot.is_finalized?.()) {
@@ -1689,7 +1689,7 @@ function _takeToastMerges() {
     return merges;
 }
 
-// fade-in скла стеку (0..1 за _fadeMS мс); рухається тіком Центру
+
 function _stackFadeK(s) {
     try {
         if (!s || !s._fadeT0)
@@ -1711,14 +1711,14 @@ function _startStackFade(s, ms = 240) {
     try { s._fadeT0 = Date.now(); s._fadeMS = ms; s._fadeK = 0; } catch (_) {}
 }
 
-// Спільна підготовка стеку Центру: виключення з каптура (панель/бокс/столешні
-// іконки) + перший семплінг.
+
+
 function _setupNcStack(p, s, monitor = null) {
     try {
         try { s.uiSampler?.addExclusion?.(p.box); } catch (_) {}
-        // сам оверлей (panelBg + бокс) НЕ має бути в каптурі -
-        // інакше скло карток семплить темний фон панелі і
-        // виглядає плоско, а не як скло з заломленням
+
+
+
         try { s.uiSampler?.addExclusion?.(p.overlay); } catch (_) {}
         for (const child of global.window_group?.get_children?.() ?? []) {
             if (child.meta_window?.get_gtk_application_id?.() === 'com.rastersoft.ding' ||
@@ -1748,9 +1748,9 @@ function _setupNcStack(p, s, monitor = null) {
     }
 }
 
-// cards-стек створюється ТІЛЬКИ при settle (кінець слайду): дорога побудова
-// (rebuildClones/каптура) у кадрах руху панелі — причина «дьоргання» відкриття.
-// Під час слайду скла карток немає взагалі; на місці воно приходить fade-in.
+
+
+
 function _ensureNcCards(p) {
     try {
         if (!p || !p.overlay || !p.stacks)
@@ -1778,10 +1778,10 @@ function _ensureNcCards(p) {
     }
 }
 
-// Тик ПОЛЬОТУ: злиті тости їдуть разом із панеллю Центру у точку свого банера.
-// prog = 1 - clamp(box.translation_x/480): 0 на старті слайду, 1 при settle;
-// перевід тоста = prog * (трансформована позиція банера − природна позиція тоста).
-// Окремих ease-транзишнів на тостах немає — рух виводить сам тик.
+
+
+
+
 function _ncRideTick(p) {
     try {
         const slots = _mergingSlots();
@@ -1794,7 +1794,7 @@ function _ncRideTick(p) {
             for (const slot of slots) {
                 try {
                     if (slot?._mergeAt && now - slot._mergeAt > 420)
-                        continue; // fail-safe прибере сам
+                        continue;
                     const banner = _rideFindBanner(p, slot);
                     if (!banner || !slot._rideNat)
                         continue;
@@ -1807,7 +1807,7 @@ function _ncRideTick(p) {
             }
             return;
         }
-        // SETTLE: тости на позиції банерів → банери показуємо, тости прибираємо
+
         for (const slot of slots) {
             try { _finishMergedSlot(slot); } catch (_) {}
         }
@@ -1816,7 +1816,7 @@ function _ncRideTick(p) {
     } catch (_) {}
 }
 
-// settle слайду: фіксація розмірів та завершення злиття тостів після завершення анімації
+
 function _ncSettle(p) {
     try {
         if (!p || p._settleDone)
@@ -1865,8 +1865,8 @@ function _toastClearTimersAll() {
     _toastTimers.clear();
 }
 
-// MERGE з банерів-тостів: картка плавно зміщується вниз зі своєї
-// вихідної позиції тоста (m.x, m.y) у слот Центру сповіщень
+
+
 function _animateEnterMerge(card, m) {
     try {
         card.remove_all_transitions();
@@ -1921,9 +1921,9 @@ function _rebuild(merges = null) {
     const p = _nc;
     if (!p)
         return;
-    // RIDE: повторний rebuild (нове сповіщення/очистка) посеред польоту
-    // тостів — миттєво завершуємо, інакше старі двійники ведуться до
-    // заново створених карток і стан хитається.
+
+
+
     try {
         if (merges === null && _mergingSlots().length && !p._rideDone) {
             _killMergingSlots();
@@ -1950,9 +1950,9 @@ function _rebuild(merges = null) {
 
         _ensureNcCards(p);
 
-        // Кожне сповіщення — окрема картка (стеки-групи видалено,
-        // переробимо заново пізніше). Каскадна поява: 240мс EASE_OUT_CUBIC,
-        // стагер 35мс по індексу.
+
+
+
         let enterIdx = 0;
         for (const item of allItems) {
             const cardData = _makeMacCard(item, () => {
@@ -1966,8 +1966,8 @@ function _rebuild(merges = null) {
             const isMerged = merges && (merges.has(item.n) || merges.has(item));
             p.list.add_child(cardData.banner);
             if (isMerged) {
-                // RIDE: банер тримаємо прозорим до settle (тост-двійник летить
-                // до його позиції), далі показ за один кадр без блимання
+
+
                 cardData.banner._isMergedToast = true;
                 cardData.banner.opacity = (p._rideDone || p._settleDone) ? 255 : 0;
             } else {
@@ -2028,8 +2028,8 @@ function _buildGroupStack(g, p) {
     container._macPeekGroup = g;
     g.container = container;
 
-    // Всі старіші картки надійно зберігаються у прихованому контейнері
-    // (вони ніколи не малюються поверх і крізь скло верхньої картки)
+
+
     const held = new St.Widget({ visible: false, x_expand: false, y_expand: false });
     g.held = held;
     for (let i = 1; i < g.cards.length; i++) {
@@ -2041,8 +2041,8 @@ function _buildGroupStack(g, p) {
     }
     container.add_child(held);
 
-    // Чисті нижні плашки глибини стоса (відображаються суворо нижче головної картки,
-    // без верхнього бордеру та без бічних ліній у зоні верхньої картки)
+
+
     for (let i = peersN; i >= 1; i--) {
         const slabW = Math.round(W - i * 16);
         const slabH = (i * over) + tuck;
@@ -2129,11 +2129,11 @@ function _buildGroupStack(g, p) {
     return container;
 }
 
-/* 2.11: стеки-групи за ім'ям застосунку (референс macW1Y):
-   колапс - найновіша картка повного розміру зверху, під нею
-   старіші ПОВНОГО РОЗМІРУ, злегка менші за скейлом (по x) і
-   присунуті нижче - видно лише нижній край кожного шару.
-   Клік по стеку розгортає групу в звичайні картки. */
+
+
+
+
+
 function _collapseNcGroups(p, merges = null) {
     if (!p || !p.list)
         return;
@@ -2411,10 +2411,10 @@ function _syncCards(p, monitor, s) {
                 const cw = card.width, ch = card.height;
                 if (!(cw > 0) || !(ch > 0) || !isFinite(cx) || !isFinite(cy))
                     continue;
-                // як у тостів: шейдер стискає кожен регіон на
-                // SHADER_PADDING з усіх боків (actual_size = size -
-                // pad*2), тому компенсуємо - інакше скло НЕ на всю
-                // висоту/рядо картки
+
+
+
+
                 const m = SHADER_PADDING;
                 regions.push({
                     x: (cx - monitor.x) - m, y: (cy - monitor.y) - m,
@@ -2443,7 +2443,7 @@ function _syncCards(p, monitor, s) {
         else if (alpha === 0 && s.bgActor.visible)
             s.bgActor.hide();
         s.bgActor.opacity = Math.round(Math.min(255, Math.max(0, alpha)));
-        // тінт регіонів карток = той самий, що в тостів (віджет-конфіг)
+
         if (regions.length)
             maxR = _notifStyling.radius || 18;
         const fill = _widgetGlassFill();
@@ -2454,10 +2454,10 @@ function _syncCards(p, monitor, s) {
             r.baseStrength = fill.a;
         }
         try { s.effect.setCornerRadius(maxR); } catch (_) {}
-        // [GPU-SAVE] Extras: регіони карток (позиції з transformed_position
-        // самих карток) — зміщення/згортання стосу сповіщень рахується як зміна.
-        // Під час слайду панелі (translation_x != 0) рух r.x не рахуємо в хеш,
-        // щоб не тригерити дорогий UI-семплінг щокадрово (інакше фризи й миготіння).
+
+
+
+
         const isSliding = !p._settleDone || (p.box?.translation_x !== 0 && Math.abs(p.box?.translation_x ?? 0) > 0.5);
         let extraH = regions.length;
         for (const r of regions) {
@@ -2466,8 +2466,8 @@ function _syncCards(p, monitor, s) {
             extraH = (extraH ^ dxh ^ dyh ^
                 (Math.round(r.w * 4) * 83492791) ^ (Math.round(r.h * 4) * 2654435761)) | 0;
         }
-        // ДЕШЕВИЙ шлях (щокадрово): регіони їдуть разом із картками без
-        // нового захоплення кадру — фон за склом не змінюється від їх руху.
+
+
         s.effect.setGlassRegions(regions);
         s.effect.setResolution(monitor.width, monitor.height);
         s.liquidBox.set_position(0, 0);
@@ -2476,12 +2476,12 @@ function _syncCards(p, monitor, s) {
             setClipIfChanged(s.bgActor, bx - monitor.x - 200, by - monitor.y - 200, bw + 400, bh + 400);
         ensureGlassAllocated(s.bgActor);
 
-        // Під час слайду панелі важку синхронізацію та UI-семплінг пропускаємо,
-        // щоб уникнути мікрофризів, миготіння та переривання анімації
+
+
         if (isSliding)
             return;
 
-        // [GPU-SAVE] важка частина — лишень при реальній зміні; межа 60 FPS.
+
         let doHeavy = true;
         try {
             doHeavy = glassRefreshDue ? glassRefreshDue(s.bgActor, extraH) : true;
@@ -2531,9 +2531,9 @@ function _syncGlass(p, monitor, s) {
         s.bgActor.opacity = Math.round(Math.min(255, Math.max(0, alpha)));
         s.liquidBox.set_position(0, 0);
         s.liquidBox.set_size(monitor.width, monitor.height);
-        // ДЕШЕВИЙ шлях (щокадрово): регіон і кліп їдуть разом із панеллю,
-        // захоплений кадр при цьому МАЛЮЄТЬСЯ не заново — фон за панеллю
-        // не змінюється від слайду, тож стара каптура лишається правильною.
+
+
+
         let rx = (bx - monitor.x) - m;
         let ry = (by - monitor.y) - m;
         let rw = bw + m * 2;
@@ -2569,10 +2569,10 @@ function _syncGlass(p, monitor, s) {
         const clip = [rx - 200, ry - 200, rw + 400, rh + 400];
         setClipIfChanged(s.bgActor, clip[0], clip[1], clip[2], clip[3]);
         ensureGlassAllocated(s.bgActor);
-        // [GPU-SAVE] Важку частину виконуємо тільки коли фон дійсно змінився
-        // (перший кадр стеку, зміна вікна/шпалер під склом) або коли реально
-        // змінився РОЗМІР панелі (вміст списку). Слайд bx/by у хеш НЕ входить:
-        // рух панелі не має рахуватися за «зміну сцени», інакше — фризи.
+
+
+
+
         const extraH = (((bw || 0) * 73856093) ^ ((bh || 0) * 19349663)) | 0;
         let doHeavy = true;
         try {
@@ -2670,7 +2670,7 @@ function _buildPanel(merges = null) {
     box.width = W;
     overlay.add_child(box);
 
-    // Заголовок: локалізований великий титул + пілюля «Очистити все» (новий вигляд MacShell)
+
     const head = new St.BoxLayout({style_class: 'tahoe-nc-head'});
     const title = new St.Label({
         style_class: 'tahoe-nc-title-big',
@@ -2770,8 +2770,8 @@ function _buildPanel(merges = null) {
         p.allocId = 0;
     }
 
-    // Glass stacks: CC-style backdrop (pure blur) та cards створюємо одразу,
-    // щоб уникнути раптового створення та миготіння на settle.
+
+
     try {
         const bd = _makeGlassStack(monitor, NC_RADIUS, 'nc-backdrop', true, 0);
         bd.kind = 'backdrop';
@@ -2809,8 +2809,8 @@ function _buildPanel(merges = null) {
                 p.panelBg.translation_x = p.box.translation_x;
             } catch (_) {}
             try {
-                // RIDE: злиті тости летять разом із панеллю (щокадрово),
-                // settle-страховка на випадок відміненого onComplete
+
+
                 _ncRideTick(p);
                 if (!p._settleDone &&
                     (p.box.translation_x ?? 0) <= 0.5 && (p.box.opacity ?? 0) >= 254)
@@ -2854,9 +2854,9 @@ function _buildPanel(merges = null) {
         panelBg.min_height = initialPanelH;
     } catch (_) {}
 
-    // Slide-in animation from our theme: translation_x 480 -> 0 with EASE_OUT_CUBIC.
-    // Скло їде разом із панеллю: дешеві шляхи тиків рухають регіони/кліп,
-    // важкий (каптура/семплінг) ніколи не виконується в кадрах руху.
+
+
+
     try {
         box.set_pivot_point(1.0, 0.0);
         box.translation_x = 480;
@@ -2896,7 +2896,7 @@ function _buildPanel(merges = null) {
 function _destroyNC(p) {
     if (!p)
         return;
-    // RIDE: зачистка злитних тостів (ніхто їх більше не веде)
+
     try { _killMergingSlots(); } catch (_) {}
     try {
         if (p.inkUnwatch)
@@ -3002,7 +3002,7 @@ export function openNC() {
         }
     } catch (_) {}
 
-    // Only one center can be open at a time
+
     if (typeof globalThis._macCloseAllCenters === 'function') {
         globalThis._macCloseAllCenters('nc');
     } else {
@@ -3026,12 +3026,12 @@ export function openNC() {
         }).catch(() => {});
     } catch (_) {}
 
-    // Якщо відкритий NC menubar (легасі) — закриваємо його теж:
+
     try {
         globalThis._macNotificationCenter?._closeNotificationCenter?.();
     } catch (_) {}
 
-    // MERGE: видимі тости передають позиції карткам Центру і зникають
+
     let merges = null;
     try {
         if (_toastsEnabled && _toastBox?.get_children().length)
@@ -3058,9 +3058,9 @@ export function closeNC(immediate = false) {
 
     globalThis._tahoeNCOpen = false;
 
-    // RIDE: злиті тости більше не ведуться польотом — прибираємо одразу,
-    // щоб не тягнути їх у slide-out (банери вже показані в по-settle,
-    // а на ран busiest закритті сповіщення лишаться в Центрі на наступний раз)
+
+
+
     try { _killMergingSlots(); } catch (_) {}
 
     if (immediate) {
@@ -3068,9 +3068,9 @@ export function closeNC(immediate = false) {
         return;
     }
 
-    // Slide-out on close: translation_x 0 -> 480 (slide out right while fading out).
-    // Тик уже мертвий (_nc = null на старті closeNC), тому опадність скла
-    // на slide-out ведуть per-stack ease → 0, синхронно з панеллю (260мс).
+
+
+
     try {
         p.box.remove_all_transitions();
         p.panelBg.remove_all_transitions();
@@ -3149,7 +3149,7 @@ function _syncNotificationStyling() {
     _loadNotifStyling();
     const style = _getCardBaseStyle();
 
-    // 1. Update toast glass & content styles
+
     if (_toastStack?.effect) {
         try { _applyWidgetGlassParams(_toastStack.effect); } catch (_) {}
         try { _toastStack.effect._queueRepaintIfDirty?.(); } catch (_) {}
@@ -3162,7 +3162,7 @@ function _syncNotificationStyling() {
         }
     }
 
-    // 2. Update Notification Center stacks & cards
+
     if (_nc) {
         for (const s of _nc.stacks ?? []) {
             if (s.effect) {
@@ -3202,9 +3202,9 @@ export function enable(settings, gettextFunc) {
             }
         };
     }
-    // Тихий режим: нативні банери вимкнено (сповіщення накопичуються
-    // лише в Центрі повідомлень). Флоутинг-банери видалено у v4;
-    // новий простий UI банерів додається пізніше.
+
+
+
     try {
         const tray = Main.messageTray;
         if (tray) {
@@ -3220,17 +3220,17 @@ export function enable(settings, gettextFunc) {
     } catch (_) {}
     _hookDate();
 
-    // Банери-тости (етап 2): вигляд MacShell-main.
-    // Скло може підвантажитися пізніше — покажемо тости одразу,
-    // як тільки LiquidEffect готовий (flush з import hook).
+
+
+
     try { _ensureToastStyles(); } catch (_) {}
     _toastsEnabled = true;
     try { _hookToastTray(); } catch (_) {}
     try { _flushToastQueue(); } catch (_) {}
 
-    // Делегатор для легасі-споживачів (tahoeNotificationCenter.js-шим
-    // → topbarBlur / tahoeOSD), щоб вони завжди консультували ЖИВИЙ
-    // інстанс модуля незалежно від кешування ES-модулів.
+
+
+
     globalThis.__tahoeNC = {
         isNCOpen, getNCPanelBox, getNCOverlay, openNC, closeNC, toggleNC,
     };
@@ -3265,7 +3265,7 @@ export function disable() {
     try {
         closeNC();
     } catch (_) {}
-    // Тости (етап 2): інтервали, актори, скло
+
     try {
         _unhookToastTray();
         _destroyToasts();
@@ -3285,10 +3285,10 @@ export function disable() {
     globalThis._tahoeNCOpen = false;
 }
 
-// Інтерфейс для centerManager/extension.js:
+
 globalThis._tahoeNCClose = closeNC;
-// ВАЖЛИВО: _tahoeNCOpen — boolean стан (читається menubar_v29
-// у _changeMenu/_onCapturedEvent як Boolean(...)); функція тут неприпустима,
-// otherwise hover-switch патч ламається.
+
+
+
 globalThis._tahoeNCOpen = false;
 globalThis._tahoeNCToggle = toggleNC;

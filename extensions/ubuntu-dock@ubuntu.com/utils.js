@@ -46,8 +46,8 @@ const BasicHandler = class DashToDockBasicHandler {
     }
 
     add(...args) {
-        // Convert arguments object to array, concatenate with generic
-        // Call addWithLabel with ags as if they were passed arguments
+
+
         this.addWithLabel(GENERIC_KEY, ...args);
     }
 
@@ -84,7 +84,7 @@ const BasicHandler = class DashToDockBasicHandler {
         if (this._storage[label] === undefined)
             this._storage[label] = [];
 
-        // Skip first element of the arguments
+
         for (const argArray of argsArray) {
             if (argArray.length < 3)
                 throw new Error('Unexpected number of arguments');
@@ -120,42 +120,42 @@ const BasicHandler = class DashToDockBasicHandler {
             })));
     }
 
-    // Virtual methods to be implemented by subclass
 
-    /**
-     * Create single element to be stored in the storage structure
-     *
-     * @param _object
-     * @param _element
-     * @param _callback
-     */
+
+
+
+
+
+
+
+
     _create(_object, _element, _callback) {
         throw new GObject.NotImplementedError(`_create in ${this.constructor.name}`);
     }
 
-    /**
-     * Correctly delete single element
-     *
-     * @param _item
-     */
+
+
+
+
+
     _remove(_item) {
         throw new GObject.NotImplementedError(`_remove in ${this.constructor.name}`);
     }
 
-    /**
-     * Block single element
-     *
-     * @param _item
-     */
+
+
+
+
+
     _block(_item) {
         throw new GObject.NotImplementedError(`_block in ${this.constructor.name}`);
     }
 
-    /**
-     * Unblock single element
-     *
-     * @param _item
-     */
+
+
+
+
+
     _unblock(_item) {
         throw new GObject.NotImplementedError(`_unblock in ${this.constructor.name}`);
     }
@@ -239,13 +239,13 @@ export class GlobalSignalsHandler extends BasicHandler {
     }
 }
 
-/**
- * Color manipulation utilities
- */
+
+
+
 export class ColorUtils {
-    // Darken or brigthen color by a fraction dlum
-    // Each rgb value is modified by the same fraction.
-    // Return "#rrggbb" string
+
+
+
     static ColorLuminance(r, g, b, dlum) {
         let rgbString = '#';
 
@@ -256,7 +256,7 @@ export class ColorUtils {
         return rgbString;
     }
 
-    // Convert decimal to an hexadecimal string adding the desired padding
+
     static _decimalToHex(d, padding) {
         let hex = d.toString(16);
         while (hex.length < padding)
@@ -264,11 +264,11 @@ export class ColorUtils {
         return hex;
     }
 
-    // Convert hsv ([0-1, 0-1, 0-1]) to rgb ([0-255, 0-255, 0-255]).
-    // Following algorithm in https://en.wikipedia.org/wiki/HSL_and_HSV
-    // here with h = [0,1] instead of [0, 360]
-    // Accept either (h,s,v) independently or  {h:h, s:s, v:v} object.
-    // Return {r:r, g:g, b:b} object.
+
+
+
+
+
     static HSVtoRGB(h, s, v) {
         if (arguments.length === 1)
             ({s, v, h} = h);
@@ -312,11 +312,11 @@ export class ColorUtils {
         };
     }
 
-    // Convert rgb ([0-255, 0-255, 0-255]) to hsv ([0-1, 0-1, 0-1]).
-    // Following algorithm in https://en.wikipedia.org/wiki/HSL_and_HSV
-    // here with h = [0,1] instead of [0, 360]
-    // Accept either (r,g,b) independently or {r:r, g:g, b:b} object.
-    // Return {h:h, s:s, v:v} object.
+
+
+
+
+
     static RGBtoHSV(r, g, b) {
         if (arguments.length === 1)
             ({r, g, b} = r);
@@ -351,10 +351,10 @@ export class ColorUtils {
     }
 }
 
-/**
- * Manage function injection: both instances and prototype can be overridden
- * and restored
- */
+
+
+
+
 export class InjectionsHandler extends BasicHandler {
     _create(object, name, injectedFunction) {
         const original = object[name];
@@ -374,10 +374,10 @@ export class InjectionsHandler extends BasicHandler {
     }
 }
 
-/**
- * Manage vfunction injection: both instances and prototype can be overridden
- * and restored
- */
+
+
+
+
 export class VFuncInjectionsHandler extends BasicHandler {
     _create(prototype, name, injectedFunction) {
         const original = prototype[`vfunc_${name}`];
@@ -391,9 +391,9 @@ export class VFuncInjectionsHandler extends BasicHandler {
         const [prototype, name] = item;
         const originalVFunc = prototype[`vfunc_${name}`];
         try {
-            // This may fail if trying to reset to a never-overridden vfunc
-            // as gjs doesn't consider it a function, even if it's true that
-            // originalVFunc instanceof Function.
+
+
+
             this._replaceVFunc(prototype, name, originalVFunc);
         } catch {
             try {
@@ -415,10 +415,10 @@ export class VFuncInjectionsHandler extends BasicHandler {
     }
 }
 
-/**
- * Manage properties injection: both instances and prototype can be overridden
- * and restored
- */
+
+
+
+
 export class PropertyInjectionsHandler extends BasicHandler {
     constructor(parentObject, params) {
         super(parentObject);
@@ -450,9 +450,9 @@ export class PropertyInjectionsHandler extends BasicHandler {
     }
 }
 
-/**
- * Return the actual position reverseing left and right in rtl
- */
+
+
+
 export function getPosition() {
     const position = Docking.DockManager.settings.dockPosition;
     if (Clutter.get_default_text_direction() === Clutter.TextDirection.RTL) {
@@ -464,17 +464,17 @@ export function getPosition() {
     return position;
 }
 
-/**
- * @param cr
- * @param x
- * @param y
- * @param width
- * @param height
- * @param isRoundLeft
- * @param isRoundRight
- * @param stroke
- * @param fill
- */
+
+
+
+
+
+
+
+
+
+
+
 export function drawRoundedLine(cr, x, y, width, height, isRoundLeft, isRoundRight, stroke, fill) {
     if (height > width) {
         y += Math.floor((height - width) / 2.0);
@@ -508,14 +508,14 @@ export function drawRoundedLine(cr, x, y, width, height, isRoundLeft, isRoundRig
     cr.stroke();
 }
 
-/**
- * Convert a signal handler with n value parameters (that is, excluding the
- * signal source parameter) to an array of n handlers that are each responsible
- * for receiving one of the n values and calling the original handler with the
- * most up-to-date arguments.
- *
- * @param handler
- */
+
+
+
+
+
+
+
+
 export function splitHandler(handler) {
     if (handler.length > 30)
         throw new Error('too many parameters');
@@ -534,9 +534,9 @@ export function splitHandler(handler) {
     });
 }
 
-/**
- * Construct a map of gtk application window object paths to MetaWindows.
- */
+
+
+
 export function getWindowsByObjectPath() {
     const windowsByObjectPath = new Map();
     const {workspaceManager} = global;
@@ -554,12 +554,12 @@ export function getWindowsByObjectPath() {
     return windowsByObjectPath;
 }
 
-/**
- * Re-implements shell_app_compare so that can be used to resort running apps
- *
- * @param appA
- * @param appB
- */
+
+
+
+
+
+
 export function shellAppCompare(appA, appB) {
     if (appA.state !== appB.state) {
         if (appA.state === Shell.AppState.RUNNING)
@@ -592,12 +592,12 @@ export function shellAppCompare(appA, appB) {
     return 0;
 }
 
-/**
- * Re-implements shell_app_compare_windows
- *
- * @param winA
- * @param winB
- */
+
+
+
+
+
+
 export function shellWindowsCompare(winA, winB) {
     const activeWorkspace = global.workspaceManager.get_active_workspace();
     const wsA = winA.get_workspace() === activeWorkspace;
@@ -674,25 +674,25 @@ class CancellableChild extends Gio.Cancellable {
     }
 });
 
-/**
- *
- */
+
+
+
 export function getMonitorManager() {
     return global.backend.get_monitor_manager?.() ?? Meta.MonitorManager.get();
 }
 
-/**
- * @param laterType
- * @param callback
- */
+
+
+
+
 export function laterAdd(laterType, callback) {
     return global.compositor?.get_laters?.().add(laterType, callback) ??
         Meta.later_add(laterType, callback);
 }
 
-/**
- * @param id
- */
+
+
+
 export function laterRemove(id) {
     if (global.compositor?.get_laters)
         global.compositor?.get_laters().remove(id);

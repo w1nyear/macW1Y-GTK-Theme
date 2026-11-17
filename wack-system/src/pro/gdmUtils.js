@@ -35,15 +35,15 @@ export function _setActorVisible(actor, visible, opacity) {
     actor.opacity = opacity;
 }
 
-/**
- * Resolves a wallpaper URI accessible by the GDM greeter (running as user 'gdm').
- * In GDM, user home directories may be mode 0700, making source_uri unreadable.
- * meta.uri points to the shared world-readable copy in /var/tmp created by
- * crossSessionManager, so prefer it whenever it exists on disk.
- *
- * @param {object} meta
- * @returns {string|null}
- */
+
+
+
+
+
+
+
+
+
 export function resolveGdmAccessibleUri(meta) {
     if (!meta)
         return null;
@@ -60,11 +60,11 @@ export function resolveGdmAccessibleUri(meta) {
     return null;
 }
 
-// GDM mode positioning and transitions
-export const GDM_USER_STACK_VERTICAL_FRACTION_WITH_CSA = 1.08; // User selection list bottom anchor Y with CSA
-export const GDM_USER_STACK_VERTICAL_FRACTION_NO_CSA = 1.04;   // User selection list bottom anchor Y without CSA
-export const GDM_USER_LIST_CAP_WITH_CSA = 3;                   // Max visible accounts before scrolling with CSA
-export const GDM_USER_LIST_CAP_NO_CSA = 4;                     // Max visible accounts before scrolling without CSA
-export const GDM_DATETIME_TOP_FRACTION = 0.07; // Date/Time offset from the top
-export const GDM_CROSSFADE_DURATION = 300; // Transition duration for selection changes in ms
-export const GDM_REST_PROMPT_VERTICAL_FRACTION = 0.66; // Prompt center Y when returning to lock screen from GDM
+
+export const GDM_USER_STACK_VERTICAL_FRACTION_WITH_CSA = 1.08;
+export const GDM_USER_STACK_VERTICAL_FRACTION_NO_CSA = 1.04;
+export const GDM_USER_LIST_CAP_WITH_CSA = 3;
+export const GDM_USER_LIST_CAP_NO_CSA = 4;
+export const GDM_DATETIME_TOP_FRACTION = 0.07;
+export const GDM_CROSSFADE_DURATION = 300;
+export const GDM_REST_PROMPT_VERTICAL_FRACTION = 0.66;

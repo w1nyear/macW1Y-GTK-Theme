@@ -16,20 +16,20 @@ export const WindowListBlur = class WindowListBlur {
     enable() {
         this._log("blurring window list");
 
-        // blur if window-list is found
+
         Main.layoutManager.uiGroup.get_children().forEach(
             child => this.try_blur(child)
         );
 
-        // listen to new actors in `Main.layoutManager.uiGroup` and blur it if
-        // if is window-list
+
+
         this.connections.connect(
             Main.layoutManager.uiGroup,
             'child-added',
             (_, child) => this.try_blur(child)
         );
 
-        // connect to overview
+
         this.connections.connect(Main.overview, 'showing', _ => {
             this.hide();
         });
@@ -70,15 +70,15 @@ export const WindowListBlur = class WindowListBlur {
             );
 
 
-            // HACK
-            //
-            //`Shell.BlurEffect` does not repaint when shadows are under it. [1]
-            //
-            // This does not entirely fix this bug (shadows caused by windows
-            // still cause artifacts), but it prevents the shadows of the panel
-            // buttons to cause artifacts on the panel itself
-            //
-            // [1]: https://gitlab.gnome.org/GNOME/gnome-shell/-/issues/2857
+
+
+
+
+
+
+
+
+
 
             if (this.settings.HACKS_LEVEL === 1) {
                 this._log("window list hack level 1");
@@ -97,7 +97,7 @@ export const WindowListBlur = class WindowListBlur {
         );
     }
 
-    // IMPORTANT: do never call this in a mutable `this.pipelines.forEach`
+
     destroy_blur(pipeline) {
         if (pipeline.actor) {
             this.remove_style(pipeline.actor);

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// ЛЕГАСІ-ШИМ (v4). Реальний Центр повідомлень живе в tahoeNotifications.js
-// (?v=<унікальний> інстанс). Через кешування ES-модулів цей файл у живій
-// сесії може бути СТАРОЮ інстанцією (1349 рядків дубльованого коду), тому
-// всі функції делегуємо через globalThis.__tahoeNC, який kiwi enable()
-// постійно оновлює до поточного живого інстансу.
-//
-// Споживачі: topbarBlur.js (getNCPanelBox/getNCOverlay),
-// tahoeOSD.js (isNCOpen), tahoeControlCenter.js (closeNC).
+
+
+
+
+
+
+
+
 
 export function isNCOpen() {
     try {
@@ -50,7 +50,7 @@ export function toggleNC() {
     } catch (_) {}
 }
 
-// centerManager / extension.js / tahoeControlCenter читають цей глобал:
+
 globalThis._tahoeNotificationCenterClose = (immediate = false) => {
     try {
         globalThis.__tahoeNC?.closeNC?.(immediate);

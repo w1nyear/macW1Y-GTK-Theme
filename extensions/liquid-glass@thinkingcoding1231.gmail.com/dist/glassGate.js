@@ -1,36 +1,36 @@
-// glassGate.js — [GPU-SAVE] шлюз подій для Liquid Glass / Blur поверхонь.
-//
-// НОВИЙ файл (створено для гарячого завантаження у живій сесії): у dist/utils.js
-// класи реєструють GType-імена (registerClass), тому повторний import того
-// модуля в тій самій сесії падає з «Type name ... is already registered».
-// Цей файл НЕ має registerClass — його можна чесно завантажувати/перевантажувати
-// будь-коли (у тому числі версіоновано), і він містить тільки логіку шлюзу.
-//
-// Призначення: скло оновлює свій фон СТРОГО при будь-якій зміні того, що воно
-// показує, і СТРОГО не частіше ніж 60 FPS (не герцовка екрана). У спокої
-// дорогі оновлення не виконуються взагалі; залишковий «пульс» 1 Гц гарантує
-// узгодженість (застряглі аллокації, семпли UI, кросфейди шпалер).
-//
-// Джерела фактів (все чисте JS-CPU, нуль GPU):
-//   1. спільний stage-хеш: кількість+геометрія+mapped/visible/opacity всіх
-//      MetaWindowActor (memo-кеш 4 мс, щоб N поверхонь не повторювали роботу
-//      в межах одного кадру);
-//   2. глобальний лічильник 'damaged' (вміст вікна змінився);
-//   3. кількість дітей backgroundGroup (зміна шпалер);
-//   4. геометрія моніторів;
-//   5. власна геометрія/opacity скла.
-//
-// A/B відкат з EvalHelper:
-//     globalThis._macGlassEventDriven = false;  // стара поведінка (кожен тік)
-//     globalThis._macGlassStats();              // лічильники
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-export const GLASS_REFRESH_ACTIVE_INTERVAL_US = 8333;   // до 120 FPS під час активного руху/трансформації (macW1Y ProMotion)
-export const GLASS_REFRESH_BACKGROUND_INTERVAL_US = 16666; // 60 FPS для фонових змін під склом (відео, ігри, анімації)
-export const GLASS_REFRESH_60FPS_INTERVAL_US = 16666;      // звичайна межа 60 FPS
-export const GLASS_REFRESH_HEARTBEAT_US = 1500000;         // пульс узгодженості у спокої: 1.5 с
+export const GLASS_REFRESH_ACTIVE_INTERVAL_US = 8333;
+export const GLASS_REFRESH_BACKGROUND_INTERVAL_US = 16666;
+export const GLASS_REFRESH_60FPS_INTERVAL_US = 16666;
+export const GLASS_REFRESH_HEARTBEAT_US = 1500000;
 
 let _backdropDamageVersion = 0;
 let _backdropFailCounter = 0;
@@ -67,12 +67,12 @@ function _isActorValid(actor) {
     }
 }
 
-/** Вміст вікна перемалювався — глобальний тригер для всіх скляних поверхонь. */
+
 export function noteWindowContentDamaged() {
     _backdropDamageVersion++;
 }
 
-/** A/B-перемикач: false → glassRefreshDue завжди true (стара покадрова поведінка). */
+
 export function setGlassEventDriven(enabled) {
     _eventDrivenDefault = !!enabled;
 }
@@ -83,7 +83,7 @@ export function isGlassEventDriven() {
     return _eventDrivenDefault;
 }
 
-/** 32-бітний мікс хеша без алокаций. */
+
 function _hmix(h, v) {
     const n = Number.isFinite(v) ? (v | 0) : 0;
     return (h ^ (n + 0x9E3779B9 + ((h << 6) | (h >>> 26)))) | 0;
@@ -127,12 +127,12 @@ function _stageBackdropHash(nowUs) {
             h = _hmix(h, m.x); h = _hmix(h, m.y);
             h = _hmix(h, m.width); h = _hmix(h, m.height);
         }
-        // Зміна шпалер: GNOME міняє дітей backgroundGroup під час кросфейду.
+
         const bg = lm?.backgroundGroup;
         h = _hmix(h, bg && _isActorValid(bg) ? bg.get_n_children() : 0);
     } catch (_) {
-        // Збій діагностики → хеш, який постійно міняється: кожен тік дає 'due'.
-        // Безпечність важливіша за економію.
+
+
         return _hmix(_stageScan.h, ++_backdropFailCounter);
     }
     _stageScan = { at: nowUs, h };
@@ -159,7 +159,7 @@ export function hookWindowDamage(actor) {
     _hookWindowDamage(actor);
 }
 
-/** Перевіряє, чи вікно перетинає або знаходиться близько (в межах 100px) до актора скла. */
+
 export function isActorNearGlass(windowActor, glassActor) {
     try {
         if (!windowActor || !_isActorValid(windowActor))
@@ -205,7 +205,7 @@ export function isActorNearGlass(windowActor, glassActor) {
         if (!Number.isFinite(gx) || !Number.isFinite(gy) || !gw || !gh || gw <= 0 || gh <= 0)
             return true;
 
-        // Зона чутливості 100px навколо елемента скла
+
         const MARGIN = 100;
         const gLeft = gx - MARGIN;
         const gTop = gy - MARGIN;
@@ -223,7 +223,7 @@ export function isActorNearGlass(windowActor, glassActor) {
     }
 }
 
-/** Хеш власної геометрії скла. */
+
 function _ownGlassHash(actor) {
     if (!actor)
         return 0;
@@ -253,18 +253,18 @@ function _newPollState() {
         lastOwnH: -1,
         dirty: true,
         lastFull: 0,
-        settleUntilUs: nowUs + 800000 // 800ms адаптивного осідання після створення/відкриття
+        settleUntilUs: nowUs + 800000
     };
 }
 
-/**
- * Вирішує, чи виконувати дорогий рефреш на цьому тіку для цього скла.
- * До прикладу використання — doc у utils.js [GPU-SAVE] блоку.
- */
+
+
+
+
 export function glassRefreshDue(glassActor, extraHash) {
     try {
         if (!isGlassEventDriven())
-            return true; // A/B: стара поведінка — кожен тік.
+            return true;
         let st = _backdropPolls.get(glassActor);
         if (!st) {
             st = _newPollState();
@@ -273,7 +273,7 @@ export function glassRefreshDue(glassActor, extraHash) {
         const nowUs = GLib.get_monotonic_time();
         if (!st.lastFull) {
             st.settleUntilUs = nowUs + 800000;
-            return true; // перший тік після створення / show().
+            return true;
         }
 
         const scanH = _stageBackdropHash(nowUs);
@@ -284,10 +284,10 @@ export function glassRefreshDue(glassActor, extraHash) {
         const ownChanged = (st.lastOwnH !== ownH);
         const dmgChanged = (st.lastDamage !== dmg);
 
-        // Перевіряємо, чи елемент зараз у періоді осідання після відкриття
+
         const isSettling = (nowUs < (st.settleUntilUs || 0));
 
-        // Перевіряємо, чи було пошкодження (відео, гра, анімація) вікна під чи поблизу скла
+
         let isNearDamaged = false;
         if (dmgChanged) {
             try {
@@ -316,20 +316,20 @@ export function glassRefreshDue(glassActor, extraHash) {
         const sinceFull = nowUs - st.lastFull;
 
         if (st.dirty) {
-            // macW1Y ProMotion Dynamic Adaptivity:
-            // Активний рух власної геометрії скла -> до 120 FPS (8.3 мс)
-            // Зміна фону під склом / вікно поруч (відео, гра, анімація) -> 60 FPS (16.6 мс)
+
+
+
             const dueInterval = ownChanged ? GLASS_REFRESH_ACTIVE_INTERVAL_US : GLASS_REFRESH_60FPS_INTERVAL_US;
             return sinceFull >= dueInterval;
         }
 
-        // Пульс узгодженості у спокої: 1.5 с
+
         if (sinceFull >= GLASS_REFRESH_HEARTBEAT_US) {
             return true;
         }
 
-        // [GPU-OPTIMIZE] У спокої, коли нічого не брудне (st.dirty === false),
-        // не виконувати дорогі оновлення взагалі (0% GPU в idle).
+
+
         return false;
     } catch (e) {
         globalThis._lastDueError = `${e?.message || e}\n${e?.stack || ''}`;
@@ -337,7 +337,7 @@ export function glassRefreshDue(glassActor, extraHash) {
     }
 }
 
-/** Викликати ПІСЛЯ успішного повного рефрешу. */
+
 export function glassRefreshDone(glassActor, extraHash) {
     try {
         _backdropRefreshCount++;
@@ -355,7 +355,7 @@ export function glassRefreshDone(glassActor, extraHash) {
     } catch (_) {}
 }
 
-/** Форсувати повний рефреш на наступному перевіреному тіку. */
+
 export function glassForceRefresh(glassActor) {
     try {
         let st = _backdropPolls.get(glassActor);
@@ -369,9 +369,9 @@ export function glassForceRefresh(glassActor) {
     } catch (_) {}
 }
 
-/** Обгортка-хвороби для прототипів: true → виконати оригінал. Повертає
- *  {due, finish()}. Ключ — сам інстанс (WeakMap), тож можна патчити
- *  прототипи класів, а стан тримати за кожним об'єктом. */
+
+
+
 export function glassGateInstance(key) {
     return {
         due: (extraHash) => glassRefreshDue(key, extraHash),
@@ -379,7 +379,7 @@ export function glassGateInstance(key) {
     };
 }
 
-/** spare entry для діагностики з EvalHelper. */
+
 function _macGlassStats() {
     try {
         return JSON.stringify({
@@ -411,12 +411,12 @@ export function glassPollStats(enable) {
     return { refreshes: _backdropRefreshCount, stopped: true };
 }
 
-/**
- * Швидка пасивна перевірка для фонового watchdog/heartbeat:
- * повертає true, якщо фон, вікна або пошкодження сцени змінилися
- * з моменту останнього рефрешу цього скла.
- * Нуль GPU, час перевірки <0.005 мс.
- */
+
+
+
+
+
+
 export function isBackdropDirtyOrChanged(glassActor) {
     try {
         if (!glassActor) return false;

@@ -40,7 +40,7 @@ struct libinput_event *libinput_get_event(struct libinput *li)
     return ev;
 }
 
-/* Also hook libinput_device_ref just in case devices are held */
+
 struct libinput_device *libinput_device_ref(struct libinput_device *device)
 {
     static struct libinput_device *(*real_ref)(struct libinput_device *) = NULL;

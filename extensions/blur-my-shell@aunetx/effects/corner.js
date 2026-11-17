@@ -12,8 +12,8 @@ const DEFAULT_PARAMS = {
     radius: 12, width: 0, height: 0,
     corners_top: true, corners_bottom: true,
     clip: [0, 0, -1, -1],
-    // Reset on reuse: `EffectsManager` pools `CornerEffect` instances, and a
-    // pooled instance could otherwise keep rendering square (see corner.glsl).
+
+
     straight_corners: false,
 };
 

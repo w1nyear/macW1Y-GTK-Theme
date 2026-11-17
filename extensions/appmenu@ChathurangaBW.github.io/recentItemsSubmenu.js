@@ -1,6 +1,6 @@
-/*
- * recentItemsSubmenu.js - Recent files and applications submenu for the macW1Y menu.
- */
+
+
+
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
@@ -14,7 +14,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {DocumentTooltip} from './documentTooltip.js';
 
-// Limits for recent items per section
+
 const FILES_RECENT_LIMIT = 12;
 const APPLICATIONS_RECENT_LIMIT = 8;
 
@@ -28,7 +28,7 @@ const APPLICATION_STATE_FILE = GLib.build_filenamev([
   'application_state',
 ]);
 const CLEAR_APPLICATION_MENU = true;
-const APPLICATION_SORT_MODE = 'usage'; // 'usage' or 'recent'
+const APPLICATION_SORT_MODE = 'usage';
 const HOVER_CLOSE_DELAY_MS = 200;
 const RECENT_OPEN_DELAY_MS = 500;
 const POINTER_TOLERANCE_PX = 8;
@@ -47,10 +47,10 @@ async function loadFileTextAsync(file, cancellable) {
   return new TextDecoder().decode(bytes.get_data());
 }
 
-/**
- * A submenu item that shows recent files in a popup menu.
- * Manages hover state, timeouts, and pointer tracking for smooth UX.
- */
+
+
+
+
 export const RecentItemsSubmenu = GObject.registerClass(
   { GTypeName: 'AppMenuRecentItemsSubmenu' },
   class RecentItemsSubmenu extends PopupMenu.PopupBaseMenuItem {
@@ -65,7 +65,7 @@ export const RecentItemsSubmenu = GObject.registerClass(
       this._recentMenuManager = recentMenuManager ?? null;
       this._managerRegistered = false;
 
-    // State tracking
+
     this._recentMenu = null;
     this._recentMenuHoverActor = null;
     this._recentMenuSignalIds = [];
@@ -82,7 +82,7 @@ export const RecentItemsSubmenu = GObject.registerClass(
     this._isDestroyed = false;
     this._populateGeneration = 0;
 
-    // Build UI
+
     const label = new St.Label({
       text: title,
       x_expand: true,
@@ -97,7 +97,7 @@ export const RecentItemsSubmenu = GObject.registerClass(
     });
     this.add_child(arrowIcon);
 
-    // Connect events
+
     this._connectEvents();
   }
 
@@ -142,7 +142,7 @@ export const RecentItemsSubmenu = GObject.registerClass(
       this._cancellable = null;
     }
 
-    // Clean up all timeouts before destroying
+
     this._cancelClose();
     this._cancelOpenDelay();
     this._stopGlobalHoverMonitor();
@@ -431,7 +431,7 @@ export const RecentItemsSubmenu = GObject.registerClass(
         try {
           target.disconnect(id);
         } catch (_error) {
-          // Ignore, signal already disconnected during teardown
+
         }
       }
     });
@@ -447,7 +447,7 @@ export const RecentItemsSubmenu = GObject.registerClass(
         try {
           this._recentMenu.disconnect(id);
         } catch (_error) {
-          // Ignore if already disconnected during teardown
+
         }
       }
     });
@@ -460,7 +460,7 @@ export const RecentItemsSubmenu = GObject.registerClass(
         try {
           actor.disconnect(signalId);
         } catch (_error) {
-          // Ignore if already disconnected during teardown
+
         }
       }
     });
@@ -491,7 +491,7 @@ export const RecentItemsSubmenu = GObject.registerClass(
           return Clutter.EVENT_PROPAGATE;
         }
 
-        // Only close recent menu if we're entering a different menu item
+
         this._cancelClose();
         this._cancelOpenDelay();
         this._closeAndDestroyRecentMenu();
@@ -531,7 +531,7 @@ export const RecentItemsSubmenu = GObject.registerClass(
     this._recentMenu.actor.reactive = true;
 
     this._recentMenuHoverActor = this._recentMenu.box ?? this._recentMenu.actor;
-    // Track hover on the visible menu box to detect real pointer exits.
+
     if (this._recentMenuHoverActor) {
       this._recentMenuHoverActor.track_hover = true;
       this._recentMenuHoverActor.reactive = true;
@@ -622,7 +622,7 @@ export const RecentItemsSubmenu = GObject.registerClass(
       const [, x, y] = device.get_coords();
       return [x, y];
     } catch (_e) {
-      // Fallback for older GNOME Shell
+
       return global.get_pointer();
     }
   }
@@ -643,12 +643,12 @@ export const RecentItemsSubmenu = GObject.registerClass(
       pointerY >= bounds.y1 - tolerance &&
       pointerY <= bounds.y2 + tolerance;
 
-    // Check if pointer is inside the recent items popup menu
+
     if (pointWithin(recentBounds, POINTER_TOLERANCE_PX)) {
       return PointerState.INSIDE_RECENT;
     }
 
-    // Check if pointer is inside the submenu item in the main menu
+
     if (pointWithin(submenuBounds, POINTER_TOLERANCE_PX)) {
       return PointerState.INSIDE_SUBMENU;
     }
@@ -661,8 +661,8 @@ export const RecentItemsSubmenu = GObject.registerClass(
     const overlapBottom = Math.min(submenuBounds.y2, recentBounds.y2);
 
     if (overlapBottom >= overlapTop) {
-      // Allow a narrow horizontal bridge between the submenu and popup.
-      // This bridge exists only to allow smooth transitions.
+
+
       const submenuRight = submenuBounds.x2;
       const recentLeft = recentBounds.x1;
       const gapWidth = Math.max(0, recentLeft - submenuRight);
@@ -705,7 +705,7 @@ export const RecentItemsSubmenu = GObject.registerClass(
         try {
           this.disconnect(this._submenuDestroyId);
         } catch (_error) {
-          // Signal was already disconnected, ignore
+
         }
         this._submenuDestroyId = 0;
       }
@@ -821,7 +821,7 @@ export const RecentItemsSubmenu = GObject.registerClass(
         return info.get_icon?.() ?? null;
       }
     } catch (_error) {
-      // Swallow errors; fall back to themed icon based on item type.
+
     }
 
     if (isDirectory) {
@@ -1079,7 +1079,7 @@ export const RecentItemsSubmenu = GObject.registerClass(
         }
       }
 
-      // Determine if this is a directory
+
       let isDirectory = false;
       if (uri.startsWith('file://')) {
         try {
@@ -1094,7 +1094,7 @@ export const RecentItemsSubmenu = GObject.registerClass(
             isDirectory = fileInfo.get_file_type() === Gio.FileType.DIRECTORY;
           }
         } catch (error) {
-          // If we can't determine, assume it's a file
+
           isDirectory = false;
         }
       }

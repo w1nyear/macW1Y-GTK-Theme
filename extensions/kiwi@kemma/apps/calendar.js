@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Repositions the calendar and customizes notification widgets in the top panel.
+
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Clutter from 'gi://Clutter';
@@ -7,7 +7,7 @@ import St from 'gi://St';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
-// State holders so we can fully restore on disable
+
 let dateMenu;
 let enabled = false;
 let originalParent;
@@ -15,25 +15,25 @@ let originalParentIndex;
 let originalMenuBoxStyle;
 let origShowNotifSection;
 let origShowMediaSection;
-let removedSections = null; // { notification:{actor,index}, media:{actor,index}, messages:{actor,index} }
-let originalBannerBinProps; // { x_align, y_align, x_expand }
-let calendarActorRef; // preserved calendar actor to ensure visibility
+let removedSections = null;
+let originalBannerBinProps;
+let calendarActorRef;
 
-// Notification indicator state
+
 let notificationIndicator = null;
 let notificationIndicatorParent = null;
 let notificationSignals = [];
-let indicatorInsertTimeoutId = null; // timeout id for delayed indicator insertion
+let indicatorInsertTimeoutId = null;
 let kiwiExtension = null;
 let kiwiSettings = null;
 let indicatorStyleSignalId = 0;
 
 function applyIndicatorStyle(style) {
     if (!notificationIndicator) return;
-    // When attached to the panel right box (Keep Notification Panel mode),
-    // the indicator sits after the clock and may become the rightmost panel
-    // element when window controls are hidden — add right padding so the dot
-    // isn't flush against the screen edge.
+
+
+
+
     const margin = notificationIndicatorParent === Main.panel._rightBox
         ? ' margin-right: 12px;'
         : '';
@@ -42,7 +42,7 @@ function applyIndicatorStyle(style) {
             notificationIndicator.style = 'color: -st-accent-color;' + margin;
             break;
         case 'symbolic':
-            notificationIndicator.style = margin || null; // let panel theme color cascade
+            notificationIndicator.style = margin || null;
             break;
         case 'default':
         default:
@@ -69,19 +69,19 @@ function setupNotificationIndicator() {
     });
     applyIndicatorStyle(initialStyle);
 
-    // The icon goes into a panel container we don't own; if that is torn down
-    // the icon goes with it and the 5 s poll would touch a disposed object.
+
+
     notificationIndicator.connect('destroy', () => {
         notificationIndicator = null;
     });
 
-    // Add small delay to ensure all other indicators are added first
+
     indicatorInsertTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 500, () => {
-        indicatorInsertTimeoutId = null; // clear reference on fire
+        indicatorInsertTimeoutId = null;
         let insertIndex = notificationIndicatorParent.get_n_children();
-        // When attached directly to the panel right box (Keep Notification
-        // Panel mode), keep the indicator adjacent to the clock instead of
-        // letting it land at the far right of the panel.
+
+
+
         if (notificationIndicatorParent === Main.panel._rightBox && dateMenu?.container) {
             const dateIdx = notificationIndicatorParent.get_children().indexOf(dateMenu.container);
             if (dateIdx >= 0)
@@ -91,20 +91,20 @@ function setupNotificationIndicator() {
         return GLib.SOURCE_REMOVE;
     });
 
-    // Update style live when the setting changes
+
     if (kiwiSettings) {
         indicatorStyleSignalId = kiwiSettings.connect('changed::notification-indicator-style', () => {
             applyIndicatorStyle(kiwiSettings.get_string('notification-indicator-style'));
         });
     }
 
-    // Connect to notification signals and update visibility
+
     connectNotificationSignals();
     updateNotificationIndicator();
 }
 
 function cleanupNotificationIndicator() {
-    // Disconnect signals and clear intervals
+
     if (indicatorInsertTimeoutId) {
         GLib.Source.remove(indicatorInsertTimeoutId);
         indicatorInsertTimeoutId = null;
@@ -134,10 +134,10 @@ function cleanupNotificationIndicator() {
     notificationIndicatorParent = null;
 }
 
-// Sources come and go over a session. Following them keeps the indicator live
-// for sources created after us, and drops each source's handles while it is
-// still alive — a source is disposed right after 'source-removed', so handles
-// kept until disable() were being disconnected from a dead object.
+
+
+
+
 function connectSource(source) {
     const addedId = source.connect('notification-added', () => updateNotificationIndicator());
     notificationSignals.push({ obj: source, id: addedId });
@@ -156,7 +156,7 @@ function disconnectSource(source) {
 
 function connectNotificationSignals() {
     notificationSignals = [];
-    // Monitor message tray sources for new notifications
+
     if (Main.messageTray) {
         const sourceAddedId = Main.messageTray.connect('source-added', (_tray, source) => {
             connectSource(source);
@@ -174,10 +174,10 @@ function connectNotificationSignals() {
             connectSource(source);
     }
 
-    // Fallback periodic check
+
     const checkInterval = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 5000, () => {
         updateNotificationIndicator();
-        return GLib.SOURCE_CONTINUE; // Keep the timeout running
+        return GLib.SOURCE_CONTINUE;
     });
     notificationSignals.push({ obj: 'interval', id: checkInterval });
 }
@@ -193,7 +193,7 @@ function updateNotificationIndicator() {
 
 export function enable(extension) {
     if (enabled)
-        return; // Prevent double-application
+        return;
     kiwiExtension = extension || null;
     kiwiSettings = kiwiExtension ? kiwiExtension.getSettings() : null;
 
@@ -201,16 +201,16 @@ export function enable(extension) {
     if (!dateMenu)
         return;
 
-    // Store original parent + index for clean restoration
+
     originalParent = dateMenu.container.get_parent();
     if (originalParent) {
         originalParentIndex = originalParent.get_children().indexOf(dateMenu.container);
     }
 
-    // The clock text is owned by topbarClock.js: GNOME fills it through a
-    // WallClock binding that never consults a format() hook.
 
-    // Move date menu to end of right box (recorded original position already)
+
+
+
     if (dateMenu.container.get_parent() === Main.panel._centerBox) {
         Main.panel._centerBox.remove_child(dateMenu.container);
         Main.panel._rightBox.insert_child_at_index(dateMenu.container, Main.panel._rightBox.get_children().length);
@@ -220,13 +220,13 @@ export function enable(extension) {
         ? kiwiSettings.get_boolean('keep-notification-panel')
         : false;
 
-    // Non-destructively remove other sections & override visibility predicates
+
     if (!keepNotificationPanel && dateMenu.menu?.box) {
         originalMenuBoxStyle = originalMenuBoxStyle ?? dateMenu.menu.box.style;
         removedSections = {};
 
         const parentBox = dateMenu.menu.box;
-        // Attempt to preserve a reference to calendar actor for safety
+
         if (!calendarActorRef) {
             calendarActorRef = dateMenu._calendar || dateMenu._calendarSection || null;
         }
@@ -234,16 +234,16 @@ export function enable(extension) {
         function detachOrHideSection(key, actorRefName) {
             const actor = dateMenu[actorRefName];
             if (!actor) return;
-            // Skip if this is (somehow) the calendar actor we want to keep
+
             if (calendarActorRef && actor === calendarActorRef)
                 return;
             let idx = -1;
             let hidden = false;
             if (actor.get_parent() === parentBox) {
                 idx = parentBox.get_children().indexOf(actor);
-                parentBox.remove_child(actor); // non-destructive
+                parentBox.remove_child(actor);
             } else {
-                // Fallback: just hide it if we cannot safely detach
+
                 if (actor.show && actor.hide) {
                     actor.hide();
                     hidden = true;
@@ -255,7 +255,7 @@ export function enable(extension) {
         detachOrHideSection('media', '_mediaSection');
         detachOrHideSection('messages', '_messageList');
 
-        // Preserve originals only once
+
         if (!origShowNotifSection)
             origShowNotifSection = dateMenu._shouldShowNotificationSection;
         if (!origShowMediaSection)
@@ -264,41 +264,41 @@ export function enable(extension) {
         dateMenu._shouldShowNotificationSection = () => false;
         dateMenu._shouldShowMediaSection = () => false;
 
-        // Dynamically size width so week numbers (if enabled) are not truncated.
+
         try {
-            const baseWidth = 300; // previous fixed width
+            const baseWidth = 300;
             let width = baseWidth;
-            // Obtain a more accurate preferred width for the calendar actor if present
+
             if (calendarActorRef && calendarActorRef.get_preferred_width) {
                 const [_minW, natW] = calendarActorRef.get_preferred_width(-1);
-                // Add padding allowance
+
                 width = Math.max(width, natW + 20);
             }
-            // Heuristic bump if week numbers enabled but preferred width not accessible yet
+
             const weekNumbersEnabled = Boolean(
                 dateMenu._calendar?.get_show_week_numbers?.() ||
                 dateMenu._calendar?._showWeekNumbers
             );
             if (weekNumbersEnabled)
-                width = Math.max(width, baseWidth + 24); // allocate extra column space
+                width = Math.max(width, baseWidth + 24);
 
-            // Use min-width to allow natural growth if theme wants larger
+
             dateMenu.menu.box.style = `min-width: ${width}px;`;
         } catch (_e) {
-            // Fallback to original fixed width if something fails
+
             dateMenu.menu.box.style = 'width: 330px;';
         }
 
-        // Ensure calendar actor is present (some GNOME versions may move it around)
+
         if (calendarActorRef && !calendarActorRef.get_parent()) {
-            // Insert at top for consistency
+
             parentBox.insert_child_at_index(calendarActorRef, 0);
         }
     }
 
-    // Adjust notification banner alignment without destroying the actor.
-    // Apply in both modes so banners appear top-right regardless of whether
-    // the GNOME notification panel is kept.
+
+
+
     if (Main.messageTray?._bannerBin) {
         const bin = Main.messageTray._bannerBin;
         originalBannerBinProps = originalBannerBinProps || {
@@ -320,14 +320,14 @@ export function enable(extension) {
             else
                 bin.y_align = Clutter.ActorAlign.START;
         } catch (_e) {
-            // Fallback: recreate only if mutation methods failed
+
             const newBin = new Clutter.Actor({
                 name: 'bannerBin',
                 x_expand: true,
                 x_align: Clutter.ActorAlign.END,
                 y_align: Clutter.ActorAlign.START,
             });
-            // Transfer children
+
             bin.get_children().forEach(c => bin.remove_child(c) && newBin.add_child(c));
             const parent = bin.get_parent();
             if (parent) {
@@ -338,7 +338,7 @@ export function enable(extension) {
         }
     }
 
-    // Set up notification indicator on QuickSettings
+
     setupNotificationIndicator();
 
     enabled = true;
@@ -346,10 +346,10 @@ export function enable(extension) {
 
 export function disable() {
     dateMenu = Main.panel.statusArea.dateMenu;
-    // Restore other sections if we detached them
+
     if (removedSections && dateMenu.menu?.box) {
         const parentBox = dateMenu.menu.box;
-        // Reinsert in original order based on recorded indices
+
         const entries = Object.values(removedSections).filter(Boolean).sort((a, b) => a.index - b.index);
         entries.forEach(({ actor, index, hidden }) => {
             if (!actor) return;
@@ -366,7 +366,7 @@ export function disable() {
         removedSections = null;
     }
 
-    // Restore predicate methods
+
     if (origShowNotifSection) {
         dateMenu._shouldShowNotificationSection = origShowNotifSection;
         origShowNotifSection = null;
@@ -376,13 +376,13 @@ export function disable() {
         origShowMediaSection = null;
     }
 
-    // Restore style
+
     if (dateMenu.menu?.box && originalMenuBoxStyle !== undefined) {
         dateMenu.menu.box.style = originalMenuBoxStyle;
         originalMenuBoxStyle = undefined;
     }
 
-    // Move back to original parent & position
+
     if (originalParent && dateMenu.container.get_parent() !== originalParent) {
         const currentParent = dateMenu.container.get_parent();
         if (currentParent)
@@ -392,7 +392,7 @@ export function disable() {
         originalParent.insert_child_at_index(dateMenu.container, insertIndex);
     }
 
-    // Restore banner bin alignment
+
     if (Main.messageTray?._bannerBin && originalBannerBinProps) {
         const bin = Main.messageTray._bannerBin;
         try {
@@ -409,29 +409,29 @@ export function disable() {
             else
                 bin.y_align = originalBannerBinProps.y_align;
         } catch (_e) {
-            // If something went wrong, we accept the modified state.
+
         }
         originalBannerBinProps = null;
     }
 
-    // Clean up notification indicator
+
     cleanupNotificationIndicator();
 
     enabled = false;
 }
 
 function checkForNotifications() {
-    // Check the message tray's notification sources directly
+
     if (Main.messageTray && Main.messageTray._sources) {
         for (let source of Main.messageTray._sources.values()) {
             if (source && source.notifications && source.notifications.length > 0) {
-                // Count notifications that are still present (not necessarily unacknowledged)
-                // since acknowledged notifications can still be in the notification panel
+
+
                 const activeNotifications = source.notifications.filter(notification => {
-                    // Check if notification is not destroyed and still relevant
+
                     return notification && !notification.destroyed && !notification.isDestroyed;
                 });
-                
+
                 if (activeNotifications.length > 0) {
                     return true;
                 }
@@ -439,24 +439,23 @@ function checkForNotifications() {
         }
     }
 
-    // Check if there are any notification actors still visible in the system
-    // This catches notifications that are in the notification panel
-    if (Main.messageTray && Main.messageTray._notificationQueue && 
+
+
+    if (Main.messageTray && Main.messageTray._notificationQueue &&
         Main.messageTray._notificationQueue.length > 0) {
         return true;
     }
 
-    // Also check if the original notification section would be visible
-    // (this is the state before our calendar module hides it)
+
+
     if (origShowNotifSection &&
         typeof origShowNotifSection === 'function') {
         try {
             return origShowNotifSection.call(dateMenu);
         } catch (e) {
-            // If there's an error, assume no notifications
+
         }
     }
 
     return false;
 }
-

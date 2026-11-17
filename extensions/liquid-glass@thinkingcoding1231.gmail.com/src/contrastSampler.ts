@@ -9,8 +9,8 @@ const MIN_READABLE_CONTRAST = 4.5;
 
 export const AdaptiveContrastConfig = {
   enabled: true,
-  samplePerElement: false, // 要素ごとにサンプリングするか、全体をまとめてサンプリングするか　負荷を考慮してデフォルトはまとめてサンプリング
-  sampleIntervalMs: 200, // 5Hz
+  samplePerElement: false,
+  sampleIntervalMs: 200,
   lightTextColor: '#f2f2f2',
   darkTextColor: '#1a1a1a',
 };
@@ -56,7 +56,7 @@ function _getActorRect(actor: Clutter.Actor): { x: number, y: number, width: num
   if (!actor.mapped) return null;
   const [x, y, w, h] = getTransformedRect(actor);
   if (![x, y, w, h].every(Number.isFinite) || w <= 0 || h <= 0) return null;
-  // Shell.Screenshot expects stage coordinates, including ancestor scale.
+
   const left = Math.max(0, Math.floor(x));
   const top = Math.max(0, Math.floor(y));
   const right = Math.min(global.stage.width, Math.ceil(x + w));
@@ -90,50 +90,50 @@ function _mergeRects(rects: { x: number, y: number, width: number, height: numbe
   };
 }
 
-/** One sampled image, in whatever layout the capture path produced. */
+
 interface SampleImage {
   data: Uint8Array;
   width: number;
   height: number;
   stride: number;
   channels: number;
-  /** Sample every step-th pixel; 1 for an already-downscaled buffer. */
+
   step: number;
 }
 
-// [PERF] Why this does NOT read the GPU back directly.
-//
-// The obvious implementation is clutter_stage_paint_to_buffer(): render the
-// sampled rectangle straight into a small buffer, no codec and no file. It
-// was implemented, measured on GNOME 50 / GJS, and it does not work — the
-// buffer comes back untouched:
-//
-//   [Liquid Glass][contrast] stage.paint_to_buffer() left the buffer
-//   untouched — GJS marshalled it as an input copy
-//
-// The reason is the introspection annotation. In mutter 50.1,
-// clutter-stage.c declares the destination as
-//
-//     @data: (array) (element-type guint8): a pointer to the data
-//
-// with no direction, which means "in". GJS is free to marshal an input array
-// as a temporary copy, which is exactly what it does here, so the pixels are
-// written into that copy and freed. The same applies to the other candidate,
-// cogl_texture_get_data(), whose cogl-texture.h annotation is
-//
-//     @data: (array) (nullable): memory location to write the texture's
-//
-// — also plain "in". So there is no GPU read-back path reachable from GJS in
-// this stack, and the code that tried one has been removed rather than left
-// in as a branch that can never be taken. (memo.md 6.1 records the same
-// class of problem from the other direction: an array argument mis-annotated
-// as a scalar, which crashed the shell instead of failing quietly.)
-//
-// What is left is still a real improvement over the original: the PNG goes
-// through a Gio.MemoryOutputStream instead of a file in /tmp, so the write,
-// the read back and the unlink are gone. If a future mutter adds
-// (out caller-allocates) to either annotation, paint_to_buffer becomes worth
-// revisiting — see performance-plan.md.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 let _capturePathLogged = false;
 
@@ -143,20 +143,20 @@ function _reportCapturePath(msg: string): void {
   console.log(`[Liquid Glass][contrast] ${msg}`);
 }
 
-// Longest edge sampled from the captured image. The original code walked the
-// full-resolution pixels with `step = max(1, min(w, h) / 48)`, i.e. it
-// already reduced everything to a ~48x48 grid before averaging; keeping that
-// number keeps the measurement identical.
+
+
+
+
 const SAMPLE_MAX_EDGE = 48;
 
-/**
- * Captures one rectangle of the screen via Shell.Screenshot, into memory.
- *
- * Still pays for a full-resolution render and a PNG round trip — see the
- * comment above for why a direct read-back is not available — but through a
- * Gio.MemoryOutputStream rather than /tmp, so the file write, the file read
- * and the unlink the original did five times a second are gone.
- */
+
+
+
+
+
+
+
+
 function _captureViaScreenshot(screenshot: Shell.Screenshot,
   rect: { x: number, y: number, width: number, height: number }): Promise<SampleImage | null> {
   return new Promise(resolve => {
@@ -186,7 +186,7 @@ function _captureViaScreenshot(screenshot: Shell.Screenshot,
               height,
               stride: pixbuf.get_rowstride(),
               channels: pixbuf.get_n_channels(),
-              // Full resolution here, so keep the original subsampling.
+
               step: Math.max(1, Math.floor(Math.min(width, height) / SAMPLE_MAX_EDGE)),
             });
           } catch (e) {
@@ -202,9 +202,9 @@ function _captureViaScreenshot(screenshot: Shell.Screenshot,
 }
 
 export class StageContrastSampler {
-  // Created lazily on the first sample rather than in the constructor: the
-  // managers all build a sampler up front, but most sessions never open the
-  // menu/notification/OSD that would use it.
+
+
+
   private _screenshot: Shell.Screenshot | null = null;
   private _lastLuma: number | null = null;
   private _lastIsBright: boolean | null = null;
@@ -235,10 +235,10 @@ export class StageContrastSampler {
             if (a < 32)
               continue;
             if (a < 255) {
-              // Un-premultiply before measuring luminance. Kept exactly as
-              // the original pixbuf loop had it so the sampled value does not
-              // shift; it only matters for semi-transparent pixels, which the
-              // opaque desktop behind a menu rarely produces.
+
+
+
+
               const inv = 255.0 / a;
               const r = _clamp(Math.round(data[idx + 0] * inv), 0, 255);
               const g = _clamp(Math.round(data[idx + 1] * inv), 0, 255);
@@ -291,11 +291,11 @@ export class StageContrastSampler {
     let isBright = this._lastIsBright ?? (darkContrast > lightContrast);
     const current = isBright ? darkContrast : lightContrast;
     const alternative = isBright ? lightContrast : darkContrast;
-    // A meaningful advantage prevents small sampling fluctuations changing polarity.
+
     if (alternative > current * SWITCH_ADVANTAGE) isBright = !isBright;
 
-    // Smoothing must never delay an obvious readability correction after a
-    // window/background changes. Use the current measurement for this decision.
+
+
     const rawCurrent = isBright ? rawDark : rawLight;
     const rawAlternative = isBright ? rawLight : rawDark;
     if (rawCurrent < MIN_READABLE_CONTRAST && rawAlternative >= MIN_READABLE_CONTRAST)

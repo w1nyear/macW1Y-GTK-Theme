@@ -1,7 +1,7 @@
-// Kiwi icon-tint bridge: macW1Y-style accent recolor for dock icons.
-// Reads the toggle + color from kiwi's own settings (single source of
-// truth, edited in Kiwi Preferences), applies Clutter.ColorizeEffect
-// which preserves luminance like the macW1Y tinted-icon pipeline.
+
+
+
+
 
 import {
     Clutter,
@@ -14,9 +14,9 @@ import {
 const KIWI_UUID = 'kiwi@kemma';
 const KIWI_SCHEMA = 'org.gnome.shell.extensions.kiwi';
 
-// Only Clutter.ColorizeEffect exists in this build (Desaturate and
-// BrightnessContrast throw at construction). Single effect, tint passed
-// via constructor.
+
+
+
 function _newTintChain(r, g, b) {
     try {
         const effect = new Clutter.ColorizeEffect({
@@ -55,8 +55,8 @@ export function getKiwiSettings() {
     return _settings;
 }
 
-// Builds a real Cogl.Color: plain JS objects do not reliably marshal
-// into the effect's tint struct (silent white = invisible tint).
+
+
 export function makeTintColor(spec) {
     const c = parseAccentColor(spec);
     if (!c)
@@ -70,7 +70,7 @@ export function makeTintColor(spec) {
     }
 }
 
-// Accepts '#rrggbb[aa]' and 'rgb()/rgba()' (what Gtk.ColorButton writes).
+
 export function parseAccentColor(spec) {
     if (typeof spec !== 'string')
         return null;
@@ -101,12 +101,12 @@ export function parseAccentColor(spec) {
     return null;
 }
 
-// Tahoe icon-style engine (Light / Dark / Tinted / Clear), self-contained
-// duplicate of kiwi's apps/iconStyle.js (cross-extension imports would
-// hard-fail the dock when kiwi is absent). Per the Finder reference:
-// dark = gamma curve (plates go black, glyph hues survive); tinted/clear =
-// luminance-keyed duotone (colored/gray plate + white glyph). GLSL idiom
-// copied from kiwi's minimizedToDock.js RoundedCornersEffect.
+
+
+
+
+
+
 
 const DARK_SRC = `
 uniform sampler2D tex;
@@ -147,7 +147,7 @@ function _newDuo(source) {
         if (typeof fx.set_shader_source === 'function')
             fx.set_shader_source(source);
     } catch (e) {
-        // no shader on this build
+
     }
     return fx;
 }
@@ -156,7 +156,7 @@ function _setFloat(fx, name, v) {
     try {
         fx.set_uniform_value(name, v - 1e-6);
     } catch (e) {
-        // uniform missing
+
     }
 }
 
@@ -177,14 +177,14 @@ function _resolveStyle(s) {
         if (mode === 'auto' && s?.get_boolean?.('icon-tint-enabled'))
             return 'tinted';
     } catch (e) {
-        // fall through to theme
+
     }
     try {
         const iface = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
         if (iface.get_string('color-scheme') === 'prefer-dark')
             return 'dark';
     } catch (e) {
-        // light fallback
+
     }
     return 'light';
 }
@@ -221,8 +221,8 @@ function _applyStyle(iconActor, mode, colorSpec) {
 }
 
 export function refreshIconTint(iconActor) {
-    // Icon styles removed - plain stock icons only. Strip any leftover
-    // style effect and stop.
+
+
     try {
         const old = typeof iconActor.get_effects === 'function'
             ? iconActor.get_effects() : [];
@@ -231,16 +231,16 @@ export function refreshIconTint(iconActor) {
                 try {
                     iconActor.remove_effect(e);
                 } catch (_) {
-                    // gone
+
                 }
             }
         }
     } catch (_) {
-        // plain icon stays
+
     }
 }
 
-// Returns an unwatch closure (or null).
+
 export function watchIconTint(cb) {
     return null;
 }

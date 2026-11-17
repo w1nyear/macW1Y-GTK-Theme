@@ -3,8 +3,8 @@ import GLib from 'gi://GLib';
 import * as SC from './scancodes.js';
 import * as Logger from '../logger.js';
 
-// Each entry: [modifierScanCode, actionScanCode, useModifier]
-// useModifier=false means only the action key is pressed (no Ctrl/Shift/Alt held)
+
+
 const SHORTCUT_MAP = {
     'copy':             [SC.KEY_CTRL, SC.KEY_C, true],
     'paste':            [SC.KEY_CTRL, SC.KEY_V, true],
@@ -65,13 +65,13 @@ function simulateNativeOpenWith(virtualDevice, manager, targetWindow) {
     if (manager) manager._timeoutIds.push(timeoutId);
 }
 
-/**
- * Try to execute a keyboard shortcut action.
- * Returns true if handled, false if the action is not a keyboard action.
- *
- * Uses the cached virtual device from MenuManager when available,
- * falling back to creating a new one if no manager is provided.
- */
+
+
+
+
+
+
+
 export function executeKeyboardAction(action, manager, targetWindow = null) {
     const vd = manager ? manager.getVirtualDevice() : null;
 

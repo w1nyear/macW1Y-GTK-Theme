@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Zooms the whole monitor in and out of the overview instead of just the work area,
-// so the desktop strip behind the top panel stops popping in and out.
-//
-// Ported from Overview Seamless Zoom by jguece, GPL-2.0-or-later:
-// https://gitlab.com/jguece/overview-seamless-zoom
+
+
+
+
+
 
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
@@ -14,7 +14,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { ControlsState } from 'resource:///org/gnome/shell/ui/overviewControls.js';
 import { Workspace, WorkspaceBackground } from 'resource:///org/gnome/shell/ui/workspace.js';
 
-// Keep in sync with the shell's src/shell-workspace-background.c
+
 const BACKGROUND_MARGIN = 12;
 
 let _overviewHiddenId = 0;
@@ -23,8 +23,8 @@ let _origComputeBox = null;
 let _origInit = null;
 let _initPatch = null;
 
-// Replaces the C base class allocation, which offsets and oversizes the wallpaper so
-// only the work-area crop stays visible.
+
+
 const SeamlessWorkspaceBackground = GObject.registerClass(
 class SeamlessWorkspaceBackground extends WorkspaceBackground {
     vfunc_allocate(box) {
@@ -45,15 +45,15 @@ class SeamlessWorkspaceBackground extends WorkspaceBackground {
         this._bin.allocate(this.get_theme_node().get_content_box(myBox));
     }
 
-    // Left unset so Mutter's rounded clip covers the whole monitor.
+
     _updateRoundedClipBounds() {}
 });
 
 function patchWorkspace(workspace) {
     const layout = workspace._container.layout_manager;
 
-    // WorkspaceLayout takes the card's aspect ratio and the preview positions from
-    // _workarea; serve the full monitor rect instead. Cached, this is a per-frame path.
+
+
     Object.defineProperty(layout, '_workarea', {
         configurable: true,
         get() {
@@ -100,7 +100,7 @@ function restoreWorkspace(workspace) {
     }
 }
 
-// Only reaches anything while the overview is open; workspaces are rebuilt on show.
+
 function restoreLiveWorkspaces() {
     const display = Main.overview._overview.controls._workspacesDisplay;
     for (const view of display._workspacesViews ?? []) {
@@ -111,7 +111,7 @@ function restoreLiveWorkspaces() {
 }
 
 function applyPatches() {
-    // At ControlsState.HIDDEN the workspace card must cover the whole primary monitor.
+
     _controlsLayout = Main.overview._overview.controls.layout_manager;
     const origComputeBox = _controlsLayout._computeWorkspacesBoxForState;
     _origComputeBox = origComputeBox;
@@ -139,8 +139,8 @@ export function enable() {
     if (_origInit || _overviewHiddenId)
         return;
 
-    // Patching mid-animation would mix patched and unpatched geometry. An interrupted
-    // hide also emits 'hidden', but leaves _shown set.
+
+
     if (Main.overview.visible) {
         _overviewHiddenId = Main.overview.connect('hidden', () => {
             if (Main.overview._shown)

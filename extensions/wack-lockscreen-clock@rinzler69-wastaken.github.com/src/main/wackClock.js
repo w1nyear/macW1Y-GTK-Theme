@@ -11,10 +11,10 @@ import { getHintTextStyle } from './colorUtils.js';
 
 const shellGettext = Gettext.domain('gnome-shell').gettext.bind(Gettext.domain('gnome-shell'));
 
-/**
- * WackClock handles the custom clock widget for the lock screen.
- * It manages the time, date, and the interaction hint (e.g., "Swipe up to unlock").
- */
+
+
+
+
 export const WackClock = GObject.registerClass(
     class WackClock extends St.BoxLayout {
         _init() {
@@ -24,7 +24,7 @@ export const WackClock = GObject.registerClass(
                 y_align: Clutter.ActorAlign.CENTER,
             });
 
-            // Initialize UI components for the clock
+
             this._dateOutput = new St.Label({
                 style_class: 'wack-date',
                 x_align: Clutter.ActorAlign.CENTER,
@@ -45,48 +45,48 @@ export const WackClock = GObject.registerClass(
             this.add_child(this._dateOutput);
             this.add_child(this._time);
 
-            // Setup the wall clock to update every minute
+
             this._wallClock = new GnomeDesktop.WallClock({ time_only: true });
             this._wallClock.connectObject('notify::clock',
                 this._updateTime.bind(this), this);
 
-            // 12h/24h preference — may be overridden externally via setClockFormat()
+
             this._clockFormatOverride = null;
             this._interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
             this._interfaceSettings.connectObject(
                 'changed::clock-format', () => this._updateTime(), this);
 
-            // Update the hint based on whether the device is in touch mode
-            // get_context() was added in GNOME 48; fall back to Clutter.get_default_backend() on 47.
+
+
             const backend = this.get_context ? this.get_context().get_backend() : Clutter.get_default_backend();
             this._seat = backend.get_default_seat();
             this._seat.connectObject('notify::touch-mode',
                 this._updateHint.bind(this), this);
 
-            // Handle power save mode changes to prevent flicker
+
             this._monitorManager = global.backend.get_monitor_manager();
             this._monitorManager.connectObject('power-save-mode-changed',
                 () => (this._hint.opacity = 0), this);
 
-            // Show the hint only after a period of user inactivity
+
             this._idleMonitor = global.backend.get_core_idle_monitor();
             this._idleWatchId = this._idleMonitor.add_idle_watch(HINT_TIMEOUT * 1000, () => {
                 this._hint.ease({ opacity: 255, duration: CROSSFADE_TIME });
             });
 
-            // Periodically refresh the date string
+
             this._dateTimeoutId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 60,
                 () => { this._updateDate(); return GLib.SOURCE_CONTINUE; });
 
             this._dateStyle = 'full';
-            this._weight = '600'; // Open Runde SemiBold — фірмовий дизайн (GDM + екран блокування)
+            this._weight = '600';
             this._tint = false;
             this._alpha = 0.85;
             this._promptColor = null;
-            // Типографіка macW1Y: цифри щільніші на пару px та двокрапка по центру
-            // висоти цифр (однаково для GDM гретера і екрана блокування в сесії).
+
+
             this._letterSpacing = -4;
-            this._colonRisePx = 12.41; // 0.09695em × 128px (.wack-time) — метрика Open Runde
+            this._colonRisePx = 12.41;
             this._inColonMarkup = false;
 
             this._updateTime();
@@ -95,20 +95,20 @@ export const WackClock = GObject.registerClass(
             this._applyTextStyle();
         }
 
-        /**
-         * Override the 12h/24h format independently of the system gsettings.
-         * Pass null to revert to the system setting.
-         * @param {'12h'|'24h'|null} format
-         */
+
+
+
+
+
         setClockFormat(format) {
             this._clockFormatOverride = format;
             this._updateTime();
         }
 
-        /**
-         * Set the date style ('short' or 'full').
-         * @param {'short'|'full'} style
-         */
+
+
+
+
         setDateStyle(style) {
             if (this._dateStyle === style)
                 return;
@@ -116,11 +116,11 @@ export const WackClock = GObject.registerClass(
             this._updateDate();
         }
 
-        /**
-         * Set the locale override for date formatting.
-         * Pass null or undefined to follow the system/environment default.
-         * @param {string|null} locale
-         */
+
+
+
+
+
         setLocale(locale) {
             if (this._locale === locale)
                 return;
@@ -136,13 +136,13 @@ export const WackClock = GObject.registerClass(
             const now = GLib.DateTime.new_now_local();
 
             if (clockFormat === '12h') {
-                // %-I strips leading zero on hour (Linux only)
+
                 this._time.text = now.format('%-I:%M');
             } else {
                 this._time.text = now.format('%H:%M');
             }
 
-            // Setting .text скидає Pango-атрибути — двокрапку потрібно підняти заново.
+
             this._colonAppliedRise = null;
             this._colonAppliedText = null;
             this._applyColonMarkup();
@@ -152,21 +152,21 @@ export const WackClock = GObject.registerClass(
             this._dateOutput.text = getPrettyDate(this._dateStyle, this._wallClock, this._locale);
         }
 
-        /**
-         * Standardizes the unlock hint text for desktop and touch devices.
-         */
+
+
+
         _updateHint() {
             this._hint.text = this._seat.touch_mode
                 ? shellGettext('Swipe up to unlock')
                 : shellGettext('Click or press a key to unlock');
         }
 
-        /**
-         * Gets the relative luminance of the clock's current base text color.
-         * @returns {number}
-         */
+
+
+
+
         getTextLuminance() {
-            return 1.0; // Statically white text
+            return 1.0;
         }
 
         setWeight(weight) {
@@ -198,36 +198,36 @@ export const WackClock = GObject.registerClass(
                 ? ` letter-spacing: ${this._letterSpacing}px;` : '';
             this._time.set_style(`color: ${timeColor}; ${font} ${weight} ${timeShadow}${letterSpacing}`);
             this._dateOutput.set_style(`color: ${dateColor}; font-family: 'Default Display', default, system-ui, sans-serif, sans-serif; font-size: 28px; font-weight: 600; text-align: center; margin-bottom: 0px; padding: 4px 8px; ${dateShadow}`);
-            // Після зміни стилю шрифт може перерахуватись — піднімаємо двокрапку заново.
+
             this._applyColonMarkup();
         }
 
-        /**
-         * Set extra letter spacing (px) for the time label.
-         * Negative values tighten the digits; null restores the stylesheet value.
-         * @param {number|null} px
-         */
+
+
+
+
+
         setLetterSpacing(px) {
             this._letterSpacing = (typeof px === 'number') ? px : null;
             this._applyTextStyle();
         }
 
-        /**
-         * Lift the ':' glyph so its optical center matches the vertical center
-         * of the digits (macW1Y-style clock colon).
-         * @param {number|null} px rise in CSS pixels (масштабується темою):
-         *   12.41px для .wack-time 128px — метрика Open Runde
-         *   (центр цифр 0.36169em мінус центр двокрапки 0.26474em = 0.09695em).
-         */
+
+
+
+
+
+
+
         setColonRise(px) {
             this._colonRisePx = (typeof px === 'number' && px > 0) ? px : null;
             this._updateTime();
         }
 
-        /**
-         * Apply Pango markup that raises ':' by _colonRisePx (Pango units: 1024 == 1px).
-         * Повторне застосування відбувається лише коли rise/текст реально змінились.
-         */
+
+
+
+
         _applyColonMarkup() {
             if (this._colonRisePx == null || this._inColonMarkup)
                 return;
@@ -239,7 +239,7 @@ export const WackClock = GObject.registerClass(
             if (colonIndex === -1)
                 return;
             // CSS px → device px через масштаб теми (global.stage існує завжди,
-            // тому rise коректний з першого кадру, до розв'язання шрифту).
+
             const scale = St.ThemeContext.get_for_stage(global.stage)?.scale_factor || 1;
             const rise = Math.round(this._colonRisePx * scale * 1024);
             if (rise <= 0)
@@ -256,7 +256,7 @@ export const WackClock = GObject.registerClass(
                 this._colonAppliedRise = rise;
                 this._colonAppliedText = text;
             } catch (e) {
-                // Збій розмітки ніколи не має ламати годинник — відкат на звичайний текст.
+
                 clutterText.set_text(text);
                 this._colonAppliedRise = null;
                 this._colonAppliedText = null;
@@ -267,9 +267,9 @@ export const WackClock = GObject.registerClass(
 
 
 
-        /**
-         * Clean up timers, monitors, and signal handlers.
-         */
+
+
+
         destroy() {
             this._wallClock.disconnectObject(this);
             this._wallClock = null;

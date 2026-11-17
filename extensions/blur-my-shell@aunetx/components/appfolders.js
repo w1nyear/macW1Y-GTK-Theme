@@ -5,7 +5,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import { PaintSignals } from '../conveniences/paint_signals.js';
 
-// TODO: Drop GNOME 46 backwards compatibility
+
 const transparent = Clutter.Color ?
     Clutter.Color.from_pixel(0x00000000) :
     new Cogl.Color({
@@ -152,8 +152,8 @@ let _zoomAndFadeOut = function () {
 
 
 export const AppFoldersBlur = class AppFoldersBlur {
-    // we do not use the effects manager and dummy pipelines here because we
-    // really want to manage our sigma value ourself during the transition
+
+
     constructor(connections, settings, _) {
         this.connections = connections;
         this.paint_signals = new PaintSignals(connections);
@@ -216,7 +216,7 @@ export const AppFoldersBlur = class AppFoldersBlur {
                     DIALOGS_STYLES[this.settings.appfolder.STYLE_DIALOGS - 1]
                 );
 
-            // finally override the builtin functions
+
             icon._dialog._zoomAndFadeIn = _zoomAndFadeIn;
             icon._dialog._zoomAndFadeOut = _zoomAndFadeOut;
 
@@ -229,15 +229,15 @@ export const AppFoldersBlur = class AppFoldersBlur {
             }
 
 
-            // HACK
-            //
-            //`Shell.BlurEffect` does not repaint when shadows are under it. [1]
-            //
-            // This does not entirely fix this bug (shadows caused by windows
-            // still cause artifacts), but it prevents the shadows of the panel
-            // buttons to cause artifacts on the panel itself
-            //
-            // [1]: https://gitlab.gnome.org/GNOME/gnome-shell/-/issues/2857
+
+
+
+
+
+
+
+
+
 
             if (this.settings.HACKS_LEVEL === 1) {
                 this.paint_signals.disconnect_all_for_actor(icon._dialog);

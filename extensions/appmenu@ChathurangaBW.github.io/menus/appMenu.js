@@ -1,7 +1,7 @@
-/**
- * Build the app-name submenu.
- * Dynamic — depends on the currently focused app and its open windows.
- */
+
+
+
+
 import { _ } from '../i18n.js';
 
 export function buildAppMenu(appName, detectedApp, focusedWindow = null) {
@@ -44,10 +44,10 @@ export function buildAppMenu(appName, detectedApp, focusedWindow = null) {
     return children;
 }
 
-/**
- * Build the fallback app menu when no app is focused (desktop state).
- * Mirrors the file-manager app menu. Built fresh each call for i18n.
- */
+
+
+
+
 export function buildFallbackAppMenu() {
     return [
         { label: _("About AppMenu"), action: "about-appmenu" },

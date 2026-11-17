@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Reveals the top panel on fullscreen hover with fine-grained animation control.
 
-// DONT remove _ghostMenu hack - it is needed to keep panel visible for GTK4 apps
+
+
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import St from 'gi://St';
@@ -9,13 +9,13 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 
-// Animation and trigger constants
+
 const ANIM_IN_MS = 300;
 const ANIM_OUT_MS = 300;
-const TRIGGER_EDGE_PX = 1; // pixels from top edge. Set it to 1px (default: 16) to reveal GTK4 app built in
-// fullscreen headerbar like gnome text editor. Feels bugged so... 
-// There is a hacky workaround to draw a tiny popup menu to force top panel stay visible (line 190+)
-const HIDE_DELAY_MS = 300; // delay before hiding after leaving/closing
+const TRIGGER_EDGE_PX = 1;
+
+
+const HIDE_DELAY_MS = 300;
 
 let fullscreenWindows = new Set();
 let windowSignals = new Map();
@@ -39,7 +39,7 @@ let _ghostMenu = null;
 let _originalTrackFullscreen = null;
 
 function _debug(_msg) {
-    // Enable for troubleshooting: console.debug(`[PanelHover] ${_msg}`);
+
 }
 
 function _getPanelBox() {
@@ -75,15 +75,15 @@ function _startPeriodicCheck() {
             _periodCheckId = null;
             return GLib.SOURCE_REMOVE;
         }
-        
-        // Check if any menu is actually open (more thorough check)
+
+
         let menuActuallyOpen = false;
         if (Main.panel?.menuManager) {
-            // Check if menuManager reports any menu as open
+
             if (Main.panel.menuManager._activeMenu) {
                 menuActuallyOpen = true;
             }
-            // Also check for any visible popups in the status area
+
             const statusArea = Main.panel.statusArea;
             if (statusArea) {
                 for (const indicator of Object.values(statusArea)) {
@@ -94,19 +94,19 @@ function _startPeriodicCheck() {
                 }
             }
         }
-        
-        // Only hide if no menu is open AND pointer is away from panel area
+
+
         if (!menuActuallyOpen && _panelRevealed) {
             const [, mouseY] = global.get_pointer();
             const panelHeight = _getPanelHeight();
-            // Give more tolerance - only hide if pointer is well below panel
+
             if (mouseY > panelHeight + 50) {
                 _hidePanelAnimated();
                 _periodCheckId = null;
                 return GLib.SOURCE_REMOVE;
             }
         }
-        
+
         return GLib.SOURCE_CONTINUE;
     });
 }
@@ -131,7 +131,7 @@ function _scheduleHideAfterDelay(force = false) {
 
 function _showPanelAnimated() {
     if (!_enabled) return;
-    if (_panelRevealed || _animating) return; // Prevent jitter
+    if (_panelRevealed || _animating) return;
     const panelBox = _getPanelBox();
     if (!panelBox) return;
     _cancelPanelTransitions();
@@ -140,7 +140,7 @@ function _showPanelAnimated() {
     _setPanelAutoHide(false);
     _animating = true;
     _panelRevealed = true;
-    _startPeriodicCheck(); // Start watching for when to hide
+    _startPeriodicCheck();
     try {
         panelBox.ease?.({
             translation_y: 0,
@@ -160,11 +160,11 @@ function _showPanelAnimated() {
 
 function _hidePanelAnimated() {
     if (!_enabled) return;
-    if (!_panelRevealed || _animating) return; // Prevent jitter
+    if (!_panelRevealed || _animating) return;
     const panelBox = _getPanelBox();
     if (!panelBox) return;
     _cancelPanelTransitions();
-    _cancelPeriodicCheck(); // Stop periodic checking
+    _cancelPeriodicCheck();
     _animating = true;
     _closeGhostMenu();
     try {
@@ -192,19 +192,19 @@ function _openGhostMenu() {
     try {
         const panelBox = _getPanelBox();
         if (!panelBox) return;
-    // Anchor far off-screen so it doesn't interfere with hover/clicks
-    // but still registers as an "open menu" with panel menu manager
-    let anchor = new St.Widget({ 
-        width: 1, 
-        height: 1, 
+
+
+    let anchor = new St.Widget({
+        width: 1,
+        height: 1,
         opacity: 0,
-        reactive: false  // Don't intercept any input events
+        reactive: false
     });
-    // Position off-screen to the right
+
     anchor.set_position(global.stage.width + 100, 0);
     Main.uiGroup.add_child(anchor);
     _ghostMenu = new PopupMenu.PopupMenu(anchor, 0.5, St.Side.TOP);
-    // Register with panel menu manager so Shell treats it as an open menu
+
     Main.panel?.menuManager?.addMenu?.(_ghostMenu);
     _ghostMenu.actor.opacity = 0;
     _ghostMenu.actor.reactive = false;
@@ -226,38 +226,38 @@ function _closeGhostMenu() {
     }
 }
 
-// Instead of manipulating panel translation, we work with GNOME Shell's
-// built-in panel visibility system by temporarily modifying trackFullscreen
+
+
 function _setPanelAutoHide(enable) {
     if (!_enabled) return;
-    
+
     try {
         const lm = Main.layoutManager;
         const panelBox = lm?.panelBox;
         if (!lm || !panelBox) return;
-        
+
         const tracked = lm._trackedActors;
         if (!Array.isArray(tracked)) return;
-        
+
         const record = tracked.find(a => a && a.actor === panelBox);
         if (!record || typeof record.trackFullscreen !== 'boolean') return;
 
-        // Store original value on first use
+
         if (_originalTrackFullscreen === null) {
             _originalTrackFullscreen = record.trackFullscreen;
         }
 
         if (enable) {
-            // Enable auto-hide: let GNOME Shell hide panel in fullscreen
+
             record.trackFullscreen = true;
         } else {
-            // Disable auto-hide: keep panel visible even in fullscreen
+
             record.trackFullscreen = false;
-            // Force panel to be visible
+
             panelBox.visible = true;
         }
-        
-        // Trigger visibility update
+
+
         lm._updateVisibility?.();
     } catch (e) {
         _debug(`setPanelAutoHide error: ${e}`);
@@ -266,26 +266,26 @@ function _setPanelAutoHide(enable) {
 
 function _createHoverArea() {
     if (!_enabled) return null;
-    
-    // Get primary monitor geometry for proper positioning
+
+
     let primaryMonitor = global.display.get_primary_monitor();
     let geometry = global.display.get_monitor_geometry(primaryMonitor);
-    
+
     const hoverArea = new Clutter.Actor({
         name: 'panel-hover-area',
         reactive: true,
         x: geometry.x,
         y: geometry.y,
         width: geometry.width,
-        height: TRIGGER_EDGE_PX, // Small hover area at top of screen
+        height: TRIGGER_EDGE_PX,
         opacity: 0,
     });
 
-    // No Meta.Barrier needed - the Clutter.Actor hover area is sufficient
-    // for detecting pointer entry. Barriers cause issues:
-    // 1. Block vertical pointer movement across monitor bounds
-    // 2. Create "sticky" pointer behavior due to hit box implementation
-    // 3. Not needed since we want hover-based reveal, not pressure-based
+
+
+
+
+
 
     hoverArea.connect('enter-event', () => {
         if (wsHasFullscreen) {
@@ -300,7 +300,7 @@ function _createHoverArea() {
     });
 
     hoverArea.connect('destroy', () => {
-        // Clear any pending timeout
+
         _cancelHideTimeout();
     });
 
@@ -360,7 +360,7 @@ function _onWindowFullscreenChanged(window) {
 
 function _recomputeFullscreenState() {
     if (!_enabled) return;
-    
+
     fullscreenWindows.clear();
     try {
         const ws = global.workspace_manager.get_active_workspace();
@@ -375,31 +375,31 @@ function _recomputeFullscreenState() {
 
     const hasFS = fullscreenWindows.size > 0;
     wsHasFullscreen = hasFS;
-    
-    // Update panel behavior based on fullscreen state and overview visibility
-    // Track idle source so it can be cancelled on disable
+
+
+
     if (_recomputeIdleId) {
         GLib.Source.remove(_recomputeIdleId);
         _recomputeIdleId = null;
     }
     _recomputeIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
         if (!_enabled) { _recomputeIdleId = null; return GLib.SOURCE_REMOVE; }
-        
+
         try {
             if (Main.overview.visible) {
-                // In overview, always show panel regardless of fullscreen
+
                 _panelRevealed = false;
                 _animating = false;
                 _setPanelAutoHide(false);
                 if (hotCorner) hotCorner.hide();
             } else if (wsHasFullscreen) {
-                // In fullscreen, enable auto-hide and show hover area
+
                 _panelRevealed = false;
                 _animating = false;
                 _setPanelAutoHide(true);
                 if (hotCorner) hotCorner.show();
             } else {
-                // Normal mode, panel always visible
+
                 _panelRevealed = false;
                 _animating = false;
                 _setPanelAutoHide(false);
@@ -419,32 +419,32 @@ function _onWorkspaceChanged() {
 
 function _onOverviewShowing() {
     if (!_enabled) return;
-    // In overview, always show panel
+
     _setPanelAutoHide(false);
     if (hotCorner) hotCorner.hide();
 }
 
 function _onOverviewHidden() {
     if (!_enabled) return;
-    // When overview hides, recompute fullscreen state
+
     _recomputeFullscreenState();
 }
 
 export function enable() {
-    // extension.js re-runs this on any settings change, and the reset below is a
-    // full teardown: dropping the chrome recomputes the input region and every
-    // window on the system gets re-connected. Only pay that when not already up.
+
+
+
     if (_enabled)
         return;
-    disable(); // Clean reset
+    disable();
     _enabled = true;
-    _originalTrackFullscreen = null; // Reset for fresh start
-    
+    _originalTrackFullscreen = null;
+
     try {
         hotCorner = _createHoverArea();
         if (hotCorner) {
             Main.layoutManager.addChrome(hotCorner, {
-                trackFullscreen: false, // We manage visibility ourselves
+                trackFullscreen: false,
                 affectsStruts: false,
                 affectsInputRegion: true,
             });
@@ -453,7 +453,7 @@ export function enable() {
         _debug(`Failed to construct hover area: ${e}`);
     }
 
-    // Connect to existing windows
+
     try {
         global.get_window_actors().forEach(actor => {
             let window = actor.meta_window;
@@ -461,13 +461,13 @@ export function enable() {
         });
     } catch (e) { _debug(`Enumerating windows failed: ${e}`); }
 
-    // Connect to events
+
     try { windowCreatedHandler = global.display.connect('window-created', _onWindowCreated); } catch (e) { _debug(`window-created connect failed: ${e}`); }
     try { workspaceChangedHandler = global.workspace_manager.connect('active-workspace-changed', _onWorkspaceChanged); } catch (e) { _debug(`workspace change connect failed: ${e}`); }
     try { overviewShowingHandler = Main.overview.connect('showing', _onOverviewShowing); } catch (e) { _debug(`overview showing connect failed: ${e}`); }
     try { overviewHiddenHandler = Main.overview.connect('hidden', _onOverviewHidden); } catch (e) { _debug(`overview hidden connect failed: ${e}`); }
 
-    // Hide when leaving panel area in fullscreen
+
     try {
         const panelBox = _getPanelBox();
         if (panelBox) {
@@ -478,7 +478,7 @@ export function enable() {
                 if (wsHasFullscreen)
                     _scheduleHideAfterDelay();
             });
-            // If a panel button was clicked but doesn't open a menu, hide after release
+
             _panelBoxButtonReleaseId = panelBox.connect('button-release-event', () => {
                 if (wsHasFullscreen)
                     _scheduleHideAfterDelay(true);
@@ -490,8 +490,8 @@ export function enable() {
     try {
         _stageButtonReleaseId = global.stage.connect('button-release-event', (stage, event) => {
             if (!wsHasFullscreen || !_panelRevealed) return Clutter.EVENT_PROPAGATE;
-            
-            // Check if any menu is actually open before hiding
+
+
             let menuActuallyOpen = false;
             if (Main.panel?.menuManager?._activeMenu) {
                 menuActuallyOpen = true;
@@ -505,28 +505,28 @@ export function enable() {
                     }
                 }
             }
-            
+
             if (menuActuallyOpen) return Clutter.EVENT_PROPAGATE;
-            
+
             const [stageX, stageY] = event.get_coords();
             const panelHeight = _getPanelHeight();
-            
-            // If click is well below panel area, schedule hide
+
+
             if (stageY > panelHeight + 20) {
                 _scheduleHideAfterDelay(true);
             }
-            
+
             return Clutter.EVENT_PROPAGATE;
         });
     } catch (e) { _debug(`stage capture failed: ${e}`); }
-    
+
     _recomputeFullscreenState();
 }
 
 export function disable() {
     _enabled = false;
 
-    // Clear any pending timeout
+
     _cancelHideTimeout();
     _cancelPeriodicCheck();
     _closeGhostMenu();
@@ -535,7 +535,7 @@ export function disable() {
         _recomputeIdleId = null;
     }
 
-    // Destroy hover area
+
     try {
         if (hotCorner) {
             hotCorner.destroy();
@@ -543,7 +543,7 @@ export function disable() {
         }
     } catch (e) { _debug(`Destroy hotCorner failed: ${e}`); }
 
-    // Disconnect event handlers
+
     if (windowCreatedHandler) {
         global.display.disconnect(windowCreatedHandler);
         windowCreatedHandler = null;
@@ -560,56 +560,56 @@ export function disable() {
         Main.overview.disconnect(overviewHiddenHandler);
         overviewHiddenHandler = null;
     }
-    // Disconnect panel box signals
+
     const panelBox = _getPanelBox();
     if (panelBox) {
         if (_panelBoxEnterId) { panelBox.disconnect(_panelBoxEnterId); _panelBoxEnterId = null; }
         if (_panelBoxLeaveId) { panelBox.disconnect(_panelBoxLeaveId); _panelBoxLeaveId = null; }
         if (_panelBoxButtonReleaseId) { panelBox.disconnect(_panelBoxButtonReleaseId); _panelBoxButtonReleaseId = null; }
     }
-    
-    // Disconnect stage capture
+
+
     if (_stageButtonReleaseId && global.stage) {
         global.stage.disconnect(_stageButtonReleaseId);
         _stageButtonReleaseId = null;
     }
 
-    // Disconnect window signals
+
     windowSignals.forEach((signalIds, window) => {
         window.disconnect(signalIds.fullscreen);
         window.disconnect(signalIds.unmanaged);
     });
-    
+
     windowSignals.clear();
     fullscreenWindows.clear();
     wsHasFullscreen = false;
     _panelRevealed = false;
     _animating = false;
 
-    // Restore panel to its original state - this must be done BEFORE setting _enabled to false
-    // but we already set it to false above, so we need to do manual restoration
+
+
     try {
         const panelBox = _getPanelBox();
         if (panelBox) {
-            // Cancel any ongoing animations
+
             _cancelPanelTransitions();
-            
-            // Reset panel position immediately
+
+
             panelBox.translation_y = 0;
             panelBox.visible = true;
-            
-            // Restore trackFullscreen property to its original value
+
+
             const lm = Main.layoutManager;
             if (lm) {
                 const tracked = lm._trackedActors;
                 if (Array.isArray(tracked)) {
                     const record = tracked.find(a => a && a.actor === panelBox);
                     if (record && typeof record.trackFullscreen === 'boolean') {
-                        // Restore original value, or default to true if not stored
+
                         record.trackFullscreen = _originalTrackFullscreen !== null ? _originalTrackFullscreen : true;
                     }
                 }
-                // Trigger visibility update
+
                 lm._updateVisibility?.();
             }
         }
@@ -617,6 +617,6 @@ export function disable() {
         _debug(`Panel restoration failed: ${e}`);
     }
 
-    // Reset stored values
+
     _originalTrackFullscreen = null;
 }

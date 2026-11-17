@@ -4,10 +4,10 @@ import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
 import Gdk from 'gi://Gdk';
 
-// gnome-extensions-prefs runs in its own process and cannot touch Meta/Shell, so
-// the list of open windows is fetched from the shell-side WindowListService over
-// D-Bus (see src/windowListService.ts). The proxy is created lazily and shared by
-// every picker in the window.
+
+
+
+
 const WINDOW_LIST_BUS_NAME = 'org.gnome.Shell';
 const WINDOW_LIST_OBJECT_PATH = '/org/gnome/Shell/Extensions/LiquidGlass';
 const WINDOW_LIST_INTERFACE_NAME = 'org.gnome.Shell.Extensions.LiquidGlass';
@@ -51,15 +51,15 @@ class WindowListClient {
       watcher();
   }
 
-  // Registers a callback fired whenever the shell reports that the set of open
-  // windows changed. Returns a function that unsubscribes it.
+
+
   addWatcher(callback) {
     this._ensureProxy();
     this._watchers.add(callback);
     return () => this._watchers.delete(callback);
   }
 
-  // callback(windows, errorMessage): exactly one of the two is meaningful.
+
   listWindows(callback) {
     const proxy = this._ensureProxy();
     if (!proxy) {
@@ -74,7 +74,7 @@ class WindowListClient {
         const [json] = source.call_finish(result).deep_unpack();
         windows = JSON.parse(json);
       } catch (e) {
-        // The usual cause is the extension being disabled: the object is only
+
         // exported while it is running, so the call fails with UnknownMethod.
         error = 'The window list is only available while the extension is enabled.';
       }
@@ -87,16 +87,16 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
   fillPreferencesWindow(window) {
     const settings = this.getSettings("org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com");
 
-    const blurRadiusRows = []; // blur-radius のテキストボックスの row を保持する
+    const blurRadiusRows = [];
 
-    // 拡張機能のディレクトリから resources.gresource の絶対パスを取得する
+
     const resourceFile = this.dir.get_child('resources.gresource');
     const resource = Gio.Resource.load(resourceFile.get_path());
     resource._register();
     const iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
     iconTheme.add_resource_path('/com/example/my-app/icons');
 
-    // --- Dock タブ ---
+
     const dockPage = new Adw.PreferencesPage({
       title: 'Dock',
       icon_name: 'dock-bottom-symbolic',
@@ -109,9 +109,9 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     });
     dockPage.add(dockGroup);
 
-    // 有効化スイッチ
+
     this._addSwitchRow(dockGroup, settings, 'enable-dock-glass', 'Enable Glass Effect', 'Apply the effect to the dock');
-    // 各種パラメータ
+
     this._addSliderRow(dockGroup, settings, 'dock-glass-expand', 'Glass Expand', 'Extra area for the effect', 0, 50, 1);
     this._addSliderRow(dockGroup, settings, 'dock-margin-bottom', 'Margin Bottom', 'Bottom spacing', -5, 30, 1);
     this._addColorRow(dockGroup, settings, 'dock-tint-color', 'Tint Color', 'Color of the glass tint');
@@ -120,7 +120,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     blurRadiusRows.push(dockBlurRow);
     this._addSliderRow(dockGroup, settings, 'dock-corner-radius', 'Corner Radius', 'Roundness of the corners', 0, 200, 1);
 
-    // Advancedグループ (開閉可能)
+
     const dockAdvanced = new Adw.ExpanderRow({
       title: 'Advanced',
       subtitle: 'Color adjustments (Brightness, Contrast, Saturation)'
@@ -132,7 +132,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     this._addSliderRow(dockAdvanced, settings, 'dock-saturation', 'Saturation', 'Adjusts saturation', 0.0, 2.0, 0.01);
 
 
-    // --- Menu タブ ---
+
     const menuPage = new Adw.PreferencesPage({
       title: 'Menu',
       icon_name: 'view-list-symbolic',
@@ -151,7 +151,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
 
     this._addSwitchRow(menuGroup, settings, 'menu-enable-adaptive-text-color', 'Adaptive Text Color', 'Adjust text contrast automatically');
     const menuSampleIntervalRow = this._addSliderRow(menuGroup, settings, 'menu-sample-interval-ms', 'Sample Interval (ms)', 'Contrast update frequency', 100, 2000, 50);
-    // Adaptive Text Color連動の非表示化
+
     settings.bind('menu-enable-adaptive-text-color', menuSampleIntervalRow, 'visible', Gio.SettingsBindFlags.GET);
 
     this._addColorRow(menuGroup, settings, 'menu-tint-color', 'Tint Color', 'Color of the glass tint');
@@ -164,32 +164,32 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     const menuScaleRow = this._addSliderRow(menuGroup, settings, 'menu-scale', 'Menu Scale', 'Shrink or grow the whole menu, glass included', 0.5, 1.0, 0.01);
     settings.bind('menu-match-quick-settings-height', menuScaleRow, 'sensitive', Gio.SettingsBindFlags.GET | Gio.SettingsBindFlags.INVERT_BOOLEAN);
 
-    // Advancedグループ (開閉可能) - Spring関連とカラー調整をここに集約
+
     const menuAdvanced = new Adw.ExpanderRow({
       title: 'Advanced',
       subtitle: 'Spring physics, color adjustments (Brightness, Contrast, Saturation)'
     });
     menuGroup.add(menuAdvanced);
 
-    // 【修正】Spring物理挙動パラメータをAdvanced内へ移動
+
     const menuStiffnessRow = this._addSliderRow(menuAdvanced, settings, 'menu-spring-stiffness', 'Spring Stiffness', 'Spring stiffness', 0.0, 1000.0, 0.1);
     const menuDampingRow = this._addSliderRow(menuAdvanced, settings, 'menu-spring-damping', 'Spring Damping', 'Spring damping', 0.0, 1000.0, 0.1);
     const menuMassRow = this._addSliderRow(menuAdvanced, settings, 'menu-spring-mass', 'Spring Mass', 'Spring mass', 0.0, 1.0, 0.1);
     const menuIntervalRow = this._addSliderRow(menuAdvanced, settings, 'menu-animation-interval-ms', 'Animation Interval (ms)', 'Animation interval', 0, 1000, 1);
 
-    // アニメーションOFF時に項目を非表示にするバインド（Advanced内にあっても正常に動作します）
+
     settings.bind('enable-menu-animation', menuStiffnessRow, 'visible', Gio.SettingsBindFlags.GET);
     settings.bind('enable-menu-animation', menuDampingRow, 'visible', Gio.SettingsBindFlags.GET);
     settings.bind('enable-menu-animation', menuMassRow, 'visible', Gio.SettingsBindFlags.GET);
     settings.bind('enable-menu-animation', menuIntervalRow, 'visible', Gio.SettingsBindFlags.GET);
 
-    // カラー調整（Advanced内）
+
     this._addSliderRow(menuAdvanced, settings, 'menu-brightness', 'Brightness', 'Adjusts brightness', 0.5, 1.5, 0.01);
     this._addSliderRow(menuAdvanced, settings, 'menu-contrast', 'Contrast', 'Adjusts contrast', 0.5, 1.5, 0.01);
     this._addSliderRow(menuAdvanced, settings, 'menu-saturation', 'Saturation', 'Adjusts saturation', 0.0, 2.0, 0.01);
 
 
-    // --- Additional top panel menus ---
+
     const panelPage = new Adw.PreferencesPage({
       title: 'Panel Extensions',
       icon_name: 'application-x-addon-symbolic',
@@ -252,8 +252,8 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
         syncingMenus = false;
       }
     };
-    // Appearance for the detected dropdowns. Own keys, not the Menu tab's —
-    // see the panel-menu-* block in the schema.
+
+
     const panelAppearance = new Adw.PreferencesGroup({
       title: 'Appearance',
       description: 'Applies to every detected panel menu. Independent of the Calendar menu.',
@@ -322,7 +322,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
 
     this._addSwitchRow(notifGroup, settings, 'notification-enable-adaptive-text-color', 'Adaptive Text Color', 'Adjust text contrast automatically');
     const notifSampleIntervalRow = this._addSliderRow(notifGroup, settings, 'notification-sample-interval-ms', 'Sample Interval (ms)', 'Contrast update frequency', 100, 2000, 50);
-    // Adaptive Text Color連動の非表示化
+
     settings.bind('notification-enable-adaptive-text-color', notifSampleIntervalRow, 'visible', Gio.SettingsBindFlags.GET);
 
     this._addSliderRow(notifGroup, settings, 'notification-glass-expand', 'Glass Expand', 'Extra area for the effect', 0, 50, 1);
@@ -333,7 +333,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     blurRadiusRows.push(notifBlurRow);
     this._addSliderRow(notifGroup, settings, 'notification-corner-radius', 'Corner Radius', 'Roundness of the corners', 0, 200, 1);
 
-    // Advancedグループ (開閉可能)
+
     const notifAdvanced = new Adw.ExpanderRow({
       title: 'Advanced',
       subtitle: 'Color adjustments (Brightness, Contrast, Saturation)'
@@ -345,7 +345,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     this._addSliderRow(notifAdvanced, settings, 'notification-saturation', 'Saturation', 'Adjusts saturation', 0.0, 2.0, 0.01);
 
 
-    // --- Quick Settings タブ ---
+
     const qsPage = new Adw.PreferencesPage({
       title: 'Quick Settings',
       icon_name: 'shapes-large-symbolic',
@@ -356,7 +356,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     qsPage.add(qsGroup);
 
     this._addSwitchRow(qsGroup, settings, 'enable-quick-settings-glass', 'Enable Glass Effect', 'Apply to quick settings panel');
-    // Apply to (Background / Toggles) を選択する ComboRow を追加し、GSettingsにバインド
+
     const qsApplyToRow = new Adw.ComboRow({
       title: 'Apply to',
       subtitle: 'Whether the glass effect covers the whole panel or only individual toggles',
@@ -371,7 +371,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
 
     this._addSwitchRow(qsGroup, settings, 'quick-settings-enable-adaptive-text-color', 'Adaptive Text Color', 'Adjust text contrast automatically');
     const qsSampleIntervalRow = this._addSliderRow(qsGroup, settings, 'quick-settings-sample-interval-ms', 'Sample Interval (ms)', 'Contrast update frequency', 100, 2000, 50);
-    // Adaptive Text Color連動の非表示化
+
     settings.bind('quick-settings-enable-adaptive-text-color', qsSampleIntervalRow, 'visible', Gio.SettingsBindFlags.GET);
 
     this._addSliderRow(qsGroup, settings, 'quick-settings-glass-expand', 'Glass Expand', 'Extra area for the effect', 0, 50, 1);
@@ -379,23 +379,23 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     const qsYOffsetRow = this._addSliderRow(qsGroup, settings, 'quick-settings-y-offset', 'Y Offset', 'Vertical offset adjustment', -100, 100, 1);
 
     this._addColorRow(qsGroup, settings, 'quick-settings-tint-color', 'Tint Color', 'Color of the glass tint');
-    // "Custom Color Strength" / "Base Color Strength": the two tint layers are
-    // independent (see glass.frag's mix() chain), so they are named for what
-    // each one actually applies rather than for how they used to be blended
-    // together. Setting KEYS are unchanged.
+
+
+
+
     this._addSliderRow(qsGroup, settings, 'quick-settings-tint-strength', 'Custom Color Strength', 'How strongly the Tint Color above is applied', 0.0, 1.0, 0.01);
     const qsBlurRow = this._addSliderRow(qsGroup, settings, 'quick-settings-blur-radius', 'Blur Radius', '', 0, 30, 1);
     blurRadiusRows.push(qsBlurRow);
     const qsCornerRadiusRow = this._addSliderRow(qsGroup, settings, 'quick-settings-corner-radius', 'Corner Radius', 'Roundness of the corners', 0, 200, 1);
 
-    // Toggles モード専用の設定（quick-settings-apply-to が Toggles の時だけ表示）
+
     const qsToggleTintStrengthRow = this._addSliderRow(qsGroup, settings, 'quick-settings-toggle-tint-strength', 'Base Color Strength', "How strongly each toggle's own original color is applied, independently of Custom Color Strength", 0.0, 1.0, 0.01);
     const qsToggleCornerRadiusRow = this._addSliderRow(qsGroup, settings, 'quick-settings-toggle-corner-radius', 'Toggle Corner Radius', 'Roundness of each individual toggle glass shape', 0, 60, 1);
 
-    // Toggles モードは各トグルの矩形を毎フレーム個別に追跡するだけで、パネル全体を
-    // 1枚板として動かしたり曲げたりはしない。そのため Corner Radius / X・Y Offset、
-    // および Advanced 内の Spring・Animation 関連は Background モード専用の設定
-    // として扱い、Toggles モードのときは非表示にする。
+
+
+
+
     const updateQsApplyToVisibility = () => {
       const isToggles = settings.get_int('quick-settings-apply-to') === 1;
       qsToggleTintStrengthRow.visible = isToggles;
@@ -405,15 +405,15 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
       qsXOffsetRow.visible = !isToggles;
       qsYOffsetRow.visible = !isToggles;
 
-      // Spring/Animationはパネル全体を動かす演出なので、Togglesモードでは
-      // スイッチ自体を隠す。Advanced内の各行は「スイッチ ON かつ Backgroundモード」の
-      // 場合だけ表示する（updateQsAnimationSubRowsVisibilityと合わせて判定）。
+
+
+
       qsEnableAnimRow.visible = !isToggles;
       updateQsAnimationSubRowsVisibility();
     };
     settings.connect('changed::quick-settings-apply-to', updateQsApplyToVisibility);
 
-    // Advancedグループ (開閉可能) - Spring関連とカラー調整をここに集約
+
     const qsAdvanced = new Adw.ExpanderRow({
       title: 'Advanced',
       subtitle: 'Spring physics, color adjustments (Brightness, Contrast, Saturation)'
@@ -425,9 +425,9 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     const quickSettingsMassRow = this._addSliderRow(qsAdvanced, settings, 'quick-settings-spring-mass', 'Spring Mass', 'Spring mass', 0.0, 1.0, 0.1);
     const quickSettingsIntervalRow = this._addSliderRow(qsAdvanced, settings, 'quick-settings-animation-interval-ms', 'Animation Interval (ms)', 'Animation interval', 0, 1000, 1);
 
-    // アニメーションOFF、またはTogglesモードのときは非表示にする
-    // (単純な settings.bind だと片方の条件しか見られないため関数化して両方の
-    // 変化を監視する。updateQsApplyToVisibility からも呼ばれる)
+
+
+
     const updateQsAnimationSubRowsVisibility = () => {
       const animOn = settings.get_boolean('enable-quick-settings-animation');
       const isToggles = settings.get_int('quick-settings-apply-to') === 1;
@@ -439,17 +439,17 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     };
     settings.connect('changed::enable-quick-settings-animation', updateQsAnimationSubRowsVisibility);
 
-    // 両方の関数定義が揃ってから初期状態を反映する
+
     updateQsApplyToVisibility();
     updateQsAnimationSubRowsVisibility();
 
-    // カラー調整（Advanced内）
+
     this._addSliderRow(qsAdvanced, settings, 'quick-settings-brightness', 'Brightness', 'Adjusts brightness', 0.5, 1.5, 0.01);
     this._addSliderRow(qsAdvanced, settings, 'quick-settings-contrast', 'Contrast', 'Adjusts contrast', 0.5, 1.5, 0.01);
     this._addSliderRow(qsAdvanced, settings, 'quick-settings-saturation', 'Saturation', 'Adjusts saturation', 0.0, 2.0, 0.01);
 
 
-    // --- OSD タブ ---
+
     const osdPage = new Adw.PreferencesPage({
       title: 'OSD',
       icon_name: 'audio-volume-medium-symbolic',
@@ -463,7 +463,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
 
     this._addSwitchRow(osdGroup, settings, 'osd-enable-adaptive-text-color', 'Adaptive Text Color', 'Adjust text contrast automatically');
     const osdSampleIntervalRow = this._addSliderRow(osdGroup, settings, 'osd-sample-interval-ms', 'Sample Interval (ms)', 'Contrast update frequency', 100, 2000, 50);
-    // Adaptive Text Color連動の非表示化
+
     settings.bind('osd-enable-adaptive-text-color', osdSampleIntervalRow, 'visible', Gio.SettingsBindFlags.GET);
 
     this._addSliderRow(osdGroup, settings, 'osd-glass-expand', 'Glass Expand', 'Extra area for the effect', 0, 50, 1);
@@ -474,7 +474,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     blurRadiusRows.push(osdBlurRow);
     this._addSliderRow(osdGroup, settings, 'osd-corner-radius', 'Corner Radius', 'Roundness of the corners', 0, 200, 1);
 
-    // Advancedグループ (開閉可能)
+
     const osdAdvanced = new Adw.ExpanderRow({
       title: 'Advanced',
       subtitle: 'Color adjustments (Brightness, Contrast, Saturation)'
@@ -486,7 +486,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     this._addSliderRow(osdAdvanced, settings, 'osd-saturation', 'Saturation', 'Adjusts saturation', 0.0, 2.0, 0.01);
 
 
-    // --- Applications タブ ---
+
     const appPage = new Adw.PreferencesPage({
       title: 'Applications',
       icon_name: 'applications-system-symbolic',
@@ -500,8 +500,8 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     appPage.add(appGroup);
 
     this._addSwitchRow(appGroup, settings, 'enable-application-glass', 'Enable Glass Effect', 'Apply to application windows');
-    // Switch to apply to all windows: the whitelist is bypassed and the blacklist
-    // below takes over as the way to exclude individual applications.
+
+
     this._addSwitchRow(appGroup, settings, 'application-glass-all-windows', 'Apply to All Windows', 'Apply to all application windows, using the blacklist below instead of the whitelist');
     this._addColorRow(appGroup, settings, 'application-tint-color', 'Tint Color', 'Color of the glass tint');
     this._addSliderRow(appGroup, settings, 'application-tint-strength', 'Tint Strength', 'Intensity of the color tint', 0.0, 1.0, 0.01);
@@ -510,7 +510,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     this._addSliderRow(appGroup, settings, 'application-corner-radius', 'Corner Radius', 'Roundness of the corners', 0, 200, 1);
     this._addSliderRow(appGroup, settings, 'application-content-opacity', 'Window Content Opacity', 'Opacity of the window content layer, so the glass shows through it', 0.0, 1.0, 0.01);
 
-    // Advancedグループ (開閉可能)
+
     const appAdvanced = new Adw.ExpanderRow({
       title: 'Advanced',
       subtitle: 'Color adjustments (Brightness, Contrast, Saturation)'
@@ -521,9 +521,9 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     this._addSliderRow(appAdvanced, settings, 'application-contrast', 'Contrast', 'Adjusts contrast', 0.5, 1.5, 0.01);
     this._addSliderRow(appAdvanced, settings, 'application-saturation', 'Saturation', 'Adjusts saturation', 0.0, 2.0, 0.01);
 
-    // Whitelist (used when "Apply to All Windows" is off) and blacklist (used
-    // when it is on). Both are edited through the same live picker of open
-    // windows, so the user never has to look a WM_CLASS up by hand.
+
+
+
     const windowListClient = new WindowListClient();
 
     this._addWindowClassEditor(appPage, settings, windowListClient, {
@@ -548,10 +548,10 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
       activeWhen: true,
     });
 
-    // The desktop's own right-click menu. Handled by the same manager as
-    // application windows — on Wayland it is a real toplevel, not a shell
-    // widget — but it is not an application, so it gets its own switch and
-    // its own appearance keys rather than inheriting the window look.
+
+
+
+
     const desktopMenuGroup = new Adw.PreferencesGroup({
       title: 'Desktop Menu',
       description: 'The menu that opens when you right-click the desktop. Separate from the application window settings above; in-app popups are not affected.',
@@ -577,7 +577,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     this._addSliderRow(desktopMenuAdvanced, settings, 'desktop-menu-saturation', 'Saturation', 'Adjusts saturation', 0.0, 2.0, 0.01);
 
 
-    // --- Glass Properties タブ ---
+
     const shaderPage = new Adw.PreferencesPage({
       title: 'Glass',
       icon_name: 'image-adjust-shadows-symbolic',
@@ -587,7 +587,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     const physGroup = new Adw.PreferencesGroup({ title: 'Physical &amp; Optical Properties' });
     shaderPage.add(physGroup);
 
-    // Blur Method を選択する ComboRow を追加し、GSettingsにバインド
+
     const blurMethodRow = new Adw.ComboRow({
       title: 'Blur Method',
       model: Gtk.StringList.new([
@@ -598,7 +598,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     this._addRowToContainer(physGroup, blurMethodRow);
     settings.bind('blur-method', blurMethodRow, 'selected', Gio.SettingsBindFlags.DEFAULT);
 
-    // Blur Resolution: 1 (Full 1:1), 2 (Half), 4 (Quarter)
+
     const BLUR_DOWNSCALE_VALUES = [1, 2, 4];
     const blurDownscaleRow = new Adw.ComboRow({
       title: 'Blur Resolution',
@@ -666,26 +666,26 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     this._addSwitchRow(debugGroup, settings, 'output-logs', 'Output Logs', 'Output logs to the terminal');
     this._addSwitchRow(debugGroup, settings, 'glass-debug-diagnostics', 'Render Diagnostics', 'Collect per-paint render state for global._lgGlass.dump(). This runs on every paint of every glass surface and costs performance even with logging off — leave it disabled unless you are debugging a rendering problem.');
 
-    // Blur Methodの選択に応じて、各Blur Radiusの注釈（subtitle）を動的に切り替える処理
+
     const updateBlurSubtitles = () => {
-      // get_int() が 1 (Dual Kawase) の時だけ注意書きを追加する
+
       const isDualKawase = settings.get_int('blur-method') === 1;
       const subtitle = isDualKawase
         ? 'Background blur intensity (Uses Dual Kawase blur; radius may not be pixel-accurate)'
         : 'Background blur intensity';
 
-      // 登録しておいたすべての Blur Radius 行のサブタイトルを更新
+
       blurRadiusRows.forEach(row => {
         row.subtitle = subtitle;
       });
     };
 
-    // 設定変更時のシグナル接続と、初期起動時の実行
+
     settings.connect('changed::blur-method', updateBlurSubtitles);
     updateBlurSubtitles();
   }
 
-  // --- 便利メソッド群 ---
+
 
   _addRowToContainer(container, row) {
     if (container.add_row) {
@@ -695,7 +695,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     }
   }
 
-  // ON/OFFスイッチ
+
   _addSwitchRow(container, settings, key, title, subtitle = '') {
     const row = new Adw.SwitchRow({ title, subtitle });
     this._addRowToContainer(container, row);
@@ -703,30 +703,30 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     return row;
   }
 
-  // スライダーと標準のスピンボタン（+/-）を配置するメソッド
+
   _addSliderRow(container, settings, key, title, subtitle, min, max, step) {
     const row = new Adw.ActionRow({ title, subtitle });
 
-    // 小数点のステップ数に応じて入力欄の表示桁数を自動判定
+
     let digits = 0;
     if (step < 1) digits = 2;
     if (step < 0.01) digits = 3;
 
-    // スライダーとスピンボタンで共有する Adjustment
+
     const adjustment = new Gtk.Adjustment({
       lower: min,
       upper: max,
       step_increment: step
     });
 
-    // 1. スライダー (Gtk.Scale) の生成
+
     const scale = Gtk.Scale.new(Gtk.Orientation.HORIZONTAL, adjustment);
     scale.set_hexpand(true);
     scale.set_valign(Gtk.Align.CENTER);
     scale.set_draw_value(false);
-    scale.set_size_request(160, -1); // 最低限の横幅
+    scale.set_size_request(160, -1);
 
-    // 2. 標準の数値入力＆上下ボタン (Gtk.SpinButton) の生成
+
     const spinButton = new Gtk.SpinButton({
       adjustment: adjustment,
       climb_rate: step,
@@ -735,7 +735,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
       valign: Gtk.Align.CENTER,
     });
 
-    // スライダーとスピンボタンを並べるコンテナ
+
     const box = new Gtk.Box({
       orientation: Gtk.Orientation.HORIZONTAL,
       spacing: 12,
@@ -747,13 +747,13 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     row.add_suffix(box);
     this._addRowToContainer(container, row);
 
-    // 設定とAdjustmentをバインド（これだけで両方が連動して保存・読み込みされます）
+
     settings.bind(key, adjustment, 'value', Gio.SettingsBindFlags.DEFAULT);
 
     return row;
   }
 
-  // 数値入力（整数・小数両対応）※念のため維持
+
   _addSpinRow(container, settings, key, title, subtitle, min, max, step) {
     let digits = 0;
     if (step < 1) digits = 2;
@@ -769,17 +769,17 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     return row;
   }
 
-  // アプリケーションウィンドウのホワイトリスト／ブラックリスト編集UI。
-  // WM_CLASS を直接打たせるのはユーザーフレンドリーではないので、開いている
-  // ウィンドウ一覧（リアルタイム更新）から選んで追加できるようにしてある。
+
+
+
   _addWindowClassEditor(page, settings, client, options) {
     const { key, title, description, emptyTitle, emptySubtitle, pickerTitle, activeKey, activeWhen } = options;
 
     const listGroup = new Adw.PreferencesGroup({ title, description });
     page.add(listGroup);
 
-    // The list that is not currently in effect is greyed out, so it is obvious
-    // which of the two the "Apply to All Windows" switch is consulting.
+
+
     if (activeKey) {
       let flags = Gio.SettingsBindFlags.GET;
       if (!activeWhen)
@@ -837,8 +837,8 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     listBox.connect('destroy', () => settings.disconnect(changedId));
     refreshList();
 
-    // Manual entry is kept for windows that are not currently open (or that the
-    // shell cannot report), but it is folded away so the picker is the default.
+
+
     const manualExpander = new Adw.ExpanderRow({
       title: 'Enter a WM_CLASS manually',
       subtitle: 'For applications that are not running right now (run: xprop WM_CLASS)',
@@ -855,7 +855,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     manualExpander.add_row(entryRow);
   }
 
-  // 追加は大文字小文字を区別せずに重複チェックする（マッチング側も同様）
+
   _addWindowClass(settings, key, wmClass) {
     const value = wmClass.trim();
     if (!value) return false;
@@ -869,8 +869,8 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     return true;
   }
 
-  // 開いているウィンドウ一覧のピッカー。開いている間は WindowsChanged シグナルを
-  // 購読し、ウィンドウの開閉に追従して中身を更新する。
+
+
   _presentWindowPicker(parentWidget, settings, client, key, title) {
     const dialog = new Adw.Dialog({
       title,
@@ -938,8 +938,8 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
 
         const rowTitle = info.appName || wmClass;
         const details = [];
-        // The WM_CLASS is what actually gets stored, so it is worth showing —
-        // except when it is already the row's title.
+
+
         if (rowTitle !== wmClass)
           details.push(wmClass);
         if (info.count > 1)
@@ -983,8 +983,8 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
             css_classes: ['flat'],
             tooltip_text: 'Add',
           });
-          // The `changed::` handler below re-renders the list, so the row flips
-          // to the "already added" state on its own.
+
+
           button.connect('clicked', () => this._addWindowClass(settings, key, wmClass));
           row.add_suffix(button);
           row.activatable_widget = button;
@@ -1003,8 +1003,8 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
       });
     };
 
-    // Live updates: the shell tells us when windows come and go, and the settings
-    // change tells us when this list itself was edited.
+
+
     const unwatch = client.addWatcher(refresh);
     const changedId = settings.connect(`changed::${key}`, refresh);
     dialog.connect('closed', () => {
@@ -1018,7 +1018,7 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
     dialog.present(parentWidget);
   }
 
-  // 色選択
+
   _addColorRow(container, settings, key, title, subtitle) {
     const row = new Adw.ActionRow({ title, subtitle });
     const colorButton = new Gtk.ColorDialogButton({
@@ -1026,12 +1026,12 @@ export default class LiquidGlassPreferences extends ExtensionPreferences {
       dialog: new Gtk.ColorDialog(),
     });
 
-    // 保存されたHEX文字列をRGBAに変換してセット
+
     const rgba = new Gdk.RGBA();
     rgba.parse(settings.get_string(key));
     colorButton.rgba = rgba;
 
-    // 色が変わったらHEXに変換して保存
+
     colorButton.connect('notify::rgba', () => {
       const color = colorButton.rgba;
       const r = Math.floor(color.red * 255).toString(16).padStart(2, '0');

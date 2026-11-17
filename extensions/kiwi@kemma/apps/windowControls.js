@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Adds window control buttons to the GNOME top panel.
-// Uses macW1Y-style PNG icons when app window buttons are enabled,
-// or system symbolic icons respecting the WM button layout otherwise.
+
+
+
 
 import GObject from 'gi://GObject';
 import Gio from 'gi://Gio';
@@ -16,7 +16,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 let controlsIndicator = null;
 let _extension = null;
 
-// Symbolic icon names for system mode
+
 const SYMBOLIC_ICONS = {
     close: 'window-close-symbolic',
     minimize: 'window-minimize-symbolic',
@@ -38,7 +38,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
             else if (key === 'show-window-controls-fullscreen-only') this._updateVisibility();
         });
 
-        // Read system WM button layout
+
         this._wmSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.wm.preferences' });
         const parsed = this._parseButtonLayout(this._wmSettings.get_string('button-layout'));
         this._buttonLayout = parsed.buttons;
@@ -58,21 +58,21 @@ class WindowControlsIndicator extends PanelMenu.Button {
     this._iconsRootPath = `${this._iconPath}/icons`;
         this._box = new St.BoxLayout({ style_class: 'window-controls-box' });
         this.add_child(this._box);
-        
-        // Track hover state for all-buttons-hover effect (macW1Y mode only)
+
+
         this._isContainerHovered = false;
 
         this._closeButton = new St.Button({ style_class: 'window-control-button close', track_hover: true });
         this._minimizeButton = new St.Button({ style_class: 'window-control-button minimize', track_hover: true });
         this._maximizeButton = new St.Button({ style_class: 'window-control-button maximize', track_hover: true });
 
-        // Suppress initial hover visuals when entering fullscreen until actual pointer motion
+
         this._suppressHoverUntilPointerMove = false;
-        this._closeButtonDelayActive = false; // hidden delay after entering fullscreen
+        this._closeButtonDelayActive = false;
         this._closeDelayTimeoutId = null;
         this._lastIsFullscreen = false;
-        this._lastIsMaximized = false; // track maximized state changes
-        this._fullscreenWindowSerial = 0; // increment when fullscreen window context changes
+        this._lastIsMaximized = false;
+        this._fullscreenWindowSerial = 0;
         this._clutterSignalIds = [];
         this._clutterSignalIds.push([this._box, this._box.connect('motion-event', () => {
             if (this._suppressHoverUntilPointerMove) {
@@ -81,8 +81,8 @@ class WindowControlsIndicator extends PanelMenu.Button {
             }
             return Clutter.EVENT_PROPAGATE;
         })]);
-        
-        // Container-level hover tracking for seamless group hover
+
+
         this._clutterSignalIds.push([this._box, this._box.connect('enter-event', () => {
             if (this._suppressHoverUntilPointerMove) {
                 this._suppressHoverUntilPointerMove = false;
@@ -93,8 +93,8 @@ class WindowControlsIndicator extends PanelMenu.Button {
             }
             return Clutter.EVENT_PROPAGATE;
         })]);
-        
-        // Add leave event for the main container to reset hover state
+
+
         this._clutterSignalIds.push([this._box, this._box.connect('leave-event', () => {
             if (this._useCustomIcons) {
                 this._isContainerHovered = false;
@@ -103,7 +103,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
             return Clutter.EVENT_PROPAGATE;
         })]);
 
-        // Helper to install macW1Y Liquid Glass Jelly physics on a traffic light button
+
         const installJellyPhysics = (button, buttonType) => {
             let isPressed = false;
             let isHolding = false;
@@ -125,7 +125,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
             const runSpringBack = () => {
                 stopSpring();
                 let lastTime = GLib.get_monotonic_time();
-                // Hooke's Law spring parameters
+
                 const stiffness = 280.0;
                 const damping = 16.0;
 
@@ -136,22 +136,22 @@ class WindowControlsIndicator extends PanelMenu.Button {
                     if (dt > 0.05) dt = 0.05;
                     if (dt <= 0) return GLib.SOURCE_CONTINUE;
 
-                    // Spring physics for scale_x (target: 1.0)
+
                     const fSx = -stiffness * (currentScaleX - 1.0) - damping * velScaleX;
                     velScaleX += fSx * dt;
                     currentScaleX += velScaleX * dt;
 
-                    // Spring physics for scale_y (target: 1.0)
+
                     const fSy = -stiffness * (currentScaleY - 1.0) - damping * velScaleY;
                     velScaleY += fSy * dt;
                     currentScaleY += velScaleY * dt;
 
-                    // Spring physics for trans_x (target: 0.0)
+
                     const fTx = -stiffness * currentTransX - damping * velTransX;
                     velTransX += fTx * dt;
                     currentTransX += velTransX * dt;
 
-                    // Spring physics for trans_y (target: 0.0)
+
                     const fTy = -stiffness * currentTransY - damping * velTransY;
                     velTransY += fTy * dt;
                     currentTransY += velTransY * dt;
@@ -185,7 +185,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
             button.set_pivot_point(0.5, 0.5);
 
             this._clutterSignalIds.push([button, button.connect('notify::hover', () => this._updateButtonIcon(buttonType))]);
-            
+
             this._clutterSignalIds.push([button, button.connect('button-press-event', (actor, event) => {
                 if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
                 stopSpring();
@@ -205,12 +205,12 @@ class WindowControlsIndicator extends PanelMenu.Button {
                 button.add_style_pseudo_class('active');
                 this._updateButtonIcon(buttonType);
 
-                // Only activate jelly if held (>280ms)!
+
                 holdTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 280, () => {
                     holdTimeoutId = 0;
                     if (isPressed) {
                         isHolding = true;
-                        // Ease-out scale up (~1.18x) and brightness/saturation glow
+
                         button.ease({
                             scale_x: 1.18,
                             scale_y: 1.18,
@@ -242,7 +242,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
 
                 if (!isHolding) return Clutter.EVENT_PROPAGATE;
 
-                // Check boundary of button: if cursor exits the button bounds, release jelly immediately!
+
                 const [bx, by] = button.get_transformed_position();
                 const [bw, bh] = button.get_transformed_size();
                 const pad = 6.0;
@@ -259,8 +259,8 @@ class WindowControlsIndicator extends PanelMenu.Button {
                     return Clutter.EVENT_STOP;
                 }
 
-                // Jelly deformation ("деформація тягучки"):
-                // Stretch along drag vector with rubber-banding resistance
+
+
                 if (dist > 1.0) {
                     const stretch = 1.18 + Math.min(dist * 0.035, 1.25);
                     const compress = Math.max(0.65, 1.18 / Math.sqrt(stretch / 1.18));
@@ -292,7 +292,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
                 this._updateButtonIcon(buttonType);
 
                 if (!isHolding) {
-                    // Quick click without holding: DO NOT animate, keep 1.0!
+
                     button.set_scale(1.0, 1.0);
                     button.set_translation(0, 0, 0);
                     currentScaleX = 1.0;
@@ -330,7 +330,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
                 }
             })]);
 
-            // Add enter event for all-buttons-hover effect (macW1Y mode)
+
             this._clutterSignalIds.push([button, button.connect('enter-event', () => {
                 if (this._suppressHoverUntilPointerMove) {
                     this._suppressHoverUntilPointerMove = false;
@@ -387,12 +387,12 @@ class WindowControlsIndicator extends PanelMenu.Button {
             this._onFocusWindowChanged();
             this._updateVisibility();
         });
-        
-        // Handle screen shield (lock screen) events
+
+
         this._screenShield = Main.screenShield;
         if (this._screenShield) {
             this._screenShieldActiveId = this._screenShield.connect('active-changed', () => {
-                // When screen is unlocked, re-evaluate window state after a short delay
+
                 if (!this._screenShield.active) {
                     if (this._screenShieldTimeoutId) {
                     GLib.Source.remove(this._screenShieldTimeoutId);
@@ -407,13 +407,13 @@ class WindowControlsIndicator extends PanelMenu.Button {
                 }
             });
         }
-        
+
         this._updateVisibility();
         this._updateButtonSizeClass();
     }
 
     _parseButtonLayout(layoutStr) {
-        // Parse 'appmenu:minimize,maximize,close' or 'close,minimize,maximize:' etc.
+
         const validButtons = ['close', 'minimize', 'maximize'];
         const parts = (layoutStr || '').split(':');
         const leftPart = parts[0] || '';
@@ -422,8 +422,8 @@ class WindowControlsIndicator extends PanelMenu.Button {
         const leftButtons = leftPart.split(',').map(b => b.trim()).filter(b => validButtons.includes(b));
         const rightButtons = rightPart.split(',').map(b => b.trim()).filter(b => validButtons.includes(b));
 
-        // Determine side: whichever side has more control buttons wins;
-        // if equal, prefer right (GNOME default)
+
+
         let side, ordered;
         if (leftButtons.length >= rightButtons.length && leftButtons.length > 0) {
             side = 'left';
@@ -436,7 +436,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
             ordered = ['minimize', 'maximize', 'close'];
         }
 
-        // Deduplicate while preserving order
+
         const seen = new Set();
         const result = [];
         for (const b of ordered) {
@@ -446,7 +446,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
     }
 
     _buildButtonLayout() {
-        // Remove all buttons from box first
+
         [this._closeButton, this._minimizeButton, this._maximizeButton].forEach(btn => {
             if (btn.get_parent() === this._box)
                 this._box.remove_child(btn);
@@ -459,12 +459,12 @@ class WindowControlsIndicator extends PanelMenu.Button {
         };
 
         if (this._useCustomIcons) {
-            // macW1Y mode: follow system button-layout order and enabled buttons
+
             for (const name of this._buttonLayout)
                 this._box.add_child(buttonMap[name]);
             this._box.remove_style_class_name('system-mode');
         } else {
-            // System mode: follow WM button-layout order exactly
+
             for (const name of this._buttonLayout)
                 this._box.add_child(buttonMap[name]);
             this._box.add_style_class_name('system-mode');
@@ -516,29 +516,29 @@ class WindowControlsIndicator extends PanelMenu.Button {
     const button = this[`_${buttonType}Button`];
     const win = global.display.focus_window;
 
-    // Robust maximized detection across GNOME versions
+
     let isMaximized = false;
     if (buttonType === 'maximize' && win) {
-        // Common properties on many GNOME versions
+
         if (win.maximized_horizontally && win.maximized_vertically) {
             isMaximized = true;
         } else if (typeof win.get_maximized === 'function') {
-            // Fallback to flags when available
+
             try {
                 const flags = win.get_maximized();
                 if ((flags & Meta.MaximizeFlags.HORIZONTAL) && (flags & Meta.MaximizeFlags.VERTICAL))
                     isMaximized = true;
             } catch (_) {}
         } else if (typeof win.is_maximized === 'function') {
-            // Older API fallback
+
             try { isMaximized = !!win.is_maximized(); } catch (_) {}
         }
     }
     const isFullscreen = !!win && typeof win.is_fullscreen === 'function' && win.is_fullscreen();
-        // When in fullscreen, the minimize button should be disabled (non-reactive) and not show hover/active variants
+
         if (buttonType === 'minimize' && isFullscreen && this._settings.get_boolean('show-window-controls')) {
-            // Force base icon, ignore hover/active state
-            button.reactive = false; // makes it "insensitive" visually via St
+
+            button.reactive = false;
             button.remove_style_pseudo_class('active');
             if (this._useCustomIcons) {
                 const iconName = 'button-minimize-backdrop.png';
@@ -549,16 +549,16 @@ class WindowControlsIndicator extends PanelMenu.Button {
             }
             return;
         } else if (buttonType === 'minimize') {
-            // Restore reactivity when leaving fullscreen
+
             button.reactive = true;
             button.opacity = 255;
         }
 
-        // For maximize button: show restore icon when window is maximized OR fullscreen
+
         const buttonName = (buttonType === 'maximize' && (isMaximized || isFullscreen)) ? 'restore' : buttonType;
 
         if (this._useCustomIcons) {
-            // macW1Y mode: file-based PNG icons with container hover
+
             let isHovered = button.hover || this._isContainerHovered;
             if (this._suppressHoverUntilPointerMove)
                 isHovered = false;
@@ -566,7 +566,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
             const iconName = `button-${buttonName}${state}.png`;
             this._setButtonIcon(button, iconName);
         } else {
-            // System mode: symbolic icons, only update if icon actually changed
+
             this._setSystemIcon(button, buttonName);
         }
     }
@@ -579,7 +579,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
 
     _updateVisibility() {
         const focusWindow = this._focusWindow;
-        // Use robust maximized detection (match _updateButtonIcon)
+
         let isMaximized = false;
         if (focusWindow) {
             if (focusWindow.maximized_horizontally && focusWindow.maximized_vertically) {
@@ -595,12 +595,12 @@ class WindowControlsIndicator extends PanelMenu.Button {
             }
         }
         const isFullscreen = !!focusWindow && typeof focusWindow.is_fullscreen === 'function' && focusWindow.is_fullscreen();
-        
-        // Store previous state for transition detection
+
+
         const wasVisible = this.visible;
         const wasMaximized = this._lastIsMaximized || false;
-        
-        // Add window exclusion logic with null check for window title
+
+
         if (focusWindow) {
             const windowTitle = focusWindow.get_title();
             if (windowTitle) {
@@ -630,10 +630,10 @@ class WindowControlsIndicator extends PanelMenu.Button {
             this._settings.get_boolean('show-window-controls') &&
             (fullscreenOnly ? isFullscreen : (isMaximized || isFullscreen));
 
-        // Reset hover state when window state changes or when becoming visible/hidden
+
         if (this.visible !== wasVisible || isMaximized !== wasMaximized) {
             this._isContainerHovered = false;
-            // Force all buttons to lose hover state
+
             ['minimize', 'maximize', 'close'].forEach(buttonType => {
                 const button = this[`_${buttonType}Button`];
                 if (button) {
@@ -642,7 +642,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
             });
         }
 
-        // Update minimize button sensitivity depending on fullscreen state
+
         if (this._minimizeButton) {
             if (this.visible && isFullscreen) {
                 this._minimizeButton.reactive = false;
@@ -651,17 +651,17 @@ class WindowControlsIndicator extends PanelMenu.Button {
             }
         }
 
-        // Hidden delay logic for close button after entering fullscreen
+
         if (this.visible && isFullscreen) {
             if (!this._lastIsFullscreen) {
-                // Transitioned into fullscreen
+
                 this._applyCloseButtonDelay();
             } else if (this._closeButtonDelayActive) {
-                // keep disabled until timeout completes
+
                 this._closeButton.reactive = false;
             }
         } else {
-            // Leaving fullscreen or hidden
+
             this._clearCloseButtonDelay();
             this._closeButton.reactive = true;
         }
@@ -669,7 +669,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
         this._lastIsFullscreen = isFullscreen;
         this._lastIsMaximized = isMaximized;
 
-        // When becoming visible in fullscreen, suppress hover visuals until pointer moves
+
         if (this.visible && isFullscreen) {
             if (!this._suppressHoverUntilPointerMove) {
                 this._suppressHoverUntilPointerMove = true;
@@ -679,21 +679,21 @@ class WindowControlsIndicator extends PanelMenu.Button {
             this._suppressHoverUntilPointerMove = false;
             this._updateAllIcons();
         }
-        
-        // Update all icons after state changes
+
+
         this._updateAllIcons();
     }
 
     _applyCloseButtonDelay() {
-        // Clear any existing
+
         this._clearCloseButtonDelay();
-        // Activate delay
+
         this._closeButtonDelayActive = true;
         this._closeButton.reactive = false;
         const serial = ++this._fullscreenWindowSerial;
-        // 3000 ms hidden delay
+
         this._closeDelayTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 3000, () => {
-            // Only lift delay if still same fullscreen context and still fullscreen
+
             if (this._closeDelayTimeoutId) {
                 this._closeDelayTimeoutId = null;
             }
@@ -721,7 +721,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
         const monitor = Main.layoutManager.primaryMonitor;
         const scaleFactor = monitor ? monitor.geometry_scale : 1;
         const file = this._getIconFile(iconName, scaleFactor);
-        
+
         button.child = new St.Icon({
             gicon: new Gio.FileIcon({ file }),
             style_class: 'window-control-icon',
@@ -730,7 +730,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
 
     _setSystemIcon(button, buttonName) {
         const iconName = SYMBOLIC_ICONS[buttonName] || SYMBOLIC_ICONS.close;
-        // Avoid recreating the icon if it's already showing the correct one
+
         if (button._currentSystemIcon === iconName)
             return;
         button._currentSystemIcon = iconName;
@@ -760,7 +760,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
                 const scaledAltFile = Gio.File.new_for_path(`${basePath}/${scaledAltName}`);
                 if (scaledAltFile.query_exists(null))
                     return scaledAltFile;
-                
+
                 const altFile = Gio.File.new_for_path(`${basePath}/${altName}`);
                 if (altFile.query_exists(null))
                     return altFile;
@@ -828,7 +828,7 @@ function _getPlacementSide() {
 function _replaceIndicatorOnPanel() {
     if (!controlsIndicator || !_extension)
         return;
-    // Remove from panel without destroying
+
     const container = controlsIndicator.container;
     const parent = container.get_parent();
     if (parent)
@@ -851,11 +851,11 @@ export function enable(ext) {
 
         const side = _getPlacementSide();
         if (side === 'right') {
-            // Place at far right (last position in right box)
+
             const rightBoxChildren = Main.panel._rightBox.get_children();
             Main.panel.addToStatusArea('window-controls', controlsIndicator, rightBoxChildren.length, 'right');
         } else {
-            // Place at far left (position 0 before macW1Y menu, like macW1Y)
+
             Main.panel.addToStatusArea('window-controls', controlsIndicator, 0, 'left');
         }
     }

@@ -20,7 +20,7 @@ import Gio from 'gi://Gio';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 
-// menu items
+
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -30,7 +30,7 @@ import { loadInterfaceXML } from 'resource:///org/gnome/shell/misc/fileUtils.js'
 import * as Convenience from './convenienceExt.js';
 import * as Indicator from './indicator.js';
 
-// for ui stuff of this extension
+
 const QuickSettingsPanelMenuButton = Main.panel.statusArea.quickSettings;
 
 const {
@@ -48,10 +48,10 @@ const {
     isNullOrWhitespace
 } = Convenience;
 
-/*
-    lowest possible value for brightness
-    this is skipped if allow-zero-brightness is set
-*/
+
+
+
+
 const minBrightness = 1;
 let displays = null;
 let mainMenuButton = null;
@@ -68,13 +68,13 @@ let syncing = false
 let pause_sync = false
 let internal_control = true
 
-/*
-    instead of reading i2c bus everytime during startup,
-    as it is unlikely that bus number changes, we can read
-    cache file instead.
-    one can make this file by running following shell command:
-    ddcutil --brief detect > $XDG_CACHE_HOME/ddcutil_detect
-*/
+
+
+
+
+
+
+
 const cacheDir = GLib.get_user_cache_dir();
 const ddcutilDetectCacheFile = `${cacheDir}/ddcutil_detect`;
 
@@ -108,7 +108,7 @@ export default class DDCUtilBrightnessControlExtension extends Extension {
             QuickSettingsPanelMenuButton._indicators.insert_child_at_index(mainMenuButton, this.settings.get_double('position-system-indicator'));
         }
         if (mainMenuButton !== null) {
-            /* connect all signals */
+
             this.connectSettingsSignals();
             this.connectMonitorChangeSignals();
 
@@ -124,14 +124,14 @@ export default class DDCUtilBrightnessControlExtension extends Extension {
     }
 
     disableBrightnessControl() {
-        /* disconnect all signals */
+
         this.disconnectSettingsSignals();
         this.disconnectMonitorSignals();
 
-        /* remove shortcuts */
+
         this.removeKeyboardShortcuts();
 
-        /* clear timeouts */
+
         if (_reloadMenuWidgetsTimer)
             clearTimeout(_reloadMenuWidgetsTimer);
 
@@ -148,7 +148,7 @@ export default class DDCUtilBrightnessControlExtension extends Extension {
             monitorChangeTimeout = null;
         }
 
-        /* clear variables */
+
         mainMenuButton.destroy();
         mainMenuButton = null;
         displays = null;
@@ -163,7 +163,7 @@ export default class DDCUtilBrightnessControlExtension extends Extension {
             if (writeCollection[displayBus].current) {
                 writeCollection[displayBus].current(() => {
                     if (writeCollection === null) {
-                        // Must be disabling. Do nothing.
+
                         return;
                     }
                     kickoffNext("on chain");
@@ -326,7 +326,7 @@ export default class DDCUtilBrightnessControlExtension extends Extension {
         }
         mainMenuButton.addMenuItem(allslider);
 
-        /* save slider in main menu, so that it can be accessed easily for different events */
+
         mainMenuButton.storeSliderForEvents(allslider);
     }
 
@@ -378,16 +378,16 @@ export default class DDCUtilBrightnessControlExtension extends Extension {
                 });
         }
 
-        /* when "All" slider is shown we do not need to store each display's value slider */
-        /* save slider in main menu, so that it can be accessed easily for different events */
+
+
         if (!this.settings.get_boolean('show-all-slider'))
             mainMenuButton.storeSliderForEvents(displaySlider);
     }
 
-    /*
-       reload menu widgets being called many time caused some lag
-       after every display info was parsed, add this should run reloadMenuWidgets only once
-     */
+
+
+
+
     reloadMenuWidgets() {
         if (_reloadMenuWidgetsTimer)
             clearTimeout(_reloadMenuWidgetsTimer);
@@ -400,7 +400,7 @@ export default class DDCUtilBrightnessControlExtension extends Extension {
 
     _reloadMenuWidgets() {
         if (reloadingExtension) {
-            /* do nothing if extension is being reloaded */
+
             brightnessLog(this.settings, `Skipping reloadMenuWidgets because extensions is reloading, timer ref: ${_reloadExtensionTimer}`);
             return;
         }
@@ -430,22 +430,22 @@ export default class DDCUtilBrightnessControlExtension extends Extension {
             if (this.settings.get_int('button-location') === 0) {
 
             } else {
-                /* in case of quick settings we need to add items after all the sliders were created */
 
-                /*  easiest way to add sliders to panel area is :
-                    QuickSettingsPanelMenuButton._addItems(mainMenuButton.quickSettingsItems, 2);
-                    we need something more though.
-                */
+
+
+
+
+
                 const _grid = QuickSettingsPanelMenuButton.menu._grid;
-                /*
-                    but we want custom positioning, this is bit of a hack to access
-                    _grid (St.Widget) directly and add items there,
-                */
+
+
+
+
                 mainMenuButton.quickSettingsItems.forEach(item => {
-                    /*
-                        also for Label and Name we are accessing slider's parent's parent
-                        Slider->Parent(St.Bin)->Parent(St.BoxLayout)
-                    */
+
+
+
+
                     const _box = item.slider.get_parent().get_parent();
                     if (this.settings.get_boolean('show-display-name'))
                         _box.insert_child_at_index(item.NameContainer, 1);
@@ -459,11 +459,11 @@ export default class DDCUtilBrightnessControlExtension extends Extension {
         }
     }
 
-    /*
-       reloading extension being called many times caused some lag
-       and also reloading menu widgets when reload extension was already called
-       caused unecessary extra ddcutil calls.
-     */
+
+
+
+
+
     reloadExtension() {
         reloadingExtension = true;
         if (_reloadExtensionTimer)
@@ -517,10 +517,10 @@ export default class DDCUtilBrightnessControlExtension extends Extension {
         const ddcutilResponseArray = getVCPInfoAsArray(ddcutilResponse)
         let displayInGoodState = true;
         if (!this.settings.get_boolean('disable-display-state-check')) {
-            /*
-                D6 = Power mode
-                x01 = DPM: On,  DPMS: Off
-            */
+
+
+
+
             displayInGoodState = ddcutilResponseArray.length >= 4 && ddcutilResponseArray[3] === 'x01';
         }
         return displayInGoodState
@@ -538,14 +538,14 @@ export default class DDCUtilBrightnessControlExtension extends Extension {
     afterGetDdcutilBrightnessResponseSuccess(displayBus, displayName, vcp, ddcutilResponseArray) {
         let display = {};
         const maxBrightness = ddcutilResponseArray[4];
-        /* we need current brightness in the scale of 0 to 1 for slider*/
+
         const currentBrightness = ddcutilResponseArray[3] / ddcutilResponseArray[4];
-        /* make display object */
+
         display = { 'bus': displayBus, 'max': maxBrightness, 'current': currentBrightness, 'name': displayName, 'vcp': vcp };
         brightnessLog(this.settings, `added display to list ${JSON.stringify(display)}`);
         displays.push(display);
 
-        /* cheap way of reloading all display slider in the panel */
+
         this.reloadMenuWidgets();
     }
 
@@ -557,13 +557,13 @@ export default class DDCUtilBrightnessControlExtension extends Extension {
     }
 
     async getDdcutilResponse(displayBus, displayName, vcpListIndex, ddcutilResponse) {
-        //this will try and call getvcp on each vcp from vcpList until it doesn't return an error.
+
         const vcpList = this.getVCPList()
         if (this.displayValidate(ddcutilResponse)) {
             if (this.displayResponseError(ddcutilResponse)) {
                 vcpListIndex += 1
                 if (vcpListIndex < vcpList.length) {
-                    /* read the current and max brightness using getvcp */
+
                     brightnessLog(this.settings, `calling ddcutil getvcp ${vcpList[vcpListIndex]} for bus ${displayBus}`);
                     await this.ddcutilCommandLine(vcpList[vcpListIndex], displayBus, async ddcutilReponseInner => {
                         brightnessLog(this.settings, `ddcutil getvcp ${vcpList[vcpListIndex]} for bus ${displayBus} is : ${ddcutilReponseInner.replace(/\n+$/, '')}`);
@@ -626,14 +626,14 @@ export default class DDCUtilBrightnessControlExtension extends Extension {
     }
 
     async addDisplayToPanelIfItIsOn(displayBus, displayName) {
-        /* check if display is on or not */
+
         await this.ddcutilCommandLine('D6', displayBus, async ddcutilResponsePowerMode => {
             brightnessLog(this.settings, `ddcutil display power state for bus: ${displayBus} is: ${ddcutilResponsePowerMode.replace(/\n+$/, '')}`);
-            /* only add display to list if ddc communication is supported with the bus*/
+
             if (this.displayValidate(ddcutilResponsePowerMode) &&
                 this.displayInGoodState(ddcutilResponsePowerMode)) {
-                // start with an ERR, so that the getDdcutilResponse will directly call
-                // move to call with index 0
+
+
                 await this.getDdcutilResponse(displayBus, displayName, -1, "VCP 0 ERR")
             }
         });
@@ -697,12 +697,12 @@ export default class DDCUtilBrightnessControlExtension extends Extension {
     }
 
     onMonitorChange() {
-        /*
-            when monitor change happens,
-            sometimes the turned off monitor is still accepting DDC connection
-            this is not a great fix, because some monitor
-            will still take longer than 5 seconds to be off
-        */
+
+
+
+
+
+
         brightnessLog(this.settings, 'Monitor change detected, reloading extension in 5 seconds.');
         if (monitorChangeTimeout !== null)
             clearTimeout(monitorChangeTimeout);

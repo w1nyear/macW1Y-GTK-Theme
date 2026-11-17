@@ -169,7 +169,7 @@ export class LockscreenMenuBarManager {
             } catch (_) {}
         }
 
-        // state: 1: CHARGING, 2: DISCHARGING, 3: EMPTY, 4: FULL, 5: PENDING_CHARGE
+
         const charging = (state === 1 || state === 5);
         const pct = Math.max(0, Math.min(1.0, percentage / 100.0));
 
@@ -195,12 +195,12 @@ export class LockscreenMenuBarManager {
             cr.closePath();
         }
 
-        // 1. Base uncharged capsule
+
         roundedRect(bx, by, bw, bh, br);
         cr.setSourceRGBA(1.0, 1.0, 1.0, 0.40);
         cr.fill();
 
-        // 2. Terminal nipple
+
         cr.newSubPath();
         cr.arc(nx + nw - nr, ny + nr, nr, -Math.PI / 2, 0);
         cr.arc(nx + nw - nr, ny + nh - nr, nr, 0, Math.PI / 2);
@@ -210,7 +210,7 @@ export class LockscreenMenuBarManager {
         cr.setSourceRGBA(1.0, 1.0, 1.0, 0.40);
         cr.fill();
 
-        // 3. Charged level fill
+
         if (pct > 0.005) {
             cr.save();
             roundedRect(bx, by, bw, bh, br);
@@ -220,7 +220,7 @@ export class LockscreenMenuBarManager {
             cr.rectangle(bx, by, fillW, bh);
 
             if (charging) {
-                // macW1Y vivid green while charging (#28cd41)
+
                 cr.setSourceRGBA(40 / 255, 205 / 255, 65 / 255, 1.0);
             } else if (pct <= 0.10) {
                 cr.setSourceRGBA(255 / 255, 59 / 255, 48 / 255, 1.0);
@@ -233,7 +233,7 @@ export class LockscreenMenuBarManager {
             cr.restore();
         }
 
-        // 4. Lightning bolt if charging (solid white with contrast stroke, centered)
+
         if (charging) {
             cr.save();
             const cx = bx + bw / 2.0;
@@ -250,14 +250,14 @@ export class LockscreenMenuBarManager {
                 cr.closePath();
             };
 
-            // Dark outline for contrast against green fill & translucent background
+
             boltPath();
             cr.setLineWidth(1.2);
             cr.setLineJoin(Cairo.LineJoin.ROUND);
             cr.setSourceRGBA(0.0, 0.0, 0.0, 0.75);
             cr.stroke();
 
-            // Crisp white lightning bolt fill
+
             boltPath();
             cr.setSourceRGBA(1.0, 1.0, 1.0, 1.0);
             cr.fill();
@@ -366,14 +366,14 @@ export class LockscreenMenuBarManager {
     _setupQuickSettings(qs) {
         if (!qs) return;
 
-        // Hide multi-indicator clutter inside quickSettings button
+
         if (qs._indicators) {
             qs._indicators.visible = false;
             qs._indicators.opacity = 0;
             qs._indicators.style = 'margin: 0 !important; padding: 0 !important; width: 0px !important; min-width: 0px !important; height: 0px !important; min-height: 0px !important;';
         }
 
-        // Attach or update CC icon if needed
+
         if (!this._ccIcon || this._ccIcon.get_parent() !== qs) {
             if (this._ccIcon) {
                 try {
@@ -517,7 +517,7 @@ export class LockscreenMenuBarManager {
                 const role = Object.entries(Main.panel.statusArea || {}).find(([_, v]) => {
                     try { return v?.container === child || v === child; } catch (_) { return false; }
                 })?.[0] || '';
-                // Elements managed by Control Center & menubar must not be forcefully unhidden
+
                 if (['macBattery', 'macWifi', 'macBluetooth', 'macVolume', 'macScreenCast'].includes(role)) {
                     continue;
                 }
@@ -537,7 +537,7 @@ export class LockscreenMenuBarManager {
         this._isApplying = true;
 
         try {
-            // 1. Hide everything in leftBox
+
             if (Main.panel?._leftBox) {
                 for (const child of Main.panel._leftBox.get_children()) {
                     child.visible = false;
@@ -545,7 +545,7 @@ export class LockscreenMenuBarManager {
                 }
             }
 
-            // 2. Hide everything in centerBox (including misplaced dateMenu)
+
             if (Main.panel?._centerBox) {
                 for (const child of Main.panel._centerBox.get_children()) {
                     child.visible = false;
@@ -553,7 +553,7 @@ export class LockscreenMenuBarManager {
                 }
             }
 
-            // 3. RightBox management
+
             const rightBox = Main.panel?._rightBox;
             if (!rightBox) return;
 
@@ -577,7 +577,7 @@ export class LockscreenMenuBarManager {
             const qsActor = qs?.container || qs;
             const dmActor = dm?.container || dm;
 
-            // Ensure our 4 items are inside rightBox
+
             if (kbActor && kbActor.get_parent() !== rightBox) {
                 if (kbActor.get_parent()) kbActor.get_parent().remove_child(kbActor);
                 rightBox.add_child(kbActor);
@@ -597,7 +597,7 @@ export class LockscreenMenuBarManager {
 
             const allowed = [kbActor, battery, qsActor, dmActor].filter(Boolean);
 
-            // Hide any other child in rightBox (e.g. a11y, dwellClick, appindicators)
+
             for (const child of rightBox.get_children()) {
                 if (!allowed.includes(child)) {
                     child.visible = false;
@@ -610,11 +610,11 @@ export class LockscreenMenuBarManager {
                 }
             }
 
-            // Strictly order the 4 allowed items:
-            // 0: Keyboard layout switcher
-            // 1: Battery
-            // 2: Control Center (quickSettings)
-            // 3: Date & Time (dateMenu)
+
+
+
+
+
             for (let i = 0; i < allowed.length; i++) {
                 try {
                     rightBox.set_child_at_index(allowed[i], i);

@@ -132,7 +132,7 @@ export function get_supported_effects(_ = () => "") {
             name: _("Color"),
             description: _("An effect that blends a color into the pipeline."),
             is_advanced: false,
-            // TODO make this RGB + blend
+
             editable_params: {
                 color: {
                     name: _("Color"),

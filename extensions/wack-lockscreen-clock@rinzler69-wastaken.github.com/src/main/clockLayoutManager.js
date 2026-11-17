@@ -187,7 +187,7 @@ export class ClockLayoutManager {
         if (this.glassClock) {
             this.glassClock.sync();
             const [fw, fh] = this.glassClock.fieldSize;
-            const rx = 48; // FIELD_RANGE
+            const rx = 48;
             const ry = 48;
 
             if (this.glassClock.isReady && fw > 1 && fh > 1) {

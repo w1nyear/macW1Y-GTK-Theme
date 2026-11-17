@@ -1,6 +1,6 @@
-/**
- * Stage Manager - Preferences UI
- */
+
+
+
 
 import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
@@ -16,16 +16,16 @@ export default class StageManagerPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
 
-        // ── Behavior Page ──
+
         const behaviorPage = new Adw.PreferencesPage({
             title: _('Behavior'),
             icon_name: 'preferences-system-symbolic',
         });
         window.add(behaviorPage);
 
-        // Sidebar Layout — the single biggest choice in this page, so it gets
-        // its own segmented switch at the very top rather than a dropdown
-        // buried inside a settings group.
+
+
+
         const layoutGroup = new Adw.PreferencesGroup({
             title: _('Sidebar Layout'),
             description: _('Stack = vertical list of cards (default). Arc = full carousel arrangement.'),
@@ -66,8 +66,8 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         });
         behaviorPage.add(maxGroup);
 
-        // One enum instead of two switches: the old pair both answered "maximize"
-        // and one silently won, so the exclusion is now structural.
+
+
         const maxRow = new Adw.ActionRow({
             title: _('When a Window Is Maximized'),
             subtitle: _('Unmaximizing always returns the window, whatever this is set to'),
@@ -89,15 +89,15 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         maxRow.add_suffix(maxDropdown);
         maxGroup.add(maxRow);
 
-        // Stage Sidebar
+
         const sideGroup = new Adw.PreferencesGroup({
             title: _('Stage Manager Sidebar'),
             description: _('Thumbnail cards for your inactive stages, at the screen edge'),
         });
         behaviorPage.add(sideGroup);
 
-        // Arc always auto-hides (hover-only, no "always visible" mode) and
-        // never reserves struts — both rows are Stack-only.
+
+
         const autoHideSwitch = new Adw.SwitchRow({
             title: _('Auto-hide Sidebar'),
             subtitle: _('Off = always visible (macW1Y default). On = hover to reveal.'),
@@ -114,9 +114,9 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         sideGroup.add(reserveSwitch);
         this._bindLayoutSensitivity(reserveSwitch, settings, 'stack');
 
-        // Sidebar Content — what the Stack layout's cards show. Arc has no
-        // equivalent (it always groups by app, one icon per stacked window), so
-        // the whole group is hidden rather than shown inert while layout is arc.
+
+
+
         const contentGroup = new Adw.PreferencesGroup({
             title: _('Sidebar Content'),
             description: _('Stack layout only'),
@@ -139,10 +139,10 @@ export default class StageManagerPreferences extends ExtensionPreferences {
             model: Gtk.StringList.new(modeLabels),
             valign: Gtk.Align.CENTER,
         });
-        // Sync setting → dropdown
+
         const modeVal = settings.get_string('sidebar-mode');
         modeDropdown.set_selected(Math.max(0, modeKeys.indexOf(modeVal)));
-        // Sync dropdown → setting
+
         modeDropdown.connect('notify::selected', () => {
             const sel = modeDropdown.get_selected();
             settings.set_string('sidebar-mode', modeKeys[sel] || 'groups');
@@ -171,7 +171,7 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         settings.bind('show-workspace-current', showCurrentWsSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
         contentGroup.add(showCurrentWsSwitch);
 
-        // Smart Visibility
+
         const smartGroup = new Adw.PreferencesGroup({
             title: _('Smart Visibility'),
             description: _('Automatically show the sidebar based on desktop state'),
@@ -185,7 +185,7 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         settings.bind('show-on-empty-workspace', emptyWsSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
         smartGroup.add(emptyWsSwitch);
 
-        // Shortcuts
+
         const shortcutGroup = new Adw.PreferencesGroup({
             title: _('Shortcuts'),
             description: _('No shortcut is set by default. Click Set to choose one — it takes effect immediately, no restart needed.'),
@@ -204,7 +204,7 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         this._addShortcutRow(shortcutGroup, settings, 'keybinding-arc-close',
             _('Arc: Close Front Window'), _('Close the front window of the arc carousel\'s front card'));
 
-        // ── Appearance Page ──
+
         const lookPage = new Adw.PreferencesPage({
             title: _('Appearance'),
             icon_name: 'applications-graphics-symbolic',
@@ -223,9 +223,9 @@ export default class StageManagerPreferences extends ExtensionPreferences {
             _('Pointer must rest on the edge this long before the sidebar opens (ms, 0 = instant)'),
             0, 1000, 50);
 
-        // Stack Layout — position only applies to the Stack layout; the card
-        // list itself stays a vertical column either way (see CLAUDE.md on
-        // why Bottom isn't offered here yet).
+
+
+
         const stackGroup = new Adw.PreferencesGroup({
             title: _('Stack Layout'),
             description: _('Stack layout only'),
@@ -252,7 +252,7 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         stackPosRow.add_suffix(stackPosDropdown);
         stackGroup.add(stackPosRow);
 
-        // Arc Layout — settings specific to the 'arc' sidebar-layout carousel.
+
         const arcGroup = new Adw.PreferencesGroup({
             title: _('Arc Layout'),
             description: _('Arc layout only'),
@@ -293,8 +293,8 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         this._addSpinRow(arcGroup, settings, 'arc-scroll-speed',
             _('Arc Scroll Speed'), _('Momentum-scroll speed (1-20)'), 1, 20, 1);
 
-        // Card scale/perspective are the Stack layout's own 3D card effect —
-        // Arc has its own separate 'arc-card-scale' above and no perspective tilt.
+
+
         const cardGroup = new Adw.PreferencesGroup({ title: _('Cards'), description: _('Stack layout only') });
         lookPage.add(cardGroup);
         this._bindLayoutVisibility(cardGroup, settings, 'stack');
@@ -307,16 +307,16 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         const animGroup = new Adw.PreferencesGroup({ title: _('Animation') });
         lookPage.add(animGroup);
 
-        // Slide duration is the Stack panel's own show/hide animation; Arc's
-        // card motions use their own fixed durations. Hide Delay (below) is
-        // shared — both layouts read auto-hide-delay.
+
+
+
         const animDurationRow = this._addSpinRow(animGroup, settings, 'animation-duration',
             _('Animation Duration'), _('Slide speed in milliseconds'), 0, 1000, 25);
         this._bindLayoutSensitivity(animDurationRow, settings, 'stack');
         this._addSpinRow(animGroup, settings, 'auto-hide-delay',
             _('Hide Delay'), _('Delay before hiding after mouse leaves (ms)'), 100, 5000, 100);
 
-        // ── About & Logs Page ──
+
         const aboutPage = new Adw.PreferencesPage({
             title: _('About'),
             icon_name: 'dialog-information-symbolic',
@@ -344,8 +344,8 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         });
         infoGroup.add(sessionRow);
 
-        // Project links — the repo URL comes from metadata.json so it stays in
-        // step with what EGO shows on the extension's page.
+
+
         const repoUrl = this.metadata.url || 'https://github.com/itsdigvijaysing/gnome-stage-manager';
         const linkGroup = new Adw.PreferencesGroup({
             title: _('Project'),
@@ -358,7 +358,7 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         linkGroup.add(this._addLinkRow(_('Report an Issue'),
             _('Bug reports and feature requests'), `${repoUrl}/issues`, _('Open')));
 
-        // Logs section
+
         const logGroup = new Adw.PreferencesGroup({
             title: _('Extension Logs'),
             description: _('Recent errors from this extension (for bug reports)'),
@@ -395,11 +395,11 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         logRow.set_child(scrollWin);
         logGroup.add(logRow);
 
-        // Not loaded on open — spawning `journalctl` unprompted is an EGO reviewer objection.
+
         logView.get_buffer().set_text(
             _('Press Refresh to load recent log messages.'), -1);
 
-        // Refresh button
+
         const refreshRow = new Adw.ActionRow({ title: _('Refresh Logs') });
         const refreshBtn = new Gtk.Button({
             label: _('Refresh'),
@@ -409,7 +409,7 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         refreshRow.add_suffix(refreshBtn);
         logGroup.add(refreshRow);
 
-        // Copy button
+
         const copyRow = new Adw.ActionRow({ title: _('Copy Logs') });
         const copyBtn = new Gtk.Button({
             label: _('Copy to Clipboard'),
@@ -426,8 +426,8 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         copyRow.add_suffix(copyBtn);
         logGroup.add(copyRow);
 
-        // Hidden until asked for; the first reveal is also what triggers the
-        // journal read, so opening preferences never spawns a subprocess.
+
+
         [logRow, refreshRow, copyRow].forEach(r => { r.visible = false; });
         showLogsBtn.connect('clicked', () => {
             const showing = !logRow.visible;
@@ -436,7 +436,7 @@ export default class StageManagerPreferences extends ExtensionPreferences {
             if (showing) this._loadLogs(logView);
         });
 
-        // Reset — destructive, so it sits last and asks first.
+
         const resetGroup = new Adw.PreferencesGroup({
             title: _('Reset'),
             description: _('Return every Stage Manager preference to its default'),
@@ -457,7 +457,7 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         resetGroup.add(resetRow);
     }
 
-    /** An ActionRow whose suffix button opens `uri` in the default browser. */
+
     _addLinkRow(title, subtitle, uri, label) {
         const row = new Adw.ActionRow({ title, subtitle });
         const button = new Gtk.LinkButton({
@@ -469,7 +469,7 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         return row;
     }
 
-    /** Ask before wiping settings — a reset is not undoable. */
+
     _confirmReset(window, settings) {
         const dialog = new Adw.AlertDialog({
             heading: _('Reset All Settings?'),
@@ -489,7 +489,7 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         dialog.present(window);
     }
 
-    /** Grey out `widget` (a group or row) while sidebar-layout isn't `wantedLayout`. */
+
     _bindLayoutSensitivity(widget, settings, wantedLayout) {
         const update = () => {
             widget.sensitive = settings.get_string('sidebar-layout') === wantedLayout;
@@ -499,9 +499,9 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         widget.connect('destroy', () => settings.disconnect(id));
     }
 
-    /** For groups that belong entirely to one layout: hide rather than grey out,
-     *  so the page only ever shows the settings that actually apply. Mixed
-     *  groups keep _bindLayoutSensitivity so their inert rows stay discoverable. */
+
+
+
     _bindLayoutVisibility(widget, settings, wantedLayout) {
         const update = () => {
             widget.visible = settings.get_string('sidebar-layout') === wantedLayout;
@@ -559,7 +559,7 @@ export default class StageManagerPreferences extends ExtensionPreferences {
     }
 
     _captureShortcut(parent, settings, key) {
-        // Adw.MessageDialog is deprecated in favor of Adw.AlertDialog (1.6+) — prefer it when available.
+
         const useAlert = typeof Adw.AlertDialog === 'function';
         const dialog = useAlert
             ? new Adw.AlertDialog({
@@ -576,7 +576,7 @@ export default class StageManagerPreferences extends ExtensionPreferences {
 
         const controller = new Gtk.EventControllerKey();
         controller.connect('key-pressed', (_c, keyval, _kc, state) => {
-            // Ignore modifier-only presses.
+
             if (this._isModifierKey(keyval)) return Gdk.EVENT_PROPAGATE;
 
             const mask = state & Gtk.accelerator_get_default_mod_mask();
@@ -610,13 +610,13 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         return Config.PACKAGE_VERSION || _('unknown');
     }
 
-    /** Read this extension's recent log lines out of the journal (Refresh button
-     *  only) — no GIO API for the journal, so an async read-only subprocess is unavoidable. */
+
+
     _loadLogs(textView) {
         const buf = textView.get_buffer();
         let proc;
         try {
-            // Matches both '[stage-manager] …' lines and the shell's own UUID-quoted errors.
+
             proc = Gio.Subprocess.new(
                 ['journalctl', '--user', '-b', '--no-pager', '-n', '50',
                  '-g', 'stage.?manager'],
@@ -631,7 +631,7 @@ export default class StageManagerPreferences extends ExtensionPreferences {
             try {
                 const [, stdout] = p.communicate_utf8_finish(res);
                 text = (stdout || '').trim();
-            } catch (_e) { /* leave text empty */ }
+            } catch (_e) {   }
             buf.set_text(text || _('No recent logs found.'), -1);
         });
     }

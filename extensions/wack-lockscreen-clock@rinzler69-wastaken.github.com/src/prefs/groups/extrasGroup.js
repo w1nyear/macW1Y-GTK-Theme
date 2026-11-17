@@ -12,7 +12,7 @@ export function buildExtrasGroup(extensionPreferences, window, _) {
 
     let showDocs = true;
 
-    
+
 
     if (showDocs) {
         const docsRow = new Adw.ActionRow({

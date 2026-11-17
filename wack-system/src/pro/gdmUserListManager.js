@@ -9,7 +9,7 @@ import {
     GDM_USER_LIST_CAP_NO_CSA,
 } from './gdmUtils.js';
 
-// Defensively guard against unallocated paint attempts in UserWidgetLabel
+
 if (UserWidget?.UserWidgetLabel?.prototype?.vfunc_paint) {
     const origPaint = UserWidget.UserWidgetLabel.prototype.vfunc_paint;
     UserWidget.UserWidgetLabel.prototype.vfunc_paint = function(paintContext) {
@@ -55,7 +55,7 @@ export class GdmUserListManager {
 
         const targetX = startX + Math.floor((w - effectiveW) / 2);
 
-        // Anchor user avatar and name near bottom edge (~65px bottom margin) matching user reference photo
+
         const bottomMargin = 65;
         const targetY = Math.max(50, Math.floor(h - effectiveH - bottomMargin));
 

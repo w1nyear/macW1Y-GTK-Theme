@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Keeps ~/.config/gtk-4.0/gtk.css following the system color scheme
-// (macW1Y Light/Dark), preserving Kiwi's managed imports. Standalone
-// twin lives in gtk-theme-sync@micronix (takes over after a re-login).
+
+
+
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
@@ -78,7 +78,7 @@ export function disable() {
         try {
             _iface.disconnect(_schemeId);
         } catch (e) {
-            // already gone
+
         }
         _schemeId = 0;
     }
@@ -86,7 +86,7 @@ export function disable() {
         try {
             _iface.disconnect(_themeId);
         } catch (e) {
-            // already gone
+
         }
         _themeId = 0;
     }

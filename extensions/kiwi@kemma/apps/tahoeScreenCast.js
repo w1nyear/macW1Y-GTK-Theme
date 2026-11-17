@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macW1Y Tahoe Screen Recording & Screen Sharing Menubar Indicator
-// Displays a macW1Y-style circular disc with a centered square cutout on the menubar
-// to the left of system icons whenever screen recording or screen sharing is active.
-// Clicking opens a Liquid Glass popup menu with live timer, status details, and stop button.
+
+
+
+
 
 import Atk from 'gi://Atk';
 import Clutter from 'gi://Clutter';
@@ -16,8 +16,8 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { getTopbarInk, watchInk } from './tahoeInk.js';
 import { t } from './mac_i18n.js';
 
-// Cairo-rendered macW1Y recording indicator icon:
-// A solid circular disc with a centered rounded square cutout.
+
+
 const MacScreenCastIcon = GObject.registerClass({
     GTypeName: `MacScreenCastIcon_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
 }, class MacScreenCastIcon extends St.DrawingArea {
@@ -71,21 +71,21 @@ const MacScreenCastIcon = GObject.registerClass({
 
             const cx = w / 2;
             const cy = h / 2;
-            const R = 8.5;     // outer circle radius (17px diameter)
-            const sq = 7.0;    // inner square cutout size
-            const sqR = 1.2;   // corner radius of inner square
+            const R = 8.5;
+            const sq = 7.0;
+            const sqR = 1.2;
 
             cr.set_fill_rule(imports.gi.cairo.FillRule.EVEN_ODD);
 
-            // 1. Outer circle
+
             cr.arc(cx, cy, R, 0, 2 * Math.PI);
 
-            // 2. Inner rounded square cutout
+
             const x = cx - sq / 2;
             const y = cy - sq / 2;
             this._rr(cr, x, y, sq, sq, sqR);
 
-            // Adaptive color matching menubar ink (pure white on dark glass, near-black on light)
+
             let isDarkTopbar = true;
             try {
                 isDarkTopbar = (typeof getTopbarInk === 'function' ? getTopbarInk() : 'dark') !== 'dark';
@@ -156,7 +156,7 @@ const MacScreenCastButton = GObject.registerClass({
     _buildMenu() {
         this.menu.box.add_style_class_name('mac-screencast-menu');
 
-        // Section 1: Header (Title + Live Timer with recording dot)
+
         const headItem = new PopupMenu.PopupBaseMenuItem({
             reactive: false,
             can_focus: false,
@@ -173,7 +173,7 @@ const MacScreenCastButton = GObject.registerClass({
             x_expand: true,
         });
 
-        // Pulsing red indicator dot in header
+
         const hDot = new St.Icon({
             icon_name: 'media-record-symbolic',
             icon_size: 15,
@@ -201,7 +201,7 @@ const MacScreenCastButton = GObject.registerClass({
         headItem.add_child(headBox);
         this.menu.addMenuItem(headItem);
 
-        // Section 2: Info Card (Details)
+
         const cardItem = new PopupMenu.PopupBaseMenuItem({
             reactive: false,
             can_focus: false,
@@ -213,24 +213,24 @@ const MacScreenCastButton = GObject.registerClass({
             x_expand: true,
         });
 
-        // Row: Source
+
         this._srcRow = this._createInfoRow(t('source_label', 'Джерело:'), t('entire_screen', 'Весь екран'));
         card.add_child(this._srcRow.box);
 
-        // Row: Resolution
+
         const mon = Main.layoutManager.primaryMonitor;
         const resText = mon ? `${mon.width} × ${mon.height}` : '1920 × 1080';
         this._resRow = this._createInfoRow(t('resolution_label', 'Роздільність:'), resText);
         card.add_child(this._resRow.box);
 
-        // Row: Destination / Type
+
         this._destRow = this._createInfoRow(t('save_location_label', 'Збереження:'), t('videos_folder', 'Папка «Відео»'));
         card.add_child(this._destRow.box);
 
         cardItem.add_child(card);
         this.menu.addMenuItem(cardItem);
 
-        // Section 3: Prominent Red Stop Button
+
         const stopItem = new PopupMenu.PopupBaseMenuItem({
             reactive: true,
             can_focus: true,
@@ -269,10 +269,10 @@ const MacScreenCastButton = GObject.registerClass({
         stopItem.add_child(stopBtn);
         this.menu.addMenuItem(stopItem);
 
-        // Separator
+
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        // Section 4: Secondary actions
+
         this._openFolderItem = new PopupMenu.PopupMenuItem(t('open_recordings_folder', 'Відкрити папку із записами'));
         this._openFolderItem.connect('activate', () => {
             this._openVideosFolder();
@@ -357,7 +357,7 @@ const MacScreenCastButton = GObject.registerClass({
             }
 
             const kids = rightBox.get_children();
-            // Find target system icon: keyboard, kiwi-wifi-button, ydotool-trigger-button
+
             const targetRoles = ['keyboard', 'kiwi-wifi-button', 'ydotool-trigger-button'];
             let targetIdx = -1;
             for (const role of targetRoles) {
@@ -490,7 +490,7 @@ export function enable(_settings = null, _gettext = null) {
         return;
     }
 
-    // Suppress stock GNOME Shell indicators so they don't duplicate or show the stock GNOME UI
+
     try {
         if (Main.panel.statusArea.screenRecording) {
             const c = Main.panel.statusArea.screenRecording.container;
@@ -510,7 +510,7 @@ export function enable(_settings = null, _gettext = null) {
         }
     } catch (_) {}
 
-    // Hook Screenshot UI screencast
+
     try {
         if (Main.screenshotUI) {
             _screenshotSignalId = Main.screenshotUI.connect(
@@ -520,7 +520,7 @@ export function enable(_settings = null, _gettext = null) {
         }
     } catch (_) {}
 
-    // Hook Remote Access Controller (PipeWire screen sharing / portals)
+
     try {
         _controller = global.backend?.get_remote_access_controller?.();
         if (_controller) {
@@ -536,14 +536,14 @@ export function enable(_settings = null, _gettext = null) {
         }
     } catch (_) {}
 
-    // Hook adaptive ink to repaint icon on topbar theme/wallpaper change
+
     try {
         _inkUnwatch = watchInk(() => {
             _indicator?._icon?.queue_repaint();
         });
     } catch (_) {}
 
-    // Initial sync
+
     _indicator._sync();
 }
 
@@ -568,7 +568,7 @@ export function disable() {
         _inkUnwatch = null;
     }
 
-    // Restore stock indicators
+
     try {
         if (_origRecShow && Main.panel.statusArea.screenRecording?.container) {
             Main.panel.statusArea.screenRecording.container.show = _origRecShow;

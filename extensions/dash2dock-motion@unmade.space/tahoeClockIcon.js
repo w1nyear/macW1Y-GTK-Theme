@@ -1,10 +1,10 @@
-// Tahoe live clock for the dock: real macW1Y Clock built from vector layers.
-// Face + 3 hands + cap are separate SVGs (tahoe-clock-*.svg in kiwi's icons),
-// each rasterized by St.Icon at 3x and GPU-downscaled - crisp at any
-// magnification, down to the minute ticks. Hands move via rotation_angle_z
-// (pure GPU transform, zero repaints, zero Cairo - nothing to segfault).
-// The container allocates children itself, so no St.Bin clamp can shrink
-// the oversampled layers back to icon size.
+
+
+
+
+
+
+
 
 import {
     St,
@@ -25,7 +25,7 @@ export function isClockApp(app) {
     }
 }
 
-// Fixed icon-size footprint for the dock layout, oversampled layers inside.
+
 const ClockBin = GObject.registerClass({
     GTypeName: 'TahoeClockBin',
 }, class TahoeClockBin extends St.Widget {
@@ -58,7 +58,7 @@ const ClockBin = GObject.registerClass({
                 child.allocate(cb);
             }
         } catch (e) {
-            // layout stays
+
         }
     }
 });
@@ -79,7 +79,7 @@ function _tick(bin, hour, min, sec) {
         hour.rotation_angle_z = ((now.get_hour() % 12) + now.get_minute() / 60) * 30;
         min.rotation_angle_z = (now.get_minute() + now.get_second() / 60) * 6;
         sec.rotation_angle_z = now.get_second() * 6;
-        // self-correct layer scale if the bin footprint ever changes
+
         const bw = bin.width || bin._clockSize;
         const s = bw / bin._layerPx;
         for (const l of [hour, min, sec]) {
@@ -87,7 +87,7 @@ function _tick(bin, hour, min, sec) {
                 l.set_scale(s, s);
         }
     } catch (e) {
-        // clock gone
+
     }
 }
 
@@ -97,7 +97,7 @@ export function createClockIcon(iconSize, oversample) {
     const s0 = 1 / over;
 
     const bin = new ClockBin(iconSize, px);
-    // shims so dock code treating this as an icon keeps working
+
     bin.iconSize = iconSize;
     bin._iconBin = bin;
     bin.update = () => {};
@@ -128,7 +128,7 @@ export function createClockIcon(iconSize, oversample) {
         try {
             GLib.Source.remove(timer);
         } catch (e) {
-            // gone
+
         }
     });
     return bin;

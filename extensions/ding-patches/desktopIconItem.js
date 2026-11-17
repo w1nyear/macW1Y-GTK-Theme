@@ -62,9 +62,9 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
         this._relativeX = 0.5;
     }
 
-    /** *********************
-     * Destroyers *
-     ***********************/
+
+
+
 
     removeFromGrid(callOnDestroy) {
         if (this._grid) {
@@ -78,18 +78,18 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
 
     _destroy() {
         this._destroyed = true;
-        /* Regular file data */
+
         if (this._queryFileInfoCancellable) {
             this._queryFileInfoCancellable.cancel();
             this._queryFileInfoCancellable = null;
         }
 
-        /* Thumbnailing */
+
         if (this._loadThumbnailDataCancellable) {
             this._loadThumbnailDataCancellable.cancel();
             this._loadThumbnailDataCancellable = null;
         }
-        /* Disconnect signals */
+
         this.disconnectAllSignals();
         this.container.destroy();
         this.container = null;
@@ -118,9 +118,9 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
         }
     }
 
-    /** *********************
-     * Creators *
-     ***********************/
+
+
+
 
     _createIconActor() {
         this.container = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, halign: Gtk.Align.CENTER});
@@ -146,7 +146,7 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
         } else {
             labelStyleContext.add_class('file-label');
         }
-        labelStyleContext = undefined; // prevent memory leaks
+        labelStyleContext = undefined;
         this._label.set_ellipsize(Pango.EllipsizeMode.END);
         this._label.set_line_wrap(true);
         this._label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR);
@@ -231,7 +231,7 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
                 c.closePath();
             }
 
-            let minStep = 8.5; /* Minimum step difference to warrant two-tier fillet contour */
+            let minStep = 8.5;
 
             if (pillLines.length === 1) {
                 cr.newPath();
@@ -285,7 +285,7 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
                     cr.closePath();
                     cr.fill();
                 } else {
-                    /* Lines are close in width -> UNIFY into a single whole rounded rectangle! */
+
                     let uxMin = Math.min(x0L, x1L);
                     let uxMax = Math.max(x0R, x1R);
                     let uyMin = y0T;
@@ -334,11 +334,11 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
         this.iconRectangle = new Gdk.Rectangle();
         this.labelRectangle = new Gdk.Rectangle();
 
-        /* We need to allow the "button-press" event to pass through the callbacks, to allow the DnD to work
-         * But we must avoid them to reach the main window.
-         * The solution is to allow them to pass in a EventBox, used both for detecting the events and the DnD, and block them
-         * in a second EventBox, located outside.
-         */
+
+
+
+
+
         this.connectSignal(this._shieldEventBox, 'button-press-event', (actor, event) => {
             return true;
         });
@@ -450,16 +450,16 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
                 lastCutPos = pos;
             }
             if (['.', ',', '-', '_', '@', ':'].includes(character)) {
-                /* if the next character is already an space or this is the last
-                 * character, the string will be naturally cut here, so we do
-                 * nothing.
-                 */
+
+
+
+
                 if ((nextChar == ' ') || (nextChar == '')) {
                     continue;
                 }
-                /* if there is a cut element in the last four previous characters,
-                 * do not add a new cut element.
-                 */
+
+
+
                 if ((lastCutPos > -1) && ((pos - lastCutPos) < 4)) {
                     continue;
                 }
@@ -469,9 +469,9 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
         this._label.label = newText;
     }
 
-    /** *********************
-     * Button Clicks *
-     ***********************/
+
+
+
 
     _updateClickState(event) {
         let settings = Gtk.Settings.get_default();
@@ -537,9 +537,9 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
     _doButtonOneReleased(event) {
     }
 
-    /** *********************
-     * Drag and Drop *
-     ***********************/
+
+
+
 
     _onEnter(element) {
         if (!this._fullStyleContext.has_class('file-item-hover')) {
@@ -688,7 +688,7 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
                 Enums.DndTargetInfo.URI_LIST);
         }
         widget.drag_source_set_target_list(targets);
-        targets = undefined; // prevent memory leaks
+        targets = undefined;
         this.connectSignal(widget, 'drag-begin', (w, context) => {
             const scale = this._icon.get_scale_factor();
             const border = this._fullStyleContext.get_border(this.container.get_state_flags());
@@ -762,9 +762,9 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
 
     }
 
-    /** *********************
-     * Icon Rendering *
-     ***********************/
+
+
+
 
     updateIcon() {
         return this._updateIcon();
@@ -874,12 +874,12 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
     }
 
     _copyAndResizeIfNeeded(pixbuf) {
-        /**
-         * If the pixbuf is the original from the theme, copies it into a new one, to be able
-         * to paint the emblems without altering the cached pixbuf in the theme object.
-         * Also, ensures that the copied pixbuf is, at least, as big as the desired icon size,
-         * to ensure that the emblems fit.
-         */
+
+
+
+
+
+
 
         if (this._copiedPixbuf) {
             return pixbuf;
@@ -967,9 +967,9 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
         return itemIcon;
     }
 
-    /** *********************
-     * Getters and setters *
-     ***********************/
+
+
+
 
     get state() {
         return this._state;

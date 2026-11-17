@@ -42,9 +42,9 @@ const AnalogClockFace = GObject.registerClass(
 			});
 
 			this._dark = theme?.dark ?? false;
-			// Smooth mode (reference clock-analog): the second hand sweeps
-			// continuously and repaints every frame; the default approved
-			// look keeps the 1s step timer below.
+
+
+
 			this._smooth = smooth;
 			const accent = parseCssColor(theme?.accent || DEFAULT_ACCENT);
 			this._accent = [accent.r, accent.g, accent.b];
@@ -53,8 +53,8 @@ const AnalogClockFace = GObject.registerClass(
 				this._timeline = new Clutter.Timeline({actor: this, duration: 1000, repeat_count: -1});
 				this._timeline.connect('new-frame', () => this.queue_repaint());
 				this._repaintTimeoutId = 0;
-				// Clutter's map/unmap are vfuncs, not signals — mirror the
-				// digital clock ring's notify::mapped handling.
+
+
 				this.connect('notify::mapped', () => {
 					if (!this._timeline)
 						return;
@@ -106,8 +106,8 @@ const AnalogClockFace = GObject.registerClass(
 			const centerY = height / 2;
 			const halfEdge = Math.max(1, size / 2 - TICK_INSET);
 			const hour = now.getHours() % 12;
-			// Smooth mode adds the millisecond fraction like the reference
-			// clockAnalog (sec + ms/1000), letting the minute hand follow it.
+
+
 			const second = now.getSeconds() + (this._smooth ? now.getMilliseconds() / 1000 : 0);
 			const minute = now.getMinutes() + second / 60;
 			const marks = this._dark ? [0.96, 0.96, 0.96] : [0.14, 0.12, 0.18];

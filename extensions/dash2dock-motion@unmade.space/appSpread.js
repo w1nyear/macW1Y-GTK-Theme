@@ -1,7 +1,7 @@
-// This file is part of Dash2Dock Motion, a modified copy of Dash to Dock
-// (https://github.com/micheleg/dash-to-dock) by Michele Gaio and
+
+
 // contributors. Distributed under the GNU General Public License,
-// version 2 or later.
+
 import {Atk, Clutter} from './dependencies/gi.js';
 
 import {
@@ -21,7 +21,7 @@ export class AppSpread {
         this.supported = true;
         this.windows = [];
 
-        // fail early and do nothing, if mandatory gnome shell functions are missing
+
         if (Main.overview.isDummy ||
             !Workspace?.Workspace?.prototype._isOverviewWindow ||
             !WorkspaceThumbnail?.WorkspaceThumbnail?.prototype._isOverviewWindow) {
@@ -52,7 +52,7 @@ export class AppSpread {
     toggle(app) {
         const newApp = this.app !== app;
         if (this.app)
-            Main.overview.hide(); // also triggers hook 'hidden'
+            Main.overview.hide();
 
         if (app && newApp)
             this._showAppSpread(app);
@@ -90,18 +90,18 @@ export class AppSpread {
         if (this.isInAppSpread)
             return;
 
-        // Checked in overview "hide" event handler _hideAppSpread
+
         this.app = app;
         this._updateWindows();
 
-        // we need to hook into overview 'hidden' like this, in case app spread
-        // overview is hidden by choosing another app it should then do its
-        // cleanup too
+
+
+
         this._signalHandlers.add(Main.overview, 'hidden', () => this._hideAppSpread());
 
         const appSpread = this;
         this._methodInjections.add([
-            // Filter workspaces to only show current app windows
+
             Workspace.Workspace.prototype, '_isOverviewWindow',
             function (originalMethod, window) {
                 /* eslint-disable no-invalid-this */
@@ -111,7 +111,7 @@ export class AppSpread {
             },
         ],
         [
-            // Filter thumbnails to only show current app windows
+
             WorkspaceThumbnail.WorkspaceThumbnail.prototype, '_isOverviewWindow',
             function (originalMethod, windowActor) {
                 /* eslint-disable no-invalid-this */
@@ -133,7 +133,7 @@ export class AppSpread {
             try {
                 hasEventVFunc = !!activitiesButton.constructor.prototype.vfunc_event;
             } catch {
-                // Resolving the vfunc can fail; treat it as unavailable.
+
             }
 
             if (hasEventVFunc) {
@@ -150,7 +150,7 @@ export class AppSpread {
                     },
                 ]);
             } else {
-                /* Shell >= 50 uses gestures on the activities button */
+
                 const click = new Clutter.ClickGesture();
                 click.set_recognize_on_press(true);
                 click.set_enabled(true);
@@ -180,8 +180,8 @@ export class AppSpread {
                 this._restoreDefaultOverview();
         });
 
-        // If closing windows in AppSpread, and only one window left:
-        // exit app spread and focus remaining window (handled in _hideAppSpread)
+
+
         this._signalHandlers.add(this.app, 'windows-changed', () => {
             this._updateWindows();
 
@@ -203,7 +203,7 @@ export class AppSpread {
             Main.panel.statusArea?.activities.add_accessible_state(Atk.StateType.CHECKED);
         }
 
-        // Restore original behaviour
+
         this.app = null;
         this._enableSearch();
         this._methodInjections.clear();
@@ -211,7 +211,7 @@ export class AppSpread {
         this._vfuncInjections.clear();
         Main.panel.statusArea?.activities.remove_action_by_name(APP_SPREAD_RESTORE_ACTION);
 
-        // Check reason for leaving AppSpread was closing app windows and only one window left...
+
         if (this.windows.length === 1)
             Main.activateWindow(this.windows[0]);
 

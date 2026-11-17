@@ -1,4 +1,4 @@
-// Logger class. Used by other classes and initialized in extension.js.
+
 export class Logger {
     _settings;
     _outputLogs;

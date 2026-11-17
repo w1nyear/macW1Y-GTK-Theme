@@ -5,30 +5,30 @@ import { getWindowActors, isActorValid, getAllocatedSize, setActorVisible, ensur
 import { isFrameSyncFrozen, SAME_FRAME_WINDOW_US, hexToColorArray } from './animation.js';
 import { noteStrandEntry } from './diagnostics.js';
 import { reportFrameLoopError } from './logger.js';
-// How far the glass extends past the window on each side. It is both the
-// sampling headroom for refraction and blur and the only room the drop shadow
-// has to render into, so it grows with the shadow settings instead of
-// enlarging every window's glass permanently.
+
+
+
+
 const GLASS_MIN_MARGIN = 10;
-// Room between the shadow's largest radius and the actor edge, so the shadow
-// fades out before it is clipped. dockManager leaves the same 20px.
+
+
 const SHADOW_MARGIN_HEADROOM = 20;
-// prefs.js caps shadow-radius at 100.
+
 const GLASS_MAX_MARGIN = 100 + SHADOW_MARGIN_HEADROOM;
-// Consecutive stranded frames before each stage of the window actor rescue:
-// first a relayout of the nearest allocated ancestor, then a remap of mutter's
-// window actor itself. See ensureWindowActorAllocated().
+
+
+
 const WINDOW_ACTOR_RELAYOUT_FRAMES = 4;
 const WINDOW_ACTOR_STRANDED_FRAMES = 14;
-// GTK's Wayland backend maps a menu xdg_popup onto DROPDOWN_MENU; the other
-// two cover X11 and toolkits that pick a different hint.
+
+
 const MENU_WINDOW_TYPES = [
     Meta.WindowType.DROPDOWN_MENU,
     Meta.WindowType.POPUP_MENU,
     Meta.WindowType.MENU,
 ];
-// Bound on the transient_for walk, so a cycle cannot hang the first-frame
-// handler. A desktop menu is one hop from the desktop, submenus a few more.
+
+
 const MAX_TRANSIENT_DEPTH = 8;
 
 export class ApplicationManager {
@@ -38,7 +38,7 @@ export class ApplicationManager {
     _states = new Map();
     _settingsSignals = [];
     _displaySignals = [];
-    // Handlers on windows created but not yet painted. See _onWindowCreated().
+
     _newWindows = new Map();
     _frameSignalId = 0;
     _lastTickUs = 0;
@@ -72,9 +72,9 @@ export class ApplicationManager {
         this._removeAllEffects();
     }
 
-    // A window can only be dressed once it has painted. The handlers are
-    // dropped after the first frame, when the window goes away first, or on
-    // cleanup.
+
+
+
     _onWindowCreated(metaWindow) {
         const actor = metaWindow.get_compositor_private();
         if (!actor)
@@ -103,8 +103,8 @@ export class ApplicationManager {
             this._settingsSignals.push(this._settings.connect(`changed::${key}`, callback));
         };
         for (const profile of ['application', 'desktop-menu']) {
-            // _syncWhitelist() drops the windows that no longer qualify, builds the
-            // ones that now do, and removes everything when both switches are off.
+
+
             connectSetting(this._profileEnableKey(profile), () => {
                 this._syncWhitelist();
                 if (this._isEffectEnabled())
@@ -122,7 +122,7 @@ export class ApplicationManager {
         connectSetting('application-glass-on-maximized', () => { this._glassOnMaximized = this._settings.get_boolean('application-glass-on-maximized'); this._updateMaximized(); });
         this._cornerOnMaximized = this._settings.get_boolean('application-corner-on-maximized');
         this._glassOnMaximized = this._settings.get_boolean('application-glass-on-maximized');
-        // The shadow renders into the margin, so these resize the glass.
+
         connectSetting('shadow-radius', () => this._updateGlassMargin());
         connectSetting('shadow-intensity', () => this._updateGlassMargin());
     }
@@ -138,12 +138,12 @@ export class ApplicationManager {
         }
     }
 
-    /** Appearance key in a profile's namespace, e.g. `desktop-menu-tint-color`. */
+
     _profileKey(profile, suffix) {
         return `${profile}-${suffix}`;
     }
 
-    /** The switch that turns one profile on, e.g. `enable-desktop-menu-glass`. */
+
     _profileEnableKey(profile) {
         return `enable-${profile}-glass`;
     }
@@ -152,14 +152,14 @@ export class ApplicationManager {
         return this._settings.get_boolean(this._profileEnableKey(profile));
     }
 
-    // Whether any profile wants glass. The per-window decision is made in
-    // _profileForWindow().
+
+
     _isEffectEnabled() {
         return this._isProfileEnabled('application') || this._isProfileEnabled('desktop-menu');
     }
 
-    // WM_CLASS casing differs between toolkits, and the preferences promise a
-    // case-insensitive match.
+
+
     _listContainsClass(list, wmClass) {
         if (!wmClass)
             return false;
@@ -177,14 +177,14 @@ export class ApplicationManager {
         return this._listContainsClass(blacklist, metaWindow.get_wm_class());
     }
 
-    /**
-     * Whether this is the menu the desktop itself puts up (right-click on the
-     * wallpaper). On GNOME 50 / Wayland with Desktop Icons NG it is a
-     * DROPDOWN_MENU window with no WM_CLASS or application id, transient for
-     * the DESKTOP window, so the menu type plus that transient chain is the
-     * only reliable signature. An in-app popup such as Chrome's has neither.
-     * Override-redirect windows are managed by their clients and left alone.
-     */
+
+
+
+
+
+
+
+
     _isDesktopMenuWindow(metaWindow) {
         if (metaWindow.is_override_redirect())
             return false;
@@ -194,8 +194,8 @@ export class ApplicationManager {
         for (let depth = 0; parent && depth < MAX_TRANSIENT_DEPTH; depth++) {
             if (parent.get_window_type() === Meta.WindowType.DESKTOP)
                 return true;
-            // A submenu is transient for its parent menu. Walk through menus only,
-            // never up through an ordinary app window.
+
+
             if (!MENU_WINDOW_TYPES.includes(parent.get_window_type()))
                 return false;
             parent = parent.get_transient_for();
@@ -203,22 +203,22 @@ export class ApplicationManager {
         return false;
     }
 
-    /**
-     * The profile that should dress this window, or null to leave it alone.
-     * _shouldApplyToWindow() and _setupWindow() both use it so they agree.
-     */
+
+
+
+
     _profileForWindow(windowActor) {
         const metaWindow = windowActor.get_meta_window();
         if (!metaWindow)
             return null;
-        // Checked first so a desktop menu can never fall through to "apply to
-        // all windows" and pick up the application settings.
+
+
         if (this._isDesktopMenuWindow(metaWindow))
             return this._isProfileEnabled('desktop-menu') ? 'desktop-menu' : null;
         if (!this._isProfileEnabled('application'))
             return null;
-        // "Apply to all windows" skips the whitelist but still only covers normal
-        // and dialog windows, and still honours the blacklist.
+
+
         if (this._settings.get_boolean('application-glass-all-windows')) {
             const windowType = metaWindow.get_window_type();
             const isNormal = windowType === Meta.WindowType.NORMAL ||
@@ -252,8 +252,8 @@ export class ApplicationManager {
             this._removeAllEffects();
             return;
         }
-        // A window that now belongs to the other profile is rebuilt too, since
-        // the profile is fixed in its state.
+
+
         for (const [actor, state] of [...this._states.entries()]) {
             if (this._profileForWindow(actor) !== state.profile) {
                 this._cleanupState(state);
@@ -266,8 +266,8 @@ export class ApplicationManager {
         }
     }
 
-    // The margin the shadow settings need. Without a shadow the glass keeps the
-    // minimum, so its framebuffers are not enlarged for nothing.
+
+
     _computeGlassMargin() {
         const radius = this._settings.get_double('shadow-radius');
         const intensity = this._settings.get_double('shadow-intensity');
@@ -276,8 +276,8 @@ export class ApplicationManager {
         return Math.min(GLASS_MAX_MARGIN, Math.max(GLASS_MIN_MARGIN, Math.ceil(radius) + SHADOW_MARGIN_HEADROOM));
     }
 
-    // Pushes a changed margin into every glass. The margin is part of the
-    // geometry signature, so the next frame resizes the glass.
+
+
     _updateGlassMargin() {
         const next = this._computeGlassMargin();
         if (next === this._glassMargin)
@@ -307,8 +307,8 @@ export class ApplicationManager {
         glass.setSaturation(this._settings.get_double(k('saturation')));
     }
 
-    // The sync runs from the stage's 'before-update', i.e. only on frames the
-    // compositor paints anyway, and never requests frames of its own.
+
+
     _startFrameSync() {
         if (this._frameSignalId !== 0)
             return;
@@ -341,9 +341,9 @@ export class ApplicationManager {
             return;
         const originalOpacity = surfaceActor.opacity;
         surfaceActor.opacity = Math.round(this._getContentOpacity(profile) * 255);
-        // Inside the window actor and below its surface: it moves, scales and
-        // fades with the window, and it reads the stage after everything below
-        // the window and before the window itself.
+
+
+
         const glass = new BackdropGlass({
             extensionPath: this._extensionPath,
             settings: this._settings,
@@ -355,10 +355,10 @@ export class ApplicationManager {
         glass.setPadding(this._glassMargin);
         this._applyAppearance(glass, profile);
         glass.setIsDock(false);
-        // No rim, specular or sheen: around a window with translucent content
-        // they read as a bright frame. Only this window's glass is affected.
+
+
         glass.setSurfaceLightEnabled(false);
-        // Windows draw their own circular corners, which the glass has to match.
+
         glass.setCornerSmoothingEnabled(false);
         glass.setShadowMaxRadius(Math.max(0, this._glassMargin - SHADOW_MARGIN_HEADROOM));
         windowActor.insert_child_below(glass, surfaceActor);
@@ -387,7 +387,7 @@ export class ApplicationManager {
         if (metaWin) {
             state.signals.push({
                 obj: metaWin,
-                // Maximize and tiling change the invisible border.
+
                 id: metaWin.connect('size-changed', () => { state.frameLocal = undefined; }),
             });
             state.signals.push({
@@ -403,8 +403,8 @@ export class ApplicationManager {
                 }),
             });
         }
-        // The glass is a child of the window actor and is already disposed when
-        // this runs; _cleanupState() checks for that.
+
+
         state.signals.push({
             obj: windowActor,
             id: windowActor.connect('destroy', () => {
@@ -414,11 +414,11 @@ export class ApplicationManager {
         });
     }
 
-    // The frame rect's origin inside the buffer rect, i.e. the invisible CSD
-    // border. It only changes with the decorations, but during a drag the frame
-    // rect trails the buffer rect by a frame, so the difference jumps by the
-    // mouse movement. It is sampled only while the actor stands still;
-    // 'size-changed' clears it.
+
+
+
+
+
     _frameLocalOffset(state, actor, rect, bufferRect) {
         const px = actor.x;
         const py = actor.y;
@@ -459,14 +459,14 @@ export class ApplicationManager {
         }
     }
 
-    // Hides the glass while its window is not shown on this workspace. The
-    // geometry signature is dropped so the next sync places it again.
+
+
     _hideGlass(state) {
         setActorVisible(state.glass, false);
         state.geomSig = undefined;
     }
 
-    // Returns whether the window moved since the last sync.
+
     _syncState(state) {
         const actor = state.windowActor;
         if (!actor.get_stage() || !actor.mapped) {
@@ -476,7 +476,7 @@ export class ApplicationManager {
         const metaWin = actor.get_meta_window();
         if (!metaWin)
             return false;
-        // Folds the repaints of the setters below into one.
+
         state.glass.beginBatch();
         try {
             return this._syncStateInner(state, actor, metaWin);
@@ -486,13 +486,13 @@ export class ApplicationManager {
         }
     }
 
-    /**
-     * Places the glass on the frame rect, in the window actor's coordinates.
-     * GNOME animates a window (open, close, minimise, resize) through the
-     * actor's scale and translation while the frame rect is already final, and
-     * the glass follows those transforms with the window. They still move it on
-     * screen, so they are part of the signature that tells syncSources().
-     */
+
+
+
+
+
+
+
     _syncStateInner(state, actor, metaWin) {
         const winWorkspace = metaWin.get_workspace();
         if (winWorkspace && winWorkspace !== global.workspace_manager.get_active_workspace()) {
@@ -531,13 +531,13 @@ export class ApplicationManager {
             state.glass.setResolution(w, h);
             state.glass.setGlassGeometry(0, 0, w, h);
         }
-        // Every frame: the windows below move on their own.
+
         state.glass.syncSources(moved);
         return moved;
     }
 
-    // Stores `values` as the geometry signature and returns whether it was
-    // unchanged. A new signature starts as NaN, which never compares equal.
+
+
     _updateGeometrySignature(state, values) {
         let sig = state.geomSig;
         if (!sig || sig.length !== values.length) {
@@ -555,15 +555,15 @@ export class ApplicationManager {
     }
 
     _frameTick() {
-        // Diagnostic switch that freezes the sync so its cost can be measured.
+
         if (isFrameSyncFrozen())
             return;
-        // Two stage views updating in the same frame each emit 'before-update'.
+
         const nowUs = GLib.get_monotonic_time();
         if (nowUs - this._lastTickUs < SAME_FRAME_WINDOW_US)
             return;
         this._lastTickUs = nowUs;
-        // One window's failure must not stop the others.
+
         for (const state of this._states.values()) {
             try {
                 this._syncFrameState(state);
@@ -579,18 +579,18 @@ export class ApplicationManager {
         if (!metaWin)
             return;
         const title = metaWin.get_title() || '(untitled)';
-        // Names this glass in diagnostic dumps.
+
         state.glass._diagOwnerLabel = title;
-        // A window that moves, or is animated, has a relayout pending in every
-        // frame this runs in, so only one that stays put can be stranded.
+
+
         if (this._syncState(state)) {
             clearStranded(state.windowActor);
             clearStranded(state.glass);
             return;
         }
-        // The window actor is rescued before the glass. Its children are laid out
-        // by its default layout, so a stranded window actor swallows every
-        // relayout they queue and the glass's own rescue could never land.
+
+
+
         const rescue = ensureWindowActorAllocated(state.windowActor, WINDOW_ACTOR_RELAYOUT_FRAMES, WINDOW_ACTOR_STRANDED_FRAMES);
         if (rescue)
             this._logStrand(state, metaWin, title, rescue);
@@ -610,12 +610,12 @@ export class ApplicationManager {
             `min=${metaWin.minimized}`);
     }
 
-    /**
-     * Re-allocates the glass once its window actor is mapped again, after a
-     * restore from minimise. clutter_actor_allocate() skips unmapped actors, so
-     * the glass still has the allocation it had mid-way through the minimise
-     * animation. Runs on the next BEFORE_REDRAW, once the map has settled.
-     */
+
+
+
+
+
+
     _forceGlassReallocation(state) {
         if (state.remapReallocLaterId)
             return;
@@ -639,8 +639,8 @@ export class ApplicationManager {
         for (const { obj, id } of state.signals)
             obj.disconnect(id);
         state.signals = [];
-        // The glass is a child of the window actor, and already disposed when
-        // this runs from the window actor's destroy handler.
+
+
         if (isActorValid(state.surfaceActor))
             state.surfaceActor.opacity = state.originalOpacity;
         state.glass.cleanup();

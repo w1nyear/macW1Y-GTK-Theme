@@ -3,8 +3,8 @@ import GLib from 'gi://GLib';
 import * as Logger from './logger.js';
 import { _ } from './i18n.js';
 
-// dbusmenu is optional. Fedora minimal installations and GTK-action-only apps
-// must still be able to load AppMenu without the typelib installed.
+
+
 let Dbusmenu = null;
 try {
     const GIRepository = imports.gi.GIRepository;
@@ -21,9 +21,9 @@ const GTK_ACTIONS_INTERFACE = 'org.gtk.Actions';
 
 Gio._promisify(Gio.DBusConnection.prototype, 'call', 'call_finish');
 
-// ── well-known action → human label ──────────────────────────────────────
+
 const KNOWN_LABELS = new Map([
-    // App menu
+
     ['about', 'About'],
     ['preferences', 'Settings'],
     ['options', 'Settings'],
@@ -36,7 +36,7 @@ const KNOWN_LABELS = new Map([
     ['make-default', 'Make Default'],
     ['show-diagnostics', 'Diagnostics'],
 
-    // File menu
+
     ['new-window', 'New Window'],
     ['clone-window', 'New Window'],
     ['tepl-new-window', 'New Window'],
@@ -65,7 +65,7 @@ const KNOWN_LABELS = new Map([
     ['search-settings', 'Search Settings'],
     ['properties', 'Properties'],
 
-    // Edit menu
+
     ['undo', 'Undo'],
     ['redo', 'Redo'],
     ['cut', 'Cut'],
@@ -87,7 +87,7 @@ const KNOWN_LABELS = new Map([
     ['insert-emoji', 'Emoji & Symbols'],
     ['insert-symbol', 'Insert Symbol'],
 
-    // View menu
+
     ['zoom-in', 'Zoom In'],
     ['zoom-out', 'Zoom Out'],
     ['zoom-default', 'Actual Size'],
@@ -116,7 +116,7 @@ const KNOWN_LABELS = new Map([
     ['filter', 'Filter…'],
     ['style-scheme', 'Color Scheme'],
 
-    // Format / Text
+
     ['bold', 'Bold'],
     ['italic', 'Italic'],
     ['underline', 'Underline'],
@@ -135,7 +135,7 @@ const KNOWN_LABELS = new Map([
     ['numbered-list', 'Numbered List'],
     ['toggle-list', 'Toggle List'],
 
-    // Tools
+
     ['spell-check', 'Spell Check'],
     ['check-spelling', 'Spell Check'],
     ['word-count', 'Word Count'],
@@ -144,42 +144,42 @@ const KNOWN_LABELS = new Map([
     ['comment', 'Comment'],
 ]);
 
-// ── action category matchers ─────────────────────────────────────────────
+
 function _categoryForAction(name) {
     const n = name.toLowerCase();
 
-    // App menu actions — exclude help/about (those go to Help menu)
+
     if (/^(preferences|options|quit|exit|close$|make-default|show-diagnostics|diagnostics)$/.test(n))
         return 'app';
 
-    // File actions — prefix-based
+
     if (/^(new-|clone-|tepl-|open|save|print|export|import|revert|send-|share|close-tab|close-window|close-all|page-setup|show-file|search-settings|properties)/.test(n))
         return 'file';
 
-    // Edit actions
+
     if (/^(undo|redo|cut|copy|paste|delete|select-all|deselect|find|replace|go-to|clear-history|remove-recent|insert-)/.test(n))
         return 'edit';
 
-    // View actions
+
     if (/^(zoom-|fullscreen|toggle-fullscreen|reload|refresh|show-|sort-|filter|style-scheme)/.test(n))
         return 'view';
 
-    // Format actions
+
     if (/^(bold|italic|underline|strikethrough|font|text-direction|align-|indent|unindent|increase-indent|decrease-indent|bullet-|numbered-|toggle-list)/.test(n))
         return 'format';
 
-    // Tools
+
     if (/^(spell|check-spelling|word-count|document-statistics|highlight-|comment)/.test(n))
         return 'tools';
 
-    // Help (only when not already in app menu)
+
     if (/^(help|about|shortcuts|keyboard-shortcuts)/.test(n))
         return 'help';
 
     return 'other';
 }
 
-// ── label helpers ─────────────────────────────────────────────────────────
+
 function _labelForAction(name) {
     const known = KNOWN_LABELS.get(name);
     if (known)
@@ -196,7 +196,7 @@ function _humanizeActionName(name) {
         .join(' ');
 }
 
-// ── dbusmenu helpers ──────────────────────────────────────────────────────
+
 function _normalizeLabel(label) {
     const raw = String(label ?? '')
         .replace(/_/g, '')
@@ -258,10 +258,10 @@ function _getOrnament(item) {
     return 'none';
 }
 
-// ── GTK action state → ornament ──────────────────────────────────────────
+
 function _gtkActionOrnament(action) {
-    // GTK action state: a GLib.Variant with the current state value.
-    // Boolean true  → check ornament,  a string → radio ornament.
+
+
     if (action.state === undefined || action.state === null)
         return 'none';
 
@@ -270,7 +270,7 @@ function _gtkActionOrnament(action) {
         return action.state.get_boolean() ? 'check' : 'none';
     }
     if (typeString === 's') {
-        // radio-like: state is a string (e.g. the selected style scheme)
+
         return 'dot';
     }
     return 'none';
@@ -304,8 +304,8 @@ function _busNameToObjectPath(busName) {
     return `/${busName.replace(/\./g, '/')}`;
 }
 
-// Probe only an already-owned application bus. Activating an app just to
-// inspect its menu is surprising, and synchronous probes freeze GNOME Shell.
+
+
 async function _probeGtkActions(busName, objectPath, cancellable) {
     try {
         const result = await Gio.DBus.session.call(
@@ -324,7 +324,7 @@ async function _probeGtkActions(busName, objectPath, cancellable) {
     }
 }
 
-// ── RealMenuManager ──────────────────────────────────────────────────────
+
 export class RealMenuManager {
     constructor(settings, onChanged) {
         this._settings = settings;
@@ -486,7 +486,7 @@ export class RealMenuManager {
         return null;
     }
 
-    // ── dbusmenu (registrar) backend ──────────────────────────────────
+
 
     _buildDbusMenuModel(appName = '') {
         if (!this._client)
@@ -527,7 +527,7 @@ export class RealMenuManager {
         };
     }
 
-    // ── GTK actions backend ───────────────────────────────────────────
+
 
     _buildGtkActionMenuModel() {
         if (!this._currentGtkContext)
@@ -537,7 +537,7 @@ export class RealMenuManager {
         if (actions.length === 0)
             return null;
 
-        // Categorize every action
+
         const buckets = {
             app: [],
             file: [],
@@ -554,7 +554,7 @@ export class RealMenuManager {
             buckets[cat].push(action);
         }
 
-        // Build items from each bucket
+
         const build = (arr) => this._buildGtkActionItems(arr);
 
         const appItems = build(buckets.app);
@@ -566,21 +566,21 @@ export class RealMenuManager {
         const helpItems = build(buckets.help);
         const otherItems = build(buckets.other);
 
-        // Assemble app menu children: app-category items + any unrecognised + per-window actions
+
         const appChildren = [...appItems];
         if (otherItems.length > 0) {
             if (appChildren.length > 0)
                 appChildren.push({ type: 'separator' });
             appChildren.push(...otherItems);
         }
-        // Add per-window actions (e.g. "Read Only" tab toggle in Ptyxis)
+
         if (this._cachedWinActions && this._cachedWinActions.length > 0) {
             if (appChildren.length > 0)
                 appChildren.push({ type: 'separator' });
             appChildren.push(...this._buildGtkActionItems(this._cachedWinActions));
         }
 
-        // Assemble top-level menus
+
         const topLevelMenus = [];
         if (fileItems.length > 0) topLevelMenus.push({ label: _('File'), children: fileItems });
         if (editItems.length > 0) topLevelMenus.push({ label: _('Edit'), children: editItems });
@@ -601,7 +601,7 @@ export class RealMenuManager {
         };
     }
 
-    // ── backend lifecycle ──────────────────────────────────────────────
+
 
     _setBackend(kind, registration) {
         this._disposeCurrentBackend();
@@ -629,7 +629,7 @@ export class RealMenuManager {
     _disposeCurrentBackend() {
         if (this._client) {
             this._clientSignalIds.forEach(id => {
-                try { this._client.disconnect(id); } catch (_e) { /* ignore */ }
+                try { this._client.disconnect(id); } catch (_e) {   }
             });
             this._clientSignalIds = [];
             this._client = null;
@@ -657,7 +657,7 @@ export class RealMenuManager {
         }
     }
 
-    // ── GTK action helpers ─────────────────────────────────────────────
+
     _buildGtkActionItems(actions) {
         return actions
             .map(action => this._buildGtkActionItem(action))
@@ -699,7 +699,7 @@ export class RealMenuManager {
         }
     }
 
-    // ── signals ────────────────────────────────────────────────────────
+
 
     _emitChanged() {
         try {
@@ -709,7 +709,7 @@ export class RealMenuManager {
         }
     }
 
-    // ── dbusmenu tree builders ─────────────────────────────────────────
+
 
     _buildTopLevelDescriptor(item) {
         if (!_isVisible(item))

@@ -21,11 +21,11 @@ import Gio from 'gi://Gio';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { toggle as tahoeToggle } from './tahoeApps.js';
 
-// Use a reverse-DNS desktop ID so DBusActivatable maps to a valid bus name
+
 const LAUNCHPAD_DESKTOP_ID = 'org.gnome.Shell.Extensions.Kiwi.Launchpad.desktop';
 const ICON_RELATIVE_PATH = 'icons/launchpad.svg';
 const DBUS_NAME = 'org.gnome.Shell.Extensions.Kiwi';
-// DBusActivatable app bus name must match desktop id without .desktop
+
 const APP_DBUS_NAME = 'org.gnome.Shell.Extensions.Kiwi.Launchpad';
 const DBUS_OBJECT_PATH = '/org/gnome/Shell/Extensions/Kiwi';
 const DBUS_INTERFACE_XML = `
@@ -45,10 +45,10 @@ const APP_DBUS_INTERFACE_XML = `
     </interface>
 </node>`;
 
-let _enabled = false; // Guards repeated enable() calls
-let _busOwnerId = 0; // For custom Kiwi interface
+let _enabled = false;
+let _busOwnerId = 0;
 let _dbusExport = null;
-let _appBusOwnerId = 0; // For org.freedesktop.Application
+let _appBusOwnerId = 0;
 let _appDbusExport = null;
 const _mainLoopSources = new Set();
 const _overviewSignalIds = new Set();
@@ -86,20 +86,20 @@ function _isAppGridVisible() {
     if (!Main.overview.visible)
         return false;
 
-    // Access overview controls (path varies by GNOME version)
+
     const overview = Main.overview;
     let controls = overview._overview?._controls;
     if (!controls)
         controls = overview.controls || overview._controls;
-    
+
     if (!controls)
         return false;
 
-    // Check state adjustment - APP_GRID = 2, WINDOW_PICKER = 1, HIDDEN = 0
+
     if (controls._stateAdjustment)
         return controls._stateAdjustment.value === 2;
-    
-    // Fallback: check dash show apps button
+
+
     const dash = controls.dash || controls._dash;
     if (dash?.showAppsButton)
         return Boolean(dash.showAppsButton.checked);
@@ -108,8 +108,8 @@ function _isAppGridVisible() {
 }
 
 function _activateLaunchpad() {
-    // The Tahoe Applications window (tahoeApps module) replaces GNOME's
-    // app grid, so every activation path routes straight to it.
+
+
     _queueIdle(() => {
         tahoeToggle();
         return GLib.SOURCE_REMOVE;
@@ -150,7 +150,7 @@ function _ensureDbusService() {
             _busOwnerId = 0;
         },
     );
-    // Export org.freedesktop.Application for DBusActivatable launcher
+
     const appImplementation = {
         Activate(_platformData) {
             _activateLaunchpad();
@@ -198,9 +198,9 @@ function _teardownDbusService() {
 
 export function enable(extension, gettext) {
     gettextFunc = typeof gettext === 'function' ? gettext : (message) => message;
-    // extension.js re-runs this on any settings change; without a guard every pass
-    // re-registers two D-Bus names and rewrites the .desktop file. A custom-icon
-    // change is handled by disabling first, so that path still rewrites it.
+
+
+
     if (_enabled)
         return;
     if (!extension || !extension.dir) {
@@ -216,7 +216,7 @@ export function enable(extension, gettext) {
 
     const desktopPath = GLib.build_filenamev([desktopDir, LAUNCHPAD_DESKTOP_ID]);
 
-    // Determine icon path: use custom icon if set and valid, otherwise default
+
     const settings = extension.getSettings();
     const customIconPath = settings.get_string('launchpad-app-custom-icon');
     let iconPath = null;
@@ -262,13 +262,13 @@ export function enable(extension, gettext) {
         try {
             const shellSettings = new Gio.Settings({ schema_id: 'org.gnome.shell' });
             const favorites = shellSettings.get_strv('favorite-apps');
-            // Migrate from old desktop id if present
+
             const OLD_ID = 'launchpad-kiwi.desktop';
             for (let i = favorites.length - 1; i >= 0; i--) {
                 if (favorites[i] === OLD_ID)
                     favorites.splice(i, 1);
             }
-            // Ensure new ID at position 1
+
             const existingIndex = favorites.indexOf(LAUNCHPAD_DESKTOP_ID);
             if (existingIndex >= 0)
                 favorites.splice(existingIndex, 1);
@@ -306,12 +306,12 @@ export function disable() {
     try {
         GLib.unlink(desktopPath);
     } catch (e) {
-        // File may not exist, ignore error
+
     }
     try {
         GLib.unlink(oldDesktopPath);
     } catch (e) {
-        // Ignore
+
     }
 
     gettextFunc = (message) => message;

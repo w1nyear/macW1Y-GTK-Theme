@@ -89,7 +89,7 @@ export default class WackLockscreenClockExtension extends Extension {
         return (this._dialog?._adjustment?.value ?? 0) > 0;
     }
 
-    // Backwards-compatibility getters for sub-managers
+
     get _clockWrapper() { return this._clockLayoutManager?.clockWrapper ?? null; }
     get _hintContainer() { return this._clockLayoutManager?.hintContainer ?? null; }
     get _hint() { return this._clockLayoutManager?.hint ?? null; }
@@ -270,7 +270,7 @@ export default class WackLockscreenClockExtension extends Extension {
         _log(`[WACK] _setupDialog called, dialog=${!!dialog}`);
         const lockDialogGroup = Main.screenShield?._lockDialogGroup || (Main.layoutManager?.uiGroup || null);
 
-        // Subsystem instantiations
+
         this._themeManager = new ThemeManager(this);
         this._wallpaperManager = new WallpaperManager(this);
         const ClmClass = this._ClockLayoutManagerClass || _ClockLayoutManagerClass || ClockLayoutManager;
@@ -315,7 +315,7 @@ export default class WackLockscreenClockExtension extends Extension {
         this._wallpaperUpdateSeq = 0;
         this._animationState = createAnimationState();
 
-        // Clock replacement & setup
+
         try {
             if (dialog._clock && dialog._stack) {
                 dialog._stack.remove_child(dialog._clock);
@@ -342,7 +342,7 @@ export default class WackLockscreenClockExtension extends Extension {
         if (this._promptActor)
             this._promptActor.set_pivot_point(0.5, 0.5);
 
-        // Wallpaper settings
+
         try {
             if (!this._bgSettings)
                 this._bgSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.background' });
@@ -364,14 +364,14 @@ export default class WackLockscreenClockExtension extends Extension {
             console.error(`[WACK] bgSettings error: ${e}`);
         }
 
-        // Install UnlockDialog controller hooks
+
         try {
             this._unlockDialogController.install(dialog, lockDialogGroup);
         } catch (e) {
             console.error(`[WACK] unlockDialogController install error: ${e}`);
         }
 
-        // Disable fullscreen ClickGesture so clicking wallpaper/clock does not reveal prompt
+
         this._disabledClickGestures = [];
         for (const action of dialog.get_actions()) {
             if (action instanceof Clutter.ClickGesture) {
@@ -380,7 +380,7 @@ export default class WackLockscreenClockExtension extends Extension {
             }
         }
 
-        // Ensure no leftover menu bar items (e.g. appmenu macW1Y icon) appear in leftBox while locked
+
         if (Main.panel?._leftBox) {
             for (const child of Main.panel._leftBox.get_children()) {
                 const isActivities = child === Main.panel.statusArea?.activities?.container ||
@@ -391,7 +391,7 @@ export default class WackLockscreenClockExtension extends Extension {
             }
         }
 
-        // Setup MainBox layout and lockscreen message
+
         try {
             const mainBox = dialog._stack?.get_parent() ?? dialog.get_child_at_index(dialog.get_n_children() - 1);
             if (mainBox) {
@@ -412,7 +412,7 @@ export default class WackLockscreenClockExtension extends Extension {
             console.error(`[WACK] MainBox layout error: ${e}`);
         }
 
-        // Input handling
+
         dialog.connectObject('key-press-event', (actor, event) => {
             const keysym = event.get_key_symbol();
 
@@ -622,7 +622,7 @@ export default class WackLockscreenClockExtension extends Extension {
         let inactiveUri;
         if (customWallpaperEnabled && customWallpaperPath && Gio.File.new_for_path(customWallpaperPath).query_exists(null)) {
             uri = customWallpaperPath.startsWith('file://') ? customWallpaperPath : `file://${customWallpaperPath}`;
-            inactiveUri = uri; // custom wallpaper is the same for both variants
+            inactiveUri = uri;
         } else {
             uri = this._bgSettings.get_string(
                 colorScheme === 1 ? 'picture-uri-dark' : 'picture-uri'
@@ -790,11 +790,11 @@ export default class WackLockscreenClockExtension extends Extension {
             });
         }
 
-        // For ACRYLIC vibrancy, the inactive Light/Dark variant needs its PNG pre-generated
-        // in the user session so the cross-session manifest can publish a complete
-        // presentation package for both variants before GDM is entered.
-        // Reuse the same prompt/UI bounds — the chip region is identical regardless
-        // of which wallpaper is displayed.
+
+
+
+
+
         const hasDistinctInactive = !isColor && inactiveUri && inactiveUri !== uri;
         const inactiveWallpaperParams = hasDistinctInactive
             ? { ...wallpaperParams, uri: inactiveUri }
@@ -818,7 +818,7 @@ export default class WackLockscreenClockExtension extends Extension {
         if (this._clockLayoutManager?.updateHintStyle)
             this._clockLayoutManager.updateHintStyle(promptColor, alpha);
 
-        
+
 
         if (this._cupertinoPromptManager?.restPrompt?.updateVisuals) {
             this._cupertinoPromptManager.restPrompt.updateVisuals(promptColor, alpha);
@@ -937,7 +937,7 @@ export default class WackLockscreenClockExtension extends Extension {
         }
     }
 
-    // Delegations to sub-managers
+
     _getLockscreenMessageActor() { return this._messageManager ? this._messageManager.getMessageActor() : null; }
     _syncLockscreenMessageFade() { if (this._messageManager) this._messageManager.syncFade(); }
     _syncLockscreenMessageLayout() { if (this._messageManager) this._messageManager.syncLayout(); }
@@ -979,7 +979,7 @@ export default class WackLockscreenClockExtension extends Extension {
     _updateCupertinoRestState(animate = false) { if (this._cupertinoPromptManager) this._cupertinoPromptManager.updateCupertinoRestState(animate); }
     _applyPromptModeLayout() { if (this._cupertinoPromptManager) this._cupertinoPromptManager.applyPromptModeLayout(); }
 
-    
+
 
     _syncCupertinoUnlockFade() {
         if (!this._settings)
@@ -991,26 +991,26 @@ export default class WackLockscreenClockExtension extends Extension {
             !isPowerSaver;
     }
 
-    // Guideline EGO-M-008: Documenting use of unlock-dialog.
-    // This extension runs in the 'unlock-dialog' session mode to customize the
-    // GNOME Shell lock screen. We perform the following modifications:
-    // - Replace the default clock widget (dialog._clock) with our WackClock to
-    //   display a macW1Y-style lockscreen clock, wallpaper-tinted and repositioned
-    //   via ClockLayoutManager.
-    // - Install UnlockDialogController hooks on the UnlockDialog to drive our
-    //   custom unlock crossfade animations.
-    // - Replace mainBox's layout_manager with WackLayout to reposition the
-    //   prompt stack, notifications box, and other-user button.
-    // - Apply blur styling to the notifications box (NotificationManager) and
-    //   custom rendering to the lockscreen message (LockscreenMessageManager).
-    // - Hook Main.screenShield's 'active-changed' signal to refresh the custom
-    //   wallpaper overlay, and intercept key-press-event on the dialog for our
-    //   Escape-to-sleep and Cupertino rest-state behavior.
-    //
-    // In this disable() method, we cleanly revert all changes, restore all overridden
-    // methods/injections to their original implementations, and destroy/nullify all
-    // custom UI elements, ensuring no resource leaks or state contamination in the
-    // GNOME Shell session.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     _syncCrossSessionManager() {
         if (Main.sessionMode.currentMode === 'gdm') {
             if (this._crossSessionManager) {

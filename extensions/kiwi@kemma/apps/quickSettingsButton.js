@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Quick settings keep every feature; their button in the top bar is gone
-// entirely (no icons, no box, no click area). The stock open path
-// (panel.toggleQuickSettings) refuses unmapped/unreactive indicators, so
-// it cannot be used with a hidden button - instead the shortcut calls
-// menu.open() DIRECTLY, which has no such checks. With Tahoe enabled
-// that method is hooked to the control center (and toggles it, since
-// _openPanel closes an open panel); with Tahoe off it opens the stock
-// popup. Either way the menu stays reachable with no topbar button.
+
+
+
+
+
+
+
+
 
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
@@ -23,7 +23,7 @@ function _openQs() {
     try {
         Main.panel.statusArea.quickSettings?.menu?.open?.();
     } catch (_) {
-        // no menu here
+
     }
 }
 
@@ -33,10 +33,10 @@ function _apply() {
         const qs = Main.panel.statusArea.quickSettings;
         if (!settings || !qs)
             return;
-        // full hide: no icons, no box, no click area
+
         qs.visible = !settings.get_boolean(HIDE_KEY);
     } catch (_) {
-        // panel gone
+
     }
 }
 
@@ -74,7 +74,7 @@ export function disable() {
         try {
             extension?.getSettings()?.disconnect(_watchId);
         } catch (_) {
-            // gone
+
         }
         _watchId = 0;
     }
@@ -83,7 +83,7 @@ export function disable() {
         if (qs)
             qs.visible = true;
     } catch (_) {
-        // panel gone
+
     }
     extension = null;
 }

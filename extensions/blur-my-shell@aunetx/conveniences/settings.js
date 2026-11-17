@@ -2,7 +2,7 @@ import GLib from 'gi://GLib';
 import { pack_pipelines, unpack_pipelines } from './pipeline_settings.js';
 const Signals = imports.signals;
 
-/// An enum non-extensively describing the type of gsettings key.
+
 export const Type = {
     B: 'Boolean',
     I: 'Integer',
@@ -13,17 +13,17 @@ export const Type = {
     PIPELINES: 'Pipelines'
 };
 
-/// An object to get and manage the gsettings preferences.
-///
-/// Should be initialized with an array of keys, for example:
-///
-/// let settings = new Settings([
-///     { type: Type.I, name: "panel-corner-radius" },
-///     { type: Type.B, name: "debug" }
-/// ]);
-///
-/// Each {type, name} object represents a gsettings key, which must be created
-/// in the gschemas.xml file of the extension.
+
+
+
+
+
+
+
+
+
+
+
 export const Settings = class Settings {
     constructor(keys, settings) {
         this.settings = settings;
@@ -92,14 +92,14 @@ export const Settings = class Settings {
 
                     case Type.C:
                         Object.defineProperty(component, property_name, {
-                            // returns the array [red, blue, green, alpha] with
-                            // values between 0 and 1
+
+
                             get() {
                                 let val = component_settings.get_value(key.name);
                                 return val.deep_unpack();
                             },
-                            // takes an array [red, blue, green, alpha] with
-                            // values between 0 and 1
+
+
                             set(v) {
                                 let val = new GLib.Variant("(dddd)", v);
                                 component_settings.set_value(key.name, val);
@@ -164,7 +164,7 @@ export const Settings = class Settings {
         });
     };
 
-    /// Reset the preferences.
+
     reset() {
         this.keys.forEach(bundle => {
             let component = this;
@@ -182,14 +182,14 @@ export const Settings = class Settings {
         this.emit('reset', true);
     }
 
-    /// From the gschema name, returns the name of the associated property on
-    /// the Settings object.
+
+
     get_property_name(name) {
         return name.replaceAll('-', '_').toUpperCase();
     }
 
-    /// Remove all connections managed by the Settings object, i.e. created with
-    /// `settings.PROPERTY_changed(callback)`.
+
+
     disconnect_all_settings() {
         this.keys.forEach(bundle => {
             let component = this;

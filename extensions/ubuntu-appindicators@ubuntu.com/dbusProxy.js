@@ -66,7 +66,7 @@ export const DBusProxy = GObject.registerClass({
             this._cancellable.cancel();
     }
 
-    // This can be removed when we will have GNOME 43 as minimum version
+
     _ensureAsyncMethod(method) {
         if (this[`${method}Async`])
             return;

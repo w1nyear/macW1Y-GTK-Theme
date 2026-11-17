@@ -24,7 +24,7 @@ export default class BlurMyShellPreferences extends ExtensionPreferences {
     constructor(metadata) {
         super(metadata);
 
-        // load the icon theme
+
         let iconPath = this.dir.get_child("icons").get_path();
         let iconTheme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default());
         iconTheme.add_search_path(iconPath);
@@ -33,7 +33,7 @@ export default class BlurMyShellPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         addMenu(window);
 
-        // update from old settings, very important for hacks level specifically
+
         update_from_old_settings(this.getSettings());
 
         const actionGroup = new Gio.SimpleActionGroup();

@@ -52,7 +52,7 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
 
         this._createIconActor();
 
-        /* Set the metadata and update relevant UI */
+
         this._updateMetadataFromFileInfo(fileInfo);
         this._setFileName(this._getVisibleName());
 
@@ -66,7 +66,7 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
             this._execLine = null;
         }
         if (fileExtra == Enums.FileType.USER_DIRECTORY_TRASH) {
-            // if this icon is the trash, monitor the state of the directory to update the icon
+
             this._trashChanged = false;
             this._queryTrashInfoCancellable = null;
             this._scheduleTrashRefreshId = 0;
@@ -92,7 +92,7 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
                             });
                         } else {
                             this._refreshTrashIcon();
-                            // after a refresh, don't allow more refreshes until 200ms after, to coalesce extra events
+
                             this._scheduleTrashRefreshId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 200, () => {
                                 this._scheduleTrashRefreshId = 0;
                                 return GLib.SOURCE_REMOVE;
@@ -114,66 +114,66 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
 
     setAccessibleName(filename) {
         if (this._fileExtra === Enums.FileType.USER_DIRECTORY_HOME) {
-            /** TRANSLATORS: when using a screen reader, this is the text read when the user's personal folder is
-              * highlighted. */
+
+
             filename = _('Home');
         }
         if (this._fileExtra === Enums.FileType.USER_DIRECTORY_TRASH) {
-            /** TRANSLATORS: when using a screen reader, this is the text read when the trash folder is
-              * highlighted. */
+
+
             filename = _('Trash');
         }
         const specialCases = [
             [
                 this._fileExtra === Enums.FileType.EXTERNAL_DRIVE,
-                /** TRANSLATORS: when using a screen reader, this is the role used when an external drive is
-                 * highlighted. Example: if a USB stick named "my_portable" is highlighted, it will say "my_portable Drive".
-                 * It is mandatory to say the file name first and the role after. */
+
+
+
                 _('${VisibleName} Drive'),
-                /** TRANSLATORS: when using a screen reader, this is the role used when an external drive is
-                 * highlighted and selected. Example: if a USB stick named "my_portable" is highlighted and selected, it
-                 * will say "my_portable Drive Selected". It is mandatory to say the file name first, then the role, and
-                 * finally "Selected". */
+
+
+
+
                 _('${VisibleName} Drive Selected')
             ], [
                 this._fileExtra === Enums.FileType.STACK_TOP,
-                /** TRANSLATORS: when using a screen reader, this is the role used when a stack is
-                 * highlighted. Example: if a stack named "pictures" is selected, it will say "pictures Stack".
-                 * It is mandatory to say the file name first and the role after. */
+
+
+
                 _('${VisibleName} Stack'),
-                /** TRANSLATORS: when using a screen reader, this is the role used when a stack is highlighted and
-                 * selected. Example: if a stack named "pictures" is highlighted and selected, it will say "pictures Stack Selected".
-                 * It is mandatory to say the file name first, then the role, and finally "Selected". */
+
+
+
                 _('${VisibleName} Stack Selected')
             ], [
                 this._isDirectory || (this._fileExtra === Enums.FileType.USER_DIRECTORY_HOME) || (this._fileExtra === Enums.FileType.USER_DIRECTORY_TRASH),
-                /** TRANSLATORS: when using a screen reader, this is the role used when a folder is
-                 * highlighted. Example: if a folder named "things" is highlighted, it will say "things Folder".
-                 * It is mandatory to say the file name first and the role after. */
+
+
+
                 _('${VisibleName} Folder'),
-                /** TRANSLATORS: when using a screen reader, this is the role used when a folder is
-                 * highlighted and selected. Example: if a folder named "things" is highlighted and selected, it will say
-                 * "things Folder Selected". It is mandatory to say the file name first, then the role, and finally "Selected". */
+
+
+
                 _('${VisibleName} Folder Selected'),
             ], [
                 this._isDesktopFile && this.trustedDesktopFile,
-                /** TRANSLATORS: when using a screen reader, this is the role used when a trusted desktop file is
-                 * highlighted. Example: if a desktop file named "My App" is highlighted and it is trusted, it will
-                 * say "My App Application". It is mandatory to say the file name first and the role after. */
+
+
+
                 _('${VisibleName} Application'),
-                /** TRANSLATORS: when using a screen reader, this is the role used when a trusted desktop file is
-                 * highlighted. Example: if a desktop file named "My App" is highlighted and selected and it is trusted, it will
-                 * say "My App Application Selected". It is mandatory to say the file name first and the role after. */
+
+
+
                 _('${VisibleName} Application Selected')
             ], [
-                // The default value
+
                 true,
-                /** TRANSLATORS: when using a screen reader, this is the text read when a normal file is
-                 * highlighted. Example: if a file named "my_picture.jpg" is highlighted, it will say "my_picture.jpg File" */
+
+
                 _('${VisibleName} File'),
-                /** TRANSLATORS: when using a screen reader, this is the text read when a normal file is highlighted and
-                 * selected. Example: if a file named "my_picture.jpg" is highlighted and selected, it will say
-                 * "my_picture.jpg File Selected". It is mandatory to say the file name first and the role after. */
+
+
+
                 _('${VisibleName} File Selected')
             ]
         ];
@@ -201,9 +201,9 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
         });
     }
 
-    /** *********************
-     * Destroyers *
-     ***********************/
+
+
+
 
     _destroy() {
         if (this._queryTrashInfoCancellable) {
@@ -214,7 +214,7 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
             GLib.source_remove(this._scheduleTrashRefreshId);
             this._scheduleTrashRefreshId = 0;
         }
-        /* Metadata */
+
         if (this._setMetadataTrustedCancellable) {
             this._setMetadataTrustedCancellable.cancel();
             this._setMetadataTrustedCancellable = null;
@@ -223,14 +223,14 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
             this.container.disconnect(this._realizeId);
             this._realizeId = 0;
         }
-        // call super() after disconnecting everything, because it destroys
-        // the top widget, and that will destroy also all the other widgets.
+
+
         super._destroy();
     }
 
-    /** *********************
-     * Creators *
-     ***********************/
+
+
+
 
     _getVisibleName() {
         if (this._fileExtra == Enums.FileType.EXTERNAL_DRIVE) {
@@ -246,7 +246,7 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
 
     _setFileName(text) {
         if (this._fileExtra == Enums.FileType.USER_DIRECTORY_HOME) {
-            // TRANSLATORS: "Home" is the text that will be shown in the user's personal folder
+
             text = _('Home');
         }
         this._setLabelName(text);
@@ -363,12 +363,12 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
             this._isSymlink = fileInfo.get_is_symlink();
         }
         this._modifiedTime = fileInfo.get_attribute_uint64('time::modified');
-        /*
-         * This is a glib trick to detect broken symlinks. If a file is a symlink, the filetype
-         * points to the final file, unless it is broken; thus if the file type is SYMBOLIC_LINK,
-         * it must be a broken link.
-         * https://developer.gnome.org/gio/stable/GFile.html#g-file-query-info
-         */
+
+
+
+
+
+
         this._isBrokenSymlink = this._isSymlink && this._fileType == Gio.FileType.SYMBOLIC_LINK;
     }
 
@@ -477,9 +477,9 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
         this._setFileName(this._getVisibleName());
     }
 
-    /** *********************
-     * Button Clicks *
-     ***********************/
+
+
+
 
     _doButtonOnePressed(event, shiftPressed, controlPressed) {
         super._doButtonOnePressed(event, shiftPressed, controlPressed);
@@ -489,8 +489,8 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
     }
 
     _doButtonOneReleased(event) {
-        // primaryButtonPressed is TRUE only if the user has pressed the button
-        // over an icon, and if (s)he has not started a drag&drop operation
+
+
         if (this._primaryButtonPressed) {
             this._primaryButtonPressed = false;
             let shiftPressed = !!(event.get_state()[1] & Gdk.ModifierType.SHIFT_MASK);
@@ -504,9 +504,9 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
         }
     }
 
-    /** *********************
-     * Drag and Drop *
-     ***********************/
+
+
+
 
     _setDropDestination(dropDestination) {
         dropDestination.drag_dest_set(Gtk.DestDefaults.MOTION | Gtk.DestDefaults.DROP, null,
@@ -543,7 +543,7 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
                     let fileList = DesktopIconsUtil.getFilesFromNautilusDnD(selection, info);
                     if (fileList.length != 0) {
                         if (this._hasToRouteDragToGrid() || (this._desktopManager.dragItem && ((this._desktopManager.dragItem.uri == this._file.get_uri()) || !(this._isValidDesktopFile || this.isDirectory)))) {
-                            // Route drag over self or non-folder item to grid as desktop move
+
                             let globalX = this._x1 + x;
                             let globalY = this._y1 + y;
                             if (widget && this._grid && this._grid._window) {
@@ -557,7 +557,7 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
                             return;
                         }
                         if (this._isValidDesktopFile) {
-                            // open the desktopfile with these dropped files as the arguments
+
                             this.doOpen(fileList);
                             Gtk.drag_finish(context, true, false, time);
                             return;
@@ -597,9 +597,9 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
         return this._isSelected;
     }
 
-    /** *********************
-     * Icon Rendering *
-     ***********************/
+
+
+
 
     _refreshTrashIcon() {
         if (this._queryTrashInfoCancellable) {
@@ -632,9 +632,9 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
     }
 
 
-    /** *********************
-     * Class Methods *
-     ***********************/
+
+
+
 
     onAttributeChanged() {
         if (this._destroyed) {
@@ -680,11 +680,11 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
     onAllowDisallowLaunchingClicked() {
         this.metadataTrusted = !this.trustedDesktopFile;
 
-        /*
-         * we're marking as trusted, make the file executable too. Note that we
-         * do not ever remove the executable bit, since we don't know who set
-         * it.
-         */
+
+
+
+
+
         if (this.metadataTrusted && !this._attributeCanExecute) {
             let info = new Gio.FileInfo();
             let newUnixMode = this._unixmode | Enums.S_IXUSR;
@@ -754,9 +754,9 @@ var FileItem = class extends desktopIconItem.desktopIconItem {
         DesktopIconsUtil.launchTerminal(this.file.get_path(), null);
     }
 
-    /** *********************
-     * Getters and setters *
-     ***********************/
+
+
+
 
     get attributeContentType() {
         return this._attributeContentType;

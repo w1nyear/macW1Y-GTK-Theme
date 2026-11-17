@@ -3,10 +3,10 @@ import GObject from 'gi://GObject';
 
 export const IS_IN_PREFERENCES = typeof global === 'undefined';
 
-// Taken from https://github.com/Schneegans/Burn-My-Windows/blob/main/src/utils.js
-// This method can be used to import a module in the GNOME Shell process only. This
-// is useful if you want to use a module in extension.js, but not in the preferences
-// process. This method returns null if it is called in the preferences process.
+
+
+
+
 export async function import_in_shell_only(module) {
     if (IS_IN_PREFERENCES)
         return null;
@@ -37,9 +37,9 @@ export function is_usable_blur_module(ns) {
     }
 }
 
-// In use for the effects, to prevent boilerplate code
+
 export function setup_params(outer_this, params) {
-    // setup each parameter, either with the given or the default value
+
     for (const params_name in outer_this.constructor.default_params) {
         outer_this["_" + params_name] = null;
         outer_this[params_name] = params_name in params ?

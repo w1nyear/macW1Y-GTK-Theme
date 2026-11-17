@@ -246,7 +246,7 @@ export class CrossSessionManager {
         this._dirty = false;
     }
 
-    // The lockscreen's 12/24h override wins over the system format, so GDM matches it.
+
     _getClockFormat() {
         const override = this._settings?.get_string('clock-format') ?? 'system';
         return override === 'system' ? this._interfaceSettings.get_string('clock-format') : override;
@@ -535,7 +535,7 @@ export class CrossSessionManager {
             this._updateWallpaperFileMonitor(activeUri);
         }
 
-        // Read existing metadata to reuse cached JPEGs if possible
+
         let metaFile = Gio.File.new_for_path(`${SHARED_DIR}/wack-shared-wallpaper-${userName}.json`);
         if (!metaFile.query_exists(null)) {
             const legacyMeta = Gio.File.new_for_path(`${LEGACY_SHARED_DIR}/wack-shared-wallpaper-${userName}.json`);
@@ -570,12 +570,12 @@ export class CrossSessionManager {
             }
         }
 
-        // Attach session's computed visuals to active variant and preserve/reuse for inactive variant.
-        // For ACRYLIC variants the promptColor carries an imagePath; validate it still exists
-        // before publishing — never write a dead artifact reference into the manifest.
+
+
+
         const _isPromptColorLive = pc => {
             if (!pc) return false;
-            if (!pc.imagePath) return true;   // TONAL / scalar — no file dependency
+            if (!pc.imagePath) return true;
             return Gio.File.new_for_path(pc.imagePath).query_exists(null);
         };
 
@@ -590,7 +590,7 @@ export class CrossSessionManager {
                 lightVariant.clockAlpha = existingLight.clockAlpha ?? 1.0;
                 lightVariant.promptColor = existingLight.promptColor;
             } else if (lightVariant && this._inactivePromptColor && _isPromptColorLive(this._inactivePromptColor)) {
-                // Pre-warmed by extension.js for the inactive URI — use it directly.
+
                 lightVariant.clockAlpha = this._inactiveClockAlpha ?? null;
                 lightVariant.promptColor = this._inactivePromptColor;
             } else if (lightVariant) {
@@ -608,7 +608,7 @@ export class CrossSessionManager {
                 darkVariant.clockAlpha = existingDark.clockAlpha ?? 1.0;
                 darkVariant.promptColor = existingDark.promptColor;
             } else if (darkVariant && this._inactivePromptColor && _isPromptColorLive(this._inactivePromptColor)) {
-                // Pre-warmed by extension.js for the inactive URI — use it directly.
+
                 darkVariant.clockAlpha = this._inactiveClockAlpha ?? null;
                 darkVariant.promptColor = this._inactivePromptColor;
             } else if (darkVariant) {
@@ -620,8 +620,8 @@ export class CrossSessionManager {
 
         const activeVariant = activeColorScheme === 1 ? darkVariant : lightVariant;
 
-        // Strict Publication Invariant:
-        // Metadata is published AFTER the referenced JPEGs are verified and on disk.
+
+
         const metadata = {
             __manifest_version__: 1,
             username: userName,
@@ -677,7 +677,7 @@ export class CrossSessionManager {
         );
         destMetaFile.set_attribute_uint32('unix::mode', 0o644, Gio.FileQueryInfoFlags.NONE, null);
 
-        // Clean up older wallpaper files for this user in shared directory and legacy /var/tmp
+
         const validPaths = new Set();
         if (lightVariant?.target_path) validPaths.add(lightVariant.target_path);
         if (darkVariant?.target_path) validPaths.add(darkVariant.target_path);
@@ -709,7 +709,7 @@ export class CrossSessionManager {
             }
         }
 
-        // Clean up legacy root JSON file if present
+
         const legacyFile = Gio.File.new_for_path(`${LEGACY_SHARED_DIR}/wack-shared-wallpaper-${userName}.json`);
         if (legacyFile.query_exists(null))
             legacyFile.delete_async(GLib.PRIORITY_DEFAULT, null, null);

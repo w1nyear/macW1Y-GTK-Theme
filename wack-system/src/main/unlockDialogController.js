@@ -89,7 +89,7 @@ export class UnlockDialogController {
     }
 
     install(dialog, lockDialogGroup) {
-        // Disable fullscreen ClickGesture so clicking wallpaper/clock does not reveal prompt
+
         this._disabledClickGestures = [];
         for (const action of dialog.get_actions()) {
             if (action instanceof Clutter.ClickGesture) {
@@ -98,7 +98,7 @@ export class UnlockDialogController {
             }
         }
 
-        // Intercept keypresses in rest mode: arbitrary keys must not show prompt on wake from sleep
+
         if (dialog.vfunc_key_press_event) {
             this.origKeyPressEvent = dialog.vfunc_key_press_event.bind(dialog);
             dialog.vfunc_key_press_event = (event) => {
@@ -119,13 +119,13 @@ export class UnlockDialogController {
             };
         }
 
-        // Manage top menu bar for authentic macW1Y lockscreen (Battery, Control Center, DateMenu)
+
         if (!this._menuBarManager) {
             this._menuBarManager = new LockscreenMenuBarManager(this._extension);
             this._menuBarManager.setup();
         }
 
-        // AuthPrompt lifecycle & PAM message intercept
+
         if (dialog._ensureAuthPrompt) {
             this.origEnsureAuthPrompt = dialog._ensureAuthPrompt.bind(dialog);
             dialog._ensureAuthPrompt = () => {
@@ -140,7 +140,7 @@ export class UnlockDialogController {
             this._setupAuthPrompt(dialog._authPrompt);
         }
 
-        // Background effects override
+
         if (dialog._updateBackgroundEffects) {
             this.origUpdateBgEffects = dialog._updateBackgroundEffects.bind(dialog);
             dialog._updateBackgroundEffects = () => {
@@ -155,7 +155,7 @@ export class UnlockDialogController {
             dialog._updateBackgroundEffects();
         }
 
-        // User switch visibility override
+
         this.origUpdateUserSwitchVisibility = dialog._updateUserSwitchVisibility.bind(dialog);
         dialog._updateUserSwitchVisibility = () => {
             this.origUpdateUserSwitchVisibility();
@@ -165,7 +165,7 @@ export class UnlockDialogController {
         };
         dialog._updateUserSwitchVisibility();
 
-        // Finish intercept for Cupertino fade-out
+
         this.origFinish = dialog.finish.bind(dialog);
         dialog.finish = (onComplete) => {
             const isCupertino = this._extension._lockscreenMode === 'cupertino';
@@ -305,7 +305,7 @@ export class UnlockDialogController {
             }
         };
 
-        // NotificationsBox changes tracking
+
         if (dialog._notificationsBox) {
             dialog._notificationsBox.connectObject(
                 'notify::height', () => {
@@ -324,7 +324,7 @@ export class UnlockDialogController {
             );
         }
 
-        // Core transition logic intercept
+
         this.origSetTransitionProgress = dialog._setTransitionProgress.bind(dialog);
         dialog._setTransitionProgress = (progress) => {
             this.origSetTransitionProgress(progress);

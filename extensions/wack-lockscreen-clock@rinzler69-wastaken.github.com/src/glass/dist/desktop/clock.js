@@ -11,18 +11,18 @@ import { connectClicks, PREFERRED_MIN_CONTRAST } from './widgets.js';
 import { FIELD_RANGE, DigitsMaker } from './glassText.js';
 import { coglContext } from '../shellVersion.js';
 import { WorkerProcess } from '../workers/workerProcess.js';
-// The drop shadow's reach (px), a little inside the distance field's.
+
 const SHADOW_REACH = 40;
-// New digits are made once the preferences stop changing them; until then
-// the digits shown are stretched to the new size.
+
+
 const FONT_DELAY_MS = 120;
-// The date sits this far (px) above the glass digits' outline.
+
 const DATE_GAP = 6;
-// The date's font size relative to the clock's digits.
+
 const DATE_SIZE_RATIO = 0.13;
 const SIZE_KEYS = ['glass-clock-size', 'glass-clock-stretch', 'glass-clock-height'];
 
-// The [min, max] the schema allows for a number key.
+
 function keyRange(settings, key) {
     const [, range] = settings.settings_schema.get_key(key).get_range().recursiveUnpack();
     return range;
@@ -32,10 +32,10 @@ function clamp(value, [min, max]) {
     return Math.min(Math.max(value, min), max);
 }
 
-/**
- * A large clock whose digits are glass, like the clock on the iPhone's lock
- * screen, with the date above it.
- */
+
+
+
+
 export class GlassClock {
     id = 'clock';
     actor;
@@ -44,18 +44,18 @@ export class GlassClock {
     _glass;
     _date;
     _source;
-    // The font, size and shape the digits are made in; null until there is one.
+
     _font = null;
-    // The digits for the time shown and for the next minute, made ahead so the
-    // minute changes without the work.
+
+
     _prepared = new Map();
     _text = '';
-    // The digits' height in the font as it is (px), once known.
+
     _digitHeight = 0;
-    // The font the digits shown were made in, and their field's size.
+
     _shownFont = null;
     _shownSize = [1, 1];
-    // The field's size on screen, and how much it is stretched to get there.
+
     _fieldSize = [1, 1];
     _fieldScale = [1, 1];
     _size = [1, 1];
@@ -122,7 +122,7 @@ export class GlassClock {
         this._adaptive.start(s.get_int('desktop-widget-sample-interval-ms'), sanitizeColorPreference(s.get_string('desktop-widget-adaptive-text-preference')), PREFERRED_MIN_CONTRAST);
     }
 
-    // The font the digits are cut from: the chosen one, or the interface font in bold.
+
     _fontDescription() {
         const chosen = this._env.settings.get_string('glass-clock-font').trim();
         if (chosen)
@@ -150,23 +150,23 @@ export class GlassClock {
         };
     }
 
-    // Stretches the digits shown to about the size the settings ask for, so a
-    // change shows at once; the new digits take a while to make.
+
+
     _fitShown() {
         const shown = this._shownFont;
         if (!shown)
             return;
         const wanted = this._wantedFont();
         let grow = [1, 1];
-        if (wanted.font === shown.font && wanted.style === shown.style) // Only when the font and style (along upright or just stretch) are the same
+        if (wanted.font === shown.font && wanted.style === shown.style)
             grow = [wanted.size * wanted.stretch / (shown.size * shown.stretch), wanted.size * wanted.height / (shown.size * shown.height)];
-        // The field's margin for the shadow stays as wide. result = ((width, height) - shadow margin * 2) * scale + shadow margin
+
         const size = this._shownSize.map((v, i) => Math.max(v - 2 * FIELD_RANGE, 1) * grow[i] + 2 * FIELD_RANGE);
         if (size[0] === this._fieldSize[0] && size[1] === this._fieldSize[1])
             return;
         this._fieldScale = [size[0] / this._shownSize[0], size[1] / this._shownSize[1]];
         this._fieldSize = size;
-        // The glass keeps drawing at the resolution of its field, stretched to its size.
+
         this._glass.set_size(...size);
         this._sizeChanged = true;
         this._layout();
@@ -185,18 +185,18 @@ export class GlassClock {
         this._tick();
     }
 
-    /** Whether the digits have a size or width other than the default. */
+
     get resized() {
         const s = this._env.settings;
         return SIZE_KEYS.some(key => !s.get_value(key).equal(s.get_default_value(key)));
     }
 
-    /**
-     * Makes the clock `sx` times as wide and `sy` times as tall, as far as the
-     * settings allow: taller alone makes the digits taller with their strokes
-     * as thick (see restroke()), wider alone stretches them, and both
-     * scale the font.
-     */
+
+
+
+
+
+
     resizeBy(sx, sy) {
         const s = this._env.settings;
         if (sx === 1 && this._digitHeight) {
@@ -208,7 +208,7 @@ export class GlassClock {
         }
         const size = s.get_int('glass-clock-size');
         const newSize = Math.round(clamp(size * sy, keyRange(s, 'glass-clock-size')));
-        // The width follows the size too; the stretch makes up the rest.
+
         const stretch = clamp(s.get_double('glass-clock-stretch') * sx * size / newSize, keyRange(s, 'glass-clock-stretch'));
         s.set_int('glass-clock-size', newSize);
         s.set_double('glass-clock-stretch', Math.round(stretch * 100) / 100);
@@ -233,7 +233,7 @@ export class GlassClock {
         const now = GLib.DateTime.new_now_local();
         this._date.visible = this._env.settings.get_boolean('glass-clock-show-date');
         this._date.text = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
-        this._setText(this._timeText(now)); // Set glass clock's text
+        this._setText(this._timeText(now));
         this._sizeChanged = true;
         const wait = 60 - now.get_seconds() + 0.05;
         this._timerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, Math.ceil(wait * 1000), () => {
@@ -243,7 +243,7 @@ export class GlassClock {
         });
     }
 
-    // The glass for `text` in the current font.
+
     _glassFor(text) {
         let glass = this._prepared.get(text);
         if (!glass) {
@@ -270,12 +270,12 @@ export class GlassClock {
                 return;
         }
         catch (e) {
-            // Given up for newer digits.
+
             if (font !== this._font || text !== this._text)
                 return;
             if (!(e instanceof GLib.Error && e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED)))
                 this._env.logger.error(`[Liquid Glass] Could not draw the clock's digits: ${e}`);
-            // Tried again at the next minute.
+
             if (text === this._text)
                 this._text = '';
             return;
@@ -298,15 +298,15 @@ export class GlassClock {
             if (key !== text)
                 this._prepared.delete(key);
         }
-        // A failure shows when that minute comes and the digits are made again.
+
         this._glassFor(this._timeText(GLib.DateTime.new_now_local().add_minutes(1))).catch(() => { });
     }
 
-    // The date above the digits; the field's margin is mostly empty, so the
-    // label goes into it.
+
+
     _layout() {
         const [fw, fh] = this._fieldSize;
-        const [rx, ry] = this._fieldScale.map(k => FIELD_RANGE * k); // Scale the margins
+        const [rx, ry] = this._fieldScale.map(k => FIELD_RANGE * k);
         const [, dateH] = this._date.visible ? this._date.get_preferred_height(-1) : [0, 0];
         const [, dateW] = this._date.visible ? this._date.get_preferred_width(-1) : [0, 0];
         const glassY = Math.max(dateH + DATE_GAP - ry, 0);
@@ -314,7 +314,7 @@ export class GlassClock {
         const glassX = Math.round((width - fw) / 2);
         this._glass.set_position(glassX, glassY);
         const dateX = Math.round((width - dateW) / 2);
-        const dateY = Math.max(glassY + ry - DATE_GAP - dateH, 0); // Ususally 0
+        const dateY = Math.max(glassY + ry - DATE_GAP - dateH, 0);
         this._date.set_position(dateX, dateY);
         this._size = [Math.ceil(width), Math.ceil(glassY + fh)];
         this.actor.set_size(...this._size);
@@ -371,10 +371,10 @@ export class GlassClock {
     }
 }
 
-// Where the glass clock gets its digits from: a worker process
-// (digitsWorker.js) that makes them while the shell goes on drawing, started
-// on first use. Where gjs cannot be found or the worker keeps failing, they
-// are made in the shell instead, a step at a time.
+
+
+
+
 export class DigitsSource {
     _logger;
     _worker;
@@ -386,7 +386,7 @@ export class DigitsSource {
         this._worker = new WorkerProcess(`${extensionPath}/dist/workers/digitsWorker.js`, 'clock\'s worker', _logger);
     }
 
-    /** Rejects when the digits cannot be made. */
+
     async make(request) {
         if (!this._local && !this._worker.available) {
             this._logger.log('[Liquid Glass] The clock\'s digits are made in the shell');
@@ -411,7 +411,7 @@ export class DigitsSource {
         }
         finally {
             file.delete_async(GLib.PRIORITY_DEFAULT, null, (_f, res) => {
-                // Throws a GError when the file is already gone; nothing is left behind then.
+
                 try {
                     file.delete_finish(res);
                 }

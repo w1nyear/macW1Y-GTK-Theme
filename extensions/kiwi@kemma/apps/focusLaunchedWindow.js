@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macW1Y-compliant window attention handling:
-// Prevents background windows (such as messaging apps) from stealing focus or auto-raising.
+
+
 
 export class FocusMyWindow {
     enable() {
-        // No-op: Do not steal focus or auto-raise windows on demands-attention.
+
         this._handlerid = null;
     }
 
@@ -31,4 +31,3 @@ export function disable() {
         focusMyWindowInstance = null;
     }
 }
-

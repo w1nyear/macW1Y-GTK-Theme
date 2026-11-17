@@ -144,13 +144,13 @@ function createPomodoroTimer(settings, onChange) {
 	return {state, startTimer, stopTimer, resetCurrentPhase, advanceToNextPhase, switchToPhase};
 };
 
-/*
- * The controller above keeps the whole session in plain closures, so a
- * theme or style switch (every widget gets rebuilt) used to reset a
- * running pomodoro. The per-instance JSON file survives those rebuilds —
- * and the wall-clock stamp even carries a running phase across a
- * GNOME relogin.
- */
+
+
+
+
+
+
+
 function openPomodoroState({body, widget, settings, timer, extraRepaint}) {
 	const statePath = widgetStatePath('pomodoro', widget);
 
@@ -163,7 +163,7 @@ function openPomodoroState({body, widget, settings, timer, extraRepaint}) {
 	});
 
 	const persist = () => saveWidgetState(statePath, snapshot());
-	// Synchronous flush right before the widget is torn down.
+
 	const flush = () => saveWidgetStateSync(statePath, snapshot());
 
 	loadWidgetStateAsync(statePath, body, (saved) => {
@@ -179,7 +179,7 @@ function openPomodoroState({body, widget, settings, timer, extraRepaint}) {
 		const savedRemaining = typeof saved?.secondsRemaining === 'number' ? saved.secondsRemaining : 0;
 
 		if (savedRemaining > 0) {
-			// A running phase keeps counting down from wall-clock truth.
+
 			state.secondsRemaining = saved.running
 				? Math.max(0, Math.round(savedRemaining - elapsedSinceWall(saved.wall) / 1000))
 				: Math.round(savedRemaining);
@@ -188,9 +188,9 @@ function openPomodoroState({body, widget, settings, timer, extraRepaint}) {
 		}
 		if (saved?.running && !state.isRunning) {
 			if (state.secondsRemaining <= 0) {
-				// The phase ticked past zero while nobody was looking —
-				// let the controller do its normal advance rather than
-				// holding a dead 00:00 phase.
+
+
+
 				timer.advanceToNextPhase();
 			} else {
 				timer.startTimer();
@@ -202,19 +202,19 @@ function openPomodoroState({body, widget, settings, timer, extraRepaint}) {
 	return {persist, flush};
 };
 
-// Accent can arrive as hex (#f5c211) or as a css rgb() string, depending on
-// whether it comes from the GNOME interface schema or from the widget's own
-// "custom accent color" setting. parseCssColor understands both.
+
+
+
 function accentColor(theme) {
 	const accent = String(theme?.accent ?? '').trim();
 
 	return accent || '#3584e4';
 }
 
-// Draws the progress ring: a faint full-circle track plus the accent arc on
-// top of it, so the widget reads as a gauge even at progress 0. The ring is
-// inset from the cell so it never touches the widget frame.
-// Only shows the ring when the timer is running.
+
+
+
+
 function drawCircularArc(ctx, width, height, progress, accent, track, isRunning) {
 	ctx.setOperator(0);
 	ctx.paint();
@@ -227,7 +227,7 @@ function drawCircularArc(ctx, width, height, progress, accent, track, isRunning)
 	const centerX = width / 2;
 	const centerY = height / 2;
 	const radius = Math.min(width, height) / 2;
-	// Ring stroke widened to 0.10
+
 	const lineWidth = Math.max(2, Math.round(radius * 0.10));
 	const startAngle = -Math.PI / 2;
 	const endAngle = startAngle + Math.min(Math.max(progress, 0), 1) * Math.PI * 2;
@@ -255,14 +255,14 @@ function drawCircularArc(ctx, width, height, progress, accent, track, isRunning)
 function textOnAccentColor(accent, theme) {
 	const { r, g, b } = parseCssColor(accent);
 	const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-	
-	// Dark theme needs higher threshold to avoid dark text on dark accent
+
+
 	const threshold = theme?.dark ? 0.6 : 0.45;
 	return lum > threshold ? '#000000' : '#ffffff';
 };
 
-// Ghost buttons read against the surface: the white outline was invisible
-// on light cards, so light mode draws an ink outline instead.
+
+
 function ghostBorderColor(theme) {
 	return theme?.dark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.18)';
 }
@@ -285,8 +285,8 @@ function renderSmallTimer({body, theme, sizeForWidget, widget, settings}) {
 	let dispatchSave = () => {};
 	const timer = createPomodoroTimer(settings, () => {
 		updateDisplay();
-		// Save piggybacks on the controller's per-second repaint cadence,
-		// so the wall stamp never gets stale by more than a second.
+
+
 		dispatchSave();
 	});
 	const {state} = timer;
@@ -296,10 +296,10 @@ function renderSmallTimer({body, theme, sizeForWidget, widget, settings}) {
 	});
 	dispatchSave = pomodoroState.persist;
 
-	// Both layers live in a BinLayout and both must expand: BinLayout gives a
-	// non-expanding child only its *current* width (0 before the first
-	// allocation), which renders as a blank widget. The ring is the first
-	// child so the label stack paints on top of it.
+
+
+
+
 	const container = new St.Widget({
 		layout_manager: new Clutter.BinLayout(),
 		x_expand: true,
@@ -325,8 +325,8 @@ function renderSmallTimer({body, theme, sizeForWidget, widget, settings}) {
 
 	container.add_child(canvasActor);
 
-	// Vertical stack with an expanding spacer above and below, so the timer
-	// reads as one centered block without relying on the box's own height.
+
+
 	const stack = new St.BoxLayout({
 		orientation: Clutter.Orientation.VERTICAL,
 		x_expand: true,
@@ -380,7 +380,7 @@ function renderSmallTimer({body, theme, sizeForWidget, widget, settings}) {
 
 	skipBtn.set_child(skipIcon);
 
-	// Hover shrink (no hover frame), shared with every other widget.
+
 	bindHoverShrink(playPauseBtn);
 	bindHoverShrink(resetBtn);
 	bindHoverShrink(skipBtn);
@@ -435,7 +435,7 @@ function renderSmallTimer({body, theme, sizeForWidget, widget, settings}) {
 		} else {
 			timer.startTimer();
 		};
-		// Neither start nor stop goes through onChange.
+
 		pomodoroState.persist();
 		syncPlayPauseIcon();
 		return Clutter.EVENT_STOP;
@@ -466,7 +466,7 @@ function renderSmallTimer({body, theme, sizeForWidget, widget, settings}) {
 			GLib.Source.remove(state.timerId);
 			state.timerId = null;
 		};
-		// Exact snapshot for in-process rebuilds and logout teardowns.
+
 		pomodoroState.flush();
 	});
 
@@ -488,8 +488,8 @@ function renderMediumFocus({body, theme, sizeForWidget, widget, settings}) {
 	const timer = createPomodoroTimer(settings, () => {
 		updateDisplay();
 		refreshControlStyles();
-		// Save piggybacks on the controller's per-second repaint cadence,
-		// so the wall stamp never gets stale by more than a second.
+
+
 		dispatchSave();
 	});
 	const state = timer.state;
@@ -548,7 +548,7 @@ function renderMediumFocus({body, theme, sizeForWidget, widget, settings}) {
 		text: getPhaseLabel(state.phase),
 	});
 
-	// Order changed: the phase label (Focus) comes first, then the time
+
 	gaugeOverlay.add_child(phaseCaption);
 	gaugeOverlay.add_child(timerLabel);
 	gaugeWrap.add_child(canvasActor);
@@ -658,9 +658,9 @@ function renderMediumFocus({body, theme, sizeForWidget, widget, settings}) {
 	const refreshControlStyles = () => {
 		const isWork = state.phase === PHASE_WORK;
 
-		// Selector track and the active pill flip to an ink wash in light
-		// mode — the white washes vanished on light cards and it was
-		// impossible to see which of Focus/Break is selected.
+
+
+
 		modeSelector.style = `background-color: ${theme.dark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)'}; padding: ${px(3)}px; border-radius: ${px(10)}px;`;
 
 		const modeButtonStyle = (isActive) => {
@@ -698,7 +698,7 @@ function renderMediumFocus({body, theme, sizeForWidget, widget, settings}) {
 		} else {
 			timer.startTimer();
 		};
-		// Neither start nor stop goes through onChange.
+
 		pomodoroState.persist();
 		updateDisplay();
 		refreshControlStyles();
@@ -724,7 +724,7 @@ function renderMediumFocus({body, theme, sizeForWidget, widget, settings}) {
 			GLib.Source.remove(state.timerId);
 			state.timerId = null;
 		};
-		// Exact snapshot for in-process rebuilds and logout teardowns.
+
 		pomodoroState.flush();
 	});
 

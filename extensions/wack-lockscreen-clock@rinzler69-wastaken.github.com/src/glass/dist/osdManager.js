@@ -7,7 +7,7 @@ import { isActorValid, ensureGlassAllocated, setClipIfChanged } from './actors.j
 import { StageContrastSampler, AdaptiveContrastConfig, sanitizeColorPreference } from './contrastSampler.js';
 import { reportFrameLoopError } from './logger.js';
 import { isFrameSyncFrozen, SAME_FRAME_WINDOW_US, startStageLoop, stopStageLoop, resolveCrossFade, adaptiveColorTweener, hexToColorArray, hexToRgb, rgbToHex } from './animation.js';
-// Room around the glass rect for the shader's edge effects.
+
 const SHADER_PADDING = 20;
 
 export class OsdManager {
@@ -181,7 +181,7 @@ export class OsdManager {
         for (let osdWindow of osdWindows) {
             this._setupOsdEffect(osdWindow);
         }
-        // One stage loop for every monitor's OSD (see DockManager's frameTick).
+
         const frameTick = () => {
             if (!this._isEffectActive)
                 return;
@@ -212,7 +212,7 @@ export class OsdManager {
     }
 
     _setupOsdEffect(osdWindow) {
-        // The OSD's 'osd-window' box, which draws its background.
+
         const targetBox = osdWindow._hbox ?? null;
         if (!targetBox) {
             this._logger.warn('[Liquid Glass] OSD UI container not found.');
@@ -225,7 +225,7 @@ export class OsdManager {
         });
         glass.set_size(1.0, 1.0);
         glass.set_pivot_point(0.0, 0.0);
-        // The OSD's ancestor that is a direct child of uiGroup.
+
         let osdRoot = osdWindow;
         while (osdRoot.get_parent() && osdRoot.get_parent() !== Main.layoutManager.uiGroup) {
             const p = osdRoot.get_parent();
@@ -233,7 +233,7 @@ export class OsdManager {
                 break;
             osdRoot = p;
         }
-        // Below the OSD, so the glass reads the stage before the OSD is drawn.
+
         if (osdRoot.get_parent() === Main.layoutManager.uiGroup) {
             Main.layoutManager.uiGroup.insert_child_below(glass, osdRoot);
         }
@@ -273,14 +273,14 @@ export class OsdManager {
             _destroyId: 0,
         };
         this._osdStates.push(state);
-        // The shell destroys the OSD window of a removed monitor.
+
         state._destroyId = osdWindow.connect('destroy', () => {
             this._osdStates = this._osdStates.filter(s => s !== state);
             this._destroyGlass(state);
         });
     }
 
-    // Every frame, for one monitor's OSD.
+
     _syncGeometry(state) {
         const glass = state.glass;
         if (!glass || !state.targetBox)
@@ -289,7 +289,7 @@ export class OsdManager {
         let [absX, absY] = state.targetBox.get_transformed_position();
         if (Number.isNaN(absX) || Number.isNaN(absY))
             return;
-        // Follow the OSD's fade.
+
         let osdWindowVisible = state.osdWindow.visible && state.osdWindow.mapped;
         let targetBoxVisible = state.targetBox.visible && state.targetBox.mapped;
         let currentOpacity = (osdWindowVisible && targetBoxVisible)
@@ -329,7 +329,7 @@ export class OsdManager {
         let monitorY = monitor?.y ?? 0;
         let screenW = Math.max(1, monitor?.width ?? 1);
         let screenH = Math.max(1, monitor?.height ?? 1);
-        // Monitor-local, as the shader uses them.
+
         let localBgX = bgX_abs - monitorX;
         let localBgY = bgY_abs - monitorY;
         if (state._lastBgW !== bgW || state._lastBgH !== bgH ||
@@ -341,7 +341,7 @@ export class OsdManager {
             glass.set_size(screenW, screenH);
             glass.remove_transition('size');
             glass.remove_transition('position');
-            // Limit drawing to the glass plus room for its shadow.
+
             const CLIP_PADDING = 200;
             setClipIfChanged(glass, localBgX - CLIP_PADDING, localBgY - CLIP_PADDING, bgW + CLIP_PADDING * 2, bgH + CLIP_PADDING * 2);
             const SHADOW_MAX_RADIUS = CLIP_PADDING - 20;
@@ -355,13 +355,13 @@ export class OsdManager {
             state._lastScreenW = screenW;
             state._lastScreenH = screenH;
         }
-        // After the geometry setters, so the relays cover this frame's rect.
+
         glass.syncSources();
     }
 
     _osdVisualHeight(state, h) {
-        // When the icon changes, the box's height briefly includes its bottom
-        // margin; that jump is ignored.
+
+
         let mB = state.targetBox.get_theme_node().get_margin(St.Side.BOTTOM);
         if (state._stableBaseH === undefined) {
             let [, naturalH] = state.targetBox.get_preferred_height(-1);
@@ -402,7 +402,7 @@ export class OsdManager {
             return;
         state.glass = null;
         glass.cleanup();
-        // At shell shutdown the stage may have destroyed it already.
+
         if (isActorValid(glass))
             glass.destroy();
     }
@@ -453,7 +453,7 @@ export class OsdManager {
     }
 
     _setActorColor(actor, color, skipAnimations = false, batchStart) {
-        // Clutter.Text targets have no St style.
+
         if (!(actor instanceof St.Widget))
             return;
         if (!this._styledActors.has(actor)) {
@@ -481,7 +481,7 @@ export class OsdManager {
     _applyAdaptiveColorMap(colorMap, skipAnimations = false) {
         if (!colorMap || colorMap.size === 0)
             return;
-        // One timestamp for the whole map, so label, icon and level bar move as one.
+
         const batchStart = GLib.get_monotonic_time();
         for (const [actor, color] of colorMap.entries()) {
             this._setActorColor(actor, color, skipAnimations, batchStart);
@@ -532,16 +532,16 @@ export class OsdManager {
     }
 
     _animateActorColor(actor, targetHexColor, durationMs = 380, skipAnimations = false, batchStart) {
-        // An existing tween is not cancelled: add() restarts from the color it
-        // last applied.
+
+
         const originalStyle = (this._styledActors.get(actor) || '').trim();
         const stylePrefix = originalStyle ? `${originalStyle.replace(/;$/, '')}; ` : '';
         let themeNode = actor.get_theme_node();
         let startColor = themeNode.get_foreground_color();
         let startBgColor = themeNode.get_background_color();
         let targetRgb = hexToRgb(targetHexColor);
-        // The level bar's fill takes the text color and its track a color 70%
-        // of the way to the other one.
+
+
         let isProgressBar = actor.has_style_class_name('level');
         let trackTargetRgb = targetRgb;
         if (isProgressBar) {
@@ -556,10 +556,10 @@ export class OsdManager {
                 b: Math.round(targetRgb.b + (otherRgb.b - targetRgb.b) * lerpRatio),
             };
         }
-        // The level bar keeps the plain lerp: it is a filled shape, not a glyph, so
-        // it never becomes illegible against the background it sits on, and dipping
-        // it through transparent would punch a hole in the OSD instead. Its track
-        // color rides the same eased progress, which is why `apply` takes one.
+
+
+
+
         const apply = (r, g, b, a, progress) => {
             if (isProgressBar) {
                 const e = progress < 0.5
@@ -588,7 +588,7 @@ export class OsdManager {
             crossFade: !isProgressBar && resolveCrossFade(startRgb, targetRgb),
             durationMs,
             apply,
-            // The bar writes a second color the tuple does not describe.
+
             coalesce: !isProgressBar,
         }, batchStart);
     }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Kiwi Extension - Helpers for removing GNOME Shell's built-in DND UI that was added in GNOME 49
-// This module removes system DND elements to avoid duplicate UI elements when Kiwi's own DND elements
+
+
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Clutter from 'gi://Clutter';
@@ -81,7 +81,7 @@ function resolveClutterActor(candidate) {
             if (child instanceof Clutter.Actor)
                 return child;
         } catch (error) {
-            // Ignore failures resolving nested actors
+
         }
     }
 
@@ -351,4 +351,3 @@ function enforceDateMenuIndicatorHidden(indicator) {
     if (indicator.opacity !== undefined)
         indicator.opacity = 0;
 }
-

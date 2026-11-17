@@ -18,7 +18,7 @@ const SURFACE_SIGNALS = [
     'notify::scale-x',
     'notify::scale-y',
     'notify::pseudo-class',
-]; 
+];
 
 export const PopupBlurSurfaceSignals = class PopupBlurSurfaceSignals {
     constructor(surface) {

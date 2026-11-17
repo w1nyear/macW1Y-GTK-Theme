@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macW1Y-style clock in the top bar: "Вт 30 сен 9:41" - Russian weekday
-// and month abbreviations, unpadded hour, minute always two digits.
-// GNOME fills the label through a WallClock binding; ours connects later,
-// so within the same emission our text is the last word.
+
+
+
+
 
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -14,8 +14,8 @@ let clockId = 0;
 let inkUnwatch = null;
 let savedStyle = null;
 
-// Direct inline color: beats every stylesheet war (theme, panelTransparency,
-// hover chains) for this one label. Saved + restored on disable.
+
+
 function applyInk() {
     try {
         const d = Main.panel?.statusArea?.dateMenu?._clockDisplay;
@@ -32,7 +32,7 @@ function applyInk() {
         const base = (savedStyle ?? '').trim();
         d.set_style(`${base}${base && !base.endsWith(';') ? ';' : ''}color: ${col};`);
     } catch (_) {
-        // label gone
+
     }
 }
 
@@ -86,7 +86,7 @@ export function disable() {
         try {
             clockSource.disconnect(clockId);
         } catch (e) {
-            // the wall clock may already be gone with the panel
+
         }
     }
     clockSource = null;
@@ -95,11 +95,11 @@ export function disable() {
         try {
             inkUnwatch();
         } catch (e) {
-            // gone
+
         }
         inkUnwatch = null;
     }
-    // restore the label's original inline style
+
     try {
         const dateMenu = Main.panel?.statusArea?.dateMenu;
         if (dateMenu?._clockDisplay) {
@@ -114,11 +114,11 @@ export function disable() {
             }
         }
     } catch (e) {
-        // gone with the panel
+
     }
     savedStyle = null;
 
-    // The stock binding never went anywhere; put its text back at once.
+
     const dateMenu = Main.panel.statusArea.dateMenu;
     if (dateMenu?._clock && dateMenu._clockDisplay)
         dateMenu._clockDisplay.text = dateMenu._clock.clock;

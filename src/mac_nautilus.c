@@ -14,9 +14,9 @@
 #include <graphene.h>
 #include "mac_i18n.h"
 
-/* =========================================================================
- * macW1Y Tahoe GtkPopover Animation (Opening & Closing with Easing and Scale)
- * ========================================================================= */
+
+
+
 static void (*orig_popover_hide)(GtkWidget *widget) = NULL;
 static void (*orig_popover_map)(GtkWidget *widget) = NULL;
 static void (*orig_popover_snapshot)(GtkWidget *widget, GtkSnapshot *snapshot) = NULL;
@@ -97,11 +97,11 @@ static gboolean mac_popover_close_tick(GtkWidget *widget, GdkFrameClock *clock, 
         return G_SOURCE_CONTINUE;
     }
     gint64 elapsed = now - d->start_time;
-    double p = (double)elapsed / 110000.0; /* 110ms macW1Y quad ease-in */
+    double p = (double)elapsed / 110000.0;
     if (p >= 1.0) p = 1.0;
 
     double opacity = 1.0 - (p * p);
-    double scale = 1.0 - 0.05 * (p * p); /* 1.0 -> 0.95 */
+    double scale = 1.0 - 0.05 * (p * p);
     d->current_scale = scale;
     gtk_widget_set_opacity(widget, (float)opacity);
     gtk_widget_queue_draw(widget);
@@ -129,11 +129,11 @@ static gboolean mac_popover_open_tick(GtkWidget *widget, GdkFrameClock *clock, g
         return G_SOURCE_CONTINUE;
     }
     gint64 elapsed = now - d->start_time;
-    double p = (double)elapsed / 140000.0; /* 140ms macW1Y cubic ease-out */
+    double p = (double)elapsed / 140000.0;
     if (p >= 1.0) p = 1.0;
 
     double ease = 1.0 - pow(1.0 - p, 3);
-    double scale = 0.94 + 0.06 * ease; /* 0.94 -> 1.0 */
+    double scale = 0.94 + 0.06 * ease;
     d->current_scale = scale;
     gtk_widget_set_opacity(widget, (float)ease);
     gtk_widget_queue_draw(widget);
@@ -223,14 +223,14 @@ static void install_mac_popover_hooks(void) {
     }
 }
 
-/* =========================================================================
- * macW1Y Finder Style Grid View Selection & Hover Pill for Nautilus
- * Wraps tightly around each line of filename text, avoiding wide empty boxes
- * ========================================================================= */
+
+
+
+
 static void (*orig_gtk_label_snapshot)(GtkWidget *widget, GtkSnapshot *snapshot) = NULL;
 
 static void get_system_accent_color(double *r, double *g, double *b) {
-    *r = 0.98; *g = 0.43; *b = 0.04; /* default orange #fa6e0a */
+    *r = 0.98; *g = 0.43; *b = 0.04;
     AdwStyleManager *sm = adw_style_manager_get_default();
     if (sm) {
         GdkRGBA *rgba = adw_style_manager_get_accent_color_rgba(sm);
@@ -357,7 +357,7 @@ static void mac_draw_rounded_rect(cairo_t *cr, double x, double y, double w, dou
 static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
     if (!orig_gtk_label_snapshot) return;
 
-    /* Ensure we never process labels inside any sidebar */
+
     for (GtkWidget *p = widget; p != NULL; p = gtk_widget_get_parent(p)) {
         if (gtk_widget_has_css_class(p, "sidebar-pane") ||
             gtk_widget_has_css_class(p, "navigation-sidebar") ||
@@ -370,7 +370,7 @@ static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
         }
     }
 
-    /* Ensure overflow is visible so top and bottom rounded arcs are never clipped */
+
     gtk_widget_set_overflow(widget, GTK_OVERFLOW_VISIBLE);
     GtkWidget *labels_box = gtk_widget_get_parent(widget);
     if (labels_box) {
@@ -487,7 +487,7 @@ static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
                 cairo_set_source_rgb(cr, ar, ag, ab);
             }
         } else {
-            /* Hover state: grey-transparent */
+
             gboolean dark = TRUE;
             AdwStyleManager *sm = adw_style_manager_get_default();
             if (sm) dark = adw_style_manager_get_dark(sm);
@@ -510,10 +510,10 @@ static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
 
             double dwL = x1L - x0L;
             double dwR = x0R - x1R;
-            double min_step = 8.5; /* Minimum step difference to warrant two-tier fillet contour */
+            double min_step = 8.5;
 
             if (dwL >= min_step && dwR >= min_step) {
-                /* Line 0 is substantially wider than Line 1 on both sides */
+
                 double rf_R = r_fillet;
                 if (rf_R > dwR / 2.0) rf_R = dwR / 2.0;
                 if (rf_R > pill_lines[0].h / 2.0) rf_R = pill_lines[0].h / 2.0;
@@ -554,7 +554,7 @@ static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
                 cairo_close_path(cr);
                 cairo_fill(cr);
             } else if (dwL <= -min_step && dwR <= -min_step) {
-                /* Line 1 is substantially wider than Line 0 on both sides */
+
                 double rf_R = r_fillet;
                 if (rf_R > -dwR / 2.0) rf_R = -dwR / 2.0;
                 if (rf_R > pill_lines[0].h / 2.0) rf_R = pill_lines[0].h / 2.0;
@@ -595,7 +595,7 @@ static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
                 cairo_close_path(cr);
                 cairo_fill(cr);
             } else {
-                /* Lines are close in width -> UNIFY into a single whole rounded rectangle! */
+
                 double ux_min = (x0L < x1L) ? x0L : x1L;
                 double ux_max = (x0R > x1R) ? x0R : x1R;
                 double uy_min = y0T;
@@ -605,7 +605,7 @@ static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
                 cairo_fill(cr);
             }
         } else {
-            /* For 3+ lines, check if all lines are close in width */
+
             double ux_min = pill_lines[0].x;
             double ux_max = pill_lines[0].x + pill_lines[0].w;
             double uy_min = pill_lines[0].y;
@@ -737,7 +737,7 @@ static void mac_record_app_drop(GFile *source, GFile *destination, gboolean is_m
     snprintf(apps_dir, sizeof(apps_dir), "%s/Applications", home);
     size_t apps_len = strlen(apps_dir);
 
-    /* Check if destination is inside ~/Applications and source is outside */
+
     if (strncmp(dest_path, apps_dir, apps_len) == 0 &&
         (dest_path[apps_len] == '/' || dest_path[apps_len] == '\0') &&
         !(strncmp(src_path, apps_dir, apps_len) == 0 && (src_path[apps_len] == '/' || src_path[apps_len] == '\0'))) {
@@ -745,7 +745,7 @@ static void mac_record_app_drop(GFile *source, GFile *destination, gboolean is_m
         char *src_dir = g_path_get_dirname(src_path);
         char *base_name = g_path_get_basename(dest_path);
 
-        /* 1. Write metadata JSON into /run/user/<uid>/mac-app-sources/<basename>.json */
+
         const char *runtime_dir = g_get_user_runtime_dir();
         if (runtime_dir) {
             char meta_dir[512];
@@ -772,7 +772,7 @@ static void mac_record_app_drop(GFile *source, GFile *destination, gboolean is_m
             }
         }
 
-        /* 2. Mirror into ~/.cache/mac-app-sources/<basename>.json */
+
         char cache_meta_dir[512];
         snprintf(cache_meta_dir, sizeof(cache_meta_dir), "%s/.cache/mac-app-sources", home);
         g_mkdir_with_parents(cache_meta_dir, 0700);
@@ -866,9 +866,9 @@ gboolean g_file_move(GFile *source,
             snprintf(apps_dir, sizeof(apps_dir), "%s/Applications", home);
             size_t apps_len = strlen(apps_dir);
 
-            /* If moving an installer/executable into Applications from outside:
-               DO NOT DESTROY THE ORIGINAL FILE IN SOURCE DIRECTORY!
-               Record the source info, and COPY the file instead of moving it! */
+
+
+
             if (strncmp(dest_p, apps_dir, apps_len) == 0 &&
                 (dest_p[apps_len] == '/' || dest_p[apps_len] == '\0') &&
                 !(strncmp(src_p, apps_dir, apps_len) == 0 && (src_p[apps_len] == '/' || src_p[apps_len] == '\0')) &&
@@ -933,7 +933,7 @@ const char *g_file_info_get_display_name(GFileInfo *info)
 
     const char *name = orig_g_file_info_get_display_name(info);
     if (!name || !is_nautilus()) return name;
-    
+
     if (g_str_has_suffix(name, ".desktop")) {
         const char *cached = g_object_get_data(G_OBJECT(info), "mac_clean_display_name");
         if (cached) return cached;
@@ -1018,7 +1018,7 @@ GBinding *g_object_bind_property(gpointer source, const gchar *source_property,
         orig_g_object_bind_property = dlsym(RTLD_NEXT, "g_object_bind_property");
     }
     if (!orig_g_object_bind_property) return NULL;
-    
+
     if (is_nautilus() &&
         g_strcmp0(source_property, "symbolic-icon") == 0 &&
         g_strcmp0(target_property, "start-icon") == 0 &&
@@ -1035,7 +1035,7 @@ GBinding *g_object_bind_property(gpointer source, const gchar *source_property,
         }
         g_free(uri);
     }
-    
+
     return orig_g_object_bind_property(source, source_property, target, target_property, flags);
 }
 
@@ -1075,11 +1075,11 @@ static gboolean uri_matches_xdg(const char *uri, GUserDirectory dir, const char 
 static int get_row_priority(GtkListBoxRow *row)
 {
     if (!row || !G_IS_OBJECT(row)) return 9999;
-    
+
     gchar *uri = NULL;
     gchar *label = NULL;
     gint section_type = 0;
-    
+
     GObjectClass *oc = G_OBJECT_GET_CLASS(row);
     if (g_object_class_find_property(oc, "uri"))
         g_object_get(row, "uri", &uri, NULL);
@@ -1087,21 +1087,21 @@ static int get_row_priority(GtkListBoxRow *row)
         g_object_get(row, "label", &label, NULL);
     if (g_object_class_find_property(oc, "section-type"))
         g_object_get(row, "section-type", &section_type, NULL);
-    
+
     int rank = 500;
     const char *home = g_get_home_dir();
-    
+
     if (uri != NULL) {
         if (g_str_has_prefix(uri, "recent:///")) {
             rank = 10;
         } else if (g_str_has_prefix(uri, "file://") && home && g_str_equal(uri + 7, home)) {
             rank = 20;
         } else if (g_str_has_prefix(uri, "starred:///")) {
-            rank = 950; // hide
+            rank = 950;
         } else if (g_str_has_prefix(uri, "x-network-view:///") || g_str_has_prefix(uri, "network:///")) {
-            rank = 960; // hide
+            rank = 960;
         } else if (g_str_has_prefix(uri, "trash:///")) {
-            rank = 800; // bottom
+            rank = 800;
         } else if (g_str_has_suffix(uri, "/Applications") || g_str_has_suffix(uri, "/Applications/")) {
             rank = 100;
         } else if (uri_matches_xdg(uri, G_USER_DIRECTORY_DESKTOP, "/Desktop", "/%D0%94%D0%B5%D1%81%D0%BA%D1%82%D0%BE%D0%BF") ||
@@ -1117,19 +1117,19 @@ static int get_row_priority(GtkListBoxRow *row)
             rank = 140;
         } else if (uri_matches_xdg(uri, G_USER_DIRECTORY_VIDEOS, "/Videos", "/%D0%92%D1%96%D0%B4%D0%B5%D0%BE")) {
             rank = 150;
-        } else if (section_type == 2) { /* BOOKMARKS */
+        } else if (section_type == 2) {
             rank = 160;
-        } else if (section_type == 4) { /* MOUNTS */
+        } else if (section_type == 4) {
             rank = 300;
         }
     } else {
         if (label && (g_str_equal(label, "Створити закладку") || g_str_equal(label, "New bookmark"))) {
-            rank = 999; /* hide */
+            rank = 999;
         } else if (section_type == 4) {
             rank = 300;
         }
     }
-    
+
     g_free(uri);
     g_free(label);
     return rank;
@@ -1139,33 +1139,33 @@ static gint mac_sidebar_sort_func(GtkListBoxRow *row1, GtkListBoxRow *row2, gpoi
 {
     int p1 = get_row_priority(row1);
     int p2 = get_row_priority(row2);
-    
+
     if (p1 != p2) {
         return p1 - p2;
     }
-    
+
     gchar *label1 = NULL, *label2 = NULL;
     gint idx1 = 0, idx2 = 0;
     GObjectClass *oc1 = G_OBJECT_GET_CLASS(row1);
     GObjectClass *oc2 = G_OBJECT_GET_CLASS(row2);
-    
+
     if (g_object_class_find_property(oc1, "label"))
         g_object_get(row1, "label", &label1, NULL);
     if (g_object_class_find_property(oc1, "order-index"))
         g_object_get(row1, "order-index", &idx1, NULL);
-        
+
     if (g_object_class_find_property(oc2, "label"))
         g_object_get(row2, "label", &label2, NULL);
     if (g_object_class_find_property(oc2, "order-index"))
         g_object_get(row2, "order-index", &idx2, NULL);
-    
+
     int res = 0;
     if (idx1 != idx2 && idx1 > 0 && idx2 > 0) {
         res = idx1 - idx2;
     } else if (label1 && label2) {
         res = g_utf8_collate(label1, label2);
     }
-    
+
     g_free(label1);
     g_free(label2);
     return res;
@@ -1201,7 +1201,7 @@ static void find_and_style_images(GtkWidget *widget, gboolean orange G_GNUC_UNUS
 static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, gpointer user_data G_GNUC_UNUSED)
 {
     if (!row || !G_IS_OBJECT(row)) return;
-    
+
     int p = get_row_priority(row);
     if (p >= 900) {
         gtk_widget_set_visible(GTK_WIDGET(row), FALSE);
@@ -1209,8 +1209,8 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
         return;
     }
     gtk_widget_set_visible(GTK_WIDGET(row), TRUE);
-    
-    /* Dynamic renaming and icon setup */
+
+
     gchar *uri = NULL;
     gchar *cur_label = NULL;
     GObjectClass *oc = G_OBJECT_GET_CLASS(row);
@@ -1218,10 +1218,10 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
         g_object_get(row, "uri", &uri, NULL);
     if (g_object_class_find_property(oc, "label"))
         g_object_get(row, "label", &cur_label, NULL);
-    
+
     gboolean has_start_icon = g_object_class_find_property(oc, "start-icon") != NULL;
     gboolean has_label = g_object_class_find_property(oc, "label") != NULL;
-    
+
     gboolean uk = is_ukrainian_locale();
 
     if (uri) {
@@ -1318,11 +1318,11 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             find_and_style_images(GTK_WIDGET(row), FALSE);
         }
     }
-    
-    /* Section headers */
+
+
     int before_p = before ? get_row_priority(before) : 0;
-    
-    /* Favorites section begins at rank 100 */
+
+
     if (p >= 100 && p < 300 && before_p < 100) {
         GtkWidget *header = gtk_list_box_row_get_header(row);
         if (!header || !g_object_get_data(G_OBJECT(header), "mac-favorites-header")) {
@@ -1335,7 +1335,7 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             gtk_list_box_row_set_header(row, box);
         }
     }
-    /* Mounts / Disks section begins at rank 300 */
+
     else if (p >= 300 && p < 800 && before_p < 300) {
         GtkWidget *header = gtk_list_box_row_get_header(row);
         if (!header || !g_object_get_data(G_OBJECT(header), "mac-mounts-header")) {
@@ -1348,7 +1348,7 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
             gtk_list_box_row_set_header(row, box);
         }
     }
-    /* Trash separator if directly following mounts */
+
     else if (p == 800 && before_p >= 300 && before_p < 800) {
         GtkWidget *header = gtk_list_box_row_get_header(row);
         if (!header || !GTK_IS_SEPARATOR(header)) {
@@ -1359,7 +1359,7 @@ static void mac_sidebar_header_func(GtkListBoxRow *row, GtkListBoxRow *before, g
     } else {
         gtk_list_box_row_set_header(row, NULL);
     }
-    
+
     g_free(uri);
     g_free(cur_label);
 }
@@ -2432,17 +2432,17 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
         fprintf(stderr, "[MAC-NAUTILUS] find_buttons_in_sidebar: search_btn=%p, menu_btn=%p\n",
                 (void*)search_btn, (void*)menu_btn);
 
-        /* 1. Hide title and title-widget in sidebar headerbar (no title near controls) */
+
         adw_header_bar_set_show_title(sidebar_hb, FALSE);
         adw_header_bar_set_title_widget(sidebar_hb, NULL);
 
-        /* Ensure window controls (Traffic lights) show in sidebar headerbar and not in content */
+
         adw_header_bar_set_show_start_title_buttons(sidebar_hb, TRUE);
         adw_header_bar_set_show_end_title_buttons(sidebar_hb, FALSE);
         adw_header_bar_set_show_start_title_buttons(content_hb, FALSE);
         adw_header_bar_set_show_end_title_buttons(content_hb, FALSE);
 
-        /* 2. Reparent search to content headerbar, hide menu button */
+
         if (menu_btn) {
             remove_from_headerbar(sidebar_hb, menu_btn);
         }
@@ -2461,11 +2461,11 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             g_object_unref(search_btn);
         }
 
-        /* 3. Hide redundant folder search button from pathbar and style pathbar to 26px */
+
         hide_folder_search_button(GTK_WIDGET(content_hb));
         find_and_style_pathbar(GTK_WIDGET(content_hb));
 
-        /* 4. Compact top/bottom margin and increase left width/margin by 15px */
+
         gtk_widget_set_margin_top(GTK_WIDGET(content_hb), 0);
         gtk_widget_set_margin_top(GTK_WIDGET(sidebar_hb), 0);
         gtk_widget_set_margin_bottom(GTK_WIDGET(content_hb), 0);
@@ -2525,7 +2525,7 @@ void adw_dialog_present(AdwDialog *self, GtkWidget *parent)
     if (ADW_IS_ALERT_DIALOG(self)) {
         const char *heading = adw_alert_dialog_get_heading(ADW_ALERT_DIALOG(self));
         if (heading && (strstr(heading, "смітник") || strstr(heading, "Trash") || strstr(heading, "Смітник"))) {
-            /* Trigger GNOME Shell Empty Trash Modal Dialog via D-Bus */
+
             GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
             if (bus) {
                 g_dbus_connection_call(bus,

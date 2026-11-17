@@ -1,5 +1,5 @@
-// GLSL port of winaviation-tweaks/liquidass LiquidAssBackboardd/Tweak.mm kShaderSrc.
-// The sampling and blur pass are adapted for Blur my Shell's Clutter pipeline.
+
+
 uniform sampler2D tex;
 uniform float width;
 uniform float height;

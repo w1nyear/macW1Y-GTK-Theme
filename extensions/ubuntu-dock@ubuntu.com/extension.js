@@ -1,10 +1,10 @@
-// -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
+
 
 import {DockManager} from './docking.js';
 import {Main} from './dependencies/shell/ui.js';
 import {Extension} from './dependencies/shell/extensions/extension.js';
 
-// We export this so it can be accessed by other extensions
+
 export let dockManager;
 
 export default class DashToDockExtension extends Extension.Extension {

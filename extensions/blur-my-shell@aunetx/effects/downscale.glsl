@@ -32,7 +32,7 @@ void main() {
         return;
     }
 
-    // mode 0: boxcar downsampling
+
     if (downsampling_mode == 0) {
 
         vec4 color = vec4(0.);
@@ -50,7 +50,7 @@ void main() {
         effect_color = color / max(1.0, float(count));
 
     } else
-    // mode 1: triangular downsampling
+
     if (downsampling_mode == 1) {
 
         vec4 color = vec4(0.);
@@ -70,7 +70,7 @@ void main() {
         effect_color = color / max(1.0, float(count));
 
     } else
-    // mode 2: Dirac downsampling
+
     if (downsampling_mode == 2) {
 
         vec2 lookup_position = min(multiplied_position + vec2(float(divider)) * 0.5, vec2(width - 1.0, height - 1.0));

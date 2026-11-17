@@ -1,4 +1,4 @@
-// -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
+
 
 import {
     Clutter,
@@ -37,8 +37,8 @@ import {
 
 import {Extension} from './dependencies/shell/extensions/extension.js';
 
-// Use __ () and N__() for the extension gettext domain, and reuse
-// the shell domain with the default _() and N_()
+
+
 const {gettext: __, ngettext: N__} = Extension;
 
 const DBusMenu = await DBusMenuUtils.haveDBusMenu();
@@ -70,7 +70,7 @@ const scrollAction = Object.freeze({
     SWITCH_WORKSPACE: 2,
 });
 
-// module "Dash" did not export DASH_ITEM_LABEL_SHOW_TIME, so let's define it.
+
 const DASH_ITEM_LABEL_SHOW_TIME = Dash.DASH_ITEM_LABEL_SHOW_TIME ?? 150;
 
 let recentlyClickedAppLoopId = 0;
@@ -79,18 +79,18 @@ let recentlyClickedAppWindows = null;
 let recentlyClickedAppIndex = 0;
 let recentlyClickedAppMonitor = -1;
 
-/**
- * Extend AppIcon
- *
- * - Apply a css class based on the number of windows of each application (#N);
- * - Customized indicators for running applications in place of the default "dot" style which is hidden (#N);
- *   a class of the form "running#N" is applied to the AppWellIcon actor.
- *   like the original .running one.
- * - Add a .focused style to the focused app
- * - Customize click actions.
- * - Update minimization animation target
- * - Update menu if open on windows change
- */
+
+
+
+
+
+
+
+
+
+
+
+
 export const DockAbstractAppIcon = GObject.registerClass({
     GTypeFlags: GObject.TypeFlags.ABSTRACT,
     Properties: {
@@ -116,19 +116,19 @@ export const DockAbstractAppIcon = GObject.registerClass({
             0, GLib.MAXUINT32, 0),
     },
 }, class DockAbstractAppIcon extends Dash.DashIcon {
-    // settings are required inside.
+
     _init(app, monitorIndex, iconAnimator) {
         super._init(app);
 
-        // a prefix is required to avoid conflicting with the parent class variable
+
         this.monitorIndex = monitorIndex;
         this._signalsHandler = new Utils.GlobalSignalsHandler(this);
         this.iconAnimator = iconAnimator;
         this._indicator = new AppIconIndicators.AppIconIndicator(this);
         this._urgentWindows = new Set();
 
-        // Monitor windows-changes instead of app state.
-        // Keep using the same Id and function callback (that is extended)
+
+
         if (this._stateChangedId > 0) {
             this.app.disconnect(this._stateChangedId);
             this._stateChangedId = 0;
@@ -141,11 +141,11 @@ export const DockAbstractAppIcon = GObject.registerClass({
         this._signalsHandler.add(global.display, 'window-marked-urgent', (_dpy, window) =>
             this._onWindowDemandsAttention(window));
 
-        // In Wayland sessions, this signal is needed to track the state of windows dragged
-        // from one monitor to another. As this is triggered quite often (whenever a new
-        // window of any application opened or moved to a different desktop),
-        // we restrict this signal to  the case when Labels.ISOLATE_MONITORS is true,
-        // and if there are at least 2 monitors.
+
+
+
+
+
         if (Docking.DockManager.settings.isolateMonitors &&
             Main.layoutManager.monitors.length > 1) {
             this._signalsHandler.addWithLabel(Labels.ISOLATE_MONITORS,
@@ -233,7 +233,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
         this._previewMenuManager = null;
         this._previewMenu = null;
 
-        // This requires GNOME 49
+
         if (Clutter.ClickGesture) {
             const doubleClickGesture = new Clutter.ClickGesture({nClicksRequired: 2});
             doubleClickGesture.connect('recognize', () => {
@@ -272,9 +272,9 @@ export const DockAbstractAppIcon = GObject.registerClass({
         if (!isEnabled)
             return Clutter.EVENT_PROPAGATE;
 
-        // We only activate windows of running applications, i.e. we never open new windows
-        // We check if the app is running, and that the # of windows is > 0 in
-        // case we use workspace isolation,
+
+
+
         if (!this.running)
             return Clutter.EVENT_PROPAGATE;
 
@@ -311,7 +311,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
             if (this.focused && !this._urgentWindows.size) {
                 this._cycleThroughWindows(reversed);
             } else {
-                // Activate the first window
+
                 const windows = this.getInterestingWindows();
                 if (windows.length > 0) {
                     const [w] = windows;
@@ -412,14 +412,14 @@ export const DockAbstractAppIcon = GObject.registerClass({
         }
     }
 
-    /**
-     * Update target for minimization animation
-     */
+
+
+
     updateIconGeometry() {
-        // If (for unknown reason) the actor is not on the stage the reported size
-        // and position are random values, which might exceeds the integer range
-        // resulting in an error when assigned to the a rect. This is a more like
-        // a workaround to prevent flooding the system with errors.
+
+
+
+
         if (!this.get_stage())
             return;
 
@@ -437,9 +437,9 @@ export const DockAbstractAppIcon = GObject.registerClass({
     }
 
     _updateRunningStyle() {
-        // The logic originally in this function has been moved to
-        // AppIconIndicatorBase._updateDefaultDot(). However it cannot be removed as
-        // it called by the parent constructor.
+
+
+
     }
 
     notifyAppIconUpdating(monitorIndex) {
@@ -469,19 +469,19 @@ export const DockAbstractAppIcon = GObject.registerClass({
                 if (!isPoppedUp) {
                     this._onMenuPoppedDown();
                 } else {
-                    // Setting the max-height is s useful if part of the menu is
-                    // scrollable so the minimum height is smaller than the natural height.
+
+
                     const monitorIndex = Main.layoutManager.findIndexForActor(this);
                     const workArea = Main.layoutManager.getWorkAreaForMonitor(monitorIndex);
                     const position = Utils.getPosition();
                     const {scaleFactor} = St.ThemeContext.get_for_stage(global.stage);
                     const isHorizontal = position === St.Side.TOP || position === St.Side.BOTTOM;
-                    // If horizontal also remove the height of the dash
+
                     const {dockFixed: fixedDock} = Docking.DockManager.settings;
                     const additionalMargin = isHorizontal && !fixedDock ? Main.overview.dash.height : 0;
                     const verticalMargins = this._menu.actor.margin_top + this._menu.actor.margin_bottom;
                     const maxMenuHeight = workArea.height - additionalMargin - verticalMargins;
-                    // Also set a max width to the menu, so long labels (long windows title) get truncated
+
                     this._menu.actor.style = 'max-width: 400px; ' +
                         `max-height: ${Math.round(maxMenuHeight / scaleFactor)}px;`;
                 }
@@ -500,7 +500,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
 
         this.set_hover(true);
         this._menu.popup();
-        // Removed in GNOME 50.
+
         this._menuManager.ignoreRelease?.();
         this.emit('sync-tooltip');
 
@@ -523,7 +523,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
             } else if (typeof globalThis._macSpotlightToggle === 'function') {
                 globalThis._macSpotlightToggle('apps');
             } else {
-                const appMenuPath = `${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog_v5.js`;
+                const appMenuPath = `${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog.js`;
                 import(`file://${appMenuPath}`)
                     .then(mod => {
                         globalThis.toggleMacApplications = () => mod.toggleSearchDialog('apps');
@@ -533,22 +533,22 @@ export const DockAbstractAppIcon = GObject.registerClass({
             return;
         }
 
-        // Only consider SHIFT and CONTROL as modifiers (exclude SUPER, CAPS-LOCK, etc.)
+
         modifiers &= Clutter.ModifierType.SHIFT_MASK | Clutter.ModifierType.CONTROL_MASK;
 
-        // We don't change the CTRL-click behavior: in such case we just chain
-        // up the parent method and return.
+
+
         if (modifiers & Clutter.ModifierType.CONTROL_MASK) {
-            // Keep default behavior: launch new window
-            // By calling the parent method I make it compatible
-            // with other extensions tweaking ctrl + click
+
+
+
             super.activate(button);
             return;
         }
 
-        // We check what type of click we have and if the modifier SHIFT is
-        // being used. We then define what buttonAction should be for this
-        // event.
+
+
+
         let buttonAction = 0;
         const {settings} = Docking.DockManager;
         if (button && button === 2) {
@@ -575,29 +575,29 @@ export const DockAbstractAppIcon = GObject.registerClass({
             break;
         }
 
-        // We check if the app is running, and that the # of windows is > 0 in
-        // case we use workspace isolation.
+
+
         const windows = this.getInterestingWindows();
 
-        // Some action modes (e.g. MINIMIZE_OR_OVERVIEW) require overview to remain open
-        // This variable keeps track of this
+
+
         let shouldHideOverview = true;
 
-        // We customize the action only when the application is already running
+
         if (this.running) {
             const hasUrgentWindows = !!this._urgentWindows.size;
             const singleOrUrgentWindows = windows.length === 1 || hasUrgentWindows;
             switch (buttonAction) {
             case clickAction.MINIMIZE:
-                // In overview just activate the app, unless the action is explicitly
-                // requested with a keyboard modifier
+
+
                 if (!Main.overview.visible || modifiers) {
-                    // If we have button=2 or a modifier, allow minimization even if
-                    // the app is not focused
+
+
                     if (this.focused && !hasUrgentWindows || button === 2 ||
                         modifiers & Clutter.ModifierType.SHIFT_MASK) {
-                        // minimize all windows on double click and always in
-                        // the case of primary click without additional modifiers
+
+
                         const allWindows = (button === 1 && !modifiers) || clickCount > 1;
                         this._minimizeWindow(allWindows);
                     } else {
@@ -610,23 +610,23 @@ export const DockAbstractAppIcon = GObject.registerClass({
                 break;
 
             case clickAction.MINIMIZE_OR_OVERVIEW:
-                // When a single window is present, toggle minimization
-                // If only one windows is present toggle minimization, but
-                // only when triggered with the simple click action
-                // (no modifiers, no middle click).
+
+
+
+
                 if (singleOrUrgentWindows && !modifiers && button === 1) {
                     const [w] = windows;
                     if (this.focused) {
                         if (buttonAction !== clickAction.FOCUS_OR_APP_SPREAD) {
-                            // Window is raised, minimize it
+
                             this._minimizeWindow(w);
                         }
                     } else {
-                        // Window is minimized, raise it
+
                         Main.activateWindow(w);
                     }
-                    // Launch overview when multiple windows are present
-                    // TODO: only show current app windows when gnome shell API will allow it
+
+
                 } else {
                     shouldHideOverview = false;
                     Main.overview.toggle();
@@ -638,7 +638,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
                     if (this.focused && !hasUrgentWindows) {
                         this._cycleThroughWindows();
                     } else {
-                        // Activate the first window
+
                         const [w] = windows;
                         Main.activateWindow(w);
                     }
@@ -652,7 +652,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
                     (windows.length > 1 || modifiers || button !== 1)) {
                     this._windowPreviews();
                 } else {
-                    // Activate the first window
+
                     const [w] = windows;
                     Main.activateWindow(w);
                 }
@@ -665,7 +665,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
                     else if (!Main.overview.visible)
                         this._minimizeWindow();
                 } else {
-                    // Activate the first window
+
                     const [w] = windows;
                     Main.activateWindow(w);
                 }
@@ -677,9 +677,9 @@ export const DockAbstractAppIcon = GObject.registerClass({
 
             case clickAction.PREVIEWS:
                 if (!Main.overview.visible) {
-                    // If only one windows is present just switch to it,
-                    // but only when triggered with the simple click action
-                    // (no modifiers, no middle click).
+
+
+
                     if (singleOrUrgentWindows && !modifiers && button === 1) {
                         const [w] = windows;
                         Main.activateWindow(w);
@@ -692,22 +692,22 @@ export const DockAbstractAppIcon = GObject.registerClass({
                 break;
 
             case clickAction.MINIMIZE_OR_PREVIEWS:
-                // When a single window is present, toggle minimization
-                // If only one windows is present toggle minimization, but only
-                // when triggered with the standard click action (no modifiers,
-                // no middle click).
+
+
+
+
                 if (!Main.overview.visible) {
                     if (singleOrUrgentWindows && !modifiers && button === 1) {
                         const [w] = windows;
                         if (this.focused) {
-                            // Window is raised, minimize it
+
                             this._minimizeWindow(w);
                         } else {
-                            // Window is minimized, raise it
+
                             Main.activateWindow(w);
                         }
                     } else {
-                        // Launch previews when multiple windows are present
+
                         this._windowPreviews();
                     }
                 } else {
@@ -721,7 +721,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
                     this._doubleClickGesture?.cancel();
                     Docking.DockManager.getDefault().appSpread.toggle(this.app);
                 } else {
-                    // Activate the first window
+
                     Main.activateWindow(windows[0]);
                 }
                 break;
@@ -732,7 +732,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
                     this._doubleClickGesture?.cancel();
                     Docking.DockManager.getDefault().appSpread.toggle(this.app);
                 } else if (!this.focused) {
-                    // Activate the first window
+
                     Main.activateWindow(windows[0]);
                 } else {
                     this._minimizeWindow();
@@ -751,7 +751,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
             this.launchNewWindow();
         }
 
-        // Hide overview except when action mode requires it
+
         if (shouldHideOverview)
             Main.overview.hide();
     }
@@ -791,9 +791,9 @@ export const DockAbstractAppIcon = GObject.registerClass({
         return false;
     }
 
-    // Try to do the right thing when attempting to launch a new window of an app. In
-    // particular, if the application doesn't allow to launch a new window, activate
-    // the existing window instead.
+
+
+
     launchNewWindow() {
         if (this.updating) {
             this.notifyAppIconUpdating();
@@ -805,9 +805,9 @@ export const DockAbstractAppIcon = GObject.registerClass({
             this.animateLaunch();
             this.app.open_new_window(-1);
         } else {
-            // Try to manually activate the first window. Otherwise, when the
-            // app is activated by switching to a different workspace, a launch
-            // spinning icon is shown and disappears only after a timeout.
+
+
+
             const windows = this.getWindows();
             if (windows.length > 0) {
                 Main.activateWindow(windows[0]);
@@ -819,7 +819,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
     }
 
     _numberOverlay() {
-        // Add label for a Hot-Key visual aid
+
         this._numberOverlayLabel = new St.Label();
         this._numberOverlayBin = new St.Bin({
             child: this._numberOverlayLabel,
@@ -835,12 +835,12 @@ export const DockAbstractAppIcon = GObject.registerClass({
     }
 
     updateNumberOverlay() {
-        // We apply an overall scale factor that might come from a HiDPI monitor.
-        // Clutter dimensions are in physical pixels, but CSS measures are in logical
-        // pixels, so make sure to consider the scale.
+
+
+
         const scaleFactor = St.ThemeContext.get_for_stage(global.stage).scale_factor;
-        // Set the font size to something smaller than the whole icon so it is
-        // still visible. The border radius is large to make the shape circular
+
+
         const [minWidth_, natWidth] = this._iconContainer.get_preferred_width(-1);
         const fontSize = Math.round(Math.max(12, 0.3 * natWidth) / scaleFactor);
         const size = Math.round(fontSize * 1.2);
@@ -866,26 +866,26 @@ export const DockAbstractAppIcon = GObject.registerClass({
     }
 
     _minimizeWindow(param) {
-        // Param true make all app windows minimize
+
         const windows = this.getInterestingWindows();
         const currentWorkspace = global.workspace_manager.get_active_workspace();
         for (let i = 0; i < windows.length; i++) {
             const w = windows[i];
             if (w.get_workspace() === currentWorkspace && w.showing_on_its_workspace()) {
                 w.minimize();
-                // Just minimize one window. By specification it should be the
-                // focused window on the current workspace.
+
+
                 if (!param)
                     break;
             }
         }
     }
 
-    // By default only non minimized windows are activated.
-    // This activates all windows in the current workspace.
+
+
     _activateAllWindows() {
-        // First activate first window so workspace is switched if needed.
-        // We don't do this if isolation is on!
+
+
         if (!Docking.DockManager.settings.isolateWorkspaces &&
             !Docking.DockManager.settings.isolateMonitors) {
             if (!this.running)
@@ -893,7 +893,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
             this.app.activate();
         }
 
-        // then activate all other app windows in the current workspace
+
         const windows = this.getInterestingWindows();
         const activeWorkspace = global.workspace_manager.get_active_workspace_index();
 
@@ -906,7 +906,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
         }
     }
 
-    // This closes all windows of the app.
+
     closeAllWindows() {
         const windows = this.getInterestingWindows();
         const time = global.get_current_time();
@@ -914,8 +914,8 @@ export const DockAbstractAppIcon = GObject.registerClass({
     }
 
     _cycleThroughWindows(reversed) {
-        // Store for a little amount of time last clicked app and its windows
-        // since the order changes upon window interaction
+
+
         const MEMORY_TIME = 3000;
 
         const appWindows = this.getInterestingWindows();
@@ -928,8 +928,8 @@ export const DockAbstractAppIcon = GObject.registerClass({
         recentlyClickedAppLoopId = GLib.timeout_add(
             GLib.PRIORITY_DEFAULT, MEMORY_TIME, this._resetRecentlyClickedApp);
 
-        // If there isn't already a list of windows for the current app,
-        // or the stored list is outdated, use the current windows list.
+
+
         const monitorIsolation = Docking.DockManager.settings.isolateMonitors;
         if (!recentlyClickedApp ||
             recentlyClickedApp.get_id() !== this.app.get_id() ||
@@ -970,8 +970,8 @@ export const DockAbstractAppIcon = GObject.registerClass({
         return this.app.get_windows();
     }
 
-    // Filter out unnecessary windows, for instance
-    // nautilus desktop window.
+
+
     getInterestingWindows() {
         const interestingWindows = getInterestingWindows(this.getWindows(),
             this.monitorIndex);
@@ -1032,11 +1032,11 @@ const DockLocationAppIcon = GObject.registerClass({
     }
 });
 
-/**
- * @param app
- * @param monitorIndex
- * @param iconAnimator
- */
+
+
+
+
+
 export function makeAppIcon(app, monitorIndex, iconAnimator) {
     if (app.appInfo instanceof Locations.LocationAppInfo)
         return new DockLocationAppIcon(app, monitorIndex, iconAnimator);
@@ -1044,28 +1044,28 @@ export function makeAppIcon(app, monitorIndex, iconAnimator) {
     return new DockAppIcon(app, monitorIndex, iconAnimator);
 }
 
-/**
- * DockAppIconMenu
- *
- * - set popup arrow side based on dash orientation
- * - Add close windows option based on quitfromdash extension
- *   (https://github.com/deuill/shell-extension-quitfromdash)
- * - Add open windows thumbnails instead of list
- * - update menu when application windows change
- */
+
+
+
+
+
+
+
+
+
 const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
     constructor(source) {
         super(source, 0.5, Utils.getPosition());
 
         this._signalsHandler = new Utils.GlobalSignalsHandler(this);
 
-        // We want to keep the item hovered while the menu is up
+
         this.blockSourceEvents = true;
 
         this.actor.add_style_class_name('app-menu');
         this.actor.add_style_class_name('dock-app-menu');
 
-        // Chain our visibility and lifecycle to that of the source
+
         this._signalsHandler.add(source, 'notify::mapped', () => {
             if (!source.mapped)
                 this.close();
@@ -1138,8 +1138,8 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
         const {app} = this.sourceActor;
 
         if (Docking.DockManager.settings.showWindowsPreview) {
-            // Display the app windows menu items and the separator between windows
-            // of the current desktop and other windows.
+
+
             const windows = this.sourceActor.getInterestingWindows();
 
             this._allWindowsMenuItem = new PopupMenu.PopupSubMenuMenuItem(__('All Windows'), false);
@@ -1153,7 +1153,7 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
 
             if (windows.length > 0) {
                 this.addMenuItem(
-                    /* TRANSLATORS: This is the heading of a list of open windows */
+
                     new PopupMenu.PopupSeparatorMenuItem(_('Open Windows')));
             }
 
@@ -1276,7 +1276,7 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
             }
         }
 
-        // dynamic menu
+
         const items = this._getMenuItems();
         let i = items.length;
         if (Shell.AppSystem.get_default().lookup_app('org.gnome.Software.desktop'))
@@ -1292,7 +1292,7 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
         this.addMenuItem(dynamicSection, i);
         this.emit('dynamic-section-changed', dynamicSection);
 
-        // quit menu
+
         this._appendSeparator();
         this._quitMenuItem = this._appendMenuItem(_('Quit'));
         this._quitMenuItem.connect('activate', () => this.sourceActor.closeAllWindows());
@@ -1300,12 +1300,12 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
         this.update();
     }
 
-    // update menu content when application windows change. This is desirable as actions
-    // acting on windows (closing) are performed while the menu is shown.
+
+
     update() {
         const {windowsCount} = this.sourceActor;
 
-        // update, show or hide the quit menu
+
         if (windowsCount > 0) {
             if (windowsCount === 1) {
                 this._quitMenuItem.label.set_text(_('Quit'));
@@ -1323,10 +1323,10 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
         if (Docking.DockManager.settings.showWindowsPreview) {
             const windows = this.sourceActor.getInterestingWindows();
 
-            // update, show, or hide the allWindows menu
-            // Check if there are new windows not already displayed. In such case,
-            // repopulate the allWindows menu. Windows removal is already handled
-            // by each preview being connected to the destroy signal
+
+
+
+
             const oldWindows = this._allWindowsMenuItem.menu._getMenuItems().map(item => {
                 return item._window;
             });
@@ -1336,15 +1336,15 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
             if (newWindows.length > 0) {
                 this._populateAllWindowMenu(windows);
 
-                // Try to set the width to that of the submenu.
-                // TODO: can't get the actual size, getting a bit less.
-                // Temporary workaround: add 15px to compensate
+
+
+
                 this._allWindowsMenuItem.width =  this._allWindowsMenuItem.menu.actor.width + 15;
             }
 
-            // The menu is created hidden and never hidden after being shown.
-            // Instead, a signal connected to its items destroy will set is
-            // insensitive if no more windows preview are shown.
+
+
+
             if (windows.length > 0) {
                 this._allWindowsMenuItem.show();
                 this._allWindowsMenuItem.setSensitive(true);
@@ -1354,7 +1354,7 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
             }
         }
 
-        // Update separators
+
         this._getMenuItems().forEach(item => {
             if ('label' in item)
                 this._updateSeparatorVisibility(item);
@@ -1382,10 +1382,10 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
                     this.emit('activate-window', window);
                 });
 
-                // This is to achieve a more graceful transition when the last
-                // window is closed.
+
+
                 item.connect('destroy', () => {
-                    // It's still counting the item just going to be destroyed
+
                     if (this._allWindowsMenuItem.menu._getMenuItems().length === 1)
                         this._allWindowsMenuItem.setSensitive(false);
                 });
@@ -1394,25 +1394,25 @@ const DockAppIconMenu = class DockAppIconMenu extends PopupMenu.PopupMenu {
     }
 };
 
-/**
- * @param w
- */
+
+
+
 function isWindowUrgent(w) {
     return w.urgent || w.demandsAttention || w._manualUrgency;
 }
 
-/**
- * Filter out unnecessary windows, for instance
- * nautilus desktop window.
- *
- * @param windows
- * @param monitorIndex
- */
+
+
+
+
+
+
+
 export function getInterestingWindows(windows, monitorIndex) {
     const {settings} = Docking.DockManager;
 
-    // When using workspace isolation, we filter out windows
-    // that are neither in the current workspace nor marked urgent
+
+
     if (settings.isolateWorkspaces) {
         const showUrgent = settings.workspaceAgnosticUrgentWindows;
         const activeWorkspace = global.workspace_manager.get_active_workspace();
@@ -1431,15 +1431,15 @@ export function getInterestingWindows(windows, monitorIndex) {
     return windows.filter(w => !w.skipTaskbar);
 }
 
-/**
- * A ShowAppsIcon improved class.
- *
- * - set label position based on dash orientation
- *   Note: we are am reusing most machinery of the appIcon class.
- * - implement a popupMenu based on the AppIcon code
- *   Note: we are reusing most machinery of the appIcon class)
- *
- */
+
+
+
+
+
+
+
+
+
 
 export const DockShowAppsIcon = GObject.registerClass({
     Signals: {
@@ -1451,7 +1451,7 @@ export const DockShowAppsIcon = GObject.registerClass({
     _init(position) {
         super._init();
 
-        // Re-use appIcon methods
+
         const {prototype: appIconPrototype} = AppDisplay.AppIcon;
         this.toggleButton.y_expand = false;
         this.toggleButton.connect('popup-menu', () =>
@@ -1493,7 +1493,7 @@ export const DockShowAppsIcon = GObject.registerClass({
 
     vfunc_button_press_event(...args) {
         try {
-            // TODO: Drop this when not supporting GNOME 48 (and older) anymore.
+
             return AppDisplay.AppIcon.prototype.vfunc_button_press_event.call(
                 this.toggleButton, ...args);
         } catch {
@@ -1503,7 +1503,7 @@ export const DockShowAppsIcon = GObject.registerClass({
 
     vfunc_touch_event(...args) {
         try {
-            // TODO: Drop this when not supporting GNOME 48 (and older) anymore.
+
             return AppDisplay.AppIcon.prototype.vfunc_touch_event.call(
                 this.toggleButton, ...args);
         } catch {
@@ -1580,7 +1580,7 @@ export const DockShowAppsIcon = GObject.registerClass({
 
         this.toggleButton.set_hover(true);
         this._menu.popup();
-        // Removed in GNOME 50.
+
         this._menuManager.ignoreRelease?.();
         this.emit('sync-tooltip');
 
@@ -1589,9 +1589,9 @@ export const DockShowAppsIcon = GObject.registerClass({
 });
 
 
-/**
- * A menu for the showAppsIcon
- */
+
+
+
 class DockShowAppsIconMenu extends DockAppIconMenu {
     _rebuildMenu() {
         this.removeAll();
@@ -1604,13 +1604,13 @@ class DockShowAppsIconMenu extends DockAppIconMenu {
     }
 }
 
-/**
- * This function is used for both DockShowAppsIcon and DockDashItemContainer
- */
+
+
+
 export function itemShowLabel() {
     /* eslint-disable no-invalid-this */
-    // Check if the label is still present at all. When switching workspace, the
-    // item might have been destroyed in between.
+
+
     if (!this._labelText || !this.label.get_stage())
         return;
 
@@ -1658,10 +1658,10 @@ export function itemShowLabel() {
         break;
     }
 
-    // keep the label inside the screen border
-    // Only needed fot the x coordinate.
 
-    // Leave a few pixel gap
+
+
+
     const gap = 5;
     const monitor = Main.layoutManager.findMonitorForActor(this);
     if (x - monitor.x < gap)

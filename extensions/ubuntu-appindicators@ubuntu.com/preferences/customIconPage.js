@@ -217,7 +217,7 @@ class AppIndicatorCustomIconPage extends Adw.PreferencesPage {
         const id = item.get_item().id;
         const name = item.get_item().name;
 
-        /* dynamic new entry*/
+
         if (storeLength === 1 && (id || name))
             this.listStore.append(new IconData({id: '', name: '', atName: ''}));
 
@@ -236,5 +236,3 @@ class AppIndicatorCustomIconPage extends Adw.PreferencesPage {
             this.listStore.remove(item.get_position());
     }
 });
-
-

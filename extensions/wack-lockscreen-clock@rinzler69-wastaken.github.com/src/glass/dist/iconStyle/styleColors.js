@@ -1,13 +1,13 @@
-// The colors icon-style.frag draws a style map in, per look, after macW1Y 26's
-// tinted, white and clear icons. Pure, so that the contact sheet and the
-// preferences can use it too.
-// Per look: the rim's width (map px), its light on the sides away from the light, the sheen, and how far the plates'
-// tones spread.
+
+
+
+
+
 const GLASS = {
     dark: [7, 0.2, 0.1, 1], light: [9, 0, 0.42, 1], mono: [9, 0, 0.42, 1],
 };
-// The clear look's plates are glass drawn with the glass settings over what is behind the icon. Until that is known
-// they are drawn as light added to it, with a rim lit on two sides as the glass's is.
+
+
 const CLEAR_WITHOUT_BACKDROP = { rim: 0.8, rimWidth: 12, rimBase: 0, sheen: 0.5, edgeShade: 0.2 };
 export const ICON_TUNING = [
     ...Object.entries(GLASS).flatMap(([look, [width, base, sheen, spread]]) => [
@@ -53,22 +53,22 @@ function mix(a, b, t) {
     return [0, 1, 2].map(i => a[i] + (b[i] - a[i]) * t);
 }
 
-// A grey a little cooler than neutral.
+
 function glass(lightness) {
     return [lightness - 0.01, lightness, lightness + 0.02].map(v => Math.min(Math.max(v, 0), 1));
 }
 
-/**
- * @param tint The accent or chosen color, 0 to 1 a channel.
- * @param strength How much of the tint the outer plate of a dark tinted icon takes, 0 (the dark glass alone) to 1.
- * @param symbolOpacity How strongly the symbol shows, 0 to 1.
- * @param tuning Values that replace ICON_TUNING's, by key.
- */
+
+
+
+
+
+
 export function iconStyleColors(mode, tint, strength, symbolOpacity, variant = 'light', tuning = {}) {
     const v = (key) => tuning[key] ?? ICON_TUNING.find(p => p.key === key).value;
     if (mode === 'clear') {
-        // Barely frosted, so that the white symbol stands apart from the plates. The frost is light added, which keeps
-        // the colors of what is behind.
+
+
         return { ...CLEAR_WITHOUT_BACKDROP, toneSpread: v('clearToneSpread'), additive: 1, symbolShadow: v('clearSymbolShadow'),
             rimScale: v('clearRimScale'),
             plate: [1, 1, 1, v('clearGlassAlpha')], inner: [1, 1, 1, v('clearInnerAlpha')],
@@ -89,7 +89,7 @@ export function iconStyleColors(mode, tint, strength, symbolOpacity, variant = '
             inner: [1, 1, 1, v('lightInnerAlpha')], symbol, symbolInner: symbol, rim: v('lightRim'), tint: [t[0], t[1], t[2]] };
     }
     const dark = glass(v('darkGlass'));
-    // On a plate in a light color the symbol is dark, as the cut-outs in it would be; on a dark one, light.
+
     const light = 0.2126 * t[0] + 0.7152 * t[1] + 0.0722 * t[2] > v('darkLightTint');
     return { ...shared, plate: [...mix(dark, t.map(c => c * v('darkTintReach')), strength), v('darkGlassAlpha')],
         inner: [...mix(t, WHITE, v('darkInnerWhite')), v('darkInnerAlpha')],
@@ -98,7 +98,7 @@ export function iconStyleColors(mode, tint, strength, symbolOpacity, variant = '
         rim: v('darkRim'), tint: [t[0], t[1], t[2]] };
 }
 
-/** The shader's uniforms for `colors`, by name. */
+
 export function iconStyleUniforms(colors) {
     const out = [['rim_a', colors.rim], ['rim_width', colors.rimWidth], ['rim_base', colors.rimBase],
         ['sheen', colors.sheen], ['tone_spread', colors.toneSpread], ['additive', colors.additive],

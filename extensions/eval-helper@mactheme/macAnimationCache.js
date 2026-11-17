@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macW1Y — Centralized Animation & Render Cache (MacAnimationCache)
-// Advanced Animation Preloading, Graphic Caching, Lifecycle Guard & Frame Scheduler.
+
+
 
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
@@ -9,8 +9,8 @@ import Meta from 'gi://Meta';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-const CACHE_MAX_BYTES = 64 * 1024 * 1024; // 64 MB VRAM/RAM cap
-const IDLE_CLEANUP_TTL_MS = 60000;         // 60s idle cleanup TTL
+const CACHE_MAX_BYTES = 64 * 1024 * 1024;
+const IDLE_CLEANUP_TTL_MS = 60000;
 
 class MacAnimationCacheEngine {
     constructor() {
@@ -110,7 +110,7 @@ class MacAnimationCacheEngine {
         this._schedulerState = state;
         this._stats.schedulerState = state;
 
-        // Propagate state to SharedGlassRenderEngine if available
+
         try {
             const ext = Main.extensionManager?.lookup('liquid-glass@thinkingcoding1231.gmail.com');
             const sharedEngine = ext?.stateObj?.sharedEngine || globalThis.__macSharedGlassEngine;
@@ -126,9 +126,9 @@ class MacAnimationCacheEngine {
         } catch (_) {}
     }
 
-    // -------------------------------------------------------------------------
-    // Animation Prewarming Pipeline
-    // -------------------------------------------------------------------------
+
+
+
 
     async prewarmAll() {
         this.setSchedulerState('PREWARMING');
@@ -150,7 +150,7 @@ class MacAnimationCacheEngine {
         return new Promise(resolve => {
             GLib.idle_add(GLib.PRIORITY_LOW, () => {
                 try {
-                    // Prewarm Overview wallpaper group and background managers
+
                     const bgGroup = Main.layoutManager.overviewGroup?.get_children()
                         ?.find(c => c.name === 'mac-overview-wallpaper-group');
                     if (bgGroup) {
@@ -158,7 +158,7 @@ class MacAnimationCacheEngine {
                         bgGroup.visible = true;
                     }
 
-                    // Prewarm DING icons clone cache
+
                     if (typeof globalThis._macEnsurePersistentDingClones === 'function') {
                         globalThis._macEnsurePersistentDingClones();
                     }
@@ -178,7 +178,7 @@ class MacAnimationCacheEngine {
         return new Promise(resolve => {
             GLib.idle_add(GLib.PRIORITY_LOW, () => {
                 try {
-                    // Eagerly initialize search dialog and its BackdropGlass
+
                     if (typeof globalThis.ensureSearchDialog === 'function') {
                         const dlg = globalThis.ensureSearchDialog();
                         if (dlg && typeof dlg._initGlass === 'function' && !dlg._glass) {
@@ -202,7 +202,7 @@ class MacAnimationCacheEngine {
         return new Promise(resolve => {
             GLib.idle_add(GLib.PRIORITY_LOW, () => {
                 try {
-                    // Ensure Tahoe Quick Settings / Control Center glass pipelines are compiled
+
                     const kiwi = Main.extensionManager?.lookup('kiwi@kemma')?.stateObj;
                     if (kiwi?._quickSettings) {
                         kiwi._quickSettings._ensurePrewarmed?.();
@@ -241,7 +241,7 @@ class MacAnimationCacheEngine {
         return new Promise(resolve => {
             GLib.idle_add(GLib.PRIORITY_LOW, () => {
                 try {
-                    // Prewarm dock magnification and hover geometries
+
                     const d2d = Main.extensionManager?.lookup('dash2dock-motion@unmade.space')?.stateObj;
                     if (d2d?._dock) {
                         d2d._dock._ensurePrewarmed?.();
@@ -256,9 +256,9 @@ class MacAnimationCacheEngine {
         });
     }
 
-    // -------------------------------------------------------------------------
-    // Caching & Lifecycle Operations
-    // -------------------------------------------------------------------------
+
+
+
 
     get(key) {
         const entry = this._resources.get(key);
@@ -277,7 +277,7 @@ class MacAnimationCacheEngine {
             this._cachedBytes -= old.sizeBytes;
         }
 
-        // Evict LRU if over budget
+
         while (this._cachedBytes + sizeBytes > this._maxBytes && this._resources.size > 0) {
             this._evictOldest();
         }
@@ -345,7 +345,7 @@ class MacAnimationCacheEngine {
             this._stats.invalidationReasons.shift();
         }
 
-        // Clean out dynamic transient caches, keep static pipelines
+
         const keysToRemove = [];
         for (const [key, entry] of this._resources.entries()) {
             if (!key.startsWith('static:')) {
@@ -358,16 +358,16 @@ class MacAnimationCacheEngine {
 
         this._prewarmed.clear();
 
-        // Schedule lazy re-prewarm on idle
+
         GLib.idle_add(GLib.PRIORITY_LOW, () => {
             this.prewarmAll();
             return GLib.SOURCE_REMOVE;
         });
     }
 
-    // -------------------------------------------------------------------------
-    // Metrics & Diagnostics Tracking
-    // -------------------------------------------------------------------------
+
+
+
 
     recordOverviewOpen(durationMs) {
         this._stats.overviewOpenCount++;

@@ -1,18 +1,18 @@
-// This file is part of the AppIndicator/KStatusNotifierItem GNOME Shell extension
-//
-// This program is free software; you can redistribute it and/or
+
+
+
 // modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
+
 // of the License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+
+
+
+
 // GNU General Public License for more details.
-//
+
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
@@ -32,7 +32,7 @@ Gio._promisify(Gio.Subprocess.prototype, 'communicate_async');
 Gio._promisify(Gio.DataInputStream.prototype, 'read_line_async', 'read_line_finish_utf8');
 
 
-// TODO: replace with org.freedesktop and /org/freedesktop when approved
+
 const KDE_PREFIX = 'org.kde';
 
 export const WATCHER_BUS_NAME = `${KDE_PREFIX}.StatusNotifierWatcher`;
@@ -40,9 +40,9 @@ const WATCHER_OBJECT = '/StatusNotifierWatcher';
 
 const DEFAULT_ITEM_OBJECT_PATH = '/StatusNotifierItem';
 
-/*
- * The StatusNotifierWatcher class implements the StatusNotifierWatcher dbus object
- */
+
+
+
 export class StatusNotifierWatcher {
     constructor(extension, watchDog) {
         this._watchDog = watchDog;
@@ -116,7 +116,7 @@ export class StatusNotifierWatcher {
                 }
             });
 
-            // if the desktop is not ready delay the icon creation and signal emissions
+
             await Util.waitForStartupCompletion(indicator.cancellable);
             const statusIcon = new IndicatorStatusIcon.IndicatorStatusIcon(indicator);
             IndicatorStatusIcon.addIconToPanel(statusIcon);
@@ -137,7 +137,7 @@ export class StatusNotifierWatcher {
         const item = this._items.get(id);
 
         if (item) {
-            // delete the old one and add the new indicator
+
             Util.Logger.debug(`Attempting to re-register ${id}; resetting instead`);
             item.reset();
             return;
@@ -147,13 +147,13 @@ export class StatusNotifierWatcher {
     }
 
     async _seekStatusNotifierItems(extension) {
-        // Some indicators (*coff*, dropbox, *coff*) do not re-register again
-        // when the plugin is enabled/disabled, thus we need to manually look
-        // for the objects in the session bus that implements the
-        // StatusNotifierItem interface... However let's do it after a low
-        // priority timeout, and using an external process so that it won't
-        // affect startup or memory (as it seems that gjs is not great at
-        // handling the memory of the bus analyzer async code).
+
+
+
+
+
+
+
         const cancellable = this._cancellable;
         await new PromiseUtils.TimeoutSecondsPromise(2, GLib.PRIORITY_LOW, cancellable);
         const busAnalyzer = GLib.build_filenamev([
@@ -206,13 +206,13 @@ export class StatusNotifierWatcher {
     }
 
     async RegisterStatusNotifierItemAsync(params, invocation) {
-        // it would be too easy if all application behaved the same
-        // instead, ayatana patched gnome apps to send a path
-        // while kde apps send a bus name
+
+
+
         const [service] = params;
         let busName, objPath;
 
-        if (service.charAt(0) === '/') { // looks like a path
+        if (service.charAt(0) === '/') {
             busName = invocation.get_sender();
             objPath = service;
         } else if (service.match(DBusUtils.BUS_ADDRESS_REGEX)) {
@@ -287,9 +287,9 @@ export class StatusNotifierWatcher {
         if (this._isDestroyed)
             return;
 
-        // this doesn't do any sync operation and doesn't allow us to hook up
-        // the event of being finished which results in our unholy debounce hack
-        // (see extension.js)
+
+
+
         this._items.forEach(indicator => indicator.destroy());
         this._cancellable.cancel();
 

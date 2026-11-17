@@ -21,7 +21,7 @@ function fastBoxBlur(srcPixels, w, h, stride, channels, r) {
     const temp = new Uint8Array(total);
     const out = new Uint8Array(total);
 
-    // Horizontal pass
+
     for (let y = 0; y < h; y++) {
         const rowOffset = y * stride;
         const tempRowOffset = y * w * channels;
@@ -43,7 +43,7 @@ function fastBoxBlur(srcPixels, w, h, stride, channels, r) {
         }
     }
 
-    // Vertical pass
+
     for (let x = 0; x < w; x++) {
         for (let c = 0; c < channels; c++) {
             let sum = 0;
@@ -66,22 +66,22 @@ function fastBoxBlur(srcPixels, w, h, stride, channels, r) {
     return out;
 }
 
-/**
- * Creates a blurred wallpaper slice matching the password prompt chip bounds,
- * with dynamic downsampling and adaptive frosted glass white/dark blend.
- *
- * @param {GdkPixbuf.Pixbuf} srcPixbuf Source wallpaper pixbuf
- * @param {object} bounds Normalized crop coordinates { x1, x2, y1, y2 }
- * @param {number} destWidth Target prompt chip width in pixels
- * @param {number} destHeight Target prompt chip height in pixels
- * @param {number} blurRadius Blur radius in screen pixels
- * @param {number} brightness Brightness multiplier factor
- * @param {number} highlightAlpha Optional overlay highlight/tint alpha (0.0 - 1.0)
- * @param {number|null} whiteBlendAlpha Frosted glass white overlay alpha (defaults to CUPERTINO_PROMPT_WHITE_BLEND_ALPHA)
- * @param {object|null} visualState Optional already-resolved prompt visual state. When provided,
- *   overlay/inverse policy is applied as-is instead of being re-derived from this slice.
- * @returns {{pixbuf: GdkPixbuf.Pixbuf, avgColor: {r: number, g: number, b: number}, shadowAlpha: number, visualState: object}|null}
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export function createBlurredPromptSlice(
     srcPixbuf,
     bounds,
@@ -110,7 +110,7 @@ export function createBlurredPromptSlice(
     if (cropW <= 0 || cropH <= 0)
         return null;
 
-    // Use uniform scaling to ensure blur slice preserves exact crop aspect ratio and does not distort or stretch
+
     const uniformScale = destHeight > 0 && cropH > 0 ? (destHeight / cropH) : 1.0;
     const targetDestW = (destWidth > 0 && destHeight > 0 && Math.abs(destWidth / cropW - uniformScale) < 0.01)
         ? destWidth
@@ -181,7 +181,7 @@ export function createBlurredPromptSlice(
         };
     }
 
-    // Calculate padding in pixbuf coordinates equivalent to blurRadius screen pixels
+
     const rInPixbuf = Math.round(blurRadius / uniformScale);
 
         const padStartX = Math.max(0, startX - rInPixbuf);
@@ -201,9 +201,9 @@ export function createBlurredPromptSlice(
         const workW = Math.max(2, Math.round(padW * scaleX));
         const workH = Math.max(2, Math.round(padH * scaleY));
 
-        // Dynamic downsampling:
-        // Use 1x for small blur radii (<16px) to avoid destroying fine details.
-        // Use 2x for standard/large radii (>=16px) for optimal performance.
+
+
+
         const dsFactor = blurRadius >= 16 ? 2 : 1;
         const dsW = Math.max(2, Math.round(workW / dsFactor));
         const dsH = Math.max(2, Math.round(workH / dsFactor));
@@ -217,12 +217,12 @@ export function createBlurredPromptSlice(
         const dsStride = dsPix.get_rowstride();
         const dsChannels = dsPix.get_n_channels();
 
-        // 2 passes of box blur approximate a true Gaussian blur of the target radius
+
         const dsRadius = Math.max(1, Math.round((blurRadius / dsFactor) * 0.7));
         const pass1 = fastBoxBlur(dsPixels, dsW, dsH, dsStride, dsChannels, dsRadius);
         const pass2 = fastBoxBlur(pass1, dsW, dsH, dsW * dsChannels, dsChannels, dsRadius);
 
-        // Crop the central prompt chip at downsampled scale
+
         const dsOffX = Math.round((startX - padStartX) * scaleX / dsFactor);
         const dsOffY = Math.round((startY - padStartY) * scaleY / dsFactor);
         const dsCropW = Math.max(1, Math.round(targetDestW / dsFactor));
@@ -230,7 +230,7 @@ export function createBlurredPromptSlice(
 
         const dsChipBytes = new Uint8Array(dsCropW * dsCropH * dsChannels);
 
-        // Calculate chip average color to determine a uniform white/dark frosted glass blend
+
         let sumR = 0, sumG = 0, sumB = 0;
         const totalSamples = dsCropW * dsCropH;
         for (let y = 0; y < dsCropH; y++) {
@@ -324,13 +324,13 @@ export function createBlurredPromptSlice(
         };
     }
 
-/**
- * Samples a rectangular region from a source wallpaper pixbuf and computes its average color.
- *
- * @param {GdkPixbuf.Pixbuf} srcPixbuf Source wallpaper pixbuf
- * @param {object} bounds Normalized crop coordinates { x1, x2, y1, y2 }
- * @returns {{r: number, g: number, b: number}|null}
- */
+
+
+
+
+
+
+
 export function sampleRegionAverageColor(srcPixbuf, bounds) {
     if (!srcPixbuf || !bounds)
         return null;
@@ -400,14 +400,14 @@ export function sampleRegionAverageColor(srcPixbuf, bounds) {
     };
 }
 
-/**
- * Samples the clock region (upper center) of a wallpaper pixbuf for average RGB and local noise.
- *
- * @param {GdkPixbuf.Pixbuf} pixbuf Source wallpaper pixbuf
- * @param {string} pictureOptions Picture sizing option ('zoom', 'spanned', etc.)
- * @param {object|null} monitor Monitor geometry { width, height }
- * @returns {{bgR: number, bgG: number, bgB: number, bgNoise: number}}
- */
+
+
+
+
+
+
+
+
 export function sampleClockRegionLuminance(pixbuf, pictureOptions = 'zoom', monitor = null) {
     if (!pixbuf)
         return { bgR: 40, bgG: 40, bgB: 40, bgNoise: 0.0 };
@@ -490,29 +490,29 @@ export function sampleClockRegionLuminance(pixbuf, pictureOptions = 'zoom', moni
     return { bgR, bgG, bgB, bgNoise };
 }
 
-/**
- * Computes sampled colors and visual state for solid colors and gradients (shadingType 0, 1, 2)
- * across Prompt chip, Cancel button, Avatar, A11y, and Session buttons.
- *
- * @param {object} params
- * @param {string} params.primaryColor Hex primary color string
- * @param {string} params.secondaryColor Hex secondary color string
- * @param {number} params.shadingType Shading type (0: solid, 1: vertical gradient, 2: horizontal gradient)
- * @param {object} params.normBounds Normalized bounds object { prompt, cancel, avatar, a11y, session }
- * @param {number} [params.whiteBlendAlpha] White overlay blend factor
- * @returns {{
- *   sampledStart: object,
- *   sampledEnd: object,
- *   sampledPrimary: object,
- *   sampledCancelColor: object,
- *   sampledAvatarColor: object,
- *   sampledA11yColor: object,
- *   sampledSessionColor: object,
- *   promptVisualState: object,
- *   shadowAlpha: number,
- *   direction: string
- * }}
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export function sampleSolidGradientPromptColors({
     primaryColor,
     secondaryColor,
@@ -665,23 +665,23 @@ export function sampleSolidGradientPromptColors({
     };
 }
 
-/**
- * Samples wallpaper region average colors and applies visual state for chrome buttons (Cancel, Avatar, A11y, Session).
- *
- * @param {object} params
- * @param {GdkPixbuf.Pixbuf} params.pixbuf Loaded wallpaper pixbuf
- * @param {object} params.mappedBoundsMap Map of normalized bounds relative to pixbuf { cancel, avatar, a11y, session }
- * @param {object|null} params.promptVisualState Visual state to apply (or derive for buttons)
- * @param {object|null} [params.fallbackPrimaryColor] Fallback color if sample fails
- * @param {number} [params.whiteBlendAlpha] White overlay blend factor
- * @returns {{
- *   cancelColor: object|null,
- *   avatarColor: object,
- *   a11yColor: object,
- *   sessionColor: object,
- *   effectivePromptVisualState: object
- * }}
- */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export function sampleWallpaperChromeColors({
     pixbuf,
     mappedBoundsMap,
@@ -693,19 +693,19 @@ export function sampleWallpaperChromeColors({
 
     const fallback = fallbackPrimaryColor || { r: 40, g: 40, b: 40 };
 
-    // Cancel
+
     let sampledCancelColor = null;
     if (cancelMappedBounds) {
         const rawCancel = sampleRegionAverageColor(pixbuf, cancelMappedBounds) || fallback;
         sampledCancelColor = applyPromptVisualState(rawCancel, promptVisualState, { preblend: true });
     }
 
-    // Avatar
+
     const rawAvatar = (avatarMappedBounds ? sampleRegionAverageColor(pixbuf, avatarMappedBounds) : null) || fallback;
     const effectivePromptVisualState = promptVisualState ?? resolvePromptVisualState(rawAvatar, whiteBlendAlpha);
     const sampledAvatarColor = applyPromptVisualState(rawAvatar, effectivePromptVisualState, { preblend: true });
 
-    // A11y
+
     const rawA11y = (a11yMappedBounds ? sampleRegionAverageColor(pixbuf, a11yMappedBounds) : null) || fallback;
     const sampledA11yColor = applyPromptVisualState(
         rawA11y,
@@ -713,7 +713,7 @@ export function sampleWallpaperChromeColors({
         { preblend: true }
     );
 
-    // Session
+
     const rawSession = (sessionMappedBounds ? sampleRegionAverageColor(pixbuf, sessionMappedBounds) : null) || fallback;
     const sampledSessionColor = applyPromptVisualState(
         rawSession,
@@ -729,4 +729,3 @@ export function sampleWallpaperChromeColors({
         effectivePromptVisualState,
     };
 }
-

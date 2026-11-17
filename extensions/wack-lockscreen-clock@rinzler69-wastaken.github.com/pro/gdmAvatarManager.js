@@ -5,34 +5,34 @@ import St from 'gi://St';
 import { getUserLabelStyle } from '../main/colorUtils.js';
 import { _log } from './gdmUtils.js';
 
-/**
- * macW1Y GDM Avatar Manager v3 — без рекурсії стилів (23.10.2026)
- *
- * ПЕРВОПРИЧИНА БАГА «too much recursion» (журнал gnome-shell, 22.10.2026):
- *   Нативний Avatar (resource:///org/gnome/shell/ui/userWidget.js, GNOME 50)
- *   у vfunc_style_changed() шукає в темі параметр 'icon-size' і викликає
- *   this.update(). Нативний update() САМ ставить background-image для фото
- *   користувача (гілка icon-file) або скидає this.style = null (fallback).
- *   Попередня версія менеджера ПЕРЕЗАПИСУВАЛА avatar.update() і одразу після
- *   нативного оновлення ставила власні inline-стилі (кольорове коло / фон фото).
- *   Отримувався вічний цикл: native змінює стиль → vfunc_style_changed →
- *   знову update → наш стиль → style_changed → … «too much recursion».
- *   Оболонка обривала рендер рядка, і фото аватарки так і не намальовувалось —
- *   користувач бачив лишк білий person-icon на темному крузі.
- *
- * ПРАВИЛА ЦІЄЇ ВЕРСІЇ (безпечні щодо нативного циклу стилів):
- *   1. Ми НІКОЛИ не перезаписуємо avatar.update() — нативний рендеринг
- *      прекрасно сам малює фото icon-file (cover) та person-icon (fallback).
- *   2. Ми НІКОЛИ не встановлюємо inline-стилі на актор Avatar — бо саме вони
- *      тригерять vfunc_style_changed. Усі кольори «вібраності» ставимо лише
- *      на обгортку-кнопку '.wack-avatar-well' (звичайний St.Button, поза
- *      класною ієрархією Avatar — цикл неможливий).
- *   3. Реакції на пізню появу фото робимо підписками на сигнали
- *      AccountsService ('notify::is-loaded' / 'changed'), які викликають
- *      ЛИШЕ updateAvatarVibrancy(), а не avatar.update().
- */
 
-// Хелпер: файл існує ТА gdm-процес може його прочитати (інакше St не намалює фото).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function _readableIconPath(candidatePath) {
     try {
         if (!candidatePath || !GLib.file_test(candidatePath, GLib.FileTest.EXISTS))
@@ -121,7 +121,7 @@ export class GdmAvatarManager {
 
         this.unwrapGdmAvatar();
 
-        // Відключення від user list і зняття вібраності зі стилів кнопки-обгортки
+
         const userList = this._dialog?._userList || this._gdm._dialog?._userList;
         if (userList) {
             userList.disconnectObject(this);
@@ -135,7 +135,7 @@ export class GdmAvatarManager {
                     if (label)
                         label.set_style(null);
 
-                    // Скасувати обгортку-кнопку аватарки у бірці списку
+
                     this._unwrapAvatarWell(userWidget);
                 }
             }
@@ -146,10 +146,10 @@ export class GdmAvatarManager {
         this._dialog = null;
     }
 
-    /* ── Обгортка аватарки у пілюлю-кнопку «.wack-avatar-well» ─────────────
-       Працює для auth prompt well І для бірок списку користувачів.
-       Кольори вібраності ставимо на КНОПКУ (St.Button) — це НЕ Avatar,
-       отже цикл vfunc_style_changed → update() неможливий за визначенням. */
+
+
+
+
     _wrapAvatarInWell(userWidget, opts = {}) {
         if (!userWidget?._avatar)
             return null;
@@ -216,10 +216,10 @@ export class GdmAvatarManager {
 
         if (!avatar) return;
 
-        // Обгортка-кнопка: фарбування кола поза циклом стилів Avatar.
+
         const well = this._wrapAvatarInWell(userWidget, {});
 
-        // Фото рендериться нативно; реакція на пізню загрузку — лише колір.
+
         const user = avatar._user || userWidget?._user;
         if (user && !user.is_loaded) {
             user.connectObject(
@@ -238,8 +238,8 @@ export class GdmAvatarManager {
             this._colorForWell(well, this._lastAvatarColor);
     }
 
-    /* Стилі вібраності: КОЛЬРИ — тільки на кнопці-обгортці.
-       На самій аватарці жодних inline-стилів (правило без рекурсії). */
+
+
     _colorForWell(well, color) {
         if (!well) return;
         const targetBg = color
@@ -249,8 +249,8 @@ export class GdmAvatarManager {
             ? `background-color: ${targetBg} !important; border-radius: 999px !important;`
             : 'background-color: transparent !important;';
 
-        // Якщо в користувача є фото — кнопка лишається прозорою,
-        // а фото намалюється нативно самою аватаркою.
+
+
         try {
             if (this._getIconFile(well.get_child()))
                 return;
@@ -274,7 +274,7 @@ export class GdmAvatarManager {
         const authPrompt = this._dialog?._authPrompt || this._gdm._dialog?._authPrompt;
         const userWidget = authPrompt?._userWell?.get_child();
 
-        // Обгортка поточної версії; підтримка легасі-_avatarButton (без стилів на Avatar)
+
         const well = userWidget?._wackAvatarWell || userWidget?._avatarButton || null;
         if (well)
             this._colorForWell(well, color);
@@ -312,11 +312,11 @@ export class GdmAvatarManager {
 
         const uw = authPrompt._userWell?.get_child();
         if (uw && uw._avatar) {
-            // Основна обгортка (нова, без recursion)
+
             const well = this._wrapAvatarInWell(uw, {});
             if (well) uw._avatarButton = well;
 
-            // Лейаут-хак заголовка: форсуємо алокацію лейблів по ширині контейнера.
+
             const label = uw?._label;
             if (label && label.vfunc_allocate && label._wackOrigVfuncAllocate === undefined) {
                 label._wackOrigVfuncAllocate = label.vfunc_allocate;
@@ -333,7 +333,7 @@ export class GdmAvatarManager {
                 };
             }
 
-            // Реакція на пізню загрузку AccountsService (фото з'явилось раптом).
+
             const avatar = uw._avatar;
             const user = avatar?._user;
             if (user) {
@@ -380,10 +380,10 @@ export class GdmAvatarManager {
         return Boolean(this._getIconFile(avatar));
     }
 
-    /* Шлях до фото користувача — РОБОЧИЙ для будь-якого імені:
-       1) те, що каже AccountsService; 2) еталонний шлях
-       /var/lib/AccountsService/icons/<username>; перевіряємо І існування,
-       І читабельність (0644), бо gdm-процес не може зчитувати 0640-файли. */
+
+
+
+
     _getIconFile(avatar) {
         if (!avatar) return null;
         const user = avatar._user || null;

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macW1Y-style keyboard badge for the top panel: a filled rounded rect with
-// the layout code (RU/DE/EN…) punched out as transparent glyphs (Cairo
-// DEST_OUT), so the panel shows through the letter shapes.
-//
-// NOTE (GNOME 50): the stock indicator holds one label per source and the
-// panel button only ever allocates its FIRST child — so the badge lives
-// inside the indicator's own container (which stacks all children) and all
-// stock labels stay hidden. Text comes straight from InputSourceManager.
+
+
+
+
+
+
+
+
 
 import Cairo from 'cairo';
 import Gio from 'gi://Gio';
@@ -48,8 +48,8 @@ function _badgeWantSize(text) {
         return [1, 1];
     const layout = _badgeMeasureLayout();
     layout.set_text(text, -1);
-    // Ink extents (real glyph bounds), not the full line box — otherwise
-    // the badge comes out a tall slab.
+
+
     const [ink] = layout.get_pixel_extents();
     return [ink.width + BADGE_PAD_X * 2, ink.height + BADGE_PAD_Y * 2];
 }
@@ -63,13 +63,13 @@ function _badgeInk(text, cr) {
 }
 
 function _badgeFill() {
-    // White rounded badge with cut-out text per macW1Y Tahoe style
+
     try {
         const ink = getTopbarInk();
         if (ink === 'dark')
             return [0, 0, 0, 0.85];
     } catch (_) {
-        // fall through
+
     }
     const panel = Main.panel;
     if (panel?.has_style_class_name?.('kiwi-panel-dark-text'))
@@ -101,7 +101,7 @@ function _onBadgeRepaint(area) {
         const wantW = ink.width + BADGE_PAD_X * 2;
         const wantH = ink.height + BADGE_PAD_Y * 2;
         if (Math.abs(aw - wantW) > 0.5 || Math.abs(ah - wantH) > 0.5) {
-            // Resize first; the next repaint after allocation draws.
+
             cr.restore();
             cr.$dispose();
             area.set_size(wantW, wantH);
@@ -112,7 +112,7 @@ function _onBadgeRepaint(area) {
         cr.setSourceRGBA(fr, fg, fb, fa);
         _roundedRect(cr, 0.5, 0.5, aw - 1, ah - 1, BADGE_RADIUS);
         cr.fill();
-        // Punch the glyphs out: panel shows through the letter shapes.
+
         cr.setOperator(Cairo.Operator.DEST_OUT);
         cr.moveTo((aw - ink.width) / 2 - ink.x, (ah - ink.height) / 2 - ink.y);
         PangoCairo.show_layout(cr, layout);
@@ -122,16 +122,16 @@ function _onBadgeRepaint(area) {
 }
 
 function _badgeHost() {
-    // The indicator's own container stacks every child (preferred size is
-    // the max, all children get allocated) — unlike the panel button, which
-    // only ever allocates its first child.
+
+
+
     return _state?.indicator?._container ?? _state?.indicator ?? null;
 }
 
 function _hideAllLabels() {
-    // Detach beats hiding: the shell re-shows labels on several paths
-    // (source switch, keymap change), but show() on a detached actor is a
-    // no-op, so no race is possible. Stashed for re-adding on disable.
+
+
+
     const host = _badgeHost();
     if (!host)
         return;
@@ -143,17 +143,17 @@ function _hideAllLabels() {
                 host.remove_child(child);
                 _rememberStripped(child);
             } catch (_) {
-                // already gone
+
             }
         }
     }
 }
 
 function _rememberStripped(label) {
-    // The shell destroys stashed labels on input-source rebuilds; re-adding
-    // a dead actor segfaults Clutter (no JS exception to catch). Prune on
-    // destroy via WeakRef so the stash only ever holds live actors and
-    // nothing is leaked by the tracking itself.
+
+
+
+
     if (_state.stripped.includes(label))
         return;
     _state.stripped.push(label);
@@ -169,7 +169,7 @@ function _rememberStripped(label) {
                 arr.splice(i, 1);
         });
     } catch (_) {
-        // cannot track; stash stays (restore probes before adding)
+
     }
 }
 
@@ -197,7 +197,7 @@ function _restoreLabels() {
             host.add_child(label);
             label.visible = true;
         } catch (_) {
-            // actor died mid-restore
+
         }
     }
     if (_state)
@@ -235,8 +235,8 @@ function _ensureBadge() {
     _state.badgeText = '';
     host.add_child(badge);
     badge.connect('repaint', () => _onBadgeRepaint(badge));
-    // Catch labels created on ANY path (source switch, keymap change,
-    // rebuild): strip them the moment they land in the container.
+
+
     if (!_state.hostChildAddedId) {
         try {
             _state.hostChildAddedId = host.connect('child-added', (_c, child) => {
@@ -244,14 +244,14 @@ function _ensureBadge() {
                     try {
                         host.remove_child(child);
                     } catch (_) {
-                        // already gone
+
                     }
                     if (_state && !_state.stripped.includes(child))
                         _rememberStripped(child);
                 }
             });
         } catch (_) {
-            // host may be gone
+
         }
     }
     _hideAllLabels();
@@ -262,8 +262,8 @@ function _updateBadge() {
     if (!_state?.badge)
         return;
     const text = _currentShortName();
-    // Synchronous size: a zero-size DrawingArea never gets a repaint,
-    // so force it on every change (same values are a cheap no-op).
+
+
     const [wantW, wantH] = _badgeWantSize(text);
     _state.badge.set_size(wantW, wantH);
     if (_state.badgeText !== text)
@@ -279,7 +279,7 @@ function _destroyBadge() {
         try {
             _state.badge.destroy();
         } catch (_) {
-            // already gone
+
         }
         _state.badge = null;
     }
@@ -293,7 +293,7 @@ function _onInputSourceChanged() {
 }
 
 function _onSourcesChanged() {
-    // Source set rebuilt: fresh labels appear visible — hide them again.
+
     _hideAllLabels();
     _updateBadge();
 }
@@ -376,7 +376,7 @@ function _disconnect() {
         try {
             inputSourceManager?.disconnect(_state.inputManagerChangedId);
         } catch (_) {
-            // manager may be gone
+
         }
         _state.inputManagerChangedId = 0;
     }
@@ -384,7 +384,7 @@ function _disconnect() {
         try {
             inputSourceManager?.disconnect(_state.sourcesChangedId);
         } catch (_) {
-            // manager may be gone
+
         }
         _state.sourcesChangedId = 0;
     }
@@ -392,7 +392,7 @@ function _disconnect() {
         try {
             _state.indicator.disconnect(_state.visibilityChangedId);
         } catch (_) {
-            // already gone
+
         }
         _state.visibilityChangedId = 0;
     }
@@ -400,7 +400,7 @@ function _disconnect() {
         try {
             Main.panel.disconnect(_state.panelStyleChangedId);
         } catch (_) {
-            // panel may be gone
+
         }
         _state.panelStyleChangedId = 0;
     }
@@ -408,7 +408,7 @@ function _disconnect() {
         try {
             _state.inkUnwatch();
         } catch (_) {
-            // gone
+
         }
         _state.inkUnwatch = null;
     }
@@ -417,7 +417,7 @@ function _disconnect() {
             const host = _badgeHost();
             host?.disconnect?.(_state.hostChildAddedId);
         } catch (_) {
-            // host may be gone
+
         }
         _state.hostChildAddedId = 0;
     }
@@ -425,7 +425,7 @@ function _disconnect() {
         try {
             _state.indicator.disconnect(_state.indicatorDestroyId);
         } catch (_) {
-            // already gone
+
         }
         _state.indicatorDestroyId = 0;
     }
@@ -468,28 +468,28 @@ export function disable() {
         return;
     _disconnect();
     _destroyBadge();
-    // Give the stock labels back.
+
     _restoreLabels();
     if (_state.indicator) {
         if (_state.shellVisible !== undefined) {
             try {
                 _state.indicator.visible = _state.shellVisible;
             } catch (_) {
-                // actor may be gone
+
             }
         }
         if (_state.indicator._kiwiOriginalVisible !== undefined) {
             try {
                 _state.indicator._kiwiOriginalVisible = undefined;
             } catch (_) {
-                // ignore
+
             }
         }
         try {
             _state.indicator.remove_style_class_name('kiwi-input-themed');
             _state.indicator.remove_style_class_name('kiwi-input-en');
         } catch (_) {
-            // ignore
+
         }
     }
     _state = null;

@@ -10,24 +10,24 @@ import { ContentLens } from './rendering/pipelines.js';
 import { StageContrastSampler, AdaptiveContrastConfig, sanitizeColorPreference } from './contrastSampler.js';
 import { LayoutOpaqueActor, ensureGlassAllocated, isActorValid, resolveMonitorGeometry, getAllocatedSize, getTransformedRect, placeScreenGlass, resolveGlassOrigin, applyGlassScale, GLASS_SHADOW_MAX_RADIUS, setPositionIfChanged, setScaleIfChanged } from './actors.js';
 import { MENU_NO_ANIMATION } from './shellVersion.js';
-// Room around the glass rect for the shader's edge effects.
+
 const SHADER_PADDING = 20;
 const SAMPLE_PER_ELEMENT = false;
-// Background mode: opacity of the buttons' own backgrounds over the glass.
+
 const BUTTON_ALPHA = 0.8;
-// Frames to wait for an opening menu to get its size before it just appears.
+
 const MORPH_WAIT_FRAMES = 30;
-// The most the toggle-mode opening moves on from one frame to the next (s): after its first frame, and later.
+
 const INTRO_FIRST_STEP_S = 1 / 60;
 const INTRO_MAX_STEP_S = 1 / 30;
-// The menu's own open and close animations, which the morph replaces. Its
-// closing fade would hide the items and then the menu long before the glass is
-// back in the button, so the fade is held and the menu is hidden by the morph.
+
+
+
 const BOXPOINTER_EASED = ['opacity', 'translation-x', 'translation-y', 'scale-x', 'scale-y'];
 const BOXPOINTER_HOLD_MS = 10000;
 const CONTENT_LENS = 'liquid-glass-content-lens';
-// What the refraction (displacement scale) and the blur radius come down to,
-// whatever they are set to, as the closing glass settles on the button.
+
+
 const SOFT_REFRACTION = 0.3;
 const SOFT_BLUR_RADIUS = 0;
 
@@ -40,8 +40,8 @@ function _collectSubmenus(actor, into) {
         _collectSubmenus(child, into);
 }
 
-// Where `actor` is in `ancestor` as laid out, without the transforms of the
-// open and close animations, or null when it is not inside it.
+
+
 function _layoutOrigin(actor, ancestor) {
     let x = 0, y = 0;
     let node = actor;
@@ -59,7 +59,7 @@ function _recordSubmenuNeighbour(n, root, gap) {
     if (!origin || Number.isNaN(nodeW) || Number.isNaN(nodeH) || nodeH <= 5 || nodeW <= 5)
         return false;
     const nodeY = origin[1];
-    // The lowest item above the submenu's center and the highest one below it.
+
     if (nodeY + (nodeH / 2) < gap.subCenterY) {
         if (nodeY + nodeH <= gap.subCenterY && nodeY + nodeH > gap.aboveMaxY)
             gap.aboveMaxY = nodeY + nodeH;
@@ -84,8 +84,8 @@ export class QuickSettingsManager {
     _keyPrefix;
     _label;
     _ownsSettingsNamespace;
-    // How many frames toggle mode may reuse its last region set while the grid
-    // relays out (see _resolveToggleRegions()).
+
+
     static REGION_GRACE_FRAMES = 2;
     _toggleStyles;
     extensionPath;
@@ -94,13 +94,13 @@ export class QuickSettingsManager {
     targetActor;
     menu;
     animActor;
-    // Monitor-sized. In toggle mode it sits inside the menu, which is drawn
-    // through an offscreen, and reads the stage through a reader outside the
-    // menu (see quickSettingsToggles.ts).
+
+
+
     glass;
-    // Toggle mode. The menu's ancestor that is a direct child of uiGroup, and
-    // the zero-size host that puts the glass inside the menu box (see
-    // LayoutOpaqueActor).
+
+
+
     _menuRoot = null;
     _toggleGlassHost = null;
     _lastScreenW;
@@ -132,12 +132,12 @@ export class QuickSettingsManager {
     _springDamping;
     _springMass;
     _enableAnimation;
-    // Toggle mode's own animation; see _startIntro().
+
     _toggleAnimation = false;
     _growFromButton = true;
     _morph = null;
-    // Multi Monitors Bar opens this menu from its own bar's button and hands it back to the main bar's button as it
-    // closes, so the glass closes into the button it opened from.
+
+
     _openedFrom = null;
     _morphTickId = 0;
     _morphSpeed = 1.0;
@@ -152,10 +152,10 @@ export class QuickSettingsManager {
     _dirtyBackdropRoots = new Set();
     _backdropRefreshId = 0;
     _applyingForeground = false;
-    // Incremented when sampling stops, so a late result is dropped.
+
     _adaptiveGeneration = 0;
-    // Set on open until the first sample has colored the text; see
-    // _startAdaptiveColorSampling().
+
+
     _awaitingOpenColors = false;
     _openSampleId = 0;
     _settingsSignals;
@@ -173,22 +173,22 @@ export class QuickSettingsManager {
     _animationInterval = 16;
     _cachedSubmenus = null;
     _submenuAfterUpdateId = 0;
-    // quick-settings-apply-to, and the mode actually running.
+
     _applyTo = 'background';
     _activeMode = null;
-    // quick-settings-tint-color as normalized [r, g, b].
+
     _tintColorArray = [1.0, 1.0, 1.0];
-    // Toggle mode: how strongly each toggle's own color is applied ("Button
-    // base color", quick-settings-toggle-tint-strength), independently of the
-    // custom tint strength.
+
+
+
     _toggleBaseStrength = 0.5;
     _toggleCornerRadius = 18.0;
     _actorDestroyed = false;
     _destroySignalId = 0;
-    // Toggle mode's opening, while it runs and until the menu is hidden.
+
     _intro = null;
-    // The last non-empty region set and how many frames it has been reused;
-    // see _resolveToggleRegions().
+
+
     _lastGoodRegions = null;
     _regionGraceFrames = 0;
 
@@ -203,7 +203,7 @@ export class QuickSettingsManager {
         this.targetActor = Main.panel.statusArea.quickSettings.menu.actor;
         this.menu = Main.panel.statusArea.quickSettings.menu;
         this._toggleStyles = new ToggleStyles(logger, () => !!this.menu?.isOpen);
-        // The menu's content box, which the animations and offsets move.
+
         this.animActor = Main.panel.statusArea.quickSettings.menu.box;
         this.glass = null;
         this._signals = [];
@@ -253,12 +253,12 @@ export class QuickSettingsManager {
         }
     }
 
-    // A key in this instance's settings namespace; see _keyPrefix.
+
     _key(suffix) {
         return `${this._keyPrefix}-${suffix}`;
     }
 
-    // The animation switch is named `enable-<prefix>-animation`.
+
     _animationKey() {
         return `enable-${this._keyPrefix}-animation`;
     }
@@ -334,12 +334,12 @@ export class QuickSettingsManager {
         });
         connectSetting(this._key('corner-radius'), () => {
             this._cornerRadius = this._settings.get_double(this._key('corner-radius'));
-            // Toggle mode uses quick-settings-toggle-corner-radius instead.
+
             if (this.glass && this._activeMode === 'background') {
                 this.glass.setCornerRadius(this._cornerRadius);
             }
         });
-        // Rebuilds the effect in the new mode at once.
+
         connectSetting(this._key('apply-to'), () => {
             const newMode = this._settings.get_int(this._key('apply-to')) === 1 ? 'toggles' : 'background';
             this._applyTo = newMode;
@@ -383,7 +383,7 @@ export class QuickSettingsManager {
             }
             this._stopAdaptiveColorSampling();
             this._clearAdaptiveStyles();
-            // Restoring the original styles also took the dimmed button backgrounds.
+
             if (this._activeMode === 'background')
                 this._updateButtonAlpha();
         });
@@ -435,7 +435,7 @@ export class QuickSettingsManager {
         }
     }
 
-    // Background mode: one sheet of glass behind the whole menu.
+
     _applyBackgroundEffect() {
         this._menuYoffset = this._settings.get_int(this._key('y-offset'));
         this._menuXoffset = this._settings.get_int(this._key('x-offset'));
@@ -449,7 +449,7 @@ export class QuickSettingsManager {
             preference: sanitizeColorPreference(this._settings.get_string(this._key('adaptive-text-preference'))),
         };
         const glass = this._createGlass(false);
-        // The menu scales from its top center; the glass follows it by geometry.
+
         this.animActor.set_pivot_point(0.5, 0.0);
         let menuRoot = this.menu.actor;
         while (menuRoot.get_parent() && menuRoot.get_parent() !== Main.layoutManager.uiGroup) {
@@ -458,7 +458,7 @@ export class QuickSettingsManager {
                 break;
             menuRoot = p;
         }
-        // Below the menu, so the glass reads the stage before the menu is drawn.
+
         if (menuRoot.get_parent() === Main.layoutManager.uiGroup)
             Main.layoutManager.uiGroup.insert_child_below(glass, menuRoot);
         else
@@ -492,7 +492,7 @@ export class QuickSettingsManager {
                 this._stableBaseW = undefined;
                 this._stableBaseH = undefined;
                 startFrameSync();
-                // The first colors of an open are applied without a tween.
+
                 this._startAdaptiveColorSampling(true);
                 this._startButtonAlphaSampling();
                 this._startAnimation(1);
@@ -504,7 +504,7 @@ export class QuickSettingsManager {
             this._stopButtonAlphaSampling();
             this._startAnimation(0);
         });
-        // The frame loop stops once the menu is fully hidden.
+
         this._signals.push({
             target: this.menu.actor,
             id: this.menu.actor.connect('notify::mapped', () => {
@@ -527,7 +527,7 @@ export class QuickSettingsManager {
         }
     }
 
-    // The glass starts at 1x1: a 0x0 actor with a shader crashes Cogl.
+
     _createGlass(toggles) {
         const params = {
             extensionPath: this.extensionPath, settings: this._settings, logger: this._logger,
@@ -540,9 +540,9 @@ export class QuickSettingsManager {
         return glass;
     }
 
-    // Toggle mode: a piece of glass behind each toggle, drawn as regions of one
-    // monitor-sized glass so the copy and the blur are done once per frame.
-    // The menu keeps its own look and animation.
+
+
+
     _applyToggleEffect() {
         if (!this.targetActor)
             return;
@@ -568,19 +568,19 @@ export class QuickSettingsManager {
             menuRoot = p;
         }
         this._menuRoot = menuRoot;
-        // The glass goes into the menu box itself, below its children, so every
-        // toggle's label and icon paint over it. A zero-size host keeps the box
-        // from growing to the glass's monitor size (see LayoutOpaqueActor), and
-        // _placeToggleHost() counters the box's transform every frame so the
-        // glass stays in monitor coordinates.
+
+
+
+
+
         if (!this._toggleGlassHost) {
             this._toggleGlassHost = new LayoutOpaqueActor();
             this._toggleGlassHost.set_name('liquid-glass-toggle-host');
         }
         this._toggleGlassHost.add_child(glass);
         this.animActor.insert_child_at_index(this._toggleGlassHost, 0);
-        // The glass reads what is behind the menu through a reader painted just
-        // before the menu.
+
+
         if (menuRoot.get_parent() === Main.layoutManager.uiGroup)
             Main.layoutManager.uiGroup.insert_child_below(glass.reader, menuRoot);
         else
@@ -605,9 +605,9 @@ export class QuickSettingsManager {
         const startFrameSync = () => this._startFrameSync(() => this._syncToggleRegions(), 'QuickSettingsManager(toggles)', false);
         const stopFrameSync = () => this._stopFrameSync();
         this._signals = [];
-        // No transparent panel, offsets or button dimming here: the panel keeps
-        // its own look, and ToggleStyles owns the toggles' styles. The menu
-        // closes with the shell's own animation.
+
+
+
         this._animSignalId = this.menu.connect('open-state-changed', (menu, isOpen) => {
             if (isOpen) {
                 this._openedFrom = this.menu.sourceActor;
@@ -618,7 +618,7 @@ export class QuickSettingsManager {
                 this._toggleStyles.start();
                 return;
             }
-            // The buttons stay where the opening had got them while the menu fades.
+
             if (this._intro)
                 this._intro.running = false;
             this._stopAdaptiveColorSampling();
@@ -644,7 +644,7 @@ export class QuickSettingsManager {
         }
     }
 
-    // Follows the stage's frames while the menu is shown.
+
     _startFrameSync(sync, errorTag, honourFreeze) {
         if (this._frameSignalId !== 0)
             return;
@@ -653,7 +653,7 @@ export class QuickSettingsManager {
             honourFreeze,
             errorTag,
             step: () => {
-                // Checked before this frame's sync dirties anything.
+
                 ensureGlassAllocated(this.glass);
                 sync();
             },
@@ -664,9 +664,9 @@ export class QuickSettingsManager {
         stopStageLoop(this._frameSignalSlot, this._frameSlot);
     }
 
-    // The product of the scales of `actor` and all its ancestors;
-    // get_scale() reports only an actor's own. BoxPointer.open() scales an
-    // ancestor while Quick Settings opens.
+
+
+
     _getAccumulatedScale(actor) {
         let sx = 1.0;
         let sy = 1.0;
@@ -682,14 +682,14 @@ export class QuickSettingsManager {
         return [sx || 1.0, sy || 1.0];
     }
 
-    // Whether the cached region set may stand in for a frame that produced none.
+
     _canReuseLastRegions() {
         return this._lastGoodRegions !== null &&
             this._regionGraceFrames < QuickSettingsManager.REGION_GRACE_FRAMES;
     }
 
-    // Uses up one grace frame; once they are spent the cache is dropped and the
-    // glass hides.
+
+
     _takeLastRegions() {
         if (!this._canReuseLastRegions()) {
             this._lastGoodRegions = null;
@@ -699,7 +699,7 @@ export class QuickSettingsManager {
         return this._lastGoodRegions;
     }
 
-    // Every frame in toggle mode. The menu's own actors are left alone.
+
     _syncToggleRegions() {
         if (!this.glass || !this.targetActor || !this.targetActor.mapped) {
             if (this.glass && this.glass.visible)
@@ -708,7 +708,7 @@ export class QuickSettingsManager {
             this._regionGraceFrames = 0;
             return;
         }
-        // Everything below is in monitor-local coordinates.
+
         let monitor = this._getMenuMonitorGeometry();
         let monitorX = monitor?.x ?? 0;
         let monitorY = monitor?.y ?? 0;
@@ -718,8 +718,8 @@ export class QuickSettingsManager {
         setPositionIfChanged(this.glass, bgPosX, bgPosY);
         const toggles = this._toggleStyles.sync(this.menu?.actor);
         this._stepIntro(toggles);
-        // Until the buttons are laid out and start small, their glass would show
-        // them at rest (or as the last open left them), and then jump to the start.
+
+
         if (this._intro?.running && !this._intro.motion) {
             this.glass.hide();
             return;
@@ -735,23 +735,23 @@ export class QuickSettingsManager {
         }
         if (!this.glass.visible)
             this.glass.show();
-        // The glass is inside the menu, so it fades with it already.
+
         this.glass.opacity = 255;
         this.glass.setGlassRegions(layout.regions);
         this._applyToggleBounds(this.glass, layout.minX, layout.minY, layout.maxX - layout.minX, layout.maxY - layout.minY, bgPosX, bgPosY, screenW, screenH);
-        // After the geometry setters, so the relays cover this frame's rect.
+
         this.glass.syncSources();
     }
 
-    // Toggle mode, with its animation on: the buttons spring out as the menu opens.
+
     _startIntro() {
         this._endIntro();
         if (!this._toggleAnimation || !St.Settings.get().enable_animations)
             return;
         this._intro = { running: true, motion: null, pods: [], rest: [], saved: [], hidden: new Map(), elapsed: 0, lastUs: 0, waitFrames: 0 };
         this._lastGoodRegions = null;
-        // The menu shows at once, so the buttons' glass does from the start; the
-        // shell's easing still runs to its end and lets the menu take input.
+
+
         const boxPointer = this.targetActor.get_first_child();
         for (const name of BOXPOINTER_EASED) {
             const ease = boxPointer?.get_transition(name);
@@ -759,15 +759,15 @@ export class QuickSettingsManager {
         }
     }
 
-    // Moves the buttons for this frame, before their rects are read for the glass.
+
     _stepIntro(toggles) {
         const intro = this._intro;
         if (!intro?.running)
             return;
         const now = GLib.get_monotonic_time();
         if (!intro.motion) {
-            // Until the menu is laid out the buttons are kept out of sight, so they
-            // do not show at rest for a frame first.
+
+
             const shown = toggles.filter(t => t.visible);
             const rest = shown.map(pod => {
                 const origin = pod.has_allocation() ? _layoutOrigin(pod, this.animActor) : null;
@@ -798,8 +798,8 @@ export class QuickSettingsManager {
                 pod.set_pivot_point(0.5, 0.5);
         }
         else {
-            // The frame that first draws the buttons small can be slow (the menu and its glass are drawn for the first
-            // time). Taken as it is, that wait would leave them still and then make them jump; it counts as one frame.
+
+
             const step = (now - intro.lastUs) / 1e6;
             intro.elapsed += Math.min(step, intro.elapsed === 0 ? INTRO_FIRST_STEP_S : INTRO_MAX_STEP_S);
         }
@@ -818,7 +818,7 @@ export class QuickSettingsManager {
             this._endIntro();
     }
 
-    // Puts the buttons back as they were.
+
     _endIntro() {
         const intro = this._intro;
         this._intro = null;
@@ -839,15 +839,15 @@ export class QuickSettingsManager {
         });
     }
 
-    /**
-     * Keeps the glass host at the bottom of the menu box (the shell reorders
-     * the box's children when toggles come and go), and returns the position
-     * that puts the glass's origin on the monitor origin despite the box's own
-     * position and inherited scale, which is also undone on the glass.
-     */
-    // Every write here is made only on change: Clutter queues a redraw even
-    // for the same value, and the sync runs in before-update, so each write
-    // would ask for another frame.
+
+
+
+
+
+
+
+
+
     _placeToggleHost(glass, monitorX, monitorY) {
         if (this.animActor.get_first_child() !== this._toggleGlassHost)
             this.animActor.set_child_below_sibling(this._toggleGlassHost, null);
@@ -855,7 +855,7 @@ export class QuickSettingsManager {
         let [accScaleX, accScaleY] = this._getAccumulatedScale(this._toggleGlassHost);
         if (!Number.isFinite(hostAbsX) || !Number.isFinite(hostAbsY))
             return [monitorX, monitorY];
-        // The pivot is (0, 0), so the scale does not move the origin.
+
         setScaleIfChanged(glass, 1.0 / accScaleX, 1.0 / accScaleY);
         return [(monitorX - hostAbsX) / accScaleX, (monitorY - hostAbsY) / accScaleY];
     }
@@ -865,8 +865,8 @@ export class QuickSettingsManager {
         for (let toggle of toggles) {
             if (!toggle.visible || !toggle.mapped)
                 continue;
-            // The toggle's real on-screen rect, including the scale an ancestor
-            // animates while the menu opens.
+
+
             let [absX, absY, w, h] = getTransformedRect(toggle);
             if (Number.isNaN(absX) || Number.isNaN(absY) || Number.isNaN(w) || Number.isNaN(h) || w <= 0 || h <= 0)
                 continue;
@@ -875,13 +875,13 @@ export class QuickSettingsManager {
             let regionW = w + (this._glassExpand * 2) + (SHADER_PADDING * 2);
             let regionH = h + (this._glassExpand * 2) + (SHADER_PADDING * 2);
             let entry = this._toggleStyles.colorFor(toggle);
-            // The toggle's own color is the region's base color, a layer separate
-            // from the custom tint. A toggle whose color could not be sampled gets
-            // strength 0.
+
+
+
             let hasBase = !!(entry && entry.baseAlpha > 0.02);
             let base = hasBase ? entry.baseColor : this._tintColorArray;
             // Weighted by the pod's coverage: with a theme whose panel is
-            // see-through (macW1Y) a toggle's two states can differ only in
+
             // alpha. Where the panel is opaque the coverage is always 1.
             let baseStrength = hasBase ? this._toggleBaseStrength * entry.baseAlpha : 0.0;
             layout.regions.push({
@@ -897,10 +897,10 @@ export class QuickSettingsManager {
         return layout;
     }
 
-    // Geometry is read before the pending relayout, so for a frame after a
-    // submenu opens or a toggle comes or goes, a toggle can be visible but not
-    // yet allocated. The last region set covers such a gap for a couple of
-    // frames instead of the glass blinking out.
+
+
+
+
     _resolveToggleRegions(collected) {
         if (collected.regions.length > 0) {
             this._lastGoodRegions = collected;
@@ -929,7 +929,7 @@ export class QuickSettingsManager {
         this._lastScreenH = screenH;
     }
 
-    // Every frame in background mode.
+
     _syncGeometry() {
         if (this._morph)
             return;
@@ -955,7 +955,7 @@ export class QuickSettingsManager {
             let screenW = Math.max(1, monitor?.width ?? 1);
             let screenH = Math.max(1, monitor?.height ?? 1);
             this._applyPanelBounds(this.glass, bgX, bgY, bgW, bgH, monitorX, monitorY, screenW, screenH);
-            // After the geometry setters, so the relays cover this frame's rect.
+
             this.glass.syncSources();
         }
         this._applyGlassScale(scaleX, scaleY);
@@ -965,7 +965,7 @@ export class QuickSettingsManager {
     _panelScale() {
         let [scaleX, scaleY] = this.animActor.get_scale();
         if (!this._enableAnimation) {
-            // The shell's own animation scales the child of the BoxPointer.
+
             let gnomeAnimContainer = this.targetActor.get_first_child();
             if (gnomeAnimContainer) {
                 scaleX *= gnomeAnimContainer.scale_x;
@@ -980,8 +980,8 @@ export class QuickSettingsManager {
     }
 
     _measurePanel() {
-        // The allocation: a restyle (hover, adaptive colors, button dimming) leaves a relayout pending,
-        // during which get_size() reports the preferred size including the theme margins.
+
+
         let [inW, inH] = getAllocatedSize(this.animActor);
         inW = Number.isNaN(inW) || inW <= 0 ? (this._stableBaseW || 1) : inW;
         inH = Number.isNaN(inH) || inH <= 0 ? (this._stableBaseH || 1) : inH;
@@ -990,7 +990,7 @@ export class QuickSettingsManager {
         const targetH = Math.round(inH);
         this._stableBaseW = targetW;
         this._stableBaseH = targetH;
-        // Never below 1px: a 0-size actor with a shader crashes Cogl.
+
         return {
             w: Math.max(1, this._stableBaseW * scaleX),
             h: Math.max(1, this._stableBaseH * scaleY),
@@ -1001,7 +1001,7 @@ export class QuickSettingsManager {
 
     _resolvePanelOrigin(w) {
         return resolveGlassOrigin(this.animActor, this, () => {
-            // Top center of the primary monitor.
+
             const monitor = Main.layoutManager.primaryMonitor;
             if (!monitor)
                 return [0, 0];
@@ -1014,7 +1014,7 @@ export class QuickSettingsManager {
             this._lastBgX === bgX && this._lastBgY === bgY &&
             this._lastScreenW === screenW && this._lastScreenH === screenH)
             return;
-        // Monitor-local, as the shader uses them.
+
         let localBgX = bgX - monitorX;
         let localBgY = bgY - monitorY;
         placeScreenGlass(glass, monitorX, monitorY, screenW, screenH, { x: localBgX, y: localBgY, w: bgW, h: bgH });
@@ -1067,7 +1067,7 @@ export class QuickSettingsManager {
     }
 
     _setActorColor(actor, color, skipAnimations = false, batchStart) {
-        // Clutter.Text targets have no St style.
+
         if (!(actor instanceof St.Widget))
             return;
         if (!this._styledActors.has(actor)) {
@@ -1099,14 +1099,14 @@ export class QuickSettingsManager {
         this._styledActors.clear();
     }
 
-    // Text sitting on an opaque backdrop of its own (a row's highlight, an
-    // expanded section) takes its color from that backdrop instead of the
-    // sample; see _watchBackdrop().
+
+
+
     _applyAdaptiveColorMap(colorMap, skipAnimations = false) {
         if (!colorMap || colorMap.size === 0)
             return;
         this._sampleColors = colorMap;
-        // One timestamp for the whole map, so the toggles flip together.
+
         const batchStart = GLib.get_monotonic_time();
         for (const [actor, color] of colorMap.entries()) {
             if (!this._backdropColors.has(actor)) {
@@ -1118,7 +1118,7 @@ export class QuickSettingsManager {
         }
     }
 
-    // Watches the text's ancestors, whose restyles can change its backdrop.
+
     _watchBackdrop(actor) {
         for (let node = actor; node; node = node.get_parent()) {
             const holder = node;
@@ -1188,20 +1188,20 @@ export class QuickSettingsManager {
         this._dirtyBackdropRoots.clear();
     }
 
-    /**
-     * @param skipAnimations Set on open: the first sample is taken before the
-     *   first frame, before the glass is drawn, from the bare backdrop where the
-     *   panel will be, and its colors are applied without a tween and kept
-     *   while the open animation runs. The last open's decision is forgotten.
-     */
+
+
+
+
+
+
     _startAdaptiveColorSampling(skipAnimations = false) {
         if (!this._adaptiveConfig.enabled)
             return;
         if (skipAnimations) {
             this._contrastSampler.reset();
             this._awaitingOpenColors = true;
-            // From GNOME 51 on, open-state-changed comes before the panel is shown
-            // and placed; this runs once open() has returned, still ahead of the frame.
+
+
             if (this._openSampleId === 0) {
                 this._openSampleId = GLib.idle_add(GLib.PRIORITY_HIGH, () => {
                     this._openSampleId = 0;
@@ -1220,7 +1220,7 @@ export class QuickSettingsManager {
                 this._adaptiveTimerId = 0;
                 return GLib.SOURCE_REMOVE;
             }
-            // The colors measured as the menu opened are kept while it moves.
+
             const opening = this._tickId !== 0 || this._morphTickId !== 0 || !!this._intro?.running;
             if (!opening || this._awaitingOpenColors)
                 this._updateAdaptiveTextColors(this._awaitingOpenColors);
@@ -1250,10 +1250,10 @@ export class QuickSettingsManager {
         const generation = this._adaptiveGeneration;
         this._contrastSampler
             .chooseColorsForActors(targets, this._adaptiveConfig, this.menu?.actor,
-        // In toggle mode the text is not drawn over the glass, so the glass's
-        // paint count says nothing about the sampled pixels.
+
+
         () => this._activeMode === 'background' ? this.glass?.paintCount ?? NaN : NaN,
-        // Only the whole-panel glass copies what is behind it.
+
         () => this._activeMode === 'background' && this.glass instanceof BackdropGlass ? [this.glass] : [])
             .then(colorMap => {
             if (generation !== this._adaptiveGeneration || !this._adaptiveConfig.enabled)
@@ -1274,22 +1274,22 @@ export class QuickSettingsManager {
         let themeNode = actor.get_theme_node();
         let startColor = themeNode.get_foreground_color();
         let targetRgb = hexToRgb(targetHexColor);
-        // Insensitive items keep their dimmed look.
+
         let targetAlpha = isInsensitive ? 0.5 : 1.0;
         let startAlpha = startColor.alpha / 255.0;
-        // Replaces only the color rules, keeping whatever else the button alpha
-        // dimming has put in the inline style.
+
+
         const apply = (r, g, b, a) => {
             const rgba = `rgba(${r}, ${g}, ${b}, ${a.toFixed(3)})`;
             const base = (actor.get_style() || '').split(';')
                 .filter(rule => !/^\s*(color|-st-icon-foreground-color)\s*:/.test(rule)).join(';').trim();
-            // set_style() emits style-changed synchronously; see _watchBackdrop().
+
             this._applyingForeground = true;
             actor.set_style(`${base}${base.endsWith(';') || !base ? '' : ';'} color: ${rgba}; -st-icon-foreground-color: ${rgba};`);
             this._applyingForeground = false;
         };
-        // An existing tween is not cancelled: add() restarts from the color it
-        // last applied.
+
+
         if (skipAnimations) {
             adaptiveColorTweener.cancel(actor);
             apply(targetRgb.r, targetRgb.g, targetRgb.b, targetAlpha);
@@ -1305,8 +1305,8 @@ export class QuickSettingsManager {
         }, batchStart);
     }
 
-    // Background mode dims the buttons' own backgrounds to at most BUTTON_ALPHA,
-    // and keeps doing so as their state changes.
+
+
     _findAllButtons(actor, foundButtons = []) {
         if (!actor)
             return foundButtons;
@@ -1343,29 +1343,29 @@ export class QuickSettingsManager {
         button.set_style(origStyle || null);
         button.ensure_style();
         const bgColor = button.get_theme_node().get_background_color();
-        // A toggle whose child button is colored (checked) hides its own
-        // background, which would otherwise darken the child's.
+
+
         if (this._hasColoredToggleChild(button)) {
             button.set_style(origStyle
                 ? `${origStyle} background-color: transparent !important;`
                 : 'background-color: transparent !important;');
             return;
         }
-        // Buttons without a background of their own stay that way.
+
         if (bgColor.alpha === 0)
             return;
-        // Only dims, so themes whose buttons are already translucent keep their own alpha.
+
         if (bgColor.alpha / 255 > targetAlpha) {
             const rgbaStr = `rgba(${bgColor.red}, ${bgColor.green}, ${bgColor.blue}, ${targetAlpha})`;
             button.set_style(origStyle ? `${origStyle} background-color: ${rgbaStr};` : `background-color: ${rgbaStr};`);
         }
-        // The parent toggle depends on this button's state.
+
         const parent = button.get_parent();
         if (parent instanceof St.Widget && parent.has_style_class_name('quick-toggle'))
             this._updateSingleButtonAlpha(parent, targetAlpha);
     }
 
-    // Keeps the adaptive text color rules while the background is re-applied.
+
     _updateSingleButtonAlpha(button, targetAlpha) {
         if (!button || button._isUpdatingAlpha)
             return;
@@ -1394,7 +1394,7 @@ export class QuickSettingsManager {
                     let origStyle = this._styledActors.get(button) ?? button.get_style();
                     this._styledButtons.set(button, origStyle || '');
                 }
-                // After the state change has restyled the button.
+
                 const updateHandler = () => {
                     if (!this.menu?.isOpen)
                         return;
@@ -1413,7 +1413,7 @@ export class QuickSettingsManager {
                 signalIds.push(button.connect('notify::mapped', updateHandler));
                 signalIds.push(button.connect('key-focus-in', updateHandler));
                 signalIds.push(button.connect('key-focus-out', updateHandler));
-                // The shell destroys rows while the menu is up and on screen lock, before this cleans up.
+
                 signalIds.push(button.connect('destroy', () => {
                     this._buttonSignalIds.delete(button);
                     this._styledButtons.delete(button);
@@ -1466,7 +1466,7 @@ export class QuickSettingsManager {
         this._buttonSignalIds.clear();
     }
 
-    // The spring open/close animation.
+
     _startAnimation(targetValue) {
         if (this._tickId !== 0) {
             removeFrameTicker(this._tickId);
@@ -1504,22 +1504,22 @@ export class QuickSettingsManager {
         }
     }
 
-    // Centers an open submenu horizontally in the menu and vertically in the
-    // gap between the items above and below it. Everything is measured as laid
-    // out in the menu's BoxPointer, which holds both the panel and the
-    // submenus: the panel's scale while it opens would skew the result, and so
-    // would the shell's own offset for the submenus, which it reads with that
-    // scale applied.
+
+
+
+
+
+
     _adjustSubmenuPositions() {
         if (!this.menu?.isOpen || !this.animActor)
             return;
         if (!this._cachedSubmenus) {
             this._cachedSubmenus = [];
             _collectSubmenus(this.menu.actor, this._cachedSubmenus);
-            // The frame loop reads the layout before it is updated, and the last
-            // change (the shell moving its submenus, a submenu taking its final
-            // height) may come with no frame after it; so every frame checks again
-            // once its layout is done.
+
+
+
+
             this._submenuAfterUpdateId = global.stage.connect('after-update', () => this._adjustSubmenuPositions());
         }
         const root = this.targetActor;
@@ -1527,8 +1527,8 @@ export class QuickSettingsManager {
         let [parentW, parentH] = getAllocatedSize(this.animActor);
         if (!parent || Number.isNaN(parentW) || Number.isNaN(parentH) || parentW <= 0 || parentH <= 0)
             return;
-        // The shell places the submenu overlay from an offset it measures once, so it can stay
-        // wrong after an animated open; the overlay belongs on the grid.
+
+
         const gridOrigin = _layoutOrigin(this.menu._grid, root);
         const overlayOrigin = _layoutOrigin(this.menu._overlay, root);
         const overlayError = gridOrigin && overlayOrigin ? gridOrigin[1] - overlayOrigin[1] : 0;
@@ -1547,12 +1547,12 @@ export class QuickSettingsManager {
         const translationX = parentX + (parentW - subW) / 2 - subX;
         if (Math.abs(submenu.translation_x - translationX) > 0.5)
             submenu.translation_x = translationX;
-        // Neighbours are told apart by where the submenu belongs, not where the overlay put it.
+
         const gap = { subCenterY: subY + overlayError + (subH / 2), aboveMaxY: parentY, belowMinY: parentY + parentH };
         for (let child of this.animActor.get_children())
             _findSubmenuGap(child, submenu, root, gap);
         const translationY = (gap.aboveMaxY + gap.belowMinY) / 2 - (subH / 2) - subY;
-        // Sub-pixel changes are ignored so it cannot jitter.
+
         if (Math.abs(submenu.translation_y - translationY) > 0.5)
             submenu.translation_y = translationY;
     }
@@ -1593,8 +1593,8 @@ export class QuickSettingsManager {
         return [x + left, y + top, w - left - right, h - top - bottom];
     }
 
-    // Where the menu's items are at rest: their stage rect without the
-    // morph's own scale and shift, and the scale (`k`) the menu puts on them.
+
+
     _menuRest() {
         if (!this.targetActor.mapped)
             return null;
@@ -1609,7 +1609,7 @@ export class QuickSettingsManager {
         return { x, y, w: w * k, h: h * k, k };
     }
 
-    // The resting menu's glass body, [x, y, w, h] in stage coordinates.
+
     _menuBodyRect() {
         const rest = this._menuRest();
         if (!rest)
@@ -1618,17 +1618,17 @@ export class QuickSettingsManager {
         return [rest.x - e, rest.y - e, rest.w + e * 2, rest.h + e * 2];
     }
 
-    /**
-     * Starts the glass towards the menu (`open`) or back into the button.
-     * False when there is no button to grow out of; the scale spring runs then.
-     */
+
+
+
+
     _startMorph(open) {
         const button = this._buttonRect();
         if (!this.glass || !button)
             return false;
         if (!(this.glass instanceof BackdropGlass))
             return false;
-        // Reversing midway starts from where the glass is.
+
         const prev = this._morph;
         if (!open && !prev?.motion && !this._menuBodyRect())
             return false;
@@ -1639,7 +1639,7 @@ export class QuickSettingsManager {
             this.animActor.add_effect_with_name(CONTENT_LENS, lens);
         }
         const blurRadius = this._settings.get_int(this._key('blur-radius'));
-        // Opened again while closing: the glass is the menu's again at once, not from the next frame.
+
         if (open && prev && prev.shownBlurRadius !== blurRadius)
             this.glass.setBlurRadius(blurRadius);
         if (open)
@@ -1678,7 +1678,7 @@ export class QuickSettingsManager {
             return false;
         }
         m.button = this._buttonRect() ?? m.button;
-        // The menu stays where it opens and stays visible until the morph ends.
+
         for (const name of BOXPOINTER_EASED) {
             const ease = this.targetActor.get_transition(name);
             if (!ease)
@@ -1693,7 +1693,7 @@ export class QuickSettingsManager {
         const menu = this._menuBodyRect();
         if (!m.motion) {
             if (!menu) {
-                // Not laid out yet: hold the glass on the button for a few frames.
+
                 this._placeMorph({
                     body: m.button, bodyRadius: m.button[3] / 2, contentScale: 1,
                     contentOpacity: 0, lens: 0, glassOpacity: 1, soften: 0, done: false
@@ -1728,7 +1728,7 @@ export class QuickSettingsManager {
         return false;
     }
 
-    // Draws the travelling glass (stage coordinates) and the menu's items in it.
+
     _placeMorph(f) {
         if (!(this.glass instanceof BackdropGlass))
             return;
@@ -1753,7 +1753,7 @@ export class QuickSettingsManager {
             this._lastBgX === bgX && this._lastBgY === bgY &&
             this._lastScreenW === screenW && this._lastScreenH === screenH)
             return;
-        // Monitor-local, as the shader uses them.
+
         let localBgX = bgX - monitorX;
         let localBgY = bgY - monitorY;
         placeScreenGlass(glass, monitorX, monitorY, screenW, screenH, { x: localBgX, y: localBgY, w: bgW, h: bgH });
@@ -1768,8 +1768,8 @@ export class QuickSettingsManager {
         this._lastScreenH = screenH;
     }
 
-    // Takes the refraction and the blur from their settings towards
-    // SOFT_REFRACTION and SOFT_BLUR_RADIUS, by `soften` (0 to 1).
+
+
     _softenGlass(glass, soften) {
         const m = this._morph;
         const toward = (from, to) => from + (Math.min(from, to) - from) * soften;
@@ -1781,8 +1781,8 @@ export class QuickSettingsManager {
         }
     }
 
-    // Draws the menu's items `f.contentScale` times their size around the
-    // middle of the travelling glass, cut to its outline.
+
+
     _placeContent(f) {
         const a = this.animActor;
         const rest = this._menuRest();
@@ -1793,7 +1793,7 @@ export class QuickSettingsManager {
         a.opacity = Math.round(255 * f.contentOpacity * f.glassOpacity);
         const e = this._glassExpand;
         const [bx, by, bw, bh] = f.body;
-        // Never 0, which Cogl cannot invert.
+
         const s = Math.max(f.contentScale, 0.01);
         const x = bx + (bw - (rest.w + e * 2) * s) / 2 + e * s;
         const y = by + (bh - (rest.h + e * 2) * s) / 2 + e * s;
@@ -1812,7 +1812,7 @@ export class QuickSettingsManager {
         this._morphTickId = 0;
     }
 
-    // Leaves the glass and the menu as the rest of the manager expects them.
+
     _endMorph() {
         this._stopMorphTicker();
         const m = this._morph;
@@ -1852,11 +1852,11 @@ export class QuickSettingsManager {
         this.glass = null;
         if (glass) {
             glass.cleanup();
-            // At shell shutdown the stage may have destroyed it already.
+
             if (isActorValid(glass))
                 glass.destroy();
         }
-        // The toggle-mode host is the glass's parent, not destroyed with it.
+
         if (this._toggleGlassHost) {
             if (isActorValid(this._toggleGlassHost))
                 this._toggleGlassHost.destroy();

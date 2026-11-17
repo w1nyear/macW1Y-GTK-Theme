@@ -15,21 +15,21 @@ import { hexToColorArray, addFrameTicker, removeFrameTicker } from '../animation
 import { AdaptiveTextColor, sanitizeColorPreference } from '../contrastSampler.js';
 import { verticalBoxParams } from '../shellVersion.js';
 import { ContentLens } from '../rendering/pipelines.js';
-// Room around the glass rect for the shader's edge effects.
+
 const SHADER_PADDING = 20;
-// Room around a card for its shadow.
+
 const SHADOW_MARGIN = 40;
-// A press that moves further than this (px) before it is let go is no click.
+
 const CLICK_SLOP = 6;
-// The text on the desktop stays in the preferred color down to this contrast
-// ratio (WCAG's for large text), so a busy wallpaper does not keep flipping it.
+
+
 export const PREFERRED_MIN_CONTRAST = 3;
 export const CARD_WIDTH = 300;
 
-/**
- * A left click on `actor` calls `onClick` and a right click opens its menu.
- * Items move only in the menu's edit mode, so a stray drag does nothing.
- */
+
+
+
+
 export function connectClicks(actor, onClick, onMenu) {
     let start = null;
     actor.connect('button-press-event', (_a, event) => {
@@ -40,8 +40,8 @@ export function connectClicks(actor, onClick, onMenu) {
         }
         if (button !== Clutter.BUTTON_PRIMARY)
             return Clutter.EVENT_PROPAGATE;
-        // A button inside gets the press: stopping it here would also cancel the
-        // button's click gesture.
+
+
         if (global.stage.get_event_actor(event) !== actor)
             return Clutter.EVENT_PROPAGATE;
         start = event.get_coords();
@@ -59,10 +59,10 @@ export function connectClicks(actor, onClick, onMenu) {
     });
 }
 
-/**
- * A desktop widget: content on a rounded card of glass. Subclasses fill
- * `box` and may hide the card (`shown`) when they have nothing to show.
- */
+
+
+
+
 export class GlassCard {
     id;
     actor;
@@ -111,7 +111,7 @@ export class GlassCard {
         if (shown === this._shown)
             return;
         this._shown = shown;
-        this.env.relayout(); // defined in desktopLayer.ts (connects to the _queueLayout() in the DesktopLayer)
+        this.env.relayout();
     }
 
     _applyMaterial() {
@@ -136,7 +136,7 @@ export class GlassCard {
         this._text.start(s.get_int('desktop-widget-sample-interval-ms'), sanitizeColorPreference(s.get_string('desktop-widget-adaptive-text-preference')), PREFERRED_MIN_CONTRAST);
     }
 
-    // The content changed; measure the text color again.
+
     contentChanged() {
         this._text.invalidate();
         this.env.relayout();
@@ -195,12 +195,12 @@ function startOfDay(date, days = 0) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
 }
 
-/**
- * The rest of today's events and tomorrow's, from the calendars the shell's
- * calendar menu shows. It reads the events the menu has already loaded
- * rather than asking for its own range, which would change what the menu
- * shows.
- */
+
+
+
+
+
+
 export class EventsWidget extends GlassCard {
     _title;
     _list;
@@ -214,7 +214,7 @@ export class EventsWidget extends GlassCard {
         this._list = new St.BoxLayout({ style_class: 'lg-list', ...verticalBoxParams() });
         this.box.add_child(this._title);
         this.box.add_child(this._list);
-        // The times move on even when the events do not.
+
         this._timerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 60, () => {
             this._update();
             return GLib.SOURCE_CONTINUE;
@@ -226,7 +226,7 @@ export class EventsWidget extends GlassCard {
         Shell.AppSystem.get_default().lookup_app(CALENDAR_APP)?.activate();
     }
 
-    // The menu's event source, which the shell replaces when the session mode changes.
+
     _eventSource() {
         const source = Main.panel.statusArea.dateMenu._eventSource;
         if (source !== this._source) {
@@ -291,7 +291,7 @@ export class EventsWidget extends GlassCard {
 }
 
 const HOURS = 5;
-// Open-Meteo is asked again after this long.
+
 const REFRESH_S = 30 * 60;
 const CONTACT = 'https://github.com/ryohsuke1231/liquid-glass';
 const USER_AGENT = `Liquid Glass GNOME Shell extension (${CONTACT})`;
@@ -304,7 +304,7 @@ function degrees(value) {
     return `${Math.round(value)}°`;
 }
 
-// WMO weather codes, as Open-Meteo reports them.
+
 const CODES = {
     0: ['Clear', 'weather-clear-symbolic', 'weather-clear-night-symbolic'],
     1: ['Mostly Clear', 'weather-few-clouds-symbolic', 'weather-few-clouds-night-symbolic'],
@@ -341,8 +341,8 @@ function wmo(code, isDay) {
     return [text, !isDay && night ? night : icon];
 }
 
-// A summary for the weather an icon stands for, where libgweather gives no
-// conditions or sky (MET Norway's forecasts have neither).
+
+
 const ICON_SUMMARIES = [
     ['weather-clear', 'Clear'], ['weather-few-clouds', 'Partly Cloudy'], ['weather-overcast', 'Cloudy'],
     ['weather-fog', 'Fog'], ['weather-showers-scattered', 'Showers'], ['weather-showers', 'Rain'],
@@ -358,13 +358,13 @@ function placeOf(settings) {
     return name ? { name, lat, lon } : null;
 }
 
-/**
- * Today's weather and the next hours, for the place chosen in the
- * preferences or else the location GNOME Weather has set up (the one the
- * shell's calendar menu shows the weather for). With GNOME Weather installed
- * the forecasts come from libgweather, as in GNOME Weather; without it, from
- * Open-Meteo.
- */
+
+
+
+
+
+
+
 export class WeatherWidget extends GlassCard {
     _place;
     _icon;
@@ -372,10 +372,10 @@ export class WeatherWidget extends GlassCard {
     _summary;
     _hours;
     _credit;
-    // The shell's weather client: GNOME Weather's location.
+
     _client = null;
     _clientId = 0;
-    // Our own libgweather forecasts, for a chosen place.
+
     _info = null;
     _infoId = 0;
     _weatherSettingsIds = [];
@@ -406,7 +406,7 @@ export class WeatherWidget extends GlassCard {
         return sanitizeUnit(this.env.settings.get_string('weather-temperature-unit'));
     }
 
-    // The shell's weather client, or null without GNOME Weather.
+
     _shellClient() {
         const client = Main.panel.statusArea.dateMenu._weatherItem._weatherClient;
         return client.available ? client : null;
@@ -455,7 +455,7 @@ export class WeatherWidget extends GlassCard {
         this._shellClient()?.activateApp();
     }
 
-    // Asks again every REFRESH_S.
+
     _every(fn) {
         fn();
         if (this._timerId)
@@ -506,7 +506,7 @@ export class WeatherWidget extends GlassCard {
         return ok ? value : null;
     }
 
-    // A report from libgweather's `info`, for `place` (its own name when null).
+
     _gweatherReport(info, place, credit) {
         const icon = info.get_symbolic_icon_name();
         const conditions = info.get_conditions();
@@ -527,7 +527,7 @@ export class WeatherWidget extends GlassCard {
                 high = Math.max(high, temp);
                 low = Math.min(low, temp);
             }
-            // Only the hours to come, at least an hour apart.
+
             if (now.difference(time) > 0 || time.difference(last) < GLib.TIME_SPAN_HOUR || hours.length === HOURS)
                 continue;
             last = time;
@@ -560,8 +560,8 @@ export class WeatherWidget extends GlassCard {
         this._show(this._gweatherReport(info, null, ''));
     }
 
-    // libgweather's forecasts for exactly `place`, which GNOME Weather may not
-    // know: its own locations are the larger cities with weather stations.
+
+
     _startOwnGWeather(place) {
         const info = new GWeather.Info({
             application_id: 'org.gnome.Shell', contact_info: CONTACT, enabled_providers: GWeather.Provider.MET_NO,
@@ -613,7 +613,7 @@ export class WeatherWidget extends GlassCard {
                 `&daily=temperature_2m_max,temperature_2m_min${fahrenheit ? '&temperature_unit=fahrenheit' : ''}`, cancellable);
             const current = json.current;
             const [summary, icon] = wmo(current.weather_code, current.is_day === 1);
-            // The hourly times are local to the place, as is current.time.
+
             const start = json.hourly.time.findIndex(t => t > current.time);
             const hours = [];
             for (let i = Math.max(start, 0); i < json.hourly.time.length && hours.length < HOURS; i++) {
@@ -648,24 +648,24 @@ export class WeatherWidget extends GlassCard {
 
 const ART_SIZE = 56;
 const ART_RADIUS = 10;
-// The bars beside the title (px): their width, the room between them, and
-// how tall they are when silent and when loudest.
+
+
 const BAR_WIDTH = 4;
 const BAR_GAP = 4;
 const BAR_MIN = 4;
 const BAR_MAX = 30;
-// How long (s) a bar takes to rise most of the way to a louder level, and to fall to a quieter one.
+
 const BAR_RISE_S = 0.04;
 const BAR_FALL_S = 0.16;
 const MPRIS_PREFIX = 'org.mpris.MediaPlayer2.';
 const MPRIS_PATH = '/org/mpris/MediaPlayer2';
 const PLAYER_IFACE = 'org.mpris.MediaPlayer2.Player';
 
-/**
- * The song or video that is playing (or was last), with buttons for the
- * previous track, play/pause and the next track. Talks to the players over
- * MPRIS directly; the card hides itself while no player is running.
- */
+
+
+
+
+
 export class MediaWidget extends GlassCard {
     _art;
     _bars;
@@ -701,8 +701,8 @@ export class MediaWidget extends GlassCard {
         this._bars = new St.DrawingArea({ width: BAR_COUNT * BAR_WIDTH + (BAR_COUNT - 1) * BAR_GAP, height: BAR_MAX,
             y_align: Clutter.ActorAlign.CENTER });
         this._bars.connect('repaint', () => this._drawBars());
-        // The bars are drawn in the title's color, which automatic contrast sets
-        // on the labels only.
+
+
         this._title.connect('style-changed', () => this._bars.queue_repaint());
         row.add_child(this._art);
         row.add_child(text);
@@ -785,7 +785,7 @@ export class MediaWidget extends GlassCard {
         return player.proxy?.get_cached_property(name)?.recursiveUnpack() ?? null;
     }
 
-    // The player that is playing, or the one that played last.
+
     _pick() {
         let best = null;
         const now = GLib.get_monotonic_time();
@@ -821,7 +821,7 @@ export class MediaWidget extends GlassCard {
         this.contentChanged();
     }
 
-    // The bars follow the sound while a player plays, and lie down otherwise.
+
     _listen(playing) {
         const on = this.env.settings.get_boolean('media-visualizer');
         this._bars.visible = on;
@@ -859,7 +859,7 @@ export class MediaWidget extends GlassCard {
         }, 16);
     }
 
-    // Rounded lines standing on the same baseline, in the title's color.
+
     _drawBars() {
         const cr = this._bars.get_context();
         const [, height] = this._bars.get_surface_size();
@@ -898,43 +898,43 @@ export class MediaWidget extends GlassCard {
     }
 }
 
-// What the speakers are playing, as the loudness of a few bands of
-// frequencies, for the Now Playing card's bars. GStreamer reads the monitor of
-// the default output and runs an FFT on it; the extension only reads the
-// result.
-// Imported dynamically, so that the extension still loads where GStreamer's
-// introspection data is not installed.
+
+
+
+
+
+
 let Gst = null;
 try {
     Gst = (await import('gi://Gst?version=1.0')).default;
 }
 catch {
-    // AudioSpectrum.start() says so when it is first needed.
+
 }
 const RATE = 48000;
 const BANDS = 256;
 const INTERVAL_MS = 25;
 const THRESHOLD_DB = -90;
-// The bars' bands (Hz), low to high.
+
 const RANGES = [[40, 150], [150, 400], [400, 1000], [1000, 2500], [2500, 7000]];
 export const BAR_COUNT = RANGES.length;
-// Music has less energy the higher it goes, about this much less per octave;
-// it is given back so the high bars move as much as the low ones.
+
+
 const TILT_DB_PER_OCTAVE = 4.5;
-// The loudest bar sets the top of the scale, which falls this fast (dB/s)
-// when the music gets quieter, and the bars show this many dB below it.
+
+
 const CEILING_FALL_DB = 8;
 const RANGE_DB = 42;
 const MIN_CEILING_DB = -70;
-// A pipeline that fails, or goes quiet (the sound server restarted, the default output changed), is
-// started again after this many seconds; the check for a silent one runs this often.
+
+
 const RETRY_S = 2;
 const WATCHDOG_S = 3;
 
-/**
- * Listens while started, and calls `onLevels` with one level from 0 to 1 per
- * bar, low to high, every INTERVAL_MS.
- */
+
+
+
+
 export class AudioSpectrum {
     _logger;
     _onLevels;
@@ -943,12 +943,12 @@ export class AudioSpectrum {
     _busId = 0;
     _ceiling = MIN_CEILING_DB;
     _lastUs = 0;
-    // Bands per bar, [first, end).
+
     _bands;
     _tilt;
-    // GStreamer lacks an element the pipeline needs; not tried again.
+
     _unavailable = false;
-    // Between start() and stop(), whether or not a pipeline is running right now.
+
     _wanted = false;
     _retryId = 0;
     _watchdogId = 0;
@@ -1017,7 +1017,7 @@ export class AudioSpectrum {
         });
     }
 
-    // Stops the pipeline, and starts it again shortly if it is still wanted.
+
     _restart() {
         this._end();
         if (this._retryId)

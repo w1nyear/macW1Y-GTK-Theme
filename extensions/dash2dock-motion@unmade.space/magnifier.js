@@ -1,19 +1,19 @@
-// -*- mode: js; js-indent-level: 4; indent-tabs-mode: nil -*-
-//
-// Icon magnification driven by the pointer position.
-//
-// Icon scale is a direct function of the pointer position through a
-// raised-cosine (Hann) window, recomputed every frame. Positions come from a
-// cumulative layout walk: each slot is widened by its own magnification and
-// the results are accumulated, anchored so the point under the cursor stays
-// under the cursor. Icons are pinned to the dock's screen edge and grow
-// outwards past the background.
-//
-// Two quantities are integrated over time instead of being read straight off
-// the pointer. One is a scalar envelope in the range 0 to 1, a critically
-// damped spring that multiplies the whole effect as the pointer enters and
-// leaves the dock. The other is the cursor itself, low passed to keep input
-// sampling noise out of the layout.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import Clutter from 'gi://Clutter';
 import Graphene from 'gi://Graphene';
@@ -24,23 +24,23 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import * as Glass from './glass.js';
 
-// Defaults; the live values come from the magnify-* settings keys.
-export const EFFECT_WIDTH = 320; // total span of the effect, px (logical)
-export const MAX_SCALE = 2.0;   // scale of the icon directly under the cursor
-// Schema maxima, used to size static clip paddings so they never need to
-// react to settings changes (magnify-effect-width max, and perpendicular
-// overflow = (magnify-max-scale max - 1) + magnify-rise max = 2 + 1).
+
+export const EFFECT_WIDTH = 320;
+export const MAX_SCALE = 2.0;
+
+
+
 export const MAX_EFFECT_WIDTH = 560;
 export const MAX_PERP_OVERFLOW = 3;
-const SPRING_OMEGA = 20.0;      // rad/s, critically damped enter/leave envelope
-const MAX_FRAME_DT = 1 / 30;    // clamp spring integration steps
+const SPRING_OMEGA = 20.0;
+const MAX_FRAME_DT = 1 / 30;
 const SETTLE_ENVELOPE = 0.002;
 const SETTLE_VELOCITY = 0.02;
-// Low pass on the sampled pointer, seconds. Reading the pointer once a frame
-// picks up the beat between the mouse's report rate and the frame clock, and
-// the anchor turns that into the whole strip twitching - worst in the middle
-// of the strip, where the raised-cosine slope is steepest. Steady state lag
-// is speed times this, so about 7px at a normal sweep.
+
+
+
+
+
 const CURSOR_TAU = 0.015;
 
 const PIVOTS = {
@@ -51,12 +51,12 @@ const PIVOTS = {
 };
 
 export class DockMagnifier {
-    /**
-     * @param {DockDash} dash the dock's dash
-     * @param {St.Widget} hoverBox the reactive, hover-tracked box wrapping it
-     * @param {St.Side} position dock position on the monitor
-     * @param {Gio.Settings} settings the dock's settings
-     */
+
+
+
+
+
+
     constructor(dash, hoverBox, position, settings) {
         this._dash = dash;
         this._hoverBox = hoverBox;
@@ -68,19 +68,19 @@ export class DockMagnifier {
             x: PIVOTS[position][0],
             y: PIVOTS[position][1],
         });
-        this._paused = false;     // menu open: freeze current transforms
-        this._suspended = false;  // drag in progress: no magnification at all
+        this._paused = false;
+        this._suspended = false;
 
         this._envelope = 0;
         this._velocity = 0;
         this._target = 0;
 
         this._timeline = null;
-        this._signalIds = [];     // [object, id] pairs
-        this._transformed = new Map();  // actor -> destroy-signal id
-        this._risen = new Map();        // container -> destroy-signal id
-        this._cursor = null;            // smoothed pointer, dock axis
-        this._debugPointer = null;      // [stageX, stageY] override for tests
+        this._signalIds = [];
+        this._transformed = new Map();
+        this._risen = new Map();
+        this._cursor = null;
+        this._debugPointer = null;
 
         this._readSettings();
         this._connectSignals();
@@ -121,18 +121,18 @@ export class DockMagnifier {
             this._signalIds.push([obj, obj.connect(name, cb)]);
         };
         connect(this._hoverBox, 'notify::hover', () => this._syncTarget());
-        // The strip can be relaid out mid hover, when an app icon animates in.
-        // Paused keeps the frozen transforms under an open menu.
+
+
         connect(this._dash, 'items-allocated', () => {
             if (!this._paused && this._envelope > 0)
                 this.update();
         });
-        // While a quicklist menu is open, freeze the current magnified state
-        // (the icon stays magnified underneath its own menu).
+
+
         connect(this._dash, 'menu-opened', () => this._setPaused(true));
         connect(this._dash, 'menu-closed', () => this._setPaused(false));
-        // While dragging an icon, drop magnification entirely: the drag
-        // machinery owns positions and placeholders.
+
+
         connect(Main.overview, 'item-drag-begin',
             () => this._setSuspended(true));
         connect(Main.overview, 'item-drag-end',
@@ -173,8 +173,8 @@ export class DockMagnifier {
             };
             connect(this._settings, 'changed::magnify-max-scale', () => {
                 onSettings();
-                // Icon textures are oversampled to the magnification cap;
-                // reload them at the new resolution.
+
+
                 this._dash.refreshIconResolution();
             });
             connect(this._settings, 'changed::magnify-effect-width', onSettings);
@@ -203,11 +203,11 @@ export class DockMagnifier {
         }
     }
 
-    /**
-     * Magnified icons must be able to render outside the icon strip: every
-     * St.BoxLayout in the containment chain is an StViewport, whose view clip
-     * would guillotine them at the dash edge.
-     */
+
+
+
+
+
     _unclipContainmentChain() {
         this._dash._box.clip_to_view = false;
         this._dash._box.clip_to_allocation = false;
@@ -242,7 +242,7 @@ export class DockMagnifier {
     _setPaused(paused) {
         this._paused = paused;
         if (paused)
-            this._stopTimeline();   // freeze transforms as they are
+            this._stopTimeline();
         else
             this._syncTarget();
     }
@@ -308,7 +308,7 @@ export class DockMagnifier {
     _startTimeline() {
         if (this._timeline)
             return;
-        // Pick the pointer up where it is now, not where the last run left it.
+
         this._cursor = null;
         this._timeline = Clutter.Timeline.new_for_actor(this._dash, 3600 * 1000);
         this._timeline.set_repeat_count(-1);
@@ -359,7 +359,7 @@ export class DockMagnifier {
         }
 
         const prevEnvelope = this._envelope;
-        // Critically damped spring toward the target envelope.
+
         const w = SPRING_OMEGA;
         this._velocity += (-2 * w * this._velocity -
                            w * w * (this._envelope - this._target)) * dt;
@@ -367,7 +367,7 @@ export class DockMagnifier {
         if (this._envelope < 0)
             this._envelope = 0;
 
-        // When entering dock, lock envelope to 1.0 once settled to avoid floating-point drift
+
         if (this._target === 1 &&
             Math.abs(this._envelope - 1) < SETTLE_ENVELOPE &&
             Math.abs(this._velocity) < SETTLE_VELOCITY) {
@@ -385,7 +385,7 @@ export class DockMagnifier {
             return;
         }
 
-        // If cursor is stationary and envelope has settled, do not waste GPU recomputing transforms
+
         const envelopeChanged = Math.abs(this._envelope - prevEnvelope) > 0.0001;
         if (!envelopeChanged && !this._cursorMoved)
             return;
@@ -393,17 +393,17 @@ export class DockMagnifier {
         this.update();
     }
 
-    /**
-     * Recompute and apply all transforms for the current pointer position and
-     * envelope. Depends only on current state, so it is safe to call at any
-     * time.
-     */
+
+
+
+
+
     update() {
         if (!this._dash._box.has_allocation())
             return;
 
-        // The frame loop owns the smoothed cursor. Calls from outside it, after
-        // a relayout or a settings change, reuse the last frame's value.
+
+
         const cursor = this._cursor ?? this._pointerAxis();
 
         const elements = this._collectElements();
@@ -414,7 +414,7 @@ export class DockMagnifier {
         const effectWidth = this._effectWidth * scaleFactor;
         const eff = this._envelope * (this._maxScale - 1);
 
-        // Raised-cosine scale for each element from its *base* center.
+
         const minP = cursor - effectWidth / 2;
         for (const el of elements) {
             if (el.fixed)
@@ -425,8 +425,8 @@ export class DockMagnifier {
             el.scale = 1 + eff * ((1 - Math.cos(theta)) / 2);
         }
 
-        // Cumulative layout: slot boundaries live midway through the gaps
-        // between consecutive elements; each slot stretches by its scale.
+
+
         const n = elements.length;
         const bounds = new Array(n + 1);
         bounds[0] = elements[0].p1;
@@ -441,18 +441,18 @@ export class DockMagnifier {
                 (bounds[i + 1] - bounds[i]) * elements[i].scale;
         }
 
-        // Anchor: macW1Y-style symmetric center anchoring.
-        // The dock expands smoothly and symmetrically outward from its center so the
-        // dock background and icons maintain a fixed, stable position on screen without
-        // jumping or jittering when sweeping the cursor rapidly side to side.
+
+
+
+
         const baseCenter = (bounds[0] + bounds[n]) / 2;
         const newCenter = (newBounds[0] + newBounds[n]) / 2;
         const shift = baseCenter - newCenter;
 
-        // Optional "rise": lift elements off the slab perpendicular to the
-        // dock, proportional to their magnification. Applied to the
-        // container (never the icon actor, whose perpendicular translation
-        // belongs to the launch bounce).
+
+
+
+
         const riseNorm = this._maxScale > 1
             ? this._rise / (this._maxScale - 1) : 0;
 
@@ -470,12 +470,12 @@ export class DockMagnifier {
         if (riseNorm === 0 && this._risen.size > 0)
             this._clearRisen();
 
-        // End padding: base margin + extra space when edge icons scale so the
-        // dock pill rounded corners comfortably surround magnified edge icons.
-        // Hugs the actual visual bounding box of all icons during magnification so
-        // that as the cursor moves toward either end of the dock and fewer icons
-        // are magnified, the dock capsule smoothly contracts at the ends together
-        // with the icons rather than leaving excessive empty background space.
+
+
+
+
+
+
         const bgActor = this._dash._background;
         const dashPos = this._dash.get_transformed_position();
         const horizontal = this._horizontal;
@@ -493,14 +493,14 @@ export class DockMagnifier {
         this._queueStageRedraw();
     }
 
-    /**
-     * Visible magnifiable elements in base-layout order along the dock's
-     * axis, in stage coordinates. Base positions come from the allocation
-     * chain up to the dash: allocations never include transforms, so they
-     * stay the untransformed truth even for elements (like the separator)
-     * that are their own transform target. Includes the Show Apps icon even
-     * though it may live in a different box than the app icons.
-     */
+
+
+
+
+
+
+
+
     _collectElements() {
         const horizontal = this._horizontal;
         const dashPos = this._dash.get_transformed_position();
@@ -516,13 +516,13 @@ export class DockMagnifier {
         const pushItem = child => {
             if (!child.visible || !child.has_allocation())
                 return;
-            // Skip items animating out: their container animates itself and
-            // will be destroyed; leave them alone entirely.
+
+
             if (child.animatingOut)
                 return;
-            // DashItemContainers get the transform on their child so we
-            // never fight the container's own show/hide animation; bare
-            // widgets (the separator) are transformed directly.
+
+
+
             const target = child.child ?? child;
             const p = baseP(child);
             const size = horizontal
@@ -533,14 +533,14 @@ export class DockMagnifier {
                 p1: p,
                 p2: p + size,
                 center: p + size / 2,
-                // Perpendicular extent, used as the rise unit so that thin
-                // widgets such as the separator lift with their neighbours.
+
+
                 thickness: horizontal
                     ? child.allocation.get_height()
                     : child.allocation.get_width(),
                 scale: 1,
-                // The separator keeps its size and only rides along with the
-                // layout; kiwi's dividers carry the same class.
+
+
                 fixed: !!child.get_style_class_name?.()
                     ?.includes('dash-separator'),
             });
@@ -548,10 +548,10 @@ export class DockMagnifier {
 
         for (const child of this._dash._box.get_children())
             pushItem(child);
-        // Kiwi's strips (downloads, minimized windows) hang beside the box in
-        // the same container: their items magnify and slide with the row as if
-        // they were in the box themselves. The show apps icon may sit there
-        // too, but it is pushed below like the box's own children.
+
+
+
+
         const showApps = this._dash._showAppsIcon;
         const host = this._dash._boxContainer;
         if (host) {
@@ -592,7 +592,7 @@ export class DockMagnifier {
                 () => this._risen.delete(container));
             this._risen.set(container, destroyId);
         }
-        // Away from the screen edge the dock sits on.
+
         switch (this._position) {
         case St.Side.BOTTOM:
             container.translation_y = -offset;
@@ -620,12 +620,12 @@ export class DockMagnifier {
         this._risen.clear();
     }
 
-    /**
-     * The slab grows with the strip: stretch the background so icons
-     * never overhang its ends. Axis-only scale about the strip-start edge;
-     * the slight corner distortion goes away when the glass slab replaces
-     * this widget.
-     */
+
+
+
+
+
+
     _stretchBackground(baseL, baseR, newL, newR, padL, padR) {
         const bg = this._dash._background;
         if (!bg)
@@ -657,9 +657,9 @@ export class DockMagnifier {
         const scale = (targetR - targetL) / baseSize;
         const translation = targetL - bgP1;
 
-        // [GPU OPTIMIZATION] If dock container scale and translation haven't changed,
-        // DO NOT mutate Clutter actors, DO NOT call _stretchBlurGroup, and DO NOT
-        // notify liquid-glass! Only icons redraw, keeping GPU at ~3-5%.
+
+
+
         if (this._lastBgScale !== undefined &&
             Math.abs(this._lastBgScale - scale) < 0.0005 &&
             Math.abs(this._lastBgTrans - translation) < 0.05) {
@@ -686,21 +686,21 @@ export class DockMagnifier {
         this._notifyDockUpdate();
     }
 
-    /**
-     * When Blur my Shell blurs this dock it injects its own background actor
-     * as a sibling of the dash and positions it over the slab. The slab we
-     * just stretched is transparent in that case, so the blur has to follow
-     * or the icons would overhang a base-width backdrop while magnified.
-     *
-     * The blur group's origin differs from the slab's, so reproduce the
-     * slab's stage-space mapping in the group's frame: for a scale s about
-     * the group origin P, the translation that reproduces
-     * x -> bgP1 + (x - bgP1)·s + delta is delta + (bgP1 - P)·(1 - s).
-     *
-     * @param {number} bgP1 slab start in stage coordinates, base geometry
-     * @param {number} scale axial scale applied to the slab
-     * @param {number} delta axial translation applied to the slab
-     */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     _stretchBlurGroup(bgP1, scale, delta) {
         const parent = this._dash.get_parent();
         if (!parent)
@@ -712,10 +712,10 @@ export class DockMagnifier {
 
         const horizontal = this._horizontal;
         const dashPos = this._dash.get_transformed_position();
-        // The group is a sibling of the dash, so shift out of the dash's own
-        // allocation to reach the shared parent frame. Allocations are used
-        // throughout: the group is itself a transform target here, and
-        // reading its transformed position would feed back into this.
+
+
+
+
         const groupP = (horizontal ? dashPos[0] : dashPos[1]) -
             (horizontal ? this._dash.allocation.x1 : this._dash.allocation.y1) +
             (horizontal ? group.allocation.x1 : group.allocation.y1);
@@ -744,7 +744,7 @@ export class DockMagnifier {
         for (const [actor, destroyId] of this._transformed) {
             actor.disconnect(destroyId);
             actor.set_scale(1, 1);
-            // Only our own axis: the launch bounce owns the other one.
+
             if (this._horizontal)
                 actor.translation_x = 0;
             else
@@ -753,8 +753,8 @@ export class DockMagnifier {
         this._transformed.clear();
         this._clearRisen();
 
-        // Reposition any label that is still showing (e.g. pointer parked on
-        // an icon while the envelope collapsed).
+
+
         const host = this._dash._boxContainer;
         const labelTargets = [...this._dash._box.get_children()];
         if (host) {
@@ -839,7 +839,7 @@ export class DockMagnifier {
         }
     }
 
-    // ---- test hooks -------------------------------------------------------
+
 
     setDebugState(stageX, stageY, envelope) {
         this._debugPointer = [stageX, stageY];

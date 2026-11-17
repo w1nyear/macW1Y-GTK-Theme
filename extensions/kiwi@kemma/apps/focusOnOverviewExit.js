@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Leaving the overview focuses the window under the pointer instead of the
-// previously focused one, like macW1Y Mission Control.
+
+
 
 import Clutter from 'gi://Clutter';
 
@@ -14,8 +14,8 @@ let _overviewHidingId = 0;
 let _stageEventId = 0;
 let _hoveredWindow = null;
 
-// The pointer lands on a child of a preview (the clone, the icon, the caption),
-// so walk up until an ancestor names the window it stands for.
+
+
 function _windowForActor(actor) {
     for (let a = actor; a; a = a.get_parent()) {
         if (a.metaWindow)
@@ -34,8 +34,8 @@ function _onStageEvent(stage, event) {
         return Clutter.EVENT_PROPAGATE;
 
     _hoveredWindow = window;
-    // Raising here keeps the preview that should lead the exit animation on top.
-    // Off a preview, the focused window leads again, so it is not left buried.
+
+
     const leader = window ?? global.display.focus_window;
     if (leader)
         leader.raise();
@@ -74,8 +74,8 @@ export function enable() {
         return;
 
     _injectionManager = new InjectionManager();
-    // Focus has to be committed before the exit animation starts. Activating on
-    // 'hiding'/'hidden' lets the shell refocus the old window and flip mid-flight.
+
+
     _injectionManager.overrideMethod(ControlsManager.prototype, 'prepareToLeaveOverview',
         original => function (...args) {
             const result = original.apply(this, args);

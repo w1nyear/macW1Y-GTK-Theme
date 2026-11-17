@@ -1,6 +1,6 @@
 import { Type } from './settings.js';
 
-// This lists the preferences keys
+
 export const KEYS = [
     {
         component: "general", schemas: [
@@ -132,7 +132,7 @@ export const KEYS = [
 ];
 
 
-// This lists the deprecated preferences keys
+
 export const DEPRECATED_KEYS = [
     {
         component: "general", schemas: [

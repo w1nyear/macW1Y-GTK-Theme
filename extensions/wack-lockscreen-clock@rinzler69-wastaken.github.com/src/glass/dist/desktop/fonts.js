@@ -41,7 +41,7 @@ export class TrueTypeFont {
         return this._tables.get(tag);
     }
 
-    // The Unicode subtable: format 4 (BMP) or 12 (full range).
+
     _readCmap() {
         const v = this._view;
         const cmap = this._table('cmap');
@@ -105,7 +105,7 @@ export class TrueTypeFont {
         return [at(id), at(id + 1)];
     }
 
-    /** The glyph for code point `c`, or for the missing glyph. */
+
     glyph(c) {
         return this._glyphById(this._cmap.get(c) ?? 0, 0);
     }
@@ -211,8 +211,8 @@ export class TrueTypeFont {
                 [a, b, c, d] = [f2dot14(p), f2dot14(p + 2), f2dot14(p + 4), f2dot14(p + 6)];
                 p += 8;
             }
-            // Components placed by matching points instead of an offset are rare
-            // in digits; they are placed without one.
+
+
             if (!(flags & 2))
                 dx = dy = 0;
             if (depth < 8) {
@@ -226,17 +226,17 @@ export class TrueTypeFont {
     }
 }
 
-/**
- * Traces `glyph` on Cairo context `cr` with its origin at (x, y) and `scale`
- * px per font unit, y down.
- */
+
+
+
+
 export function traceGlyph(cr, glyph, x, y, scale) {
     const at = (q) => [x + q.x * scale, y - q.y * scale];
     for (const contour of glyph.contours) {
         const n = contour.length;
         if (n === 0)
             continue;
-        // Start on an on-curve point, or between two off-curve ones.
+
         const startIndex = contour.findIndex(q => q.on);
         const start = startIndex >= 0 ? contour[startIndex]
             : { x: (contour[0].x + contour[1 % n].x) / 2, y: (contour[0].y + contour[1 % n].y) / 2, on: true };
@@ -277,7 +277,7 @@ export function traceGlyph(cr, glyph, x, y, scale) {
     }
 }
 
-// The families in fonts/, and the file names their weights are kept under.
+
 export const BUNDLED_FAMILIES = {
     'Antonio': 'Antonio',
     'Barlow Condensed': 'BarlowCondensed',
@@ -286,14 +286,14 @@ export const BUNDLED_FAMILIES = {
 };
 const WEIGHTS = [[300, 'Light'], [400, 'Regular'], [600, 'SemiBold'], [700, 'Bold']];
 
-/**
- * The file in `extensionPath`/fonts for a font description such as
- * "Antonio SemiBold" (the nearest weight it has), or null when the extension
- * does not ship that family.
- */
+
+
+
+
+
 export function bundledFontFile(extensionPath, description) {
-    // By name, not through Pango, which reads "Condensed" as a width and keeps
-    // only "Barlow" of "Barlow Condensed".
+
+
     const family = Object.keys(BUNDLED_FAMILIES)
         .find(name => description === name || description.startsWith(`${name} `));
     if (!family)
