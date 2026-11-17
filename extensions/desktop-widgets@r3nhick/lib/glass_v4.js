@@ -115,6 +115,11 @@ if (!globalThis[GLASS_CLASS_KEY]) {
                     this._effect.setShadowMaxRadius(0.0);
                     this.add_effect(this._effect);
 
+                    // A Clone does not reliably inherit its source size. It
+                    // must cover the full wallpaper and be offset so the
+                    // widget's clipped area samples the matching screen area.
+                    this._syncWallpaper();
+
                     if (globalThis._macSharedGlassEngine?.damageTracker) {
                         globalThis._macSharedGlassEngine.damageTracker.registerElement(this._glassId, {
                             actor: this,
@@ -130,8 +135,12 @@ if (!globalThis[GLASS_CLASS_KEY]) {
             }
 
             _syncWallpaper() {
-                if (this._wpClone && Number.isFinite(this._screenX) && Number.isFinite(this._screenY)) {
-                    this._wpClone.set_position(-this._screenX, -this._screenY);
+                const bgGroup = Main.layoutManager._backgroundGroup;
+                if (this._wpClone && bgGroup) {
+                    this._wpClone.set_size(bgGroup.width, bgGroup.height);
+                    if (Number.isFinite(this._screenX) && Number.isFinite(this._screenY)) {
+                        this._wpClone.set_position(-this._screenX, -this._screenY);
+                    }
                 }
                 if (this._effect) {
                     this._effect.markBackdropDirty();
@@ -168,9 +177,7 @@ if (!globalThis[GLASS_CLASS_KEY]) {
                     this.set_size(this._width, this._height);
                 }
 
-                if (this._wpClone) {
-                    this._wpClone.set_position(-x, -y);
-                }
+                this._syncWallpaper();
 
                 if (this._effect) {
                     if (sizeChanged) {
