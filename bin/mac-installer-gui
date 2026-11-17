@@ -628,7 +628,7 @@ button.mac-btn-pill-primary:active,
 
 /* Modal Sheet (LiquidGlass with 5px blur, 5% tint, 28px radius) */
 .mac-modal-dim {
-    background-color: rgba(0, 0, 0, 0.16);
+    background-color: transparent;
     border-radius: 20px;
 }
 

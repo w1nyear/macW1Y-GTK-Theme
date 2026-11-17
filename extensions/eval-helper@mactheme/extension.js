@@ -2220,6 +2220,12 @@ export default class EvalHelper extends Extension {
                 const attachDialogGlass = (dialogActor) => {
                     try {
                         if (!dialogActor) return;
+                        const lightbox = dialogActor._lightbox;
+                        if (lightbox) {
+                            lightbox._radialEffect = false;
+                            lightbox._fadeFactor = 0;
+                            lightbox.opacity = 0;
+                        }
                         if (dialogActor._macDlgGlassState) {
                             if (dialogActor._macDlgGlassState !== 'pending') {
                                 if (globalThis._macDlgStates && !globalThis._macDlgStates.has(dialogActor._macDlgGlassState)) {
