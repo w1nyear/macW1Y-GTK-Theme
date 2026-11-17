@@ -90,6 +90,10 @@ if (!globalThis[GLASS_CLASS_KEY]) {
 
                 try {
                     this._wpClone = createBackgroundMirror('dw-glass-wp-mirror');
+                    const bgGroup = Main.layoutManager._backgroundGroup;
+                    if (bgGroup && this._wpClone) {
+                        this._wpClone.set_size(bgGroup.width, bgGroup.height);
+                    }
                     this.add_child(this._wpClone);
 
                     let lgSettings = null;
@@ -130,8 +134,22 @@ if (!globalThis[GLASS_CLASS_KEY]) {
             }
 
             _syncWallpaper() {
-                if (this._wpClone && Number.isFinite(this._screenX) && Number.isFinite(this._screenY)) {
-                    this._wpClone.set_position(-this._screenX, -this._screenY);
+                const bgGroup = Main.layoutManager._backgroundGroup;
+                if (!this._wpClone || !this._wpClone.source || (createBackgroundMirror && typeof this._wpClone.is_in_clone_paint !== 'function' && !this._wpClone.get_parent())) {
+                    if (this._wpClone) {
+                        try { this._wpClone.destroy(); } catch (_) {}
+                        this._wpClone = null;
+                    }
+                    if (createBackgroundMirror) {
+                        this._wpClone = createBackgroundMirror('dw-glass-wp-mirror');
+                        this.insert_child_at_index(this._wpClone, 0);
+                    }
+                }
+                if (this._wpClone && bgGroup) {
+                    this._wpClone.set_size(bgGroup.width, bgGroup.height);
+                    if (Number.isFinite(this._screenX) && Number.isFinite(this._screenY)) {
+                        this._wpClone.set_position(-this._screenX, -this._screenY);
+                    }
                 }
                 if (this._effect) {
                     this._effect.markBackdropDirty();
@@ -169,6 +187,10 @@ if (!globalThis[GLASS_CLASS_KEY]) {
                 }
 
                 if (this._wpClone) {
+                    const bgGroup = Main.layoutManager._backgroundGroup;
+                    if (bgGroup) {
+                        this._wpClone.set_size(bgGroup.width, bgGroup.height);
+                    }
                     this._wpClone.set_position(-x, -y);
                 }
 

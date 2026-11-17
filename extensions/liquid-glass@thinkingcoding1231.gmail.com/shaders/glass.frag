@@ -676,7 +676,7 @@ void main() {
         vec3 flatRgb = (fTap1.rgb + fTap2.rgb + fTap3.rgb + fTap4.rgb) * 0.25;
         float fAlpha = (fTap1.a + fTap2.a + fTap3.a + fTap4.a) * 0.25;
         if (fAlpha < 0.20) {
-            vec3 fallbackBg = vec3(0.12, 0.12, 0.14);
+            vec3 fallbackBg = mix(vec3(0.92, 0.92, 0.95), activeTint, activeBaseStrength);
             flatRgb = mix(fallbackBg, flatRgb, clamp(fAlpha / 0.20, 0.0, 1.0));
         }
 
@@ -1011,7 +1011,7 @@ void main() {
                           texture2D(cogl_sampler1, SAFE(uvG + off3)).a +
                           texture2D(cogl_sampler1, SAFE(uvG + off4)).a) * 0.25;
     if (sampledAlpha < 0.20) {
-        vec3 fallbackBg = vec3(0.12, 0.12, 0.14);
+        vec3 fallbackBg = mix(vec3(0.92, 0.92, 0.95), activeTint, activeBaseStrength);
         refractedRgb = mix(fallbackBg, refractedRgb, clamp(sampledAlpha / 0.20, 0.0, 1.0));
     }
 

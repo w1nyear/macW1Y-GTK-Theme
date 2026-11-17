@@ -69,10 +69,15 @@ def check_integrity():
         try:
             with open(lock_path) as f:
                 lock = json.load(f).get("extensions", {})
-            enabled = set(subprocess.check_output(["gnome-extensions", "list", "--enabled"], text=True).splitlines())
-            for uuid in lock:
-                if uuid not in enabled:
-                    issues.append(f"Критичне розширення вимкнено: {uuid}")
+            import time
+            for attempt in range(10):
+                enabled = set(subprocess.check_output(["gnome-extensions", "list", "--enabled"], text=True).splitlines())
+                missing = [uuid for uuid in lock if uuid not in enabled]
+                if not missing or attempt == 9:
+                    for uuid in missing:
+                        issues.append(f"Критичне розширення вимкнено: {uuid}")
+                    break
+                time.sleep(1)
         except Exception as e:
             pass
 
