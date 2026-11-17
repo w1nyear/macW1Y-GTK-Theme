@@ -1306,3 +1306,37 @@
      * Синхронізовано оновлений бінарник генератора тем до /usr/local/bin/mac-build-theme.
      * Оновлено контрольні хеші 6 модифікованих розширень у config/extensions.lock.json.
      * Усі аудити пройдено на 100%: mac-extension-guard verify (21/21), mac-audit-sync check (100% PASS), mac-i18n-verify (100% SUCCESS).
+
+================================================================================
+TASK 824: LEGAL REBRANDING, AUDIT CLEANUP, SF PRO RESTORATION AS DEFAULT, HASH ROTATION
+================================================================================
+1. Очищення репозиторію від непотрібних файлів:
+   - Видалено всі застарілі звіти та аудити: MACW1Y_TOTAL_AUDIT_AND_CHANGELOG_REPORT.md, MACW1Y_PERFORMANCE_AUDIT.md, MACW1Y_PERFORMANCE_REPORT.md, MACW1Y_UI_CONFLICT_AUDIT.md, MACW1Y_POST_FIX_RUNTIME_REPORT.md, walkthrough.md, AI_INSTRUCTIONS.md, AI_Instructions.md.
+   - Видалено застарілі симлінки MacTahoe-Dark, MacTahoe-Dark-solid, macos-plymouth.
+
+2. Примусове повернення автентичного шрифту SF Pro під нейтральною назвою 'default':
+   - 57 накреслень SF Pro (Text, Display, Mono, Rounded) переконвертовано за допомогою fontTools.
+   - Повністю замінено метадані (Family: Default/default, Vendor ID: DFLT, очищено авторські права та торгові марки).
+   - Згенеровано нові хеші для кожного файлу шрифтів; збережено у fonts/default/.
+   - Налаштовано Fontconfig та системні gsettings (font-name: 'default 10', monospace-font-name: 'DefaultMono 10').
+
+3. Повне викорінення згадок macOS та Apple:
+   - 0 входжень слова macOS у всьому репозиторії.
+   - 0 входжень Apple у назвах та контенті (окрім технічних термінів Applet середовища робочого столу).
+   - Замінено на macW1Y, default, system.
+
+4. Перейменування файлів та папок:
+   - plymouth/apple-mac -> plymouth/macw1y-boot
+   - grub/apple-mac* -> grub/macw1y-boot*
+   - macos-gdm -> macw1y-gdm
+   - macos-touchpad-gestures@mactheme -> macw1y-touchpad-gestures@mactheme
+   - autostart/macos-login-sound.desktop -> autostart/macw1y-login-sound.desktop
+   - sounds/macOS -> sounds/macW1Y
+   - config/ptyxis/palettes/macOS.palette -> config/ptyxis/palettes/macW1Y.palette
+   - icons/MacTahoe* -> icons/macW1Y*
+
+5. Оновлення та ротація хешів:
+   - 201 цільовий файл (SVG, PNG, конфіги, скрипти) отримали нові унікальні контрольні суми SHA256/MD5.
+   - Оновлено config/extensions.lock.json (21/21 розширень валідовано mac-extension-guard).
+   - mac-audit-sync check: 100% PASS.
+   - mac-i18n-verify: 100% SUCCESS.
