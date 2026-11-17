@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+mac-animation-diag — macW1Y Animation Preloading & Render Cache Diagnostics CLI
+Queries the running GNOME Shell EvalHelper / MacAnimationCache engine via D-Bus.
+Provides real-time inspection of VRAM cache, frame rates, component prewarming, and latencies.
+"""
+
+import sys
+import json
+import time
+import argparse
+import subprocess
+
+DBUS_DEST = "org.gnome.Shell"
+DBUS_PATH = "/org/gnome/Shell/Extensions/EvalHelper"
+DBUS_IFACE = "org.gnome.Shell.Extensions.EvalHelper"
+
+def query_diagnostics():
+    cmd = [
+        "gdbus", "call", "--session",
+        "--dest", DBUS_DEST,
+        "--object-path", DBUS_PATH,
+        "--method", f"{DBUS_IFACE}.GetAnimationDiagnostics"
+    ]
+    try:
+        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=5)
+        if proc.returncode != 0:
+            return {"error": proc.stderr.strip() or "DBus call failed"}
+        raw = proc.stdout.strip()
+        # Parse gdbus output: ('{...}',)
+        if raw.startswith("('") and raw.endswith("',)") or raw.endswith("',)"):
+            first_quote = raw.find("'")
+            last_quote = raw.rfind("'")
+            if first_quote != -1 and last_quote != -1:
+                json_str = raw[first_quote+1:last_quote]
+                json_str = json_str.replace("\\'", "'").replace('\\"', '"').replace("\\\\", "\\")
+                return json.loads(json_str)
+        return json.loads(raw)
+    except Exception as e:
+        return {"error": str(e)}
+
+def trigger_prewarm():
+    cmd = [
+        "gdbus", "call", "--session",
+        "--dest", DBUS_DEST,
+        "--object-path", DBUS_PATH,
+        "--method", f"{DBUS_IFACE}.PrewarmAnimations"
+    ]
+    try:
+        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=5)
+        return proc.returncode == 0
+    except Exception:
+        return False
+
+def clear_cache():
+    cmd = [
+        "gdbus", "call", "--session",
+        "--dest", DBUS_DEST,
+        "--object-path", DBUS_PATH,
+        "--method", f"{DBUS_IFACE}.Eval",
+        "globalThis.MacAnimationCache ? globalThis.MacAnimationCache.clear() : false"
+    ]
+    try:
+        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=5)
+        return proc.returncode == 0
+    except Exception:
+        return False
+
+def format_dashboard(diag):
+    if "error" in diag:
+        return f"\033[1;31m[!] Error querying MacAnimationCache: {diag['error']}\033[0m"
+
+    status = diag.get("status", "UNKNOWN")
+    sched = diag.get("schedulerState", "IDLE")
+    status_color = "\033[1;32m" if status == "HEALTHY" else "\033[1;33m"
+
+    perf = diag.get("performance", {})
+    last_frame = perf.get("lastFrameTimeMs", 16.6)
+    target_frame = perf.get("targetFrameTimeMs", 16.67)
+    fps_est = perf.get("fpsEstimate", 60)
+
+    cache = diag.get("cache", {})
+    items = cache.get("items", 0)
+    bytes_used = cache.get("bytes", 0)
+    mb_used = bytes_used / (1024 * 1024)
+    hits = cache.get("hits", 0)
+    misses = cache.get("misses", 0)
+    ratio = cache.get("hitRatioPct", 100)
+
+    ov = diag.get("overview", {})
+    ov_opens = ov.get("openCount", 0)
+    ov_avg = ov.get("avgOpenMs", 0)
+
+    spot = diag.get("spotlight", {})
+    spot_opens = spot.get("openCount", 0)
+    spot_avg = spot.get("avgOpenMs", 0)
+
+    prewarmed = diag.get("prewarmed", [])
+    reasons = diag.get("invalidationReasons", [])
+
+    lines = []
+    lines.append("\033[1;34m╔════════════════════════════════════════════════════════════════════╗\033[0m")
+    lines.append("\033[1;34m║\033[0m      \033[1;37mmacW1Y — Animation Preloading & Render Cache Dashboard\033[0m        \033[1;34m║\033[0m")
+    lines.append("\033[1;34m╠════════════════════════════════════════════════════════════════════╣\033[0m")
+    lines.append(f"\033[1;34m║\033[0m  Engine Status:     {status_color}{status:<12}\033[0m   Scheduler: \033[1;36m{sched:<16}\033[0m      \033[1;34m║\033[0m")
+    lines.append(f"\033[1;34m║\033[0m  Frame Timing:      \033[1;32m{last_frame:.1f} ms\033[0m (target: {target_frame:.1f} ms)  FPS: \033[1;32m{fps_est} fps\033[0m           \033[1;34m║\033[0m")
+    lines.append("\033[1;34m╠────────────────────────────────────────────────────────────────────╣\033[0m")
+    lines.append(f"\033[1;34m║\033[0m  \033[1;33mGRAPHICS CACHE (64 MB Budget):\033[0m                                    \033[1;34m║\033[0m")
+    lines.append(f"\033[1;34m║\033[0m    Allocated:       \033[1;37m{mb_used:.2f} MB\033[0m / 64.00 MB ({items} cached items)               \033[1;34m║\033[0m")
+    lines.append(f"\033[1;34m║\033[0m    Efficiency:      \033[1;32m{ratio}%\033[0m Hit Ratio ({hits} hits, {misses} misses)                 \033[1;34m║\033[0m")
+    lines.append("\033[1;34m╠────────────────────────────────────────────────────────────────────╣\033[0m")
+    lines.append(f"\033[1;34m║\033[0m  \033[1;33mPREWARMED COMPONENTS:\033[0m                                              \033[1;34m║\033[0m")
+    for comp in ["overview", "spotlight", "quicksettings", "osd", "dock"]:
+        is_pw = comp in prewarmed
+        check = "\033[1;32m✓ READY (0 ms)\033[0m" if is_pw else "\033[1;31m✗ COLD\033[0m"
+        lines.append(f"\033[1;34m║\033[0m    • {comp.capitalize():<15} {check:<30}                 \033[1;34m║\033[0m")
+    lines.append("\033[1;34m╠────────────────────────────────────────────────────────────────────╣\033[0m")
+    lines.append(f"\033[1;34m║\033[0m  \033[1;33mCOMPONENT LATENCY METRICS:\033[0m                                         \033[1;34m║\033[0m")
+    lines.append(f"\033[1;34m║\033[0m    Overview:        {ov_opens} transitions | Avg Latency: \033[1;32m{ov_avg:.1f} ms\033[0m            \033[1;34m║\033[0m")
+    lines.append(f"\033[1;34m║\033[0m    Spotlight:       {spot_opens} transitions | Avg Latency: \033[1;32m{spot_avg:.1f} ms\033[0m            \033[1;34m║\033[0m")
+    if reasons:
+        lines.append("\033[1;34m╠────────────────────────────────────────────────────────────────────╣\033[0m")
+        lines.append(f"\033[1;34m║\033[0m  Recent Invalidation: {reasons[-1]:<45} \033[1;34m║\033[0m")
+    lines.append("\033[1;34m╚════════════════════════════════════════════════════════════════════╝\033[0m")
+    return "\n".join(lines)
+
+def main():
+    parser = argparse.ArgumentParser(description="macW1Y Animation Preloading & Render Cache Diagnostics")
+    parser.add_argument("--json", "-j", action="store_true", help="Output raw JSON format")
+    parser.add_argument("--prewarm", "-p", action="store_true", help="Trigger full animation & pipeline prewarming")
+    parser.add_argument("--clear", "-c", action="store_true", help="Evict and clear render cache")
+    parser.add_argument("--watch", "-w", type=float, const=1.0, nargs="?", help="Watch dashboard continuously (interval sec)")
+    args = parser.parse_args()
+
+    if args.prewarm:
+        ok = trigger_prewarm()
+        print("Prewarming triggered successfully." if ok else "Failed to trigger prewarming.")
+        return 0 if ok else 1
+
+    if args.clear:
+        ok = clear_cache()
+        print("Cache cleared." if ok else "Failed to clear cache.")
+        return 0 if ok else 1
+
+    if args.watch is not None:
+        interval = max(0.2, args.watch)
+        try:
+            while True:
+                diag = query_diagnostics()
+                print("\033[2J\033[H", end="") # clear screen
+                print(format_dashboard(diag))
+                time.sleep(interval)
+        except KeyboardInterrupt:
+            return 0
+
+    diag = query_diagnostics()
+    if args.json:
+        print(json.dumps(diag, indent=2))
+    else:
+        print(format_dashboard(diag))
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

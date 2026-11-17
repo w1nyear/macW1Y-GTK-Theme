@@ -13,6 +13,7 @@ import Graphene from 'gi://Graphene';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as MacSetupWizard from './macSetupWizard.js';
 import { t } from './mac_i18n.js';
+import { MacAnimationCache } from './macAnimationCache.js';
 
 const EvalIface = `
 <node>
@@ -40,6 +41,12 @@ const EvalIface = `
       <arg type="b" direction="out" name="success"/>
     </method>
     <method name="SyncAltTabStyling">
+      <arg type="b" direction="out" name="success"/>
+    </method>
+    <method name="GetAnimationDiagnostics">
+      <arg type="s" direction="out" name="json_diagnostics"/>
+    </method>
+    <method name="PrewarmAnimations">
       <arg type="b" direction="out" name="success"/>
     </method>
     <method name="ShowSetupWizard">
@@ -89,8 +96,8 @@ class OverviewWallpaperManager {
             this
         );
 
-        Main.layoutManager.overviewGroup.connectObject(
-            'child-added', () => {
+        Main.overview.connectObject(
+            'showing', () => {
                 if (this._bgGroup && this._bgGroup.get_parent() === Main.layoutManager.overviewGroup) {
                     Main.layoutManager.overviewGroup.set_child_below_sibling(this._bgGroup, null);
                 }
@@ -151,6 +158,7 @@ class OverviewWallpaperManager {
 
     destroy() {
         try { Main.layoutManager.disconnectObject(this); } catch (_) {}
+        try { Main.overview.disconnectObject(this); } catch (_) {}
         try { Main.layoutManager.overviewGroup.disconnectObject(this); } catch (_) {}
 
         for (const mgr of this._bgManagers) {
@@ -550,6 +558,23 @@ export default class EvalHelper extends Extension {
                         return false;
                     }
                 },
+                GetAnimationDiagnostics: () => {
+                    try {
+                        const diag = MacAnimationCache.getDiagnostics();
+                        return JSON.stringify(diag);
+                    } catch (e) {
+                        return JSON.stringify({ error: String(e) });
+                    }
+                },
+                PrewarmAnimations: () => {
+                    try {
+                        MacAnimationCache.prewarmAll();
+                        return true;
+                    } catch (e) {
+                        console.error(`[EvalHelper] PrewarmAnimations error: ${e}`);
+                        return false;
+                    }
+                },
                 ShowSetupWizard: (force) => {
                     try {
                         return MacSetupWizard.startSetupWizard(force);
@@ -602,6 +627,12 @@ export default class EvalHelper extends Extension {
                 return GLib.SOURCE_REMOVE;
             });
         }
+
+        // Prewarm animation & rendering cache
+        GLib.idle_add(GLib.PRIORITY_LOW, () => {
+            try { MacAnimationCache.prewarmAll(); } catch (_) {}
+            return GLib.SOURCE_REMOVE;
+        });
 
         // Permanently prevent GNOME from disabling user extensions or resetting theme
         try {
@@ -2853,7 +2884,7 @@ export default class EvalHelper extends Extension {
                     });
                 }
 
-                // Desktop Icons (DING) smooth opacity fade on overview open/close
+                // Desktop Icons (DING) smooth opacity fade on overview open/close (Persistent Clone Pool)
                 const getDingActors = () => {
                     return (global.window_group?.get_children() || []).filter(c => {
                         const mw = c.meta_window || c.get_meta_window?.();
@@ -2861,7 +2892,7 @@ export default class EvalHelper extends Extension {
                                       mw.get_title?.()?.startsWith('Desktop Icons'));
                     });
                 };
-                const DING_FADE_DURATION = 280;
+                const DING_FADE_DURATION = 240;
                 const DING_FADE_MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
 
                 let _dingClones = [];
@@ -2880,12 +2911,27 @@ export default class EvalHelper extends Extension {
                 globalThis._macCleanupDingClones = cleanupDingClones;
 
                 const ensureDingClones = (initialOpacity = 255) => {
-                    cleanupDingClones();
+                    const dingActors = getDingActors();
+                    if (!dingActors.length) {
+                        cleanupDingClones();
+                        return;
+                    }
                     const ovGroup = Main.layoutManager.overviewGroup;
                     if (!ovGroup) return;
-                    const dingActors = getDingActors();
-                    if (!dingActors.length) return;
 
+                    // Reuse existing clones if valid
+                    if (_dingClones.length === dingActors.length && _dingClones.every(c => c && c.get_parent() === ovGroup)) {
+                        for (let i = 0; i < dingActors.length; i++) {
+                            const actor = dingActors[i];
+                            const clone = _dingClones[i];
+                            clone.set_position(actor.x, actor.y);
+                            clone.set_size(actor.width, actor.height);
+                            clone.visible = true;
+                        }
+                        return;
+                    }
+
+                    cleanupDingClones();
                     const bgIdx = ovGroup.get_children().findIndex(c => c.name === 'mac-overview-wallpaper-group');
                     const targetIdx = bgIdx >= 0 ? bgIdx + 1 : 0;
 
@@ -2904,17 +2950,26 @@ export default class EvalHelper extends Extension {
                     }
                 };
 
+                const animateDingFade = (targetOpacity, duration = DING_FADE_DURATION) => {
+                    ensureDingClones(targetOpacity === 0 ? 255 : 0);
+                    for (const clone of _dingClones) {
+                        clone.remove_all_transitions();
+                        clone.ease({
+                            opacity: targetOpacity,
+                            duration: duration,
+                            mode: DING_FADE_MODE,
+                            onComplete: () => {
+                                if (targetOpacity === 0) {
+                                    cleanupDingClones();
+                                }
+                            },
+                        });
+                    }
+                };
+
                 if (!Main.overview._macDingShowingConn) {
                     Main.overview._macDingShowingConn = Main.overview.connect('showing', () => {
-                        ensureDingClones(255);
-                        for (const clone of _dingClones) {
-                            clone.ease({
-                                opacity: 0,
-                                duration: DING_FADE_DURATION,
-                                mode: DING_FADE_MODE,
-                                onComplete: () => cleanupDingClones(),
-                            });
-                        }
+                        animateDingFade(0, DING_FADE_DURATION);
                         for (const actor of getDingActors()) {
                             actor.remove_all_transitions();
                             actor.opacity = 0;
@@ -2932,49 +2987,15 @@ export default class EvalHelper extends Extension {
                 }
                 if (!Main.overview._macDingHidingConn) {
                     Main.overview._macDingHidingConn = Main.overview.connect('hiding', () => {
-                        ensureDingClones(0);
-                        for (const clone of _dingClones) {
-                            clone.ease({
-                                opacity: 255,
-                                duration: DING_FADE_DURATION,
-                                mode: DING_FADE_MODE,
-                                onComplete: () => cleanupDingClones(),
-                            });
-                        }
+                        animateDingFade(255, DING_FADE_DURATION);
                     });
                 }
                 if (!Main.overview._macDingHiddenConn) {
                     Main.overview._macDingHiddenConn = Main.overview.connect('hidden', () => {
                         cleanupDingClones();
-                        _lastDingOpacity = 255;
                         for (const actor of getDingActors()) {
                             actor.remove_all_transitions();
                             actor.opacity = 255;
-                        }
-                    });
-                }
-
-                let _lastDingOpacity = -1;
-                const stateAdj = controls?._stateAdjustment;
-                if (stateAdj && !stateAdj._macDingStateConn) {
-                    stateAdj._macDingStateConn = stateAdj.connect('notify::value', () => {
-                        if (Main.overview._animationInProgress || Main.overview.visible) {
-                            const val = stateAdj.value;
-                            const progress = Math.min(1, Math.max(0, val));
-                            const targetOpacity = Math.round(255 * (1 - progress));
-                            if (_lastDingOpacity === targetOpacity) return;
-                            _lastDingOpacity = targetOpacity;
-
-                            if (!_dingClones.length && (Main.overview.visible || Main.overview._animationInProgress) && targetOpacity > 0 && targetOpacity < 255) {
-                                ensureDingClones(targetOpacity);
-                            }
-                            for (const clone of _dingClones) {
-                                if (clone.get_transition('opacity')) continue;
-                                if (clone.opacity !== targetOpacity) clone.opacity = targetOpacity;
-                            }
-                            if (progress >= 1) {
-                                cleanupDingClones();
-                            }
                         }
                     });
                 }
@@ -4466,6 +4487,10 @@ export default class EvalHelper extends Extension {
             try { global.display.disconnect(this._wineFocusWindowId); } catch (_) {}
             this._wineFocusWindowId = 0;
         }
+
+        try {
+            MacAnimationCache.destroy();
+        } catch (_) {}
     }
 
     _setupWineWindowStacking() {
@@ -4712,15 +4737,36 @@ export default class EvalHelper extends Extension {
             GLib.source_remove(timerId);
         });
 
-        // 2. Idle trim when overview hides
+        // 2. Debounced idle trim when overview remains hidden for at least 15s (min interval 60s)
+        let overviewHiddenTimer = 0;
+        let lastTrimTime = 0;
         const overviewHiddenId = Main.overview.connect('hidden', () => {
-            GLib.idle_add(GLib.PRIORITY_LOW, () => {
-                runMemoryTrim();
+            if (overviewHiddenTimer) {
+                GLib.source_remove(overviewHiddenTimer);
+                overviewHiddenTimer = 0;
+            }
+            overviewHiddenTimer = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 15, () => {
+                overviewHiddenTimer = 0;
+                const now = GLib.get_monotonic_time();
+                if ((now - lastTrimTime) > 60000000) { // 60s
+                    lastTrimTime = now;
+                    runMemoryTrim();
+                }
                 return GLib.SOURCE_REMOVE;
             });
         });
+        const overviewShowingId = Main.overview.connect('showing', () => {
+            if (overviewHiddenTimer) {
+                GLib.source_remove(overviewHiddenTimer);
+                overviewHiddenTimer = 0;
+            }
+        });
         this._memOptimizerCleanups.push(() => {
+            if (overviewHiddenTimer) {
+                try { GLib.source_remove(overviewHiddenTimer); } catch (_) {}
+            }
             try { Main.overview.disconnect(overviewHiddenId); } catch (_) {}
+            try { Main.overview.disconnect(overviewShowingId); } catch (_) {}
         });
 
         // Initial trim after 5 seconds

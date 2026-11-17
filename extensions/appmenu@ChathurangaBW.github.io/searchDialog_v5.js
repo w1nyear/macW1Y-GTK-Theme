@@ -27,6 +27,19 @@ const BUTTON_SIZE = 50;
 const CORNER_RADIUS = 26;
 const EDGE_STYLE = '1px solid rgba(255, 255, 255, 0.30)';
 
+const SPOTLIGHT_FALLBACK_STYLE =
+    `background-color: rgba(30, 32, 40, 0.92) !important; ` +
+    `border-radius: ${CORNER_RADIUS}px !important; ` +
+    'border: 1px solid rgba(255, 255, 255, 0.15) !important; ' +
+    'box-shadow: 0 20px 48px rgba(0, 0, 0, 0.55) !important;';
+
+const SPOTLIGHT_GLASS_STYLE =
+    'background-color: transparent !important; ' +
+    'background: none !important; ' +
+    `border-radius: ${CORNER_RADIUS}px !important; ` +
+    'border: none !important; ' +
+    'box-shadow: none !important;';
+
 const APPS_CATEGORIES = [
     {
         id: 'social',
@@ -481,13 +494,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             track_hover: true,
             clip_to_allocation: false,
         });
-        this._box.set_style(
-            'background-color: transparent !important; ' +
-            'background: none !important; ' +
-            `border-radius: ${CORNER_RADIUS}px !important; ` +
-            'border: none !important; ' +
-            'box-shadow: none !important;'
-        );
+        this._box.set_style(SPOTLIGHT_FALLBACK_STYLE);
+        this._box._isUsingFallback = true;
         this._box.set_offscreen_redirect(Clutter.OffscreenRedirect.AUTOMATIC_FOR_OPACITY);
         this.add_child(this._box);
         this._box.connect('motion-event', (_actor, event) => {
@@ -2206,6 +2214,11 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             }
             this._glass.setResolution(mon.width, mon.height);
 
+            if (this._box && this._box._isUsingFallback) {
+                this._box.set_style(SPOTLIGHT_GLASS_STYLE);
+                this._box._isUsingFallback = false;
+            }
+
             const hasText = (this._entry && this._entry.get_text) ? this._entry.get_text().trim().length > 0 : false;
             const hasResults = this._resultsWrapper && this._resultsWrapper.visible && (box.height > PILL_HEIGHT + 10);
             const isExpanded = this._buttonsCollapsed || hasText || hasResults || this._mode !== 'search' || this._isCollapsing;
@@ -2718,6 +2731,10 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
 
         const hideGlass = () => {
             try {
+                if (this._box && !this._box._isUsingFallback) {
+                    this._box.set_style(SPOTLIGHT_FALLBACK_STYLE);
+                    this._box._isUsingFallback = true;
+                }
                 if (_isGlassAlive(this._glass)) {
                     this._glass.remove_all_transitions();
                     this._glass.scale_x = 1.0;
@@ -4349,6 +4366,19 @@ export function ensureSearchDialog() {
     globalThis.closeMacSpotlight = closeSearchDialog;
     return _spotlightDialog;
 }
+
+export async function prewarmSpotlight() {
+    try {
+        const dlg = ensureSearchDialog();
+        if (dlg && !dlg._glass) {
+            await dlg._initGlass().catch(() => {});
+        }
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+globalThis._macPrewarmSpotlight = prewarmSpotlight;
 
 export function toggleSearchDialog(initialMode = 'search') {
     ensureSearchDialog();

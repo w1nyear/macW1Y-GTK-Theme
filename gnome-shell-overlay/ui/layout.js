@@ -1057,59 +1057,101 @@ export const LayoutManager = GObject.registerClass({
         this.uiGroup.set_pivot_point(0, 0);
         this.uiGroup.opacity = 255;
 
-        // 1. Wait for all 21 extensions to enable
-        const waitForAllExtensions = async () => {
-            let em = Main.extensionManager;
-            let attempts = 0;
-            while ((!em || !em._enabledExtensions || em._enabledExtensions.length === 0) && attempts < 40) {
-                await new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
-                    r();
-                    return GLib.SOURCE_REMOVE;
-                }));
-                em = Main.extensionManager;
-                attempts++;
-            }
+        // 1. Parallel Startup Barrier: Concurrently await extensions, dock, liquid-glass, widgets
+        // with a strict 1200ms timeout race to eliminate prolonged black screen.
+        const STARTUP_TIMEOUT_MS = 1200;
 
-            if (!em || !em._enabledExtensions || em._enabledExtensions.length === 0)
-                return;
-
-            const isReady = () => em._enabledExtensions.every(uuid => {
+        const checkExtensions = async () => {
+            const em = Main.extensionManager;
+            if (!em) return;
+            const isReady = () => (em._enabledExtensions || []).every(uuid => {
                 const ext = em.lookup(uuid);
                 return ext && (ext.state === 1 || ext.state === 2 || ext.state === 3);
             });
-
             if (isReady()) return;
-
-            await new Promise(resolve => {
-                let timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 4000, () => {
-                    timeoutId = 0;
-                    try { em.disconnect(sigId); } catch (_) {}
-                    resolve();
-                    return GLib.SOURCE_REMOVE;
-                });
-
+            return new Promise(resolve => {
                 const sigId = em.connect('extension-state-changed', () => {
                     if (isReady()) {
-                        if (timeoutId) GLib.source_remove(timeoutId);
                         try { em.disconnect(sigId); } catch (_) {}
                         resolve();
                     }
                 });
             });
         };
-        await waitForAllExtensions();
 
-        // 2. Wait for Dash to Dock container to exist (keep hidden)
-        let dockContainer = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
-        let dockAttempts = 0;
-        while (!dockContainer && dockAttempts < 30) {
-            await new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
-                r();
+        const checkDock = async () => {
+            let dockContainer = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
+            if (dockContainer) return;
+            return new Promise(resolve => {
+                let attempts = 0;
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
+                    attempts++;
+                    dockContainer = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
+                    if (dockContainer || attempts > 25) {
+                        resolve();
+                        return GLib.SOURCE_REMOVE;
+                    }
+                    return GLib.SOURCE_CONTINUE;
+                });
+            });
+        };
+
+        const checkLiquidGlass = async () => {
+            return new Promise(resolve => {
+                let attempts = 0;
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
+                    attempts++;
+                    const lg = Main.extensionManager?.lookup('liquid-glass@thinkingcoding1231.gmail.com');
+                    const docks = lg?.stateObj?._dashDocks;
+                    const ready = docks && docks.length > 0 && docks[0].manager?.bgActor;
+                    if (ready || attempts > 25) {
+                        resolve();
+                        return GLib.SOURCE_REMOVE;
+                    }
+                    return GLib.SOURCE_CONTINUE;
+                });
+            });
+        };
+
+        const checkWidgets = async () => {
+            return new Promise(resolve => {
+                let attempts = 0;
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
+                    attempts++;
+                    const dw = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
+                    const layer = dw?.stateObj?._controller?._layer ||
+                        this._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer') || c.name === 'widget-layer');
+                    if ((layer && layer.get_children().length > 0) || attempts > 25) {
+                        resolve();
+                        return GLib.SOURCE_REMOVE;
+                    }
+                    return GLib.SOURCE_CONTINUE;
+                });
+            });
+        };
+
+        const timeoutBarrier = new Promise(resolve => {
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, STARTUP_TIMEOUT_MS, () => {
+                resolve();
                 return GLib.SOURCE_REMOVE;
-            }));
-            dockContainer = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
-            dockAttempts++;
-        }
+            });
+        });
+
+        // Trigger prewarming during the startup barrier
+        try {
+            if (typeof globalThis._macPrewarmSpotlight === 'function') {
+                globalThis._macPrewarmSpotlight();
+            }
+        } catch (_) {}
+
+        // Race parallel ready checks against timeout barrier
+        await Promise.race([
+            Promise.all([checkExtensions(), checkDock(), checkLiquidGlass(), checkWidgets()]),
+            timeoutBarrier
+        ]);
+
+        // Dock initial state: zero opacity for synchronized reveal
+        let dockContainer = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
         if (dockContainer) {
             dockContainer.remove_all_transitions();
             dockContainer.opacity = 0;
@@ -1117,52 +1159,6 @@ export const LayoutManager = GObject.registerClass({
                 sub.opacity = 0;
             }
         }
-
-        // 3. Wait for Liquid Glass to attach to Dash to Dock and create its background actor
-        const waitForLiquidGlass = async () => {
-            let attempts = 0;
-            while (attempts < 40) {
-                const lg = Main.extensionManager?.lookup('liquid-glass@thinkingcoding1231.gmail.com');
-                const docks = lg?.stateObj?._dashDocks;
-                if (docks && docks.length > 0) {
-                    const manager = docks[0].manager;
-                    if (manager && manager.bgActor) {
-                        return;
-                    }
-                }
-                await new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
-                    r();
-                    return GLib.SOURCE_REMOVE;
-                }));
-                attempts++;
-            }
-        };
-        await waitForLiquidGlass();
-
-        // 4. Wait for Desktop Widgets to create and populate its widget layer
-        const waitForDesktopWidgets = async () => {
-            let attempts = 0;
-            while (attempts < 30) {
-                const dw = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
-                const layer = dw?.stateObj?._controller?._layer ||
-                    this._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer') || c.name === 'widget-layer');
-                if (layer && layer.get_children().length > 0) {
-                    return;
-                }
-                await new Promise(r => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
-                    r();
-                    return GLib.SOURCE_REMOVE;
-                }));
-                attempts++;
-            }
-        };
-        await waitForDesktopWidgets();
-
-        // 5. Final stabilization barrier (250 ms — ensures Clutter has painted first frame offscreen)
-        await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, () => {
-            resolve();
-            return GLib.SOURCE_REMOVE;
-        }));
 
         // Clean up listeners
         if (this._macBgChildAddedId && this._backgroundGroup) {
@@ -1174,8 +1170,8 @@ export const LayoutManager = GObject.registerClass({
             this._macUiGroupChildAddedId = null;
         }
 
-        // 6. NOW TRIGGER SYNCHRONIZED REVEAL!
-        const DURATION = 650;
+        // 2. NOW TRIGGER SYNCHRONIZED REVEAL (Crisp 380ms Ease-Out Cubic)
+        const DURATION = 380;
         const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
 
         // Menubar slides down from top
