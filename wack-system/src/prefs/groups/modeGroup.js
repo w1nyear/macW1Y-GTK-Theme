@@ -415,9 +415,9 @@ export function buildModeGroup(settings, window, _, settingsSignalIds, cleanupCa
         }
 
         if (isCup) {
-            modeRow.subtitle = _('A complete macOS Sonoma-inspired lockscreen layout (Click user-icon to switch users).');
+            modeRow.subtitle = _('A complete macW1Y Sonoma-inspired lockscreen layout (Click user-icon to switch users).');
         } else {
-            modeRow.subtitle = _('macOS Sonoma-style clock over the classic, GNOME-compliant layout and flow.');
+            modeRow.subtitle = _('macW1Y Sonoma-style clock over the classic, GNOME-compliant layout and flow.');
         }
 
         // Always keep it expandable since both modes now have sub-settings, but do not auto-expand

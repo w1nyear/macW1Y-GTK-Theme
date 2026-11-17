@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macOS-style topbar status indicators: a moon left of the ydotool button
+// macW1Y-style topbar status indicators: a moon left of the ydotool button
 // while Focus (Do Not Disturb) is on, and an airplane glyph next to the
 // Wi-Fi icon while Airplane Mode is on. Pure indicators: reactive=false,
 // no click handlers - they show state and nothing else.

@@ -1,5 +1,5 @@
 /*
- * Kiwi is not Apple – macOS-inspired enhancements for GNOME Shell.
+ * Kiwi is not macW1Y – macW1Y-inspired enhancements for GNOME Shell.
  * Copyright (C) 2025  Arnis Kemlers
  *
  * This program is free software: you can redistribute it and/or modify

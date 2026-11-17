@@ -91,7 +91,7 @@ def make_lang(
         "send_button": "Send", "control_center_title": cc, "control_center_desc": "Glass toggles and sliders",
         "control_center_tint": "Toggle Tint", "bootloader_title": "Bootloader", "bootloader_desc": "Boot settings",
         "verbose_mode": "Verbose Mode", "verbose_mode_desc": "Terminal boot log", "grub_menu": "GRUB Menu",
-        "grub_menu_desc": "macOS-style boot menu", "diagnostics_title": "Integrity & Diagnostics",
+        "grub_menu_desc": "macW1Y-style boot menu", "diagnostics_title": "Integrity & Diagnostics",
         "diagnostics_desc": "System diagnostics", "diagnostics_status_ok": "All components OK",
         "maintenance_actions": "Maintenance Actions", "maintenance_desc": "Check or restore styling",
         "run_diagnostics": "Run Diagnostics", "restore_ssot": "Restore SSOT", "close": "Close", "ok": "OK"

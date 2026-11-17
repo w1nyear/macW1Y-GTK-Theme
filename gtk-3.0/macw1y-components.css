@@ -76,7 +76,7 @@ scale slider {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
 }
 
-/* GTK 3 Base Push Buttons (macOS Tahoe Flat Push Buttons) */
+/* GTK 3 Base Push Buttons (macW1Y Tahoe Flat Push Buttons) */
 button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill) {
   min-height: 24px;
   padding: 3px 12px;
@@ -124,7 +124,7 @@ button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not
   color: @theme_fg_color;
 }
 
-/* macOS Tahoe Universal 1:1 Circular Icon & Action Buttons (Etap 655) */
+/* macW1Y Tahoe Universal 1:1 Circular Icon & Action Buttons (Etap 655) */
 headerbar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button),
 .titlebar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button),
 headerbar button.image-button,
@@ -401,7 +401,7 @@ button.circular image {
   min-height: 16px;
 }
 
-/* GTK 3 Window Controls (macOS Traffic Lights) */
+/* GTK 3 Window Controls (macW1Y Traffic Lights) */
 headerbar button.titlebutton,
 .titlebar button.titlebutton,
 windowcontrols button,
@@ -502,7 +502,7 @@ window dialog headerbar .title {
 }
 
 /* =========================================================================
- * 100. Nautilus & File Thumbnails Clean Transparency (macOS Finder style)
+ * 100. Nautilus & File Thumbnails Clean Transparency (macW1Y Finder style)
  * ========================================================================= */
 window.nautilus-window .view .thumbnail,
 window.nautilus-window .nautilus-properties .thumbnail,
@@ -530,7 +530,7 @@ widget.thumbnail {
 }
 
 /* =========================================================================
- * Dropdowns & Selection Controls (macOS Tahoe Circular Badge Dropdowns)
+ * Dropdowns & Selection Controls (macW1Y Tahoe Circular Badge Dropdowns)
  * ========================================================================= */
 combobox,
 combobox > box.linked > button,
@@ -589,7 +589,7 @@ combobox > box.linked > button:checked arrow {
 }
 
 /* =========================================================================
- * Checkboxes & Radio Buttons (macOS Tahoe Solid Circle + Accent Dot)
+ * Checkboxes & Radio Buttons (macW1Y Tahoe Solid Circle + Accent Dot)
  * ========================================================================= */
 checkbutton check {
   min-width: 18px;
@@ -609,7 +609,7 @@ checkbutton check:indeterminate {
   color: @theme_selected_fg_color;
 }
 
-/* macOS Radio Button: Solid filled circle when unselected, Accent with white dot when selected */
+/* macW1Y Radio Button: Solid filled circle when unselected, Accent with white dot when selected */
 checkbutton radio,
 radio {
   min-width: 18px;

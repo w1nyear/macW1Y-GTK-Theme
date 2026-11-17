@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Конструктор картки сповіщення macOS Tahoe (kiwi@kemma).
+// Конструктор картки сповіщення macW1Y Tahoe (kiwi@kemma).
 // ВЕРСІЯ v4: у режимі переробки UI сповіщень залишено ТІЛЬКИ картку —
 // MacNotificationGroup і NotificationsController видалено (стеки банерів
 // та старий контролер перероблятимуться заново).
@@ -330,7 +330,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     let bodyLabel = null;
 
     if (isScreenshot) {
-        // Канонічний вигляд скріншотів macOS:
+        // Канонічний вигляд скріншотів macW1Y:
         // Рядок 1: Назва програми «Скріншот» (bold 700)
         // Рядок 2: Заголовок «Скріншот створено» (regular 400)
         // Рядок 3: Додаткова інструкція/статус (якщо не порожнє)
@@ -339,7 +339,7 @@ export function buildNotificationCard(source, notification, options = {}) {
             text: shotApp,
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
-            style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: #ffffff !important; font-size: 12.5px !important; font-weight: 700 !important;',
+            style: 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; color: #ffffff !important; font-size: 12.5px !important; font-weight: 700 !important;',
         });
         try { appLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
         contentBox.add_child(appLabel);
@@ -347,7 +347,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         const shotTitle = rawTitle || t('screenshot_taken', 'Скріншот створено');
         titleLabel = new St.Label({
             x_expand: true,
-            style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.95) !important; font-size: 13.5px !important; font-weight: 400 !important;',
+            style: 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; color: rgba(255, 255, 255, 0.95) !important; font-size: 13.5px !important; font-weight: 400 !important;',
         });
         setLabelMarkup(titleLabel, shotTitle);
         try { titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
@@ -356,7 +356,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         if (bodyText) {
             bodyLabel = new St.Label({
                 x_expand: true,
-                style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.78) !important; font-size: 12px !important; font-weight: 400 !important;',
+                style: 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; color: rgba(255, 255, 255, 0.78) !important; font-size: 12px !important; font-weight: 400 !important;',
             });
             setLabelMarkup(bodyLabel, bodyText);
             bodyLabel.clutter_text.single_line_mode = false;
@@ -376,8 +376,8 @@ export function buildNotificationCard(source, notification, options = {}) {
                 y_align: Clutter.ActorAlign.CENTER,
                 x_expand: true,
                 style: isCritical
-                    ? 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: #ff453a !important; font-size: 13px !important; font-weight: 700 !important;'
-                    : 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: #ffffff !important; font-size: 12.5px !important; font-weight: 700 !important;',
+                    ? 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; color: #ff453a !important; font-size: 13px !important; font-weight: 700 !important;'
+                    : 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; color: #ffffff !important; font-size: 12.5px !important; font-weight: 700 !important;',
             });
             try { appLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
             contentBox.add_child(appLabel);
@@ -388,7 +388,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         if (displayTitle && (!isDuplicateTitle || !hasBody)) {
             titleLabel = new St.Label({
                 x_expand: true,
-                style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.95) !important; font-size: 13.5px !important; font-weight: 400 !important;',
+                style: 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; color: rgba(255, 255, 255, 0.95) !important; font-size: 13.5px !important; font-weight: 400 !important;',
             });
             setLabelMarkup(titleLabel, displayTitle);
             try { titleLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
@@ -398,7 +398,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         if (hasBody) {
             bodyLabel = new St.Label({
                 x_expand: true,
-                style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.85) !important; font-size: 12.5px !important; font-weight: 400 !important;',
+                style: 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; color: rgba(255, 255, 255, 0.85) !important; font-size: 12.5px !important; font-weight: 400 !important;',
             });
             setLabelMarkup(bodyLabel, bodyText);
             bodyLabel.clutter_text.single_line_mode = false;
@@ -427,8 +427,8 @@ export function buildNotificationCard(source, notification, options = {}) {
         actionsBox.set_width(contentW);
         actionsBox.max_width = contentW;
         const btnStyleBase = isScreenshot
-            ? 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 9999px !important; padding: 4px 14px !important; font-size: 11px !important; font-weight: 500 !important; margin-right: 6px !important;'
-            : 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 9999px !important; padding: 5px 16px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-right: 6px !important;';
+            ? 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 9999px !important; padding: 4px 14px !important; font-size: 11px !important; font-weight: 500 !important; margin-right: 6px !important;'
+            : 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 9999px !important; padding: 5px 16px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-right: 6px !important;';
         const btnStyleHover = btnStyleBase.replace('0.16', '0.26').replace('0.14', '0.20');
 
         for (const action of notification.actions) {
@@ -458,7 +458,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         text: formatToastAge(notification.datetime),
         x_align: Clutter.ActorAlign.END,
         y_align: Clutter.ActorAlign.START,
-        style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; color: rgba(255, 255, 255, 0.55) !important; font-size: 12px !important; font-weight: 500 !important; margin-top: 5px !important; margin-right: 0px !important;',
+        style: 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; color: rgba(255, 255, 255, 0.55) !important; font-size: 12px !important; font-weight: 500 !important; margin-top: 5px !important; margin-right: 0px !important;',
     });
     try { timeLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
 

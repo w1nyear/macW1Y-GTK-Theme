@@ -38,9 +38,9 @@ def main():
 
     paths = [
         (os.path.expanduser("~/.themes/macW1Y-Dark/gnome-shell/gnome-shell.css"), False),
-        (os.path.expanduser("~/.themes/MacTahoe-Dark/gnome-shell/gnome-shell.css"), False),
+        (os.path.expanduser("~/.themes/macW1Y-Dark/gnome-shell/gnome-shell.css"), False),
         (os.path.expanduser("~/.themes/macW1Y-Light/gnome-shell/gnome-shell.css"), True),
-        (os.path.expanduser("~/.themes/MacTahoe-Light/gnome-shell/gnome-shell.css"), True)
+        (os.path.expanduser("~/.themes/macW1Y-Light/gnome-shell/gnome-shell.css"), True)
     ]
 
     for css_path, is_light in paths:

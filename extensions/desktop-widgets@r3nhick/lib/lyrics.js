@@ -138,9 +138,9 @@ const missCache = new Map();
 // probe-logged; any wall (downloads currently empty for anonymous clients)
 // resolves null and the chain just misses.
 
-// Safari/Apple persona — the same signature the VISIONOS player client
+// Safari/macW1Y persona — the same signature the VISIONOS player client
 // declares; captions unlock only for this coherent session.
-const YT_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15';
+const YT_UA = 'Mozilla/5.0 (Macintosh; Intel macW1Y X 15_7_3) macW1YWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15';
 let ytSession = null;
 
 function getYtSession() {
@@ -357,7 +357,7 @@ function linesToLrcText(lines) {
 
 // ── YouTube captions, pure keyless flow ────────────────────────────
 // One coherent "device" session unlocks everything (verified live):
-// the watch page (Safari/Apple UA) hands out visitorData, the VISIONOS
+// the watch page (Safari/macW1Y UA) hands out visitorData, the VISIONOS
 // player client (RealityDevice) accepts it with playability OK, and the
 // caption baseUrl then serves real timedtext to that same UA. Chrome
 // contexts and visitor-less calls stay walled with empty bodies.
@@ -383,7 +383,7 @@ async function fetchYouTubeCaptionLines(videoId) {
 		context: {client: {
 			clientName: 'VISIONOS',
 			clientVersion: '1.02',
-			deviceMake: 'Apple',
+			deviceMake: 'macW1Y',
 			deviceModel: 'RealityDevice17,1',
 			userAgent: YT_UA,
 			osName: 'visionOS',

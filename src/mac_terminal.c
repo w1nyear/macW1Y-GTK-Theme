@@ -11,12 +11,12 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
 /* =========================================================================
- * macW1Y macOS Tahoe Terminal (Ptyxis) Customizer & Redesign
+ * macW1Y macW1Y Tahoe Terminal (Ptyxis) Customizer & Redesign
  *
- * Implements 1:1 macOS Terminal header bar & layout:
+ * Implements 1:1 macW1Y Terminal header bar & layout:
  * - Window controls (traffic lights) on the left.
  * - All other buttons (new tab splitbutton, menu button, overview) removed.
- * - Dynamic macOS title: [📁] <folder> — <path> — <columns>x<rows>
+ * - Dynamic macW1Y title: [📁] <folder> — <path> — <columns>x<rows>
  * - Folder tracking via VTE URI and /proc/<tcgetpgrp>/cwd.
  * - Live window dimensions tracking (e.g. 120x30).
  * ========================================================================= */
@@ -289,7 +289,7 @@ static void init_terminal_css(void) {
         "   box-shadow: none;"
         "   opacity: 0;"
         "}"
-        /* Header bar: authentic macOS 34px height, 100% transparent so the dark */
+        /* Header bar: authentic macW1Y 34px height, 100% transparent so the dark */
         /* window background seamlessly shows through — NEVER turns white! */
         ".ptyxis-window headerbar,"
         ".ptyxis-window headerbar.flat,"
@@ -353,15 +353,15 @@ static void init_terminal_css(void) {
         "   min-height: 14px;"
         "   margin-right: 4px;"
         "}"
-        /* Authentic compact macOS titlebar typography matching Photo 2 */
+        /* Authentic compact macW1Y titlebar typography matching Photo 2 */
         ".mac-terminal-folder-label {"
-        "   font-family: 'SF Mono', monospace;"
+        "   font-family: 'Default Mono', monospace;"
         "   font-weight: 500;"
         "   font-size: 11px;"
         "   color: #ffffff;"
         "}"
         ".mac-terminal-sep {"
-        "   font-family: 'SF Mono', monospace;"
+        "   font-family: 'Default Mono', monospace;"
         "   font-weight: 400;"
         "   font-size: 11px;"
         "   color: rgba(255, 255, 255, 0.45);"
@@ -369,13 +369,13 @@ static void init_terminal_css(void) {
         "   margin-right: 3px;"
         "}"
         ".mac-terminal-path-label {"
-        "   font-family: 'SF Mono', monospace;"
+        "   font-family: 'Default Mono', monospace;"
         "   font-weight: 400;"
         "   font-size: 11px;"
         "   color: rgba(255, 255, 255, 0.85);"
         "}"
         ".mac-terminal-size-label {"
-        "   font-family: 'SF Mono', monospace;"
+        "   font-family: 'Default Mono', monospace;"
         "   font-weight: 400;"
         "   font-size: 11px;"
         "   color: rgba(255, 255, 255, 0.85);"
@@ -480,7 +480,7 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
         }
     }
 
-    /* 3. Create macOS Terminal title box: [📁] folder — path — 120x30 */
+    /* 3. Create macW1Y Terminal title box: [📁] folder — path — 120x30 */
     GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
     gtk_widget_add_css_class(box, "mac-terminal-title-box");
     gtk_widget_set_valign(box, GTK_ALIGN_CENTER);
@@ -488,13 +488,13 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
     gtk_widget_set_margin_top(box, 0);
     gtk_widget_set_margin_bottom(box, 0);
 
-    /* Load authentic macOS folder icon at exact 14x14 size */
+    /* Load authentic macW1Y folder icon at exact 14x14 size */
     GtkWidget *icon = NULL;
     const char *folder_icon_paths[] = {
-        "/usr/share/icons/MacTahoe-dark/places/scalable/folder.svg",
-        "/home/vitaliy/.local/share/icons/MacTahoe-dark/places/scalable/folder.svg",
-        "/usr/share/icons/MacTahoe/places/scalable/folder.svg",
-        "/home/vitaliy/.local/share/icons/MacTahoe/places/scalable/folder.svg",
+        "/usr/share/icons/macW1Y-dark/places/scalable/folder.svg",
+        "/home/vitaliy/.local/share/icons/macW1Y-dark/places/scalable/folder.svg",
+        "/usr/share/icons/macW1Y/places/scalable/folder.svg",
+        "/home/vitaliy/.local/share/icons/macW1Y/places/scalable/folder.svg",
         NULL
     };
     for (int i = 0; folder_icon_paths[i]; i++) {

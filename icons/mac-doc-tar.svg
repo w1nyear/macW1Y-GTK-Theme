@@ -15,7 +15,7 @@
       <circle cx="31" cy="42" r="2" fill="#a0a0a8"/>
     
   <!-- Extension Label Text -->
-  <text x="31" y="54" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Helvetica, sans-serif" font-size="7.5" font-weight="700" fill="#8e8e93" text-anchor="middle">TAR</text>
+  <text x="31" y="54" font-family="default, system-ui, sans-serif, BlinkMacSystemFont, 'Default', Helvetica, sans-serif" font-size="7.5" font-weight="700" fill="#8e8e93" text-anchor="middle">TAR</text>
   <!-- App / Format Badge -->
   
           <g transform="translate(44, 52)">

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macOS-style top bar buttons: Battery (percentage + icon, opens
+// macW1Y-style top bar buttons: Battery (percentage + icon, opens
 // Settings -> Power) and Search (opens Spotlight, falls back to overview).
 
 import Clutter from 'gi://Clutter';
@@ -105,7 +105,7 @@ function _onBatteryRepaint(area) {
         cr.rectangle(bx, by, fillW, bh);
 
         if (charging) {
-            // macOS vivid green while charging (#28cd41)
+            // macW1Y vivid green while charging (#28cd41)
             cr.setSourceRGBA(40 / 255, 205 / 255, 65 / 255, 1.0);
         } else if (pct <= 0.10) {
             cr.setSourceRGBA(255 / 255, 59 / 255, 48 / 255, 1.0);
@@ -263,7 +263,7 @@ function _syncBatteryPercentageVisibility() {
 }
 
 function _openPowerSettings() {
-    // GNOME Settings -> Power panel (macOS: clicking battery opens settings)
+    // GNOME Settings -> Power panel (macW1Y: clicking battery opens settings)
     try {
         GLib.spawn_command_line_async('gnome-control-center power');
         return;

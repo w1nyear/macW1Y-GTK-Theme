@@ -881,7 +881,7 @@ export class QuickSettingsManager {
             let hasBase = !!(entry && entry.baseAlpha > 0.02);
             let base = hasBase ? entry.baseColor : this._tintColorArray;
             // Weighted by the pod's coverage: with a theme whose panel is
-            // see-through (MacTahoe) a toggle's two states can differ only in
+            // see-through (macW1Y) a toggle's two states can differ only in
             // alpha. Where the panel is opaque the coverage is always 1.
             let baseStrength = hasBase ? this._toggleBaseStrength * entry.baseAlpha : 0.0;
             layout.regions.push({

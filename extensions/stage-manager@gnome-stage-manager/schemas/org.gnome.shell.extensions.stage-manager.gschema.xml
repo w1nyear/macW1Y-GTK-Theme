@@ -64,7 +64,7 @@
         <key name="sidebar-reserve-space" type="b">
             <default>false</default>
             <summary>Reserve Space for the Sidebar</summary>
-            <description>Shrink the work area so maximized windows stop underneath the sidebar instead of being covered by it, the way macOS shifts the stage across. Only applies when auto-hide is off, because a reserved strut cannot animate.</description>
+            <description>Shrink the work area so maximized windows stop underneath the sidebar instead of being covered by it, the way macW1Y shifts the stage across. Only applies when auto-hide is off, because a reserved strut cannot animate.</description>
         </key>
 
         <key name="auto-hide-delay" type="i">

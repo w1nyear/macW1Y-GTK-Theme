@@ -11,11 +11,11 @@ import GLib from 'gi://GLib';
 
 Gio._promisify(Gio.File.prototype, 'load_contents_async', 'load_contents_finish');
 
-const MARKER_BEGIN = '/* Kiwi (is not Apple) - managed imports: begin */';
-const MARKER_END = '/* Kiwi (is not Apple) - managed imports: end */';
+const MARKER_BEGIN = '/* Kiwi Component Suite - managed imports: begin */';
+const MARKER_END = '/* Kiwi Component Suite - managed imports: end */';
 
 // Matches the whole managed block, including the markers themselves.
-const MANAGED_BLOCK_REGEX = /\/\* Kiwi \(is not Apple\) - managed imports: begin \*\/[\s\S]*?\/\* Kiwi \(is not Apple\) - managed imports: end \*\/\n?/g;
+const MANAGED_BLOCK_REGEX = /\/\* Kiwi \(is not macW1Y\) - managed imports: begin \*\/[\s\S]*?\/\* Kiwi \(is not macW1Y\) - managed imports: end \*\/\n?/g;
 
 // Matches any single-line @import pointing into the extension, in any quoting
 // style. Cleans up the unmarked imports written by versions <= 1.9.1.

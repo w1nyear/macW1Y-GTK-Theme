@@ -114,8 +114,8 @@ if [ "$DO_CHECK" -eq 1 ]; then
     fi
 
     # 3. Plymouth logger check
-    if [ -f /etc/systemd/system/plymouth-verbose-logger.service ] || [ -f /usr/share/plymouth/themes/apple-mac/verbose_on.png ]; then
-        echo -e "   [${C_YELLOW}!${C_RESET}] Plymouth verbose logger files are present (can cause text leak over Apple splash)"
+    if [ -f /etc/systemd/system/plymouth-verbose-logger.service ] || [ -f /usr/share/plymouth/themes/macw1y-boot/verbose_on.png ]; then
+        echo -e "   [${C_YELLOW}!${C_RESET}] Plymouth verbose logger files are present (can cause text leak over macW1Y splash)"
     else
         echo -e "   [${C_GREEN}✓${C_RESET}] Plymouth verbose logger is cleanly disabled"
     fi
@@ -176,13 +176,13 @@ fi
 rm -f /var/tmp/mactheme-overlay-* /tmp/mactheme-overlay-* /tmp/disable-mactheme-overlay
 echo -e "   ${C_GREEN}✓${C_RESET} Cleared watchdog crash lockouts"
 
-echo -e "\n${C_BOLD}${C_BLUE}▶ [4/6] Silencing Plymouth & terminal logging to protect Apple splash...${C_RESET}"
+echo -e "\n${C_BOLD}${C_BLUE}▶ [4/6] Silencing Plymouth & terminal logging to protect macW1Y splash...${C_RESET}"
 systemctl stop plymouth-verbose-logger.service 2>/dev/null || true
 systemctl disable plymouth-verbose-logger.service 2>/dev/null || true
 rm -f /etc/systemd/system/plymouth-start.service.d/verbose-logger.conf
 rm -f /etc/systemd/system/plymouth-verbose-logger.service
 rm -f /usr/local/bin/plymouth-verbose-logger
-rm -f /usr/share/plymouth/themes/apple-mac/verbose_on.png
+rm -f /usr/share/plymouth/themes/macw1y-boot/verbose_on.png
 rm -f /etc/plymouth/verbose_on
 echo -e "   ${C_GREEN}✓${C_RESET} Verbose terminal kernel logger silenced"
 
@@ -193,8 +193,8 @@ ExecStart=
 ExecStart=-/usr/bin/plymouth quit --retain-splash
 EOF
 
-if [ -f /usr/share/plymouth/themes/apple-mac/apple-mac.plymouth ]; then
-    update-alternatives --set default.plymouth /usr/share/plymouth/themes/apple-mac/apple-mac.plymouth 2>/dev/null || true
+if [ -f /usr/share/plymouth/themes/macw1y-boot/macw1y-boot.plymouth ]; then
+    update-alternatives --set default.plymouth /usr/share/plymouth/themes/macw1y-boot/macw1y-boot.plymouth 2>/dev/null || true
 fi
 
 GRUB_DEFAULT="/etc/default/grub"

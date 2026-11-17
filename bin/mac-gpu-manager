@@ -328,7 +328,7 @@ def print_status():
     prime = get_current_prime()
     targets = get_targets()
     print("=" * 50)
-    print("  macOS Style GPU Manager for Hybrid Laptops")
+    print("  macW1Y Style GPU Manager for Hybrid Laptops")
     print("=" * 50)
     print(f"Active Mode        : {mode} ({MODE_DESCRIPTIONS.get(mode, 'Unknown')})")
     print(f"prime-select state : {prime}")

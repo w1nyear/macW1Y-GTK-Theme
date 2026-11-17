@@ -12,7 +12,7 @@
   padding: 3px 9px;
 }
 
-/* Nautilus grid view: accent background on selected file names, like macOS.
+/* Nautilus grid view: accent background on selected file names, like macW1Y.
    Nautilus forces a gray accent on its gridview, so the real one is captured
    on the parent first. */
 .nautilus-grid-view {
@@ -51,7 +51,7 @@ listview.view > row.activatable > cell {
   min-height: 16px;
 }
 
-/* Remove checkered alpha channel drawing around thumbnails and icons. Creates cleaner macOS look */
+/* Remove checkered alpha channel drawing around thumbnails and icons. Creates cleaner macW1Y look */
 window.nautilus-window .view .thumbnail,
 window.nautilus-window .nautilus-properties .thumbnail,
 window.nautilus-window .nautilus-grid-view .thumbnail,
@@ -244,7 +244,7 @@ viewport overshoot {
 }
 
 /* ============================================================
-   macOS Top Bar & List Dissolve Shader:
+   macW1Y Top Bar & List Dissolve Shader:
    Gradient starts from the very beginning of the top panel
    across Settings and all applications
    ============================================================ */
@@ -413,7 +413,7 @@ window.nautilus-window .sidebar-pane headerbar {
   box-shadow: none;
 }
 
-/* Settings content list and applications: Soft macOS Tahoe gradient dissolve when scrolled */
+/* Settings content list and applications: Soft macW1Y Tahoe gradient dissolve when scrolled */
 scrolledwindow > undershoot,
 undershoot {
   min-height: 0px;

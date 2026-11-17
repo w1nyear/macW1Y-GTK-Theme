@@ -98,7 +98,7 @@ headerbar centerbox {
 }
 
 /* =========================================================================
- * 1.1 macOS Authentic Sidebar Header: Clean Window Controls, No Redundant App Title
+ * 1.1 macW1Y Authentic Sidebar Header: Clean Window Controls, No Redundant App Title
  * ========================================================================= */
 navigation-split-view .sidebar-pane headerbar windowtitle,
 navigation-split-view .sidebar-pane headerbar label.title,
@@ -218,7 +218,7 @@ window.filechooser headerbar .title {
 }
 
 /* =========================================================================
- * 2. Navigation Sidebars (macOS Sequoia / Tahoe Item Styling)
+ * 2. Navigation Sidebars (macW1Y Sequoia / Tahoe Item Styling)
  * ========================================================================= */
 navigation-split-view list,
 overlay-split-view list,
@@ -1031,7 +1031,7 @@ levelbar trough block.filled {
 }
 
 /* =========================================================================
- * 6. Buttons, Segmented Controls & Keycaps (macOS Tahoe Flat Push Buttons)
+ * 6. Buttons, Segmented Controls & Keycaps (macW1Y Tahoe Flat Push Buttons)
  * ========================================================================= */
 button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill),
 button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
@@ -1087,7 +1087,7 @@ window.dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):n
   color: @window_fg_color;
 }
 
-/* Headerbar control buttons - macOS style (excluding windowcontrols and splitbuttons) */
+/* Headerbar control buttons - macW1Y style (excluding windowcontrols and splitbuttons) */
 headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button),
 .titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
 headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
@@ -1360,7 +1360,7 @@ NautilusHistoryControls button:active {
 }
 
 /* Nautilus View Controls (splitbutton: grid/list + options dropdown) —
-   macOS Tahoe Finder pill capsule with circular ends */
+   macW1Y Tahoe Finder pill capsule with circular ends */
 .nautilus-window headerbar splitbutton,
 .nautilus-window headerbar NautilusViewControls splitbutton,
 .nautilus-window headerbar #view_split_button,
@@ -1575,7 +1575,7 @@ headerbar splitbutton icon,
   padding: 0;
 }
 
-/* Flat and icon-only buttons in content rows (macOS circular 1:1) */
+/* Flat and icon-only buttons in content rows (macW1Y circular 1:1) */
 adwactionrow button.image-button,
 adwactionrow button.circular,
 preferencespage row button.image-button,
@@ -1930,7 +1930,7 @@ searchbar {
 }
 
 /* =========================================================================
- * 8. Dropdowns & Selection Controls (macOS Tahoe Flat Seamless + Circular Badge)
+ * 8. Dropdowns & Selection Controls (macW1Y Tahoe Flat Seamless + Circular Badge)
  * ========================================================================= */
 dropdown,
 combobox,
@@ -2022,7 +2022,7 @@ list.boxed-list row combobox {
 }
 
 /* =========================================================================
- * 9. Checkboxes & Radio Buttons (macOS Tahoe Solid Circle + Accent Dot)
+ * 9. Checkboxes & Radio Buttons (macW1Y Tahoe Solid Circle + Accent Dot)
  * ========================================================================= */
 checkbutton check {
   min-width: 18px;
@@ -2042,7 +2042,7 @@ checkbutton check:indeterminate {
   color: @accent_fg_color;
 }
 
-/* macOS Radio Button: Solid filled circle when unselected, Accent with white dot when selected */
+/* macW1Y Radio Button: Solid filled circle when unselected, Accent with white dot when selected */
 checkbutton radio,
 radio {
   min-width: 18px;
@@ -2198,7 +2198,7 @@ menu menuitem:hover {
 }
 
 /* =========================================================================
- * 12. Window Controls (macOS Traffic Lights)
+ * 12. Window Controls (macW1Y Traffic Lights)
  * ========================================================================= */
 headerbar windowcontrols,
 windowcontrols,
@@ -2310,7 +2310,7 @@ windowcontrols button image,
   border: none;
 }
 
-/* Ensure macOS Traffic Light button images bind properly across all container variations */
+/* Ensure macW1Y Traffic Light button images bind properly across all container variations */
 .nautilus-window windowcontrols button.close,
 .nautilus-window headerbar windowcontrols button.close,
 .sidebar-pane headerbar windowcontrols button.close,
@@ -2445,7 +2445,7 @@ headerbar windowcontrols button.maximize:active {
 }
 
 /* =========================================================================
- * 13. Scrolled Lists & Undershoot Soft macOS Gradient Dissolve
+ * 13. Scrolled Lists & Undershoot Soft macW1Y Gradient Dissolve
  * ========================================================================= */
 undershoot,
 scrolledwindow > undershoot {
@@ -2783,7 +2783,7 @@ window.filechooser headerbar .title {
 }
 
 /* =========================================================================
- * 100. Nautilus & File Thumbnails Clean Transparency (macOS Finder style)
+ * 100. Nautilus & File Thumbnails Clean Transparency (macW1Y Finder style)
  * ========================================================================= */
 window.nautilus-window .view .thumbnail,
 window.nautilus-window .nautilus-properties .thumbnail,
@@ -2815,7 +2815,7 @@ widget.thumbnail {
 }
 
 /* =========================================================================
- * 101. Nautilus & File Grid View Selection & Hover (macOS Finder style: label pill)
+ * 101. Nautilus & File Grid View Selection & Hover (macW1Y Finder style: label pill)
  * ========================================================================= */
 .nautilus-grid-view gridview > child:selected,
 window.nautilus-window .nautilus-grid-view gridview > child:selected,

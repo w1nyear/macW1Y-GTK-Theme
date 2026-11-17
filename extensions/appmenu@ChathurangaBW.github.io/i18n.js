@@ -1,5 +1,5 @@
 /**
- * AppMenu i18n — Universal macOS Menu Localization Engine.
+ * AppMenu i18n — Universal macW1Y Menu Localization Engine.
  * Supports Ukrainian, Polish, Russian, English, German, French, Spanish, Italian, etc.
  * Dynamically resolves active system language and translates all static and dynamic menu items.
  */

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-mac-installer-gui — macOS Recovery Style GUI Installer for macW1Y
-Authentic recreation of macOS Recovery & Installation Wizard for Ubuntu/GNOME.
+mac-installer-gui — macW1Y Recovery Style GUI Installer for macW1Y
+Authentic recreation of macW1Y Recovery & Installation Wizard for Ubuntu/GNOME.
 """
 
 import sys
@@ -171,7 +171,7 @@ def setup_installer_session():
         "appmenu@ChathurangaBW.github.io",
         "kiwi@kemma",
         "desktop-widgets@r3nhick",
-        "macos-touchpad-gestures@mactheme",
+        "macw1y-touchpad-gestures@mactheme",
         "compiz-alike-magic-lamp-effect@hermes83.github.com",
         "cupertino-dock-lite@rinzler69-wastaken.github.com",
         "custom-command-toggle@storageb.github.com",
@@ -189,8 +189,8 @@ def setup_installer_session():
 
     subprocess.run(["gsettings", "set", "org.gnome.shell.extensions.user-theme", "name", "macW1Y-Dark"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
     subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "gtk-theme", "macW1Y-Dark"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
-    subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", "MacTahoe-dark"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
-    subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "font-name", "Inter 10"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", "macW1Y-dark"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "font-name", "default 10"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
 
 def get_user_avatar_path(username):
     candidates = [
@@ -478,7 +478,7 @@ popover.mac-popover-menu.mac-popover-closing > contents {
     transform: translateY(-4px) scale(0.97);
 }
 
-/* Hover Sliding Pill Indicator (macOS Sequoia / Sonoma / macW1Y authentic style) */
+/* Hover Sliding Pill Indicator (macW1Y Sequoia / Sonoma / macW1Y authentic style) */
 .mac-menu-hover-pill {
     background-color: @mac_accent_color;
     border-radius: 9999px;
@@ -556,7 +556,7 @@ popover.menu modelbutton:focus {
     font-weight: 400;
 }
 
-/* Rounded Pill Buttons (macOS Recovery style) */
+/* Rounded Pill Buttons (macW1Y Recovery style) */
 button.mac-btn-pill,
 .mac-btn-pill {
     background-color: rgba(255, 255, 255, 0.22);
@@ -1348,7 +1348,7 @@ class MacMenuPopover(Gtk.Popover):
 # ------------------------------------------------------------------------------
 class MacModalSheetHost(Gtk.Box):
     """
-    Host container for Alert Modals supporting authentic macOS spring pop entrance
+    Host container for Alert Modals supporting authentic macW1Y spring pop entrance
     and smooth ease-in scale down exit without spring.
     """
     def __init__(self):
@@ -1550,7 +1550,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             return GLib.SOURCE_REMOVE
 
         mapping = {
-            "apple": getattr(self, "btn_apple", None),
+            "main": getattr(self, "btn_main", None),
             "file": getattr(self, "btn_file", None),
             "edit": getattr(self, "btn_edit", None),
             "utils": getattr(self, "btn_utils", None),
@@ -1703,22 +1703,22 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
         bar.add_css_class("mac-recovery-menubar")
 
-        # Apple Icon
-        items_apple = [
+        # macW1Y Icon
+        items_main = [
             ("Про macW1Y", "app.about"),
             None,
             ("Перезавантажити...", "app.reboot"),
             ("Вимкнути комп'ютер...", "app.poweroff"),
         ]
 
-        apple_svg = os.path.join(ASSETS_DIR, "apple_logo.svg")
-        if os.path.exists(apple_svg):
-            img_apple = Gtk.Image.new_from_file(apple_svg)
-            img_apple.set_pixel_size(15)
-            self.btn_apple = self._make_menu_btn(None, items_apple, icon_widget=img_apple)
+        system_svg = os.path.join(ASSETS_DIR, "system_logo.svg")
+        if os.path.exists(system_svg):
+            img_logo = Gtk.Image.new_from_file(system_svg)
+            img_logo.set_pixel_size(15)
+            self.btn_main = self._make_menu_btn(None, items_main, icon_widget=img_logo)
         else:
-            self.btn_apple = self._make_menu_btn("", items_apple, is_bold=True)
-        bar.append(self.btn_apple)
+            self.btn_main = self._make_menu_btn("", items_main, is_bold=True)
+        bar.append(self.btn_main)
 
         # App Title
         lbl_app = Gtk.Label(label="Встановлення macW1Y")
@@ -1903,7 +1903,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
                 self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_RIGHT)
 
     # --------------------------------------------------------------------------
-    # Screen 0: Language Selection (macOS Setup Wizard style)
+    # Screen 0: Language Selection (macW1Y Setup Wizard style)
     # --------------------------------------------------------------------------
     def _build_screen_language(self):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -2434,9 +2434,9 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         terms_text = (
             "УКРАЇНСЬКА\n\n"
-            "КОРПОРАЦІЯ APPLE INC. / macW1Y\n"
+            "КОРПОРАЦІЯ macW1Y PROJECT / macW1Y\n"
             "ЛІЦЕНЗІЙНА УГОДА ПРО ВИКОРИСТАННЯ ПРОГРАМНОГО ЗАБЕЗПЕЧЕННЯ macW1Y\n\n"
-            "Для використання в системах Linux / macOS\n\n"
+            "Для використання в системах Linux / macW1Y\n\n"
             "УВАЖНО ОЗНАЙОМТЕСЬ З ЦІЄЮ ЛІЦЕНЗІЙНОЮ УГОДОЮ\n\n"
             "Цей програмний комплекс розповсюджується під ліцензією MIT / GPLv3. "
             "macW1Y розроблено виключно для особистого використання та кастомізації середовища GNOME на платформі Ubuntu Linux. "
@@ -3124,10 +3124,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     def _update_progress(self, pct, msg):
         stage_names = {
             "stage1": "Встановлення системних залежностей...",
-            "stage2": "Встановлення шрифтів Inter...",
+            "stage2": "Встановлення шрифтів за замовчуванням...",
             "stage3": "Встановлення тем macW1Y (GTK3, GTK4, Shell)...",
-            "stage4": "Встановлення MacTahoe іконок та панелей...",
-            "stage5": "Встановлення звукової теми macOS...",
+            "stage4": "Встановлення macW1Y іконок та панелей...",
+            "stage5": "Встановлення звукової теми macW1Y...",
             "stage6": "Встановлення шпалер Golden Gate...",
             "stage7": "Налаштування розширень GNOME Shell...",
             "stage8": "Інтеграція в меню Налаштування (Settings)...",
@@ -3154,10 +3154,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     def _parse_stage_line(self, line):
         stage_map = {
             "Stage 1/": (0.10, "Встановлення системних залежностей..."),
-            "Stage 2/": (0.20, "Встановлення шрифтів Inter..."),
+            "Stage 2/": (0.20, "Встановлення шрифтів за замовчуванням..."),
             "Stage 3/": (0.35, "Встановлення тем macW1Y (GTK3, GTK4, Shell)..."),
-            "Stage 4/": (0.45, "Встановлення MacTahoe іконок та панелей..."),
-            "Stage 5/": (0.55, "Встановлення звукової теми macOS..."),
+            "Stage 4/": (0.45, "Встановлення macW1Y іконок та панелей..."),
+            "Stage 5/": (0.55, "Встановлення звукової теми macW1Y..."),
             "Stage 6/": (0.65, "Встановлення шпалер Golden Gate..."),
             "Stage 7/": (0.75, "Налаштування розширень GNOME Shell..."),
             "Stage 8/": (0.82, "Інтеграція в меню Налаштування (Settings)..."),
@@ -3177,8 +3177,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         steps = [
             (0.05, "Перевірка системи та цільового диска..."),
             (0.15, "Встановлення системних залежностей..."),
-            (0.30, "Встановлення шрифтів Inter..."),
-            (0.45, "Встановлення тем оформлення MacTahoe..."),
+            (0.30, "Встановлення шрифтів за замовчуванням..."),
+            (0.45, "Встановлення тем оформлення macW1Y..."),
             (0.60, "Налаштування розширень GNOME Shell..."),
             (0.75, "Оновлення конфігурацій Dock та OSD..."),
             (0.90, "Оновлення системних кешів..."),
@@ -3270,7 +3270,7 @@ class MacRecoveryApp(Gtk.Application):
             kiosk_guard.enter()
 
         act_about = Gio.SimpleAction.new("about", None)
-        act_about.connect("activate", lambda a, p: self.win._show_simple_alert("Про macW1Y", f"macW1Y Release (v{get_modpack_version()})\nmacOS Transformation Modpack for Ubuntu"))
+        act_about.connect("activate", lambda a, p: self.win._show_simple_alert("Про macW1Y", f"macW1Y Release (v{get_modpack_version()})\nmacW1Y Transformation Modpack for Ubuntu"))
         self.add_action(act_about)
 
         act_reboot = Gio.SimpleAction.new("reboot", None)

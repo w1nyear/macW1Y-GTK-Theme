@@ -44,7 +44,7 @@ const OverflowBin = GObject.registerClass(
     });
 
 /**
- * Cupertino System Actions (CSA): macOS-style Suspend / Restart / Power Off
+ * Cupertino System Actions (CSA): macW1Y-style Suspend / Restart / Power Off
  * buttons under the GDM user list. Each button follows SystemActions, which
  * already honours logind availability and org.gnome.login-screen
  * disable-restart-buttons. While enabled, the Quick Settings power menu is

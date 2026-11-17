@@ -1,6 +1,6 @@
 #!/bin/sh
 # macW1Y — GNOME Shell Launch Wrapper with Safety Watchdog & Version Guard
-# Injects macOS Desktop Preparation & Synchronized Entrance Transition Overlay safely.
+# Injects macW1Y Desktop Preparation & Synchronized Entrance Transition Overlay safely.
 
 [ -z "$REAL_SHELL" ] && REAL_SHELL="/usr/bin/gnome-shell.real"
 if [ ! -x "$REAL_SHELL" ]; then

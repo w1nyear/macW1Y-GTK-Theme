@@ -1,5 +1,5 @@
 #!/bin/sh
-# mac-login-sound - macOS Boot Chime synchronized with GNOME Settings (org.gnome.shell.ubuntu startup-sound)
+# mac-login-sound - macW1Y Boot Chime synchronized with GNOME Settings (org.gnome.shell.ubuntu startup-sound)
 #
 # In Ubuntu GNOME Shell, the startup chime is played natively by gnome-shell (main.js)
 # using Mutter's sound player via 'org.gnome.shell.ubuntu startup-sound' ('warty-startup').
@@ -36,11 +36,11 @@ fi
 
 [ -d "$LOCK_DIR" ] && touch "$LOCK_FILE" 2>/dev/null || true
 
-# Play macOS boot chime
+# Play macW1Y boot chime
 if command -v canberra-gtk-play >/dev/null 2>&1; then
     canberra-gtk-play -i desktop-login 2>/dev/null || \
-    canberra-gtk-play -f /usr/share/sounds/macOS/stereo/desktop-login.ogg 2>/dev/null || \
-    paplay /usr/share/sounds/macOS/stereo/desktop-login.ogg 2>/dev/null
+    canberra-gtk-play -f /usr/share/sounds/macW1Y/stereo/desktop-login.ogg 2>/dev/null || \
+    paplay /usr/share/sounds/macW1Y/stereo/desktop-login.ogg 2>/dev/null
 elif command -v paplay >/dev/null 2>&1; then
-    paplay /usr/share/sounds/macOS/stereo/desktop-login.ogg 2>/dev/null
+    paplay /usr/share/sounds/macW1Y/stereo/desktop-login.ogg 2>/dev/null
 fi

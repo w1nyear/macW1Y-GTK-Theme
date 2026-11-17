@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-#   macOS Sequoia / Tahoe Transformation Modpack (macW1Y Release)
+#   macW1Y Sequoia / Tahoe Transformation Modpack (macW1Y Release)
 #  Installer & Maintenance System - Version 0.7
 # ==============================================================================
 
@@ -57,13 +57,13 @@ elif [ -z "$MAC_INSTALLER_CLI" ]; then
             for ext in "ubuntu-dock@ubuntu.com" "tiling-assistant@ubuntu.com" "ding@rastersoft.com" "dash-to-dock@micxgx.gmail.com" "stage-manager@gnome-stage-manager" "snapd-prompting@canonical.com" "web-search-provider@ubuntu.com"; do
                 gnome-extensions disable "$ext" 2>/dev/null || true
             done
-            for ext in "user-theme@gnome-shell-extensions.gcampax.github.com" "eval-helper@mactheme" "blur-my-shell@aunetx" "dash2dock-motion@unmade.space" "appmenu@ChathurangaBW.github.io" "kiwi@kemma" "desktop-widgets@r3nhick" "macos-touchpad-gestures@mactheme" "compiz-alike-magic-lamp-effect@hermes83.github.com" "cupertino-dock-lite@rinzler69-wastaken.github.com" "custom-command-toggle@storageb.github.com" "liquid-glass@thinkingcoding1231.gmail.com" "quick-settings-scroll@diskmth.fr" "Rounded_Corners@lennart-k" "volume-percentage-quick-settings@imdarktom" "wack-lockscreen-clock@rinzler69-wastaken.github.com" "wifi-hotspot-quick-settings@aryan10.github.io"; do
+            for ext in "user-theme@gnome-shell-extensions.gcampax.github.com" "eval-helper@mactheme" "blur-my-shell@aunetx" "dash2dock-motion@unmade.space" "appmenu@ChathurangaBW.github.io" "kiwi@kemma" "desktop-widgets@r3nhick" "macw1y-touchpad-gestures@mactheme" "compiz-alike-magic-lamp-effect@hermes83.github.com" "cupertino-dock-lite@rinzler69-wastaken.github.com" "custom-command-toggle@storageb.github.com" "liquid-glass@thinkingcoding1231.gmail.com" "quick-settings-scroll@diskmth.fr" "Rounded_Corners@lennart-k" "volume-percentage-quick-settings@imdarktom" "wack-lockscreen-clock@rinzler69-wastaken.github.com" "wifi-hotspot-quick-settings@aryan10.github.io"; do
                 gnome-extensions enable "$ext" 2>/dev/null || true
             done
             gsettings set org.gnome.shell.extensions.user-theme name "macW1Y-Dark" 2>/dev/null || true
             gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark" 2>/dev/null || true
-            gsettings set org.gnome.desktop.interface icon-theme "MacTahoe-dark" 2>/dev/null || true
-            gsettings set org.gnome.desktop.interface font-name "Inter 10" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface icon-theme "macW1Y-dark" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface font-name "default 10" 2>/dev/null || true
             exec "$SCRIPT_DIR/bin/mac-installer-gui" "$@"
         fi
     fi
@@ -161,7 +161,7 @@ get_installed_version() {
        [ -d "$TARGET_HOME/.icons/macW1Y-dark" ] || \
        [ -f "$TARGET_HOME/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v29.js" ] || \
        [ -f "/etc/systemd/system/mac-touchpad-daemon.service" ] || \
-       [ -d "/boot/grub/themes/apple-mac" ]; then
+       [ -d "/boot/grub/themes/macw1y-boot" ]; then
         echo "0.1"
         return
     fi
@@ -358,7 +358,7 @@ install_dependencies() {
     fi
 
     if ! command -v opendrop &>/dev/null; then
-        log_info "Installing Apple AirDrop utility (opendrop)..."
+        log_info "Installing macW1Y AirDrop utility (opendrop)..."
         pip3 install --break-system-packages opendrop 2>/dev/null || true
     fi
 
@@ -388,21 +388,21 @@ install_dependencies() {
 }
 
 # ------------------------------------------------------------------------------
-# 2. Inter & Open Runde Fonts
+# 2. Default Typography & Open Runde Fonts
 # ------------------------------------------------------------------------------
 install_fonts() {
-    log_step "Stage 2/13: Installing Inter and Open Runde fonts"
-    local USER_FONT_DIR="$TARGET_HOME/.local/share/fonts/Inter"
-    local SYS_FONT_DIR="/usr/local/share/fonts/Inter"
+    log_step "Stage 2/13: Installing Default typography and Open Runde fonts"
+    local USER_FONT_DIR="$TARGET_HOME/.local/share/fonts/default"
+    local SYS_FONT_DIR="/usr/local/share/fonts/default"
     
     mkdir -p "$USER_FONT_DIR"
-    if [ -d "$SCRIPT_DIR/fonts/Inter" ]; then
-        cp -r "$SCRIPT_DIR/fonts/Inter/"* "$USER_FONT_DIR/" 2>/dev/null || true
+    if [ -d "$SCRIPT_DIR/fonts/default" ]; then
+        cp -r "$SCRIPT_DIR/fonts/default/"* "$USER_FONT_DIR/" 2>/dev/null || true
         chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.local/share/fonts"
         
         require_root
         sudo mkdir -p "$SYS_FONT_DIR"
-        sudo cp -r "$SCRIPT_DIR/fonts/Inter/"* "$SYS_FONT_DIR/" 2>/dev/null || true
+        sudo cp -r "$SCRIPT_DIR/fonts/default/"* "$SYS_FONT_DIR/" 2>/dev/null || true
     fi
 
     if [ -d "$SCRIPT_DIR/fonts/Open_Runde" ]; then
@@ -414,9 +414,24 @@ install_fonts() {
         sudo cp -r "$SCRIPT_DIR/fonts/Open_Runde/"* "/usr/share/fonts/opentype/Open_Runde/" 2>/dev/null || true
     fi
 
+    # Fontconfig rules
+    if [ -f "$SCRIPT_DIR/config/fonts.conf" ]; then
+        mkdir -p "$TARGET_HOME/.config/fontconfig/conf.d"
+        cp -f "$SCRIPT_DIR/config/fonts.conf" "$TARGET_HOME/.config/fontconfig/conf.d/50-macw1y-fonts.conf" 2>/dev/null || true
+        require_root
+        sudo mkdir -p /etc/fonts/conf.d
+        sudo cp -f "$SCRIPT_DIR/config/fonts.conf" /etc/fonts/conf.d/50-macw1y-fonts.conf 2>/dev/null || true
+    fi
+
     sudo fc-cache -f >/dev/null 2>&1 || true
     run_as_user fc-cache -f >/dev/null 2>&1 || true
-    log_success "Inter and Open Runde fonts deployed and font cache updated successfully!"
+
+    # Force apply default font to user environment
+    run_as_user gsettings set org.gnome.desktop.interface font-name "default 10" 2>/dev/null || true
+    run_as_user gsettings set org.gnome.desktop.interface document-font-name "default 10" 2>/dev/null || true
+    run_as_user gsettings set org.gnome.desktop.interface monospace-font-name "DefaultMono 10" 2>/dev/null || true
+
+    log_success "Default typography deployed and font cache updated successfully!"
 }
 
 # ------------------------------------------------------------------------------
@@ -430,14 +445,14 @@ install_themes() {
     if [ -d "$SCRIPT_DIR/macW1Y-Dark" ]; then
         cp -r "$SCRIPT_DIR/macW1Y-Dark" "$THEMES_DIR/"
         [ -d "$SCRIPT_DIR/macW1Y-Dark-solid" ] && cp -r "$SCRIPT_DIR/macW1Y-Dark-solid" "$THEMES_DIR/"
-        ln -sfn "macW1Y-Dark" "$THEMES_DIR/MacTahoe-Dark"
-        ln -sfn "macW1Y-Dark-solid" "$THEMES_DIR/MacTahoe-Dark-solid"
+        ln -sfn "macW1Y-Dark" "$THEMES_DIR/macW1Y-Dark"
+        ln -sfn "macW1Y-Dark-solid" "$THEMES_DIR/macW1Y-Dark-solid"
         sudo mkdir -p /usr/share/themes
         sudo cp -rf "$SCRIPT_DIR/macW1Y-Dark" /usr/share/themes/
         [ -d "$SCRIPT_DIR/macW1Y-Dark-solid" ] && sudo cp -rf "$SCRIPT_DIR/macW1Y-Dark-solid" /usr/share/themes/
-        sudo ln -sfn macW1Y-Dark /usr/share/themes/MacTahoe-Dark
+        sudo ln -sfn macW1Y-Dark /usr/share/themes/macW1Y-Dark
         sudo ln -sfn macW1Y-Dark /usr/share/themes/macW1Y
-        sudo chmod -R a+rX /usr/share/themes/macW1Y* /usr/share/themes/MacTahoe* 2>/dev/null || true
+        sudo chmod -R a+rX /usr/share/themes/macW1Y* /usr/share/themes/macW1Y* 2>/dev/null || true
         log_success "Themes copied to ~/.themes/ and /usr/share/themes/"
     fi
     
@@ -493,8 +508,8 @@ install_themes() {
         sudo chmod 644 /usr/lib/x86_64-linux-gnu/girepository-1.0/MacMemTrim-1.0.typelib 2>/dev/null || true
     fi
     
-    # Configuring macOS Nautilus Finder Sidebar and Applications section
-    log_info "Installing macOS Nautilus Finder Sidebar and extensions..."
+    # Configuring macW1Y Nautilus Finder Sidebar and Applications section
+    log_info "Installing macW1Y Nautilus Finder Sidebar and extensions..."
     if [ -f "$SCRIPT_DIR/src/mac_nautilus.c" ] && command -v gcc >/dev/null 2>&1; then
         gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmac_nautilus.so" "$SCRIPT_DIR/src/mac_nautilus.c" $(pkg-config --cflags --libs gtk4 libadwaita-1 gio-2.0 2>/dev/null) -ldl 2>/dev/null || true
     fi
@@ -555,7 +570,7 @@ EOF_NAUT
     rm -f "$TARGET_HOME/.config/autostart/mac-sync-applications.desktop" 2>/dev/null || true
     rm -f "$TARGET_HOME/.config/autostart/mac-ensure-extensions.desktop" 2>/dev/null || true
 
-    # Suppress xdg-user-dirs-gtk prompt on locale change (macOS directory structure preservation)
+    # Suppress xdg-user-dirs-gtk prompt on locale change (macW1Y directory structure preservation)
     mkdir -p "$TARGET_HOME/.config/autostart"
     cat << 'EOF_UDIRS' > "$TARGET_HOME/.config/autostart/user-dirs-update-gtk.desktop"
 [Desktop Entry]
@@ -591,11 +606,11 @@ EOF_UDIRS
 # 4. Icons and Assets
 # ------------------------------------------------------------------------------
 install_icons() {
-    log_step "Stage 4/13: Installing MacTahoe and Control Center icons"
+    log_step "Stage 4/13: Installing macW1Y and Control Center icons"
     local ICONS_DIR="$TARGET_HOME/.local/share/icons"
     mkdir -p "$ICONS_DIR" "$ICONS_DIR/hicolor/scalable/apps"
     
-    for theme_dir in MacTahoe MacTahoe-dark MacTahoe-light; do
+    for theme_dir in macW1Y macW1Y-dark macW1Y-light; do
         if [ -d "$SCRIPT_DIR/icons/$theme_dir" ]; then
             rm -rf "$ICONS_DIR/$theme_dir"
             if command -v rsync >/dev/null 2>&1; then
@@ -607,15 +622,15 @@ install_icons() {
         fi
     done
     
-    # Creating compatibility symlinks macW1Y-dark -> MacTahoe-dark, MacTahoe-Dark -> MacTahoe-dark and macOS -> MacTahoe
-    ln -sfn "MacTahoe-dark" "$ICONS_DIR/macW1Y-dark"
-    ln -sfn "MacTahoe-dark" "$ICONS_DIR/MacTahoe-Dark"
-    ln -sfn "MacTahoe" "$ICONS_DIR/macOS"
+    # Creating compatibility symlinks macW1Y-dark -> macW1Y-dark, macW1Y-Dark -> macW1Y-dark and macW1Y -> macW1Y
+    ln -sfn "macW1Y-dark" "$ICONS_DIR/macW1Y-dark"
+    ln -sfn "macW1Y-dark" "$ICONS_DIR/macW1Y-Dark"
+    ln -sfn "macW1Y" "$ICONS_DIR/macW1Y"
     mkdir -p "$TARGET_HOME/.icons" "$ICONS_DIR/default" "$TARGET_HOME/.icons/default"
-    ln -sfn "$ICONS_DIR/MacTahoe" "$TARGET_HOME/.icons/MacTahoe"
-    ln -sfn "$ICONS_DIR/MacTahoe" "$TARGET_HOME/.icons/macOS"
-    ln -sfn "$ICONS_DIR/MacTahoe-dark" "$TARGET_HOME/.icons/MacTahoe-dark"
-    ln -sfn "$ICONS_DIR/MacTahoe-dark" "$TARGET_HOME/.icons/MacTahoe-Dark"
+    ln -sfn "$ICONS_DIR/macW1Y" "$TARGET_HOME/.icons/macW1Y"
+    ln -sfn "$ICONS_DIR/macW1Y" "$TARGET_HOME/.icons/macW1Y"
+    ln -sfn "$ICONS_DIR/macW1Y-dark" "$TARGET_HOME/.icons/macW1Y-dark"
+    ln -sfn "$ICONS_DIR/macW1Y-dark" "$TARGET_HOME/.icons/macW1Y-Dark"
     ln -sfn "$ICONS_DIR/macW1Y-dark" "$TARGET_HOME/.icons/macW1Y-dark"
 
     # User-level default cursor theme fallback
@@ -623,21 +638,21 @@ install_icons() {
 [Icon Theme]
 Name=Default
 Comment=Default Cursor Theme
-Inherits=MacTahoe
+Inherits=macW1Y
 EOF_DEF_THEME
     cp -f "$ICONS_DIR/default/index.theme" "$TARGET_HOME/.icons/default/index.theme"
-    cat << 'EOF_CUR_THEME' > "$ICONS_DIR/MacTahoe/cursor.theme"
+    cat << 'EOF_CUR_THEME' > "$ICONS_DIR/macW1Y/cursor.theme"
 [Icon Theme]
-Name=MacTahoe
-Comment=MacTahoe macOS Cursor Theme
-Inherits=MacTahoe
+Name=macW1Y
+Comment=macW1Y macW1Y Cursor Theme
+Inherits=macW1Y
 EOF_CUR_THEME
 
     if [ -w "/usr/share/icons" ] || sudo -n true 2>/dev/null; then
-        sudo ln -sfn "$ICONS_DIR/MacTahoe" /usr/share/icons/MacTahoe
-        sudo ln -sfn "$ICONS_DIR/MacTahoe" /usr/share/icons/macOS
-        sudo update-alternatives --install /usr/share/icons/default/index.theme x-cursor-theme "$ICONS_DIR/MacTahoe/cursor.theme" 100 2>/dev/null || true
-        sudo update-alternatives --set x-cursor-theme "$ICONS_DIR/MacTahoe/cursor.theme" 2>/dev/null || true
+        sudo ln -sfn "$ICONS_DIR/macW1Y" /usr/share/icons/macW1Y
+        sudo ln -sfn "$ICONS_DIR/macW1Y" /usr/share/icons/macW1Y
+        sudo update-alternatives --install /usr/share/icons/default/index.theme x-cursor-theme "$ICONS_DIR/macW1Y/cursor.theme" 100 2>/dev/null || true
+        sudo update-alternatives --set x-cursor-theme "$ICONS_DIR/macW1Y/cursor.theme" 2>/dev/null || true
     fi
     
     # System Control Center icons (user-independent and protected from removal)
@@ -655,40 +670,40 @@ EOF_CUR_THEME
     [ -f "$SCRIPT_DIR/assets/icons/control-center-symbolic.svg" ] && cp "$SCRIPT_DIR/assets/icons/control-center-symbolic.svg" "$ICONS_DIR/hicolor/scalable/apps/" 2>/dev/null || true
     
     chown -R "${TARGET_USER}:${TARGET_USER}" "$ICONS_DIR"
-    gtk-update-icon-cache -f -t "$ICONS_DIR/MacTahoe" 2>/dev/null || true
-    gtk-update-icon-cache -f -t "$ICONS_DIR/MacTahoe-dark" 2>/dev/null || true
-    gtk-update-icon-cache -f -t "$ICONS_DIR/MacTahoe-light" 2>/dev/null || true
+    gtk-update-icon-cache -f -t "$ICONS_DIR/macW1Y" 2>/dev/null || true
+    gtk-update-icon-cache -f -t "$ICONS_DIR/macW1Y-dark" 2>/dev/null || true
+    gtk-update-icon-cache -f -t "$ICONS_DIR/macW1Y-light" 2>/dev/null || true
     gtk-update-icon-cache -f -t "$ICONS_DIR/hicolor" 2>/dev/null || true
     
-    run_as_user gsettings set org.gnome.desktop.interface icon-theme "MacTahoe-dark"
+    run_as_user gsettings set org.gnome.desktop.interface icon-theme "macW1Y-dark"
     run_as_user /usr/local/bin/mac-icon-normalizer 2>/dev/null || true
     run_as_user /usr/local/bin/mac-sync-applications 2>/dev/null || true
-    log_success "macOS icon theme activated!"
+    log_success "macW1Y icon theme activated!"
 }
 
 # ------------------------------------------------------------------------------
-# 5. System Sounds (macOS Sound Theme)
+# 5. System Sounds (macW1Y Sound Theme)
 # ------------------------------------------------------------------------------
 install_sounds() {
-    log_step "Stage 5/13: Installing macOS sound theme"
+    log_step "Stage 5/13: Installing macW1Y sound theme"
     local SOUNDS_DIR="$TARGET_HOME/.local/share/sounds"
     mkdir -p "$SOUNDS_DIR"
     
-    if [ -d "$SCRIPT_DIR/sounds/macOS" ]; then
-        rm -rf "$SOUNDS_DIR/macOS"
-        cp -r "$SCRIPT_DIR/sounds/macOS" "$SOUNDS_DIR/"
+    if [ -d "$SCRIPT_DIR/sounds/macW1Y" ]; then
+        rm -rf "$SOUNDS_DIR/macW1Y"
+        cp -r "$SCRIPT_DIR/sounds/macW1Y" "$SOUNDS_DIR/"
         chown -R "${TARGET_USER}:${TARGET_USER}" "$SOUNDS_DIR"
         
         if [ -w "/usr/share/sounds" ] || sudo -n true 2>/dev/null; then
-            sudo mkdir -p /usr/share/sounds/macOS
-            sudo cp -r "$SCRIPT_DIR/sounds/macOS/"* /usr/share/sounds/macOS/
+            sudo mkdir -p /usr/share/sounds/macW1Y
+            sudo cp -r "$SCRIPT_DIR/sounds/macW1Y/"* /usr/share/sounds/macW1Y/
         fi
         
-        run_as_user gsettings set org.gnome.desktop.sound theme-name 'macOS'
+        run_as_user gsettings set org.gnome.desktop.sound theme-name 'macW1Y'
         run_as_user gsettings set org.gnome.desktop.sound event-sounds true
         run_as_user gsettings set org.gnome.desktop.sound input-feedback-sounds true
         run_as_user gsettings set org.gnome.shell.ubuntu startup-sound 'warty-startup'
-        log_success "macOS sound theme installed and activated successfully!"
+        log_success "macW1Y sound theme installed and activated successfully!"
     fi
     
     if [ -f "$SCRIPT_DIR/bin/mac-login-sound" ]; then
@@ -696,11 +711,11 @@ install_sounds() {
         sudo chmod 755 /usr/local/bin/mac-login-sound
     fi
     
-    if [ -f "$SCRIPT_DIR/autostart/macos-login-sound.desktop" ]; then
+    if [ -f "$SCRIPT_DIR/autostart/macw1y-login-sound.desktop" ]; then
         mkdir -p "$TARGET_HOME/.config/autostart"
-        cp "$SCRIPT_DIR/autostart/macos-login-sound.desktop" "$TARGET_HOME/.config/autostart/"
+        cp "$SCRIPT_DIR/autostart/macw1y-login-sound.desktop" "$TARGET_HOME/.config/autostart/"
         chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/autostart"
-        log_success "macOS startup chime autostart entry added!"
+        log_success "macW1Y startup chime autostart entry added!"
     fi
 
     # Disabling GDM ready sound to prevent duplicate startup chime
@@ -715,7 +730,7 @@ install_sounds() {
 # 6. Wallpapers
 # ------------------------------------------------------------------------------
 install_wallpaper() {
-    log_step "Stage 6/13: Installing original macOS wallpaper and Live Wallpaper assets"
+    log_step "Stage 6/13: Installing original macW1Y wallpaper and Live Wallpaper assets"
     local WALLPAPER_SRC="$SCRIPT_DIR/wallpapers/GoldenGate_Day.jpg"
     local WALLPAPER_DEST="/usr/share/backgrounds/GoldenGate_Day.jpg"
     
@@ -851,7 +866,7 @@ install_extensions() {
         "ubuntu-appindicators@ubuntu.com"
         "compiz-alike-magic-lamp-effect@hermes83.github.com"
         "Rounded_Corners@lennart-k"
-        "macos-touchpad-gestures@mactheme"
+        "macw1y-touchpad-gestures@mactheme"
         "custom-command-toggle@storageb.github.com"
         "volume-percentage-quick-settings@imdarktom"
         "quick-settings-scroll@diskmth.fr"
@@ -1052,7 +1067,7 @@ install_settings_overlay() {
     rm -f "$APP_DIR/mac-widgets-settings.desktop"
     sudo rm -f "/usr/share/applications/mac-widgets-settings.desktop" 2>/dev/null || true
     
-    # 1. Core macOS theme components (always installed)
+    # 1. Core macW1Y theme components (always installed)
     for core_df in launchpad.desktop mac-app-launcher.desktop org.gnome.Settings.desktop; do
         if [ -f "$SCRIPT_DIR/applications/$core_df" ]; then
             cp -f "$SCRIPT_DIR/applications/$core_df" "$APP_DIR/"
@@ -1164,7 +1179,7 @@ install_settings_overlay() {
 # 9. Touchpad Gestures System
 # ------------------------------------------------------------------------------
 install_touchpad() {
-    log_step "Stage 9/13: Installing macOS touchpad daemon and gestures"
+    log_step "Stage 9/13: Installing macW1Y touchpad daemon and gestures"
     require_root
     
     log_info "Compiling mac-touchpad-daemon..."
@@ -1512,15 +1527,15 @@ install_gdm_transition() {
 
     # 1. GDM Dconf profile
     sudo mkdir -p /etc/dconf/profile
-    if [ -f "$SCRIPT_DIR/macos-gdm/gdm" ]; then
-        sudo cp "$SCRIPT_DIR/macos-gdm/gdm" /etc/dconf/profile/gdm
+    if [ -f "$SCRIPT_DIR/macw1y-gdm/gdm" ]; then
+        sudo cp "$SCRIPT_DIR/macw1y-gdm/gdm" /etc/dconf/profile/gdm
         sudo chmod 644 /etc/dconf/profile/gdm
     fi
 
     # 2. Dconf settings for GDM and lock screen
-    if [ -f "$SCRIPT_DIR/macos-gdm/99-wack-lockscreen" ]; then
+    if [ -f "$SCRIPT_DIR/macw1y-gdm/99-wack-lockscreen" ]; then
         sudo mkdir -p /etc/dconf/db/gdm.d
-        sudo cp "$SCRIPT_DIR/macos-gdm/99-wack-lockscreen" /etc/dconf/db/gdm.d/99-wack-lockscreen
+        sudo cp "$SCRIPT_DIR/macw1y-gdm/99-wack-lockscreen" /etc/dconf/db/gdm.d/99-wack-lockscreen
         sudo chmod 644 /etc/dconf/db/gdm.d/99-wack-lockscreen
     fi
 
@@ -1528,13 +1543,13 @@ install_gdm_transition() {
     sudo mkdir -p /usr/share/themes /usr/share/icons
     [ -d "$TARGET_HOME/.themes/macW1Y-Dark" ] && sudo cp -rf "$TARGET_HOME/.themes/macW1Y-Dark" /usr/share/themes/
     [ -d "$TARGET_HOME/.themes/macW1Y-Dark-solid" ] && sudo cp -rf "$TARGET_HOME/.themes/macW1Y-Dark-solid" /usr/share/themes/
-    sudo ln -sfn /usr/share/themes/macW1Y-Dark /usr/share/themes/MacTahoe-Dark
+    sudo ln -sfn /usr/share/themes/macW1Y-Dark /usr/share/themes/macW1Y-Dark
     sudo ln -sfn /usr/share/themes/macW1Y-Dark /usr/share/themes/macW1Y
-    sudo chmod -R a+rX /usr/share/themes/macW1Y* /usr/share/themes/MacTahoe* 2>/dev/null || true
+    sudo chmod -R a+rX /usr/share/themes/macW1Y* /usr/share/themes/macW1Y* 2>/dev/null || true
     
-    [ -d "$TARGET_HOME/.local/share/icons/MacTahoe-dark" ] && sudo ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe-dark" /usr/share/icons/MacTahoe-dark
-    [ -d "$TARGET_HOME/.local/share/icons/MacTahoe-dark" ] && sudo ln -sfn MacTahoe-dark /usr/share/icons/MacTahoe-Dark
-    sudo chmod -R a+rX /usr/share/icons/MacTahoe* 2>/dev/null || true
+    [ -d "$TARGET_HOME/.local/share/icons/macW1Y-dark" ] && sudo ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y-dark" /usr/share/icons/macW1Y-dark
+    [ -d "$TARGET_HOME/.local/share/icons/macW1Y-dark" ] && sudo ln -sfn macW1Y-dark /usr/share/icons/macW1Y-Dark
+    sudo chmod -R a+rX /usr/share/icons/macW1Y* 2>/dev/null || true
 
     # 4. Installing and compiling GSettings schemas (wack-lockscreen and 99_mactheme override)
     local WACK_SCHEMA="$SCRIPT_DIR/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/schemas/org.gnome.shell.extensions.wack-lockscreen-clock.gschema.xml"
@@ -1543,16 +1558,16 @@ install_gdm_transition() {
         sudo cp "$WACK_SCHEMA" /usr/share/glib-2.0/schemas/
         sudo chmod 644 /usr/share/glib-2.0/schemas/org.gnome.shell.extensions.wack-lockscreen-clock.gschema.xml
     fi
-    if [ -f "$SCRIPT_DIR/macos-gdm/99_mactheme.gschema.override" ]; then
-        sudo cp "$SCRIPT_DIR/macos-gdm/99_mactheme.gschema.override" /usr/share/glib-2.0/schemas/
+    if [ -f "$SCRIPT_DIR/macw1y-gdm/99_mactheme.gschema.override" ]; then
+        sudo cp "$SCRIPT_DIR/macw1y-gdm/99_mactheme.gschema.override" /usr/share/glib-2.0/schemas/
         sudo chmod 644 /usr/share/glib-2.0/schemas/99_mactheme.gschema.override
     fi
 
     # 5. Neutralizing Ubuntu Yaru theme overrides
     if [ -f /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override ]; then
         sudo sed -i 's|gtk-theme = "Yaru"|gtk-theme = "macW1Y-Dark"|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
-        sudo sed -i 's|icon-theme = "Yaru"|icon-theme = "MacTahoe-dark"|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
-        sudo sed -i 's|cursor-theme = "Yaru"|cursor-theme = "macOS"|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
+        sudo sed -i 's|icon-theme = "Yaru"|icon-theme = "macW1Y-dark"|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
+        sudo sed -i 's|cursor-theme = "Yaru"|cursor-theme = "macW1Y"|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
         sudo sed -i -E 's/(warty-final-ubuntu\.png|mendhak-Bluebells_Suspended_In_Time\.jpg)/GoldenGate_Day.jpg/g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
     fi
     if [ -f "$SCRIPT_DIR/extensions/desktop-widgets@r3nhick/schemas/org.gnome.shell.extensions.desktop-widgets-r3nhick.gschema.xml" ]; then
@@ -1674,16 +1689,16 @@ install_gdm_transition() {
 }
 
 # ------------------------------------------------------------------------------
-# 12. Plymouth Apple Boot Splash
+# 12. Plymouth macW1Y Boot Splash
 # ------------------------------------------------------------------------------
 install_plymouth() {
-    log_step "Stage 12/13: Installing Apple Plymouth boot splash"
+    log_step "Stage 12/13: Installing macW1Y Plymouth boot splash"
     require_root
     
-    local PLYMOUTH_TARGET="/usr/share/plymouth/themes/apple-mac"
-    if [ -d "$SCRIPT_DIR/plymouth/apple-mac" ]; then
+    local PLYMOUTH_TARGET="/usr/share/plymouth/themes/macw1y-boot"
+    if [ -d "$SCRIPT_DIR/plymouth/macw1y-boot" ]; then
         sudo mkdir -p "$PLYMOUTH_TARGET"
-        sudo cp -r "$SCRIPT_DIR/plymouth/apple-mac/"* "$PLYMOUTH_TARGET/"
+        sudo cp -r "$SCRIPT_DIR/plymouth/macw1y-boot/"* "$PLYMOUTH_TARGET/"
     fi
     
     if [ -f "$SCRIPT_DIR/plymouth/plymouth-verbose-logger.c" ]; then
@@ -1719,18 +1734,18 @@ install_plymouth() {
     fi
     
     # Registering theme in Plymouth alternatives and setting default
-    if [ -f "$PLYMOUTH_TARGET/apple-mac.plymouth" ]; then
+    if [ -f "$PLYMOUTH_TARGET/macw1y-boot.plymouth" ]; then
         if command -v update-alternatives >/dev/null 2>&1; then
-            sudo update-alternatives --install /usr/share/plymouth/themes/default.plymouth default.plymouth "$PLYMOUTH_TARGET/apple-mac.plymouth" 200 2>/dev/null || true
-            sudo update-alternatives --set default.plymouth "$PLYMOUTH_TARGET/apple-mac.plymouth" 2>/dev/null || true
+            sudo update-alternatives --install /usr/share/plymouth/themes/default.plymouth default.plymouth "$PLYMOUTH_TARGET/macw1y-boot.plymouth" 200 2>/dev/null || true
+            sudo update-alternatives --set default.plymouth "$PLYMOUTH_TARGET/macw1y-boot.plymouth" 2>/dev/null || true
         fi
         if command -v plymouth-set-default-theme >/dev/null 2>&1; then
-            sudo plymouth-set-default-theme -R apple-mac 2>/dev/null || true
+            sudo plymouth-set-default-theme -R macw1y-boot 2>/dev/null || true
         fi
         sudo mkdir -p /etc/plymouth
         sudo tee /etc/plymouth/plymouthd.conf >/dev/null << 'EOF'
 [Daemon]
-Theme=apple-mac
+Theme=macw1y-boot
 ShowDelay=0
 DeviceTimeout=8
 EOF
@@ -1738,26 +1753,26 @@ EOF
     
     log_info "Updating initramfs..."
     sudo update-initramfs -u 2>/dev/null || true
-    log_success "Apple Boot Splash activated successfully!"
+    log_success "macW1Y Boot Splash activated successfully!"
 }
 
 # ------------------------------------------------------------------------------
-# 13. GRUB Apple Silicon Boot Manager
+# 13. GRUB macW1Y Boot Manager
 # ------------------------------------------------------------------------------
 install_grub() {
-    log_step "Stage 13/13: Installing Apple Silicon horizontal GRUB boot menu"
+    log_step "Stage 13/13: Installing macW1Y horizontal GRUB boot menu"
     require_root
     
-    local GRUB_TARGET="/boot/grub/themes/apple-mac"
-    if [ -d "$SCRIPT_DIR/grub/apple-mac" ]; then
+    local GRUB_TARGET="/boot/grub/themes/macw1y-boot"
+    if [ -d "$SCRIPT_DIR/grub/macw1y-boot" ]; then
         sudo mkdir -p "$GRUB_TARGET"
-        sudo cp -r "$SCRIPT_DIR/grub/apple-mac/"* "$GRUB_TARGET/"
+        sudo cp -r "$SCRIPT_DIR/grub/macw1y-boot/"* "$GRUB_TARGET/"
     fi
 
-    local GRUB_USB_TARGET="/boot/grub/themes/apple-mac-usb"
-    if [ -d "$SCRIPT_DIR/grub/apple-mac-usb" ]; then
+    local GRUB_USB_TARGET="/boot/grub/themes/macw1y-boot-usb"
+    if [ -d "$SCRIPT_DIR/grub/macw1y-boot-usb" ]; then
         sudo mkdir -p "$GRUB_USB_TARGET"
-        sudo cp -r "$SCRIPT_DIR/grub/apple-mac-usb/"* "$GRUB_USB_TARGET/"
+        sudo cp -r "$SCRIPT_DIR/grub/macw1y-boot-usb/"* "$GRUB_USB_TARGET/"
     fi
     
     [ -f /etc/default/grub ] && [ ! -f /etc/default/grub.bak_mactheme ] && sudo cp /etc/default/grub /etc/default/grub.bak_mactheme
@@ -1766,7 +1781,7 @@ install_grub() {
     if [ -f "$SCRIPT_DIR/grub/grub.default" ]; then
         sudo cp "$SCRIPT_DIR/grub/grub.default" /etc/default/grub
     else
-        sudo sed -i "s/^GRUB_THEME=.*/#GRUB_THEME=\"\/boot\/grub\/themes\/apple-mac\/theme.txt\"/" /etc/default/grub
+        sudo sed -i "s/^GRUB_THEME=.*/#GRUB_THEME=\"\/boot\/grub\/themes\/macw1y-boot\/theme.txt\"/" /etc/default/grub
     fi
     
     if [ -f "$SCRIPT_DIR/grub/06_mac_theme_select" ]; then
@@ -1800,7 +1815,7 @@ install_grub() {
     fi
 
     if [ -f "$SCRIPT_DIR/grub/generate_icons.py" ]; then
-        log_info "Generating transparent Apple Silicon icons and GRUB status widgets..."
+        log_info "Generating transparent macW1Y icons and GRUB status widgets..."
         sudo python3 "$SCRIPT_DIR/grub/generate_icons.py" 2>/dev/null || true
     fi
 
@@ -1812,7 +1827,7 @@ install_grub() {
 
     log_info "Updating GRUB configuration..."
     sudo update-grub
-    log_success "Apple Silicon boot manager menu installed successfully!"
+    log_success "macW1Y boot manager menu installed successfully!"
 }
 
 # ------------------------------------------------------------------------------
@@ -1867,14 +1882,14 @@ EOF_EVO
     echo -e "\n${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
     echo -e " ${C_BOLD}${C_GREEN}✔ macW1Y v${NEW_VERSION} INSTALLATION / UPDATE COMPLETED SUCCESSFULLY!${C_RESET}"
     echo -e "${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
-    echo -e " ${C_CYAN}All macOS Modpack components successfully deployed:${C_RESET}"
+    echo -e " ${C_CYAN}All macW1Y Modpack components successfully deployed:${C_RESET}"
     echo -e "   • macW1Y-Dark UI theme and icons"
-    echo -e "   • San Francisco Pro fonts"
-    echo -e "   • Liquid Glass menu bar with 8px margins and Apple Menu"
+    echo -e "   • Default Pro fonts"
+    echo -e "   • Liquid Glass menu bar with 8px margins and macW1Y Menu"
     echo -e "   • Control Center and system Settings with Mac Styling panel"
-    echo -e "   • Multi-touch macOS touchpad gestures (3-finger drag, pinch copy/paste)"
+    echo -e "   • Multi-touch macW1Y touchpad gestures (3-finger drag, pinch copy/paste)"
     echo -e "   • Game Mode and GPU graphics management"
-    echo -e "   • Apple Silicon GRUB boot menu and Plymouth boot splash"
+    echo -e "   • macW1Y GRUB boot menu and Plymouth boot splash"
     echo -e "   • Smooth GDM transition with seamless wallpaper alignment"
     echo -e "\n ${C_YELLOW}It is recommended to log out and log back in (or restart your PC),${C_RESET}"
     echo -e " ${C_YELLOW}for all environment variables and overlays to take full effect.${C_RESET}\n"
@@ -1923,8 +1938,8 @@ run_incremental_update() {
     log_info "2/10 Checking UI themes..."
     sync_directory_tree "$SCRIPT_DIR/macW1Y-Dark" "$TARGET_HOME/.themes/macW1Y-Dark" false
     sync_directory_tree "$SCRIPT_DIR/macW1Y-Dark-solid" "$TARGET_HOME/.themes/macW1Y-Dark-solid" false
-    ln -sfn "macW1Y-Dark" "$TARGET_HOME/.themes/MacTahoe-Dark"
-    ln -sfn "macW1Y-Dark-solid" "$TARGET_HOME/.themes/MacTahoe-Dark-solid"
+    ln -sfn "macW1Y-Dark" "$TARGET_HOME/.themes/macW1Y-Dark"
+    ln -sfn "macW1Y-Dark-solid" "$TARGET_HOME/.themes/macW1Y-Dark-solid"
     sync_directory_tree "$SCRIPT_DIR/gtk-3.0" "$TARGET_HOME/.config/gtk-3.0" false
     sync_directory_tree "$SCRIPT_DIR/gtk-4.0" "$TARGET_HOME/.config/gtk-4.0" false
     run_as_user gsettings set org.gnome.desktop.wm.preferences button-layout "close,minimize,maximize:" 2>/dev/null || true
@@ -1966,53 +1981,53 @@ run_incremental_update() {
     fi
 
     log_info "3/10 Checking icon themes..."
-    for theme_dir in MacTahoe MacTahoe-dark MacTahoe-light; do
+    for theme_dir in macW1Y macW1Y-dark macW1Y-light; do
         if [ -d "$SCRIPT_DIR/icons/$theme_dir" ]; then
             sync_directory_tree "$SCRIPT_DIR/icons/$theme_dir" "$TARGET_HOME/.local/share/icons/$theme_dir" false
         fi
     done
-    ln -sfn "MacTahoe-dark" "$TARGET_HOME/.local/share/icons/macW1Y-dark"
-    ln -sfn "MacTahoe-dark" "$TARGET_HOME/.local/share/icons/MacTahoe-Dark"
-    ln -sfn "MacTahoe" "$TARGET_HOME/.local/share/icons/macOS"
+    ln -sfn "macW1Y-dark" "$TARGET_HOME/.local/share/icons/macW1Y-dark"
+    ln -sfn "macW1Y-dark" "$TARGET_HOME/.local/share/icons/macW1Y-Dark"
+    ln -sfn "macW1Y" "$TARGET_HOME/.local/share/icons/macW1Y"
     mkdir -p "$TARGET_HOME/.icons" "$TARGET_HOME/.local/share/icons/default" "$TARGET_HOME/.icons/default"
-    ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe" "$TARGET_HOME/.icons/MacTahoe"
-    ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe" "$TARGET_HOME/.icons/macOS"
-    ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe-dark" "$TARGET_HOME/.icons/MacTahoe-dark"
-    ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe-dark" "$TARGET_HOME/.icons/MacTahoe-Dark"
+    ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y" "$TARGET_HOME/.icons/macW1Y"
+    ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y" "$TARGET_HOME/.icons/macW1Y"
+    ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y-dark" "$TARGET_HOME/.icons/macW1Y-dark"
+    ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y-dark" "$TARGET_HOME/.icons/macW1Y-Dark"
     ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y-dark" "$TARGET_HOME/.icons/macW1Y-dark"
 
     cat << 'EOF_DEF_THEME_UP' > "$TARGET_HOME/.local/share/icons/default/index.theme"
 [Icon Theme]
 Name=Default
 Comment=Default Cursor Theme
-Inherits=MacTahoe
+Inherits=macW1Y
 EOF_DEF_THEME_UP
     cp -f "$TARGET_HOME/.local/share/icons/default/index.theme" "$TARGET_HOME/.icons/default/index.theme"
-    cat << 'EOF_CUR_THEME_UP' > "$TARGET_HOME/.local/share/icons/MacTahoe/cursor.theme"
+    cat << 'EOF_CUR_THEME_UP' > "$TARGET_HOME/.local/share/icons/macW1Y/cursor.theme"
 [Icon Theme]
-Name=MacTahoe
-Comment=MacTahoe macOS Cursor Theme
-Inherits=MacTahoe
+Name=macW1Y
+Comment=macW1Y macW1Y Cursor Theme
+Inherits=macW1Y
 EOF_CUR_THEME_UP
 
     if [ -w "/usr/share/icons" ] || sudo -n true 2>/dev/null; then
-        sudo ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe" /usr/share/icons/MacTahoe
-        sudo ln -sfn "$TARGET_HOME/.local/share/icons/MacTahoe" /usr/share/icons/macOS
-        sudo update-alternatives --install /usr/share/icons/default/index.theme x-cursor-theme "$TARGET_HOME/.local/share/icons/MacTahoe/cursor.theme" 100 2>/dev/null || true
-        sudo update-alternatives --set x-cursor-theme "$TARGET_HOME/.local/share/icons/MacTahoe/cursor.theme" 2>/dev/null || true
+        sudo ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y" /usr/share/icons/macW1Y
+        sudo ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y" /usr/share/icons/macW1Y
+        sudo update-alternatives --install /usr/share/icons/default/index.theme x-cursor-theme "$TARGET_HOME/.local/share/icons/macW1Y/cursor.theme" 100 2>/dev/null || true
+        sudo update-alternatives --set x-cursor-theme "$TARGET_HOME/.local/share/icons/macW1Y/cursor.theme" 2>/dev/null || true
     fi
     sync_or_update_file "$SCRIPT_DIR/icons/control-center.png" "$TARGET_HOME/.local/share/icons/hicolor/scalable/apps/control-center.png" false
     sync_or_update_file "$SCRIPT_DIR/icons/control-center-symbolic.svg" "$TARGET_HOME/.local/share/icons/hicolor/scalable/apps/control-center-symbolic.svg" false
-    run_as_user gsettings set org.gnome.desktop.interface icon-theme "MacTahoe-dark"
+    run_as_user gsettings set org.gnome.desktop.interface icon-theme "macW1Y-dark"
 
-    log_info "4/10 Checking macOS sound theme..."
-    if [ -d "$SCRIPT_DIR/sounds/macOS" ]; then
-        sync_directory_tree "$SCRIPT_DIR/sounds/macOS" "$TARGET_HOME/.local/share/sounds/macOS" false
+    log_info "4/10 Checking macW1Y sound theme..."
+    if [ -d "$SCRIPT_DIR/sounds/macW1Y" ]; then
+        sync_directory_tree "$SCRIPT_DIR/sounds/macW1Y" "$TARGET_HOME/.local/share/sounds/macW1Y" false
         if [ -w "/usr/share/sounds" ] || sudo -n true 2>/dev/null; then
-            sudo mkdir -p /usr/share/sounds/macOS
-            sync_directory_tree "$SCRIPT_DIR/sounds/macOS" "/usr/share/sounds/macOS" true
+            sudo mkdir -p /usr/share/sounds/macW1Y
+            sync_directory_tree "$SCRIPT_DIR/sounds/macW1Y" "/usr/share/sounds/macW1Y" true
         fi
-        run_as_user gsettings set org.gnome.desktop.sound theme-name 'macOS'
+        run_as_user gsettings set org.gnome.desktop.sound theme-name 'macW1Y'
         run_as_user gsettings set org.gnome.desktop.sound event-sounds true
         run_as_user gsettings set org.gnome.desktop.sound input-feedback-sounds true
     fi
@@ -2020,8 +2035,8 @@ EOF_CUR_THEME_UP
         sync_or_update_file "$SCRIPT_DIR/bin/mac-login-sound" "/usr/local/bin/mac-login-sound" true
         sudo chmod 755 /usr/local/bin/mac-login-sound
     fi
-    if [ -f "$SCRIPT_DIR/autostart/macos-login-sound.desktop" ]; then
-        sync_or_update_file "$SCRIPT_DIR/autostart/macos-login-sound.desktop" "$TARGET_HOME/.config/autostart/macos-login-sound.desktop" false
+    if [ -f "$SCRIPT_DIR/autostart/macw1y-login-sound.desktop" ]; then
+        sync_or_update_file "$SCRIPT_DIR/autostart/macw1y-login-sound.desktop" "$TARGET_HOME/.config/autostart/macw1y-login-sound.desktop" false
     fi
     if [ -f "/usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop" ]; then
         sudo sed -i 's/^X-GNOME-Autostart-enabled=.*/X-GNOME-Autostart-enabled=false/' /usr/share/gdm/autostart/LoginWindow/libcanberra-ready-sound.desktop 2>/dev/null || true
@@ -2062,7 +2077,7 @@ EOF_CUR_THEME_UP
             "ubuntu-appindicators@ubuntu.com"
             "compiz-alike-magic-lamp-effect@hermes83.github.com"
             "Rounded_Corners@lennart-k"
-            "macos-touchpad-gestures@mactheme"
+            "macw1y-touchpad-gestures@mactheme"
             "custom-command-toggle@storageb.github.com"
             "volume-percentage-quick-settings@imdarktom"
             "quick-settings-scroll@diskmth.fr"
@@ -2097,8 +2112,8 @@ EOF_CUR_THEME_UP
         done
 
         # System gschema overrides
-        if [ -f "$SCRIPT_DIR/macos-gdm/99_mactheme.gschema.override" ]; then
-            sudo cp "$SCRIPT_DIR/macos-gdm/99_mactheme.gschema.override" /usr/share/glib-2.0/schemas/
+        if [ -f "$SCRIPT_DIR/macw1y-gdm/99_mactheme.gschema.override" ]; then
+            sudo cp "$SCRIPT_DIR/macw1y-gdm/99_mactheme.gschema.override" /usr/share/glib-2.0/schemas/
             sudo chmod 644 /usr/share/glib-2.0/schemas/99_mactheme.gschema.override
             sudo glib-compile-schemas /usr/share/glib-2.0/schemas/ 2>/dev/null || true
         fi
@@ -2212,7 +2227,7 @@ EOF_CUR_THEME_UP
         rm -f "$LOCAL_BIN/google-chrome" 2>/dev/null || true
     fi
 
-    # Core macOS theme desktop files
+    # Core macW1Y theme desktop files
     for core_df in launchpad.desktop mac-app-launcher.desktop org.gnome.Settings.desktop; do
         if [ -f "$SCRIPT_DIR/applications/$core_df" ]; then
             sync_or_update_file "$SCRIPT_DIR/applications/$core_df" "$APP_DIR/$core_df" false
@@ -2322,7 +2337,7 @@ EOF_CUR_THEME_UP
     fi
 
     # Nautilus Finder Sidebar and extensions
-    log_info "Updating macOS Nautilus Finder Sidebar..."
+    log_info "Updating macW1Y Nautilus Finder Sidebar..."
     if [ -f "$SCRIPT_DIR/src/mac_nautilus.c" ] && command -v gcc >/dev/null 2>&1; then
         gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmac_nautilus.so" "$SCRIPT_DIR/src/mac_nautilus.c" $(pkg-config --cflags --libs gtk4 libadwaita-1 gio-2.0 2>/dev/null) -ldl 2>/dev/null || true
     fi
@@ -2383,7 +2398,7 @@ EOF_NAUT
     rm -f "$TARGET_HOME/.config/autostart/mac-sync-applications.desktop" 2>/dev/null || true
     rm -f "$TARGET_HOME/.config/autostart/mac-ensure-extensions.desktop" 2>/dev/null || true
 
-    # Suppress xdg-user-dirs-gtk prompt on locale change (macOS directory structure preservation)
+    # Suppress xdg-user-dirs-gtk prompt on locale change (macW1Y directory structure preservation)
     mkdir -p "$TARGET_HOME/.config/autostart"
     cat << 'EOF_UDIRS' > "$TARGET_HOME/.config/autostart/user-dirs-update-gtk.desktop"
 [Desktop Entry]
@@ -2401,16 +2416,16 @@ EOF_UDIRS
     sudo rm -rf /etc/gnome-shell/ui/layout.js /etc/gnome-shell/ui 2>/dev/null || true
     sudo sed -i '/G_RESOURCE_OVERLAYS.*gnome-shell/d' /etc/environment 2>/dev/null || true
     install_gnome_shell_overlay
-    if [ -d "$SCRIPT_DIR/plymouth/apple-mac" ]; then
-        sync_directory_tree "$SCRIPT_DIR/plymouth/apple-mac" "/usr/share/plymouth/themes/apple-mac" true
+    if [ -d "$SCRIPT_DIR/plymouth/macw1y-boot" ]; then
+        sync_directory_tree "$SCRIPT_DIR/plymouth/macw1y-boot" "/usr/share/plymouth/themes/macw1y-boot" true
         if command -v update-alternatives >/dev/null 2>&1; then
-            sudo update-alternatives --install /usr/share/plymouth/themes/default.plymouth default.plymouth "/usr/share/plymouth/themes/apple-mac/apple-mac.plymouth" 200 2>/dev/null || true
-            sudo update-alternatives --set default.plymouth "/usr/share/plymouth/themes/apple-mac/apple-mac.plymouth" 2>/dev/null || true
+            sudo update-alternatives --install /usr/share/plymouth/themes/default.plymouth default.plymouth "/usr/share/plymouth/themes/macw1y-boot/macw1y-boot.plymouth" 200 2>/dev/null || true
+            sudo update-alternatives --set default.plymouth "/usr/share/plymouth/themes/macw1y-boot/macw1y-boot.plymouth" 2>/dev/null || true
         fi
         sudo mkdir -p /etc/plymouth
         sudo tee /etc/plymouth/plymouthd.conf >/dev/null << 'EOF'
 [Daemon]
-Theme=apple-mac
+Theme=macw1y-boot
 ShowDelay=0
 DeviceTimeout=8
 EOF
@@ -2418,11 +2433,11 @@ EOF
     fi
 
     log_info "10/10 Checking GRUB bootloader..."
-    if [ -d "$SCRIPT_DIR/grub/apple-mac" ]; then
-        sync_directory_tree "$SCRIPT_DIR/grub/apple-mac" "/boot/grub/themes/apple-mac" true
+    if [ -d "$SCRIPT_DIR/grub/macw1y-boot" ]; then
+        sync_directory_tree "$SCRIPT_DIR/grub/macw1y-boot" "/boot/grub/themes/macw1y-boot" true
     fi
-    if [ -d "$SCRIPT_DIR/grub/apple-mac-usb" ]; then
-        sync_directory_tree "$SCRIPT_DIR/grub/apple-mac-usb" "/boot/grub/themes/apple-mac-usb" true
+    if [ -d "$SCRIPT_DIR/grub/macw1y-boot-usb" ]; then
+        sync_directory_tree "$SCRIPT_DIR/grub/macw1y-boot-usb" "/boot/grub/themes/macw1y-boot-usb" true
     fi
     [ -f "$SCRIPT_DIR/grub/grub.default" ] && sync_or_update_file "$SCRIPT_DIR/grub/grub.default" "/etc/default/grub" true
     [ -f "$SCRIPT_DIR/grub/06_mac_theme_select" ] && sync_or_update_file "$SCRIPT_DIR/grub/06_mac_theme_select" "/etc/grub.d/06_mac_theme_select" true
@@ -2519,8 +2534,8 @@ run_clean_update() {
     run_as_user dconf dump / > "$BKP_DIR/dconf_dump.ini" 2>/dev/null || true
     
     log_info "2/3 Removing ALL macW1Y components from the system..."
-    rm -rf "$TARGET_HOME/.themes/macW1Y-Dark"* "$TARGET_HOME/.themes/MacTahoe"*
-    rm -rf "$TARGET_HOME/.local/share/icons/macW1Y-dark"* "$TARGET_HOME/.local/share/icons/MacTahoe"* "$TARGET_HOME/.local/share/icons/apple-cursors"*
+    rm -rf "$TARGET_HOME/.themes/macW1Y-Dark"* "$TARGET_HOME/.themes/macW1Y"*
+    rm -rf "$TARGET_HOME/.local/share/icons/macW1Y-dark"* "$TARGET_HOME/.local/share/icons/macW1Y"* "$TARGET_HOME/.local/share/icons/macw1y-cursors"*
     rm -f "$TARGET_HOME/.local/share/icons/hicolor/scalable/apps/control-center"*
     
     rm -rf "$TARGET_HOME/.local/share/fonts/SF_Pro"
@@ -2537,13 +2552,13 @@ run_clean_update() {
     rm -rf "$TARGET_HOME/.config/mac-styling"
     rm -f "$TARGET_HOME/.config/environment.d/10-mac-theme.conf"
     
-    rm -rf "$TARGET_HOME/.local/share/sounds/macOS"
-    sudo rm -rf /usr/share/sounds/macOS 2>/dev/null || true
-    rm -f "$TARGET_HOME/.config/autostart/macos-login-sound.desktop"
+    rm -rf "$TARGET_HOME/.local/share/sounds/macW1Y"
+    sudo rm -rf /usr/share/sounds/macW1Y 2>/dev/null || true
+    rm -f "$TARGET_HOME/.config/autostart/macw1y-login-sound.desktop"
     sudo rm -f /usr/local/bin/mac-login-sound
-    run_as_user gsettings set org.gnome.desktop.sound theme-name 'macOS' 2>/dev/null || true
+    run_as_user gsettings set org.gnome.desktop.sound theme-name 'macW1Y' 2>/dev/null || true
 
-    rm -rf "$TARGET_HOME/.local/share/gnome-shell/extensions/macos-touchpad-gestures@mactheme"
+    rm -rf "$TARGET_HOME/.local/share/gnome-shell/extensions/macw1y-touchpad-gestures@mactheme"
     rm -rf "$TARGET_HOME/.local/share/gnome-shell/extensions/eval-helper@mactheme"
     rm -rf "$TARGET_HOME/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com"
     sudo rm -rf /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com
@@ -2568,12 +2583,12 @@ run_clean_update() {
     sudo systemctl stop plymouth-verbose-logger.service 2>/dev/null || true
     sudo systemctl disable plymouth-verbose-logger.service 2>/dev/null || true
     sudo rm -f /etc/systemd/system/plymouth-verbose-logger.service /usr/local/bin/plymouth-verbose-logger
-    sudo rm -rf /usr/share/plymouth/themes/apple-mac
+    sudo rm -rf /usr/share/plymouth/themes/macw1y-boot
     
     sudo systemctl stop mac-grub-status.service 2>/dev/null || true
     sudo systemctl disable mac-grub-status.service 2>/dev/null || true
     sudo rm -f /etc/systemd/system/mac-grub-status.service
-    sudo rm -rf /boot/grub/themes/apple-mac
+    sudo rm -rf /boot/grub/themes/macw1y-boot
     
     rm -rf "$TARGET_HOME/.local/share/macW1Y"
     sudo rm -rf /etc/macW1Y

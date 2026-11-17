@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Replaces GNOME's window open/close animation with a subtle macOS-style fade.
+// Replaces GNOME's window open/close animation with a subtle macW1Y-style fade.
 
 import Clutter from 'gi://Clutter';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-// macOS-style: a quick fade in/out with only a barely-there scale, anchored at
+// macW1Y-style: a quick fade in/out with only a barely-there scale, anchored at
 // the window center. Open decelerates (ease-out), close accelerates (ease-in).
 const OPEN_DURATION = 100;     // ms
 const OPEN_SCALE_FROM = 0.97;

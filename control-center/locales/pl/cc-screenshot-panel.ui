@@ -83,7 +83,7 @@
                 <child>
                   <object class="AdwSwitchRow" id="screenshot_sound_row">
                     <property name="title">Dźwięk migawki aparatu</property>
-                    <property name="subtitle">Odtwarzaj charakterystyczny dźwięk migawki macOS przy robieniu zrzutu</property>
+                    <property name="subtitle">Odtwarzaj charakterystyczny dźwięk migawki macW1Y przy robieniu zrzutu</property>
                     <property name="active">true</property>
                     <signal name="realize" handler="init_screenshot_sound" />
                     <signal name="notify::active" handler="on_screenshot_sound_changed" />
@@ -124,7 +124,7 @@
                     <property name="model">
                       <object class="GtkStringList">
                         <items>
-                          <item>MP4 (.mp4 — maksymalna zgodność macOS/iOS/Windows)</item>
+                          <item>MP4 (.mp4 — maksymalna zgodność macW1Y/iOS/Windows)</item>
                           <item>WebM (.webm — otwarty zoptymalizowany format sieciowy)</item>
                           <item>MKV (.mkv — kontener bez ograniczeń)</item>
                         </items>
@@ -160,7 +160,7 @@
                     <property name="model">
                       <object class="GtkStringList">
                         <items>
-                          <item>60 kl./s (Płynny styl macOS)</item>
+                          <item>60 kl./s (Płynny styl macW1Y)</item>
                           <item>30 kl./s (Standardowy balans rozmiaru)</item>
                         </items>
                       </object>
@@ -314,7 +314,7 @@
                 <child>
                   <object class="AdwActionRow">
                     <property name="title">Przywróć domyślne</property>
-                    <property name="subtitle">Zresetuj wszystkie ustawienia zrzutów do domyślnych macOS</property>
+                    <property name="subtitle">Zresetuj wszystkie ustawienia zrzutów do domyślnych macW1Y</property>
                     <child type="suffix">
                       <object class="GtkButton" id="btn_reset_screenshot_defaults">
                         <property name="label">Zresetuj…</property>

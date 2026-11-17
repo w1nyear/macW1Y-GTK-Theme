@@ -1,5 +1,5 @@
 /*
- * Kiwi is not Apple – macOS-inspired enhancements for GNOME Shell.
+ * Kiwi is not macW1Y – macW1Y-inspired enhancements for GNOME Shell.
  * Copyright (C) 2025  Arnis Kemlers
  *
  * This program is free software: you can redistribute it and/or modify
@@ -111,7 +111,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
         window._settings = settings;
-        const extensionTitle = _('Kiwi (is not Apple)');
+        const extensionTitle = _('Kiwi Component Suite');
         window.title = extensionTitle;
         window.set_default_size(510, 710);
         // Enable built-in libadwaita search (adds search button automatically)
@@ -839,8 +839,8 @@ export default class KiwiPreferences extends ExtensionPreferences {
         // pickers are the point of this page, so the expander stays open for as
         // long as the feature is on, whatever the sub-options are set to.
         const buttonsExpander = new Adw.ExpanderRow({
-            title: _("Enable macOS Window Buttons"),
-            subtitle: _("Replace window control buttons in application windows with macOS style"),
+            title: _("Enable macW1Y Window Buttons"),
+            subtitle: _("Replace window control buttons in application windows with macW1Y style"),
             expanded: settings.get_boolean('enable-app-window-buttons'),
             show_enable_switch: true,
             enable_expansion: settings.get_boolean('enable-app-window-buttons'),
@@ -882,7 +882,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         // Firefox styling switch
         const firefoxStylingSwitch = new Adw.SwitchRow({
             title: _("Firefox Styling"),
-            subtitle: _("Apply macOS window control styling for Firefox. Recommended to use with vertical tabs."),
+            subtitle: _("Apply macW1Y window control styling for Firefox. Recommended to use with vertical tabs."),
             active: settings.get_boolean('enable-firefox-styling'),
         });
         buttonsExpander.add_row(firefoxStylingSwitch);
@@ -891,7 +891,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
         // Thunderbird styling switch
         const thunderbirdStylingSwitch = new Adw.SwitchRow({
             title: _("Thunderbird Styling"),
-            subtitle: _("Apply macOS window control styling for Thunderbird."),
+            subtitle: _("Apply macW1Y window control styling for Thunderbird."),
             active: settings.get_boolean('enable-thunderbird-styling'),
         });
         buttonsExpander.add_row(thunderbirdStylingSwitch);
@@ -947,7 +947,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
 
         const group = new Adw.PreferencesGroup({
             title: _('Kiwi'),
-            description: _("Kiwi is not like Apple, it's free open source project that brings macOS-like feel for GNOME"),
+            description: _("Kiwi is not like macW1Y, it's free open source project that brings macW1Y-like feel for GNOME"),
         });
         settingsPage.add(group);
 
@@ -958,7 +958,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
             { key: 'skip-overview-on-login', title: _("Skip to Desktop"), subtitle: _("Do not show the overview when logging in. Animation is still visible") },
             { key: 'hide-minimized-windows', title: _("Hide Minimized Windows"), subtitle: _("Hide minimized windows in the overview") },
             { key: 'move-window-to-new-workspace', title: _("Move Window to New Workspace"), subtitle: _("Move fullscreen window to a new workspace") },
-            { key: 'reduce-window-animations', title: _("Reduce App Animations"), subtitle: _("Mimic macOS window opening and closing with a subtle scale and fade") },
+            { key: 'reduce-window-animations', title: _("Reduce App Animations"), subtitle: _("Mimic macW1Y window opening and closing with a subtle scale and fade") },
             { key: 'focus-new-windows', title: _("Focus New Windows"), subtitle: _("Automatically focus new windows instead of showing window-ready alerts. Requires extension reload") },
             { key: 'transparent-move', title: _("Transparent Move"), subtitle: _("Move window with transparency") },
         ]);
@@ -1010,7 +1010,7 @@ export default class KiwiPreferences extends ExtensionPreferences {
 
         // Explanation text
         const explanationLabel = new Gtk.Label({
-            label: _('The titlebuttons hover module provides macOS-like hover effects for window controls in GTK3 applications. GTK3 apps cannot natively show hover effects on all three window controls simultaneously, requiring this custom library to achieve the desired behavior.\n\nThis binary code cannot be distributed through the GNOME Extensions platform due to security policies regarding native libraries, but manual installation is possible.'),
+            label: _('The titlebuttons hover module provides macW1Y-like hover effects for window controls in GTK3 applications. GTK3 apps cannot natively show hover effects on all three window controls simultaneously, requiring this custom library to achieve the desired behavior.\n\nThis binary code cannot be distributed through the GNOME Extensions platform due to security policies regarding native libraries, but manual installation is possible.'),
             wrap: true,
             halign: Gtk.Align.START,
             xalign: 0,
@@ -1038,9 +1038,9 @@ export default class KiwiPreferences extends ExtensionPreferences {
         });
 
         const moreProjects = [
-            { title: _('Kiwi Menu'), subtitle: _('MacOS style menu for GNOME'), url: 'https://github.com/kem-a/Kiwi-Menu' },
-            { title: _('AppManager'), subtitle: _('MacOS style AppImage installer and management application'), url: 'https://github.com/kem-a/AppManager' },
-            { title: _('Catalina Reloaded Icon Pack'), subtitle: _('macOS Tahoe icon theme for Linux'), url: 'https://github.com/kem-a/Catalina-reloaded' },
+            { title: _('Kiwi Menu'), subtitle: _('macW1Y style menu for GNOME'), url: 'https://github.com/kem-a/Kiwi-Menu' },
+            { title: _('AppManager'), subtitle: _('macW1Y style AppImage installer and management application'), url: 'https://github.com/kem-a/AppManager' },
+            { title: _('Catalina Reloaded Icon Pack'), subtitle: _('macW1Y Tahoe icon theme for Linux'), url: 'https://github.com/kem-a/Catalina-reloaded' },
             { title: _('GDM Wallpaper'), subtitle: _('Set custom GDM login screen wallpaper'), url: 'https://github.com/kem-a/gnome-gdm-wallpaper' },
         ];
 

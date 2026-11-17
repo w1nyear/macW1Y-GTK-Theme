@@ -619,7 +619,7 @@ export class ApplicationManager {
         return true;
     }
     _getMenuArrowConfig(metaWindow, rect, visW, visH) {
-        // macOS Tahoe & Ubuntu context menus never have an arrow (arrows belong only to GNOME Shell panel menus)
+        // macW1Y Tahoe & Ubuntu context menus never have an arrow (arrows belong only to GNOME Shell panel menus)
         return { side: 0, origin: 0, base: 0, rise: 0, radius: 0, fillet: 0 };
     }
     /**

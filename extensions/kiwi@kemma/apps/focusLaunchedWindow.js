@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macOS-compliant window attention handling:
+// macW1Y-compliant window attention handling:
 // Prevents background windows (such as messaging apps) from stealing focus or auto-raising.
 
 export class FocusMyWindow {

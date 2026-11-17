@@ -199,11 +199,11 @@ export class QuickSettingsManager {
   // _getStylableSubActors() below.
   private _toggleRegions: Map<Clutter.Actor, {
     baseColor: [number, number, number];
-    // [FIX] mactahoe theme: has-menu pods (Wi-Fi/Bluetooth) render their
+    // [FIX] macw1y theme: has-menu pods (Wi-Fi/Bluetooth) render their
     // visible pill background on the `.quick-toggle-has-menu` WRAPPER, while
     // Adwaita renders it on the inner `.quick-toggle` button instead (see
     // _samplePodColor() below). We used to sample only the inner button and
-    // trust its RGB unconditionally — under mactahoe that button reports
+    // trust its RGB unconditionally — under macw1y that button reports
     // rgba(0,0,0,0.00) (a fully transparent black), and since only the RGB
     // was kept (never the alpha), baseColor became a "real" opaque black,
     // which the tint blend below then painted solidly over the whole pod.
@@ -1097,7 +1097,7 @@ export class QuickSettingsManager {
   //    LockItem / ShutdownItem, all plain `.icon-button` St.Buttons parented
   //    (at some depth) by the `.quick-settings-system-item` widget, and both
   //    themes give them a real pill background of their own (Adwaita
-  //    #48484b, mactahoe rgba(255,255,255,.15)) — i.e. exactly the same
+  //    #48484b, macw1y rgba(255,255,255,.15)) — i.e. exactly the same
   //    "solid chip that should become glass" shape as a quick toggle.
   //
   //    The `.icon-button` class alone is NOT a sufficient test: the sliders'
@@ -1111,7 +1111,7 @@ export class QuickSettingsManager {
   //    pod is never descended into.
   //
   //  - [EXTEND] a `.quick-slider` row (volume / input / brightness) — but
-  //    ONLY on themes that actually paint a pill around it. mactahoe wraps
+  //    ONLY on themes that actually paint a pill around it. macw1y wraps
   //    the volume bar in a rgba(255,255,255,.15) rounded container (the
   //    thing the user sees "surrounding" the slider); Adwaita paints nothing
   //    there at all (`ThemeColor:#00000000`), and putting a glass chip
@@ -1166,7 +1166,7 @@ export class QuickSettingsManager {
   }
 
   // [EXTEND] "Does this widget paint a background of its OWN?" — used to
-  // decide whether a `.quick-slider` row is a glass pod (mactahoe: yes, it
+  // decide whether a `.quick-slider` row is a glass pod (macw1y: yes, it
   // has a visible rgba(255,255,255,.15) container; Adwaita: no, the row is
   // bare and only its children paint).
   //
@@ -1182,7 +1182,7 @@ export class QuickSettingsManager {
   // re-checked by _resampleToggleColors(), in the one moment per pass where
   // the override is lifted and the pod's real theme is readable again, and a
   // slider that stopped painting its own pill is released there. Pinning it
-  // forever is what let a slider adopted under mactahoe stay glassed after
+  // forever is what let a slider adopted under macw1y stay glassed after
   // switching to Adwaita — see the comment at that check for the full story.
   _paintsOwnBackground(actor: Clutter.Actor): boolean {
     if (this._toggleRegions.has(actor)) return true;
@@ -1321,13 +1321,13 @@ export class QuickSettingsManager {
   // ACTUALLY sees at that actor's position.
   //
   // Why this is needed: a fully transparent background-color still carries
-  // RGB, and CSS engines overwhelmingly leave that RGB at black — mactahoe's
+  // RGB, and CSS engines overwhelmingly leave that RGB at black — macw1y's
   // `.quick-toggle-has-menu .quick-toggle { background: none }` reports
   // rgba(0,0,0,0.00), and Adwaita does the same for anything unstyled. Any
   // code path that reads such a sample and keeps its RGB is reading black
   // that the theme never intended to paint. Compositing over the ancestry
   // replaces that meaningless black with the color genuinely visible there
-  // (for mactahoe: the pod's own translucent white sheen over
+  // (for macw1y: the pod's own translucent white sheen over
   // `.popup-menu-content`'s rgba(36,36,36,0.92)), so the tint calculation
   // always works from a real color.
   //
@@ -1368,13 +1368,13 @@ export class QuickSettingsManager {
     return { r: outR / outA, g: outG / outA, b: outB / outA, a: outA };
   }
 
-  // [FIX] "Wi-Fi/Bluetooth glass renders solid black under mactahoe theme,
+  // [FIX] "Wi-Fi/Bluetooth glass renders solid black under macw1y theme,
   // regardless of ON/OFF state". Root cause: for has-menu pods,
   // _getPrimaryToggleButton() always samples the inner `.quick-toggle`
   // button, which is correct for Adwaita (where THAT button carries the
   // real, opaque, checked-state color and the `.quick-toggle-has-menu`
-  // wrapper itself stays transparent) — but mactahoe does the opposite: the
-  // quick___.txt tree dump shows mactahoe's Wi-Fi/Bluetooth wrapper at
+  // wrapper itself stays transparent) — but macw1y does the opposite: the
+  // quick___.txt tree dump shows macw1y's Wi-Fi/Bluetooth wrapper at
   // rgba(255,255,255,0.15) while its inner button is rgba(0,0,0,0.00) in
   // BOTH the checked and unchecked case. Sampling only the inner button
   // there always reads a fully transparent black, and because the caller
@@ -1386,7 +1386,7 @@ export class QuickSettingsManager {
   // actually painting something (higher alpha). If neither is painting
   // anything real, return alpha 0 so the caller knows not to trust the RGB.
   //
-  // [FIX-7] "Under mactahoe the toggles' color comes back transparent, and
+  // [FIX-7] "Under macw1y the toggles' color comes back transparent, and
   // the tint then falls back to black." Confirmed against the theme's own
   // CSS: `.quick-toggle-has-menu .quick-toggle` is `background: none
   // !important` in EVERY state, so the primary button genuinely reports
@@ -1415,9 +1415,9 @@ export class QuickSettingsManager {
 
     let candidates: Clutter.Actor[] = [primary];
     if (isHasMenu && pod !== primary) candidates.push(pod);
-    // [FIX-9] "Under mactahoe the base color never changes with a toggle's
+    // [FIX-9] "Under macw1y the base color never changes with a toggle's
     // ON/OFF state, while the custom tint color works fine." Confirmed
-    // against MacTahoe-Dark/gnome-shell/gnome-shell.css: for a has-menu pod
+    // against macW1Y-Dark/gnome-shell/gnome-shell.css: for a has-menu pod
     // (Wi-Fi, Bluetooth) NEITHER of the two candidates above carries the
     // state at all —
     //
@@ -1584,7 +1584,7 @@ export class QuickSettingsManager {
       // [EXTEND-FIX] "Adwaita でも音量バーにガラスが適用されてしまう."
       //
       // A `.quick-slider` only becomes a pod on themes that actually paint a
-      // pill around it (mactahoe does, Adwaita does not) — but that verdict
+      // pill around it (macw1y does, Adwaita does not) — but that verdict
       // was made once, from the live theme node, and then pinned for the
       // lifetime of the actor by _paintsOwnBackground()'s `_toggleRegions`
       // short-circuit. That short-circuit is unavoidable while our own
@@ -1595,7 +1595,7 @@ export class QuickSettingsManager {
       //
       // It does: switching the gnome-shell theme does NOT rebuild the
       // quick-settings actors, so the very same OutputStreamSlider adopted
-      // under mactahoe stayed adopted after switching to Adwaita, glass and
+      // under macw1y stayed adopted after switching to Adwaita, glass and
       // all, with nothing left that could ever revoke it.
       //
       // Right here is the one moment per pass where the override is lifted
@@ -1607,7 +1607,7 @@ export class QuickSettingsManager {
       // then re-reads the live theme node on the next frame — now finding a
       // bare Adwaita row — and stops emitting a region for it. The reverse
       // direction needs nothing extra: an unadopted slider is always judged
-      // live, so switching back to mactahoe re-adopts it on the next frame.
+      // live, so switching back to macw1y re-adopts it on the next frame.
       if (pod instanceof St.Widget && pod.has_style_class_name('quick-slider')) {
         let pill = this._readThemeBg(pod);
         if (!(pill && pill.a > 0.02)) {
@@ -1638,7 +1638,7 @@ export class QuickSettingsManager {
           // theme that paints its color somewhere we're not looking yet"
           // requires seeing both candidates, not just the winner.
           let wrapperBg = isHasMenu ? this._readThemeBg(pod) : null;
-          // [FIX-9] The icon chip is the only element some themes (mactahoe)
+          // [FIX-9] The icon chip is the only element some themes (macw1y)
           // move the ON/OFF color onto — log it alongside the other two so a
           // "the base color never changes" report can be settled from the
           // journal alone.
@@ -1854,7 +1854,7 @@ export class QuickSettingsManager {
     // No inline style override: the widget is placed at the real panel's
     // ALLOCATION, and St insets a widget's background by its CSS margin, so
     // letting the theme's own margin apply is what lands the material exactly
-    // where the real background is drawn (mactahoe's `.popup-menu-content`
+    // where the real background is drawn (macw1y's `.popup-menu-content`
     // carries `margin: 4px 12px 17px 12px`). Padding is irrelevant here — it
     // only positions children, and this widget has none.
 
@@ -2070,7 +2070,7 @@ export class QuickSettingsManager {
 
       let entry = this._toggleRegions.get(toggle);
       // [FIX-8] "A toggle whose background genuinely turns solid white when
-      // ON (Do Not Disturb under mactahoe) barely shows any white unless the
+      // ON (Do Not Disturb under macw1y) barely shows any white unless the
       // custom Tint Strength is also turned up."
       //
       // The old code pre-blended the pod's own color with the configured tint
@@ -2102,20 +2102,20 @@ export class QuickSettingsManager {
       // screen". That holds only while the ancestry actually terminates in
       // something opaque. Adwaita's `.popup-menu-content` is `#36363a` (fully
       // opaque), so _compositeOverAncestors() always reaches coverage 1.0
-      // there and the distinction never mattered — but mactahoe's
+      // there and the distinction never mattered — but macw1y's
       // `.quick-settings { background: none }` overrides that very rule, so
-      // under mactahoe the walk runs out of ancestors while still
+      // under macw1y the walk runs out of ancestors while still
       // see-through and the coverage stays at the pod's own alpha.
       //
       // _compositeOverAncestors() then UN-PREMULTIPLIES before returning, so
-      // for a standalone `.quick-toggle` under mactahoe:
+      // for a standalone `.quick-toggle` under macw1y:
       //
       //   OFF: rgba(255,255,255,0.15) -> {r:1, g:1, b:1, a:0.15}
       //   ON:  #ffffff                -> {r:1, g:1, b:1, a:1.00}
       //
       // i.e. the RGB is pure white in BOTH states and the only thing that
       // changed is the alpha that [FIX-8] discarded — exactly the reported
-      // "the base color doesn't follow ON/OFF under mactahoe". (Adwaita
+      // "the base color doesn't follow ON/OFF under macw1y". (Adwaita
       // works because its two states differ in RGB: a gray sheen vs the
       // accent color.)
       //
@@ -2188,13 +2188,13 @@ export class QuickSettingsManager {
     //
     // That leak was invisible under Adwaita, whose `.popup-menu-content` is
     // an opaque `#36363a` — the 30% showing through is just dark panel. But
-    // mactahoe overrides that rule with `.quick-settings { background: none }`,
+    // macw1y overrides that rule with `.quick-settings { background: none }`,
     // leaving the panel body fully transparent, so the 30% showing through
     // is the raw, UNBLURRED desktop. glass.frag's own output is opaque
     // inside a region (`float alpha = insideMask;`), and global._lgGlass
     // confirmed the blur pipeline itself is healthy (blurResult 960x540, not
     // null) — so this actor opacity was the entire reason the toggles looked
-    // like they had a sharp background and no blur under mactahoe only.
+    // like they had a sharp background and no blur under macw1y only.
     const TOGGLE_GLASS_OVERLAY_OPACITY = 1.0;
     let panelOpacity = this.targetActor.get_first_child()?.opacity ?? 255;
     this.bgActor.opacity = Math.round(panelOpacity * TOGGLE_GLASS_OVERLAY_OPACITY);

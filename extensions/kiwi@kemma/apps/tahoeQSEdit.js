@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Tahoe Edit Controls menu: opens when the "Edit Controls" pill is clicked
-// instead of Settings. 1:1 with macOS Tahoe:
+// instead of Settings. 1:1 with macW1Y Tahoe:
 //   left sidebar (search + category list), right pane (section headers +
 //   control tiles), footer (hint + blue "Done" button).
 // Drag a tile into the Control Center to add it; drag CC elements to
@@ -34,7 +34,7 @@ export function setCatalog(items) {
 }
 
 function _categories() {
-    // sidebar categories, order matches macOS Tahoe reference
+    // sidebar categories, order matches macW1Y Tahoe reference
     return [
         {id: 'all', title: 'All Controls', icon: 'view-grid-symbolic', color: '#8e8e93'},
         {id: 'battery', title: 'Battery', icon: 'battery-symbolic', color: '#30d158'},
@@ -66,7 +66,7 @@ function _gicon(name) {
 }
 
 function _makeTile(ctrl) {
-    // circle tile with icon + label below (macOS Tahoe edit menu tile)
+    // circle tile with icon + label below (macW1Y Tahoe edit menu tile)
     const wrap = new St.BoxLayout({vertical: true, x_expand: false,
         y_expand: false, style_class: 'tahoe-qse-tile-wrap'});
     const circle = new St.Bin({

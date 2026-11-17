@@ -300,7 +300,7 @@ def detect_kind(path):
         return "apk"
     if base.endswith((".exe", ".msi", ".scr", ".cpl", ".dll", ".efi")):
         return "exe"
-    # tar-архіви вимкнено — мають відображатися зі статичною стандартною macOS-іконкою
+    # tar-архіви вимкнено — мають відображатися зі статичною стандартною macW1Y-іконкою
     return None
 
 

@@ -1,0 +1,44 @@
+[org/gnome/shell]
+disable-user-extensions=false
+enabled-extensions=['wack-lockscreen-clock@rinzler69-wastaken.github.com', 'user-theme@gnome-shell-extensions.gcampax.github.com']
+
+[org/gnome/shell/extensions/user-theme]
+name='macW1Y-Dark'
+
+[org/gnome/desktop/interface]
+gtk-theme='macW1Y-Dark'
+icon-theme='macW1Y-dark'
+font-name='Default 10'
+document-font-name='Default 10'
+monospace-font-name='Default Mono 10'
+
+[org/gnome/login-screen]
+enable-fingerprint-authentication=false
+logo=''
+disable-user-list=false
+
+[com/ubuntu/login-screen]
+background-color='#000000'
+
+[org/gnome/desktop/background]
+picture-uri='file:///usr/share/backgrounds/GoldenGate_Day.jpg'
+picture-uri-dark='file:///usr/share/backgrounds/GoldenGate_Day.jpg'
+picture-options='zoom'
+primary-color='#000000'
+secondary-color='#000000'
+
+[org/gnome/desktop/screensaver]
+picture-uri='file:///usr/share/backgrounds/GoldenGate_Day.jpg'
+picture-options='zoom'
+primary-color='#000000'
+
+[org/gnome/shell/extensions/wack-lockscreen-clock]
+clock-weight='bold'
+lockscreen-mode='cupertino'
+cupertino-always-show-user=true
+lockscreen-wallpaper-enable=true
+lockscreen-wallpaper-path='/usr/share/backgrounds/GoldenGate_Day.jpg'
+date-style='full'
+clock-animation='scale-down'
+prompt-animation='shell'
+cupertino-unlock-fade=true

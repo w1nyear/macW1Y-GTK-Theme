@@ -83,7 +83,7 @@ export class GdmClockManager {
         if (metadata?.clockAlpha !== undefined && metadata?.clockAlpha !== null && typeof this.clock.setWallpaperAlpha === 'function')
             this.clock.setWallpaperAlpha(metadata.clockAlpha, metadata?.promptColor ?? null);
 
-        // GDM-типографіка часу (macOS Tahoe): Open Runde SemiBold, цифри щільніші на 2px
+        // GDM-типографіка часу (macW1Y Tahoe): Open Runde SemiBold, цифри щільніші на 2px
         // та двокрапка, піднята до оптичного центру висоти цифр. Фіксуємо поверх
         // маніфесту/dconf ('bold' з user-session інакше перезаписував би дизайн входу).
         if (typeof this.clock.setWeight === 'function')
@@ -153,7 +153,7 @@ export class GdmClockManager {
 
         this.clockWrapper.visible = true;
         this.clockWrapper.opacity = 255;
-        dateLabel.set_style("color: #ffffff !important; font-family: 'SF Pro Display', -apple-system, sans-serif !important; font-size: 28px !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important; padding: 4px 8px !important;");
+        dateLabel.set_style("color: #ffffff !important; font-family: 'Default Display', default, system-ui, sans-serif, sans-serif !important; font-size: 28px !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important; padding: 4px 8px !important;");
         dateLabel.visible = true;
         dateLabel.opacity = 255;
         timeLabel.visible = true;

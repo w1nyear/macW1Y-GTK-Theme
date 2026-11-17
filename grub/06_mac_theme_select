@@ -1,7 +1,7 @@
 #! /bin/sh
 set -e
 
-# macOS Startup Manager: Theme selector & dynamic USB / Thunderbolt device detection
+# macW1Y Startup Manager: Theme selector & dynamic USB / Thunderbolt device detection
 
 esp_uuid="$(findmnt -no UUID /boot/efi 2>/dev/null || echo "B621-3DF3")"
 esp_uuid_lower="$(echo "$esp_uuid" | tr '[:upper:]' '[:lower:]')"
@@ -19,7 +19,7 @@ insmod udf
 insmod chain
 insmod probe
 
-# macOS Apple Silicon Startup Manager: Dynamic Device Scan (USB & Thunderbolt)
+# macW1Y Startup Manager: Dynamic Device Scan (USB & Thunderbolt)
 set mac_has_usb=0
 set mac_ext_count=0
 set mac_ext1_dev=""
@@ -59,7 +59,7 @@ for dev in (*); do
                         if [ "\$mac_ext_count" = "0" ]; then
                             set dev_name="VTOYEFI"
                         else
-                            set dev_name="MACOS"
+                            set dev_name="MACW1Y"
                         fi
                     fi
                 fi
@@ -85,20 +85,20 @@ for dev in (*); do
 done
 
 if [ "\$mac_ext_count" = "2" ]; then
-    set theme=(\$root)/boot/grub/themes/apple-mac-usb2/theme.txt
+    set theme=(\$root)/boot/grub/themes/macw1y-boot-usb2/theme.txt
 elif [ "\$mac_ext_count" = "1" ]; then
     if [ "\$mac_play_anim" = "1" ]; then
         set mac_play_anim=0
         insmod gfxterm_background
-        background_image -m stretch (\$root)/boot/grub/themes/apple-mac/anim/frame1.png
-        background_image -m stretch (\$root)/boot/grub/themes/apple-mac/anim/frame2.png
-        background_image -m stretch (\$root)/boot/grub/themes/apple-mac/anim/frame3.png
-        background_image -m stretch (\$root)/boot/grub/themes/apple-mac/anim/frame4.png
-        background_image -m stretch (\$root)/boot/grub/themes/apple-mac/anim/frame5.png
+        background_image -m stretch (\$root)/boot/grub/themes/macw1y-boot/anim/frame1.png
+        background_image -m stretch (\$root)/boot/grub/themes/macw1y-boot/anim/frame2.png
+        background_image -m stretch (\$root)/boot/grub/themes/macw1y-boot/anim/frame3.png
+        background_image -m stretch (\$root)/boot/grub/themes/macw1y-boot/anim/frame4.png
+        background_image -m stretch (\$root)/boot/grub/themes/macw1y-boot/anim/frame5.png
     fi
-    set theme=(\$root)/boot/grub/themes/apple-mac-usb/theme.txt
+    set theme=(\$root)/boot/grub/themes/macw1y-boot-usb/theme.txt
 else
-    set theme=(\$root)/boot/grub/themes/apple-mac/theme.txt
+    set theme=(\$root)/boot/grub/themes/macw1y-boot/theme.txt
 fi
 export theme
 EOF

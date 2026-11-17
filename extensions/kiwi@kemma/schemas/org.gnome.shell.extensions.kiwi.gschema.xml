@@ -273,7 +273,7 @@
       <key name="reduce-window-animations" type="b">
         <default>true</default>
         <summary>Reduce Window Open/Close Animations</summary>
-        <description>Replace the default window opening and closing animation with a subtle macOS-style scale and fade.</description>
+        <description>Replace the default window opening and closing animation with a subtle macW1Y-style scale and fade.</description>
       </key>
       <key name="transparent-move" type="b">
         <default>true</default>

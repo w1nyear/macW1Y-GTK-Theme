@@ -234,7 +234,7 @@ export class UIManager {
     /**
      * The accent color and its foreground as [background, foreground] hex.
      * Asked of St rather than read off a themed dummy widget, because themes
-     * such as MacTahoe only paint today's date in the accent while selected.
+     * such as macW1Y only paint today's date in the accent while selected.
      * The dummy (marked :selected) remains the fallback when St has no accent
      * (GNOME 46).
      */

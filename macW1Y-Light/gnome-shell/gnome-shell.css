@@ -2753,7 +2753,7 @@ StEntry StLabel.hint-text {
 }
 
 .unlock-dialog-clock-time {
-  font-family: Open Runde, Open Runde, SF Pro Rounded, SF Pro Display, -apple-system, sans-serif !important;
+  font-family: Open Runde, Open Runde, Default Rounded, Default Display, default, system-ui, sans-serif, sans-serif !important;
   font-size: 80pt !important;
   font-weight: 700 !important;
   color: #ffffff !important;
@@ -2764,7 +2764,7 @@ StEntry StLabel.hint-text {
 }
 
 .unlock-dialog-clock-date {
-  font-family: 'SF Pro Display', -apple-system, sans-serif !important;
+  font-family: 'Default Display', default, system-ui, sans-serif, sans-serif !important;
   font-size: 18pt !important;
   font-weight: 600 !important;
   color: rgba(255, 255, 255, 0.98) !important;
@@ -3025,7 +3025,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
   color: rgba(255, 255, 255, 0.85);
 }
 
-/* App Switcher (macOS Alt+Tab HUD) */
+/* App Switcher (macW1Y Alt+Tab HUD) */
 .switcher-popup {
   padding: 0px !important;
   spacing: 0px !important;
@@ -3092,7 +3092,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .alt-tab-app .label,
 .switcher-list .item-box StLabel,
 .switcher-list .item-box .label {
-  font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-family: 'Default Display', 'Default', default, system-ui, sans-serif, BlinkMacSystemFont, sans-serif !important;
   font-size: 11px !important;
   font-weight: 500 !important;
   color: #1d1d1f !important;
@@ -4153,7 +4153,7 @@ StWidget.focused .app-grid-running-dot {
   icon-size: 32px !important;
 }
 
-/* Notifications & Message Tray (macOS style) */
+/* Notifications & Message Tray (macW1Y style) */
 #mac-notification-stack,
 .mac-notification-stack {
   margin-top: 8px !important;
@@ -5360,7 +5360,7 @@ StWidget.focused .app-grid-running-dot {
   box-shadow: 0 4px 16px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* Workspace pager - hidden in favor of macOS Mission Control Spaces Bar */
+/* Workspace pager - hidden in favor of macW1Y Mission Control Spaces Bar */
 .workspace-thumbnails,
 #overviewControls .workspace-thumbnails,
 .overview-controls .workspace-thumbnails {
@@ -5881,7 +5881,7 @@ StWidget.focused .app-grid-running-dot {
   background: rgba(255, 255, 255, 0.1) !important;
 }
 
-/* macOS Menu Bar Status Items & Privacy Pills */
+/* macW1Y Menu Bar Status Items & Privacy Pills */
 .mac-control-center-icon {
   icon-size: 16px;
   margin: 0 4px;
@@ -5945,7 +5945,7 @@ StWidget.focused .app-grid-running-dot {
   spacing: 10px !important;
 }
 
-/* AppIndicator centered icons & macOS spacing */
+/* AppIndicator centered icons & macW1Y spacing */
 #panel .panel-button.indicator-status-icon,
 #panel .panel-button .appindicator-box,
 #panel .panel-button .appindicator-trayicons-box {
@@ -5996,7 +5996,7 @@ StWidget.focused .app-grid-running-dot {
   y-align: center !important;
 }
 
-/* Standalone Menus & Control Center Submenus in macOS Style (Wi-Fi, Bluetooth, Battery, Keyboard, Power) */
+/* Standalone Menus & Control Center Submenus in macW1Y Style (Wi-Fi, Bluetooth, Battery, Keyboard, Power) */
 .mac-menu-header-row {
   padding: 8px 12px !important;
   margin: 2px 4px !important;
@@ -6214,7 +6214,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 /* --- MAC-STYLING-START --- */
-/* Frosted Glass GNOME Shell Rules (Original MacTahoe-Dark defaults with user tint) */
+/* Frosted Glass GNOME Shell Rules (Original macW1Y-Dark defaults with user tint) */
 #dashtodockContainer #dash .dash-background,
 #dashtodockContainer.bottom #dash .dash-background,
 #dashtodockContainer.top #dash .dash-background,
@@ -6464,7 +6464,7 @@ StWidget.focused .app-grid-running-dot {
   background-color: rgba(255, 255, 255, 0.12) !important;
 }
 
-/* OSD Original Layout & Authentic Tahoe/macOS Corner Radius */
+/* OSD Original Layout & Authentic Tahoe/macW1Y Corner Radius */
 .osd-window {
   border-radius: 22px !important;
   spacing: 8px !important;
@@ -6512,7 +6512,7 @@ StWidget.focused .app-grid-running-dot {
   padding: 0 !important;
 }
 
-/* Notification Center flyout matching macOS Tahoe (Image 3) */
+/* Notification Center flyout matching macW1Y Tahoe (Image 3) */
 #calendarArea .message-list {
   min-width: 380px !important;
   max-width: 380px !important;
@@ -6575,7 +6575,7 @@ StWidget.focused .app-grid-running-dot {
   icon-size: 32px !important;
 }
 
-/* Individual notification cards: exact macOS Photo 3 styling */
+/* Individual notification cards: exact macW1Y Photo 3 styling */
 .message-list .message,
 .message {
   width: 395px !important;
@@ -6599,7 +6599,7 @@ StWidget.focused .app-grid-running-dot {
   box-shadow: none !important;
 }
 
-/* Stacked card layers (macOS card deck effect) */
+/* Stacked card layers (macW1Y card deck effect) */
 .message:second-in-stack {
   border-radius: 24px !important;
   background-color: rgba(255, 255, 255, 0.04) !important;
@@ -6695,7 +6695,7 @@ StWidget.focused .app-grid-running-dot {
   line-height: 1.35 !important;
 }
 
-/* Action buttons on cards (exact macOS pill capsule style with maximum rounding) */
+/* Action buttons on cards (exact macW1Y pill capsule style with maximum rounding) */
 .message .message-action-button,
 .message .notification-button,
 .message StButton.notification-button,
@@ -6769,7 +6769,7 @@ StWidget.focused .app-grid-running-dot {
   color: #ffffff !important;
 }
 
-/* Bottom macOS widget toolbar (Image 3) */
+/* Bottom macW1Y widget toolbar (Image 3) */
 .mac-nc-bottom-bar {
   min-width: 380px !important;
   width: 380px !important;
@@ -6872,7 +6872,7 @@ StWidget.focused .app-grid-running-dot {
   color: #ffffff !important;
   font-size: 11.5px !important;
   font-weight: 600 !important;
-  font-family: "SF Pro Text", -apple-system, sans-serif !important;
+  font-family: "Default", default, system-ui, sans-serif, sans-serif !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20) !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
   transition-duration: 150ms !important;
@@ -6893,7 +6893,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-notif-center-title {
-  font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important;
+  font-family: "Default Display", "Default", default, system-ui, sans-serif, sans-serif !important;
   font-size: 20px !important;
   font-weight: 700 !important;
   color: #ffffff !important;
@@ -6902,7 +6902,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-notif-empty-label {
-  font-family: "SF Pro Text", -apple-system, sans-serif !important;
+  font-family: "Default", default, system-ui, sans-serif, sans-serif !important;
   font-size: 14px !important;
   color: rgba(255, 255, 255, 0.6) !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
@@ -6910,7 +6910,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 /* ==========================================================================
-   macOS Tahoe Control Center Styles
+   macW1Y Tahoe Control Center Styles
    ========================================================================== */
 .mac-control-center-root {
   width: 360px !important;
@@ -6922,7 +6922,7 @@ StWidget.focused .app-grid-running-dot {
   border: none !important;
   box-shadow: none !important;
   padding: 10px !important;
-  font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important;
+  font-family: "Default Display", "Default", default, system-ui, sans-serif, sans-serif !important;
   color: #ffffff !important;
 }
 
@@ -7089,7 +7089,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-cc-title {
-  font-family: "SF Pro Text", -apple-system, sans-serif !important;
+  font-family: "Default", default, system-ui, sans-serif, sans-serif !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   letter-spacing: 0.15px !important;
@@ -7098,7 +7098,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 .mac-cc-subtitle {
-  font-family: "SF Pro Text", -apple-system, sans-serif !important;
+  font-family: "Default", default, system-ui, sans-serif, sans-serif !important;
   font-size: 11.5px !important;
   font-weight: 400 !important;
   letter-spacing: 0.1px !important;
@@ -7304,7 +7304,7 @@ StWidget.focused .app-grid-running-dot {
   color: #ffffff !important;
 }
 
-/* --- Spotlight macOS Liquid Glass Redesign --- */
+/* --- Spotlight macW1Y Liquid Glass Redesign --- */
 .mac-spotlight-backdrop {
   background-color: transparent !important;
   background: transparent !important;

@@ -615,7 +615,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         this._ghostLabel = new St.Label({
             style_class: 'mac-spotlight-ghost-label',
-            style: 'font-size: 19px !important; font-weight: 500 !important; font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif !important; ' +
+            style: 'font-size: 19px !important; font-weight: 500 !important; font-family: Inter, default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", sans-serif !important; ' +
                    'color: #ffffff !important; padding: 0px !important; margin: 0px !important; background: none !important; border: none !important;',
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.START,
@@ -627,7 +627,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
         this._entry = new St.Entry({
             style_class: 'mac-spotlight-entry',
-            style: 'font-size: 19px !important; font-weight: 500 !important; font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif !important; ' +
+            style: 'font-size: 19px !important; font-weight: 500 !important; font-family: Inter, default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", sans-serif !important; ' +
                    'color: #ffffff !important; ' +
                    'hint-text-color: #ffffff !important; ' +
                    'text-shadow: 0 1px 1px rgba(0, 0, 0, 0.10) !important; ' +
@@ -3615,7 +3615,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 this._ghostLabel.clutter_text.set_text('');
                 this._ghostLabel.set_style(
                     'font-size: 19px !important; font-weight: 500 !important; ' +
-                    'font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif !important; ' +
+                    'font-family: Inter, default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", sans-serif !important; ' +
                     'color: #ffffff !important; padding: 0px !important; margin: 0px !important; ' +
                     'background: none !important; border: none !important;'
                 );
@@ -3667,7 +3667,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 this._ghostLabel.clutter_text.set_markup(markup);
                 this._ghostLabel.set_style(
                     'font-size: 19px !important; font-weight: 500 !important; ' +
-                    'font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif !important; ' +
+                    'font-family: Inter, default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", sans-serif !important; ' +
                     'color: #ffffff !important; padding: 0px !important; margin: 0px 0px 0px ' + textWidth + 'px !important; ' +
                     'background: none !important; border: none !important;'
                 );

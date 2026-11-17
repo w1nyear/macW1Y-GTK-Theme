@@ -83,7 +83,7 @@ export class ClockLayoutManager {
         this.dateLabel = dateLabel;
         this.timeLabel = timeLabel;
         if (this.dateLabel) {
-            this.dateLabel.set_style("color: #ffffff !important; font-family: 'SF Pro Display', -apple-system, sans-serif !important; font-size: 28px !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important; padding: 4px 8px !important;");
+            this.dateLabel.set_style("color: #ffffff !important; font-family: 'Default Display', default, system-ui, sans-serif, sans-serif !important; font-size: 28px !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important; padding: 4px 8px !important;");
         }
 
         dateLabel.connectObject('notify::text', () => this.positionClock(), this);

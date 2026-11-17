@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-#   macW1Y — macOS Transformation, Developer & Debug CLI System
+#   macW1Y — macW1Y Transformation, Developer & Debug CLI System
 # ==============================================================================
 
 VERSION="0.7"
@@ -40,7 +40,7 @@ show_help() {
 
     echo -e " ${C_BOLD}${C_BLUE}▶ System & Setup:${C_RESET}"
     printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-gdm-bypass" "[bypass]" "Emergency GDM bypass & auto-login recovery to desktop GUI"
-    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-setup-wizard" "[wizard]" "Initial macOS setup wizard controller (start|status|reset|stop)"
+    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-setup-wizard" "[wizard]" "Initial macW1Y setup wizard controller (start|status|reset|stop)"
     printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-diagnostics" "[diag]" "Run comprehensive system diagnostics & baseline check"
     printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-audit-sync" "[audit]" "Audit system files, libraries, dock & repo synchronization"
     printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-extension-guard" "[guard]" "GNOME Shell extensions version lock & integrity watchdog"
@@ -48,28 +48,28 @@ show_help() {
     printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-integrity-check" "[integrity]" "Verify package and modpack file checksums"
 
     echo -e "\n ${C_BOLD}${C_BLUE}▶ Styling & Themes:${C_RESET}"
-    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-apply-theme" "[theme]" "Switch macOS theme variant (dark, light, solid, default)"
+    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-apply-theme" "[theme]" "Switch macW1Y theme variant (dark, light, solid, default)"
     printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-apply-locale" "[locale]" "Synchronize system language and interface translations"
-    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-styling-settings" "[styling]" "Open macOS Liquid Glass and shader styling settings"
+    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-styling-settings" "[styling]" "Open macW1Y Liquid Glass and shader styling settings"
     printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-build-theme" "[build-theme]" "Recompile GTK3, GTK4, and GNOME Shell theme CSS"
-    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-login-sound" "[sound]" "Configure macOS startup chime sound"
+    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-login-sound" "[sound]" "Configure macW1Y startup chime sound"
 
     echo -e "\n ${C_BOLD}${C_BLUE}▶ Desktop & Widgets:${C_RESET}"
     printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-widgets-settings" "[widgets]" "Desktop widgets settings panel"
-    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-widget-picker" "[picker]" "Open interactive macOS desktop widget picker gallery"
-    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-clipboard" "[clipboard]" "Open smart macOS clipboard history dialog"
-    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-airdrop" "[airdrop]" "macOS AirDrop file receiver and network daemon"
-    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-touchpad-daemon" "[touchpad]" "Apple MacBook 3-finger / 4-finger gestures daemon"
+    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-widget-picker" "[picker]" "Open interactive macW1Y desktop widget picker gallery"
+    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-clipboard" "[clipboard]" "Open smart macW1Y clipboard history dialog"
+    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-airdrop" "[airdrop]" "macW1Y AirDrop file receiver and network daemon"
+    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-touchpad-daemon" "[touchpad]" "macW1Y 3-finger / 4-finger gestures daemon"
     printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-sync-applications" "[sync-apps]" "Synchronize application launcher entries & desktop icons"
-    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-uninstall-app" "[uninstall-app]" "macOS drag-to-trash application uninstaller"
-    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-screenshot-process" "[screenshot]" "macOS screenshot & screen recording processor"
+    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-uninstall-app" "[uninstall-app]" "macW1Y drag-to-trash application uninstaller"
+    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-screenshot-process" "[screenshot]" "macW1Y screenshot & screen recording processor"
 
     echo -e "\n ${C_BOLD}${C_BLUE}▶ Hardware & Gaming:${C_RESET}"
-    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-gamemode" "[gamemode]" "Apple Game Mode optimization controller (on|off|auto|status)"
+    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-gamemode" "[gamemode]" "macW1Y Game Mode optimization controller (on|off|auto|status)"
     printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-gpu-manager" "[gpu]" "Discrete / Integrated GPU manager and launcher"
     printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-graphics-profile" "[profile]" "Switch graphics profile (balanced|high|performance|auto)"
-    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-boot-config" "[boot]" "macOS Apple Silicon GRUB boot menu configuration"
-    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-wine-runner" "[wine]" "macOS Wine/Proton compatibility runner"
+    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-boot-config" "[boot]" "macW1Y macW1Y GRUB boot menu configuration"
+    printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-wine-runner" "[wine]" "macW1Y Wine/Proton compatibility runner"
     printf "   ${C_CYAN}%-26s${C_RESET} %-18s %s\n" "mac-capcut-fix" "[capcut]" "Fix CapCut video editor hardware acceleration & rendering"
 
     echo -e "\n ${C_BOLD}${C_BLUE}▶ Debug & Maintenance:${C_RESET}"

@@ -9561,7 +9561,7 @@ themeswitcher checkbutton.dark {
 @define-color text_view_bg @view_bg_color;
 
 /* --- MAC-STYLING-START --- */
-/* macOS Tahoe Context Menus (System GTK Applications Only) */
+/* macW1Y Tahoe Context Menus (System GTK Applications Only) */
 menu,
 menu.popup-menu,
 menu.context-menu,
@@ -9849,7 +9849,7 @@ tooltip label {
 /* --- MAC-STYLING-END --- */
 
 /* --- MAC-NAUTILUS-SIDEBAR-START --- */
-/* macOS Tahoe Nautilus Finder - Translucent Glass Sidebar & Solid Dark Pane */
+/* macW1Y Tahoe Nautilus Finder - Translucent Glass Sidebar & Solid Dark Pane */
 
 /* Make window root and split container transparent in the sidebar area, with corner patches for rounded sidebar */
 window.nautilus-window,
@@ -9949,7 +9949,7 @@ navigationview.sidebar headerbar windowcontrols.start:dir(ltr),
 }
 
 /* Mac Settings headerbar alignment matching Nautilus */
-/* Global Top Bar Transparency & macOS List Dissolve Shader across all apps */
+/* Global Top Bar Transparency & macW1Y List Dissolve Shader across all apps */
 headerbar,
 headerbar:backdrop,
 headerbar.default-decoration,
@@ -9983,7 +9983,7 @@ window.nautilus-window .sidebar-pane headerbar {
     box-shadow: none;
 }
 
-/* macOS Top Bar & List Dissolve Shader:
+/* macW1Y Top Bar & List Dissolve Shader:
    Gradient starts from the very beginning of the top panel across Settings and all applications */
 window toolbarview > .top-bar,
 window toolbarview > revealer.top-bar,
@@ -10157,7 +10157,7 @@ placessidebar row:hover:not(:selected),
     transition-property: background-color, color;
 }
 
-/* Selected state - system accent color (macOS Tahoe style) */
+/* Selected state - system accent color (macW1Y Tahoe style) */
 .navigation-sidebar row:selected,
 .navigation-sidebar row:selected:backdrop,
 .navigation-sidebar > row:selected,
@@ -10257,7 +10257,7 @@ separator.sidebar-trash-separator {
     margin: 8px 10px;
 }
 
-/* Clean macOS app grid/list view without symlink/readonly emblems */
+/* Clean macW1Y app grid/list view without symlink/readonly emblems */
 #emblems_box,
 box#emblems_box,
 .nautilus-grid-view #emblems_box,
@@ -10420,7 +10420,7 @@ scrolledwindow undershoot.right {
 }
 
 /* ============================================================
-   macOS Tahoe / Sequoia style gradient fade for scrolled lists
+   macW1Y Tahoe / Sequoia style gradient fade for scrolled lists
    Smooth edge dissolution at scroll limits (Settings, Nautilus, etc.)
    with gradient blur dissolution (Control Center background blur logic)
    ============================================================ */
@@ -10760,7 +10760,7 @@ row.fan-settings-subrow:selected {
     font-size: 12px;
 }
 
-/* macOS 26 Settings UI Transformation */
+/* macW1Y 26 Settings UI Transformation */
 window.mac-settings-window list.mac-settings-sidebar-list,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar {
     background-color: transparent;
@@ -11318,7 +11318,7 @@ window.mac-settings-window .panel-has-switcher scrolledwindow > undershoot.top {
 
 
 /* =========================================================================
-   macOS Settings Navigation Buttons (Photo 2 / Photo 3)
+   macW1Y Settings Navigation Buttons (Photo 2 / Photo 3)
    ========================================================================= */
 .mc-toggle-group,
 .mac-nav-pill {
@@ -11402,7 +11402,7 @@ window.mac-settings-window .panel-has-switcher scrolledwindow > undershoot.top {
 }
 
 /* =========================================================================
-   macOS Settings Cards & Rows Styling
+   macW1Y Settings Cards & Rows Styling
    ========================================================================= */
 window.mac-settings-window preferencesgroup list.boxed-list row:not(.property) label.subtitle,
 window.mac-settings-window preferencesgroup list.boxed-list row:not(.property) .subtitle,

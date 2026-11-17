@@ -142,7 +142,7 @@ def notify_user(issues):
             title,
             body
         ], check=False)
-        sound_path = "/usr/share/sounds/macOS/stereo/dialog-warning.ogg"
+        sound_path = "/usr/share/sounds/macW1Y/stereo/dialog-warning.ogg"
         if os.path.exists(sound_path):
             subprocess.Popen(["pw-play", sound_path], stderr=subprocess.DEVNULL)
     except Exception as e:

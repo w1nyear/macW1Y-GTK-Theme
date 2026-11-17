@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-mac-screenshot-process — macOS Sequoia/Tahoe Screenshot & Screencast Processing Engine
+mac-screenshot-process — macW1Y Sequoia/Tahoe Screenshot & Screencast Processing Engine
 Handles:
-- Immediate macOS camera shutter sound on capture
+- Immediate macW1Y camera shutter sound on capture
 - Post-processing & upscaling (Native / 1080p / 2K / 4K) using Lanczos3 / Unsharp Mask
 - Format conversion (PNG, JPEG, WebP)
 - Video transcoding (MP4 / WebM / MKV, H.264 / VP9 / AV1, 60fps / 30fps)
@@ -20,7 +20,7 @@ import subprocess
 from pathlib import Path
 
 CONFIG_FILE = Path(os.path.expanduser("~/.config/mac-styling/screenshot.json"))
-SHUTTER_SOUND = "/usr/share/sounds/macOS/stereo/camera-shutter.ogg"
+SHUTTER_SOUND = "/usr/share/sounds/macW1Y/stereo/camera-shutter.ogg"
 
 DEFAULT_CONFIG = {
     "image_format": 0,           # 0=PNG, 1=JPEG, 2=WebP
@@ -602,9 +602,9 @@ def run_daemon():
             time.sleep(2.0)
 
 def main():
-    parser = argparse.ArgumentParser(description="macOS Sequoia/Tahoe Screenshot Processing Engine")
+    parser = argparse.ArgumentParser(description="macW1Y Sequoia/Tahoe Screenshot Processing Engine")
     parser.add_argument("--file", "-f", help="Path to screenshot or screencast file to process")
-    parser.add_argument("--play-shutter", action="store_true", help="Play the macOS camera shutter sound")
+    parser.add_argument("--play-shutter", action="store_true", help="Play the macW1Y camera shutter sound")
     parser.add_argument("--daemon", action="store_true", help="Run background watcher daemon")
     args = parser.parse_args()
 

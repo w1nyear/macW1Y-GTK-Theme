@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Wine Windows Program Loader
-Comment=Run Windows applications seamlessly on macOS Modpack
+Comment=Run Windows applications seamlessly on macW1Y Modpack
 Exec=/usr/local/bin/mac-wine-runner %F
 Icon=wine
 Terminal=false

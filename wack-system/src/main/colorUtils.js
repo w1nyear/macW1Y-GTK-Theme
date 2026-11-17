@@ -1,5 +1,5 @@
 // Tuning range for the adaptive prompt-chip white-blend alpha.
-// Calibrated against the real macOS Sonoma lockscreen:
+// Calibrated against the real macW1Y Sonoma lockscreen:
 //   At FLOOR (0.16): chip is 16% white on very dark wallpapers — keeps the chip dark.
 //   At ROOF  (0.224): chip is 22.4% white on bright wallpapers — keeps the chip frosted-white.
 export const PROMPT_ALPHA_FLOOR = 0.16;
@@ -644,7 +644,7 @@ export function getChromeAlpha(visualStateOrLightness, state = 'base') {
  * Sensibilities:
  * - On dark backdrops: slightly deeper dark veil (0.25 - 0.35) creates distinct unfocused depth.
  * - On bright/inverse backdrops: gentle, subtle dark veil (0.10 - 0.16) avoids muddy black blotches
- *   and maintains clean macOS-style frosted aesthetic.
+ *   and maintains clean macW1Y-style frosted aesthetic.
  * - Monotonic mapping bounded between 0.10 and 0.35.
  *
  * @param {object|number} visualStateOrLightness

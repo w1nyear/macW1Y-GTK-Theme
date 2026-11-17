@@ -1,5 +1,5 @@
 /*
- * cascadingSubmenuMenuItem.js - macOS-style flyout cascading submenu for the AppMenu menubar.
+ * cascadingSubmenuMenuItem.js - macW1Y-style flyout cascading submenu for the AppMenu menubar.
  * Submenus appear to the right (St.Side.RIGHT) as a new context menu, rather than expanding inline.
  */
 

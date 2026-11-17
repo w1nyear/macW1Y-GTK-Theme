@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macOS-style keyboard badge for the top panel: a filled rounded rect with
+// macW1Y-style keyboard badge for the top panel: a filled rounded rect with
 // the layout code (RU/DE/EN…) punched out as transparent glyphs (Cairo
 // DEST_OUT), so the panel shows through the letter shapes.
 //
@@ -28,7 +28,7 @@ let _state = null;
 
 function _badgeFont() {
     const desc = new Pango.FontDescription();
-    desc.set_family('SF Pro Text, Sans');
+    desc.set_family('Default, Sans');
     desc.set_weight(Pango.Weight.BOLD);
     desc.set_size(BADGE_FONT_PX * Pango.SCALE);
     return desc;
@@ -63,7 +63,7 @@ function _badgeInk(text, cr) {
 }
 
 function _badgeFill() {
-    // White rounded badge with cut-out text per macOS Tahoe style
+    // White rounded badge with cut-out text per macW1Y Tahoe style
     try {
         const ink = getTopbarInk();
         if (ink === 'dark')

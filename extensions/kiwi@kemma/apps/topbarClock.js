@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macOS-style clock in the top bar: "Вт 30 сен 9:41" - Russian weekday
+// macW1Y-style clock in the top bar: "Вт 30 сен 9:41" - Russian weekday
 // and month abbreviations, unpadded hour, minute always two digits.
 // GNOME fills the label through a WallClock binding; ours connects later,
 // so within the same emission our text is the last word.

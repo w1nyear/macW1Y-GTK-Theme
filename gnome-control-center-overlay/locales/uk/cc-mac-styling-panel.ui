@@ -1315,11 +1315,11 @@
                 <child>
                   <object class="AdwPreferencesGroup">
                     <property name="title">Завантажувач (Bootloader)</property>
-                    <property name="description">Параметри завантаження macOS Plymouth та логування ядра</property>
+                    <property name="description">Параметри завантаження macW1Y Plymouth та логування ядра</property>
                     <child>
                       <object class="AdwSwitchRow" id="boot_verbose_switch">
                         <property name="title">Режим verbose</property>
-                        <property name="subtitle">Текстовий лог завантаження термінала позаду логотипу Apple</property>
+                        <property name="subtitle">Текстовий лог завантаження термінала позаду логотипу macW1Y</property>
                         <signal name="realize" handler="init_boot_verbose"/>
                         <signal name="notify::active" handler="on_boot_verbose_changed"/>
                       </object>
@@ -1327,7 +1327,7 @@
                     <child>
                       <object class="AdwSwitchRow" id="boot_grub_switch">
                         <property name="title">Меню GRUB</property>
-                        <property name="subtitle">Графічне меню вибору системи у стилі macOS під час старту</property>
+                        <property name="subtitle">Графічне меню вибору системи у стилі macW1Y під час старту</property>
                         <signal name="realize" handler="init_boot_grub"/>
                         <signal name="notify::active" handler="on_boot_grub_changed"/>
                       </object>

@@ -16,7 +16,7 @@
     border-color: transparent;
 }
 
-/* macOS style selection & hover: transparent item container, rounded accent or hover pill on file label */
+/* macW1Y style selection & hover: transparent item container, rounded accent or hover pill on file label */
 .file-item,
 .file-item:hover,
 .file-item.file-item-hover,
@@ -80,7 +80,7 @@ window.rename-popup {
     padding: 10px 14px;
 }
 
-/* Desktop Context Menu styling (macOS Tahoe Glass) */
+/* Desktop Context Menu styling (macW1Y Tahoe Glass) */
 window.desktopmenu,
 window.desktopmenu.background,
 window.desktopmenu.popup,

@@ -27,7 +27,7 @@
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-export const GLASS_REFRESH_ACTIVE_INTERVAL_US = 8333;   // до 120 FPS під час активного руху/трансформації (Apple ProMotion)
+export const GLASS_REFRESH_ACTIVE_INTERVAL_US = 8333;   // до 120 FPS під час активного руху/трансформації (macW1Y ProMotion)
 export const GLASS_REFRESH_BACKGROUND_INTERVAL_US = 16666; // 60 FPS для фонових змін під склом (відео, ігри, анімації)
 export const GLASS_REFRESH_60FPS_INTERVAL_US = 16666;      // звичайна межа 60 FPS
 export const GLASS_REFRESH_HEARTBEAT_US = 1500000;         // пульс узгодженості у спокої: 1.5 с
@@ -316,7 +316,7 @@ export function glassRefreshDue(glassActor, extraHash) {
         const sinceFull = nowUs - st.lastFull;
 
         if (st.dirty) {
-            // Apple ProMotion Dynamic Adaptivity:
+            // macW1Y ProMotion Dynamic Adaptivity:
             // Активний рух власної геометрії скла -> до 120 FPS (8.3 мс)
             // Зміна фону під склом / вікно поруч (відео, гра, анімація) -> 60 FPS (16.6 мс)
             const dueInterval = ownChanged ? GLASS_REFRESH_ACTIVE_INTERVAL_US : GLASS_REFRESH_60FPS_INTERVAL_US;

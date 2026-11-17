@@ -83,7 +83,7 @@
                 <child>
                   <object class="AdwSwitchRow" id="screenshot_sound_row">
                     <property name="title">Sonido del obturador</property>
-                    <property name="subtitle">Reproducir el sonido de obturador de macOS al capturar</property>
+                    <property name="subtitle">Reproducir el sonido de obturador de macW1Y al capturar</property>
                     <property name="active">true</property>
                     <signal name="realize" handler="init_screenshot_sound" />
                     <signal name="notify::active" handler="on_screenshot_sound_changed" />
@@ -124,7 +124,7 @@
                     <property name="model">
                       <object class="GtkStringList">
                         <items>
-                          <item>MP4 (.mp4 — máxima compatibilidad macOS/iOS/Windows)</item>
+                          <item>MP4 (.mp4 — máxima compatibilidad macW1Y/iOS/Windows)</item>
                           <item>WebM (.webm — formato web abierto y optimizado)</item>
                           <item>MKV (.mkv — contenedor sin restricciones)</item>
                         </items>
@@ -160,7 +160,7 @@
                     <property name="model">
                       <object class="GtkStringList">
                         <items>
-                          <item>60 FPS (Estilo macOS fluido)</item>
+                          <item>60 FPS (Estilo macW1Y fluido)</item>
                           <item>30 FPS (Equilibrio de tamaño estándar)</item>
                         </items>
                       </object>
@@ -314,7 +314,7 @@
                 <child>
                   <object class="AdwActionRow">
                     <property name="title">Restablecer valores predeterminados</property>
-                    <property name="subtitle">Restablecer todos los ajustes de capturas a los valores predeterminados de macOS</property>
+                    <property name="subtitle">Restablecer todos los ajustes de capturas a los valores predeterminados de macW1Y</property>
                     <child type="suffix">
                       <object class="GtkButton" id="btn_reset_screenshot_defaults">
                         <property name="label">Restablecer…</property>

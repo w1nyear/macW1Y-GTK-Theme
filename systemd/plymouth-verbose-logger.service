@@ -1,6 +1,6 @@
 [Unit]
-Description=macOS Verbose Boot Logger for Plymouth
-ConditionPathExists=/usr/share/plymouth/themes/apple-mac/verbose_on.png
+Description=macW1Y Verbose Boot Logger for Plymouth
+ConditionPathExists=/usr/share/plymouth/themes/macw1y-boot/verbose_on.png
 DefaultDependencies=no
 After=plymouth-start.service
 Before=plymouth-quit.service

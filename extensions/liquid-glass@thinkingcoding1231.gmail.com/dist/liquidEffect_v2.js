@@ -1804,7 +1804,7 @@ export const LiquidEffect_v2 = _registerLiquidEffect_v2(class LiquidEffect_v2 ex
         const timeSinceLastBlur = now - (this._lastBlurTimeUs || 0);
         const isActivelyTransforming = (now - (this._lastGeometryChangeUs || 0)) < 150000;
 
-        // Dynamic Adaptive Rate (Apple ProMotion logic):
+        // Dynamic Adaptive Rate (macW1Y ProMotion logic):
         // 1. Active transformation / drag / resize: up to 120 FPS (8,333 μs) for silky-smooth motion.
         // 2. Resting / static geometry: throttle blur updates to 30 FPS (33,333 μs).
         //    (Blurred background updates at 30 FPS save 75% GPU without visible degradation).
@@ -3228,7 +3228,7 @@ export const LiquidEffect_v2 = _registerLiquidEffect_v2(class LiquidEffect_v2 ex
             this._batchDirty = true;
             return;
         }
-        // [PERF - Apple Architecture]
+        // [PERF - macW1Y Architecture]
         // Do NOT unconditionally dirty the backdrop blur here. queue_repaint() is
         // called for foreground UI updates (scrolling list items, hover feedback,
         // cursor blinks, selection changes). Those do NOT change the wallpaper or

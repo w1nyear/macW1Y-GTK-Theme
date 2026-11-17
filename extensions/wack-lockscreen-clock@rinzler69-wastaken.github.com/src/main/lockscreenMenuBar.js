@@ -220,7 +220,7 @@ export class LockscreenMenuBarManager {
             cr.rectangle(bx, by, fillW, bh);
 
             if (charging) {
-                // macOS vivid green while charging (#28cd41)
+                // macW1Y vivid green while charging (#28cd41)
                 cr.setSourceRGBA(40 / 255, 205 / 255, 65 / 255, 1.0);
             } else if (pct <= 0.10) {
                 cr.setSourceRGBA(255 / 255, 59 / 255, 48 / 255, 1.0);
@@ -344,7 +344,7 @@ export class LockscreenMenuBarManager {
             width: showPctInitial ? -1 : 0,
             margin_right: showPctInitial ? 6 : 0,
             y_align: Clutter.ActorAlign.CENTER,
-            style: "font-family: 'SF Pro Text', -apple-system, sans-serif !important; font-size: 14px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.95) !important; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45) !important;",
+            style: "font-family: 'Default', default, system-ui, sans-serif, sans-serif !important; font-size: 14px !important; font-weight: 600 !important; color: rgba(255, 255, 255, 0.95) !important; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45) !important;",
         });
 
         this._batteryDrawingArea = new St.DrawingArea({
@@ -387,7 +387,7 @@ export class LockscreenMenuBarManager {
             const CC_PATHS = [
                 '/usr/share/mactheme/icons/controlcenter.png',
                 '/home/vitaliy/.themes/macW1Y-Dark/icons/control-center.png',
-                '/home/vitaliy/.themes/MacTahoe-Dark/icons/control-center.png',
+                '/home/vitaliy/.themes/macW1Y-Dark/icons/control-center.png',
                 GLib.get_home_dir() + '/.themes/macW1Y-Dark/icons/control-center.png',
             ];
             let ccFile = null;
@@ -468,7 +468,7 @@ export class LockscreenMenuBarManager {
             dm.container.style = 'margin: 0 !important; padding: 0 6px !important; height: 34px !important; min-height: 34px !important;';
         }
         if (dm._clockDisplay) {
-            dm._clockDisplay.style = "font-family: 'SF Pro Text', -apple-system, sans-serif !important; font-size: 14px !important; font-weight: 500 !important; color: rgba(255, 255, 255, 0.95) !important; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45) !important;";
+            dm._clockDisplay.style = "font-family: 'Default', default, system-ui, sans-serif, sans-serif !important; font-size: 14px !important; font-weight: 500 !important; color: rgba(255, 255, 255, 0.95) !important; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45) !important;";
         }
 
         if (!this._dateMenuClickId) {

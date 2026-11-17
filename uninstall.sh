@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-#   macOS Sequoia / Tahoe Transformation Modpack for Ubuntu 24.04 (GNOME 46)
+#   macW1Y Sequoia / Tahoe Transformation Modpack for Ubuntu 24.04 (GNOME 46)
 #  Uninstaller Script - Master Version (macW1Y Release)
 # ==============================================================================
 
@@ -98,14 +98,14 @@ restore_ui() {
         run_as_user gsettings set org.gnome.desktop.background picture-uri-dark "file://$DEFAULT_WP"
     fi
     
-    # Вимкнення кастомних розширень macOS
+    # Вимкнення кастомних розширень macW1Y
     log_info "Вимкнення кастомних розширень..."
     local CUSTOM_EXTS=(
         "blur-my-shell@aunetx"
         "compiz-alike-magic-lamp-effect@hermes83.github.com"
         "Rounded_Corners@lennart-k"
         "liquid-glass@thinkingcoding1231.gmail.com"
-        "macos-touchpad-gestures@mactheme"
+        "macw1y-touchpad-gestures@mactheme"
         "eval-helper@mactheme"
         "wack-lockscreen-clock@rinzler69-wastaken.github.com"
     )
@@ -133,7 +133,7 @@ restore_ui() {
 # 2. Видалення системних компонентів та служб
 # ------------------------------------------------------------------------------
 restore_system() {
-    log_step "Вимкнення та видалення системних служб macOS..."
+    log_step "Вимкнення та видалення системних служб macW1Y..."
     require_root
     
     # Жести тачпада
@@ -213,7 +213,7 @@ restore_system() {
     sudo systemctl disable plymouth-verbose-logger.service 2>/dev/null || true
     sudo rm -f /etc/systemd/system/plymouth-verbose-logger.service
     sudo rm -f /usr/local/bin/plymouth-verbose-logger
-    sudo rm -rf /usr/share/plymouth/themes/apple-mac
+    sudo rm -rf /usr/share/plymouth/themes/macw1y-boot
     sudo rm -f /etc/systemd/system/plymouth-quit.service.d/override.conf
     if command -v plymouth-set-default-theme >/dev/null 2>&1; then
         sudo plymouth-set-default-theme -R bgrt 2>/dev/null || sudo plymouth-set-default-theme -R ubuntu-logo 2>/dev/null || true
@@ -224,13 +224,13 @@ restore_system() {
     if [ -f /etc/default/grub.bak_mactheme ]; then
         sudo cp /etc/default/grub.bak_mactheme /etc/default/grub
     else
-        sudo sed -i '/GRUB_THEME.*apple-mac/d' /etc/default/grub 2>/dev/null || true
+        sudo sed -i '/GRUB_THEME.*macw1y-boot/d' /etc/default/grub 2>/dev/null || true
     fi
     
     if [ -f /etc/grub.d/10_linux.bak_mactheme ]; then
         sudo cp /etc/grub.d/10_linux.bak_mactheme /etc/grub.d/10_linux
     fi
-    sudo rm -rf /boot/grub/themes/apple-mac
+    sudo rm -rf /boot/grub/themes/macw1y-boot
     sudo update-grub
     
     sudo systemctl daemon-reload

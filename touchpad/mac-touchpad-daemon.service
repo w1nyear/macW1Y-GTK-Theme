@@ -1,5 +1,5 @@
 [Unit]
-Description=macOS Touchpad Gestures Daemon
+Description=macW1Y Touchpad Gestures Daemon
 After=network.target
 
 [Service]

@@ -7,14 +7,14 @@ A stripped down, and currently maintained lightweight fork, of **[Dash Cupertini
   <img src="screenshots/screenshot2.png" width="48%" />
 </p>
 
-This is a part of the WACK project (WACK Ain't Cupertino, Kid), a collection of tweaks aimed at bringing a refined, macOS-inspired aesthetic to the GNOME desktop.
+This is a part of the WACK project (WACK Ain't Cupertino, Kid), a collection of tweaks aimed at bringing a refined, macW1Y-inspired aesthetic to the GNOME desktop.
 
-This specific extension focuses on the Dock, with macOS-inspired theming (Mojave and Big Sur styles) and bounce animations for launching and urgent apps, as well as a quality-of-life improvement for smoother Magic Lamp minimize effects.
+This specific extension focuses on the Dock, with macW1Y-inspired theming (Mojave and Big Sur styles) and bounce animations for launching and urgent apps, as well as a quality-of-life improvement for smoother Magic Lamp minimize effects.
 
 ## Features
-- **macOS-inspired Theming** <br>
-Choose from two dock themes — Mojave (flush to screen edge, 10px radius) and Big Sur (floating, 22px radius) — in light, dark, or system-synced color. Includes macOS-style notification badge styling. Theming can be toggled off under Theme → Override Theming. <br><br>
-- **macOS-inspired Launch Animation** <br>
+- **macW1Y-inspired Theming** <br>
+Choose from two dock themes — Mojave (flush to screen edge, 10px radius) and Big Sur (floating, 22px radius) — in light, dark, or system-synced color. Includes macW1Y-style notification badge styling. Theming can be toggled off under Theme → Override Theming. <br><br>
+- **macW1Y-inspired Launch Animation** <br>
 App icons bounce when launching or urgent, with tunable speed and bounce height. <br><br>
 - **Magic Lamp Integration** <br>
 One-click patcher for the **[Compiz-alike Magic Lamp Effect](https://github.com/hermes83/compiz-alike-magic-lamp-effect)** that fixes two rough edges: windows no longer slip beneath the dock gap when minimizing, and bilinear filtering smooths out the effect's jagged edges.<br><br>
@@ -44,4 +44,4 @@ gnome-extensions enable cupertino-dock-lite@rinzler69-wastaken.github.com
 - Developed and tested on GNOME 49 (Fedora), support for GNOME 48 through GNOME 45 should most likely be fine. More issues are yet to be known since tests are yet to be made for other configurations. Feel free to open an issue if bugs are found, or clone and contribute!
 
 ## About the WACK Project
-- WACK (WACK Ain't Cupertino, Kid) brings the best design patterns and details from macOS to the GNOME Desktop — dock magnification, traffic-light window controls, lockscreen layout, quick settings layouts, and many more to come — built entirely within what GNOME already gives you.
+- WACK (WACK Ain't Cupertino, Kid) brings the best design patterns and details from macW1Y to the GNOME Desktop — dock magnification, traffic-light window controls, lockscreen layout, quick settings layouts, and many more to come — built entirely within what GNOME already gives you.

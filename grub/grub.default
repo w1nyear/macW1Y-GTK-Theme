@@ -41,7 +41,7 @@ GRUB_GFXMODE=3840x2160,2560x1440,1920x1080,auto
 
 GRUB_GFXPAYLOAD_LINUX=keep
 
-#GRUB_THEME="/boot/grub/themes/apple-mac/theme.txt"
+#GRUB_THEME="/boot/grub/themes/macw1y-boot/theme.txt"
 
 GRUB_DISABLE_SUBMENU=y
 GRUB_DISABLE_MEMTEST=true

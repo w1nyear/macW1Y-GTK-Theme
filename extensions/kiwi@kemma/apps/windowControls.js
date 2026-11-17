@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Adds window control buttons to the GNOME top panel.
-// Uses macOS-style PNG icons when app window buttons are enabled,
+// Uses macW1Y-style PNG icons when app window buttons are enabled,
 // or system symbolic icons respecting the WM button layout otherwise.
 
 import GObject from 'gi://GObject';
@@ -30,7 +30,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
         super._init(0.0, 'window-controls', true);
 
         this._settings = _extension.getSettings();
-        this._useMacosIcons = this._settings.get_boolean('enable-app-window-buttons');
+        this._useCustomIcons = this._settings.get_boolean('enable-app-window-buttons');
         this._settingsChangedId = this._settings.connect('changed', (_, key) => {
             if (key === 'button-type') this._updateAllIcons();
             else if (key === 'button-size') this._updateButtonSizeClass();
@@ -59,7 +59,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
         this._box = new St.BoxLayout({ style_class: 'window-controls-box' });
         this.add_child(this._box);
         
-        // Track hover state for all-buttons-hover effect (macOS mode only)
+        // Track hover state for all-buttons-hover effect (macW1Y mode only)
         this._isContainerHovered = false;
 
         this._closeButton = new St.Button({ style_class: 'window-control-button close', track_hover: true });
@@ -87,7 +87,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
             if (this._suppressHoverUntilPointerMove) {
                 this._suppressHoverUntilPointerMove = false;
             }
-            if (this._useMacosIcons) {
+            if (this._useCustomIcons) {
                 this._isContainerHovered = true;
                 this._updateAllIcons();
             }
@@ -96,14 +96,14 @@ class WindowControlsIndicator extends PanelMenu.Button {
         
         // Add leave event for the main container to reset hover state
         this._clutterSignalIds.push([this._box, this._box.connect('leave-event', () => {
-            if (this._useMacosIcons) {
+            if (this._useCustomIcons) {
                 this._isContainerHovered = false;
                 this._updateAllIcons();
             }
             return Clutter.EVENT_PROPAGATE;
         })]);
 
-        // Helper to install macOS Liquid Glass Jelly physics on a traffic light button
+        // Helper to install macW1Y Liquid Glass Jelly physics on a traffic light button
         const installJellyPhysics = (button, buttonType) => {
             let isPressed = false;
             let isHolding = false;
@@ -330,12 +330,12 @@ class WindowControlsIndicator extends PanelMenu.Button {
                 }
             })]);
 
-            // Add enter event for all-buttons-hover effect (macOS mode)
+            // Add enter event for all-buttons-hover effect (macW1Y mode)
             this._clutterSignalIds.push([button, button.connect('enter-event', () => {
                 if (this._suppressHoverUntilPointerMove) {
                     this._suppressHoverUntilPointerMove = false;
                 }
-                if (this._useMacosIcons) {
+                if (this._useCustomIcons) {
                     this._isContainerHovered = true;
                     this._updateAllIcons();
                 }
@@ -458,8 +458,8 @@ class WindowControlsIndicator extends PanelMenu.Button {
             maximize: this._maximizeButton,
         };
 
-        if (this._useMacosIcons) {
-            // macOS mode: follow system button-layout order and enabled buttons
+        if (this._useCustomIcons) {
+            // macW1Y mode: follow system button-layout order and enabled buttons
             for (const name of this._buttonLayout)
                 this._box.add_child(buttonMap[name]);
             this._box.remove_style_class_name('system-mode');
@@ -540,7 +540,7 @@ class WindowControlsIndicator extends PanelMenu.Button {
             // Force base icon, ignore hover/active state
             button.reactive = false; // makes it "insensitive" visually via St
             button.remove_style_pseudo_class('active');
-            if (this._useMacosIcons) {
+            if (this._useCustomIcons) {
                 const iconName = 'button-minimize-backdrop.png';
                 this._setButtonIcon(button, iconName);
             } else {
@@ -557,8 +557,8 @@ class WindowControlsIndicator extends PanelMenu.Button {
         // For maximize button: show restore icon when window is maximized OR fullscreen
         const buttonName = (buttonType === 'maximize' && (isMaximized || isFullscreen)) ? 'restore' : buttonType;
 
-        if (this._useMacosIcons) {
-            // macOS mode: file-based PNG icons with container hover
+        if (this._useCustomIcons) {
+            // macW1Y mode: file-based PNG icons with container hover
             let isHovered = button.hover || this._isContainerHovered;
             if (this._suppressHoverUntilPointerMove)
                 isHovered = false;
@@ -855,7 +855,7 @@ export function enable(ext) {
             const rightBoxChildren = Main.panel._rightBox.get_children();
             Main.panel.addToStatusArea('window-controls', controlsIndicator, rightBoxChildren.length, 'right');
         } else {
-            // Place at far left (position 0 before Apple menu, like macOS)
+            // Place at far left (position 0 before macW1Y menu, like macW1Y)
             Main.panel.addToStatusArea('window-controls', controlsIndicator, 0, 'left');
         }
     }

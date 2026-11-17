@@ -418,7 +418,7 @@ var DesktopGrid = class extends SignalManager.SignalManager{
             Gdk.cairo_set_source_rgba(cr, this._desktopManager.borderColor);
             cr.stroke();
         }
-        // macOS Tahoe desktop: drop place orange grid rectangles are removed
+        // macW1Y Tahoe desktop: drop place orange grid rectangles are removed
     }
 
     getDistance(x, y) {

@@ -252,9 +252,9 @@ ICONS_DIR = os.path.join(HOME, ".local/share/icons/hicolor/scalable/apps")
 for d in [APPS_DIR, APPIMAGES_DIR, INSTALLED_APPS_DIR, WINE_APPS_DIR, WINE_INSTALLERS_CACHE, ICONS_DIR, LOCAL_APPS_DIR, TRASH_DIR, TRASH_INFO_DIR]:
     os.makedirs(d, exist_ok=True)
 
-APP_STORE_ICON = os.path.join(HOME, ".local/share/icons/MacTahoe/apps/scalable/snap-store.svg")
+APP_STORE_ICON = os.path.join(HOME, ".local/share/icons/macW1Y/apps/scalable/snap-store.svg")
 if not os.path.exists(APP_STORE_ICON):
-    APP_STORE_ICON = os.path.join(HOME, ".local/share/icons/MacTahoe/apps/scalable/software-center.svg")
+    APP_STORE_ICON = os.path.join(HOME, ".local/share/icons/macW1Y/apps/scalable/software-center.svg")
 if not os.path.exists(APP_STORE_ICON):
     APP_STORE_ICON = "snap-store"
 
@@ -318,8 +318,8 @@ def install_icon_file(src_icon_path, icon_name):
     Copies to:
       ~/.local/share/icons/hicolor/256x256/apps/{icon_name}.{ext}
       ~/.local/share/icons/hicolor/scalable/apps/{icon_name}.{ext}
-      ~/.local/share/icons/MacTahoe-dark/apps/scalable/{icon_name}.{ext}
-      ~/.local/share/icons/MacTahoe/apps/scalable/{icon_name}.{ext}
+      ~/.local/share/icons/macW1Y-dark/apps/scalable/{icon_name}.{ext}
+      ~/.local/share/icons/macW1Y/apps/scalable/{icon_name}.{ext}
     """
     if not src_icon_path or not os.path.exists(src_icon_path):
         return None
@@ -331,14 +331,14 @@ def install_icon_file(src_icon_path, icon_name):
         os.path.join(HOME, ".local/share/icons/hicolor/256x256/apps", f"{icon_name}{ext}"),
         os.path.join(HOME, ".local/share/icons/hicolor/scalable/apps", f"{icon_name}{ext}"),
     ]
-    # Only copy to MacTahoe apps/scalable if the source icon is already an SVG.
+    # Only copy to macW1Y apps/scalable if the source icon is already an SVG.
     # Raw PNGs must NOT be placed in scalable/ because GTK icon resolution prioritizes
     # raw PNGs in scalable/ over properly styled theme SVGs.
     if ext == ".svg":
-        dest_paths.append(os.path.join(HOME, ".local/share/icons/MacTahoe/apps/scalable", f"{icon_name}{ext}"))
-        mactahoe_dark_scalable = os.path.join(HOME, ".local/share/icons/MacTahoe-dark/apps/scalable")
-        if os.path.exists(mactahoe_dark_scalable) and not os.path.islink(mactahoe_dark_scalable):
-            dest_paths.append(os.path.join(mactahoe_dark_scalable, f"{icon_name}{ext}"))
+        dest_paths.append(os.path.join(HOME, ".local/share/icons/macW1Y/apps/scalable", f"{icon_name}{ext}"))
+        macw1y_dark_scalable = os.path.join(HOME, ".local/share/icons/macW1Y-dark/apps/scalable")
+        if os.path.exists(macw1y_dark_scalable) and not os.path.islink(macw1y_dark_scalable):
+            dest_paths.append(os.path.join(macw1y_dark_scalable, f"{icon_name}{ext}"))
     primary_path = dest_paths[0]
     for dp in dest_paths:
         try:
@@ -355,7 +355,7 @@ def install_icon_file(src_icon_path, icon_name):
         except Exception:
             pass
 
-    # Normalize icon into macOS squircle format (Task 786)
+    # Normalize icon into macW1Y squircle format (Task 786)
     try:
         norm_cmd = "/usr/local/bin/mac-icon-normalizer"
         if not os.path.exists(norm_cmd):
@@ -369,11 +369,11 @@ def install_icon_file(src_icon_path, icon_name):
     return primary_path
 
 def update_icon_caches():
-    """Updates icon caches for hicolor and MacTahoe themes."""
+    """Updates icon caches for hicolor and macW1Y themes."""
     for tdir in [
         os.path.join(HOME, ".local/share/icons/hicolor"),
-        os.path.join(HOME, ".local/share/icons/MacTahoe-dark"),
-        os.path.join(HOME, ".local/share/icons/MacTahoe")
+        os.path.join(HOME, ".local/share/icons/macW1Y-dark"),
+        os.path.join(HOME, ".local/share/icons/macW1Y")
     ]:
         if os.path.exists(tdir):
             try:
@@ -388,10 +388,10 @@ def icon_exists_in_theme(icon_name):
     if os.path.isabs(icon_name) and os.path.exists(icon_name):
         return True
     for d in [
-        os.path.join(HOME, ".local/share/icons/MacTahoe/apps/scalable"),
-        os.path.join(HOME, ".local/share/icons/MacTahoe-dark/apps/scalable"),
-        os.path.join(HOME, ".local/share/icons/MacTahoe/apps/48"),
-        os.path.join(HOME, ".local/share/icons/MacTahoe-dark/apps/48"),
+        os.path.join(HOME, ".local/share/icons/macW1Y/apps/scalable"),
+        os.path.join(HOME, ".local/share/icons/macW1Y-dark/apps/scalable"),
+        os.path.join(HOME, ".local/share/icons/macW1Y/apps/48"),
+        os.path.join(HOME, ".local/share/icons/macW1Y-dark/apps/48"),
         os.path.join(HOME, ".local/share/icons/hicolor/256x256/apps"),
         os.path.join(HOME, ".local/share/icons/hicolor/scalable/apps"),
         "/usr/share/icons/hicolor/scalable/apps",
@@ -478,14 +478,14 @@ def resolve_icon(app_info, desktop_path, home):
     if any("steam" in h for h in name_hints):
         name_hints.insert(0, "steam")
 
-    # 1. Prefer macOS Tahoe themed icon if available
+    # 1. Prefer macW1Y Tahoe themed icon if available
     for hint in name_hints:
         for tdir in [
-            os.path.join(home, ".local/share/icons/MacTahoe/apps/scalable"),
-            os.path.join(home, ".local/share/icons/MacTahoe-dark/apps/scalable"),
-            os.path.join(home, ".local/share/icons/MacTahoe/apps/48"),
-            os.path.join(home, ".local/share/icons/MacTahoe-dark/apps/48"),
-            "/usr/share/icons/MacTahoe-dark/apps/scalable"
+            os.path.join(home, ".local/share/icons/macW1Y/apps/scalable"),
+            os.path.join(home, ".local/share/icons/macW1Y-dark/apps/scalable"),
+            os.path.join(home, ".local/share/icons/macW1Y/apps/48"),
+            os.path.join(home, ".local/share/icons/macW1Y-dark/apps/48"),
+            "/usr/share/icons/macW1Y-dark/apps/scalable"
         ]:
             for ext in [".svg", ".png"]:
                 cand = os.path.join(tdir, f"{hint}{ext}")
@@ -503,8 +503,8 @@ def resolve_icon(app_info, desktop_path, home):
 
     # 3. Check system and user icon dirs for icon_str or name hints
     search_dirs = [
-        os.path.join(home, ".local/share/icons/MacTahoe/apps/scalable"),
-        os.path.join(home, ".local/share/icons/MacTahoe-dark/apps/scalable"),
+        os.path.join(home, ".local/share/icons/macW1Y/apps/scalable"),
+        os.path.join(home, ".local/share/icons/macW1Y-dark/apps/scalable"),
         os.path.join(home, ".local/share/icons/hicolor/scalable/apps"),
         os.path.join(home, ".local/share/icons/hicolor/512x512/apps"),
         os.path.join(home, ".local/share/icons/hicolor/256x256/apps"),
@@ -703,7 +703,7 @@ def _sync_internal():
                         while clean_lines and not clean_lines[-1].strip():
                             clean_lines.pop()
 
-                        # Normalize Icon= for snap apps and known themed apps so GNOME Shell uses MacTahoe theme
+                        # Normalize Icon= for snap apps and known themed apps so GNOME Shell uses macW1Y theme
                         has_icon_line = any(l.startswith("Icon=") for l in clean_lines)
                         normalized_lines = []
                         base_key = base.replace(".desktop", "").lower()
@@ -873,7 +873,7 @@ def _sync_internal():
             except Exception:
                 pass
 
-    # Normalize application icons into macOS squircle format (Task 786)
+    # Normalize application icons into macW1Y squircle format (Task 786)
     try:
         norm_cmd = "/usr/local/bin/mac-icon-normalizer"
         if not os.path.exists(norm_cmd):
@@ -1112,7 +1112,7 @@ X-Mac-Real-Path={dest_binary}
 
     subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     sync()
-    subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
+    subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON,
                     sync_tr("app_installed_title"), sync_tr("app_installed_msg", name=clean_name)])
 
 
@@ -1241,7 +1241,7 @@ StartupNotify=true
 
     subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     sync()
-    subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
+    subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON,
                     sync_tr("app_installed_title"), sync_tr("app_deployed_msg", name=clean_name)])
 
 
@@ -1257,7 +1257,7 @@ def install_deb(filepath):
         pass
     if res.returncode == 0:
         sync()
-        subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON, sync_tr("installed_title"),
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON, sync_tr("installed_title"),
                         sync_tr("pkg_installed_msg", name=clean_name)])
 
 
@@ -1508,7 +1508,7 @@ StartupNotify=true
 
         subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         sync()
-        subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON,
                         sync_tr("app_added_title"), sync_tr("wine_app_ready_msg", name=clean_name)])
         return
 
@@ -1524,7 +1524,7 @@ StartupNotify=true
         target_path = cached_installer
         target_cwd = WINE_INSTALLERS_CACHE
 
-    subprocess.run(["notify-send", "-a", "macOS", "-i", "system-software-install",
+    subprocess.run(["notify-send", "-a", "macW1Y", "-i", "system-software-install",
                     sync_tr("installing_title"), sync_tr("wine_installing_msg", name=clean_name)])
 
     before_desktops = set(glob.glob(os.path.join(LOCAL_APPS_DIR, "**", "*.desktop"), recursive=True))
@@ -1659,7 +1659,7 @@ StartupNotify=true
 
     subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     sync()
-    subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
+    subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON,
                     sync_tr("app_installed_title"), sync_tr("wine_installed_msg", name=clean_name)])
 
 
@@ -1713,7 +1713,7 @@ def install_shell_script(filepath):
     is_installer = any(k in base_lower for k in ["install", "setup"])
 
     if is_installer:
-        subprocess.run(["notify-send", "-a", "macOS", "-i", "system-software-install",
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", "system-software-install",
                         sync_tr("installing_title"), sync_tr("script_running_msg", name=clean_name)])
         before_desktops = set(glob.glob(os.path.join(LOCAL_APPS_DIR, "**", "*.desktop"), recursive=True))
         try:
@@ -1724,7 +1724,7 @@ def install_shell_script(filepath):
         after_desktops = set(glob.glob(os.path.join(LOCAL_APPS_DIR, "**", "*.desktop"), recursive=True))
         if after_desktops - before_desktops:
             sync()
-        subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON,
                         sync_tr("installed_title"), sync_tr("script_done_msg", name=clean_name)])
     else:
         icons = glob.glob(os.path.join(target_cwd, "**", "*.png"), recursive=True) + \
@@ -1758,7 +1758,7 @@ StartupNotify=true
         os.chmod(local_desktop, 0o755)
         subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         sync()
-        subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON,
                         sync_tr("app_added_title"), sync_tr("script_added_msg", name=clean_name)])
 
 
@@ -1811,7 +1811,7 @@ def install_batch_script(filepath):
     is_installer = any(k in base_lower for k in ["install", "setup"])
 
     if is_installer:
-        subprocess.run(["notify-send", "-a", "macOS", "-i", "system-software-install",
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", "system-software-install",
                         sync_tr("installing_title"), sync_tr("batch_running_msg", name=clean_name)])
         cmd = [wine_runner, "cmd", "/c", target_script]
         try:
@@ -1819,7 +1819,7 @@ def install_batch_script(filepath):
         except Exception as e:
             print(f"[Batch Installer] Error: {e}")
         sync()
-        subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON,
                         sync_tr("installed_title"), sync_tr("batch_done_msg", name=clean_name)])
     else:
         desktop_content = f"""[Desktop Entry]
@@ -1840,7 +1840,7 @@ StartupNotify=true
         os.chmod(local_desktop, 0o755)
         subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         sync()
-        subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON,
                         sync_tr("app_added_title"), sync_tr("batch_ready_msg", name=clean_name)])
 
 
@@ -1890,14 +1890,14 @@ def install_binary_installer(filepath):
     except Exception:
         pass
 
-    subprocess.run(["notify-send", "-a", "macOS", "-i", "system-software-install",
+    subprocess.run(["notify-send", "-a", "macW1Y", "-i", "system-software-install",
                     sync_tr("installing_title"), sync_tr("bin_running_msg", name=clean_name)])
     try:
         subprocess.run([target_bin], cwd=target_cwd)
     except Exception as e:
         print(f"[Binary Installer] Error: {e}")
     sync()
-    subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON,
+    subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON,
                     sync_tr("installed_title"), sync_tr("bin_done_msg", name=clean_name)])
 
 
@@ -2005,7 +2005,7 @@ def handle_trash(trashinfo_path):
                 pass
             subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             sync()
-            subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON, sync_tr("removed_title"), sync_tr("app_uninstalled_msg", name=app_name)])
+            subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON, sync_tr("removed_title"), sync_tr("app_uninstalled_msg", name=app_name)])
             return
 
         # Case 2: Archive/Custom installed app
@@ -2033,7 +2033,7 @@ def handle_trash(trashinfo_path):
                 pass
             subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             sync()
-            subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON, sync_tr("removed_title"), sync_tr("app_uninstalled_msg", name=app_name)])
+            subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON, sync_tr("removed_title"), sync_tr("app_uninstalled_msg", name=app_name)])
             return
 
         # Case 3: Wine Application
@@ -2091,7 +2091,7 @@ def handle_trash(trashinfo_path):
 
             subprocess.run(["update-desktop-database", LOCAL_APPS_DIR], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             sync()
-            subprocess.run(["notify-send", "-a", "macOS", "-i", APP_STORE_ICON, sync_tr("removed_title"), sync_tr("wine_uninstalled_msg", name=app_name)])
+            subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON, sync_tr("removed_title"), sync_tr("wine_uninstalled_msg", name=app_name)])
             return
 
         # Case 4: System package (Snap / Flatpak / DEB)
@@ -2173,7 +2173,7 @@ class MacAppDaemon:
 
     def run(self):
         acquire_daemon_lock()
-        print("[MacAppDaemon] Starting macOS Applications Drag-and-Drop Manager...")
+        print("[MacAppDaemon] Starting macW1Y Applications Drag-and-Drop Manager...")
         sync()
         trim_process_memory()
 

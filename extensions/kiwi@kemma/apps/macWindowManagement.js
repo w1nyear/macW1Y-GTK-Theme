@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macOS-Style Window Management & Fullscreen Edge Reveals
+// macW1Y-Style Window Management & Fullscreen Edge Reveals
 //
 // 1. Dragging a window flush against the top menubar and releasing ->
 //    TRUE FULLSCREEN (win.make_fullscreen()) with smooth expansion animation,
 //    hiding menubar and dock.
 // 2. Clicking the window's green button ("квадратик") ->
-//    MAXIMIZE to monitor work area (win.maximize()), keeping menubar and dock VISIBLE (macOS Zoom).
+//    MAXIMIZE to monitor work area (win.maximize()), keeping menubar and dock VISIBLE (macW1Y Zoom).
 //    Clicking it again restores to unmaximized mode.
 // 3. Smooth Clutter snapshot expansion/contraction animations on entering and exiting fullscreen.
 // 4. While in fullscreen mode:

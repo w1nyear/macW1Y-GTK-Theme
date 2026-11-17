@@ -13,7 +13,7 @@
       <path d="M22 26c0 0 5 1 8 4s4 8 4 8-3-1-6-4-6-8-6-8z" stroke="#e04040" stroke-width="2" fill="none"/>
     
   <!-- Extension Label Text -->
-  <text x="31" y="54" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Helvetica, sans-serif" font-size="7.5" font-weight="700" fill="#8e8e93" text-anchor="middle">PDF</text>
+  <text x="31" y="54" font-family="default, system-ui, sans-serif, BlinkMacSystemFont, 'Default', Helvetica, sans-serif" font-size="7.5" font-weight="700" fill="#8e8e93" text-anchor="middle">PDF</text>
   <!-- App / Format Badge -->
   
           <g transform="translate(44, 52)">

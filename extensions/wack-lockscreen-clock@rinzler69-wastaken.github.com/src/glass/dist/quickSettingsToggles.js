@@ -234,7 +234,7 @@ export class ToggleStyles {
     }
 
     // The pod's visible color. Themes put a toggle's state color in different
-    // places: Adwaita on the inner `.quick-toggle`, MacTahoe on the has-menu
+    // places: Adwaita on the inner `.quick-toggle`, macW1Y on the has-menu
     // wrapper (whose inner button is `background: none`) or only on the
     // `.quick-toggle-icon`. Every candidate is read, the most opaque wins
     // (ties go to the earlier one), and the result is composited over what is

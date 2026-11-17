@@ -37,7 +37,7 @@ AIRDROP_I18N = {
     "pl": {
         "select_file": "AirDrop: Wybierz plik do wysłania",
         "searching": "Wyszukiwanie urządzeń do wysłania {file_name}...",
-        "no_devices": "Nie znaleziono urządzeń Apple w pobliżu.\\nUpewnij się, że funkcja AirDrop na urządzeniu jest włączona dla Wszystkich (Everyone).",
+        "no_devices": "Nie znaleziono urządzeń w pobliżu.\\nUpewnij się, że funkcja AirDrop na urządzeniu jest włączona dla Wszystkich (Everyone).",
         "select_recipient": "AirDrop: Wybierz odbiorcę",
         "col_device": "Nazwa urządzenia",
         "col_ip": "IP",
@@ -52,7 +52,7 @@ AIRDROP_I18N = {
     "uk": {
         "select_file": "AirDrop: Оберіть файл для надсилання",
         "searching": "Пошук пристроїв для надсилання {file_name}...",
-        "no_devices": "Пристроїв Apple поблизу не знайдено.\\nПереконайтеся, що на пристрої AirDrop увімкнено для Усіх (Everyone).",
+        "no_devices": "Пристроїв macW1Y поблизу не знайдено.\\nПереконайтеся, що на пристрої AirDrop увімкнено для Усіх (Everyone).",
         "select_recipient": "AirDrop: Оберіть одержувача",
         "col_device": "Ім’я пристрою",
         "col_ip": "IP",
@@ -67,7 +67,7 @@ AIRDROP_I18N = {
     "de": {
         "select_file": "AirDrop: Datei zum Senden auswählen",
         "searching": "Suche nach Geräten zum Senden von {file_name}...",
-        "no_devices": "Keine Apple-Geräte in der Nähe gefunden.\\nStellen Sie sicher, dass AirDrop für Jeden aktiviert ist.",
+        "no_devices": "Keine Geräte in der Nähe gefunden.\\nStellen Sie sicher, dass AirDrop für Jeden aktiviert ist.",
         "select_recipient": "AirDrop: Empfänger auswählen",
         "col_device": "Gerätename",
         "col_ip": "IP",
@@ -82,7 +82,7 @@ AIRDROP_I18N = {
     "fr": {
         "select_file": "AirDrop : Sélectionner le fichier à envoyer",
         "searching": "Recherche d'appareils pour envoyer {file_name}...",
-        "no_devices": "Aucun appareil Apple à proximité.\\nAssurez-vous qu'AirDrop est réglé sur Tout le monde sur l'appareil récepteur.",
+        "no_devices": "Aucun appareil à proximité.\\nAssurez-vous qu'AirDrop est réglé sur Tout le monde sur l'appareil récepteur.",
         "select_recipient": "AirDrop : Sélectionner le destinataire",
         "col_device": "Nom de l'appareil",
         "col_ip": "IP",
@@ -97,7 +97,7 @@ AIRDROP_I18N = {
     "es": {
         "select_file": "AirDrop: Seleccionar archivo para enviar",
         "searching": "Buscando dispositivos para enviar {file_name}...",
-        "no_devices": "No se encontraron dispositivos Apple cercanos.\\nAsegúrese de que AirDrop esté configurado para Todos en el dispositivo receptor.",
+        "no_devices": "No se encontraron dispositivos cercanos.\\nAsegúrese de que AirDrop esté configurado para Todos en el dispositivo receptor.",
         "select_recipient": "AirDrop: Seleccionar destinatario",
         "col_device": "Nombre del dispositivo",
         "col_ip": "IP",
@@ -112,7 +112,7 @@ AIRDROP_I18N = {
     "it": {
         "select_file": "AirDrop: Seleziona il file da inviare",
         "searching": "Ricerca di dispositivi per inviare {file_name}...",
-        "no_devices": "Nessun dispositivo Apple nelle vicinanze.\\nAssicurati che AirDrop sia impostato su Tutti sul dispositivo ricevente.",
+        "no_devices": "Nessun dispositivo macW1Y nelle vicinanze.\\nAssicurati che AirDrop sia impostato su Tutti sul dispositivo ricevente.",
         "select_recipient": "AirDrop: Seleziona destinatario",
         "col_device": "Nome dispositivo",
         "col_ip": "IP",
@@ -127,7 +127,7 @@ AIRDROP_I18N = {
     "en": {
         "select_file": "AirDrop: Select file to send",
         "searching": "Searching for devices to send {file_name}...",
-        "no_devices": "No nearby Apple devices found.\\nMake sure AirDrop is set to Everyone on the receiving device.",
+        "no_devices": "No nearby nearby devices found.\\nMake sure AirDrop is set to Everyone on the receiving device.",
         "select_recipient": "AirDrop: Select recipient",
         "col_device": "Device Name",
         "col_ip": "IP",
@@ -200,7 +200,7 @@ def is_daemon_running():
         return False, None
 
 def notify(title, message):
-    icon = '/home/vitaliy/.themes/MacTahoe-Dark/icons/airdrop-symbolic.svg'
+    icon = '/home/vitaliy/.themes/macW1Y-Dark/icons/airdrop-symbolic.svg'
     try:
         subprocess.run(['notify-send', '-a', 'AirDrop', '-i', icon, title, message], check=False)
     except Exception:
@@ -235,7 +235,7 @@ sys.path.insert(0, '/home/vitaliy/.local/lib/python3.14/site-packages')
 sys.path.insert(0, '/home/vitaliy/.local/lib/python3.13/site-packages')
 
 save_dir = Path(r'{save_dir}')
-icon = r'/home/vitaliy/.themes/MacTahoe-Dark/icons/airdrop-symbolic.svg'
+icon = r'/home/vitaliy/.themes/macW1Y-Dark/icons/airdrop-symbolic.svg'
 sound = r'/usr/share/sounds/freedesktop/stereo/complete.oga'
 
 def alert(title, msg):

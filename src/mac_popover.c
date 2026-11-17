@@ -9,7 +9,7 @@
 #include <graphene.h>
 
 /* =========================================================================
- * macOS Tahoe GtkPopover Smooth Open & Close Animation (Opacity + Scaling)
+ * macW1Y Tahoe GtkPopover Smooth Open & Close Animation (Opacity + Scaling)
  * ========================================================================= */
 static void (*orig_popover_hide)(GtkWidget *widget) = NULL;
 static void (*orig_popover_map)(GtkWidget *widget) = NULL;
@@ -91,7 +91,7 @@ static gboolean mac_popover_close_tick(GtkWidget *widget, GdkFrameClock *clock, 
         return G_SOURCE_CONTINUE;
     }
     gint64 elapsed = now - d->start_time;
-    double p = (double)elapsed / 110000.0; /* 110ms macOS quad ease-in */
+    double p = (double)elapsed / 110000.0; /* 110ms macW1Y quad ease-in */
     if (p >= 1.0) p = 1.0;
 
     double opacity = 1.0 - (p * p);
@@ -123,7 +123,7 @@ static gboolean mac_popover_open_tick(GtkWidget *widget, GdkFrameClock *clock, g
         return G_SOURCE_CONTINUE;
     }
     gint64 elapsed = now - d->start_time;
-    double p = (double)elapsed / 140000.0; /* 140ms macOS cubic ease-out */
+    double p = (double)elapsed / 140000.0; /* 140ms macW1Y cubic ease-out */
     if (p >= 1.0) p = 1.0;
 
     double ease = 1.0 - pow(1.0 - p, 3);
@@ -218,7 +218,7 @@ static void install_mac_popover_hooks(void) {
 }
 
 /* =========================================================================
- * macOS Tahoe Window Controls Liquid Glass Jelly Drag & Spring Physics
+ * macW1Y Tahoe Window Controls Liquid Glass Jelly Drag & Spring Physics
  * ========================================================================= */
 static void (*orig_wc_map)(GtkWidget *widget) = NULL;
 static void (*orig_wc_snapshot)(GtkWidget *widget, GtkSnapshot *snapshot) = NULL;

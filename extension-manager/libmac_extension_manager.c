@@ -39,7 +39,7 @@ static const char * const MACW1Y_UUIDS[] = {
     "eval-helper@mactheme",
     "kiwi@kemma",
     "liquid-glass@thinkingcoding1231.gmail.com",
-    "macos-touchpad-gestures@mactheme",
+    "macw1y-touchpad-gestures@mactheme",
     "quick-settings-scroll@diskmth.fr",
     "Rounded_Corners@lennart-k",
     "run-cmd@custom.extension",
@@ -142,7 +142,7 @@ static void populate_macw1y_expander(MacW1YBinding *binding) {
     }
     
     char sub[128];
-    snprintf(sub, sizeof(sub), "Модпак трансформації macOS (%d розширень)", mac_count);
+    snprintf(sub, sizeof(sub), "Модпак трансформації macW1Y (%d розширень)", mac_count);
     adw_expander_row_set_subtitle(binding->expander, sub);
 }
 
@@ -205,7 +205,7 @@ void adw_preferences_group_bind_model(void *group, void *model, void *create_wid
             void *mac_expander = adw_expander_row_new();
             
             adw_preferences_row_set_title(mac_expander, "macW1Y");
-            adw_expander_row_set_subtitle(mac_expander, "Модпак трансформації macOS");
+            adw_expander_row_set_subtitle(mac_expander, "Модпак трансформації macW1Y");
             adw_expander_row_set_icon_name(mac_expander, "preferences-desktop-theme-symbolic");
             adw_expander_row_set_expanded(mac_expander, FALSE);
             

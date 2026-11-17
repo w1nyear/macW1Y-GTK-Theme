@@ -1210,7 +1210,7 @@ export class WorkspaceIndicatorController {
         const barReactive = (v >= 0.95);
         const barVisible = (v > 0.005);
 
-        // 1. Smoothly fade left box icons (Apple logo, app name, menus)
+        // 1. Smoothly fade left box icons (System logo, app name, menus)
         if (Main.panel && Main.panel._leftBox) {
             if (Main.panel._leftBox.opacity !== iconOpacity) Main.panel._leftBox.opacity = iconOpacity;
             if (Main.panel._leftBox.reactive !== iconReactive) Main.panel._leftBox.reactive = iconReactive;

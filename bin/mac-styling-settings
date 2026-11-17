@@ -14,8 +14,8 @@ from gi.repository import Gtk, Adw, Gio, GLib
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mac_i18n import t, tf, get_locale
 
-CSS_PATH = os.path.expanduser("~/.themes/MacTahoe-Dark/gnome-shell/gnome-shell.css")
-CSS_SOLID_PATH = os.path.expanduser("~/.themes/MacTahoe-Dark-solid/gnome-shell/gnome-shell.css")
+CSS_PATH = os.path.expanduser("~/.themes/macW1Y-Dark/gnome-shell/gnome-shell.css")
+CSS_SOLID_PATH = os.path.expanduser("~/.themes/macW1Y-Dark-solid/gnome-shell/gnome-shell.css")
 LIQUID_SCHEMA = "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com"
 BMS_SCHEMA_BASE = "org.gnome.shell.extensions.blur-my-shell"
 
@@ -294,19 +294,19 @@ class MacStylingWindow(Adw.ApplicationWindow):
         # 7. Boot Group (Завантажувач)
         boot_group = Adw.PreferencesGroup()
         boot_group.set_title(t("bootloader_title", "Завантажувач (Bootloader)"))
-        boot_group.set_description(t("bootloader_desc", "Параметри завантаження macOS Plymouth та логування ядра"))
+        boot_group.set_description(t("bootloader_desc", "Параметри завантаження macW1Y Plymouth та логування ядра"))
         pref_page.add(boot_group)
 
         self.verbose_switch = Adw.SwitchRow()
         self.verbose_switch.set_title(t("verbose_mode", "Режим verbose"))
-        self.verbose_switch.set_subtitle(t("verbose_mode_desc", "Текстовий лог завантаження термінала позаду логотипу Apple"))
+        self.verbose_switch.set_subtitle(t("verbose_mode_desc", "Текстовий лог завантаження термінала позаду логотипу macW1Y"))
         self.verbose_switch.set_active(self.verbose_mode)
         self.verbose_switch.connect("notify::active", self.on_verbose_toggled)
         boot_group.add(self.verbose_switch)
 
         self.grub_switch = Adw.SwitchRow()
         self.grub_switch.set_title(t("grub_menu", "Меню GRUB"))
-        self.grub_switch.set_subtitle(t("grub_menu_desc", "Графічне меню вибору системи у стилі macOS під час старту"))
+        self.grub_switch.set_subtitle(t("grub_menu_desc", "Графічне меню вибору системи у стилі macW1Y під час старту"))
         self.grub_switch.set_active(self.grub_mode)
         self.grub_switch.connect("notify::active", self.on_grub_toggled)
         boot_group.add(self.grub_switch)
@@ -575,7 +575,7 @@ class MacStylingWindow(Adw.ApplicationWindow):
         try:
             with open("/etc/default/grub", "r") as f:
                 c = f.read()
-                if "systemd.show_status=1" in c or os.path.exists("/usr/share/plymouth/themes/apple-mac/verbose_on.png"):
+                if "systemd.show_status=1" in c or os.path.exists("/usr/share/plymouth/themes/macw1y-boot/verbose_on.png"):
                     self.verbose_mode = True
         except Exception:
             pass
@@ -932,13 +932,13 @@ class MacStylingWindow(Adw.ApplicationWindow):
         self.save_css()
         loc = get_locale().split('_')[0]
         test_msgs = {
-            "pl": ("Powiadomienie macOS", "Powiadomienie testowe z obsługą szerokiej karty 395px, cieni i natywnego szkła!"),
-            "uk": ("Сповіщення macOS", "Тестове сповіщення з підтримкою широкої картки 395px, тіней та нативного скла!"),
-            "de": ("macOS-Benachrichtigung", "Testbenachrichtigung mit Unterstützung für 395px-Karten, Schatten und natives Glas!"),
-            "fr": ("Notification macOS", "Notification de test prenant en charge les cartes larges de 395px, les ombres et le verre natif !"),
-            "es": ("Notificación de macOS", "¡Notificación de prueba compatible con tarjeta ancha de 395px, sombras y vidrio nativo!"),
-            "it": ("Notifica di macOS", "Notifica di test che supporta schede larghe 395px, ombre e vetro nativo!"),
-            "en": ("macOS Notification", "Test notification supporting wide 395px card, drop shadows and native glass!")
+            "pl": ("Powiadomienie macW1Y", "Powiadomienie testowe z obsługą szerokiej karty 395px, cieni i natywnego szkła!"),
+            "uk": ("Сповіщення macW1Y", "Тестове сповіщення з підтримкою широкої картки 395px, тіней та нативного скла!"),
+            "de": ("macW1Y-Benachrichtigung", "Testbenachrichtigung mit Unterstützung für 395px-Karten, Schatten und natives Glas!"),
+            "fr": ("Notification macW1Y", "Notification de test prenant en charge les cartes larges de 395px, les ombres et le verre natif !"),
+            "es": ("Notificación de macW1Y", "¡Notificación de prueba compatible con tarjeta ancha de 395px, sombras y vidrio nativo!"),
+            "it": ("Notifica di macW1Y", "Notifica di test che supporta schede larghe 395px, ombre e vetro nativo!"),
+            "en": ("macW1Y Notification", "Test notification supporting wide 395px card, drop shadows and native glass!")
         }
         title, body = test_msgs.get(loc, test_msgs["en"])
         run_cmd(f'notify-send "{title}" "{body}"')

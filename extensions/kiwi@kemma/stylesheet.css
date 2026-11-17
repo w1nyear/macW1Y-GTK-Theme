@@ -205,7 +205,7 @@
 }
 
 /* Window control button icon sizing (GNOME Shell panel, not GTK headerbars)
- * NOTE: This controls the macOS-style panel buttons created by apps/windowControls.js
+ * NOTE: This controls the macW1Y-style panel buttons created by apps/windowControls.js
  */
 .window-control-icon {
   icon-size: 16px; /* normal_size */
@@ -660,7 +660,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 /*        Minimized Windows in the Dock         */
 /*###############################################*/
 
-/* Thumbnails pack tightly like macOS: 6px between them, made of the tiles' own
+/* Thumbnails pack tightly like macW1Y: 6px between them, made of the tiles' own
    2px sides plus 2px of spacing. Padding is only along the dock — across it, it
    would make the whole dock taller. */
 #kiwi-minimized-strip {
@@ -701,7 +701,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 /* Name pills: a touch of the wallpaper carries through them the way it does
-   through a macOS label. The pill follows the session's light or dark scheme -
+   through a macW1Y label. The pill follows the session's light or dark scheme -
    apps/downloadsStack.js adds .dark when the session asks for it, since shell
    stylesheets have no way to ask on their own. */
 .kiwi-fan-label {
@@ -787,8 +787,8 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
   icon-shadow: 0 0 4px rgba(0, 0, 0, 0.35);
 }
 
-/* ===== macOS Tahoe Applications (Launchpad) window ===== */
-/* Tahoe Apps — macOS Tahoe-style Applications window */
+/* ===== macW1Y Tahoe Applications (Launchpad) window ===== */
+/* Tahoe Apps — macW1Y Tahoe-style Applications window */
 
 .tahoe-overlay {
     background-color: transparent;
@@ -967,7 +967,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-pill {
     font-size: 0.92em;
     font-weight: 500;
-    font-family: "SF Pro Display";
+    font-family: "Default Display";
     padding: 6px 12px;
     border-radius: 8px;
     background-color: rgba(0, 0, 0, 0.06);
@@ -1161,12 +1161,12 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     box-shadow: none !important;
 }
 
-/* ------------------------------- Tahoe Quick Settings v5 (macOS Tahoe CC)
+/* ------------------------------- Tahoe Quick Settings v5 (macW1Y Tahoe CC)
    Panel 320, padding 14, col gap 18, column 137, pills 80, circles 62,
    music 152, cards 96, edit pill 36, Focus 137x62.
    Panel bg = separate actor BELOW the glass stacks ('pill' r40,
    'disc' r31, 'card'/'music' r26, 'edit' r18). White text on translucent gray (light) / faint white
-   (dark) glass fills — like macOS Tahoe. */
+   (dark) glass fills — like macW1Y Tahoe. */
 .tahoe-qs-panel {
     spacing: 12px;
     padding: 14px;
@@ -1195,11 +1195,11 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-qs-row { spacing: 6px; }
 .tahoe-qs-rowd { spacing: 18px; }
 
-/* macOS-style topbar status indicators (Focus moon, Airplane): plain bins,
+/* macW1Y-style topbar status indicators (Focus moon, Airplane): plain bins,
    never clickable (reactive=false, no handlers) */
 .kiwi-topbar-statusicon { padding: 0 4px; margin: 0 4px; }
 
-/* macOS-style battery in the top bar: "87%" + horizontal battery glyph.
+/* macW1Y-style battery in the top bar: "87%" + horizontal battery glyph.
    Inherits panel foreground via tahoeInk, same as other topbar buttons. */
 .kiwi-battery-box { spacing: 0px; padding: 0 2px; }
 .kiwi-battery-label { font-weight: 600; font-size: 0.95em; margin-right: 6px; }
@@ -1218,7 +1218,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 #panel .screen-sharing-indicator StIcon,
 #panel .panel-button.screen-sharing-indicator StIcon { color: #ffffff; }
 
-/* Tahoe volume/brightness OSD: macOS Sequoia / Tahoe style glass pill */
+/* Tahoe volume/brightness OSD: macW1Y Sequoia / Tahoe style glass pill */
 .tahoe-osd-shadow {
     border-radius: 9999px !important;
     background-color: transparent;
@@ -1248,7 +1248,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     max-width: 268px;
 }
 .tahoe-osd-title {
-    font-family: "SF Pro Display", -apple-system, system-ui, sans-serif;
+    font-family: "Default Display", default, system-ui, sans-serif, system-ui, sans-serif;
     font-size: 1.05em;
     font-weight: 700;
     color: #ffffff;
@@ -1280,7 +1280,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 .tahoe-qs-dark .tahoe-nc-clear { background-color: rgba(255, 255, 255, 0.14); }
 .tahoe-nc-title-big {
-    font-family: "SF Pro Display";
+    font-family: "Default Display";
     font-size: 1.35em;
     font-weight: 800;
     color: #1d1d1f;
@@ -1290,7 +1290,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .kiwi-notification-scroll { -st-vfade-offset: 36px; }
 .tahoe-nc-list { spacing: 10px; }
 .tahoe-nc-empty {
-    font-family: "SF Pro Display";
+    font-family: "Default Display";
     font-size: 0.95em;
     color: rgba(120, 120, 128, 0.9);
     padding: 28px 0;
@@ -1304,21 +1304,21 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-nc-cardrow { spacing: 10px; }
 .tahoe-nc-texts { spacing: 2px; }
 .tahoe-nc-title {
-    font-family: "SF Pro Display";
+    font-family: "Default Display";
     font-size: 0.95em;
     font-weight: 700;
     color: #1d1d1f;
 }
 .tahoe-qs-dark .tahoe-nc-title { color: #ffffff; }
 .tahoe-nc-sub {
-    font-family: "SF Pro Display";
+    font-family: "Default Display";
     font-size: 0.85em;
     font-weight: 400;
     color: rgba(60, 60, 67, 0.85);
 }
 .tahoe-qs-dark .tahoe-nc-sub { color: rgba(235, 235, 245, 0.7); }
 
-/* Authentic macOS Notification Center Cards — новий вигляд (MacShell): іконка 44×44,
+/* Authentic macW1Y Notification Center Cards — новий вигляд (MacShell): іконка 44×44,
    час дружнім відліком, кругла ✕ при наведенні; розміри задає інлайн у білдері */
 .mac-notification-banner {
   min-height: 74px !important;
@@ -1366,7 +1366,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-urgent {
-  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-family: "Default", Cantarell, sans-serif !important;
   font-size: 12px !important;
   font-weight: 600 !important;
   letter-spacing: 0.6px !important;
@@ -1378,7 +1378,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-app-name {
-  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-family: "Default", Cantarell, sans-serif !important;
   font-size: 14px !important;
   font-weight: 700 !important;
   color: #ffffff !important;
@@ -1387,7 +1387,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-count-badge {
-  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-family: "Default", Cantarell, sans-serif !important;
   background-color: rgba(255, 255, 255, 0.20) !important;
   color: rgba(255, 255, 255, 0.90) !important;
   font-size: 10px !important;
@@ -1398,7 +1398,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-title {
-  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-family: "Default", Cantarell, sans-serif !important;
   font-size: 14px !important;
   font-weight: 400 !important;
   color: #ffffff !important;
@@ -1408,7 +1408,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-body {
-  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-family: "Default", Cantarell, sans-serif !important;
   font-size: 13px !important;
   font-weight: 400 !important;
   color: rgba(255, 255, 255, 0.80) !important;
@@ -1417,7 +1417,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 
 .mac-notification-time {
-  font-family: "SF Pro Text", Cantarell, sans-serif !important;
+  font-family: "Default", Cantarell, sans-serif !important;
   font-size: 12px !important;
   font-weight: 400 !important;
   color: rgba(255, 255, 255, 0.55) !important;
@@ -1487,13 +1487,13 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 #panel.tahoe-ink-dark .panel-button.clock-display:active .clock,
 #panel.tahoe-ink-dark .panel-button.clock-display:checked .clock { color: #1d1d1f !important; }
 
-/* Tahoe type: SF Pro Display Bold for titles, Medium for subtitles */
+/* Tahoe type: Default Display Bold for titles, Medium for subtitles */
 .tahoe-qs-title, .tahoe-qs-music-title, .tahoe-qs-card-label, .tahoe-qs-edit {
-    font-family: "SF Pro Display";
+    font-family: "Default Display";
     font-weight: 700;
 }
 .tahoe-qs-subtitle, .tahoe-qs-music-artist {
-    font-family: "SF Pro Display";
+    font-family: "Default Display";
     font-weight: 500;
 }
 
@@ -1527,7 +1527,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-qs-pill.tahoe-qs-on .tahoe-qs-pill-glyph { color: #0a84ff; }
 .tahoe-qs-title { font-size: 0.95em; font-weight: 700; color: #1d1d1f; }
 .tahoe-qs-subtitle { font-size: 0.8em; color: rgba(0, 0, 0, 0.6); }
-/* privacy pill dot: camera green, mic orange, share blue (macOS) */
+/* privacy pill dot: camera green, mic orange, share blue (macW1Y) */
 .tahoe-qs-priv-green { background-color: #30d158; }
 .tahoe-qs-priv-orange { background-color: #ff9f0a; }
 .tahoe-qs-priv-blue { background-color: #0a84ff; }
@@ -1607,7 +1607,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     margin-left: 2px;
 }
 .tahoe-qs-card-label {
-    font-family: "SF Pro Display", -apple-system, system-ui, sans-serif;
+    font-family: "Default Display", default, system-ui, sans-serif, system-ui, sans-serif;
     font-size: 0.95em;
     font-weight: 700;
     color: #1d1d1f;
@@ -1641,7 +1641,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 .tahoe-qs-endbtn-icon { icon-size: 13px; color: #1d1d1f; }
 
-/* slider: macOS Tahoe / Sequoia OSD segmented bar */
+/* slider: macW1Y Tahoe / Sequoia OSD segmented bar */
 .tahoe-qs-slider {
     color: #fff;
     -slider-height: 5px;
@@ -1811,7 +1811,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-qs-editbadge-resize { color: #0a84ff; font-size: 15px; }
 
 /* =========================================================================
-   macOS Screen Recording & Screen Sharing Menubar Indicator & Menu
+   macW1Y Screen Recording & Screen Sharing Menubar Indicator & Menu
    ========================================================================= */
 .mac-screencast-button {
   padding: 0 4px;
@@ -1831,13 +1831,13 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
   color: #ff3b30;
 }
 .mac-screencast-head-title {
-  font-family: "SF Pro Display", -apple-system, system-ui, sans-serif;
+  font-family: "Default Display", default, system-ui, sans-serif, system-ui, sans-serif;
   font-size: 1.05em;
   font-weight: 700;
   color: #ffffff;
 }
 .mac-screencast-head-timer {
-  font-family: "SF Pro Text", -apple-system, system-ui, sans-serif;
+  font-family: "Default", default, system-ui, sans-serif, system-ui, sans-serif;
   font-size: 0.9em;
   color: #ff453a;
   font-weight: 600;
@@ -1893,7 +1893,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
   font-weight: 600;
 }
 
-/* Tahoe Control Center Glass Submenus (macOS Sequoia / Tahoe style) */
+/* Tahoe Control Center Glass Submenus (macW1Y Sequoia / Tahoe style) */
 .tahoe-submenu-glass-popup,
 .tahoe-submenu-glass-popup.popup-menu-boxpointer,
 .tahoe-submenu-glass-popup .popup-menu-content {

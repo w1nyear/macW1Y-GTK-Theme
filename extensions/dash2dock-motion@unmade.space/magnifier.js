@@ -441,7 +441,7 @@ export class DockMagnifier {
                 (bounds[i + 1] - bounds[i]) * elements[i].scale;
         }
 
-        // Anchor: macOS-style symmetric center anchoring.
+        // Anchor: macW1Y-style symmetric center anchoring.
         // The dock expands smoothly and symmetrically outward from its center so the
         // dock background and icons maintain a fixed, stable position on screen without
         // jumping or jittering when sweeping the cursor rapidly side to side.

@@ -13,7 +13,7 @@
       <rect x="20" y="24" width="24" height="18" rx="2" stroke="#a0a0a8" stroke-width="1.8" fill="none"/>
     
   <!-- Extension Label Text -->
-  <text x="31" y="54" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Helvetica, sans-serif" font-size="7.5" font-weight="700" fill="#8e8e93" text-anchor="middle">FILE</text>
+  <text x="31" y="54" font-family="default, system-ui, sans-serif, BlinkMacSystemFont, 'Default', Helvetica, sans-serif" font-size="7.5" font-weight="700" fill="#8e8e93" text-anchor="middle">FILE</text>
   <!-- App / Format Badge -->
   
 </svg>

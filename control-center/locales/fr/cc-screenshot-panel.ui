@@ -83,7 +83,7 @@
                 <child>
                   <object class="AdwSwitchRow" id="screenshot_sound_row">
                     <property name="title">Son de l'obturateur</property>
-                    <property name="subtitle">Jouer le son d'obturateur macOS lors de la capture</property>
+                    <property name="subtitle">Jouer le son d'obturateur macW1Y lors de la capture</property>
                     <property name="active">true</property>
                     <signal name="realize" handler="init_screenshot_sound" />
                     <signal name="notify::active" handler="on_screenshot_sound_changed" />
@@ -124,7 +124,7 @@
                     <property name="model">
                       <object class="GtkStringList">
                         <items>
-                          <item>MP4 (.mp4 — compatibilité maximale macOS/iOS/Windows)</item>
+                          <item>MP4 (.mp4 — compatibilité maximale macW1Y/iOS/Windows)</item>
                           <item>WebM (.webm — format web ouvert et optimisé)</item>
                           <item>MKV (.mkv — conteneur sans restrictions)</item>
                         </items>
@@ -160,7 +160,7 @@
                     <property name="model">
                       <object class="GtkStringList">
                         <items>
-                          <item>60 FPS (Style macOS fluide)</item>
+                          <item>60 FPS (Style macW1Y fluide)</item>
                           <item>30 FPS (Équilibre de taille standard)</item>
                         </items>
                       </object>
@@ -314,7 +314,7 @@
                 <child>
                   <object class="AdwActionRow">
                     <property name="title">Restaurer les valeurs par défaut</property>
-                    <property name="subtitle">Réinitialiser tous les réglages de capture aux valeurs par défaut de macOS</property>
+                    <property name="subtitle">Réinitialiser tous les réglages de capture aux valeurs par défaut de macW1Y</property>
                     <child type="suffix">
                       <object class="GtkButton" id="btn_reset_screenshot_defaults">
                         <property name="label">Réinitialiser…</property>

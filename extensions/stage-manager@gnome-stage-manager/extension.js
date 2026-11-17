@@ -1,5 +1,5 @@
 /**
- * Stage Manager — macOS-style window grouping sidebar for GNOME Shell (46+, ESM).
+ * Stage Manager — macW1Y-style window grouping sidebar for GNOME Shell (46+, ESM).
  */
 
 import Meta from 'gi://Meta';

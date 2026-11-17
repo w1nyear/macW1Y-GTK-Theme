@@ -248,7 +248,7 @@ static int create_uinput_device(void) {
     us.id.bustype = BUS_USB;
     us.id.vendor = 0x1234;
     us.id.product = 0x5678;
-    strcpy(us.name, "macOS Virtual Touchpad Drag Device");
+    strcpy(us.name, "macW1Y Virtual Touchpad Drag Device");
 
     if (ioctl(fd, UI_DEV_SETUP, &us) < 0) {
         close(fd);

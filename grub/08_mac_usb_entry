@@ -1,7 +1,7 @@
 #! /bin/sh
 set -e
 
-# macOS Startup Manager: External Boot Entries (USB, Thunderbolt, External SSD)
+# macW1Y Startup Manager: External Boot Entries (USB, Thunderbolt, External SSD)
 
 cat << EOF
 if [ "\$mac_ext_count" = "1" ]; then

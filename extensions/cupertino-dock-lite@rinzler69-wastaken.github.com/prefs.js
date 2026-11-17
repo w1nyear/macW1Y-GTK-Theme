@@ -225,13 +225,13 @@ export default class DashAnimatorPreferences extends ExtensionPreferences {
         // ── Dock theme group ──────────────────────────────────────────────────
         const themeGroup = new Adw.PreferencesGroup({
             title: 'Dock Theme',
-            description: 'Override Dash to Dock styling with macOS-inspired themes. Note that toggling "Shrink the Dock" off may not work as expected when this theming is active.',
+            description: 'Override Dash to Dock styling with macW1Y-inspired themes. Note that toggling "Shrink the Dock" off may not work as expected when this theming is active.',
         });
         configPage.add(themeGroup);
 
         const overrideRow = new Adw.SwitchRow({
             title: 'Override Theming',
-            subtitle: 'Apply macOS-inspired dock styling on top of Dash to Dock',
+            subtitle: 'Apply macW1Y-inspired dock styling on top of Dash to Dock',
         });
         settings.bind('override-theming', overrideRow, 'active', 0);
         themeGroup.add(overrideRow);

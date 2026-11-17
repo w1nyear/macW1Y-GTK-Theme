@@ -83,7 +83,7 @@
                 <child>
                   <object class="AdwSwitchRow" id="screenshot_sound_row">
                     <property name="title">Kamera-Auslöseton</property>
-                    <property name="subtitle">Authentischen macOS-Auslöseton bei Aufnahme abspielen</property>
+                    <property name="subtitle">Authentischen macW1Y-Auslöseton bei Aufnahme abspielen</property>
                     <property name="active">true</property>
                     <signal name="realize" handler="init_screenshot_sound" />
                     <signal name="notify::active" handler="on_screenshot_sound_changed" />
@@ -124,7 +124,7 @@
                     <property name="model">
                       <object class="GtkStringList">
                         <items>
-                          <item>MP4 (.mp4 — maximale Kompatibilität macOS/iOS/Windows)</item>
+                          <item>MP4 (.mp4 — maximale Kompatibilität macW1Y/iOS/Windows)</item>
                           <item>WebM (.webm — offenes web-optimiertes Format)</item>
                           <item>MKV (.mkv — unbegrenzter Container)</item>
                         </items>
@@ -160,7 +160,7 @@
                     <property name="model">
                       <object class="GtkStringList">
                         <items>
-                          <item>60 FPS (Flüssiger macOS-Stil)</item>
+                          <item>60 FPS (Flüssiger macW1Y-Stil)</item>
                           <item>30 FPS (Standard-Größenbalance)</item>
                         </items>
                       </object>
@@ -314,7 +314,7 @@
                 <child>
                   <object class="AdwActionRow">
                     <property name="title">Standardwerte wiederherstellen</property>
-                    <property name="subtitle">Alle Bildschirmfoto-Einstellungen auf macOS-Standard zurücksetzen</property>
+                    <property name="subtitle">Alle Bildschirmfoto-Einstellungen auf macW1Y-Standard zurücksetzen</property>
                     <child type="suffix">
                       <object class="GtkButton" id="btn_reset_screenshot_defaults">
                         <property name="label">Zurücksetzen…</property>

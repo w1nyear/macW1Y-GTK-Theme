@@ -40,7 +40,7 @@ get_steam_dirs() {
 
 WRAPPER_CONTENT='#!/bin/bash
 # Steam Fossilize Replayer Smart Wrapper
-# Offloads shader pre-caching to the target GPU selected in macOS / GNOME Settings
+# Offloads shader pre-caching to the target GPU selected in macW1Y / GNOME Settings
 # Clamps CPU compilation threads to 2 and idle priority to prevent CPU boiling (100°C)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -54,7 +54,7 @@ if [ ! -x "$REAL_BIN" ]; then
     exit 1
 fi
 
-# 1. Determine target GPU from macOS / GNOME Settings config
+# 1. Determine target GPU from macW1Y / GNOME Settings config
 TARGET_GPU=1
 CONFIG_FILE="/etc/mac-gpu-targets.json"
 if [ ! -f "$CONFIG_FILE" ] && [ -f "$HOME/.config/mac-gpu-targets.json" ]; then

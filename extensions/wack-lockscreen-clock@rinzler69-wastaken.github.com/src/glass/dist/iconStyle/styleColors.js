@@ -1,4 +1,4 @@
-// The colors icon-style.frag draws a style map in, per look, after macOS 26's
+// The colors icon-style.frag draws a style map in, per look, after macW1Y 26's
 // tinted, white and clear icons. Pure, so that the contact sheet and the
 // preferences can use it too.
 // Per look: the rim's width (map px), its light on the sides away from the light, the sheen, and how far the plates'

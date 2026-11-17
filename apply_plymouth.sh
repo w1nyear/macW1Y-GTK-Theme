@@ -2,7 +2,7 @@
 set -e
 
 # ==============================================================================
-# Apple Boot Splash (Plymouth) & Kernel Initramfs Setup for macOS Theme
+# macW1Y Boot Splash (Plymouth) & Kernel Initramfs Setup for macW1Y Theme
 # ==============================================================================
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -13,12 +13,12 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-THEME_NAME="apple-mac"
-THEME_SRC="$SCRIPT_DIR/plymouth/apple-mac"
+THEME_NAME="macw1y-boot"
+THEME_SRC="$SCRIPT_DIR/plymouth/macw1y-boot"
 THEME_DST="/usr/share/plymouth/themes/$THEME_NAME"
 
 echo "=================================================="
-echo " 🍎 Активація завантажувача Apple macOS Plymouth   "
+echo " 🍎 Активація завантажувача macW1Y macW1Y Plymouth   "
 echo "=================================================="
 
 # 1. Копіювання файлів теми
@@ -38,7 +38,7 @@ echo "📝 Запис конфігурації у /etc/plymouth/plymouthd.conf..
 mkdir -p /etc/plymouth
 cat << 'EOF' > /etc/plymouth/plymouthd.conf
 [Daemon]
-Theme=apple-mac
+Theme=macw1y-boot
 ShowDelay=0
 DeviceTimeout=8
 EOF
@@ -72,7 +72,7 @@ echo "📦 Оновлення образу завантаження initramfs (�
 update-initramfs -u -k all
 
 echo "=================================================="
-echo "✅ Тема Apple Plymouth успішно активована!"
+echo "✅ Тема macW1Y Plymouth успішно активована!"
 echo "   - Біле яблуко по центру на чисто чорному фоні"
 echo "   - Фірмовий плавний індикатор прогресу при завантаженні (boot)"
 echo "   - Індикатор прогресу при вимкненні та перезавантаженні (shutdown/reboot)"

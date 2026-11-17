@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-echo "==> Встановлення залежностей для macOS Modpack..."
+echo "==> Встановлення залежностей для macW1Y Modpack..."
 sudo apt-get update
 sudo apt-get install -y \
     gcc make pkg-config \

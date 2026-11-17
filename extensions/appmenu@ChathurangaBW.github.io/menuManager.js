@@ -10,7 +10,7 @@ import * as PopupMenu from "resource:///org/gnome/shell/ui/popupMenu.js";
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
 import { dispatch } from './actions/dispatcher.js';
 import { buildAppMenu, buildFallbackAppMenu } from './menus/appMenu.js';
-import { buildAppleMenu } from './menus/appleMenu.js';
+import { buildmacW1YMenu } from './menus/mainMenu.js';
 import { buildFileMenu } from './menus/fileMenu.js';
 import { buildEditMenu } from './menus/editMenu.js';
 import { buildViewMenu } from './menus/viewMenu.js';
@@ -283,7 +283,7 @@ class AppMenuHoverGlide {
                     opacity: 255,
                     scale_x: 1.0,
                     scale_y: 1.0,
-                    duration: 130, // 130ms authentic macOS glide
+                    duration: 130, // 130ms authentic macW1Y glide
                     mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                 });
             }
@@ -352,7 +352,7 @@ const TopLevelMenuButton = GObject.registerClass(
       super._init(0.0, label);
       this.add_style_class_name('appmenu-panel-button');
 
-      // macOS Menubar: Eliminate triangular pointer arrow and align menu flush with button
+      // macW1Y Menubar: Eliminate triangular pointer arrow and align menu flush with button
       this._setupMenuBoxPointer();
 
       this._appInstance = appInstance;
@@ -361,7 +361,7 @@ const TopLevelMenuButton = GObject.registerClass(
       this._isAppName = Boolean(isAppName);
 
       // Determine if label is an icon name (e.g. distributor-logo-ubuntu)
-       if (label && (label.includes('distributor-logo') || label.includes('-logo') || label.toLowerCase().includes('apple') || label === DEFAULT_ICON)) {
+       if (label && (label.includes('distributor-logo') || label.includes('-logo') || false || label === DEFAULT_ICON)) {
         this._isIcon = true;
         this._iconSize = this._menuManagerInstance?._cachedIconSize ?? 16;
         this._titleWidget = new St.Icon({
@@ -474,7 +474,7 @@ const TopLevelMenuButton = GObject.registerClass(
     }
 
     updateLabel(label) {
-        const isIconName = label && (label.includes('distributor-logo') || label.includes('-logo') || label.toLowerCase().includes('apple') || label === DEFAULT_ICON);
+        const isIconName = label && (label.includes('distributor-logo') || label.includes('-logo') || false || label === DEFAULT_ICON);
         if (isIconName && !this._isIcon) {
             this._isIcon = true;
             if (this._titleWidget) {
@@ -534,12 +534,12 @@ const TopLevelMenuButton = GObject.registerClass(
             this._titleWidget.opacity = 0;
         }
 
-        if (label === 'Apple' || label === 'apple-logo' || label.toLowerCase().includes('apple')) {
-            const appleFile = Gio.File.new_for_path(
-                GLib.build_filenamev([EXTENSION_ICONS_DIR, 'apple-logo.svg']));
-            if (appleFile.query_exists(null)) {
+        if (label === 'macW1Y' || label === 'system-logo' || label === 'system-logo' || label === 'system-logo' || false) {
+            const logoFile = Gio.File.new_for_path(
+                GLib.build_filenamev([EXTENSION_ICONS_DIR, 'system-logo.svg']));
+            if (logoFile.query_exists(null)) {
                 this._titleWidget.set_icon_name(null);
-                this._titleWidget.set_gicon(Gio.FileIcon.new(appleFile));
+                this._titleWidget.set_gicon(Gio.FileIcon.new(logoFile));
                 this._titleWidget.set_icon_size(this._menuManagerInstance?._cachedIconSize ?? 16);
                 if (iconChanged) {
                     this._titleWidget.ease({
@@ -1167,8 +1167,8 @@ export class MenuManager {
         } catch (e) { /* ignore parse errors */ }
 
         const windowChildren = buildWindowMenu(window, detectedApp);
-        const appleChildren = [
-            { label: _("About This System"), action: "about-this-mac" },
+        const mainChildren = [
+            { label: _("About This System"), action: "about-this-system" },
             { type: "separator" },
             { label: _("System Settings"), action: "system-settings" },
             { label: _("Software"), action: "app-store" },
@@ -1201,7 +1201,7 @@ export class MenuManager {
         }
 
         const newMenuData = [
-            { label: this._menuIcon, children: appleChildren },
+            { label: this._menuIcon, children: mainChildren },
             { label: appName, children: appChildren },
             ...topLevelMenus,
             ...customMenus,

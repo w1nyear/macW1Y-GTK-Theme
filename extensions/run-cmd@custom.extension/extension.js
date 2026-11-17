@@ -55,7 +55,7 @@ export default class RunCommandExtension extends Extension {
     enable() {
         this._indicator = new PanelMenu.Button(0.0, 'Ydotool Trigger', true);
 
-        const FADE_DURATION = 200; // ms (smooth macOS cross-fade)
+        const FADE_DURATION = 200; // ms (smooth macW1Y cross-fade)
 
         this._iconBox = new St.Widget({
             layout_manager: new Clutter.BinLayout(),

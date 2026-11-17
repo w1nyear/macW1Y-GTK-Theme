@@ -706,7 +706,7 @@ export class Animator {
         this.extension?._cleanUpDragState?.();
       },
       'drag-end', (_d, eventTime, success) => {
-        // macOS-style "drag out to unpin"
+        // macW1Y-style "drag out to unpin"
         if (this._dragging && this.extension?._draggedAppId && success === false) {
           const isOutside = !this.extension._isPointerOverDock(40);
           if (isOutside) {

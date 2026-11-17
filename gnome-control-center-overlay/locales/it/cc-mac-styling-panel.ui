@@ -1315,11 +1315,11 @@
                 <child>
                   <object class="AdwPreferencesGroup">
                     <property name="title">Bootloader</property>
-                    <property name="description">Impostazioni di avvio macOS Plymouth e registrazione del kernel</property>
+                    <property name="description">Impostazioni di avvio macW1Y Plymouth e registrazione del kernel</property>
                     <child>
                       <object class="AdwSwitchRow" id="boot_verbose_switch">
                         <property name="title">Modalità dettagliata (Verbose)</property>
-                        <property name="subtitle">Testo del registro di avvio del terminale dietro il logo Apple</property>
+                        <property name="subtitle">Testo del registro di avvio del terminale dietro il logo macW1Y</property>
                         <signal name="realize" handler="init_boot_verbose" />
                         <signal name="notify::active" handler="on_boot_verbose_changed" />
                       </object>
@@ -1327,7 +1327,7 @@
                     <child>
                       <object class="AdwSwitchRow" id="boot_grub_switch">
                         <property name="title">Menu GRUB</property>
-                        <property name="subtitle">Menu grafico di selezione del sistema in stile macOS all'avvio</property>
+                        <property name="subtitle">Menu grafico di selezione del sistema in stile macW1Y all'avvio</property>
                         <signal name="realize" handler="init_boot_grub" />
                         <signal name="notify::active" handler="on_boot_grub_changed" />
                       </object>

@@ -1,4 +1,4 @@
-# macW1Y - macOS Experience on GNOME
+# macW1Y - macW1Y Experience on GNOME
 
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://ubuntu.com/)
 [![GNOME](https://img.shields.io/badge/GNOME-4a86cf?style=for-the-badge&logo=gnome&logoColor=white)](https://www.gnome.org/)
@@ -12,17 +12,17 @@
 
 ---
 
-**macW1Y** is a complete, pixel-perfect transformation suite and performance modpack designed to bring the authentic macOS experience to Ubuntu (GNOME Shell on Wayland). The project integrates custom GTK3/GTK4 themes, GNOME Shell styling, Liquid Glass shaders, Apple SF Pro typography, animated Apple Silicon GRUB and Plymouth boot animations, a dedicated low-latency multitouch gesture daemon, interactive desktop widgets, hybrid graphics optimizations, and an overhauled Control Center and Settings experience.
+**macW1Y** is a complete, pixel-perfect transformation suite and performance modpack designed to bring the authentic macW1Y experience to Ubuntu (GNOME Shell on Wayland). The project integrates custom GTK3/GTK4 themes, GNOME Shell styling, Liquid Glass shaders, macW1Y Default typography, animated macW1Y GRUB and Plymouth boot animations, a dedicated low-latency multitouch gesture daemon, interactive desktop widgets, hybrid graphics optimizations, and an overhauled Control Center and Settings experience.
 
 ### Visual Experience & Styling
 
-The system delivers the refined aesthetics and behavior of modern macOS (Sequoia / Tahoe):
+The system delivers the refined aesthetics and behavior of modern macW1Y (Sequoia / Tahoe):
 - **Top Menubar & Control Center**: Native slide-in Control Center with audio and brightness controls, quick toggles, battery health, and dynamic top-bar OSD icons.
 - **Cupertino Glass Dock**: Floating dock with Liquid Glass reflection, magnification, and smooth application minimization animations.
 - **Mission Control & Window Management**: Intuitive workspace navigation, drag-to-top window zooming with automatic menubar slide-in and window height accommodation.
 - **Spotlight Search & Clipboard**: Super+Space modal search with instant file preview, calculator, and an integrated clipboard history popup.
 - **Finder-Styled Nautilus**: Clean file manager sidebar with authentic iconography, custom pathbars, and folder badging.
-- **Settings (GNOME Control Center)**: Refreshed macOS 26-inspired interface with compact leftbar navigation, Apple ID user banner, collapsible system alerts, and radio-accordion power modes.
+- **Settings (GNOME Control Center)**: Refreshed macW1Y 26-inspired interface with compact leftbar navigation, macW1Y ID user banner, collapsible system alerts, and radio-accordion power modes.
 - **Dark & Light Themes**: Precise rounded geometry, authentic drop shadows, typography, and accent colors.
 
 ---
@@ -44,7 +44,7 @@ macW1Y/
 ├── apply_plymouth.sh             # Script to install and apply Plymouth boot theme
 ├── toggle-launchpad.sh           # Script to trigger Launchpad / Application Grid
 ├── AI_INSTRUCTIONS.md            # AI agent deployment instructions
-├── gnome-control-center-overlay/ # macOS styling injections for GNOME Control Center
+├── gnome-control-center-overlay/ # macW1Y styling injections for GNOME Control Center
 ├── gnome-shell-overlay/         # GNOME Shell custom overlay module
 ├── extension-manager/           # Custom GNOME extension manager helper library
 ├── services/                    # Systemd user service overrides
@@ -56,9 +56,9 @@ macW1Y/
 ├── macW1Y-Light/                 # Light theme suite for GTK3, GTK4, and GNOME Shell
 ├── macW1Y-Light-solid/           # Opaque variant of the light theme
 ├── gnome-shell-theme/            # Custom GNOME Shell stylesheet and assets
-├── icons/                        # Complete macOS-styled icon themes
-├── fonts/                        # Apple SF Pro fonts collection (29 font weights)
-├── wallpapers/                   # Official macOS desktop wallpapers
+├── icons/                        # Complete macW1Y-styled icon themes
+├── fonts/                        # macW1Y Default fonts collection (29 font weights)
+├── wallpapers/                   # Official macW1Y desktop wallpapers
 ├── bin/                          # Core system scripts, guards, and diagnostics utilities
 ├── lib/                          # Compiled helper libraries (e.g. libmac_settings.so)
 ├── src/                          # C and GLib source code for system integrations
@@ -68,21 +68,21 @@ macW1Y/
 │   ├── blur-my-shell@aunetx      # Mutter blur effects for menubar and panels
 │   ├── liquid-glass@...          # Dynamic Liquid Glass GLSL refraction shader
 │   ├── eval-helper@mactheme      # High-performance DBus bridge, GC, and modal helper
-│   ├── kiwi@kemma                # macOS Control Center & Notification Center suite
+│   ├── kiwi@kemma                # macW1Y Control Center & Notification Center suite
 │   ├── cupertino-dock-lite@...   # Cupertino-style floating glass dock
-│   └── macos-touchpad-gestures@mactheme # Low-latency multitouch gestures extension
-├── control-center/               # macOS styling injections for GNOME Control Center
-├── grub/                         # Apple Silicon bootloader theme for GRUB
-├── plymouth/                     # Plymouth boot splash animation with Apple logo
-├── macos-plymouth/               # Alternative boot splash theme
-├── macos-gdm/                    # macOS-style GDM login screen styling
+│   └── macw1y-touchpad-gestures@mactheme # Low-latency multitouch gestures extension
+├── control-center/               # macW1Y styling injections for GNOME Control Center
+├── grub/                         # macW1Y bootloader theme for GRUB
+├── plymouth/                     # Plymouth boot splash animation with System logo
+├── macw1y-boot/               # Alternative boot splash theme
+├── macw1y-gdm/                    # macW1Y-style GDM login screen styling
 ├── systemd/                      # Systemd services (power management, touchpad daemon)
 ├── dconf/                        # Baseline dconf system setting dumps
 ├── dependencies/                 # Package dependency manifests and installer scripts
 ├── config/                       # Application configurations, GTK settings, and locks
 ├── gtk-3.0/                      # User-specific GTK3 styling
 ├── gtk-4.0/                      # User-specific GTK4 styling
-├── sounds/                       # Authentic macOS system audio and alerts
+├── sounds/                       # Authentic macW1Y system audio and alerts
 ├── touchpad/                     # Hardware uinput multitouch gesture daemon
 ├── wack-system/                  # Lockscreen clock, widgets, and animation system
 └── assets/                       # Vector graphics and UI resources
@@ -180,7 +180,7 @@ The integrated Widgets extension is distributed under the **GNU General Public L
 ## Acknowledgements
 
 - **Lilithium** — for visual improvements
-- **Teemo** — for providing macOS screenshots
+- **Teemo** — for providing macW1Y screenshots
 
 ---
 
@@ -192,9 +192,9 @@ The integrated Widgets extension is distributed under the **GNU General Public L
 
 **Legal Notice & Disclaimers:**
 - This project is developed independently for educational, research, and personalization purposes for Linux users.
-- Apple, macOS, Cupertino, San Francisco, Sequoia, Tahoe, Golden Gates, and related marks are trademarks of Apple Inc.
+- macW1Y, macW1Y, Cupertino, Default, Sequoia, Tahoe, Golden Gates, and related marks are trademarks of macW1Y Project
 - All open-source components and third-party tools included or referenced are licensed under their respective original licenses (GPL, MIT, LGPL, Apache 2.0).
-- Apple SF Pro fonts and brand iconography are referenced solely for personal non-commercial customization.
+- macW1Y Default fonts and brand iconography are referenced solely for personal non-commercial customization.
 - GNOME Shell extension code interfaces with official GNOME JavaScript APIs under the GNU GPLv3+ license.
 
 ---

@@ -1,4 +1,4 @@
-// Tahoe live clock for the dock: real macOS Clock built from vector layers.
+// Tahoe live clock for the dock: real macW1Y Clock built from vector layers.
 // Face + 3 hands + cap are separate SVGs (tahoe-clock-*.svg in kiwi's icons),
 // each rasterized by St.Icon at 3x and GPU-downscaled - crisp at any
 // magnification, down to the minute ticks. Hands move via rotation_angle_z

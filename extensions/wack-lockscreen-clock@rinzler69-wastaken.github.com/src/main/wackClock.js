@@ -83,7 +83,7 @@ export const WackClock = GObject.registerClass(
             this._tint = false;
             this._alpha = 0.85;
             this._promptColor = null;
-            // Типографіка macOS: цифри щільніші на пару px та двокрапка по центру
+            // Типографіка macW1Y: цифри щільніші на пару px та двокрапка по центру
             // висоти цифр (однаково для GDM гретера і екрана блокування в сесії).
             this._letterSpacing = -4;
             this._colonRisePx = 12.41; // 0.09695em × 128px (.wack-time) — метрика Open Runde
@@ -190,14 +190,14 @@ export const WackClock = GObject.registerClass(
         _applyTextStyle() {
             const timeColor = '#ffffff';
             const dateColor = '#ffffff';
-            const font = "font-family: 'SF Pro Rounded', 'SF Pro Display', -apple-system, sans-serif;";
+            const font = "font-family: 'Default Rounded', 'Default Display', default, system-ui, sans-serif, sans-serif;";
             const weight = `font-weight: ${this._weight || '600'};`;
             const timeShadow = 'text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42);';
             const dateShadow = 'text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42);';
             const letterSpacing = (this._letterSpacing != null)
                 ? ` letter-spacing: ${this._letterSpacing}px;` : '';
             this._time.set_style(`color: ${timeColor}; ${font} ${weight} ${timeShadow}${letterSpacing}`);
-            this._dateOutput.set_style(`color: ${dateColor}; font-family: 'SF Pro Display', -apple-system, sans-serif; font-size: 28px; font-weight: 600; text-align: center; margin-bottom: 0px; padding: 4px 8px; ${dateShadow}`);
+            this._dateOutput.set_style(`color: ${dateColor}; font-family: 'Default Display', default, system-ui, sans-serif, sans-serif; font-size: 28px; font-weight: 600; text-align: center; margin-bottom: 0px; padding: 4px 8px; ${dateShadow}`);
             // Після зміни стилю шрифт може перерахуватись — піднімаємо двокрапку заново.
             this._applyColonMarkup();
         }
@@ -214,7 +214,7 @@ export const WackClock = GObject.registerClass(
 
         /**
          * Lift the ':' glyph so its optical center matches the vertical center
-         * of the digits (macOS-style clock colon).
+         * of the digits (macW1Y-style clock colon).
          * @param {number|null} px rise in CSS pixels (масштабується темою):
          *   12.41px для .wack-time 128px — метрика Open Runde
          *   (центр цифр 0.36169em мінус центр двокрапки 0.26474em = 0.09695em).

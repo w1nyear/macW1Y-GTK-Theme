@@ -1,5 +1,5 @@
 // Liquid-glass backdrop for GNOME Shell desktop widgets.
-// Uses the macOS physical liquid-glass pipeline (LiquidEffect with glass.frag)
+// Uses the macW1Y physical liquid-glass pipeline (LiquidEffect with glass.frag)
 // powered by Dual Kawase blur, Snell refraction, chromatic dispersion, physical specular rim,
 // ambient occlusion and wallpaper mirror.
 

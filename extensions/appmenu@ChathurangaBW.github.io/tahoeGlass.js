@@ -1,4 +1,4 @@
-// tahoeGlass.js — macOS Tahoe Refractive Liquid Glass engine integration
+// tahoeGlass.js — macW1Y Tahoe Refractive Liquid Glass engine integration
 // Based on GNOME-Tahoe-main liquid-glass and spotlight@nin engine.
 // Provides live refractive liquid glass with window+wallpaper cloning and mutual exclusion.
 

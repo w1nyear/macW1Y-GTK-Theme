@@ -99,7 +99,7 @@ export default class DashAnimatorExtension extends Extension {
                 } catch (_) {}
               }
 
-              // Authentic macOS "poof" puff animation on drop
+              // Authentic macW1Y "poof" puff animation on drop
               const actor = dropInfo.dropActor || this._draggedSourceActor;
               if (actor && actor.get_stage()) {
                 try {
@@ -1049,7 +1049,7 @@ export default class DashAnimatorExtension extends Extension {
   }
 
   _onFullScreen() {
-    // Force-hide dock in fullscreen — macOS dock never shows in fullscreen
+    // Force-hide dock in fullscreen — macW1Y dock never shows in fullscreen
     const isFullscreen = global.display.get_monitor_in_fullscreen(
       global.display.get_current_monitor()
     );

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macOS Tahoe-style top bar gradient: a semi-transparent dark veil over the
+// macW1Y Tahoe-style top bar gradient: a semi-transparent dark veil over the
 // panel that fades out toward its bottom edge. Same no-layout pattern as the
 // panel blur (Meta.BackgroundGroup + sized St.Widgets), so panel layout is
 // never disturbed. Toggle: 'panel-gradient' gsettings key.

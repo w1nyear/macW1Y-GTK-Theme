@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Keeps ~/.config/gtk-4.0/gtk.css following the system color scheme
-// (MacTahoe Light/Dark), preserving Kiwi's managed imports. Standalone
+// (macW1Y Light/Dark), preserving Kiwi's managed imports. Standalone
 // twin lives in gtk-theme-sync@micronix (takes over after a re-login).
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
-const MARKER_BEGIN = '/* Kiwi (is not Apple) - managed imports: begin */';
-const MARKER_END = '/* Kiwi (is not Apple) - managed imports: end */';
+const MARKER_BEGIN = '/* Kiwi Component Suite - managed imports: begin */';
+const MARKER_END = '/* Kiwi Component Suite - managed imports: end */';
 
 let _iface = null;
 let _schemeId = 0;
@@ -33,8 +33,8 @@ export function syncTheme() {
     try {
         const iface = _iface ?? new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
         const theme = iface.get_string('gtk-theme') || '';
-        if (!theme.startsWith('MacTahoe')) {
-            console.log('[kiwi-gtk-sync] gtk-theme is not MacTahoe, leaving gtk.css alone');
+        if (!theme.startsWith('macW1Y')) {
+            console.log('[kiwi-gtk-sync] gtk-theme is not macW1Y, leaving gtk.css alone');
             return;
         }
 

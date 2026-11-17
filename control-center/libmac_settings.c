@@ -2637,7 +2637,7 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     char badge_text[128];
     g_snprintf(badge_text, sizeof(badge_text), "Liquid Glass • %s", shape_names[shape_idx]);
 
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.0);
     cairo_text_extents_t ext;
     cairo_text_extents(cr, badge_text, &ext);
@@ -2747,7 +2747,7 @@ static void menubar_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_line_to(cr, width, mb_h - 0.5);
     cairo_stroke(cr);
 
-    // Apple Logo 
+    // System Logo 
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
     cairo_arc(cr, 16.5, 14.5, 3.8, 0, 2 * G_PI);
     cairo_fill(cr);
@@ -2757,12 +2757,12 @@ static void menubar_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_fill(cr);
 
     // Menus
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.5);
     cairo_move_to(cr, 30.0, 17.5);
     cairo_show_text(cr, "Finder");
 
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.85);
     cairo_move_to(cr, 76.0, 17.5);
     cairo_show_text(cr, "Файл");
@@ -3136,7 +3136,7 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_stroke(cr);
 
     // 5. Label text: "Telegram"
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 12.0);
     cairo_text_extents_t te;
     cairo_text_extents(cr, "Telegram", &te);
@@ -3243,7 +3243,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
 
     draw_frosted_glass_card(cr, blurred_bg, cx, cy, cw, ch, cr_r, card_tint_a, shadow_a, 0.16);
 
-    // Amber warning triangle icon (macOS Warning Badge)
+    // Amber warning triangle icon (macW1Y Warning Badge)
     double tri_cx = cx + cw / 2.0;
     double tri_cy = cy + 24.0;
     double tri_sz = 14.0;
@@ -3255,7 +3255,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_fill(cr);
 
     // Exclamation mark inside warning triangle
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 13.0);
     cairo_set_source_rgb(cr, 0.10, 0.10, 0.10);
     cairo_text_extents_t ex_w;
@@ -3272,7 +3272,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_show_text(cr, title_txt);
 
     // Subtitle
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.65);
     const char *sub_txt = "Цю дію неможливо скасувати.";
@@ -3306,7 +3306,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     draw_rounded_rect_path(cr, b2_x, btn_y, btn_w, btn_h, btn_r);
     cairo_set_source_rgb(cr, 0.88, 0.22, 0.20);
     cairo_fill(cr);
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
     cairo_text_extents(cr, "Спорожнити", &ex_w);
@@ -3385,25 +3385,25 @@ static void notifications_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, i
     cairo_fill(cr);
 
     // Text content
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
     cairo_move_to(cr, nx + 58.0, ny + 22.0);
     cairo_show_text(cr, "Повідомлення");
 
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.55);
     cairo_move_to(cr, nx + 150.0, ny + 22.0);
     cairo_show_text(cr, "•  щойно");
 
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.92);
     cairo_move_to(cr, nx + 58.0, ny + 38.0);
     cairo_show_text(cr, "Олександр");
 
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.80);
     cairo_move_to(cr, nx + 58.0, ny + 51.0);
@@ -3473,7 +3473,7 @@ static gboolean spotlight_anim_tick_cb(GtkWidget *widget G_GNUC_UNUSED,
         return G_SOURCE_REMOVE;
     }
 
-    /* Critically damped macOS-style fluid exponential easing */
+    /* Critically damped macW1Y-style fluid exponential easing */
     double speed = (spotlight_anim_target_progress > spotlight_anim_current_progress) ? 14.0 : 18.0;
     double factor = 1.0 - exp(-speed * dt);
     spotlight_anim_current_progress += diff * factor;
@@ -3782,7 +3782,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
     double text_x = sx + 38.0 + p * 8.0;
     double text_y = sy + 27.5 + p * 3.5;
     double font_sz = 12.0 + p * 4.0;
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, font_sz);
 
     if (spotlight_input_active) {
@@ -3829,7 +3829,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.18 * badge_alpha);
             cairo_set_line_width(cr, 0.8);
             cairo_stroke(cr);
-            cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+            cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
             cairo_set_font_size(cr, 9.5);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88 * badge_alpha);
             cairo_move_to(cr, bx + 7.5, by + 14.5);
@@ -3847,7 +3847,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
             draw_rounded_rect_path(cr, esc_x, esc_y, esc_w, esc_h, 6.0);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12 * esc_alpha);
             cairo_fill(cr);
-            cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+            cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
             cairo_set_font_size(cr, 9.5);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.70 * esc_alpha);
             cairo_move_to(cr, esc_x + 11.5, esc_y + 13.5);
@@ -3878,13 +3878,13 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
             // Safari header row
             draw_safari_compass_icon(cr, sx + 34.0, sy + 76.0, 15.0);
 
-            cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+            cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
             cairo_set_font_size(cr, 13.0);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95 * content_alpha);
             cairo_move_to(cr, sx + 58.0, sy + 73.0);
             cairo_show_text(cr, "Результати у інтернеті");
 
-            cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+            cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
             cairo_set_font_size(cr, 10.5);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.52 * content_alpha);
             cairo_move_to(cr, sx + 58.0, sy + 87.0);
@@ -3909,7 +3909,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
                 pango_layout_set_width(layout, (int)((card_w - 24.0) * PANGO_SCALE));
                 pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
                 pango_layout_set_spacing(layout, (int)(4.0 * PANGO_SCALE));
-                PangoFontDescription *desc = pango_font_description_from_string("Inter 11.5");
+                PangoFontDescription *desc = pango_font_description_from_string("default 11.5");
                 pango_layout_set_font_description(layout, desc);
                 pango_font_description_free(desc);
 
@@ -3920,7 +3920,7 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
                 char markup[768];
                 snprintf(markup, sizeof(markup),
                     "<span foreground=\"%s\">"
-                    "<b>macW1Y</b> is the less popular but the most alike macOS modpack that makes GNOME beautiful with Liquid Glass and Apple HIG design."
+                    "<b>macW1Y</b> is the less popular but the most alike macW1Y modpack that makes GNOME beautiful with Liquid Glass and System HIG design."
                     "</span>\n\n"
                     "<span foreground=\"%s\">"
                     "Also this modpack was made by a femboy. In Telegram @w1nyear channel chat you can find w1nyear's thighs with thigh highs."
@@ -4116,13 +4116,13 @@ static void blur_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
 
     draw_frosted_glass_card(cr, blurred_bg, bx, by, bw, bh, br, tint_a, 0.70, 0.16);
 
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
     cairo_move_to(cr, bx + 18.0, by + 28.0);
     cairo_show_text(cr, "Глобальне розмиття (Blur)");
 
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.72);
     cairo_move_to(cr, bx + 18.0, by + 46.0);
@@ -4136,7 +4136,7 @@ static void blur_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
     const char *tint_word = is_light ? (is_uk ? "Засвітлення" : "Lightening") : (is_uk ? "Затемнення" : "Darkening");
     char val_txt[64];
     g_snprintf(val_txt, sizeof(val_txt), "Sigma: %d • %s: %d%%", state.blur_sigma, tint_word, state.blur_tint);
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 9.0);
     cairo_text_extents_t ex_v;
     cairo_text_extents(cr, val_txt, &ex_v);
@@ -4267,7 +4267,7 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     cairo_set_source_rgba(cr, ar, ag, ab, 0.20);
     cairo_fill(cr);
 
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
     cairo_move_to(cr, mx + 14.0, r1_y + 18.0);
@@ -4297,7 +4297,7 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     cairo_stroke(cr);
 
     // Row 2: "Додати віджети..."
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88);
     cairo_move_to(cr, mx + 14.0, my + 92.0);
@@ -4306,14 +4306,14 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     // Row 3: "Упорядкувати віджети" + chevron ›
     cairo_move_to(cr, mx + 14.0, my + 116.0);
     cairo_show_text(cr, "Упорядкувати віджети");
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.45);
     cairo_move_to(cr, mx + mw - 20.0, my + 116.0);
     cairo_show_text(cr, "›");
 
     // Row 4: "Змінити шпалери..."
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88);
     cairo_move_to(cr, mx + 14.0, my + 138.0);
@@ -4381,12 +4381,12 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
 
     draw_frosted_glass_card(cr, blurred_bg, wx, wy, ww, wh, wr, tint_a, shadow_a, 0.14);
 
-    // 4. Apple World Clock inside the Frosted Card
+    // 4. macW1Y World Clock inside the Frosted Card
     double cx = wx + ww / 2.0;
     double cy = wy + 52.0;
     double cr_dial = 34.0;
 
-    // Dial background: rich dark radial gradient (Apple dark mode)
+    // Dial background: rich dark radial gradient (macW1Y dark mode)
     cairo_pattern_t *dial_pat = cairo_pattern_create_radial(cx, cy - 6.0, 2.0, cx, cy, cr_dial);
     cairo_pattern_add_color_stop_rgba(dial_pat, 0.0, 0.16, 0.17, 0.20, 0.95);
     cairo_pattern_add_color_stop_rgba(dial_pat, 1.0, 0.08, 0.09, 0.11, 0.98);
@@ -4401,7 +4401,7 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_set_line_width(cr, 0.8);
     cairo_stroke(cr);
 
-    // 12 Authentic Apple Clock Tick Marks
+    // 12 Authentic macW1Y Clock Tick Marks
     for (int t = 0; t < 12; t++) {
         double ang = t * (G_PI / 6.0) - G_PI / 2.0;
         int is_q = (t % 3 == 0);
@@ -4467,8 +4467,8 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_set_source_rgb(cr, ar, ag, ab);
     cairo_fill(cr);
 
-    // Typography (Apple Cupertino World Clock)
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    // Typography (macW1Y Cupertino World Clock)
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
     cairo_text_extents_t ex_t;
@@ -4476,7 +4476,7 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_move_to(cr, cx - ex_t.width / 2.0, wy + 106.0);
     cairo_show_text(cr, "КИЇВ");
 
-    cairo_select_font_face(cr, "Inter", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.55);
     cairo_text_extents(cr, "+0 ГОД", &ex_t);
@@ -5307,7 +5307,7 @@ void init_boot_verbose(void *widget, gpointer data) {
         }
         fclose(f);
     }
-    if (!is_verbose && g_file_test("/usr/share/plymouth/themes/apple-mac/verbose_on.png", G_FILE_TEST_EXISTS)) {
+    if (!is_verbose && g_file_test("/usr/share/plymouth/themes/macw1y-boot/verbose_on.png", G_FILE_TEST_EXISTS)) {
         is_verbose = 1;
     }
     adw_switch_row_set_active(widget, is_verbose);
@@ -6818,7 +6818,7 @@ void gtk_list_box_set_header_func(GtkListBox *box,
     }
 
     if (is_sidebar_main_list) {
-        /* Disallow GNOME's hardcoded category separators inside macOS sidebar */
+        /* Disallow GNOME's hardcoded category separators inside macW1Y sidebar */
         if (orig_set_header_func) {
             orig_set_header_func(box, NULL, NULL, NULL);
         }
@@ -11065,7 +11065,7 @@ static GtkListBoxRow *create_account_row(AdwNavigationSplitView *split_view) {
     gtk_widget_add_css_class(name_lbl, "account-title");
     gtk_box_append(GTK_BOX(tbox), name_lbl);
 
-    GtkWidget *sub_lbl = gtk_label_new(mac_tr("apple_account", "Акаунт"));
+    GtkWidget *sub_lbl = gtk_label_new(mac_tr("system_account", "Акаунт"));
     gtk_label_set_xalign(GTK_LABEL(sub_lbl), 0.0);
     gtk_widget_add_css_class(sub_lbl, "account-subtitle");
     gtk_box_append(GTK_BOX(tbox), sub_lbl);
@@ -12691,7 +12691,7 @@ static gboolean mac_fix_settings_window(gpointer user_data)
             g_object_set_data(G_OBJECT(main_listbox), "mac_listbox_connected", GINT_TO_POINTER(1));
         }
 
-        /* Style all rows inside main_listbox to ensure compact macOS heights */
+        /* Style all rows inside main_listbox to ensure compact macW1Y heights */
         for (GtkWidget *ch = gtk_widget_get_first_child(GTK_WIDGET(main_listbox)); ch != NULL; ch = gtk_widget_get_next_sibling(ch)) {
             if (GTK_IS_LIST_BOX_ROW(ch)) {
                 if (!g_object_get_data(G_OBJECT(ch), "is_account_row")) {

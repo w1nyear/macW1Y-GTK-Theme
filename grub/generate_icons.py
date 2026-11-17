@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-generate_icons.py — macOS Apple Silicon Startup Manager Theme Generator for GRUB 2
+generate_icons.py — macW1Y Startup Manager Theme Generator for GRUB 2
 Generates:
 1. 3-card layout icons (Ubuntu, UEFI Settings, Options + Shut Down/Restart)
 2. 4-card layout icons with USB drive (USB Boot, Ubuntu, UEFI Settings, Options + Shut Down/Restart)
@@ -17,11 +17,11 @@ S = 2  # 2x supersampling downscaled with Lanczos for 4K Retina sharpness
 SW, SH = W * S, H * S
 
 # Font configuration
-font_display = '/home/vitaliy/.local/share/fonts/SF_Pro_Display/SF-Pro-Display-Medium.otf'
-font_text = '/home/vitaliy/.local/share/fonts/SF_Pro_Text/SF-Pro-Text-Medium.otf'
-font_regular = '/home/vitaliy/.local/share/fonts/SF_Pro_Text/SF-Pro-Text-Regular.otf'
-font_semibold = '/home/vitaliy/.local/share/fonts/SF_Pro_Text/SF-Pro-Text-Semibold.otf'
-font_bold = '/home/vitaliy/.local/share/fonts/SF_Pro_Display/SF-Pro-Display-Bold.otf'
+font_display = '/home/vitaliy/.local/share/fonts/SF_Pro_Display/Default-Display-Medium.otf'
+font_text = '/home/vitaliy/.local/share/fonts/SF_Pro_Text/Default-Medium.otf'
+font_regular = '/home/vitaliy/.local/share/fonts/SF_Pro_Text/Default-Regular.otf'
+font_semibold = '/home/vitaliy/.local/share/fonts/SF_Pro_Text/Default-Semibold.otf'
+font_bold = '/home/vitaliy/.local/share/fonts/SF_Pro_Display/Default-Display-Bold.otf'
 
 f_label = ImageFont.truetype(font_display, int(round(15 * S)))
 f_continue = ImageFont.truetype(font_text, int(round(12.5 * S)))
@@ -99,7 +99,7 @@ def create_uefi_chip_icon():
 
 uefi_clean = create_uefi_chip_icon()
 
-# 3. Generate macOS External USB Drive icon
+# 3. Generate macW1Y External USB Drive icon
 def create_usb_drive_icon():
     w, h = disk_clean.size
     usb_im = Image.new('RGBA', (w, h), (0, 0, 0, 0))
@@ -167,7 +167,7 @@ def make_continue_btn():
 
 btn_continue = make_continue_btn()
 
-# Card geometry: compact authentic Apple Silicon layout with close icon-label spacing
+# Card geometry: compact authentic macW1Y layout with close icon-label spacing
 card_w = int(round(176 * S))
 card_h = int(round(176 * S))
 center_y = int(round(498 * S))
@@ -277,7 +277,7 @@ def get_external_boot_labels():
                 is_boot = False
                 if mount and (os.path.isdir(f'{mount}/EFI') or os.path.isdir(f'{mount}/efi')):
                     is_boot = True
-                elif lbl and any(x in lbl.upper() for x in ['VTOYEFI', 'MACOS', 'BOOT', 'EFI']):
+                elif lbl and any(x in lbl.upper() for x in ['VTOYEFI', 'MACW1Y', 'BOOT', 'EFI']):
                     is_boot = True
                 if is_boot and lbl and lbl not in labels:
                     labels.append(lbl)
@@ -287,8 +287,8 @@ def get_external_boot_labels():
     if len(labels) >= 2:
         return labels[0], labels[1]
     elif len(labels) == 1:
-        return labels[0], 'MACOS'
-    return 'VTOYEFI', 'MACOS'
+        return labels[0], 'MACW1Y'
+    return 'VTOYEFI', 'MACW1Y'
 
 def render_4item_screen(selected, ext_name='VTOYEFI', os_name='Ubuntu'):
     im = Image.new('RGBA', (SW, SH), (0, 0, 0, 255))
@@ -316,7 +316,7 @@ def render_4item_screen(selected, ext_name='VTOYEFI', os_name='Ubuntu'):
 
     return im.resize((W, H), Image.Resampling.LANCZOS)
 
-def render_5item_screen(selected, ext1_name='VTOYEFI', ext2_name='MACOS', os_name='Ubuntu'):
+def render_5item_screen(selected, ext1_name='VTOYEFI', ext2_name='MACW1Y', os_name='Ubuntu'):
     im = Image.new('RGBA', (SW, SH), (0, 0, 0, 255))
     d = ImageDraw.Draw(im)
     draw_top_bar(im, d)
@@ -379,19 +379,19 @@ def render_transition_frame(progress, ext_name='VTOYEFI', os_name='Ubuntu'):
     return im.resize((W, H), Image.Resampling.LANCZOS)
 
 def main():
-    print("Generating macOS Apple Silicon GRUB theme assets (lower placement & unclipped gear)...")
+    print("Generating macW1Y macW1Y GRUB theme assets (lower placement & unclipped gear)...")
 
     base_dirs = [
-        '/boot/grub/themes/apple-mac',
-        '/home/vitaliy/MACTHEMEFILES/grub/apple-mac'
+        '/boot/grub/themes/macw1y-boot',
+        '/home/vitaliy/MACTHEMEFILES/grub/macw1y-boot'
     ]
     usb_dirs = [
-        '/boot/grub/themes/apple-mac-usb',
-        '/home/vitaliy/MACTHEMEFILES/grub/apple-mac-usb'
+        '/boot/grub/themes/macw1y-boot-usb',
+        '/home/vitaliy/MACTHEMEFILES/grub/macw1y-boot-usb'
     ]
     usb2_dirs = [
-        '/boot/grub/themes/apple-mac-usb2',
-        '/home/vitaliy/MACTHEMEFILES/grub/apple-mac-usb2'
+        '/boot/grub/themes/macw1y-boot-usb2',
+        '/home/vitaliy/MACTHEMEFILES/grub/macw1y-boot-usb2'
     ]
 
     for b in base_dirs:
@@ -513,8 +513,8 @@ def main():
     import glob
 
     for u2 in usb2_dirs:
-        # Copy theme.txt, background.png, and all *.pf2 fonts from apple-mac
-        src_dir = '/boot/grub/themes/apple-mac'
+        # Copy theme.txt, background.png, and all *.pf2 fonts from macw1y-boot
+        src_dir = '/boot/grub/themes/macw1y-boot'
         if os.path.exists(f'{src_dir}/theme.txt'):
             shutil.copy2(f'{src_dir}/theme.txt', f'{u2}/theme.txt')
         if os.path.exists(f'{src_dir}/background.png'):

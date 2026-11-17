@@ -153,7 +153,7 @@ def main():
     is_light = active_scheme in ("prefer-light", "default")
 
     cur_gtk_theme = "macW1Y-Light" if is_light else "macW1Y-Dark"
-    cur_icon_theme = "MacTahoe" if is_light else "MacTahoe-dark"
+    cur_icon_theme = "macW1Y" if is_light else "macW1Y-dark"
     cur_wm_theme = "macW1Y-Light" if is_light else "macW1Y-Dark"
     cur_shell_theme = "macW1Y-Light" if is_light else "macW1Y-Dark"
     cur_color_scheme = "prefer-light" if is_light else "prefer-dark"
@@ -161,10 +161,10 @@ def main():
     # 1. Desktop Interface
     if gsettings_set("org.gnome.desktop.interface", "gtk-theme", cur_gtk_theme): changes_count += 1
     if gsettings_set("org.gnome.desktop.interface", "icon-theme", cur_icon_theme): changes_count += 1
-    if gsettings_set("org.gnome.desktop.interface", "cursor-theme", th.get("cursor_theme", "macOS")): changes_count += 1
-    if gsettings_set("org.gnome.desktop.interface", "font-name", th.get("font_name", "Inter 11")): changes_count += 1
-    if gsettings_set("org.gnome.desktop.interface", "document-font-name", th.get("document_font_name", "Inter 11")): changes_count += 1
-    if gsettings_set("org.gnome.desktop.interface", "monospace-font-name", th.get("monospace_font_name", "Ubuntu Sans Mono 11")): changes_count += 1
+    if gsettings_set("org.gnome.desktop.interface", "cursor-theme", th.get("cursor_theme", "macW1Y")): changes_count += 1
+    if gsettings_set("org.gnome.desktop.interface", "font-name", th.get("font_name", "default 10")): changes_count += 1
+    if gsettings_set("org.gnome.desktop.interface", "document-font-name", th.get("document_font_name", "default 10")): changes_count += 1
+    if gsettings_set("org.gnome.desktop.interface", "monospace-font-name", th.get("monospace_font_name", "DefaultMono 10")): changes_count += 1
     if gsettings_set("org.gnome.desktop.interface", "font-antialiasing", "grayscale"): changes_count += 1
     if gsettings_set("org.gnome.desktop.interface", "color-scheme", cur_color_scheme): changes_count += 1
 
@@ -176,7 +176,7 @@ def main():
     if gsettings_set("org.gnome.shell.extensions.user-theme", "name", cur_shell_theme): changes_count += 1
 
     # 4. Sound Theme
-    if gsettings_set("org.gnome.desktop.sound", "theme-name", th.get("sound_theme", "macOS")): changes_count += 1
+    if gsettings_set("org.gnome.desktop.sound", "theme-name", th.get("sound_theme", "macW1Y")): changes_count += 1
     if gsettings_set("org.gnome.desktop.sound", "event-sounds", "true", "bool"): changes_count += 1
     if gsettings_set("org.gnome.desktop.sound", "input-feedback-sounds", "true", "bool"): changes_count += 1
 
@@ -184,8 +184,8 @@ def main():
     ini_dict = {
         "gtk-theme-name": cur_gtk_theme,
         "gtk-icon-theme-name": cur_icon_theme,
-        "gtk-font-name": th.get("font_name", "Inter 11"),
-        "gtk-cursor-theme-name": th.get("cursor_theme", "macOS"),
+        "gtk-font-name": th.get("font_name", "default 10"),
+        "gtk-cursor-theme-name": th.get("cursor_theme", "macW1Y"),
         "gtk-decoration-layout": th.get("button_layout", "close,minimize,maximize:"),
         "gtk-application-prefer-dark-theme": "0" if is_light else "1"
     }
@@ -197,7 +197,7 @@ def main():
     # 5b. Universal Cursor Enforcement (Xresources, X11, GTK2, Snaps)
     try:
         xresources_path = os.path.join(HOME, ".Xresources")
-        xr_content = "Xcursor.theme: MacTahoe\nXcursor.size: 24\n"
+        xr_content = "Xcursor.theme: macW1Y\nXcursor.size: 24\n"
         with open(xresources_path, "w") as xrf:
             xrf.write(xr_content)
         if shutil.which("xrdb"):
@@ -264,7 +264,7 @@ def main():
     except Exception:
         pass
 
-    # 9. macOS Desktop Transition Overlay sync with backup & watchdog wrapper
+    # 9. macW1Y Desktop Transition Overlay sync with backup & watchdog wrapper
     overlay_src = os.path.join(REPO_DIR, "gnome-shell-overlay/ui/layout.js")
     overlay_dst = "/usr/share/mactheme/gnome-shell-overlay/ui/layout.js"
     orig_dst = "/usr/share/mactheme/gnome-shell-overlay/ui/layout.js.orig"

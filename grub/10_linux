@@ -228,7 +228,7 @@ linux_entry ()
   if [ x"$quiet_boot" = x0 ] || [ x"$type" != xsimple ]; then
     message="$(gettext_printf "Loading Linux %s ..." ${version})"
     sed "s/^/$submenu_indentation/" << EOF
-	# suppressed for macOS high-res transition: echo 'Loading...'
+	# suppressed for macW1Y high-res transition: echo 'Loading...'
 EOF
   fi
   # We have initrd and PARTUUID is set - we try to boot without initrd, and fallback to using it
@@ -256,7 +256,7 @@ EOF
 EOF
       if [ x"$quiet_boot" = x0 ] || [ x"$type" != xsimple ]; then
         sed "s/^/$submenu_indentation/" << EOF
-		# suppressed for macOS high-res transition: echo 'Loading...'
+		# suppressed for macW1Y high-res transition: echo 'Loading...'
 EOF
       fi
       sed "s/^/$submenu_indentation/" << EOF
@@ -284,7 +284,7 @@ EOF
           # TRANSLATORS: ramdisk isn't identifier. Should be translated.
           if [ x"$quiet_boot" = x0 ] || [ x"$type" != xsimple ]; then
             sed "s/^/$submenu_indentation/" << EOF
-	# suppressed for macOS high-res transition: echo 'Loading...'
+	# suppressed for macW1Y high-res transition: echo 'Loading...'
 EOF
           fi
           sed "s/^/$submenu_indentation/" << EOF
@@ -295,7 +295,7 @@ EOF
       if [ x"$quiet_boot" = x0 ] || [ x"$type" != xsimple ]; then
         message="$(gettext_printf "Loading device tree blob...")"
         sed "s/^/$submenu_indentation/" << EOF
-	# suppressed for macOS high-res transition: echo 'Loading...'
+	# suppressed for macW1Y high-res transition: echo 'Loading...'
 EOF
       fi
       sed "s/^/$submenu_indentation/" << EOF
@@ -489,7 +489,7 @@ for linux in ${reverse_sorted_list}; do
   linux_entry "${OS}" "${version}" advanced \
               "${GRUB_CMDLINE_LINUX} ${GRUB_CMDLINE_LINUX_DEFAULT}"
 
-  # macOS Startup Manager: Card 2 — UEFI Settings
+  # macW1Y Startup Manager: Card 2 — UEFI Settings
   if [ "x$is_top_level" = xtrue ]; then
     cat << 'EOF'
 if [ "$grub_platform" = "efi" ]; then

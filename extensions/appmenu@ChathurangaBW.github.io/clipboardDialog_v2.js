@@ -439,7 +439,7 @@ class ClipboardStore {
 const clipboardStore = new ClipboardStore();
 
 // ------------------------------------------------------------------------------
-// MacClipboardDialog UI (Pure Liquid Glass & macOS Styling)
+// MacClipboardDialog UI (Pure Liquid Glass & macW1Y Styling)
 // ------------------------------------------------------------------------------
 export const MacClipboardDialog = GObject.registerClass({
     GTypeName: `MacClipboardDialog_${Math.floor(Math.random() * 1000000)}`,
@@ -566,7 +566,7 @@ export const MacClipboardDialog = GObject.registerClass({
             const home = GLib.get_home_dir();
             const candidates = [
                 `${home}/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/icons/mac-clipboard-copy.svg`,
-                `${home}/.local/share/icons/MacTahoe/apps/scalable/edit-copy-symbolic.svg`,
+                `${home}/.local/share/icons/macW1Y/apps/scalable/edit-copy-symbolic.svg`,
             ];
             for (const p of candidates) {
                 if (p && GLib.file_test(p, GLib.FileTest.EXISTS)) {

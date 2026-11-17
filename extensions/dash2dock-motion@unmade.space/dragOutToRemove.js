@@ -1,4 +1,4 @@
-// macOS-style "pull out of the dock to remove": releasing a pinned app icon
+// macW1Y-style "pull out of the dock to remove": releasing a pinned app icon
 // far outside the dock unpins it with a poof (puff up + fade), instead of
 // snapping back. Running-only icons, the trash, Show Apps and kiwi's strips
 // have no favorite id and are left alone.

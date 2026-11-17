@@ -1,4 +1,4 @@
-# Core System Dependencies for Ubuntu macOS Modpack
+# Core System Dependencies for Ubuntu macW1Y Modpack
 gcc
 make
 pkg-config

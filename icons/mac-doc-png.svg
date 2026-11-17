@@ -15,7 +15,7 @@
       <path d="M20 40l6-7 5 5 5-7 8 9H20z" fill="#a0a0a8"/>
     
   <!-- Extension Label Text -->
-  <text x="31" y="54" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', Helvetica, sans-serif" font-size="7.5" font-weight="700" fill="#8e8e93" text-anchor="middle">PNG</text>
+  <text x="31" y="54" font-family="default, system-ui, sans-serif, BlinkMacSystemFont, 'Default', Helvetica, sans-serif" font-size="7.5" font-weight="700" fill="#8e8e93" text-anchor="middle">PNG</text>
   <!-- App / Format Badge -->
   
           <g transform="translate(44, 52)">

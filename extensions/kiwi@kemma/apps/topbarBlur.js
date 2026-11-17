@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Persistent macOS-style topbar backdrop: pure blur behind the panel,
+// Persistent macW1Y-style topbar backdrop: pure blur behind the panel,
 // full at the top screen edge, dissipating downward over TOP_FADE px.
 // Layering: uiGroup below panelBox (paints over windows). Input is
 // wallpaper only - all UI newborn-excluded every frame, all windows
@@ -146,7 +146,7 @@ function _bandSegments(monitor, panelH) {
 }
 
 // Ghost-proofing: this band overlaps the panel, so clone NOTHING from the
-// UI layer - wallpaper + windows only (macOS behaviour). Runs EVERY frame
+// UI layer - wallpaper + windows only (macW1Y behaviour). Runs EVERY frame
 // (before refresh) so newborn actors (Spotlight, banners, OSD, QS overlay)
 // are excluded the same frame they appear - a geometry-gated sweep misses
 // anything born between geometry changes.

@@ -10,4 +10,5 @@
   </defs>
   <circle cx="64" cy="64" r="54" fill="url(#suc_bg)" filter="url(#shadow)"/>
   <path d="M 40 64 L 56 80 L 90 46" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- macW1Y build-hash -->
 </svg>

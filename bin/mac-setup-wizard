@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-mac-setup-wizard — macOS Setup Wizard Controller for macW1Y
+mac-setup-wizard — macW1Y Setup Wizard Controller for macW1Y
 Controls initial MacBook setup wizard display on user login / post-installation.
 """
 
@@ -75,7 +75,7 @@ def cmd_status():
     ver = get_version()
     flag = get_flag()
     print("===================================================================")
-    print("         macW1Y — macOS Setup Wizard Status (macSetupWizard)      ")
+    print("         macW1Y — macW1Y Setup Wizard Status (macSetupWizard)      ")
     print("===================================================================")
     print(f"  • Modpack Version:     macW1Y v{ver}")
     print(f"  • macSetupWizard Flag: {flag} ({'Увімкнено (зʼявиться при наступному вході)' if flag == 1 else 'Вимкнено (робота налаштована)'})")
@@ -102,7 +102,7 @@ def cmd_status():
     print("===================================================================")
 
 def cmd_start(force=True):
-    print("🚀 Запуск macOS Setup Wizard на екрані...")
+    print("🚀 Запуск macW1Y Setup Wizard на екрані...")
     js = f"""(() => {{
         const home = imports.gi.GLib.get_home_dir();
         return import('file://' + home + '/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=' + Date.now())

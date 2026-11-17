@@ -145,7 +145,7 @@ def run_diagnostics(auto_fix=False):
     # Check Cupertino / Dash2dock
     dock_active = ("dash2dock-motion@unmade.space" in enabled_exts) and ("cupertino-dock-lite@rinzler69-wastaken.github.com" in enabled_exts)
     if dock_active:
-        print(f"  {C_GREEN}✔{C_RESET} " + ("macOS Cupertino Glass Dock активний." if IS_UK else "macOS Cupertino Glass Dock active."))
+        print(f"  {C_GREEN}✔{C_RESET} " + ("macW1Y Cupertino Glass Dock активний." if IS_UK else "macW1Y Cupertino Glass Dock active."))
     else:
         print(f"  {C_RED}✖{C_RESET} " + ("Компоненти Dock (dash2dock-motion або cupertino-dock-lite) вимкнено!" if IS_UK else "Dock components are disabled!"))
         issues.append("Компоненти Dock вимкнено" if IS_UK else "Dock components disabled")

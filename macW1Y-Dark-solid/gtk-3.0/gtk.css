@@ -1,12 +1,12 @@
 @import url("gtk-dark.css");
 
-/* Kiwi (is not Apple) - managed imports: begin */
+/* Kiwi Component Suite - managed imports: begin */
 @import url("titlebuttons3.css");
 @import url("titlebuttons-size-small3.css");
 @import url("fixes3.css");
-/* Kiwi (is not Apple) - managed imports: end */
+/* Kiwi Component Suite - managed imports: end */
 /* --- MAC-STYLING-START --- */
-/* macOS Tahoe Context Menus (Desktop and System GTK Applications) */
+/* macW1Y Tahoe Context Menus (Desktop and System GTK Applications) */
 window.desktopmenu,
 window.desktopmenu decoration,
 window.popup decoration,
@@ -232,7 +232,7 @@ tooltip label {
 /* --- MAC-STYLING-END --- */
 
 /* --- MAC-TRAFFIC-LIGHTS-START --- */
-/* macOS Traffic Lights for GTK 3, Electron, and Chromium Apps */
+/* macW1Y Traffic Lights for GTK 3, Electron, and Chromium Apps */
 headerbar.titlebar {
   padding-left: 12px;
 }

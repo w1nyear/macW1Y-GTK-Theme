@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Leaving the overview focuses the window under the pointer instead of the
-// previously focused one, like macOS Mission Control.
+// previously focused one, like macW1Y Mission Control.
 
 import Clutter from 'gi://Clutter';
 

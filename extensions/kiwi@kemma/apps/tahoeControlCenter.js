@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Tahoe Quick Settings v5: 1:1 macOS Tahoe Control Center.
+// Tahoe Quick Settings v5: 1:1 macW1Y Tahoe Control Center.
 //   panel 320, padding 14, col gap 18, column 137
 //   St adds CSS padding ON TOP of forced sizes (content-box), so the grid
 //   below targets RENDERED sizes, not forced ones:
@@ -652,7 +652,7 @@ async function _openSoundSubmenu(sourceActor, state) {
         const secHeader = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
         const headerLbl = new St.Label({
             text: t('output_device', 'Вихідний пристрій'),
-            style: 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 11px !important; font-weight: 700 !important; color: rgba(255, 255, 255, 0.6) !important; letter-spacing: -0.1px !important; margin: 4px 8px !important;',
+            style: 'font-family: "Default Display", "Default", default, system-ui, sans-serif, sans-serif !important; font-size: 11px !important; font-weight: 700 !important; color: rgba(255, 255, 255, 0.6) !important; letter-spacing: -0.1px !important; margin: 4px 8px !important;',
         });
         try { headerLbl.clutter_text.ellipsize = Pango.EllipsizeMode.NONE; } catch (_) {}
         secHeader.add_child(headerLbl);
@@ -777,7 +777,7 @@ export async function _openDisplaySubmenu(sourceActor, state) {
         const secHeader = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
         const headerLbl = new St.Label({
             text: t('display_header', 'Дисплей'),
-            style: 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 11px !important; font-weight: 700 !important; color: rgba(255, 255, 255, 0.6) !important; letter-spacing: -0.1px !important; margin: 4px 8px !important;',
+            style: 'font-family: "Default Display", "Default", default, system-ui, sans-serif, sans-serif !important; font-size: 11px !important; font-weight: 700 !important; color: rgba(255, 255, 255, 0.6) !important; letter-spacing: -0.1px !important; margin: 4px 8px !important;',
         });
         try { headerLbl.clutter_text.ellipsize = Pango.EllipsizeMode.NONE; } catch (_) {}
         secHeader.add_child(headerLbl);
@@ -955,7 +955,7 @@ export async function _openFocusSubmenu(sourceActor, state) {
         const secHeader = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
         const headerLbl = new St.Label({
             text: t('focus', 'Зосередження'),
-            style: 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 11px !important; font-weight: 700 !important; color: rgba(255, 255, 255, 0.6) !important; letter-spacing: -0.1px !important; margin: 4px 8px !important;',
+            style: 'font-family: "Default Display", "Default", default, system-ui, sans-serif, sans-serif !important; font-size: 11px !important; font-weight: 700 !important; color: rgba(255, 255, 255, 0.6) !important; letter-spacing: -0.1px !important; margin: 4px 8px !important;',
         });
         try { headerLbl.clutter_text.ellipsize = Pango.EllipsizeMode.NONE; } catch (_) {}
         secHeader.add_child(headerLbl);
@@ -1225,7 +1225,7 @@ function _makePrivPill(iconName, dotClass) {
     return pill;
 }
 
-// single pill for every active source at once (macOS Tahoe): extra dots
+// single pill for every active source at once (macW1Y Tahoe): extra dots
 // are appended after the main circle, names are joined with commas.
 function _makeComboPrivPill() {
     const pill = _makePrivPill('camera-web-symbolic', 'tahoe-qs-priv-green');
@@ -1307,10 +1307,10 @@ function _makeGlyph(iconName) {
     return {btn, icon};
 }
 
-// Tahoe slider: exact macOS Sequoia / Tahoe OSD segmented slider.
+// Tahoe slider: exact macW1Y Sequoia / Tahoe OSD segmented slider.
 // Features a 5px track, solid filled bar (turns red when overamplified > 100%),
 // and a row of 17 discrete dots beneath aligned with the 16 volume/brightness steps.
-// Handleless design matching macOS OSD, with smooth drag, click-to-position, and scroll.
+// Handleless design matching macW1Y OSD, with smooth drag, click-to-position, and scroll.
 const TahoeSlider = GObject.registerClass({
     GTypeName: `TahoeSlider_${Date.now()}_${Math.floor(Math.random() * 100000)}`,
 }, class TahoeSlider extends Slider {
@@ -1473,7 +1473,7 @@ const TahoeSlider = GObject.registerClass({
     }
 });
 
-// full-width card matching macOS OSD inside:
+// full-width card matching macW1Y OSD inside:
 // [ Title (bold) ]
 // [ (icon 15px)   ====================....   (icon 20px) ]
 // [                 .  .  .  .  .  .  .                  ]
@@ -1644,7 +1644,7 @@ function _buildPanel() {
     });
 
     // ======================= privacy pill (top, hidden when idle) =======================
-    // ONE compact centered pill for every active source at once (macOS Tahoe)
+    // ONE compact centered pill for every active source at once (macW1Y Tahoe)
     const privPill = _makeComboPrivPill();
     const privRow = new St.BoxLayout({x_expand: true});
     privRow.add_child(new St.BoxLayout({x_expand: true}));
@@ -2770,7 +2770,7 @@ export async function _openPowerModeSubmenu(sourceActor, state) {
         const secHeader = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
         const headerLbl = new St.Label({
             text: t('power_mode', 'Режим живлення'),
-            style: 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 11px !important; font-weight: 700 !important; color: rgba(255, 255, 255, 0.6) !important; letter-spacing: -0.1px !important; margin: 4px 8px !important;',
+            style: 'font-family: "Default Display", "Default", default, system-ui, sans-serif, sans-serif !important; font-size: 11px !important; font-weight: 700 !important; color: rgba(255, 255, 255, 0.6) !important; letter-spacing: -0.1px !important; margin: 4px 8px !important;',
         });
         try { headerLbl.clutter_text.ellipsize = Pango.EllipsizeMode.NONE; } catch (_) {}
         secHeader.add_child(headerLbl);
@@ -2817,11 +2817,11 @@ export async function _openPowerModeSubmenu(sourceActor, state) {
             const textBox = new St.BoxLayout({ vertical: true, x_expand: true, y_align: Clutter.ActorAlign.CENTER });
             const titleLbl = new St.Label({
                 text: m.title,
-                style: `font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 13px !important; font-weight: ${isSelected ? '700' : '500'} !important; color: #ffffff !important;`,
+                style: `font-family: "Default Display", "Default", default, system-ui, sans-serif, sans-serif !important; font-size: 13px !important; font-weight: ${isSelected ? '700' : '500'} !important; color: #ffffff !important;`,
             });
             const descLbl = new St.Label({
                 text: m.desc,
-                style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; font-size: 10px !important; color: rgba(255, 255, 255, 0.6) !important; margin-top: -1px;',
+                style: 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; font-size: 10px !important; color: rgba(255, 255, 255, 0.6) !important; margin-top: -1px;',
             });
             textBox.add_child(titleLbl);
             textBox.add_child(descLbl);
@@ -2853,7 +2853,7 @@ export async function _openPowerModeSubmenu(sourceActor, state) {
             text: t('power_settings', 'Параметри живлення…'),
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
-            style: 'font-family: "SF Pro Text", "SF Pro Display", -apple-system, sans-serif !important; font-size: 13px !important; color: #ffffff !important;',
+            style: 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; font-size: 13px !important; color: #ffffff !important;',
         });
         settItem.add_child(settLbl);
         settItem.connect('activate', () => {
@@ -2949,7 +2949,7 @@ function _systemAction(kind) {
 }
 
 // ------------------------------------------------- privacy pill (mic/camera/share)
-// macOS-style pill on top: colored dot + app name. Camera green, mic
+// macW1Y-style pill on top: colored dot + app name. Camera green, mic
 // orange, share blue. Hidden when nothing is in use.
 // Sources: Shell.CameraMonitor (camera), the stock screen-sharing
 // indicator (share, initial-state-correct), pactl source-outputs (mic
@@ -3497,7 +3497,7 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
     if (pure) {
         // backdrop: pure blur, nothing else. No tint wash, no brightness/
         // saturation shift, no refraction, no rim/specular/sheen - and a
-        // wide edge_smoothing so the blur fades out gradually (macOS 26).
+        // wide edge_smoothing so the blur fades out gradually (macW1Y 26).
         effect.setTintColor(0, 0, 0);
         effect.setTintStrength(0);
         effect.setBrightness(1.0);

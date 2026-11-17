@@ -106,7 +106,7 @@ def apply_theme_mode(is_light):
 
     # 1. Desktop Interface
     gtk_theme = "macW1Y-Light" if is_light else "macW1Y-Dark"
-    icon_theme = "MacTahoe" if is_light else "MacTahoe-dark"
+    icon_theme = "macW1Y" if is_light else "macW1Y-dark"
     color_scheme = "prefer-light" if is_light else "prefer-dark"
     wm_theme = "macW1Y-Light" if is_light else "macW1Y-Dark"
     shell_theme = "macW1Y-Dark"

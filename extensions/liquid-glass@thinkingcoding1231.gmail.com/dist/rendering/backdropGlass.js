@@ -54,9 +54,9 @@ function _registerBackdropGlass(cls) {
     if (globalThis.__LiquidGlass_classes?.BackdropGlass) return globalThis.__LiquidGlass_classes.BackdropGlass;
     if (!globalThis.__LiquidGlass_classes) globalThis.__LiquidGlass_classes = {};
     try {
-        return (globalThis.__LiquidGlass_classes.BackdropGlass = GObject.registerClass({ GTypeName: 'MacTahoeBackdropGlass' }, cls));
+        return (globalThis.__LiquidGlass_classes.BackdropGlass = GObject.registerClass({ GTypeName: 'macW1YBackdropGlass' }, cls));
     } catch (_) {
-        return (globalThis.__LiquidGlass_classes.BackdropGlass = GObject.registerClass({ GTypeName: 'MacTahoeBackdropGlass_' + Date.now() }, cls));
+        return (globalThis.__LiquidGlass_classes.BackdropGlass = GObject.registerClass({ GTypeName: 'macW1YBackdropGlass_' + Date.now() }, cls));
     }
 }
 
@@ -379,7 +379,7 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
                 reportFrameLoopError?.(`BackdropGlass_${this._owner}`, e);
             }
 
-            // Idle sleep pattern (Apple Core Animation principle)
+            // Idle sleep pattern (macW1Y Core Animation principle)
             if (doHeavy) {
                 this._idleCount = 0;
             } else {

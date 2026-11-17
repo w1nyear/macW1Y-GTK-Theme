@@ -1,5 +1,5 @@
 /*
- * recentItemsSubmenu.js - Recent files and applications submenu for the Apple menu.
+ * recentItemsSubmenu.js - Recent files and applications submenu for the macW1Y menu.
  */
 
 import Gio from 'gi://Gio';

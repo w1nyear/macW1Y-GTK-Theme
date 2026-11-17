@@ -182,7 +182,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         onClick = null,
     } = options;
 
-    // Канонічні стилі картки: напівпрозоре скло (macOS Tahoe liquid glass)
+    // Канонічні стилі картки: напівпрозоре скло (macW1Y Tahoe liquid glass)
     let isDark = true;
     try {
         const iface = new Gio.Settings({ schema: 'org.gnome.desktop.interface' });
@@ -243,7 +243,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         console.warn(`[notifications_v4] Error adding BlurEffect to banner: ${e}`);
     }
 
-    // Головна розкладка в стилі macOS: [іконка 44×44] [тексти] [правий рейл]
+    // Головна розкладка в стилі macW1Y: [іконка 44×44] [тексти] [правий рейл]
     const mainBox = new St.BoxLayout({
         orientation: Clutter.Orientation.HORIZONTAL,
         x_expand: true,
@@ -377,7 +377,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     rightRail.add_child(timeLabel);
     banner.add_child(closeBtn);
 
-    // Заголовок (тільки якщо відрізняється від імені застосунку — як у macOS)
+    // Заголовок (тільки якщо відрізняється від імені застосунку — як у macW1Y)
     const rawTitle = (notification.title || '').trim();
     const appName = (source?.title || '').trim();
     const isDuplicateTitle = rawTitle.toLowerCase() === appName.toLowerCase();
@@ -577,7 +577,7 @@ globalThis._macBuildNotificationCard = buildNotificationCard;
 /**
  * MacNotificationGroup:
  * Manages multiple notifications belonging to the same application or conversation.
- * In collapsed state: shows top card with macOS layered card stack underneath.
+ * In collapsed state: shows top card with macW1Y layered card stack underneath.
  * On click: cascades downwards to show all notifications with smooth staggered animation.
  */
 export class MacNotificationGroup {

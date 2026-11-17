@@ -9468,7 +9468,7 @@ themeswitcher checkbutton.dark {
 @define-color text_view_bg @view_bg_color;
 
 /* --- MAC-NAUTILUS-SIDEBAR-START --- */
-/* macOS Finder Sidebar Styling for Nautilus and Libadwaita / GTK4 (Light Theme) */
+/* macW1Y Finder Sidebar Styling for Nautilus and Libadwaita / GTK4 (Light Theme) */
 splitview > paned > scrolledwindow > list.navigation-sidebar,
 splitview > paned > scrolledwindow > .navigation-sidebar,
 .sidebar-pane placessidebar,
@@ -9604,7 +9604,7 @@ separator.sidebar-trash-separator {
     margin: 8px 10px;
 }
 
-/* Clean macOS app grid/list view without symlink/readonly emblems */
+/* Clean macW1Y app grid/list view without symlink/readonly emblems */
 #emblems_box,
 box#emblems_box,
 .nautilus-grid-view #emblems_box,

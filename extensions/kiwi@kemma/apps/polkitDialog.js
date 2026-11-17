@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macOS-style authentication dialogs (polkit): centered card, lock icon,
+// macW1Y-style authentication dialogs (polkit): centered card, lock icon,
 // round password field, gray Cancel + blue Unlock. Purely visual: the
 // stock session/PAM flow is untouched, so every consumer (Settings unlock,
 // Software, system dialogs) keeps working.
@@ -24,7 +24,7 @@ function _styleDialog(dialog) {
         return;
     }
 
-    // macOS shows a lock instead of the user avatar.
+    // macW1Y shows a lock instead of the user avatar.
     try {
         dialog._userAvatar?.hide();
     } catch (_) {
@@ -98,7 +98,7 @@ export function enable(settings) {
     if (_enabled)
         return;
     _settings = settings;
-    if (!_settings.get_boolean('polkit-dialog-macos'))
+    if (!_settings.get_boolean('polkit-dialog-macw1y'))
         return;
     _enabled = true;
     console.log('[tahoe-polkit] enabled');

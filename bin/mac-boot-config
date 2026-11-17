@@ -87,11 +87,11 @@ def set_grub(enable):
         else:
             c += "\nGRUB_TIMEOUT=5\n"
 
-        # 3. Theme (Enable Apple theme)
+        # 3. Theme (Enable macW1Y theme)
         if re.search(r"^#?GRUB_THEME=.*", c, re.M):
-            c = re.sub(r"^#?GRUB_THEME=.*", 'GRUB_THEME="/boot/grub/themes/apple-mac/theme.txt"', c, flags=re.M)
+            c = re.sub(r"^#?GRUB_THEME=.*", 'GRUB_THEME="/boot/grub/themes/macw1y-boot/theme.txt"', c, flags=re.M)
         else:
-            c += '\nGRUB_THEME="/boot/grub/themes/apple-mac/theme.txt"\n'
+            c += '\nGRUB_THEME="/boot/grub/themes/macw1y-boot/theme.txt"\n'
 
         # 4. Recordfail timeout
         if re.search(r"^#?GRUB_RECORDFAIL_TIMEOUT=.*", c, re.M):
@@ -114,7 +114,7 @@ def set_grub(enable):
 
         # 3. Comment out theme so gfxmenu doesn't force menu display
         if re.search(r"^GRUB_THEME=.*", c, re.M):
-            c = re.sub(r"^GRUB_THEME=.*", '#GRUB_THEME="/boot/grub/themes/apple-mac/theme.txt"', c, flags=re.M)
+            c = re.sub(r"^GRUB_THEME=.*", '#GRUB_THEME="/boot/grub/themes/macw1y-boot/theme.txt"', c, flags=re.M)
 
         # 4. Recordfail timeout 0
         if re.search(r"^#?GRUB_RECORDFAIL_TIMEOUT=.*", c, re.M):
@@ -129,7 +129,7 @@ def set_verbose(enable):
     c = read_grub_default()
     if enable:
         try:
-            subprocess.run(["cp", "-f", "/usr/share/plymouth/themes/apple-mac/1x1.png", "/usr/share/plymouth/themes/apple-mac/verbose_on.png"], check=False)
+            subprocess.run(["cp", "-f", "/usr/share/plymouth/themes/macw1y-boot/1x1.png", "/usr/share/plymouth/themes/macw1y-boot/verbose_on.png"], check=False)
             subprocess.run(["systemctl", "daemon-reload"], check=False)
             subprocess.run(["systemctl", "enable", "plymouth-verbose-logger.service"], check=False)
         except Exception:
@@ -140,8 +140,8 @@ def set_verbose(enable):
             c += '\nGRUB_CMDLINE_LINUX_DEFAULT="splash systemd.show_status=1 loglevel=4 bgrt.disable=1 vt.global_cursor_default=0"\n'
     else:
         try:
-            if os.path.exists("/usr/share/plymouth/themes/apple-mac/verbose_on.png"):
-                os.remove("/usr/share/plymouth/themes/apple-mac/verbose_on.png")
+            if os.path.exists("/usr/share/plymouth/themes/macw1y-boot/verbose_on.png"):
+                os.remove("/usr/share/plymouth/themes/macw1y-boot/verbose_on.png")
             subprocess.run(["systemctl", "disable", "plymouth-verbose-logger.service"], check=False)
         except Exception:
             pass

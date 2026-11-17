@@ -102,7 +102,7 @@ static const MacCKeyEntry MAC_C_ENTRIES[] = {
     { "bookmark_trash", "Кошик", "Trash", "Papierkorb", "Corbeille", "Papelera", "Kosz" },
     { "widgets", "widgets", "widgets", "widgets", "widgets", "widgets", "widgets" },
     { "mac_styling", "Mac стилізація", "Mac Styling", "Mac-Stil", "Style Mac", "Estilo Mac", "Stylizacja Mac" },
-    { "apple_account", "apple_account", "apple_account", "apple_account", "apple_account", "apple_account", "apple_account" },
+    { "system_account", "system_account", "system_account", "system_account", "system_account", "system_account", "system_account" },
     { "storage_alert", "storage_alert", "storage_alert", "storage_alert", "storage_alert", "storage_alert", "storage_alert" },
     { "software_update_alert", "software_update_alert", "software_update_alert", "software_update_alert", "software_update_alert", "software_update_alert", "software_update_alert" },
     { "search", "search", "search", "search", "search", "search", "search" },

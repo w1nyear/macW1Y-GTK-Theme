@@ -119,7 +119,7 @@ export class UnlockDialogController {
             };
         }
 
-        // Manage top menu bar for authentic macOS lockscreen (Battery, Control Center, DateMenu)
+        // Manage top menu bar for authentic macW1Y lockscreen (Battery, Control Center, DateMenu)
         if (!this._menuBarManager) {
             this._menuBarManager = new LockscreenMenuBarManager(this._extension);
             this._menuBarManager.setup();

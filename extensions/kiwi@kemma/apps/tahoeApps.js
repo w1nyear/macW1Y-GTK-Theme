@@ -58,7 +58,7 @@ function _newTintChain(r, g, b) {
     }
 }
 
-// macOS Tahoe-style "Applications" (Launchpad) window that replaces
+// macW1Y Tahoe-style "Applications" (Launchpad) window that replaces
 // GNOME's app grid. Grabs the shell's toggle-application-view binding
 // and intercepts overview.showApps()/selectApp() so every activation
 // path (Super+A, dock button, D-Bus) lands on this window.

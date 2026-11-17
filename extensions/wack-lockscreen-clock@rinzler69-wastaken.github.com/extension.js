@@ -380,7 +380,7 @@ export default class WackLockscreenClockExtension extends Extension {
             }
         }
 
-        // Ensure no leftover menu bar items (e.g. appmenu Apple icon) appear in leftBox while locked
+        // Ensure no leftover menu bar items (e.g. appmenu macW1Y icon) appear in leftBox while locked
         if (Main.panel?._leftBox) {
             for (const child of Main.panel._leftBox.get_children()) {
                 const isActivities = child === Main.panel.statusArea?.activities?.container ||
@@ -995,7 +995,7 @@ export default class WackLockscreenClockExtension extends Extension {
     // This extension runs in the 'unlock-dialog' session mode to customize the
     // GNOME Shell lock screen. We perform the following modifications:
     // - Replace the default clock widget (dialog._clock) with our WackClock to
-    //   display a macOS-style lockscreen clock, wallpaper-tinted and repositioned
+    //   display a macW1Y-style lockscreen clock, wallpaper-tinted and repositioned
     //   via ClockLayoutManager.
     // - Install UnlockDialogController hooks on the UnlockDialog to drive our
     //   custom unlock crossfade animations.

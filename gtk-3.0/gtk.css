@@ -1,7 +1,7 @@
 @import url("macw1y-tokens.css");
 @import url("titlebuttons3.css");
 /* --- MAC-STYLING-START --- */
-/* macOS Tahoe Context Menus (Desktop and System GTK Applications) */
+/* macW1Y Tahoe Context Menus (Desktop and System GTK Applications) */
 window.desktopmenu,
 window.desktopmenu decoration,
 window.popup decoration,
@@ -225,7 +225,7 @@ tooltip label {
 /* --- MAC-STYLING-END --- */
 
 /* --- MAC-TRAFFIC-LIGHTS-START --- */
-/* macOS Traffic Lights for GTK 3, Electron, and Chromium Apps */
+/* macW1Y Traffic Lights for GTK 3, Electron, and Chromium Apps */
 headerbar.titlebar {
   padding-left: 12px;
 }
@@ -507,7 +507,7 @@ notebook > header > tabs > tab button.image-button.flat {
 
 
 /* =========================================================================
-   macOS Global Switches - GTK3
+   macW1Y Global Switches - GTK3
    ========================================================================= */
 switch {
   min-width: 42px;
@@ -598,7 +598,7 @@ switch:checked slider:active {
 }
 
 /* =========================================================================
-   macOS Global Sliders / Scales - GTK3
+   macW1Y Global Sliders / Scales - GTK3
    ========================================================================= */
 scale {
   min-height: 24px;
@@ -682,7 +682,7 @@ scale slider:disabled {
 }
 
 /* =========================================================================
-   macOS Global Nautilus Navigation Buttons (Photo 2 / Photo 3) - GTK3
+   macW1Y Global Nautilus Navigation Buttons (Photo 2 / Photo 3) - GTK3
    ========================================================================= */
 .mc-toggle-group,
 .mac-nav-pill {

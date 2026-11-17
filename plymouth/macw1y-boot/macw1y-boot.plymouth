@@ -1,0 +1,10 @@
+[Plymouth Theme]
+Name=macW1Y Boot
+Description=macW1Y boot splash with progress bar
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/macw1y-boot
+ScriptFile=/usr/share/plymouth/themes/macw1y-boot/macw1y-boot.script
+
+# macW1Y build

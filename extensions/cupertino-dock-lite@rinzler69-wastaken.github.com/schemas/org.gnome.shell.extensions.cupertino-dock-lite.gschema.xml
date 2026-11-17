@@ -9,12 +9,12 @@
     <key name="override-theming" type="b">
       <default>false</default>
       <summary>Override Dock Theming</summary>
-      <description>Apply macOS-inspired dock styling on top of Dash to Dock.</description>
+      <description>Apply macW1Y-inspired dock styling on top of Dash to Dock.</description>
     </key>
     <key name="dock-theme" type="s">
       <default>'bigsur'</default>
       <summary>Dock Theme</summary>
-      <description>Which macOS dock theme to apply. Either 'mojave' or 'bigsur'.</description>
+      <description>Which macW1Y dock theme to apply. Either 'mojave' or 'bigsur'.</description>
     </key>
     <key name="theme-aware" type="b">
       <default>true</default>

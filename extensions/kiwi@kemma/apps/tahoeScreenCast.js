@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macOS Tahoe Screen Recording & Screen Sharing Menubar Indicator
-// Displays a macOS-style circular disc with a centered square cutout on the menubar
+// macW1Y Tahoe Screen Recording & Screen Sharing Menubar Indicator
+// Displays a macW1Y-style circular disc with a centered square cutout on the menubar
 // to the left of system icons whenever screen recording or screen sharing is active.
 // Clicking opens a Liquid Glass popup menu with live timer, status details, and stop button.
 
@@ -16,7 +16,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import { getTopbarInk, watchInk } from './tahoeInk.js';
 import { t } from './mac_i18n.js';
 
-// Cairo-rendered macOS recording indicator icon:
+// Cairo-rendered macW1Y recording indicator icon:
 // A solid circular disc with a centered rounded square cutout.
 const MacScreenCastIcon = GObject.registerClass({
     GTypeName: `MacScreenCastIcon_${Date.now()}_${Math.floor(Math.random() * 100000)}`,

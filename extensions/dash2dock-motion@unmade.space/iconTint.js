@@ -1,7 +1,7 @@
-// Kiwi icon-tint bridge: macOS-style accent recolor for dock icons.
+// Kiwi icon-tint bridge: macW1Y-style accent recolor for dock icons.
 // Reads the toggle + color from kiwi's own settings (single source of
 // truth, edited in Kiwi Preferences), applies Clutter.ColorizeEffect
-// which preserves luminance like the macOS tinted-icon pipeline.
+// which preserves luminance like the macW1Y tinted-icon pipeline.
 
 import {
     Clutter,

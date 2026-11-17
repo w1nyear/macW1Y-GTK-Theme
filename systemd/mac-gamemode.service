@@ -1,5 +1,5 @@
 [Unit]
-Description=macOS Game Mode Optimizer Daemon
+Description=macW1Y Game Mode Optimizer Daemon
 After=multi-user.target
 
 [Service]

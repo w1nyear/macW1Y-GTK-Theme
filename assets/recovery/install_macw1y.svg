@@ -21,4 +21,5 @@
     <!-- Down Arrow -->
     <path d="M 0 -28 L 0 6 M -12 -6 L 0 6 L 12 -6" fill="none" stroke="url(#inst_box)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
+<!-- macW1Y build-hash -->
 </svg>

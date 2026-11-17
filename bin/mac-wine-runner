@@ -139,7 +139,7 @@ export WINEDEBUG="${WINEDEBUG:--all}"
 # If wine prefix doesn't exist yet, run silent wineboot
 if [ ! -d "$WINEPREFIX" ]; then
     if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
-        notify-send -a "macOS" -i "system-software-install" "$I18N_SETUP_TITLE" "$I18N_SETUP_MSG" 2>/dev/null || true
+        notify-send -a "macW1Y" -i "system-software-install" "$I18N_SETUP_TITLE" "$I18N_SETUP_MSG" 2>/dev/null || true
     fi
     wineboot -u >/dev/null 2>&1 || true
 fi
@@ -235,7 +235,7 @@ if [ -z "$REAL_WINE" ] || [ ! -x "$REAL_WINE" ]; then
 fi
 
 if [ -z "$REAL_WINE" ]; then
-    notify-send -u critical -a "macOS" "$I18N_ERR_TITLE" "$I18N_ERR_MSG" 2>/dev/null || true
+    notify-send -u critical -a "macW1Y" "$I18N_ERR_TITLE" "$I18N_ERR_MSG" 2>/dev/null || true
     echo "$I18N_ERR_MSG" >&2
     exit 1
 fi

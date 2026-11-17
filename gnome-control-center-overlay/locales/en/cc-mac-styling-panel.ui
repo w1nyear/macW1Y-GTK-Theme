@@ -1315,11 +1315,11 @@
                 <child>
                   <object class="AdwPreferencesGroup">
                     <property name="title">Bootloader</property>
-                    <property name="description">macOS Plymouth splash boot settings and kernel logging</property>
+                    <property name="description">macW1Y Plymouth splash boot settings and kernel logging</property>
                     <child>
                       <object class="AdwSwitchRow" id="boot_verbose_switch">
                         <property name="title">Verbose Mode</property>
-                        <property name="subtitle">Terminal boot log text displayed behind Apple logo</property>
+                        <property name="subtitle">Terminal boot log text displayed behind System logo</property>
                         <signal name="realize" handler="init_boot_verbose" />
                         <signal name="notify::active" handler="on_boot_verbose_changed" />
                       </object>
@@ -1327,7 +1327,7 @@
                     <child>
                       <object class="AdwSwitchRow" id="boot_grub_switch">
                         <property name="title">GRUB Menu</property>
-                        <property name="subtitle">macOS-style graphical OS selection menu during boot</property>
+                        <property name="subtitle">macW1Y-style graphical OS selection menu during boot</property>
                         <signal name="realize" handler="init_boot_grub" />
                         <signal name="notify::active" handler="on_boot_grub_changed" />
                       </object>

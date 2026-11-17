@@ -212,7 +212,7 @@ function _ensureDockDragMonitor() {
                         favs.removeFavorite(appId);
                     }
 
-                    // Authentic macOS "poof" animation
+                    // Authentic macW1Y "poof" animation
                     if (dropEvent.dropActor) {
                         dropEvent.dropActor.remove_all_transitions();
                         dropEvent.dropActor.ease({
@@ -408,17 +408,17 @@ export const MacApplicationsDialog = GObject.registerClass({
         });
         this._box.add_child(this._headerRow);
 
-        // Glyph icon 'A' (simple line SVG as on the macOS Tahoe reference photo)
+        // Glyph icon 'A' (simple line SVG as on the macW1Y Tahoe reference photo)
         let appIconGIcon = null;
         try {
             let extDirPath = null;
             try { extDirPath = new URL('.', import.meta.url).pathname; } catch (_) {}
             const home = GLib.get_home_dir();
             const candidates = [
-                `${home}/.local/share/icons/MacTahoe/apps/scalable/Appstore.svg`,
-                `${home}/.local/share/icons/MacTahoe-dark/apps/scalable/Appstore.svg`,
+                `${home}/.local/share/icons/macW1Y/apps/scalable/Appstore.svg`,
                 `${home}/.local/share/icons/macW1Y-dark/apps/scalable/Appstore.svg`,
-                `/usr/share/icons/MacTahoe-dark/apps/scalable/Appstore.svg`,
+                `${home}/.local/share/icons/macW1Y-dark/apps/scalable/Appstore.svg`,
+                `/usr/share/icons/macW1Y-dark/apps/scalable/Appstore.svg`,
             ];
             for (const p of candidates) {
                 if (p && GLib.file_test(p, GLib.FileTest.EXISTS)) {

@@ -1333,7 +1333,7 @@ export class GlyphFields {
         const b = this._face.bounds(text, 1);
         const offsets = this._face.offsets(text);
         const r = this.range;
-        // Letter spacing: tighten digits closer together for authentic macOS lockscreen appearance
+        // Letter spacing: tighten digits closer together for authentic macW1Y lockscreen appearance
         const letterSpacing = Math.round(-6 * (this.digitHeight / 98));
 
         // The line's room above and below the digits stays as it was.

@@ -33,7 +33,7 @@ fi
 # Unset any broken LD_PRELOAD that might corrupt game processes or 32-bit runtimes
 unset LD_PRELOAD
 
-# 3. Read target GPU configured in macOS / GNOME Settings (Power -> Game Mode GPU Allocation)
+# 3. Read target GPU configured in macW1Y / GNOME Settings (Power -> Game Mode GPU Allocation)
 TARGET_GAME_GPU=1
 CONFIG_FILE="$HOME/.config/mac-gpu-targets.json"
 if [ ! -f "$CONFIG_FILE" ]; then

@@ -100,7 +100,7 @@ export default class StageManagerPreferences extends ExtensionPreferences {
         // never reserves struts — both rows are Stack-only.
         const autoHideSwitch = new Adw.SwitchRow({
             title: _('Auto-hide Sidebar'),
-            subtitle: _('Off = always visible (macOS default). On = hover to reveal.'),
+            subtitle: _('Off = always visible (macW1Y default). On = hover to reveal.'),
         });
         settings.bind('sidebar-auto-hide', autoHideSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
         sideGroup.add(autoHideSwitch);

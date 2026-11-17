@@ -83,7 +83,7 @@
                 <child>
                   <object class="AdwSwitchRow" id="screenshot_sound_row">
                     <property name="title">Звук затвора камери</property>
-                    <property name="subtitle">Відтворювати характерний звук затвора macOS при створенні знімка</property>
+                    <property name="subtitle">Відтворювати характерний звук затвора macW1Y при створенні знімка</property>
                     <property name="active">true</property>
                     <signal name="realize" handler="init_screenshot_sound" />
                     <signal name="notify::active" handler="on_screenshot_sound_changed" />
@@ -124,7 +124,7 @@
                     <property name="model">
                       <object class="GtkStringList">
                         <items>
-                          <item>MP4 (.mp4 — максимальна сумісність macOS/iOS/Windows)</item>
+                          <item>MP4 (.mp4 — максимальна сумісність macW1Y/iOS/Windows)</item>
                           <item>WebM (.webm — відкритий оптимізований веб-формат)</item>
                           <item>MKV (.mkv — контейнер без обмежень)</item>
                         </items>
@@ -160,7 +160,7 @@
                     <property name="model">
                       <object class="GtkStringList">
                         <items>
-                          <item>60 FPS (Плавний macOS-стиль)</item>
+                          <item>60 FPS (Плавний macW1Y-стиль)</item>
                           <item>30 FPS (Стандартний баланс розміру)</item>
                         </items>
                       </object>
@@ -314,7 +314,7 @@
                 <child>
                   <object class="AdwActionRow">
                     <property name="title">Відновити початкові значення</property>
-                    <property name="subtitle">Скинути всі налаштування скріншотів до стандартних macOS</property>
+                    <property name="subtitle">Скинути всі налаштування скріншотів до стандартних macW1Y</property>
                     <child type="suffix">
                       <object class="GtkButton" id="btn_reset_screenshot_defaults">
                         <property name="label">Скинути…</property>

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macOS-style minimized windows: a thumbnail of every minimized window sits in
+// macW1Y-style minimized windows: a thumbnail of every minimized window sits in
 // Dash-to-Dock, between the app icons and the trash. The snapshot is taken with
 // paint_to_content() while the window is still mapped.
 
@@ -27,7 +27,7 @@ const THUMBNAIL_RADIUS = 4;   // px of corner rounding on a thumbnail, scaled
 const BADGE_FRACTION = 0.4;   // app icon badge, fraction of the dash icon size
 const RESTORE_GRACE = 500;    // ms to leave a restoring window's target alone
 const GEOMETRY_SETTLE = 100;  // ms of a still dock before recomputing targets
-// Split in two like macOS: the dock makes room along its length first, then the
+// Split in two like macW1Y: the dock makes room along its length first, then the
 // thumbnail grows out of its edge. Together they match the shell's
 // MINIMIZE_WINDOW_ANIMATION_TIME, so the slot and the window move as one.
 const TILE_SLOT_TIME = 160;   // ms to open or close the slot along the dock

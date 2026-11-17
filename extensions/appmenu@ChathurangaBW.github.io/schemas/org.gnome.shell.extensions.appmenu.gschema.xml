@@ -10,7 +10,7 @@
     <key name="menu-icon" type="s">
       <default>''</default>
       <summary>Menu Icon</summary>
-      <description>Icon for the system menu (position 0). Leave empty to auto-detect from your distro. Select "Apple" to use the Apple logo.</description>
+      <description>Icon for the system menu (position 0). Leave empty to auto-detect from your distro. Select "macW1Y" to use the System logo.</description>
     </key>
     <key name="lock-to-focused-app" type="b">
       <default>true</default>
@@ -20,7 +20,7 @@
     <key name="show-os-icon" type="b">
       <default>true</default>
       <summary>Show OS Icon</summary>
-      <description>Show the Apple or distribution logo button in the top panel.</description>
+      <description>Show the macW1Y or distribution logo button in the top panel.</description>
     </key>
     <key name="show-user-switcher" type="b">
       <default>true</default>
@@ -50,14 +50,14 @@
     <key name="clipboard-shortcut" type="as">
       <default>['&lt;Super&gt;v']</default>
       <summary>Clipboard Shortcut</summary>
-      <description>Keyboard shortcut used to open macOS Clipboard History dialog.</description>
+      <description>Keyboard shortcut used to open macW1Y Clipboard History dialog.</description>
     </key>
     <key name="use-real-menus" type="b">
       <default>true</default>
       <summary>Use Real Application Menus</summary>
       <description>When available, import real exported application menus over D-Bus.</description>
     </key>
-    <key name="prefer-macos-style" type="b">
+    <key name="prefer-macw1y-style" type="b">
       <default>false</default>
       <summary>Unused compatibility key</summary>
       <description>Retained for dconf compatibility. No longer used by AppMenu.</description>

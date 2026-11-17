@@ -405,7 +405,7 @@ fi
             except Exception:
                 pass
 
-    # 5. Prevent xdg-user-dirs-gtk prompt on locale change (macOS style: preserve directory structure)
+    # 5. Prevent xdg-user-dirs-gtk prompt on locale change (macW1Y style: preserve directory structure)
     try:
         user_dirs_conf = os.path.join(home, ".config/user-dirs.conf")
         with open(user_dirs_conf, "w", encoding="utf-8") as f:
@@ -483,11 +483,11 @@ def notify_gnome_shell(lang_code, posix, lang_env):
 def show_notification(info):
     title = info.get("notif_title", "macW1Y: System Language")
     body = info.get("notif_body", "System language updated successfully!")
-    icon = "/home/vitaliy/.themes/MacTahoe-Dark/icons/preferences-desktop-locale-symbolic.svg"
+    icon = "/home/vitaliy/.themes/macW1Y-Dark/icons/preferences-desktop-locale-symbolic.svg"
     if not os.path.exists(icon):
         icon = "preferences-desktop-locale"
     try:
-        subprocess.run(["notify-send", "-a", "macOS", "-i", icon, title, body], check=False)
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", icon, title, body], check=False)
     except Exception:
         pass
 

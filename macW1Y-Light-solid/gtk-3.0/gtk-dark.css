@@ -5103,10 +5103,10 @@ button.emoji-section:last-child {
 }
 
 .xfce4-panel.background widget.tasklist > button.toggle, .xfce4-panel.background button, .xfce4-panel.background button.flat, .mate-panel-menu-bar button,
-.mate-panel-menu-bar #PanelApplet > button.toggle,
+.mate-panel-menu-bar #PanelmacW1Yt > button.toggle,
 .mate-panel-menu-bar #tasklist-button,
 panel-toplevel.background button,
-panel-toplevel.background #PanelApplet > button.toggle,
+panel-toplevel.background #PanelmacW1Yt > button.toggle,
 panel-toplevel.background #tasklist-button, window#ValaPanel.background button.flat.-panel-button,
 window#ValaPanel.background button#tasklist-button.toggle.flat,
 window#ValaPanel.background button.flat.-panel-icon-button {
@@ -5118,10 +5118,10 @@ window#ValaPanel.background button.flat.-panel-icon-button {
 }
 
 .xfce4-panel.background widget.tasklist > button.toggle:hover, .xfce4-panel.background button:hover, .mate-panel-menu-bar button:hover,
-.mate-panel-menu-bar #PanelApplet > button.toggle:hover,
+.mate-panel-menu-bar #PanelmacW1Yt > button.toggle:hover,
 .mate-panel-menu-bar #tasklist-button:hover,
 panel-toplevel.background button:hover,
-panel-toplevel.background #PanelApplet > button.toggle:hover,
+panel-toplevel.background #PanelmacW1Yt > button.toggle:hover,
 panel-toplevel.background #tasklist-button:hover, window#ValaPanel.background button.flat.-panel-button:hover,
 window#ValaPanel.background button#tasklist-button.toggle.flat:hover,
 window#ValaPanel.background button.flat.-panel-icon-button:hover {
@@ -5130,10 +5130,10 @@ window#ValaPanel.background button.flat.-panel-icon-button:hover {
 }
 
 .xfce4-panel.background widget.tasklist > button.toggle:checked, .xfce4-panel.background button:checked, .mate-panel-menu-bar button:checked,
-.mate-panel-menu-bar #PanelApplet > button.toggle:checked,
+.mate-panel-menu-bar #PanelmacW1Yt > button.toggle:checked,
 .mate-panel-menu-bar #tasklist-button:checked,
 panel-toplevel.background button:checked,
-panel-toplevel.background #PanelApplet > button.toggle:checked,
+panel-toplevel.background #PanelmacW1Yt > button.toggle:checked,
 panel-toplevel.background #tasklist-button:checked, window#ValaPanel.background button.flat.-panel-button:checked,
 window#ValaPanel.background button#tasklist-button.toggle.flat:checked,
 window#ValaPanel.background button.flat.-panel-icon-button:checked {
@@ -5142,17 +5142,17 @@ window#ValaPanel.background button.flat.-panel-icon-button:checked {
 }
 
 .xfce4-panel.background widget.tasklist > button.toggle:checked label, .xfce4-panel.background button:checked label, .mate-panel-menu-bar button:checked label,
-.mate-panel-menu-bar #PanelApplet > button.toggle:checked label,
+.mate-panel-menu-bar #PanelmacW1Yt > button.toggle:checked label,
 .mate-panel-menu-bar #tasklist-button:checked label,
 panel-toplevel.background button:checked label,
-panel-toplevel.background #PanelApplet > button.toggle:checked label,
+panel-toplevel.background #PanelmacW1Yt > button.toggle:checked label,
 panel-toplevel.background #tasklist-button:checked label, window#ValaPanel.background button.flat.-panel-button:checked label,
 window#ValaPanel.background button#tasklist-button.toggle.flat:checked label,
 window#ValaPanel.background button.flat.-panel-icon-button:checked label, .xfce4-panel.background widget.tasklist > button.toggle:checked image, .xfce4-panel.background button:checked image, .mate-panel-menu-bar button:checked image,
-.mate-panel-menu-bar #PanelApplet > button.toggle:checked image,
+.mate-panel-menu-bar #PanelmacW1Yt > button.toggle:checked image,
 .mate-panel-menu-bar #tasklist-button:checked image,
 panel-toplevel.background button:checked image,
-panel-toplevel.background #PanelApplet > button.toggle:checked image,
+panel-toplevel.background #PanelmacW1Yt > button.toggle:checked image,
 panel-toplevel.background #tasklist-button:checked image, window#ValaPanel.background button.flat.-panel-button:checked image,
 window#ValaPanel.background button#tasklist-button.toggle.flat:checked image,
 window#ValaPanel.background button.flat.-panel-icon-button:checked image {
@@ -5160,10 +5160,10 @@ window#ValaPanel.background button.flat.-panel-icon-button:checked image {
 }
 
 .xfce4-panel.background widget.tasklist > button.toggle:active, .xfce4-panel.background button:active, .mate-panel-menu-bar button:active,
-.mate-panel-menu-bar #PanelApplet > button.toggle:active,
+.mate-panel-menu-bar #PanelmacW1Yt > button.toggle:active,
 .mate-panel-menu-bar #tasklist-button:active,
 panel-toplevel.background button:active,
-panel-toplevel.background #PanelApplet > button.toggle:active,
+panel-toplevel.background #PanelmacW1Yt > button.toggle:active,
 panel-toplevel.background #tasklist-button:active, window#ValaPanel.background button.flat.-panel-button:active,
 window#ValaPanel.background button#tasklist-button.toggle.flat:active,
 window#ValaPanel.background button.flat.-panel-icon-button:active {
@@ -8543,23 +8543,23 @@ panel-toplevel.background menubar {
 }
 
 .mate-panel-menu-bar menubar,
-.mate-panel-menu-bar #PanelApplet label,
-.mate-panel-menu-bar #PanelApplet image,
+.mate-panel-menu-bar #PanelmacW1Yt label,
+.mate-panel-menu-bar #PanelmacW1Yt image,
 panel-toplevel.background menubar,
-panel-toplevel.background #PanelApplet label,
-panel-toplevel.background #PanelApplet image {
+panel-toplevel.background #PanelmacW1Yt label,
+panel-toplevel.background #PanelmacW1Yt image {
   color: white;
 }
 
 .mate-panel-menu-bar button label, .mate-panel-menu-bar button image,
-.mate-panel-menu-bar #PanelApplet > button.toggle label,
-.mate-panel-menu-bar #PanelApplet > button.toggle image,
+.mate-panel-menu-bar #PanelmacW1Yt > button.toggle label,
+.mate-panel-menu-bar #PanelmacW1Yt > button.toggle image,
 .mate-panel-menu-bar #tasklist-button label,
 .mate-panel-menu-bar #tasklist-button image,
 panel-toplevel.background button label,
 panel-toplevel.background button image,
-panel-toplevel.background #PanelApplet > button.toggle label,
-panel-toplevel.background #PanelApplet > button.toggle image,
+panel-toplevel.background #PanelmacW1Yt > button.toggle label,
+panel-toplevel.background #PanelmacW1Yt > button.toggle image,
 panel-toplevel.background #tasklist-button label,
 panel-toplevel.background #tasklist-button image {
   color: inherit;

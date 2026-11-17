@@ -959,7 +959,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
             }
         } catch (_) {}
 
-        // Kiwi icon tint: macOS-style accent recolor, live.
+        // Kiwi icon tint: macW1Y-style accent recolor, live.
         const unwatch = IconTint.watchIconTint(() => IconTint.refreshIconTint(icon));
         icon.connect('destroy', () => {
             try {

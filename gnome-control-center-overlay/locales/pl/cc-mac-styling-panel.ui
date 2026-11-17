@@ -1315,11 +1315,11 @@
                 <child>
                   <object class="AdwPreferencesGroup">
                     <property name="title">Program rozruchowy (Bootloader)</property>
-                    <property name="description">Parametry ekranu startowego macOS Plymouth i logowania jądra</property>
+                    <property name="description">Parametry ekranu startowego macW1Y Plymouth i logowania jądra</property>
                     <child>
                       <object class="AdwSwitchRow" id="boot_verbose_switch">
                         <property name="title">Tryb szczegółowy (Verbose)</property>
-                        <property name="subtitle">Tekstowy dziennik startowy terminala za logo Apple</property>
+                        <property name="subtitle">Tekstowy dziennik startowy terminala za logo macW1Y</property>
                         <signal name="realize" handler="init_boot_verbose" />
                         <signal name="notify::active" handler="on_boot_verbose_changed" />
                       </object>
@@ -1327,7 +1327,7 @@
                     <child>
                       <object class="AdwSwitchRow" id="boot_grub_switch">
                         <property name="title">Menu GRUB</property>
-                        <property name="subtitle">Graficzne menu wyboru systemu w stylu macOS podczas uruchamiania</property>
+                        <property name="subtitle">Graficzne menu wyboru systemu w stylu macW1Y podczas uruchamiania</property>
                         <signal name="realize" handler="init_boot_grub" />
                         <signal name="notify::active" handler="on_boot_grub_changed" />
                       </object>

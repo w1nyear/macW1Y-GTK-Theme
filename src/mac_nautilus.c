@@ -15,7 +15,7 @@
 #include "mac_i18n.h"
 
 /* =========================================================================
- * macOS Tahoe GtkPopover Animation (Opening & Closing with Easing and Scale)
+ * macW1Y Tahoe GtkPopover Animation (Opening & Closing with Easing and Scale)
  * ========================================================================= */
 static void (*orig_popover_hide)(GtkWidget *widget) = NULL;
 static void (*orig_popover_map)(GtkWidget *widget) = NULL;
@@ -97,7 +97,7 @@ static gboolean mac_popover_close_tick(GtkWidget *widget, GdkFrameClock *clock, 
         return G_SOURCE_CONTINUE;
     }
     gint64 elapsed = now - d->start_time;
-    double p = (double)elapsed / 110000.0; /* 110ms macOS quad ease-in */
+    double p = (double)elapsed / 110000.0; /* 110ms macW1Y quad ease-in */
     if (p >= 1.0) p = 1.0;
 
     double opacity = 1.0 - (p * p);
@@ -129,7 +129,7 @@ static gboolean mac_popover_open_tick(GtkWidget *widget, GdkFrameClock *clock, g
         return G_SOURCE_CONTINUE;
     }
     gint64 elapsed = now - d->start_time;
-    double p = (double)elapsed / 140000.0; /* 140ms macOS cubic ease-out */
+    double p = (double)elapsed / 140000.0; /* 140ms macW1Y cubic ease-out */
     if (p >= 1.0) p = 1.0;
 
     double ease = 1.0 - pow(1.0 - p, 3);
@@ -224,7 +224,7 @@ static void install_mac_popover_hooks(void) {
 }
 
 /* =========================================================================
- * macOS Finder Style Grid View Selection & Hover Pill for Nautilus
+ * macW1Y Finder Style Grid View Selection & Hover Pill for Nautilus
  * Wraps tightly around each line of filename text, avoiding wide empty boxes
  * ========================================================================= */
 static void (*orig_gtk_label_snapshot)(GtkWidget *widget, GtkSnapshot *snapshot) = NULL;
@@ -2325,7 +2325,7 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             ".view .thumbnail {\n"
             "    filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.3));\n"
             "}\n"
-            "/* macOS-style selection: icon background transparent, only filename pill highlighted */\n"
+            "/* macW1Y-style selection: icon background transparent, only filename pill highlighted */\n"
             "window.nautilus-window .nautilus-grid-view gridview > child:selected,\n"
             "window.nautilus-window gridview > child:selected,\n"
             ".nautilus-grid-view gridview > child:selected,\n"

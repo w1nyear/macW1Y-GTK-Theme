@@ -1315,11 +1315,11 @@
                 <child>
                   <object class="AdwPreferencesGroup">
                     <property name="title">Chargeur d'amorçage (Bootloader)</property>
-                    <property name="description">Paramètres de démarrage macOS Plymouth et journalisation du noyau</property>
+                    <property name="description">Paramètres de démarrage macW1Y Plymouth et journalisation du noyau</property>
                     <child>
                       <object class="AdwSwitchRow" id="boot_verbose_switch">
                         <property name="title">Mode verbeux (Verbose)</property>
-                        <property name="subtitle">Journal texte de démarrage du terminal derrière le logo Apple</property>
+                        <property name="subtitle">Journal texte de démarrage du terminal derrière le logo macW1Y</property>
                         <signal name="realize" handler="init_boot_verbose" />
                         <signal name="notify::active" handler="on_boot_verbose_changed" />
                       </object>
@@ -1327,7 +1327,7 @@
                     <child>
                       <object class="AdwSwitchRow" id="boot_grub_switch">
                         <property name="title">Menu GRUB</property>
-                        <property name="subtitle">Menu graphique de sélection de système style macOS au démarrage</property>
+                        <property name="subtitle">Menu graphique de sélection de système style macW1Y au démarrage</property>
                         <signal name="realize" handler="init_boot_grub" />
                         <signal name="notify::active" handler="on_boot_grub_changed" />
                       </object>

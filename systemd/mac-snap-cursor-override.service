@@ -1,5 +1,5 @@
 [Unit]
-Description=macOS Tahoe / macW1Y Cursor Snap Override
+Description=macW1Y Tahoe / macW1Y Cursor Snap Override
 After=snapd.service
 Wants=snapd.service
 

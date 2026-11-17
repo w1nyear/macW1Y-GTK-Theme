@@ -38,7 +38,7 @@ export class GdmGlassClock {
             try { setter(); } catch (_) {}
         };
 
-        // Typography: Open Runde SemiBold / SF Pro Rounded (GDM lockscreen design)
+        // Typography: Open Runde SemiBold / Default Rounded (GDM lockscreen design)
         safeSet(() => this._settings.set_string('glass-clock-font', 'Open Runde SemiBold'));
         safeSet(() => this._settings.set_int('glass-clock-size', 128));
         safeSet(() => this._settings.set_double('glass-clock-stretch', 1.0));
@@ -46,7 +46,7 @@ export class GdmGlassClock {
         safeSet(() => this._settings.set_string('glass-clock-tall-style', 'even'));
         safeSet(() => this._settings.set_boolean('glass-clock-show-date', false)); // wack-lockscreen-clock manages dateLabel
 
-        // Optical glass parameters: macOS Tahoe liquid glass
+        // Optical glass parameters: macW1Y Tahoe liquid glass
         safeSet(() => this._settings.set_string('glass-clock-tint-color', '#ffffff'));
         safeSet(() => this._settings.set_double('glass-clock-tint-strength', 0.35));
         safeSet(() => this._settings.set_int('glass-clock-blur-radius', 35));

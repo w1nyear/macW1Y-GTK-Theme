@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// macOS-style Downloads stack: a folder item in Dash-to-Dock that fans the
+// macW1Y-style Downloads stack: a folder item in Dash-to-Dock that fans the
 // newest files in ~/Downloads out over the desktop. The fan is an arc of rows -
 // a name pill and an icon, each turned to the tangent - and the dock item is a
 // pile of those same thumbnails, kept in step by a file monitor.
@@ -16,7 +16,7 @@ import {
     makeDashSeparator, makeStrip, prefersDark, scaleFactor, syncDarken, watchDocks,
 } from './dockUtils.js';
 
-const MAX_ROWS = 10;          // files in the fan, as macOS caps it
+const MAX_ROWS = 10;          // files in the fan, as macW1Y caps it
 const FILE_ICON = 1.3;        // file icon, in dash icon sizes
 const FOLDER_SCALE = 1.1;     // folder paint scale — the slot stays stock size
 const ROW_SPACING = 1.2;      // step along the arc, in file icon sizes
@@ -282,7 +282,7 @@ function _makeRow(text, iconActor, iconClass, onActivate) {
 
 /**
  * Put a row on the arc: the icon lands on the point and the whole row - pill and
- * picture together - turns to the tangent there, the way a macOS stack tips its
+ * picture together - turns to the tangent there, the way a macW1Y stack tips its
  * entries over as the fan climbs.
  *
  * @param row a row built by _makeRow
@@ -454,7 +454,7 @@ function _showFan(info) {
         text = gettextFunc('Empty');
 
     // The row that ends the fan and goes on to the folder. White glyph
-    // in a dark circle, like macOS.
+    // in a dark circle, like macW1Y.
     const more = _makeRow(
         text,
         new St.Icon({
@@ -474,7 +474,7 @@ function _showFan(info) {
     more.add_style_class_name('kiwi-fan-more-row');
     rows.push(more);
 
-    // The arc leans to the right, as a macOS fan does, and the name pills hang
+    // The arc leans to the right, as a macW1Y fan does, and the name pills hang
     // off to the left of it where there is room for them
     let x = anchorX;
     let y = anchorY;
@@ -879,7 +879,7 @@ function _clearStripSignal(info) {
 }
 
 /**
- * Standing alone after the app icons, the stack needs the divider macOS draws in
+ * Standing alone after the app icons, the stack needs the divider macW1Y draws in
  * front of it. In the minimized strip that divider is already there, and
  * Dash-to-Dock draws one of its own for a dock without loose running apps.
  *

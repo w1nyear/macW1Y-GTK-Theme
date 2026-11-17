@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// centerManager.js — macOS Tahoe Mutual Exclusion Coordinator
+// centerManager.js — macW1Y Tahoe Mutual Exclusion Coordinator
 // Guarantees that only ONE center (Control Center, Notification Center,
 // Spotlight, Clipboard, or Panel Menu) is open at any given moment.
 

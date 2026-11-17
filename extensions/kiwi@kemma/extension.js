@@ -1,6 +1,6 @@
 /*
- * Kiwi is not Apple – macOS-inspired enhancements for GNOME Shell.
- * Customized for macOS Tahoe Transformation Suite.
+ * Kiwi is not macW1Y – macW1Y-inspired enhancements for GNOME Shell.
+ * Customized for macW1Y Tahoe Transformation Suite.
  */
 
 import Gio from 'gi://Gio';

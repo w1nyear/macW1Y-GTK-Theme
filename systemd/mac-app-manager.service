@@ -1,5 +1,5 @@
 [Unit]
-Description=macOS Applications Sync and Drag-and-Drop App Installer/Uninstaller Daemon
+Description=macW1Y Applications Sync and Drag-and-Drop App Installer/Uninstaller Daemon
 After=graphical-session.target
 
 [Service]

@@ -18,17 +18,17 @@
         "49",
         "50"
       ],
-      "sha256": "d186d62bd0bd771af43dfa2e3b839a6cc9b133f456181e8ff958cf916778ceb0",
+      "sha256": "c5f035fd96403d1898acbc3ab018142b1d5141e35f2fa06ed2e2ca2bbbf54eee",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
         "menubar",
-        "apple_logo_menu",
+        "system_logo_menu",
         "spotlight_search",
         "finder_fallback"
       ],
       "has_custom_patches": true,
-      "patch_description": "macOS Monterey style spotlight, apple menu, finder naming, wine exclusions; clipboard dialog copy-and-close & click-to-paste injection",
+      "patch_description": "macW1Y Monterey style spotlight, main menu, finder naming, wine exclusions; clipboard dialog copy-and-close & click-to-paste injection",
       "last_verified": "2026-11-04",
       "pinned_sha256": "b349e7f6da46cd8b15b022e1c1a91bae424e83f1008467a04b7d90e8e9308466"
     },
@@ -44,7 +44,7 @@
         "50",
         "51"
       ],
-      "sha256": "48d1165f641e587a551c0d5b6fe71f11567e93355245c1f39512b3540898b5cf",
+      "sha256": "3a25db8643803d84267611cf244e21f5fb571a7e83c44a1b09dc2c602a3e11ea",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -54,7 +54,7 @@
         "liquid_glass_mutter_actor"
       ],
       "has_custom_patches": true,
-      "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macOS horizontal Cairo battery indicator",
+      "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macW1Y horizontal Cairo battery indicator",
       "last_verified": "2026-11-08",
       "pinned_sha256": "5ae218eb0eff236be0d91d4ef5bfd20db50ba9d456ca98892b4718a892941c4d",
       "dir_hash": "5ae218eb"
@@ -94,7 +94,7 @@
         "49",
         "50"
       ],
-      "sha256": "a1e39d2ccb30948a5792ed663c0302a2b71c4cc080818f7afd0761e6d09f5da3",
+      "sha256": "3643fa89119887aa85043ed56718b853622b1b8d836fba0c2a1fee461b8479c3",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -103,7 +103,7 @@
         "dock_indicators"
       ],
       "has_custom_patches": true,
-      "patch_description": "macOS-style smooth dock reordering, duplicate prevention, and trash drop handling in animator.js and extension.js",
+      "patch_description": "macW1Y-style smooth dock reordering, duplicate prevention, and trash drop handling in animator.js and extension.js",
       "last_verified": "2026-11-12",
       "pinned_sha256": "00a7c13a3e6322f6a3e0d83d3ca7af7d97bc2b5aee6dcb7113c5a7ac41a9cd01"
     },
@@ -138,7 +138,7 @@
       "shell_compatibility": [
         "50"
       ],
-      "sha256": "931d89521eb4a7671117dd3d3b1f898604e0fc91bd98e1b2c72ca51def811ead",
+      "sha256": "afa0aaa2e613a28c1bc349eb28663d43f089ae1e027a9f019cdfaaaae24d8f57",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -238,7 +238,7 @@
         "49",
         "50"
       ],
-      "sha256": "5b8f6a963f2f9fae948571792e646eed33b28ce080289cce6696facd1ff29fd0",
+      "sha256": "01e9a9556b453b9380c5cca7ca2862d098e39efb6ae873ce508e459f966fcd3f",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -247,13 +247,13 @@
         "switcher_popup_mac_liquid_glass"
       ],
       "has_custom_patches": true,
-      "patch_description": "Local D-Bus EvalHelper service and macOS Alt+Tab switcher enhancements",
+      "patch_description": "Local D-Bus EvalHelper service and macW1Y Alt+Tab switcher enhancements",
       "last_verified": "2026-11-10",
       "pinned_sha256": "100ba8df1a4c7fc61dc62dba759775281b8f3ff145caebed26dc3f513cc95ef2"
     },
     "kiwi@kemma": {
       "uuid": "kiwi@kemma",
-      "name": "Kiwi (is not Apple)",
+      "name": "Kiwi Component Suite",
       "pinned_version": 99999,
       "shell_compatibility": [
         "48",
@@ -261,7 +261,7 @@
         "50",
         "51"
       ],
-      "sha256": "39ef8b384ac62e5e7bf44dcd98ebfd1dbd07f9b8862ee830b0c60f48f6bfc693",
+      "sha256": "cb082cb3024d6e3a66c188a96d775ba34ac8e10a5b02602078318e91d81135b0",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -272,7 +272,7 @@
         "control_center_liquid_glass_submenus"
       ],
       "has_custom_patches": true,
-      "patch_description": "macOS Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macOS Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macOS Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macOS horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
+      "patch_description": "macW1Y Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macW1Y Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macW1Y Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macW1Y horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
       "last_verified": "2026-11-09",
       "integrity_hash": "408cf0e45df8c5eaefa45c0f36cc0125c669d4bcc42bfa86de8b1cace9e0c94f",
       "pinned_sha256": "7041e6f9efeb55e7f574bf8b08a591e7dd335546de8f9be488556431e356dfaf",
@@ -287,7 +287,7 @@
         "49",
         "50"
       ],
-      "sha256": "dae9e7d715a9c266d4ca4973dfe5825b5a6233724de689290573003cf01e4469",
+      "sha256": "0bb6c7de627bc21cb70fcffeefbc0346c4234a957294d3539b06be3f44b3d274",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -354,9 +354,9 @@
       },
       "pinned_sha256": "da124f57fc8940a746879d5aae58d5bb79bbca9960f92d6d423f1b5eba225c37"
     },
-    "macos-touchpad-gestures@mactheme": {
-      "uuid": "macos-touchpad-gestures@mactheme",
-      "name": "macOS Touchpad Gestures",
+    "macw1y-touchpad-gestures@mactheme": {
+      "uuid": "macw1y-touchpad-gestures@mactheme",
+      "name": "macW1Y Touchpad Gestures",
       "pinned_version": "custom",
       "shell_compatibility": [
         "45",
@@ -366,7 +366,7 @@
         "49",
         "50"
       ],
-      "sha256": "3ba0221729e1a1179eccd5e311b657cd8dc0df7ffb53159369c08efda5ecec94",
+      "sha256": "ec75777cc94c3b46562e6d31ab2f0c411eb8a8081086149b4346696660f3d913",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -375,7 +375,7 @@
         "mission_control_swipe"
       ],
       "has_custom_patches": true,
-      "patch_description": "Local custom macOS touchpad gesture suite",
+      "patch_description": "Local custom macW1Y touchpad gesture suite",
       "last_verified": "2026-10-27",
       "pinned_sha256": "2cb9979eafd57372dd45c5140bbc90194db54b2831b901c8812cc1f263efdf68"
     },
@@ -434,7 +434,7 @@
         "50",
         "51"
       ],
-      "sha256": "ebd1bac7764a63e6b71568bdd8b737a67393b05355255aa373c090e7582f554a",
+      "sha256": "f07c1c43df6a75e9a0a6207dda6dbd5b7b4999d50263396a38370e32948d268a",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -519,7 +519,7 @@
         "49",
         "50"
       ],
-      "sha256": "2a7941963036cff573704bc60ebdec1e46ee22375bc118c6bf7cb0e6db31ae55",
+      "sha256": "4f4caf9820aeaa80fc88801aee3a229f5a2744640a9b6065d10a119e2116589c",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -567,7 +567,7 @@
         "finder_desktop"
       ],
       "has_custom_patches": true,
-      "patch_description": "macOS Finder style stepped label selection pill, semi-transparent hover state, askRenamePopup, and desktopManager patches",
+      "patch_description": "macW1Y Finder style stepped label selection pill, semi-transparent hover state, askRenamePopup, and desktopManager patches",
       "last_verified": "2026-11-14",
       "pinned_sha256": "9227d6b42b31e2e3af402eb6cd251628ab6ade784e16e7934c61e25db0004b86"
     },
@@ -579,7 +579,7 @@
         "50",
         "51"
       ],
-      "sha256": "8264acd503da3678c0ea0b967ce3bd668f7685ff2fafef7c28e421ca0096d155",
+      "sha256": "c5dfd302544dbe75ee1aecd8abe7912a03de0b4ff66acdd7fa7ed7a6872abac6",
       "status": "locked",
       "source": "github",
       "macw1y_components": [

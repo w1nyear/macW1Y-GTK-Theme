@@ -32,7 +32,7 @@ function resolveCCIcon() {
     const candidates = [
         `${home}/.themes/macW1Y-Dark/icons/control-center.png`,
         `${home}/.themes/macW1Y-Dark-solid/icons/control-center.png`,
-        `${home}/.themes/MacTahoe-Dark/icons/control-center.png`,
+        `${home}/.themes/macW1Y-Dark/icons/control-center.png`,
         `${home}/.local/share/icons/hicolor/scalable/apps/control-center.png`,
         `/usr/share/themes/macW1Y-Dark/icons/control-center.png`,
         `${home}/macW1Y/icons/control-center.png`,
@@ -198,7 +198,7 @@ function createMacMenuBadge(text, isDark = false) {
     });
 
     const fontDesc = new Pango.FontDescription();
-    fontDesc.set_family('SF Pro Text, -apple-system, sans-serif');
+    fontDesc.set_family('Default, default, system-ui, sans-serif, sans-serif');
     fontDesc.set_weight(Pango.Weight.BOLD);
     fontDesc.set_size(10 * Pango.SCALE);
 
@@ -233,7 +233,7 @@ function createMacMenuBadge(text, isDark = false) {
             const [layoutInk] = layout.get_pixel_extents();
 
             if (!isDark) {
-                // White rounded badge with cut-out transparent text (per macOS menubar style)
+                // White rounded badge with cut-out transparent text (per macW1Y menubar style)
                 cr.setOperator(Cairo.Operator.SOURCE);
                 cr.setSourceRGBA(1.0, 1.0, 1.0, 0.95);
                 _roundedBadgeRect(cr, 0.5, 0.5, aw - 1, ah - 1, radius);
@@ -1008,7 +1008,7 @@ const BatteryWidget = GObject.registerClass({
             cr.rectangle(bx, by, fillW, bh);
 
             if (charging) {
-                // macOS vivid green while charging (#28cd41)
+                // macW1Y vivid green while charging (#28cd41)
                 cr.setSourceRGBA(40 / 255, 205 / 255, 65 / 255, 1.0);
             } else if (pct <= 0.10) {
                 cr.setSourceRGBA(255 / 255, 59 / 255, 48 / 255, 1.0);
@@ -3075,7 +3075,7 @@ export const MenuBarController = class MenuBarController {
         // Setup Launchpad instant activate handler
         this._setupLaunchpadHandler();
 
-        // Setup macOS input source switcher
+        // Setup macW1Y input source switcher
         try {
             this._macInputSwitcher = new MacInputSwitcher();
             this._macInputSwitcher.enable().catch(e => {
@@ -3130,7 +3130,7 @@ export const MenuBarController = class MenuBarController {
         // 7. Setup sliding hover glide indicator for all context menus
         this._setupMenuHoverGlide();
 
-        // 7b. Setup macOS style Keyboard / Input Source Menu
+        // 7b. Setup macW1Y style Keyboard / Input Source Menu
         this._setupKeyboardMenu();
 
         // 8. Watch for child additions to keep proper order and styling
@@ -3141,7 +3141,7 @@ export const MenuBarController = class MenuBarController {
             });
         }
 
-        // 9. Setup macOS-style fade in/fade out and slide animations for menubar icons
+        // 9. Setup macW1Y-style fade in/fade out and slide animations for menubar icons
         this._setupMenubarActorAnimations();
     }
 
@@ -3468,7 +3468,7 @@ export const MenuBarController = class MenuBarController {
             this._ccIcon = null;
         }
 
-        // Add macOS Control Center icon from /home/vitaliy/.themes/MacTahoe-Dark/icons/control-center.png
+        // Add macW1Y Control Center icon from /home/vitaliy/.themes/macW1Y-Dark/icons/control-center.png
         try {
             if (GLib.file_test(CC_PNG_PATH, GLib.FileTest.EXISTS)) {
                 const ccFile = Gio.File.new_for_path(CC_PNG_PATH);
@@ -3579,7 +3579,7 @@ export const MenuBarController = class MenuBarController {
             });
         }
 
-        // Control Center is handled by macOS Tahoe Control Center (kiwi@kemma).
+        // Control Center is handled by macW1Y Tahoe Control Center (kiwi@kemma).
         // Hide standard quickSettings menu grid so it never overlaps.
         if (this._macControlCenter) {
             try { this._macControlCenter.destroy(); } catch (_) {}
@@ -3916,7 +3916,7 @@ export const MenuBarController = class MenuBarController {
             }
         }
 
-        // macOS MenuBar Interaction Model:
+        // macW1Y MenuBar Interaction Model:
         // When Control Center (QuickSettings) or Notification Center (DateMenu) is open:
         // 1. Hover-switching is strictly disabled. Moving the mouse across other buttons
         //    (Wi-Fi, Bluetooth, Sound, Battery, Keyboard, AppIndicators) does NOT open them.
@@ -4119,7 +4119,7 @@ export const MenuBarController = class MenuBarController {
         const label = new St.Label({
             text: t('notification_center', 'Центр повідомлень'),
             style_class: 'mac-notif-center-title',
-            style: 'font-family: "SF Pro Display", "SF Pro Text", -apple-system, sans-serif !important; font-size: 20px !important; font-weight: 700 !important; color: #ffffff !important; text-shadow: 0 0 14px rgba(255, 255, 255, 0.55), 0 0 24px rgba(0, 0, 0, 0.8), 0 2px 12px rgba(0, 0, 0, 0.9) !important; background: transparent !important; margin: 0 !important; padding: 0 !important;',
+            style: 'font-family: "Default Display", "Default", default, system-ui, sans-serif, sans-serif !important; font-size: 20px !important; font-weight: 700 !important; color: #ffffff !important; text-shadow: 0 0 14px rgba(255, 255, 255, 0.55), 0 0 24px rgba(0, 0, 0, 0.8), 0 2px 12px rgba(0, 0, 0, 0.9) !important; background: transparent !important; margin: 0 !important; padding: 0 !important;',
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
         });
@@ -4223,7 +4223,7 @@ export const MenuBarController = class MenuBarController {
         const emptyLabel = new St.Label({
             text: t('no_new_notifications', 'Немає нових повідомлень'),
             style_class: 'mac-notif-empty-label',
-            style: 'font-family: "SF Pro Text", -apple-system, sans-serif !important; font-size: 14px !important; color: rgba(255, 255, 255, 0.6) !important; text-shadow: 0 0 10px rgba(255, 255, 255, 0.45), 0 0 18px rgba(0, 0, 0, 0.85), 0 2px 10px rgba(0, 0, 0, 0.7) !important; text-align: center; padding: 36px 10px !important; margin: 0 !important;',
+            style: 'font-family: "Default", default, system-ui, sans-serif, sans-serif !important; font-size: 14px !important; color: rgba(255, 255, 255, 0.6) !important; text-shadow: 0 0 10px rgba(255, 255, 255, 0.45), 0 0 18px rgba(0, 0, 0, 0.85), 0 2px 10px rgba(0, 0, 0, 0.7) !important; text-align: center; padding: 36px 10px !important; margin: 0 !important;',
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
             visible: false,

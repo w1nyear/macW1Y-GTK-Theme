@@ -317,10 +317,10 @@ export class GdmManager {
             _logError(`[WACK/GdmManager] Sub-manager setup error: ${subErr.stack || subErr}`);
         }
 
-        // Ensure no Apple logo in GDM top left panel
+        // Ensure no System logo in GDM top left panel
         if (Main.panel?._leftBox) {
-            const appleBtn = Main.panel._leftBox.get_children().find(c => c.name === "gdm-apple-menu");
-            if (appleBtn) appleBtn.destroy();
+            const mainBtn = Main.panel._leftBox.get_children().find(c => c.name === "gdm-main-menu");
+            if (mainBtn) mainBtn.destroy();
         }
 
         // Cleanly hide accessibility button and session menu button at bottom of GDM
@@ -806,7 +806,7 @@ export class GdmManager {
             });
         }
 
-        // 3. macOS lockscreen clock: fade in & subtle slide down
+        // 3. macW1Y lockscreen clock: fade in & subtle slide down
         if (this._clockManager?.clockWrapper) {
             this._clockManager.clockWrapper.remove_all_transitions();
             this._clockManager.clockWrapper.visible = true;
@@ -847,8 +847,8 @@ export class GdmManager {
 
     _teardown() {
         if (Main.panel?._leftBox) {
-            const appleBtn = Main.panel._leftBox.get_children().find(c => c.name === "gdm-apple-menu");
-            if (appleBtn) appleBtn.destroy();
+            const mainBtn = Main.panel._leftBox.get_children().find(c => c.name === "gdm-main-menu");
+            if (mainBtn) mainBtn.destroy();
         }
         this._verificationSucceeded = false;
         this._animController._legacySuccessFadeRunning = false;

@@ -136,7 +136,7 @@ def main():
             },
             "tier_2": {
                 "name": "Comprehensive Major Languages (Tier 2)",
-                "description": "Full translation of all core macOS UI controls, navigation, and settings",
+                "description": "Full translation of all core macW1Y UI controls, navigation, and settings",
                 "count": sum(1 for c in catalog if c["tier"] == 2),
                 "languages": [c["code"] for c in catalog if c["tier"] == 2]
             },

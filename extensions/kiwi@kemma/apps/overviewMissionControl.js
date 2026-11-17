@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Mission Control overview: static sharp wallpaper, no zoom-out,
-// hidden panel and dock. Windows float above like macOS.
+// hidden panel and dock. Windows float above like macW1Y.
 //
 // The stock overview hides the real desktop background and shows a
 // per-workspace wallpaper copy that shrinks with the workspace card.
@@ -106,7 +106,7 @@ function _setPreviewChromeHidden() {
 }
 
 function _setChromeVisible(visible) {
-    // macOS Mission Control: no top bar. The dock stays visible.
+    // macW1Y Mission Control: no top bar. The dock stays visible.
     try {
         if (visible)
             Main.panel.show();

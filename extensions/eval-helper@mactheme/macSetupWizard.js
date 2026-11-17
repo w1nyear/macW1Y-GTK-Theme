@@ -13,7 +13,7 @@ const USER_LOCAL_FILE = `${GLib.get_home_dir()}/.local/share/macW1Y/macSetupWiza
 const SYSTEM_FILE = '/etc/macW1Y/macSetupWizard';
 const VERSION_FILE = `${GLib.get_home_dir()}/.config/mac-styling/version`;
 const LOCALE_CONFIG_FILE = `${GLib.get_home_dir()}/.config/mac-styling/locale`;
-const ICON_PATH = `${GLib.get_home_dir()}/.local/share/icons/MacTahoe-dark/apps/scalable/preferences-desktop-theme.svg`;
+const ICON_PATH = `${GLib.get_home_dir()}/.local/share/icons/macW1Y-dark/apps/scalable/preferences-desktop-theme.svg`;
 
 const ACCENT_COLOR_MAP = {
     'blue':   '#007aff',
@@ -421,7 +421,7 @@ export class MacSetupWizard {
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
             y_expand: true,
-            style: "font-family: 'SF Pro Rounded', 'SF Pro Display', -apple-system, sans-serif; " +
+            style: "font-family: 'Default Rounded', 'Default Display', default, system-ui, sans-serif, sans-serif; " +
                    "font-size: 64px; font-weight: 600; color: #ffffff; text-align: center; " +
                    "text-shadow: 0 4px 28px rgba(0, 0, 0, 0.60); letter-spacing: -0.5px;"
         });
@@ -485,7 +485,7 @@ export class MacSetupWizard {
 
         const labelText = new St.Label({
             text: t('wizard_continue', 'Continue', this._selectedLocale),
-            style: "font-family: 'SF Pro Text', -apple-system, sans-serif; " +
+            style: "font-family: 'Default', default, system-ui, sans-serif, sans-serif; " +
                    "font-size: 13px; font-weight: 500; color: rgba(255, 255, 255, 0.92); " +
                    "text-align: center; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.60); margin-top: 6px;"
         });
@@ -609,13 +609,13 @@ export class MacSetupWizard {
 
         this._titleLabel = new St.Label({
             text: '',
-            style: `font-family: 'SF Pro Display', -apple-system, sans-serif; font-size: 22px; font-weight: 700; color: ${titleColor}; text-align: center;`
+            style: `font-family: 'Default Display', default, system-ui, sans-serif, sans-serif; font-size: 22px; font-weight: 700; color: ${titleColor}; text-align: center;`
         });
         headerBox.add_child(this._titleLabel);
 
         this._subtitleLabel = new St.Label({
             text: '',
-            style: `font-family: 'SF Pro Text', -apple-system, sans-serif; font-size: 13px; font-weight: 400; color: ${subColor}; text-align: center; margin-top: 3px;`
+            style: `font-family: 'Default', default, system-ui, sans-serif, sans-serif; font-size: 13px; font-weight: 400; color: ${subColor}; text-align: center; margin-top: 3px;`
         });
         headerBox.add_child(this._subtitleLabel);
         mainLayout.add_child(headerBox);
@@ -847,7 +847,7 @@ export class MacSetupWizard {
 
             const ver = getModpackVersion();
             this._titleLabel.text = tf('wizard_welcome_title', { version: ver }, `macW1Y ${ver} успішно встановлено`, curLang);
-            this._subtitleLabel.text = t('wizard_welcome_sub', 'Оновлена конфігурація та нативні компоненти macOS Tahoe', curLang);
+            this._subtitleLabel.text = t('wizard_welcome_sub', 'Оновлена конфігурація та нативні компоненти macW1Y Tahoe', curLang);
 
             this._backBtn.visible = true;
             this._backBtn.opacity = 255;
@@ -867,8 +867,8 @@ export class MacSetupWizard {
             const items = [
                 {
                     icon: 'preferences-desktop-theme-symbolic',
-                    title: t('wizard_feat1_title', 'macOS Tahoe Liquid Glass & SSOT', curLang),
-                    desc: t('wizard_feat1_desc', 'Повний набір єдиних стилів GTK3/GTK4, плавні вікна, шрифти Apple SF Pro та нативні віджети.', curLang)
+                    title: t('wizard_feat1_title', 'macW1Y Tahoe Liquid Glass & SSOT', curLang),
+                    desc: t('wizard_feat1_desc', 'Повний набір єдиних стилів GTK3/GTK4, плавні вікна, шрифти macW1Y Default та нативні віджети.', curLang)
                 },
                 {
                     icon: 'preferences-system-performance-symbolic',
@@ -877,7 +877,7 @@ export class MacSetupWizard {
                 },
                 {
                     icon: 'input-touchpad-symbolic',
-                    title: t('wizard_feat3_title', 'Підтримка жестів Apple Trackpad', curLang),
+                    title: t('wizard_feat3_title', 'Підтримка жестів macW1Y Trackpad', curLang),
                     desc: t('wizard_feat3_desc', 'Нативне 3-пальцеве переміщення вікон, 4-пальцеві віртуальні столи та розумний буфер обміну.', curLang)
                 }
             ];
@@ -922,7 +922,7 @@ export class MacSetupWizard {
             this._headerIcon.style = `color: ${this._accentColor}; margin-bottom: 10px;`;
 
             this._titleLabel.text = t('wizard_gesture_title', 'Жест переміщення трьома пальцями', curLang);
-            this._subtitleLabel.text = t('wizard_gesture_sub', 'Спробуйте перемістити міні-вікно macOS всередині області трьома пальцями на тачпаді.', curLang);
+            this._subtitleLabel.text = t('wizard_gesture_sub', 'Спробуйте перемістити міні-вікно macW1Y всередині області трьома пальцями на тачпаді.', curLang);
 
             this._backBtn.visible = true;
             this._backBtn.opacity = 255;
@@ -988,7 +988,7 @@ export class MacSetupWizard {
             miniTitlebar.add_child(tlGreen);
 
             const miniTitle = new St.Label({
-                text: 'macOS Finder',
+                text: 'macW1Y Finder',
                 x_expand: true,
                 style: `font-size: 10px; font-weight: 600; color: ${titleColor}; text-align: center; margin-right: 24px;`
             });

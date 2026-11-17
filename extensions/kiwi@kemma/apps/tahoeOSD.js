@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Tahoe volume/brightness OSD (macOS Tahoe / Sequoia style):
+// Tahoe volume/brightness OSD (macW1Y Tahoe / Sequoia style):
 // A dark glass pill under the Control Center button with title, icons,
 // and a sleek segmented bar with subtle dots.
 // Intercepts Main.osdWindowManager to completely suppress stock OSD.
@@ -64,7 +64,7 @@ function _getAccentColor() {
         const iface = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
         const name = iface.get_string('accent-color') || 'blue';
         const ACCENT_MAP = {
-            'blue':   [0.05, 0.56, 1.00], // #0c8eff / #007aff macOS vibrant blue
+            'blue':   [0.05, 0.56, 1.00], // #0c8eff / #007aff macW1Y vibrant blue
             'teal':   [0.13, 0.56, 0.64],
             'green':  [0.20, 0.78, 0.35], // #34c759
             'yellow': [1.00, 0.80, 0.00], // #ffcc00
@@ -339,7 +339,7 @@ function _animateReposition(targetX, targetY) {
     }
 
     const startTime = GLib.get_monotonic_time();
-    const durationUs = 200 * 1000; // 200ms buttery smooth macOS physics
+    const durationUs = 200 * 1000; // 200ms buttery smooth macW1Y physics
 
     _animTimerId = GLib.timeout_add(GLib.PRIORITY_HIGH, 10, () => {
         const elapsed = GLib.get_monotonic_time() - startTime;
@@ -884,7 +884,7 @@ function _restoreCcIcon() {
                         const home = GLib.get_home_dir();
                         const candidates = [
                             `${home}/.themes/macW1Y-Dark/icons/control-center.png`,
-                            `${home}/.themes/MacTahoe-Dark/icons/control-center.png`,
+                            `${home}/.themes/macW1Y-Dark/icons/control-center.png`,
                             `/usr/share/mactheme/icons/controlcenter.png`
                         ];
                         let found = null;

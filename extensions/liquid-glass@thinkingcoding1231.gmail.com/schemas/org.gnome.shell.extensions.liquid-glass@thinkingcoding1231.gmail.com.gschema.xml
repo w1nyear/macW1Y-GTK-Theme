@@ -634,7 +634,7 @@
     <key name="glass-shape-type" type="i">
       <default>0</default>
       <summary>Shape geometry for glass elements</summary>
-      <description>0 = Rounded Rectangle, 1 = Circle, 2 = Capsule, 3 = Squircle Apple</description>
+      <description>0 = Rounded Rectangle, 1 = Circle, 2 = Capsule, 3 = Squircle macW1Y</description>
     </key>
 
     <key name="glass-max-z" type="d">

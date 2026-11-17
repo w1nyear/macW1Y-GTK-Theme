@@ -1,7 +1,7 @@
 [appmenu]
 hide-overview-button=true
 icon-size=16
-menu-icon='apple-logo'
+menu-icon='system-logo'
 search-shortcut=['<Control>space', '<Primary>space']
 show-os-icon=true
 show-user-switcher=false
@@ -215,7 +215,7 @@ overview-wallpaper-background=false
 panel-gradient=false
 panel-styling=false
 panel-transparency=false
-polkit-dialog-macos=false
+polkit-dialog-system=false
 reduce-window-animations=true
 show-window-controls=false
 show-window-controls-fullscreen-only=false

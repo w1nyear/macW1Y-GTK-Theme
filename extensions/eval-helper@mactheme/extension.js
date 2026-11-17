@@ -371,7 +371,7 @@ class MacMenuHoverGlide {
                     opacity: 255,
                     scale_x: 1.0,
                     scale_y: 1.0,
-                    duration: 130, // 130ms authentic macOS glide
+                    duration: 130, // 130ms authentic macW1Y glide
                     mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                 });
             }
@@ -657,7 +657,7 @@ export default class EvalHelper extends Extension {
             });
         } catch (_) {}
 
-        // macOS Screenshot & Screencast integration
+        // macW1Y Screenshot & Screencast integration
         try {
             if (Main.screenshotUI) {
                 this._screenshotTakenSignalId = Main.screenshotUI.connect('screenshot-taken', (_ui, file) => {
@@ -700,7 +700,7 @@ export default class EvalHelper extends Extension {
             };
         }
 
-        // Ensure liquid-glass covers macOS Control Center submenu cards and sound drawer
+        // Ensure liquid-glass covers macW1Y Control Center submenu cards and sound drawer
         const patchLiquidGlass = () => {
             try {
                 const lg = Main.extensionManager?.lookup?.('liquid-glass@thinkingcoding1231.gmail.com')?.stateObj;
@@ -1039,7 +1039,7 @@ export default class EvalHelper extends Extension {
             return GLib.SOURCE_REMOVE;
         });
 
-        // macOS Tahoe context & popup menus: single gliding hover pill following cursor
+        // macW1Y Tahoe context & popup menus: single gliding hover pill following cursor
         const setupMenuHoverGlide = () => {
             try {
                 const attachToMenu = (menu) => {
@@ -1138,7 +1138,7 @@ export default class EvalHelper extends Extension {
         });
 
 
-        // Ensure search-shortcut Ctrl+Space connects to redesigned macOS Liquid Glass Spotlight
+        // Ensure search-shortcut Ctrl+Space connects to redesigned macW1Y Liquid Glass Spotlight
         // with strict suppression in fullscreen apps and when pointer/mouse is grabbed/captured (games)
         const patchSpotlightKeybinding = async () => {
             try {
@@ -1278,7 +1278,7 @@ export default class EvalHelper extends Extension {
             return GLib.SOURCE_REMOVE;
         });
 
-        // Patch SwitcherPopup (Alt+Tab) with macOS Liquid Glass & Focused Label
+        // Patch SwitcherPopup (Alt+Tab) with macW1Y Liquid Glass & Focused Label
         const patchSwitcherPopupLQVisual = async () => {
             try {
                 const SwitcherPopupMod = await import('resource:///org/gnome/shell/ui/switcherPopup.js');
@@ -1448,7 +1448,7 @@ export default class EvalHelper extends Extension {
                             this._activeAppLabel = new St.Label({
                                 style_class: 'alt-tab-app-label',
                             });
-                            this._activeAppLabel.style = 'font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Cantarell, sans-serif !important; font-size: 12px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9) !important; text-align: center !important;';
+                            this._activeAppLabel.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", "Helvetica Neue", Cantarell, sans-serif !important; font-size: 12px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9) !important; text-align: center !important;';
                             if (this._activeAppLabel.clutter_text) {
                                 this._activeAppLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this._activeAppLabel.clutter_text.line_wrap = false;
@@ -1562,7 +1562,7 @@ export default class EvalHelper extends Extension {
                             this.label.opacity = 0;
                             if (typeof this.label.set_height === 'function') this.label.set_height(0);
                             this.label.x_align = Clutter.ActorAlign.CENTER;
-                            this.label.style = 'font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 4px !important;';
+                            this.label.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", default, system-ui, sans-serif, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 4px !important;';
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this.label.clutter_text.line_wrap = false;
@@ -1605,7 +1605,7 @@ export default class EvalHelper extends Extension {
                             this.label.x_align = Clutter.ActorAlign.CENTER;
                             this.label.opacity = 0;
                             if (typeof this.label.set_height === 'function') this.label.set_height(0);
-                            this.label.style = 'font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 4px !important;';
+                            this.label.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", default, system-ui, sans-serif, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 4px !important;';
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this.label.clutter_text.line_wrap = false;
@@ -2130,7 +2130,7 @@ export default class EvalHelper extends Extension {
                         const isTrash = dialogBox.has_style_class_name('mac-empty-trash-dialog');
                         const radius = isTrash ? 24.0 : 30.0;
 
-                        // Tahoe-widget / macOS Alert look: Liquid Glass shader
+                        // Tahoe-widget / macW1Y Alert look: Liquid Glass shader
                         glass.setResolution(screenW, screenH);
                         glass.setCornerRadius(radius);
                         glass.setTintColor(0.0, 0.0, 0.0);
@@ -3220,7 +3220,7 @@ export default class EvalHelper extends Extension {
 
 
 
-        // macOS-compliant notification & urgency handling:
+        // macW1Y-compliant notification & urgency handling:
         // Background apps (e.g. Telegram, messaging, Zoom) receiving new messages must NEVER
         // automatically raise or steal focus over the active foreground window.
         // We also suppress the redundant/annoying GNOME "is ready" banner because
@@ -3234,7 +3234,7 @@ export default class EvalHelper extends Extension {
             };
         }
 
-        // Dynamic macOS Accent Color Synchronization
+        // Dynamic macW1Y Accent Color Synchronization
         const ACCENT_COLOR_MAP = {
             'blue': '#007aff',
             'teal': '#00a294',
@@ -3267,7 +3267,7 @@ export default class EvalHelper extends Extension {
             syncAccentColor();
         } catch (_) {}
 
-        // macOS Startup Transition: Smooth opacity fade-in, rock-solid wallpaper (strict no-zoom / no-flicker)
+        // macW1Y Startup Transition: Smooth opacity fade-in, rock-solid wallpaper (strict no-zoom / no-flicker)
         if (Main.layoutManager) {
             // 1. Immediately eliminate any GNOME Ubuntu zoom-in scale (0.75 -> 1.0) and fix pivot point
             Main.layoutManager.uiGroup.scale_x = 1.0;
@@ -3348,7 +3348,7 @@ export default class EvalHelper extends Extension {
 
             // 3. Intercept _startupAnimationSession:
             // Wait until the entire system, all extensions, and the final look have fully loaded and settled.
-            // ONLY THEN trigger the synchronized macOS entrance animation:
+            // ONLY THEN trigger the synchronized macW1Y entrance animation:
             // Top menu bar slides down from top, dock slides up from bottom, desktop widgets fade in.
             this._origStartupAnimationSession = Main.layoutManager._startupAnimationSession;
             Main.layoutManager._startupAnimationSession = async function() {
@@ -3408,7 +3408,7 @@ export default class EvalHelper extends Extension {
                     this._macBgChildAddedId = null;
                 }
 
-                // Step 3: Coordinated macOS entrance animation
+                // Step 3: Coordinated macW1Y entrance animation
                 const DURATION = 650;
                 const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
 
@@ -3473,7 +3473,7 @@ export default class EvalHelper extends Extension {
             }
         }
 
-        // macOS MenuBar Interaction Model:
+        // macW1Y MenuBar Interaction Model:
         // When Control Center (QuickSettings) or Notification Center (DateMenu) is open:
         // 1. Hover-switching is strictly disabled. Moving the mouse across other buttons
         //    (Wi-Fi, Bluetooth, Sound, Battery, Keyboard, AppIndicators) does NOT open them.
@@ -3783,7 +3783,7 @@ export default class EvalHelper extends Extension {
                         return;
                     }
 
-                    // Ultra-responsive authentic macOS Tahoe appearance: immediate visibility (no delay/lag) with snappy 75ms micro-spring
+                    // Ultra-responsive authentic macW1Y Tahoe appearance: immediate visibility (no delay/lag) with snappy 75ms micro-spring
                     this.scale_x = 0.98;
                     this.scale_y = 0.98;
 

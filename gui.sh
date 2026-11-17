@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-#   macOS Sequoia / Tahoe Transformation Modpack (macW1Y Release)
+#   macW1Y Sequoia / Tahoe Transformation Modpack (macW1Y Release)
 #  GUI Test Simulator & Mock Installer - Version 0.7
 # ==============================================================================
 
@@ -57,13 +57,13 @@ elif [ -z "$MAC_INSTALLER_CLI" ]; then
             for ext in "ubuntu-dock@ubuntu.com" "tiling-assistant@ubuntu.com" "ding@rastersoft.com" "dash-to-dock@micxgx.gmail.com" "stage-manager@gnome-stage-manager" "snapd-prompting@canonical.com" "web-search-provider@ubuntu.com"; do
                 gnome-extensions disable "$ext" 2>/dev/null || true
             done
-            for ext in "user-theme@gnome-shell-extensions.gcampax.github.com" "eval-helper@mactheme" "blur-my-shell@aunetx" "dash2dock-motion@unmade.space" "appmenu@ChathurangaBW.github.io" "kiwi@kemma" "desktop-widgets@r3nhick" "macos-touchpad-gestures@mactheme" "compiz-alike-magic-lamp-effect@hermes83.github.com" "cupertino-dock-lite@rinzler69-wastaken.github.com" "custom-command-toggle@storageb.github.com" "liquid-glass@thinkingcoding1231.gmail.com" "quick-settings-scroll@diskmth.fr" "Rounded_Corners@lennart-k" "volume-percentage-quick-settings@imdarktom" "wack-lockscreen-clock@rinzler69-wastaken.github.com" "wifi-hotspot-quick-settings@aryan10.github.io"; do
+            for ext in "user-theme@gnome-shell-extensions.gcampax.github.com" "eval-helper@mactheme" "blur-my-shell@aunetx" "dash2dock-motion@unmade.space" "appmenu@ChathurangaBW.github.io" "kiwi@kemma" "desktop-widgets@r3nhick" "macw1y-touchpad-gestures@mactheme" "compiz-alike-magic-lamp-effect@hermes83.github.com" "cupertino-dock-lite@rinzler69-wastaken.github.com" "custom-command-toggle@storageb.github.com" "liquid-glass@thinkingcoding1231.gmail.com" "quick-settings-scroll@diskmth.fr" "Rounded_Corners@lennart-k" "volume-percentage-quick-settings@imdarktom" "wack-lockscreen-clock@rinzler69-wastaken.github.com" "wifi-hotspot-quick-settings@aryan10.github.io"; do
                 gnome-extensions enable "$ext" 2>/dev/null || true
             done
             gsettings set org.gnome.shell.extensions.user-theme name "macW1Y-Dark" 2>/dev/null || true
             gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark" 2>/dev/null || true
-            gsettings set org.gnome.desktop.interface icon-theme "MacTahoe-dark" 2>/dev/null || true
-            gsettings set org.gnome.desktop.interface font-name "Inter 10" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface icon-theme "macW1Y-dark" 2>/dev/null || true
+            gsettings set org.gnome.desktop.interface font-name "default 10" 2>/dev/null || true
             export MAC_INSTALLER_SCRIPT="$SCRIPT_DIR/gui.sh"
             exec "$SCRIPT_DIR/bin/mac-installer-gui" --mock-installer "$@"
         fi
@@ -125,7 +125,7 @@ get_installed_version() {
        [ -d "$TARGET_HOME/.icons/macW1Y-dark" ] || \
        [ -f "$TARGET_HOME/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/components/menubar_v29.js" ] || \
        [ -f "/etc/systemd/system/mac-touchpad-daemon.service" ] || \
-       [ -d "/boot/grub/themes/apple-mac" ]; then
+       [ -d "/boot/grub/themes/macw1y-boot" ]; then
         echo "0.1"
         return
     fi
@@ -173,7 +173,7 @@ run_mock_installation() {
         "10:stage1:Stage 1/10: Verifying system dependencies and environment"
         "20:stage2:Stage 2/10: Verifying typography and font bundles"
         "30:stage3:Stage 3/10: Preparing macW1Y GTK and Shell theme engines"
-        "45:stage4:Stage 4/10: Validating MacTahoe icon assets and cursors"
+        "45:stage4:Stage 4/10: Validating macW1Y icon assets and cursors"
         "55:stage5:Stage 5/10: Checking sound themes and audio feedback"
         "65:stage6:Stage 6/10: Preparing Golden Gate wallpaper integration"
         "75:stage7:Stage 7/10: Simulating GNOME Shell extensions deployment"

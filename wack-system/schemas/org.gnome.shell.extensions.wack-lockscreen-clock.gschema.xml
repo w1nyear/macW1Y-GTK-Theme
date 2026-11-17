@@ -8,7 +8,7 @@
       </choices>
       <default>'wack'</default>
       <summary>Lockscreen mode</summary>
-      <description>Visual style of the lock screen. WACK is the classic GNOME-compliant mode; Cupertino emulates macOS Sonoma style.</description>
+      <description>Visual style of the lock screen. WACK is the classic GNOME-compliant mode; Cupertino emulates macW1Y Sonoma style.</description>
     </key>
     <key name="cupertino-always-show-user" type="b">
       <default>false</default>
@@ -126,7 +126,7 @@
     <key name="status-corner" type="b">
       <default>true</default>
       <summary>Status Corner</summary>
-      <description>Style top right status corner in macOS lockscreen style.</description>
+      <description>Style top right status corner in macW1Y lockscreen style.</description>
     </key>
     <key name="password-indicators" type="b">
       <default>true</default>
@@ -136,7 +136,7 @@
     <key name="cupertino-system-actions" type="b">
       <default>true</default>
       <summary>Cupertino System Actions</summary>
-      <description>Show macOS-style power buttons on lock screen.</description>
+      <description>Show macW1Y-style power buttons on lock screen.</description>
     </key>
     <key name="gdm-background-dimmer" type="b">
       <default>false</default>

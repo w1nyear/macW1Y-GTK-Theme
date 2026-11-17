@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
 mac-sanitize-favorites.sh - Dynamically inspects and sanitizes org.gnome.shell favorite-apps
-for the macOS Tahoe theme.
+for the macW1Y Tahoe theme.
 
 Ensures that:
 1. Applications not installed on the system (e.g. Steam, Telegram, Chrome, Antigravity, OpenCode)
    are never pinned to the dock.
 2. Stale or phantom .desktop files in ~/.local/share/applications/ are removed.
-3. Essential macOS base dock applications are always present and properly ordered:
+3. Essential macW1Y base dock applications are always present and properly ordered:
    - Finder (org.gnome.Nautilus.desktop)
    - Launchpad (launchpad.desktop)
    - Default Browser (Chrome, Firefox, Brave, Chromium, Edge, Opera)
@@ -243,7 +243,7 @@ def main():
     # 3. Filter valid applications
     valid_favs = [app for app in combined_favs if is_app_installed_and_valid(app)]
 
-    # 4. Construct macOS Tahoe dock layout
+    # 4. Construct macW1Y Tahoe dock layout
     # Ensure Finder (Nautilus) at pos 0
     nautilus = 'org.gnome.Nautilus.desktop'
     if nautilus in valid_favs:

@@ -671,7 +671,7 @@ export class DashManager {
     let [absX, absY] = sourceActor.get_transformed_position();
     if (Number.isNaN(absX) || Number.isNaN(absY)) return false;
 
-    // macOS Dock: authoritative geometry directly from dash2dock-motion background slab
+    // macW1Y Dock: authoritative geometry directly from dash2dock-motion background slab
     let hasSlabBounds = false;
     const slab = this._findDashBackground(this.targetActor.get_parent() || this.targetActor);
     if (slab) {

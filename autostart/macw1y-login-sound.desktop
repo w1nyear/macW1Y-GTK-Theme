@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=macW1Y Startup Chime
+Comment=Plays the macW1Y boot chime upon user login
+Exec=/usr/local/bin/mac-login-sound
+Terminal=false
+Hidden=true
+NoDisplay=true
+X-GNOME-Autostart-Phase=Application
+X-GNOME-Autostart-enabled=false

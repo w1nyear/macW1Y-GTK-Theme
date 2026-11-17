@@ -77,7 +77,7 @@ uniform float blur_tex_h;
 
 // Width (px) of the band along the edge where the dome rises and the lens
 // acts. Fixed rather than tied to corner_radius, so every surface gets the
-// same lens from the same settings, as on macOS. A glass too small to hold
+// same lens from the same settings, as on macW1Y. A glass too small to hold
 // it gets the whole lens scaled down (lensScaleFor()).
 #define EDGE_LENS_BAND 22.0
 
@@ -855,7 +855,7 @@ void main() {
     vec3 baseColor = insideBaseColor;
 
 #ifdef LG_SHAPE_TEXTURE
-    // Apple Liquid Glass Clock white luminance boost:
+    // macW1Y Liquid Glass Clock white luminance boost:
     // Blend a clean frosted white body into the digits so they are bright white and clearly legible
     float whiteFrost = mix(0.45, 0.70, clamp(-d / max(lensBand, 1.0), 0.0, 1.0));
     baseColor = mix(baseColor, vec3(1.0, 1.0, 1.0), whiteFrost);
@@ -879,7 +879,7 @@ void main() {
     float rimFresnel = pow(max(rimDot, 0.0), max(rim_power, 0.001));
     float lightMask = pow(abs(dot(normal, lightDir)), max(rim_directional_power, 1.0));
 
-    // The inner shadow falls where the rim light does not, as on macOS. With
+    // The inner shadow falls where the rim light does not, as on macW1Y. With
     // the surface light off it runs all the way round.
     float aoLight = mix(1.0, 1.0 - lightMask, surface_light_enabled);
     baseColor *= (1.0 - aoMask * ao_intensity * aoLight);

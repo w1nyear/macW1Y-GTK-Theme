@@ -1,6 +1,6 @@
 #!/bin/bash
-# Ensures macOS Tahoe / macW1Y cursors override snap fallback directories
-SRC="/home/vitaliy/.local/share/icons/MacTahoe/cursors"
+# Ensures macW1Y Tahoe / macW1Y cursors override snap fallback directories
+SRC="/home/vitaliy/.local/share/icons/macW1Y/cursors"
 [ -d "$SRC" ] || exit 0
 
 # gtk-common-themes

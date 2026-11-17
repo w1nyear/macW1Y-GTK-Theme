@@ -1,0 +1,8 @@
+[Sound Theme]
+Name=macW1Y
+Comment=macW1Y High-Definition Sound Theme
+Inherits=freedesktop
+Directories=stereo
+
+[stereo]
+OutputProfile=stereo

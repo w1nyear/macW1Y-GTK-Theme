@@ -155,8 +155,8 @@ async function ejectDevice(device) {
 }
 
 export const fileActions = {
-    // Apple Menu
-    'about-this-mac': () => launch(['gnome-control-center', 'about']),
+    // macW1Y Menu
+    'about-this-system': () => launch(['gnome-control-center', 'about']),
     'system-settings': () => launch(['gnome-control-center']),
     'app-store': () => launch(['gnome-software']),
     'recent-items': () => openPath('recent:///'),
