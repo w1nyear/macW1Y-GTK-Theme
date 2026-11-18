@@ -2951,7 +2951,9 @@ export class UILayerSampler {
                     child.name?.startsWith('liquid-box') ||
                     child.name?.startsWith('tahoe-') ||
                     child.name === 'tahoe-control-center-overlay' ||
-                    child.name === 'tahoe-submenu-popup')
+                    child.name === 'tahoe-submenu-popup' ||
+                    child.has_style_class_name?.('tahoe-submenu-glass-popup') ||
+                    child.has_style_class_name?.('popup-menu-boxpointer'))
                     continue;
                 if (child.name === 'screenshotUIGroup' || child.name?.toLowerCase().includes('screenshot') || child === Main.screenshotUI || child === Main.screenshotUI?.get_parent())
                     continue;

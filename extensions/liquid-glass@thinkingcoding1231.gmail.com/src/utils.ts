@@ -3138,7 +3138,13 @@ export class UILayerSampler {
 
 
 
-        if (child === getSharedBackgroundSource()) continue;
+        if ((child as any).name?.startsWith('liquid-glass-bg-actor') ||
+            (child as any).name?.startsWith('liquid-box') ||
+            (child as any).name?.startsWith('tahoe-') ||
+            (child as any).name === 'tahoe-control-center-overlay' ||
+            (child as any).name === 'tahoe-submenu-popup' ||
+            (child as any).has_style_class_name?.('tahoe-submenu-glass-popup') ||
+            (child as any).has_style_class_name?.('popup-menu-boxpointer')) continue;
         if ((child as any).name === 'screenshotUIGroup' || (child as any).name?.toLowerCase().includes('screenshot') || child === Main.screenshotUI || child === (Main.screenshotUI as any)?.get_parent()) continue;
         if ((child as any).name === 'iconsContainer' ||
             (child as any).name?.startsWith('iconsContainer') ||

@@ -1712,3 +1712,28 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      - bin/mac-i18n-verify — 100% PASS
      - python3 bin/mac-extension-guard verify — 21/21 PASS (LOCKED OK)
      - python3 bin/test-macw1y-animations.py — 12/12 PASS (100.0%).
+
+823. 2026-11-18 — Виправлення анімацій появи, зникнення та підменю Центру Керування (Control Center):
+   - Синхронна анімація появи скла та контенту (усунено появу без скла та подвійне ступеневе нашарування):
+     1) Скло (скляний бекдроп та скляні капсули плиток/карток) тепер ініціалізується синхронно у `_buildPanel` ще до запуску анімації виїзду.
+     2) Усі актори скла (`s.bgActor`) встановлюються у вихідний стан `translation_x: slideOffset, opacity: 0` та анімуються через Clutter transition синхронно з контейнером `p.box` та тлом `p.panelBg` (`duration: 230ms, EASE_OUT_CUBIC`).
+     3) Ліквідовано відкладений виклик `_startGlass` на `onComplete`, через який Центр керування спочатку виїжджав «голим» без скла, а потім з ривком одне за одним накладалися шари скла без анімації.
+   - Виправлення зникнення скла та елементів навколо кнопки при відкритті підменю:
+     1) Усунено взаємне рекурсивне клонування (цикл) між UILayerSampler Центру Керування та підменю PopupMenu:
+        - Підменю (`menu.actor`, `mgr.bgActor`) тепер негайно виключається з вибірки семплерів усіх скляних стеків Центру Керування.
+        - Центр Керування (`_panel.overlay`, `_panel.box`, `_panel.panelBg`, `s.bgActor`) одразу ж виключається із вибірки семплера підменю при відкритті (`addExclusion`).
+        - У `liquid-glass/dist/utils.js` додано глобальне виключення для акторів з класами `tahoe-submenu-glass-popup` та `popup-menu-boxpointer`, що запобігає падінню FBO та assertion `width > 0 && height > 0`.
+     2) Виправлено зникнення стеків через нульовий розмір регіонів: grace-період збереження останніх валідних регіонів збільшено з 2 до 12 кадрів, а `_panel.overlay.mapped` у циклі `tick()` більше не знищує цикл перемальовування, а коректно перезапускає його через `get_laters()`.
+     3) Під час анімацій появи/зникнення (`_panelOpening`, `_closing`) вимкнено примусове перезаписування `s.bgActor.opacity = p.box.opacity` усередині `_syncStack`, завдяки чому плавні переходи прозорості не перебиваються.
+   - Синхронна анімація зникнення (скло забирається разом з панеллю):
+     1) У `_closePanel()` додано анімацію `translation_x: slideOffset` до `s.bgActor.ease(...)` з тривалістю 190мс та режимом `EASE_IN_CUBIC`.
+     2) Скло тепер плавно з'їжджає праворуч разом із панеллю, а не залишається нерухомим на робочому столі під час закриття.
+   - Синхронізація та блокування:
+     - Оновлено та синхронізовано `extensions/kiwi@kemma/` та `extensions/liquid-glass@thinkingcoding1231.gmail.com/` з системними каталогами `~/.local/share/gnome-shell/extensions/`.
+     - Оновлено SHA-256 хеші у `config/extensions.lock.json`.
+   - Верифікація:
+     - `bin/mac-audit-sync check` — 100% PASS.
+     - `bin/mac-i18n-verify` — 100% PASS.
+     - `python3 bin/mac-extension-guard verify` — 21/21 LOCKED OK.
+     - `python3 bin/test-macw1y-animations.py` — 12/12 PASS (100.0%).
+     - `python3 bin/test-macw1y-performance-guards.py` — 13/13 PASS.

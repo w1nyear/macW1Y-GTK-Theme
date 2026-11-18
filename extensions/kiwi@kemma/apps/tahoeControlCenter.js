@@ -306,8 +306,14 @@ let _activeSubmenu = null;
 
 function _closeActiveSubmenu() {
     if (_activeSubmenu) {
-        try { _activeSubmenu.close(); _activeSubmenu.destroy(); } catch (_) {}
+        const sub = _activeSubmenu;
         _activeSubmenu = null;
+        try { sub.close(); sub.destroy(); } catch (_) {}
+        if (_panel?.glass?.stacks) {
+            for (const s of _panel.glass.stacks) {
+                try { s.uiSampler?.rebindSelf?.(); } catch (_) {}
+            }
+        }
     }
 }
 
@@ -364,8 +370,24 @@ async function _attachSubmenuGlass(menu, owner = 'submenu') {
         const tuneGlass = () => {
             const mgr = menu._liquidGlassUIManager;
             if (mgr) {
-                if (mgr._uiSampler && _panel?.overlay) {
-                    try { mgr._uiSampler.addExclusion(_panel.overlay); } catch (_) {}
+                if (mgr._uiSampler) {
+                    if (_panel?.overlay) mgr._uiSampler.addExclusion(_panel.overlay);
+                    if (_panel?.box) mgr._uiSampler.addExclusion(_panel.box);
+                    if (_panel?.panelBg) mgr._uiSampler.addExclusion(_panel.panelBg);
+                    if (_panel?.glass?.stacks) {
+                        for (const s of _panel.glass.stacks) {
+                            if (s.bgActor) mgr._uiSampler.addExclusion(s.bgActor);
+                        }
+                    }
+                    try { mgr._uiSampler.rebindSelf?.(); } catch (_) {}
+                    try { mgr._uiSampler.refresh?.(); } catch (_) {}
+                }
+                if (_panel?.glass?.stacks) {
+                    for (const s of _panel.glass.stacks) {
+                        if (menu.actor) s.uiSampler?.addExclusion?.(menu.actor);
+                        if (mgr.bgActor) s.uiSampler?.addExclusion?.(mgr.bgActor);
+                        try { s.uiSampler?.rebindSelf?.(); } catch (_) {}
+                    }
                 }
                 const p = _getContextMenuGlassParams();
                 if (mgr.effect) {
@@ -381,7 +403,7 @@ async function _attachSubmenuGlass(menu, owner = 'submenu') {
                         mgr.effect.setShadowIntensity?.(p.shadowIntensity);
                         mgr.effect._setFloat?.('shadow_intensity', p.shadowIntensity);
                         mgr.effect._setFloat?.('shadow_radius', p.shadowRadius);
-                        mgr.effect.setShadowMaxRadius?.(50.0);
+                        mgr.effect.setShadowMaxRadius?.(30.0);
                         mgr.effect._setFloat?.('displacement_scale', 25.0);
                         mgr.effect._setFloat?.('ior', 1.45);
                         mgr.effect._setFloat?.('rim_intensity', 0.10);
@@ -406,6 +428,8 @@ async function _attachSubmenuGlass(menu, owner = 'submenu') {
             }
         };
 
+        const BoxPointer = await import('resource:///org/gnome/shell/ui/boxpointer.js');
+        menu.open(BoxPointer.PopupAnimation.NONE);
         tuneGlass();
         GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
             tuneGlass();
@@ -531,12 +555,11 @@ async function _openWifiSubmenu(sourceActor, state) {
         });
 
         _activeSubmenu = menu;
-        await _attachSubmenuGlass(menu, 'wifi');
         menu.actor.opacity = 0;
         menu.actor.scale_x = 0.95;
         menu.actor.scale_y = 0.95;
         menu.actor.set_pivot_point(1.0, 0.2);
-        menu.open(BoxPointer.PopupAnimation.NONE);
+        await _attachSubmenuGlass(menu, 'wifi');
         menu.actor.ease({
             opacity: 255,
             scale_x: 1.0,
@@ -599,12 +622,11 @@ async function _openBluetoothSubmenu(sourceActor, state) {
         });
 
         _activeSubmenu = menu;
-        await _attachSubmenuGlass(menu, 'bluetooth');
         menu.actor.opacity = 0;
         menu.actor.scale_x = 0.95;
         menu.actor.scale_y = 0.95;
         menu.actor.set_pivot_point(1.0, 0.2);
-        menu.open(BoxPointer.PopupAnimation.NONE);
+        await _attachSubmenuGlass(menu, 'bluetooth');
         menu.actor.ease({
             opacity: 255,
             scale_x: 1.0,
@@ -727,12 +749,11 @@ async function _openSoundSubmenu(sourceActor, state) {
         menu.addMenuItem(settItem);
 
         _activeSubmenu = menu;
-        await _attachSubmenuGlass(menu, 'sound');
         menu.actor.opacity = 0;
         menu.actor.scale_x = 0.95;
         menu.actor.scale_y = 0.95;
         menu.actor.set_pivot_point(1.0, 0.2);
-        menu.open(BoxPointer.PopupAnimation.NONE);
+        await _attachSubmenuGlass(menu, 'sound');
         menu.actor.ease({
             opacity: 255,
             scale_x: 1.0,
@@ -905,12 +926,11 @@ export async function _openDisplaySubmenu(sourceActor, state) {
         menu.addMenuItem(settItem);
 
         _activeSubmenu = menu;
-        await _attachSubmenuGlass(menu, 'display');
         menu.actor.opacity = 0;
         menu.actor.scale_x = 0.95;
         menu.actor.scale_y = 0.95;
         menu.actor.set_pivot_point(1.0, 0.2);
-        menu.open(BoxPointer.PopupAnimation.NONE);
+        await _attachSubmenuGlass(menu, 'display');
         menu.actor.ease({
             opacity: 255,
             scale_x: 1.0,
@@ -1035,12 +1055,11 @@ export async function _openFocusSubmenu(sourceActor, state) {
         menu.addMenuItem(settItem);
 
         _activeSubmenu = menu;
-        await _attachSubmenuGlass(menu, 'focus');
         menu.actor.opacity = 0;
         menu.actor.scale_x = 0.95;
         menu.actor.scale_y = 0.95;
         menu.actor.set_pivot_point(1.0, 0.2);
-        menu.open(BoxPointer.PopupAnimation.NONE);
+        await _attachSubmenuGlass(menu, 'focus');
         menu.actor.ease({
             opacity: 255,
             scale_x: 1.0,
@@ -2416,16 +2435,20 @@ function _buildPanel() {
     box.set_pivot_point(1.0, 0.0);
     box.scale_x = 1.0;
     box.scale_y = 1.0;
-    box.translation_x = slideOffset;
-    box.opacity = 0;
     panelBg.set_pivot_point(1.0, 0.0);
     panelBg.scale_x = 1.0;
     panelBg.scale_y = 1.0;
-    panelBg.translation_x = slideOffset;
-    panelBg.opacity = 0;
 
     _panelOpening = true;
     _closing = false;
+
+    // Initialize glass stacks synchronously so they are ready for entrance animation
+    _startGlass(slideOffset);
+
+    box.translation_x = slideOffset;
+    box.opacity = 0;
+    panelBg.translation_x = slideOffset;
+    panelBg.opacity = 0;
 
     box.ease({
         translation_x: 0,
@@ -2442,8 +2465,13 @@ function _buildPanel() {
                 _panel.panelBg.translation_x = 0;
                 _panel.panelBg.opacity = 255;
             }
-            if (_panel && !_panel.glass && !_closing) {
-                _startGlass();
+            if (_panel?.glass?.stacks) {
+                for (const s of _panel.glass.stacks) {
+                    try {
+                        s.bgActor.translation_x = 0;
+                        s.bgActor.opacity = 255;
+                    } catch (_) {}
+                }
             }
         }
     });
@@ -2453,6 +2481,19 @@ function _buildPanel() {
         duration: 230,
         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
     });
+    if (_panel.glass?.stacks) {
+        for (const s of _panel.glass.stacks) {
+            try {
+                s.bgActor.remove_all_transitions();
+                s.bgActor.ease({
+                    translation_x: 0,
+                    opacity: 255,
+                    duration: 230,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                });
+            } catch (_) {}
+        }
+    }
 }
 
 
@@ -2870,12 +2911,11 @@ export async function _openPowerModeSubmenu(sourceActor, state) {
         menu.addMenuItem(settItem);
 
         _activeSubmenu = menu;
-        await _attachSubmenuGlass(menu, 'power');
         menu.actor.opacity = 0;
         menu.actor.scale_x = 0.95;
         menu.actor.scale_y = 0.95;
         menu.actor.set_pivot_point(1.0, 0.2);
-        menu.open(BoxPointer.PopupAnimation.NONE);
+        await _attachSubmenuGlass(menu, 'power');
         menu.actor.ease({
             opacity: 255,
             scale_x: 1.0,
@@ -3573,17 +3613,14 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
         lastRegions: null, lastBounds: null, grace: 0, clip: null, screen: null};
 }
 
-async function _startGlass() {
+function _startGlass(slideOffset = 0) {
     if (!_panel || _panel.glass)
         return;
     const monitor = Main.layoutManager.primaryMonitor;
     if (!monitor)
         return;
-    if (!_lgReady()) {
-        await ensureLgReady();
-        if (!_lgReady() || !_panel || _panel.glass)
-            return;
-    }
+    if (!_lgReady())
+        return;
 
     try {
         const stacks = GLASS_GROUPS.map(g => ({
@@ -3609,29 +3646,30 @@ async function _startGlass() {
         _panel.glass = glass;
 
         for (const s of stacks) {
+            s.bgActor.translation_x = slideOffset;
             s.bgActor.opacity = 0;
             s.bgActor.show();
             s.bgActor.set_scale(1.0, 1.0);
             try {
                 _syncStack(s, monitor);
             } catch (_) {}
-            try {
-                s.bgActor.ease({
-                    opacity: _panel?.box?.opacity ?? 255,
-                    duration: 160,
-                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                });
-            } catch (_) {
-                s.bgActor.opacity = _panel?.box?.opacity ?? 255;
-            }
+            s.bgActor.translation_x = slideOffset;
+            s.bgActor.opacity = 0;
         }
 
         const tick = () => {
             glass.frameId = 0;
             if (glass.torndown || !_panel || _panel.glass !== glass)
                 return GLib.SOURCE_REMOVE;
-            if (!_panel.overlay.mapped)
+            if (!_panel.overlay.mapped) {
+                try {
+                    glass.frameId = global.compositor.get_laters().add(
+                        Meta.LaterType.BEFORE_REDRAW, tick);
+                } catch (_) {
+                    glass.frameId = 0;
+                }
                 return GLib.SOURCE_REMOVE;
+            }
             if (!_closing) {
                 try {
                     _panel.panelBg.opacity = _panel.box.opacity;
@@ -3745,7 +3783,7 @@ function _syncStack(s, monitor) {
     }
 
     if (regions.length === 0) {
-        if (s.lastRegions && s.grace++ < 2) {
+        if (s.lastRegions && s.grace++ < 12) {
             regions.push(...s.lastRegions);
             ({minX, minY, maxX, maxY} = s.lastBounds);
         } else {
@@ -3770,7 +3808,9 @@ function _syncStack(s, monitor) {
 
     if (!s.bgActor.visible)
         s.bgActor.show();
-    s.bgActor.opacity = p.box.opacity;
+    if (!_panelOpening && !_closing) {
+        s.bgActor.opacity = p.box.opacity;
+    }
     if (s.group === 'card') {
         if (typeof s.effect.setShapeType === 'function')
             s.effect.setShapeType(0.0);
@@ -3958,6 +3998,7 @@ function _closePanel(immediate = false) {
             try {
                 s.bgActor.remove_all_transitions();
                 s.bgActor.ease({
+                    translation_x: slideOffset,
                     opacity: 0,
                     duration: 190,
                     mode: Clutter.AnimationMode.EASE_IN_CUBIC,
