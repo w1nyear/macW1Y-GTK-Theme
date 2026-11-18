@@ -1787,7 +1787,7 @@ async function _attachSubmenuGlass(menu, owner = 'submenu') {
         menu.actor.style = 'background: none !important; background-color: transparent !important; box-shadow: none !important; border: none !important;';
 
         menu.box.add_style_class_name('tahoe-submenu-glass-box');
-        menu.box.style = 'width: 300px !important; min-width: 300px !important; max-width: 300px !important; border-radius: 20px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; padding: 8px !important;';
+        menu.box.style = 'width: 300px !important; min-width: 300px !important; max-width: 300px !important; border-radius: 20px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: none !important; padding: 8px !important;';
 
         const tuneGlass = () => {
             const mgr = menu._liquidGlassUIManager;

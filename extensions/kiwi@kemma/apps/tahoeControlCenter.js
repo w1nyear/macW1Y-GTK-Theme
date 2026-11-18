@@ -365,7 +365,7 @@ async function _attachSubmenuGlass(menu, owner = 'submenu') {
         menu.actor.style = 'background: none !important; background-color: transparent !important; box-shadow: none !important; border: none !important;';
 
         menu.box.add_style_class_name('tahoe-submenu-glass-box');
-        menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; padding: 10px !important;';
+        menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: none !important; padding: 10px !important;';
 
         const tuneGlass = () => {
             const mgr = menu._liquidGlassUIManager;
@@ -528,7 +528,7 @@ async function _openWifiSubmenu(sourceActor, state) {
         menu.actor.style = 'background: none !important; background-color: transparent !important; box-shadow: none !important; border: none !important;';
 
         menu.box.add_style_class_name('tahoe-submenu-glass-box');
-        menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; padding: 10px !important;';
+        menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: none !important; padding: 10px !important;';
 
         let nmClient = state.nm;
         if (!nmClient) {
@@ -598,7 +598,7 @@ async function _openBluetoothSubmenu(sourceActor, state) {
         menu.actor.style = 'background: none !important; background-color: transparent !important; box-shadow: none !important; border: none !important;';
 
         menu.box.add_style_class_name('tahoe-submenu-glass-box');
-        menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; padding: 10px !important;';
+        menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: none !important; padding: 10px !important;';
 
         let btClient = state.bt;
         if (!btClient) {
@@ -665,7 +665,7 @@ async function _openSoundSubmenu(sourceActor, state) {
         menu.actor.style = 'background: none !important; background-color: transparent !important; box-shadow: none !important; border: none !important;';
 
         menu.box.add_style_class_name('tahoe-submenu-glass-box');
-        menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; padding: 10px !important;';
+        menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: none !important; padding: 10px !important;';
 
         const control = state.control;
         const currentSink = control?.get_default_sink();
@@ -792,7 +792,7 @@ export async function _openDisplaySubmenu(sourceActor, state) {
         menu.actor.style = 'background: none !important; background-color: transparent !important; box-shadow: none !important; border: none !important;';
 
         menu.box.add_style_class_name('tahoe-submenu-glass-box');
-        menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; padding: 10px !important;';
+        menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: none !important; padding: 10px !important;';
 
 
         const secHeader = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
@@ -969,7 +969,7 @@ export async function _openFocusSubmenu(sourceActor, state) {
         menu.actor.style = 'background: none !important; background-color: transparent !important; box-shadow: none !important; border: none !important;';
 
         menu.box.add_style_class_name('tahoe-submenu-glass-box');
-        menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; padding: 10px !important;';
+        menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: none !important; padding: 10px !important;';
 
 
         const secHeader = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
@@ -2809,7 +2809,7 @@ export async function _openPowerModeSubmenu(sourceActor, state) {
         menu.actor.style = 'background: none !important; background-color: transparent !important; box-shadow: none !important; border: none !important;';
 
         menu.box.add_style_class_name('tahoe-submenu-glass-box');
-        menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; padding: 10px !important;';
+        menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: none !important; padding: 10px !important;';
 
         const curProfile = _getPowerProfile();
 

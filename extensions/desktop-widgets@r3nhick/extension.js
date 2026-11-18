@@ -1419,6 +1419,7 @@ class WidgetController {
       // still get their regular theme.background fills.
       styleStr += ' background-color: transparent;';
       styleStr += ` border-radius: ${theme.radius}px;`;
+      styleStr += ' border: none !important;';
     }
 
     // The edit-border text color is set here, not in stylesheet.css: there it was

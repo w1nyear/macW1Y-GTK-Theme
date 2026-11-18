@@ -207,7 +207,7 @@ export function buildNotificationCard(source, notification, options = {}) {
 
     const CARD_BASE_STYLE = (typeof globalThis._macGetNotifCardStyle === 'function')
         ? globalThis._macGetNotifCardStyle()
-        : 'background-color: transparent !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
+        : 'background-color: transparent !important; border: none !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
     const CARD_HOVER_STYLE = CARD_BASE_STYLE;
 
     const CARD_PILL_STYLE = CARD_BASE_STYLE.replace(/border-radius:\s*[^;]+;/, 'border-radius: 9999px !important;');

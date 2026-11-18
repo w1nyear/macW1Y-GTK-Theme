@@ -1737,3 +1737,21 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      - `python3 bin/mac-extension-guard verify` — 21/21 LOCKED OK.
      - `python3 bin/test-macw1y-animations.py` — 12/12 PASS (100.0%).
      - `python3 bin/test-macw1y-performance-guards.py` — 13/13 PASS.
+
+824. 2026-11-19 — Переведення відблисків і рамок виключно на шейдер скла (відповідно до референсу iOS 18 / macOS Sequoia):
+   - Усунення штучних CSS-рамок і відблисків:
+     1) Повністю вимкнено всі плоскі CSS `border`, `border-top`, `border-bottom` у `extensions/kiwi@kemma/stylesheet.css` для скляних елементів (`.tahoe-qs-pill`, `.tahoe-qs-circle`, `.tahoe-qs-music`, `.tahoe-qs-card`, `.tahoe-qs-panelbg`, `.tahoe-submenu-glass-box`).
+     2) Прибрано інлайнові CSS-бордери у `tahoeControlCenter.js` та `tahoeQuickSettings.js` для спливаючих підменю, а також у `tahoeApps.js`, `tahoeNotificationCard.js` та `tahoeNotifications.js`.
+     3) У `desktop-widgets@r3nhick/extension.js` для скляного режиму примусово встановлено `border: none !important`.
+   - Оновлення фізичного шейдера скла (liquid-glass, wack-lockscreen-clock, desktop-widgets):
+     1) Верхні та нижні білі краї (borders): реалізовано спрямовані спекулярні грані білого кольору вздовж верхньої та нижньої межі форми (`isTop`, `isBottom`, `whiteWidth: 1.2px`), які на закруглених кутах плавно розмиваються і пом'якшуються (`mix(1.2, 4.5, cornerFactor)`, розширення до 6.0px soft glow).
+     2) Лівий і правий темні краї: реалізовано тонші, прозорі темні кантики (`darkWidth: 0.95px`, `darkIntensity: 0.28`), які забезпечують глибину та контраст і так само м'яко розмиваються та зникають при виході на кути.
+     3) Плавний кросфейд на кутах: безперервна метрика `cornerFactor = clamp(2.0 * abs(outDir.x) * abs(outDir.y), 0.0, 1.0)` забезпечує органічний радіальний перехід без артефактів і стиків.
+   - Синхронізація та верифікація:
+     - Оновлено та синхронізовано `liquid-glass@thinkingcoding1231.gmail.com`, `kiwi@kemma`, `desktop-widgets@r3nhick`, `wack-lockscreen-clock@rinzler69-wastaken.github.com` у `~/.local/share/gnome-shell/extensions/`.
+     - Оновлено хеші блокування у `config/extensions.lock.json`.
+     - `bin/mac-audit-sync check` — 100% PASS (5/5).
+     - `bin/mac-i18n-verify` — 100% PASS.
+     - `python3 bin/mac-extension-guard verify` — 21/21 LOCKED OK.
+     - `python3 bin/test-macw1y-animations.py` — 12/12 PASS (100.0%).
+     - `python3 bin/test-macw1y-performance-guards.py` — 13/13 PASS.

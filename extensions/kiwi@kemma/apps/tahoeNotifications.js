@@ -110,7 +110,7 @@ function _getCardBaseStyle() {
         shadow = `0 ${sY}px ${sBlur}px rgba(0, 0, 0, ${sAlpha})`;
     }
 
-    return `background-color: ${bg} !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: ${radius}px !important; box-shadow: ${shadow} !important; padding: 0 !important;`;
+    return `background-color: ${bg} !important; border: none !important; border-top: none !important; border-bottom: none !important; border-left: none !important; border-right: none !important; border-radius: ${radius}px !important; box-shadow: ${shadow} !important; padding: 0 !important;`;
 }
 
 function _getToastContentStyle(noglass = false) {
@@ -130,7 +130,7 @@ function _getToastContentStyle(noglass = false) {
         shadow = `0 ${sY}px ${sBlur}px rgba(0, 0, 0, ${sAlpha})`;
     }
 
-    return `background-color: ${bg} !important; padding: 13px 10px 15px 14px !important; border-radius: ${radius}px !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: ${shadow} !important;`;
+    return `background-color: ${bg} !important; padding: 13px 10px 15px 14px !important; border-radius: ${radius}px !important; border: none !important; border-top: none !important; border-bottom: none !important; border-left: none !important; border-right: none !important; box-shadow: ${shadow} !important;`;
 }
 
 function _getSlabStyle(i, radius = 18) {
@@ -147,10 +147,11 @@ function _getSlabStyle(i, radius = 18) {
         shadow = `0 ${sY}px ${sBlur}px rgba(0, 0, 0, ${sAlpha})`;
     }
     return `background-color: rgba(30, 32, 40, ${bgAlpha}) !important; ` +
+           `border: none !important; ` +
            `border-top: none !important; ` +
-           `border-bottom: 1px solid rgba(255, 255, 255, 0.16) !important; ` +
-           `border-left: 1px solid rgba(255, 255, 255, 0.14) !important; ` +
-           `border-right: 1px solid rgba(255, 255, 255, 0.14) !important; ` +
+           `border-bottom: none !important; ` +
+           `border-left: none !important; ` +
+           `border-right: none !important; ` +
            `border-top-left-radius: 0px !important; ` +
            `border-top-right-radius: 0px !important; ` +
            `border-bottom-left-radius: ${rad}px !important; ` +

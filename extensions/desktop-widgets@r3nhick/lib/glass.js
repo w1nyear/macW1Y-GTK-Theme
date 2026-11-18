@@ -137,13 +137,25 @@ vec3 lg_cornerSpec(vec2 p, float depthPx) {
 }
 
 vec3 lg_edgeSpec(vec2 ndir, float depthPx) {
-    if (lg_specStrength <= 0.0)
-        return vec3(0.0);
+    float cornerFactor = clamp(2.0 * abs(ndir.x) * abs(ndir.y), 0.0, 1.0);
+    float horizWeight = abs(ndir.y);
+    float isTop = clamp(-ndir.y, 0.0, 1.0);
+    float edgeDist = abs(depthPx);
 
-    float lip = 1.0 - smoothstep(0.0, 3.0, max(depthPx, 0.0));
-    vec2 lightDir = normalize(vec2(-0.45, 0.90));
-    float facing = 0.35 + 0.65 * clamp(dot(ndir, lightDir) * 0.5 + 0.5, 0.0, 1.0);
-    return vec3(1.0, 0.98, 0.94) * (lip * facing * lg_specStrength * 0.10);
+    // 1. White borders on top & bottom (diffusing at corners)
+    float whiteWidth = mix(1.2, 4.5, cornerFactor);
+    float whiteLine = 1.0 - smoothstep(0.0, whiteWidth, edgeDist);
+    float cornerBlur = (1.0 - smoothstep(0.0, 6.0, edgeDist)) * cornerFactor * 0.45;
+    float diffusedWhite = mix(whiteLine, whiteLine * 0.60 + cornerBlur, cornerFactor);
+
+    float topIntensity = 0.95;
+    float bottomIntensity = 0.60;
+    float whiteIntensity = mix(bottomIntensity, topIntensity, isTop / max(horizWeight, 1e-4));
+    float whiteFalloff = pow(horizWeight, 1.15);
+    float topInnerSheen = (1.0 - smoothstep(0.0, mix(3.0, 5.5, cornerFactor), depthPx)) * 0.22 * isTop * (1.0 - cornerFactor * 0.5);
+    float whiteBorder = (diffusedWhite * whiteIntensity * whiteFalloff) + topInnerSheen;
+
+    return vec3(1.0, 0.99, 0.97) * whiteBorder;
 }
 
 vec4 lg_glass(sampler2D tex, vec2 uv) {
@@ -179,6 +191,19 @@ vec4 lg_glass(sampler2D tex, vec2 uv) {
 
     vec3 tintColor = mix(lg_tint.rgb, lg_tintBottom.rgb, lg_tintBottom.a > 0.0 ? uv.y : 0.0);
     col = mix(col, tintColor, lg_tint.a);
+
+    // 2. Translucent dark borders on left & right (smaller, diffusing at corners)
+    float cornerFactor = clamp(2.0 * abs(ndir.x) * abs(ndir.y), 0.0, 1.0);
+    float vertWeight = abs(ndir.x);
+    float darkWidth = mix(0.95, 2.8, cornerFactor);
+    float darkLine = 1.0 - smoothstep(0.0, darkWidth, abs(depthPx));
+    float darkCornerBlur = (1.0 - smoothstep(0.0, 4.5, abs(depthPx))) * cornerFactor * 0.35;
+    float diffusedDark = mix(darkLine, darkLine * 0.65 + darkCornerBlur, cornerFactor);
+    float darkIntensity = 0.28;
+    float darkFalloff = pow(vertWeight, 1.35);
+    float darkBorder = diffusedDark * darkIntensity * darkFalloff;
+
+    col *= (1.0 - darkBorder);
     col += lg_edgeSpec(ndir, depthPx);
     col += lg_cornerSpec(p, depthPx);
 

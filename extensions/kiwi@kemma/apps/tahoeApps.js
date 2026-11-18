@@ -628,7 +628,7 @@ class TahoeApps {
             ` font-size: ${Math.round(this._settings.get_int('tahoe-font-size') * S)}px;` +
             ' font-weight: normal;' +
             ` border-radius: ${tahoeRadius}px;` +
-            ' border: 1px solid rgba(255, 255, 255, 0.16);';
+            ' border: none !important;';
         win.connect('button-press-event', () => {
             if (this._menu)
                 this._closeMenu();

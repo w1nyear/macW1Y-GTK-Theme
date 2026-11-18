@@ -261,7 +261,7 @@
         "50",
         "51"
       ],
-      "sha256": "3a8d2bb8737c3d3d93bddf402283b71d7212807d587b6eeea6135dd2a93ea2c2",
+      "sha256": "adf892f2e05f964f929d59d17b9f47827642e3687c6470396226076c7cb39e7f",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -287,7 +287,7 @@
         "49",
         "50"
       ],
-      "sha256": "93541e4e4bed1f96da9fc69da9e459a75da84d458952ea25348ad5d62be61556",
+      "sha256": "643730480119f2bd5c64aeeb3dd14a9d555f4d1f2d09ea566241c97b2d802377",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -314,7 +314,7 @@
         "shaders/gaussian_v.frag": "604b318b9750f807b3ad52b08cba8181638a16f73d12cf3bb2c46733d1937c55",
         "shaders/downsample.frag": "35d971052c1730e7da0e5edf15c57c04300573a0c2fdd9de197739b9aa1c9b4c",
         "shaders/gaussian_h.frag": "1375ac86287fce5a2a1878bfebb4cb39d90eccd3e3128381bc0611e8feaa734d",
-        "shaders/glass.frag": "c7bc4d5f407b5e41612ff26e45cd816217bff89853f8f2af8765d7e73aab6f0f",
+        "shaders/glass.frag": "6c01299816b60b70e7c61c5d37df1fffa0756094379c9c83bdf17d5dbf1e08c8",
         "shaders/upsample.frag": "5b499e75ee05a69429948049ba130b6b160a8cf35e63bdc709aec754688e0b03",
         "schemas/gschemas.compiled": "61af4893ac7b5510f13e548a81c72f4cb707dfd24239788a2944fe785caeacd9",
         "schemas/org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com.gschema.xml": "8069d7797fd064f2583643d1b54cf94b61bfdb14d11854a706ff328258078d13",
@@ -520,7 +520,7 @@
         "49",
         "50"
       ],
-      "sha256": "737a7db401c133cc4d8e999e5f2b44ba31939e5531734caf99ce57f8dc316622",
+      "sha256": "6862285985c1eeea35cb8a468ca86c80dee83b3d2a94782332dd1a89eec01d30",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -580,7 +580,7 @@
         "50",
         "51"
       ],
-      "sha256": "89052495221a7be28cd391ebe834c783299f0c99c4e70c9c6663e29079ac23d3",
+      "sha256": "cd77494a0c9a9f06042834f392412788238657dd280b1d6e53b48ea3fae59265",
       "status": "locked",
       "source": "github",
       "macw1y_components": [

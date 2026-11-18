@@ -1183,7 +1183,11 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-qs-panelbg {
     border-radius: 24px;
     background-color: transparent;
-    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
     /* one shadow for both themes: tight core + wide soft diffusion */
     box-shadow: 0 4px 22px rgba(0, 0, 0, 0.15),
         0 12px 70px rgba(0, 0, 0, 0.10);
@@ -1192,7 +1196,11 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-qs-dark .tahoe-qs-panelbg,
 .tahoe-qs-panelbg.tahoe-qs-dark {
     background-color: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 .tahoe-qs-cols { spacing: 18px; }
 .tahoe-qs-col { spacing: 12px; }
@@ -1507,16 +1515,20 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     border-radius: 999px;
     padding: 10px 12px 10px 10px;
     box-shadow: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
     border-left: none !important;
     border-right: none !important;
 }
 .tahoe-qs-dark .tahoe-qs-pill,
 .tahoe-qs-inklight .tahoe-qs-pill {
     background-color: rgba(255, 255, 255, 0.10);
-    border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.20) !important;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
     box-shadow: none;
 }
 .tahoe-qs-pill:hover {
@@ -1552,16 +1564,20 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-qs-pill.tahoe-qs-pill-priv {
     background-color: rgba(0, 0, 0, 0.05);
     padding: 4px 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
     border-left: none !important;
     border-right: none !important;
 }
 .tahoe-qs-dark .tahoe-qs-pill.tahoe-qs-pill-priv,
 .tahoe-qs-inklight .tahoe-qs-pill.tahoe-qs-pill-priv {
     background-color: rgba(255, 255, 255, 0.10);
-    border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.20) !important;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 .tahoe-qs-pill-priv .tahoe-qs-pill-circle { width: 20px; height: 20px; }
 .tahoe-qs-pill-priv .tahoe-qs-pill-glyph { icon-size: 12px; }
@@ -1573,16 +1589,20 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     background-color: rgba(0, 0, 0, 0.05);
     border-radius: 999px;
     box-shadow: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
     border-left: none !important;
     border-right: none !important;
 }
 .tahoe-qs-dark .tahoe-qs-circle,
 .tahoe-qs-inklight .tahoe-qs-circle {
     background-color: rgba(255, 255, 255, 0.10);
-    border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.20) !important;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
     box-shadow: none;
 }
 .tahoe-qs-circle:hover {
@@ -1609,16 +1629,20 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     border-radius: 28px;
     padding: 10px 8px;
     box-shadow: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
     border-left: none !important;
     border-right: none !important;
 }
 .tahoe-qs-dark .tahoe-qs-music,
 .tahoe-qs-inklight .tahoe-qs-music {
     background-color: rgba(255, 255, 255, 0.10);
-    border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.20) !important;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
     box-shadow: none;
 }
 .tahoe-qs-music-box { spacing: 1px; }
@@ -1642,12 +1666,20 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     padding: 8px 14px 10px 14px;
     spacing: 5px;
     box-shadow: none;
-    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
 }
 .tahoe-qs-dark .tahoe-qs-card,
 .tahoe-qs-inklight .tahoe-qs-card {
     background-color: rgba(255, 255, 255, 0.10);
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
     box-shadow: none;
 }
 .tahoe-qs-card-head {
@@ -1974,7 +2006,11 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
   background-color: transparent !important;
   background: transparent !important;
   border-radius: 28px !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
   box-shadow: none !important;
 }
 
