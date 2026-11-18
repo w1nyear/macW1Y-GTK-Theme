@@ -335,17 +335,107 @@ sync_directory_tree() {
 }
 
 # ------------------------------------------------------------------------------
+# Distribution and System Library Path Detection
+# ------------------------------------------------------------------------------
+detect_distro_and_paths() {
+    DISTRO_ID="unknown"
+    DISTRO_FAMILY="unknown"
+    DISTRO_NAME="Linux"
+
+    if [ -f "/etc/os-release" ]; then
+        # shellcheck disable=SC1091
+        . /etc/os-release
+        DISTRO_ID="${ID:-unknown}"
+        DISTRO_NAME="${PRETTY_NAME:-$NAME}"
+
+        if [[ "$ID" =~ ^(ubuntu|debian|pop|linuxmint|elementary|neon|zorin)$ ]] || [[ "$ID_LIKE" =~ (ubuntu|debian) ]]; then
+            DISTRO_FAMILY="debian"
+        elif [[ "$ID" =~ ^(fedora|rhel|centos|rocky|almalinux|nobara)$ ]] || [[ "$ID_LIKE" =~ (fedora|rhel) ]]; then
+            DISTRO_FAMILY="fedora"
+        elif [[ "$ID" =~ ^(arch|cachyos|manjaro|endeavouros|garuda)$ ]] || [[ "$ID_LIKE" =~ (arch) ]]; then
+            DISTRO_FAMILY="arch"
+        fi
+    fi
+
+    if [ "$DISTRO_FAMILY" = "unknown" ]; then
+        if command -v apt-get >/dev/null 2>&1; then
+            DISTRO_FAMILY="debian"
+        elif command -v dnf >/dev/null 2>&1; then
+            DISTRO_FAMILY="fedora"
+        elif command -v pacman >/dev/null 2>&1; then
+            DISTRO_FAMILY="arch"
+        fi
+    fi
+
+    SYS_LIB_DIR="/usr/lib"
+    if [ -d "/usr/lib/x86_64-linux-gnu" ]; then
+        SYS_LIB_DIR="/usr/lib/x86_64-linux-gnu"
+    elif [ -d "/usr/lib64" ]; then
+        SYS_LIB_DIR="/usr/lib64"
+    fi
+    export DISTRO_ID DISTRO_FAMILY DISTRO_NAME SYS_LIB_DIR
+}
+detect_distro_and_paths
+
+install_mac_shared_lib() {
+    local src="$1"
+    local filename
+    filename="$(basename "$src")"
+
+    sync_or_update_file "$src" "$SYS_LIB_DIR/$filename" true
+    sudo chmod 755 "$SYS_LIB_DIR/$filename" 2>/dev/null || true
+
+    sync_or_update_file "$src" "/usr/local/lib/$filename" true
+    sudo chmod 755 "/usr/local/lib/$filename" 2>/dev/null || true
+    if [ "$SYS_LIB_DIR" != "/usr/lib" ]; then
+        sync_or_update_file "$src" "/usr/lib/$filename" true
+        sudo chmod 755 "/usr/lib/$filename" 2>/dev/null || true
+    fi
+}
+
+install_mac_typelib() {
+    local src="$1"
+    local filename
+    filename="$(basename "$src")"
+
+    sudo mkdir -p "$SYS_LIB_DIR/girepository-1.0" /usr/lib/girepository-1.0
+    sync_or_update_file "$src" "$SYS_LIB_DIR/girepository-1.0/$filename" true
+    sudo chmod 644 "$SYS_LIB_DIR/girepository-1.0/$filename" 2>/dev/null || true
+    if [ "$SYS_LIB_DIR" != "/usr/lib" ]; then
+        sync_or_update_file "$src" "/usr/lib/girepository-1.0/$filename" true
+        sudo chmod 644 "/usr/lib/girepository-1.0/$filename" 2>/dev/null || true
+    fi
+}
+
+install_nautilus_extension() {
+    local src="$1"
+    local filename
+    filename="$(basename "$src")"
+
+    sudo mkdir -p "$SYS_LIB_DIR/nautilus/extensions-4" /usr/lib/nautilus/extensions-4 /usr/lib64/nautilus/extensions-4
+    sync_or_update_file "$src" "$SYS_LIB_DIR/nautilus/extensions-4/$filename" true
+    sudo chmod 755 "$SYS_LIB_DIR/nautilus/extensions-4/$filename" 2>/dev/null || true
+    if [ "$SYS_LIB_DIR" != "/usr/lib" ]; then
+        sync_or_update_file "$src" "/usr/lib/nautilus/extensions-4/$filename" true
+        sudo chmod 755 "/usr/lib/nautilus/extensions-4/$filename" 2>/dev/null || true
+    fi
+}
+
+# ------------------------------------------------------------------------------
 # 1. Dependencies
 # ------------------------------------------------------------------------------
 install_dependencies() {
-    log_step "Stage 1/13: Installing system dependencies (APT)"
+    log_step "Stage 1/13: Installing system dependencies"
     require_root
-    
-    if [ -f "$SCRIPT_DIR/dependencies/apt-packages.txt" ]; then
-        log_info "Updating package lists..."
+
+    detect_distro_and_paths
+    log_info "Detected OS: $DISTRO_NAME ($DISTRO_FAMILY family, libdir: $SYS_LIB_DIR)"
+
+    if [ "$DISTRO_FAMILY" = "debian" ] && [ -f "$SCRIPT_DIR/dependencies/apt-packages.txt" ]; then
+        log_info "Updating package lists via APT..."
         sudo dpkg --add-architecture i386 2>/dev/null || true
         sudo apt-get update -qq
-        
+
         log_info "Installing packages from dependencies/apt-packages.txt..."
         local RAW_PKGS
         RAW_PKGS=$(grep -v "^#" "$SCRIPT_DIR/dependencies/apt-packages.txt" | tr "\n" " ")
@@ -355,7 +445,7 @@ install_dependencies() {
                 VALID_PKGS+=("$p")
             fi
         done
-        # Dynamic selection of libmutter-dev version for current Ubuntu release (24.04, 24.10, 26.04)
+        # Dynamic selection of libmutter-dev version for current Debian/Ubuntu release
         for mdev in libmutter-18-dev libmutter-17-dev libmutter-16-dev libmutter-15-dev libmutter-14-dev; do
             if apt-cache show "$mdev" >/dev/null 2>&1; then
                 VALID_PKGS+=("$mdev")
@@ -365,9 +455,34 @@ install_dependencies() {
         sudo apt-get install -y "${VALID_PKGS[@]}"
         log_info "Ensuring system glibc locales are generated for internationalization..."
         sudo locale-gen en_US.UTF-8 uk_UA.UTF-8 pl_PL.UTF-8 de_DE.UTF-8 fr_FR.UTF-8 es_ES.UTF-8 it_IT.UTF-8 >/dev/null 2>&1 || true
-        log_success "System dependencies installed successfully!"
+        log_success "System dependencies installed successfully via APT!"
+    elif [ "$DISTRO_FAMILY" = "fedora" ] && [ -f "$SCRIPT_DIR/dependencies/dnf-packages.txt" ]; then
+        log_info "Installing dependencies via DNF..."
+        local RAW_PKGS
+        RAW_PKGS=$(grep -v "^#" "$SCRIPT_DIR/dependencies/dnf-packages.txt" | tr "\n" " ")
+        local VALID_PKGS=()
+        for p in $RAW_PKGS; do
+            if dnf list "$p" >/dev/null 2>&1; then
+                VALID_PKGS+=("$p")
+            fi
+        done
+        sudo dnf install -y "${VALID_PKGS[@]}"
+        log_success "System dependencies installed successfully via DNF!"
+    elif [ "$DISTRO_FAMILY" = "arch" ] && [ -f "$SCRIPT_DIR/dependencies/pacman-packages.txt" ]; then
+        log_info "Installing dependencies via Pacman..."
+        sudo pacman -Sy --needed --noconfirm
+        local RAW_PKGS
+        RAW_PKGS=$(grep -v "^#" "$SCRIPT_DIR/dependencies/pacman-packages.txt" | tr "\n" " ")
+        local VALID_PKGS=()
+        for p in $RAW_PKGS; do
+            if pacman -Si "$p" >/dev/null 2>&1; then
+                VALID_PKGS+=("$p")
+            fi
+        done
+        sudo pacman -S --needed --noconfirm "${VALID_PKGS[@]}"
+        log_success "System dependencies installed successfully via Pacman!"
     else
-        log_warning "dependencies/apt-packages.txt not found, skipping."
+        log_warning "No matching package list found for $DISTRO_NAME. Skipping automatic package manager installation."
     fi
 
     if ! command -v opendrop &>/dev/null; then
@@ -375,7 +490,7 @@ install_dependencies() {
         pip3 install --break-system-packages opendrop 2>/dev/null || true
     fi
 
-    if [ ! -f "/usr/lib/x86_64-linux-gnu/girepository-1.0/Blur-1.0.typelib" ] || [ ! -f "/usr/lib/x86_64-linux-gnu/libblur-effect-1.0.so" ]; then
+    if [ ! -f "$SYS_LIB_DIR/girepository-1.0/Blur-1.0.typelib" ] && [ ! -f "/usr/lib/girepository-1.0/Blur-1.0.typelib" ]; then
         log_info "Building and installing gnome-rounded-blur library for hardware-accelerated rounded blur..."
         local BUILD_TMP="/tmp/gnome-rounded-blur"
         rm -rf "$BUILD_TMP"
@@ -385,9 +500,13 @@ install_dependencies() {
                 meson setup build --prefix=/usr 2>/dev/null || true
                 meson compile -C build 2>/dev/null || true
                 sudo meson install -C build 2>/dev/null || true
-                sudo mkdir -p /usr/lib/girepository-1.0
-                sudo cp -f /usr/lib/x86_64-linux-gnu/girepository-1.0/Blur-1.0.typelib /usr/lib/girepository-1.0/ 2>/dev/null || true
-                for mdir in /usr/lib/x86_64-linux-gnu/mutter-*; do
+                sudo mkdir -p /usr/lib/girepository-1.0 "$SYS_LIB_DIR/girepository-1.0"
+                if [ -f "$SYS_LIB_DIR/girepository-1.0/Blur-1.0.typelib" ]; then
+                    sudo cp -f "$SYS_LIB_DIR/girepository-1.0/Blur-1.0.typelib" /usr/lib/girepository-1.0/ 2>/dev/null || true
+                elif [ -f "/usr/lib/girepository-1.0/Blur-1.0.typelib" ]; then
+                    sudo cp -f "/usr/lib/girepository-1.0/Blur-1.0.typelib" "$SYS_LIB_DIR/girepository-1.0/" 2>/dev/null || true
+                fi
+                for mdir in "$SYS_LIB_DIR"/mutter-* /usr/lib64/mutter-* /usr/lib/mutter-*; do
                     if [ -d "$mdir" ]; then
                         echo "$mdir" | sudo tee /etc/ld.so.conf.d/mutter-macw1y.conf >/dev/null 2>&1 || true
                         break
@@ -488,10 +607,7 @@ install_themes() {
         gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmacpopover.so" "$SCRIPT_DIR/src/mac_popover.c" $(pkg-config --cflags --libs gtk4 glib-2.0 gobject-2.0 2>/dev/null) -ldl -lm 2>/dev/null || true
     fi
     if [ -f "$SCRIPT_DIR/lib/libmacpopover.so" ]; then
-        sudo cp -f "$SCRIPT_DIR/lib/libmacpopover.so" /usr/lib/x86_64-linux-gnu/libmacpopover.so 2>/dev/null || true
-        sudo cp -f "$SCRIPT_DIR/lib/libmacpopover.so" /usr/local/lib/libmacpopover.so 2>/dev/null || true
-        sudo cp -f "$SCRIPT_DIR/lib/libmacpopover.so" /usr/lib/libmacpopover.so 2>/dev/null || true
-        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmacpopover.so /usr/local/lib/libmacpopover.so 2>/dev/null || true
+        install_mac_shared_lib "$SCRIPT_DIR/lib/libmacpopover.so"
         rm -f "$TARGET_HOME/.config/environment.d/10-mac-theme.conf" 2>/dev/null || true
         sudo sed -i "/libmacpopover.so/d" /etc/environment 2>/dev/null || true
     fi
@@ -500,8 +616,7 @@ install_themes() {
         gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmac_terminal.so" "$SCRIPT_DIR/src/mac_terminal.c" $(pkg-config --cflags --libs gtk4 libadwaita-1 2>/dev/null) -ldl 2>/dev/null || true
     fi
     if [ -f "$SCRIPT_DIR/lib/libmac_terminal.so" ]; then
-        sudo cp -f "$SCRIPT_DIR/lib/libmac_terminal.so" /usr/lib/x86_64-linux-gnu/libmac_terminal.so 2>/dev/null || true
-        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_terminal.so 2>/dev/null || true
+        install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_terminal.so"
     fi
     if [ -f "$SCRIPT_DIR/bin/ptyxis" ]; then
         sudo cp -f "$SCRIPT_DIR/bin/ptyxis" /usr/local/bin/ptyxis
@@ -512,13 +627,10 @@ install_themes() {
         gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmac_memtrim.so" "$SCRIPT_DIR/src/mac_memtrim.c" $(pkg-config --cflags --libs glib-2.0 2>/dev/null) 2>/dev/null || true
     fi
     if [ -f "$SCRIPT_DIR/lib/libmac_memtrim.so" ]; then
-        sudo cp -f "$SCRIPT_DIR/lib/libmac_memtrim.so" /usr/lib/x86_64-linux-gnu/libmac_memtrim.so 2>/dev/null || true
-        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_memtrim.so 2>/dev/null || true
+        install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_memtrim.so"
     fi
     if [ -f "$SCRIPT_DIR/lib/MacMemTrim-1.0.typelib" ]; then
-        sudo mkdir -p /usr/lib/x86_64-linux-gnu/girepository-1.0
-        sudo cp -f "$SCRIPT_DIR/lib/MacMemTrim-1.0.typelib" /usr/lib/x86_64-linux-gnu/girepository-1.0/MacMemTrim-1.0.typelib 2>/dev/null || true
-        sudo chmod 644 /usr/lib/x86_64-linux-gnu/girepository-1.0/MacMemTrim-1.0.typelib 2>/dev/null || true
+        install_mac_typelib "$SCRIPT_DIR/lib/MacMemTrim-1.0.typelib"
     fi
     
     # Configuring macW1Y Nautilus Finder Sidebar and Applications section
@@ -527,23 +639,18 @@ install_themes() {
         gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmac_nautilus.so" "$SCRIPT_DIR/src/mac_nautilus.c" $(pkg-config --cflags --libs gtk4 libadwaita-1 gio-2.0 2>/dev/null) -ldl 2>/dev/null || true
     fi
     if [ -f "$SCRIPT_DIR/lib/libmac_nautilus.so" ]; then
-        sudo cp -f "$SCRIPT_DIR/lib/libmac_nautilus.so" /usr/lib/x86_64-linux-gnu/libmac_nautilus.so 2>/dev/null || true
-        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_nautilus.so 2>/dev/null || true
+        install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_nautilus.so"
     fi
     if [ -f "$SCRIPT_DIR/lib/libmac_nautilus_menu.so" ]; then
-        sudo mkdir -p /usr/lib/x86_64-linux-gnu/nautilus/extensions-4
-        sudo cp -f "$SCRIPT_DIR/lib/libmac_nautilus_menu.so" /usr/lib/x86_64-linux-gnu/nautilus/extensions-4/libmac_nautilus_menu.so 2>/dev/null || true
-        sudo chmod 755 /usr/lib/x86_64-linux-gnu/nautilus/extensions-4/libmac_nautilus_menu.so 2>/dev/null || true
+        install_nautilus_extension "$SCRIPT_DIR/lib/libmac_nautilus_menu.so"
     fi
     if [ -f "/usr/bin/nautilus" ] && [ ! -f "/usr/bin/nautilus.orig" ]; then
         sudo mv /usr/bin/nautilus /usr/bin/nautilus.orig
     fi
-    cat << 'EOF_NAUT' | sudo tee /usr/bin/nautilus >/dev/null
-#!/bin/sh
-export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmac_nautilus.so:/usr/lib/x86_64-linux-gnu/libmacpopover.so${LD_PRELOAD:+:$LD_PRELOAD}"
-exec /usr/bin/nautilus.orig "$@"
-EOF_NAUT
-    sudo chmod +x /usr/bin/nautilus 2>/dev/null || true
+    if [ -f "$SCRIPT_DIR/bin/nautilus" ]; then
+        sudo cp -f "$SCRIPT_DIR/bin/nautilus" /usr/bin/nautilus
+        sudo chmod 755 /usr/bin/nautilus
+    fi
 
     if [ -f "$SCRIPT_DIR/bin/mac-sync-applications" ]; then
         sudo cp -f "$SCRIPT_DIR/bin/mac-sync-applications" /usr/local/bin/mac-sync-applications
@@ -1018,12 +1125,11 @@ install_settings_overlay() {
     fi
     
     # System-wide installation of library and overlays for all users
-    sudo mkdir -p /usr/share/mactheme/gnome-control-center-overlay /usr/lib/x86_64-linux-gnu /usr/local/lib
+    sudo mkdir -p /usr/share/mactheme/gnome-control-center-overlay
     if [ -f "$LOCAL_LIB/libmac_settings.so" ]; then
-        sudo cp -f "$LOCAL_LIB/libmac_settings.so" /usr/lib/x86_64-linux-gnu/libmac_settings.so
-        sudo cp -f "$LOCAL_LIB/libmac_settings.so" /usr/local/lib/libmac_settings.so
+        install_mac_shared_lib "$LOCAL_LIB/libmac_settings.so"
         sudo cp -f "$LOCAL_LIB/libmac_settings.so" /usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so
-        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_settings.so /usr/local/lib/libmac_settings.so /usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so
+        sudo chmod 755 /usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so 2>/dev/null || true
     fi
     if [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ]; then
         sudo cp -f "$SCRIPT_DIR/gnome-control-center-overlay"/cc-*.ui /usr/share/mactheme/gnome-control-center-overlay/ 2>/dev/null || true
@@ -1292,7 +1398,9 @@ install_gamemode() {
     fi
 
     # 3. Multiarch support (i386 for Steam, Wine, Proton)
-    sudo dpkg --add-architecture i386 2>/dev/null || true
+    if command -v dpkg >/dev/null 2>&1; then
+        sudo dpkg --add-architecture i386 2>/dev/null || true
+    fi
 
     # 4. Automatic detection and installation of GPU drivers
     local HAS_NVIDIA=false
@@ -1314,29 +1422,44 @@ install_gamemode() {
         local NV_VER=""
         if ! command -v nvidia-smi &>/dev/null && ! lsmod | grep -q "^nvidia"; then
             log_info "Searching and automatically installing recommended NVIDIA driver..."
-            local RECOMMENDED_DRIVER=""
-            if command -v ubuntu-drivers >/dev/null 2>&1; then
-                RECOMMENDED_DRIVER=$(ubuntu-drivers devices 2>/dev/null | grep 'recommended' | awk '{print $3}' | head -n1)
-            fi
-            if [ -n "$RECOMMENDED_DRIVER" ]; then
-                log_info "Installing $RECOMMENDED_DRIVER and PRIME/Wayland components..."
-                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$RECOMMENDED_DRIVER" nvidia-prime nvidia-settings libnvidia-egl-wayland1 2>/dev/null || true
-                NV_VER=$(echo "$RECOMMENDED_DRIVER" | grep -oP '\d+')
-            else
-                sudo DEBIAN_FRONTEND=noninteractive ubuntu-drivers autoinstall 2>/dev/null || true
-                NV_VER=$(dpkg -l 2>/dev/null | grep -oP 'nvidia-driver-\K\d+' | head -n1)
+            if [ "$DISTRO_FAMILY" = "debian" ]; then
+                local RECOMMENDED_DRIVER=""
+                if command -v ubuntu-drivers >/dev/null 2>&1; then
+                    RECOMMENDED_DRIVER=$(ubuntu-drivers devices 2>/dev/null | grep 'recommended' | awk '{print $3}' | head -n1)
+                fi
+                if [ -n "$RECOMMENDED_DRIVER" ]; then
+                    log_info "Installing $RECOMMENDED_DRIVER and PRIME/Wayland components..."
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$RECOMMENDED_DRIVER" nvidia-prime nvidia-settings libnvidia-egl-wayland1 2>/dev/null || true
+                    NV_VER=$(echo "$RECOMMENDED_DRIVER" | grep -oP '\d+')
+                elif command -v ubuntu-drivers >/dev/null 2>&1; then
+                    sudo DEBIAN_FRONTEND=noninteractive ubuntu-drivers autoinstall 2>/dev/null || true
+                    NV_VER=$(dpkg -l 2>/dev/null | grep -oP 'nvidia-driver-\K\d+' | head -n1)
+                elif apt-cache show nvidia-driver >/dev/null 2>&1; then
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nvidia-driver 2>/dev/null || true
+                fi
+            elif [ "$DISTRO_FAMILY" = "fedora" ]; then
+                if dnf list "*nvidia*" >/dev/null 2>&1; then
+                    sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda 2>/dev/null || true
+                else
+                    log_info "RPM Fusion may be required for NVIDIA drivers on Fedora."
+                fi
+            elif [ "$DISTRO_FAMILY" = "arch" ]; then
+                sudo pacman -S --needed --noconfirm nvidia-dkms nvidia-utils lib32-nvidia-utils 2>/dev/null || \
+                sudo pacman -S --needed --noconfirm nvidia-utils 2>/dev/null || true
             fi
         else
             log_info "NVIDIA driver already installed on the system."
-            NV_VER=$(dpkg -l 2>/dev/null | grep -oP 'nvidia-driver-\K\d+' | head -n1)
         fi
 
         # Installing 32-bit NVIDIA OpenGL/Vulkan libraries for Steam and games
-        if [ -n "$NV_VER" ]; then
-            log_info "Installing 32-bit libnvidia-gl-$NV_VER:i386 and Vulkan libraries for Steam/gaming..."
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "libnvidia-gl-${NV_VER}:i386" libvulkan1:i386 mesa-vulkan-drivers:i386 2>/dev/null || true
-        else
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libvulkan1:i386 mesa-vulkan-drivers:i386 2>/dev/null || true
+        if [ "$DISTRO_FAMILY" = "debian" ]; then
+            NV_VER=$(dpkg -l 2>/dev/null | grep -oP 'nvidia-driver-\K\d+' | head -n1)
+            if [ -n "$NV_VER" ]; then
+                log_info "Installing 32-bit libnvidia-gl-$NV_VER:i386 and Vulkan libraries for Steam/gaming..."
+                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "libnvidia-gl-${NV_VER}:i386" libvulkan1:i386 mesa-vulkan-drivers:i386 2>/dev/null || true
+            else
+                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libvulkan1:i386 mesa-vulkan-drivers:i386 2>/dev/null || true
+            fi
         fi
 
         # Blacklisting nouveau and updating initramfs for proper nvidia module loading
@@ -1357,23 +1480,52 @@ options nvidia-drm fbdev=1
 EOF
         sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service 2>/dev/null || true
         if command -v update-initramfs >/dev/null 2>&1; then
+            if command -v update-initramfs >/dev/null 2>&1; then
             sudo update-initramfs -u 2>/dev/null || true
+        elif command -v dracut >/dev/null 2>&1; then
+            sudo dracut --force 2>/dev/null || true
+        elif command -v mkinitcpio >/dev/null 2>&1; then
+            sudo mkinitcpio -P 2>/dev/null || true
+        fi
+        elif command -v dracut >/dev/null 2>&1; then
+            sudo dracut --force 2>/dev/null || true
+        elif command -v mkinitcpio >/dev/null 2>&1; then
+            sudo mkinitcpio -P 2>/dev/null || true
         fi
     fi
 
     if [ "$HAS_AMD" = true ]; then
         log_info "AMD Radeon graphics detected. Installing Mesa Vulkan/VA-API drivers..."
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mesa-vulkan-drivers mesa-vulkan-drivers:i386 mesa-va-drivers vulkan-tools 2>/dev/null || true
+        if [ "$DISTRO_FAMILY" = "debian" ]; then
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mesa-vulkan-drivers mesa-vulkan-drivers:i386 mesa-va-drivers vulkan-tools 2>/dev/null || true
+        elif [ "$DISTRO_FAMILY" = "fedora" ]; then
+            sudo dnf install -y mesa-vulkan-drivers mesa-va-drivers vulkan-tools 2>/dev/null || true
+        elif [ "$DISTRO_FAMILY" = "arch" ]; then
+            sudo pacman -S --needed --noconfirm vulkan-radeon libva-mesa-driver vulkan-tools 2>/dev/null || true
+        fi
     fi
 
     if [ "$HAS_INTEL" = true ]; then
         log_info "Intel graphics detected. Installing hardware acceleration drivers..."
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y intel-media-va-driver-non-free mesa-vulkan-drivers mesa-vulkan-drivers:i386 vulkan-tools 2>/dev/null || \
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y intel-media-va-driver mesa-vulkan-drivers mesa-vulkan-drivers:i386 vulkan-tools 2>/dev/null || true
+        if [ "$DISTRO_FAMILY" = "debian" ]; then
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y intel-media-va-driver-non-free mesa-vulkan-drivers mesa-vulkan-drivers:i386 vulkan-tools 2>/dev/null || \
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y intel-media-va-driver mesa-vulkan-drivers mesa-vulkan-drivers:i386 vulkan-tools 2>/dev/null || true
+        elif [ "$DISTRO_FAMILY" = "fedora" ]; then
+            sudo dnf install -y intel-media-driver mesa-vulkan-drivers vulkan-tools 2>/dev/null || true
+        elif [ "$DISTRO_FAMILY" = "arch" ]; then
+            sudo pacman -S --needed --noconfirm intel-media-driver vulkan-intel vulkan-tools 2>/dev/null || true
+        fi
     fi
 
     # 5. Installing GameMode, Vulkan libraries, and Preload daemon
-    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y gamemode libgamemode0 libgamemodeauto0 libvulkan1 vulkan-tools preload 2>/dev/null || true
+    if [ "$DISTRO_FAMILY" = "debian" ]; then
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y gamemode libgamemode0 libgamemodeauto0 libvulkan1 vulkan-tools preload 2>/dev/null || true
+    elif [ "$DISTRO_FAMILY" = "fedora" ]; then
+        sudo dnf install -y gamemode vulkan-tools 2>/dev/null || true
+    elif [ "$DISTRO_FAMILY" = "arch" ]; then
+        sudo pacman -S --needed --noconfirm gamemode vulkan-tools 2>/dev/null || true
+    fi
+    sudo systemctl enable --now preload 2>/dev/null || true
     sudo systemctl enable --now preload 2>/dev/null || true
 
     # 6. sysctl kernel optimizations (vm.max_map_count for gaming/Proton, caching, and low latency)
@@ -1421,16 +1573,33 @@ _install_hardware_extras() {
     CPU_VENDOR=$(grep -m1 "vendor_id" /proc/cpuinfo 2>/dev/null | awk '{print $3}' || echo "Unknown")
 
     if echo "$CPU_VENDOR" | grep -qi "Intel"; then
-        log_info "Intel CPU detected. Installing intel-microcode..."
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y intel-microcode 2>/dev/null || true
+        log_info "Intel CPU detected. Installing microcode..."
+        if [ "$DISTRO_FAMILY" = "debian" ]; then
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y intel-microcode 2>/dev/null || true
+        elif [ "$DISTRO_FAMILY" = "fedora" ]; then
+            sudo dnf install -y microcode_ctl 2>/dev/null || true
+        elif [ "$DISTRO_FAMILY" = "arch" ]; then
+            sudo pacman -S --needed --noconfirm intel-ucode 2>/dev/null || true
+        fi
     elif echo "$CPU_VENDOR" | grep -qi "AMD\|AuthenticAMD"; then
-        log_info "AMD CPU detected. Installing amd64-microcode..."
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y amd64-microcode 2>/dev/null || true
+        log_info "AMD CPU detected. Installing microcode..."
+        if [ "$DISTRO_FAMILY" = "debian" ]; then
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y amd64-microcode 2>/dev/null || true
+        elif [ "$DISTRO_FAMILY" = "fedora" ]; then
+            sudo dnf install -y microcode_ctl 2>/dev/null || true
+        elif [ "$DISTRO_FAMILY" = "arch" ]; then
+            sudo pacman -S --needed --noconfirm amd-ucode 2>/dev/null || true
+        fi
     fi
 
-    # ── Firmware ──────────────────────────────────────────────────────────────
-    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        linux-firmware fwupd fwupdate 2>/dev/null || true
+    # -- Firmware --
+    if [ "$DISTRO_FAMILY" = "debian" ]; then
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y linux-firmware fwupd fwupdate 2>/dev/null || true
+    elif [ "$DISTRO_FAMILY" = "fedora" ]; then
+        sudo dnf install -y linux-firmware fwupd 2>/dev/null || true
+    elif [ "$DISTRO_FAMILY" = "arch" ]; then
+        sudo pacman -S --needed --noconfirm linux-firmware fwupd 2>/dev/null || true
+    fi
 
     # ── GameMode Config (Windows 11 Game Mode style) ──────────────────
     log_info "Installing GameMode configuration (Windows 11 style)..."
@@ -1516,8 +1685,13 @@ install_gnome_shell_overlay() {
 
     # 4. Set up safe launcher diversion
     if [ ! -f "/usr/bin/gnome-shell.real" ]; then
-        log_info "Configuring dpkg-divert for /usr/bin/gnome-shell..."
-        sudo dpkg-divert --add --rename --divert /usr/bin/gnome-shell.real /usr/bin/gnome-shell 2>/dev/null || true
+        if command -v dpkg-divert >/dev/null 2>&1; then
+            log_info "Configuring dpkg-divert for /usr/bin/gnome-shell..."
+            sudo dpkg-divert --add --rename --divert /usr/bin/gnome-shell.real /usr/bin/gnome-shell 2>/dev/null || true
+        elif [ -f "/usr/bin/gnome-shell" ]; then
+            log_info "Renaming /usr/bin/gnome-shell to /usr/bin/gnome-shell.real..."
+            sudo mv /usr/bin/gnome-shell /usr/bin/gnome-shell.real
+        fi
     fi
 
     if [ -f "$SCRIPT_DIR/bin/gnome-shell" ]; then
@@ -1765,7 +1939,19 @@ EOF
     fi
     
     log_info "Updating initramfs..."
-    sudo update-initramfs -u 2>/dev/null || true
+    if command -v update-initramfs >/dev/null 2>&1; then
+        if command -v update-initramfs >/dev/null 2>&1; then
+            sudo update-initramfs -u 2>/dev/null || true
+        elif command -v dracut >/dev/null 2>&1; then
+            sudo dracut --force 2>/dev/null || true
+        elif command -v mkinitcpio >/dev/null 2>&1; then
+            sudo mkinitcpio -P 2>/dev/null || true
+        fi
+    elif command -v dracut >/dev/null 2>&1; then
+        sudo dracut --force 2>/dev/null || true
+    elif command -v mkinitcpio >/dev/null 2>&1; then
+        sudo mkinitcpio -P 2>/dev/null || true
+    fi
     log_success "macW1Y Boot Splash activated successfully!"
 }
 
@@ -1839,7 +2025,17 @@ install_grub() {
     fi
 
     log_info "Updating GRUB configuration..."
-    sudo update-grub
+    if command -v update-grub >/dev/null 2>&1; then
+        sudo update-grub
+    elif command -v grub2-mkconfig >/dev/null 2>&1; then
+        if [ -d "/boot/efi/EFI/fedora" ]; then
+            sudo grub2-mkconfig -o /boot/efi/EFI/fedora/grub.cfg 2>/dev/null || sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+        else
+            sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+        fi
+    elif command -v grub-mkconfig >/dev/null 2>&1; then
+        sudo grub-mkconfig -o /boot/grub/grub.cfg
+    fi
     log_success "macW1Y boot manager menu installed successfully!"
 }
 
@@ -1979,27 +2175,20 @@ run_incremental_update() {
         sync_directory_tree "$SCRIPT_DIR/gnome-shell-theme" "$TARGET_HOME/.themes/macW1Y-Dark/gnome-shell" false
     fi
     if [ -f "$SCRIPT_DIR/lib/libmacpopover.so" ]; then
-        sync_or_update_file "$SCRIPT_DIR/lib/libmacpopover.so" "/usr/local/lib/libmacpopover.so" true
-        sync_or_update_file "$SCRIPT_DIR/lib/libmacpopover.so" "/usr/lib/libmacpopover.so" true
-        sync_or_update_file "$SCRIPT_DIR/lib/libmacpopover.so" "/usr/lib/x86_64-linux-gnu/libmacpopover.so" true
-        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmacpopover.so /usr/local/lib/libmacpopover.so 2>/dev/null || true
+        install_mac_shared_lib "$SCRIPT_DIR/lib/libmacpopover.so"
     fi
     if [ -f "$SCRIPT_DIR/lib/libmac_terminal.so" ]; then
-        sync_or_update_file "$SCRIPT_DIR/lib/libmac_terminal.so" "/usr/lib/x86_64-linux-gnu/libmac_terminal.so" true
-        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_terminal.so 2>/dev/null || true
+        install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_terminal.so"
     fi
     if [ -f "$SCRIPT_DIR/bin/ptyxis" ]; then
         sync_or_update_file "$SCRIPT_DIR/bin/ptyxis" "/usr/local/bin/ptyxis" true
         sudo chmod 755 /usr/local/bin/ptyxis 2>/dev/null || true
     fi
     if [ -f "$SCRIPT_DIR/lib/libmac_memtrim.so" ]; then
-        sync_or_update_file "$SCRIPT_DIR/lib/libmac_memtrim.so" "/usr/lib/x86_64-linux-gnu/libmac_memtrim.so" true
-        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_memtrim.so 2>/dev/null || true
+        install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_memtrim.so"
     fi
     if [ -f "$SCRIPT_DIR/lib/MacMemTrim-1.0.typelib" ]; then
-        sudo mkdir -p /usr/lib/x86_64-linux-gnu/girepository-1.0
-        sync_or_update_file "$SCRIPT_DIR/lib/MacMemTrim-1.0.typelib" "/usr/lib/x86_64-linux-gnu/girepository-1.0/MacMemTrim-1.0.typelib" true
-        sudo chmod 644 /usr/lib/x86_64-linux-gnu/girepository-1.0/MacMemTrim-1.0.typelib 2>/dev/null || true
+        install_mac_typelib "$SCRIPT_DIR/lib/MacMemTrim-1.0.typelib"
     fi
 
     log_info "3/10 Checking icon themes..."
@@ -2167,9 +2356,9 @@ EOF_CUR_THEME_UP
     fi
     if [ -f "$SCRIPT_DIR/lib/libmac_settings.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_settings.so" "$LOCAL_LIB/libmac_settings.so" false
-        sync_or_update_file "$SCRIPT_DIR/lib/libmac_settings.so" "/usr/lib/x86_64-linux-gnu/libmac_settings.so" true
+        install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_settings.so"
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_settings.so" "/usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so" true
-        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_settings.so /usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so 2>/dev/null || true
+        sudo chmod 755 /usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so 2>/dev/null || true
     fi
     sudo mkdir -p /usr/share/mactheme/gnome-control-center-overlay 2>/dev/null || true
     if [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ]; then
@@ -2364,23 +2553,18 @@ EOF_CUR_THEME_UP
         gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmac_nautilus.so" "$SCRIPT_DIR/src/mac_nautilus.c" $(pkg-config --cflags --libs gtk4 libadwaita-1 gio-2.0 2>/dev/null) -ldl 2>/dev/null || true
     fi
     if [ -f "$SCRIPT_DIR/lib/libmac_nautilus.so" ]; then
-        sync_or_update_file "$SCRIPT_DIR/lib/libmac_nautilus.so" "/usr/lib/x86_64-linux-gnu/libmac_nautilus.so" true
-        sudo chmod 755 /usr/lib/x86_64-linux-gnu/libmac_nautilus.so 2>/dev/null || true
+        install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_nautilus.so"
     fi
     if [ -f "$SCRIPT_DIR/lib/libmac_nautilus_menu.so" ]; then
-        sudo mkdir -p /usr/lib/x86_64-linux-gnu/nautilus/extensions-4
-        sync_or_update_file "$SCRIPT_DIR/lib/libmac_nautilus_menu.so" "/usr/lib/x86_64-linux-gnu/nautilus/extensions-4/libmac_nautilus_menu.so" true
-        sudo chmod 755 /usr/lib/x86_64-linux-gnu/nautilus/extensions-4/libmac_nautilus_menu.so 2>/dev/null || true
+        install_nautilus_extension "$SCRIPT_DIR/lib/libmac_nautilus_menu.so"
     fi
     if [ -f "/usr/bin/nautilus" ] && [ ! -f "/usr/bin/nautilus.orig" ]; then
         sudo mv /usr/bin/nautilus /usr/bin/nautilus.orig
     fi
-    cat << 'EOF_NAUT' | sudo tee /usr/bin/nautilus >/dev/null
-#!/bin/sh
-export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmac_nautilus.so:/usr/lib/x86_64-linux-gnu/libmacpopover.so${LD_PRELOAD:+:$LD_PRELOAD}"
-exec /usr/bin/nautilus.orig "$@"
-EOF_NAUT
-    sudo chmod +x /usr/bin/nautilus 2>/dev/null || true
+    if [ -f "$SCRIPT_DIR/bin/nautilus" ]; then
+        sync_or_update_file "$SCRIPT_DIR/bin/nautilus" "/usr/bin/nautilus" true
+        sudo chmod 755 /usr/bin/nautilus
+    fi
 
     if [ -f "$SCRIPT_DIR/bin/mac-sync-applications" ]; then
         sync_or_update_file "$SCRIPT_DIR/bin/mac-sync-applications" "/usr/local/bin/mac-sync-applications" true
@@ -2451,7 +2635,13 @@ Theme=macw1y-boot
 ShowDelay=0
 DeviceTimeout=8
 EOF
-        sudo update-initramfs -u 2>/dev/null || true
+        if command -v update-initramfs >/dev/null 2>&1; then
+            sudo update-initramfs -u 2>/dev/null || true
+        elif command -v dracut >/dev/null 2>&1; then
+            sudo dracut --force 2>/dev/null || true
+        elif command -v mkinitcpio >/dev/null 2>&1; then
+            sudo mkinitcpio -P 2>/dev/null || true
+        fi
     fi
 
     log_info "10/10 Checking GRUB bootloader..."
@@ -2470,7 +2660,17 @@ EOF
     [ -f "$SCRIPT_DIR/systemd/mac-grub-status.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-grub-status.service" "/etc/systemd/system/mac-grub-status.service" true
     sudo chmod 755 /etc/grub.d/06_mac_theme_select /etc/grub.d/08_mac_usb_entry /etc/grub.d/10_linux /etc/grub.d/40_custom 2>/dev/null || true
     sudo chmod 644 /etc/grub.d/30_uefi-firmware 2>/dev/null || true
-    sudo update-grub 2>/dev/null || true
+    if command -v update-grub >/dev/null 2>&1; then
+        sudo update-grub 2>/dev/null || true
+    elif command -v grub2-mkconfig >/dev/null 2>&1; then
+        if [ -d "/boot/efi/EFI/fedora" ]; then
+            sudo grub2-mkconfig -o /boot/efi/EFI/fedora/grub.cfg 2>/dev/null || sudo grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null || true
+        else
+            sudo grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null || true
+        fi
+    elif command -v grub-mkconfig >/dev/null 2>&1; then
+        sudo grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || true
+    fi
 
     log_info "Updating system caches..."
     chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.themes" "$TARGET_HOME/.local/share/fonts" "$TARGET_HOME/.local/share/icons" "$EXT_USER_DIR" "$OVERLAY_DIR" "$LOCAL_BIN" "$LOCAL_LIB" "$APP_DIR" "$SVC_DIR" "$CFG_DIR" 2>/dev/null || true

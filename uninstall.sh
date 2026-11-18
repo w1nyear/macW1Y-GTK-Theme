@@ -180,8 +180,12 @@ restore_system() {
     if [ -f /usr/bin/nautilus.orig ]; then
         sudo mv -f /usr/bin/nautilus.orig /usr/bin/nautilus
     fi
-    sudo rm -f /usr/lib/x86_64-linux-gnu/libmac_nautilus.so
-    sudo rm -f /usr/lib/x86_64-linux-gnu/nautilus/extensions-4/libmac_nautilus_menu.so
+    sudo rm -f /usr/lib/x86_64-linux-gnu/libmac_nautilus.so /usr/lib64/libmac_nautilus.so /usr/lib/libmac_nautilus.so /usr/local/lib/libmac_nautilus.so
+    sudo rm -f /usr/lib/x86_64-linux-gnu/nautilus/extensions-4/libmac_nautilus_menu.so /usr/lib64/nautilus/extensions-4/libmac_nautilus_menu.so /usr/lib/nautilus/extensions-4/libmac_nautilus_menu.so
+    sudo rm -f /usr/lib/x86_64-linux-gnu/libmacpopover.so /usr/lib64/libmacpopover.so /usr/lib/libmacpopover.so /usr/local/lib/libmacpopover.so
+    sudo rm -f /usr/lib/x86_64-linux-gnu/libmac_terminal.so /usr/lib64/libmac_terminal.so /usr/lib/libmac_terminal.so /usr/local/lib/libmac_terminal.so
+    sudo rm -f /usr/lib/x86_64-linux-gnu/libmac_memtrim.so /usr/lib64/libmac_memtrim.so /usr/lib/libmac_memtrim.so /usr/local/lib/libmac_memtrim.so
+    sudo rm -f /usr/lib/x86_64-linux-gnu/libmac_settings.so /usr/lib64/libmac_settings.so /usr/lib/libmac_settings.so /usr/local/lib/libmac_settings.so
     sudo rm -f /usr/local/bin/mac-sync-applications
     sudo rm -f /usr/local/bin/mac-uninstall-app
     sudo rm -f /usr/share/applications/mac-app-launcher.desktop
@@ -231,12 +235,24 @@ restore_system() {
         sudo cp /etc/grub.d/10_linux.bak_mactheme /etc/grub.d/10_linux
     fi
     sudo rm -rf /boot/grub/themes/macw1y-boot
-    sudo update-grub
+    if command -v update-grub >/dev/null 2>&1; then
+        sudo update-grub
+    elif command -v grub2-mkconfig >/dev/null 2>&1; then
+        sudo grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null || true
+    elif command -v grub-mkconfig >/dev/null 2>&1; then
+        sudo grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || true
+    fi
     
     sudo systemctl daemon-reload
     log_info "Оновлення initramfs..."
-    sudo update-initramfs -u 2>/dev/null || true
-    log_success "Системні служби, Plymouth та GRUB відновлено до стандарту Ubuntu!"
+    if command -v update-initramfs >/dev/null 2>&1; then
+        sudo update-initramfs -u 2>/dev/null || true
+    elif command -v dracut >/dev/null 2>&1; then
+        sudo dracut --force 2>/dev/null || true
+    elif command -v mkinitcpio >/dev/null 2>&1; then
+        sudo mkinitcpio -P 2>/dev/null || true
+    fi
+    log_success "Системні служби, Plymouth та GRUB відновлено до стандарту!"
 }
 
 # ------------------------------------------------------------------------------

@@ -1,5 +1,22 @@
 #!/bin/sh
-export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmac_nautilus.so:/usr/lib/x86_64-linux-gnu/libmacpopover.so${LD_PRELOAD:+:$LD_PRELOAD}"
+find_mac_lib() {
+    for d in /usr/lib/x86_64-linux-gnu /usr/lib64 /usr/lib /usr/local/lib "$HOME/.local/lib"; do
+        if [ -f "$d/$1" ]; then
+            echo "$d/$1"
+            return 0
+        fi
+    done
+    return 1
+}
+
+NAUTILUS_LIB=$(find_mac_lib libmac_nautilus.so)
+POPOVER_LIB=$(find_mac_lib libmacpopover.so)
+PRELOAD_LIBS=""
+[ -n "$NAUTILUS_LIB" ] && PRELOAD_LIBS="$NAUTILUS_LIB"
+if [ -n "$POPOVER_LIB" ]; then
+    [ -n "$PRELOAD_LIBS" ] && PRELOAD_LIBS="$PRELOAD_LIBS:$POPOVER_LIB" || PRELOAD_LIBS="$POPOVER_LIB"
+fi
+[ -n "$PRELOAD_LIBS" ] && export LD_PRELOAD="$PRELOAD_LIBS${LD_PRELOAD:+:$LD_PRELOAD}"
 if [ -f /usr/bin/nautilus.orig ]; then
     exec /usr/bin/nautilus.orig "$@"
 else

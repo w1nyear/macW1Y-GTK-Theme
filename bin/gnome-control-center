@@ -23,14 +23,24 @@ fi
 
 export G_RESOURCE_OVERLAYS="/org/gnome/Settings/gtk/cc-window.ui=$LOC_DIR/cc-window.ui:/org/gnome/control-center/system/cc-system-panel.ui=$LOC_DIR/cc-system-panel.ui:/org/gnome/control-center/power/cc-power-panel.ui=$LOC_DIR/cc-power-panel.ui:/org/gnome/control-center/mouse/cc-mouse-panel.ui=$LOC_DIR/cc-mouse-panel.ui:/org/gnome/control-center/background/cc-background-panel.ui=$LOC_DIR/cc-background-panel.ui:/org/gnome/control-center/background/preview.css=$OVERLAY_DIR/preview.css"
 
-if [ -f "/usr/lib/x86_64-linux-gnu/libmacpopover.so" ]; then
-    export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmacpopover.so${LD_PRELOAD:+:$LD_PRELOAD}"
+find_mac_lib() {
+    for d in /usr/lib/x86_64-linux-gnu /usr/lib64 /usr/lib /usr/local/lib "$HOME/.local/lib"; do
+        if [ -f "$d/$1" ]; then
+            echo "$d/$1"
+            return 0
+        fi
+    done
+    return 1
+}
+
+POPOVER_LIB=$(find_mac_lib libmacpopover.so)
+if [ -n "$POPOVER_LIB" ]; then
+    export LD_PRELOAD="$POPOVER_LIB${LD_PRELOAD:+:$LD_PRELOAD}"
 fi
 
-if [ -f "/usr/lib/x86_64-linux-gnu/libmac_settings.so" ]; then
-    export LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libmac_settings.so${LD_PRELOAD:+:$LD_PRELOAD}"
-elif [ -f "$HOME/.local/lib/libmac_settings.so" ]; then
-    export LD_PRELOAD="$HOME/.local/lib/libmac_settings.so${LD_PRELOAD:+:$LD_PRELOAD}"
+SETTINGS_LIB=$(find_mac_lib libmac_settings.so)
+if [ -n "$SETTINGS_LIB" ]; then
+    export LD_PRELOAD="$SETTINGS_LIB${LD_PRELOAD:+:$LD_PRELOAD}"
 fi
 
 if [ "$1" = "about" ] || [ "$1" = "info" ]; then

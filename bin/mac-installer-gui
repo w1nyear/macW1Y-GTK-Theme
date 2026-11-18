@@ -107,6 +107,26 @@ def get_sorted_languages(selected_locale="uk"):
     others.sort(key=lambda x: x["native"])
     return [sys_lang] + others
 
+def get_system_os_info():
+    if os.path.exists("/etc/os-release"):
+        try:
+            with open("/etc/os-release", "r", encoding="utf-8") as f:
+                name = None
+                pretty = None
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("PRETTY_NAME="):
+                        pretty = line.split("=", 1)[1].strip().strip('"').strip("'")
+                    elif line.startswith("NAME="):
+                        name = line.split("=", 1)[1].strip().strip('"').strip("'")
+                if pretty:
+                    return pretty
+                if name:
+                    return name
+        except Exception:
+            pass
+    return "Linux"
+
 def get_target_username():
     sudo_user = os.environ.get("SUDO_USER")
     if sudo_user:
@@ -2596,7 +2616,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             ("uninstall",
              os.path.join(ASSETS_DIR, "disk_utility.svg"),
              self.tr("installer_opt_uninstall_title", "Uninstall macW1Y"),
-             self.tr("installer_opt_uninstall_desc", "Complete removal of theme, extensions, and restoration of Ubuntu defaults"))
+             self.tr("installer_opt_uninstall_desc", f"Complete removal of theme, extensions, and restoration of {get_system_os_info()} defaults"))
         ]
 
         def select_opt(action_id):
@@ -2686,7 +2706,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_t.set_max_width_chars(28)
         sheet.append(lbl_t)
 
-        lbl_sub = Gtk.Label(label=self.tr("installer_uninst_confirm_desc", "All macW1Y themes, extensions, icons, and optimizations will be removed. Default Ubuntu desktop will be restored."))
+        lbl_sub = Gtk.Label(label=self.tr("installer_uninst_confirm_desc", f"All macW1Y themes, extensions, icons, and optimizations will be removed. Default {get_system_os_info()} desktop will be restored."))
         lbl_sub.add_css_class("mac-modal-desc")
         lbl_sub.set_halign(Gtk.Align.START)
         lbl_sub.set_xalign(0.0)
@@ -2783,7 +2803,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             "Для використання в системах Linux / macW1Y\n\n"
             "УВАЖНО ОЗНАЙОМТЕСЬ З ЦІЄЮ ЛІЦЕНЗІЙНОЮ УГОДОЮ\n\n"
             "Цей програмний комплекс розповсюджується під ліцензією MIT / GPLv3. "
-            "macW1Y розроблено виключно для особистого використання та кастомізації середовища GNOME на платформі Ubuntu Linux. "
+            f"macW1Y розроблено виключно для особистого використання та кастомізації середовища GNOME на платформі {get_system_os_info()}. "
             "Всі торгові марки належать їх законним власникам."
         )
 
@@ -3007,7 +3027,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
         box.set_vexpand(True)
 
-        lbl_sub = Gtk.Label(label=self.tr("installer_disk_sub", "macW1Y will be installed onto the Ubuntu system disk."))
+        lbl_sub = Gtk.Label(label=self.tr("installer_disk_sub", f"macW1Y will be installed onto the {get_system_os_info()} system disk."))
         lbl_sub.add_css_class("mac-subtitle")
         box.append(lbl_sub)
 
@@ -3026,7 +3046,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         img_disk.set_halign(Gtk.Align.CENTER)
         card_btn.append(img_disk)
 
-        lbl_disk_name = Gtk.Label(label="Ubuntu System HD")
+        lbl_disk_name = Gtk.Label(label=f"{get_system_os_info()} System HD")
         lbl_disk_name.add_css_class("mac-title-medium")
         card_btn.append(lbl_disk_name)
 
@@ -3636,7 +3656,7 @@ class MacRecoveryApp(Gtk.Application):
             kiosk_guard.enter()
 
         act_about = Gio.SimpleAction.new("about", None)
-        act_about.connect("activate", lambda a, p: self.win._show_simple_alert("Про macW1Y", f"macW1Y Release (v{get_package_version()})\nmacW1Y Transformation Modpack for Ubuntu"))
+        act_about.connect("activate", lambda a, p: self.win._show_simple_alert("Про macW1Y", f"macW1Y Release (v{get_package_version()})\nmacW1Y Transformation Modpack for {get_system_os_info()}"))
         self.add_action(act_about)
 
         act_reboot = Gio.SimpleAction.new("reboot", None)
@@ -3661,7 +3681,7 @@ class MacRecoveryApp(Gtk.Application):
             inst_str = f"v{inst_v}" if inst_v else "Не встановлено"
             self.win._show_simple_alert(
                 "Інформація про систему",
-                f"ОС: Ubuntu 24.04 LTS\nВерсія інсталятора macW1Y: v{pkg_v}\nПоточна встановлена версія: {inst_str}\nДиск: {get_disk_capacity_info()}"
+                f"ОС: {get_system_os_info()}\nВерсія інсталятора macW1Y: v{pkg_v}\nПоточна встановлена версія: {inst_str}\nДиск: {get_disk_capacity_info()}"
             )
 
         act_sysinfo = Gio.SimpleAction.new("sysinfo", None)

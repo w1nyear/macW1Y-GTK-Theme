@@ -89,8 +89,11 @@ def audit_libraries():
     target_lib = REPO_DIR / "control-center" / "libmac_settings.so"
     target_md5 = get_file_md5(target_lib)
     
+    sys_lib_candidates = ["/usr/lib/x86_64-linux-gnu", "/usr/lib64", "/usr/lib"]
+    sys_lib_dir = next((d for d in sys_lib_candidates if os.path.isdir(d)), "/usr/lib")
+
     paths_to_check = [
-        "/usr/lib/x86_64-linux-gnu/libmac_settings.so",
+        f"{sys_lib_dir}/libmac_settings.so",
         "/usr/local/lib/libmac_settings.so",
         os.path.expanduser("~/.local/lib/libmac_settings.so"),
         "/usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so",
