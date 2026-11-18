@@ -124,7 +124,8 @@
 #panel.kiwi-panel-dark-text .panel-button:hover,
 #panel.kiwi-panel-dark-text .panel-button.clock-display:focus .clock,
 #panel.kiwi-panel-dark-text .panel-button.clock-display:hover .clock {
-  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.17);
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.14) !important;
 }
 
 #panel.kiwi-panel-dark-text .panel-button:active,
@@ -162,7 +163,8 @@
 #panel.kiwi-panel-light-text .panel-button:hover,
 #panel.kiwi-panel-light-text .panel-button.clock-display:focus .clock,
 #panel.kiwi-panel-light-text .panel-button.clock-display:hover .clock {
-  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.17);
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.14) !important;
 }
 
 #panel.kiwi-panel-light-text .panel-button:active,

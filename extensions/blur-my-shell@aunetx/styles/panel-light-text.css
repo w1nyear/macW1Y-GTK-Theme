@@ -35,7 +35,8 @@
 .panel-light-text #panel .panel-button:hover,
 .panel-light-text #panel .panel-button.clock-display:hover,
 .panel-light-text #panel .panel-button.clock-display:hover .clock {
-    box-shadow: inset 0 0 0 100px rgba(246, 245, 244, 0.2);
+    background-color: transparent !important;
+    box-shadow: inset 0 0 0 100px rgba(255, 255, 255, 0.14) !important;
 }
 
 .panel-light-text #panel .panel-button#panelActivities .workspace-dot {

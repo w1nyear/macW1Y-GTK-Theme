@@ -2274,10 +2274,24 @@ StEntry StLabel.hint-text {
   height: 0;
 }
 
-#panel .panel-button:hover {
+#panel .panel-button:hover,
+#panel #panelLeft .panel-button:hover,
+#panel #panelRight .panel-button:hover,
+#panel #panelCenter .panel-button:hover,
+#panel .appmenu-panel-button:hover,
+#panel .appmenu-menu-item-button:hover,
+#panel .appmenu-app-name-button:hover,
+#panel .appmenu-system-logo-button:hover,
+#panel .indicator-status-icon:hover,
+#panel .indicator-tray-icon:hover,
+#panel IndicatorStatusIcon:hover,
+#panel IndicatorTrayIcon:hover,
+#panel .panel-button.indicator-status-icon:hover,
+#panel .panel-button.indicator-tray-icon:hover {
   color: white !important;
   background-color: transparent !important;
-  box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.15) !important;
+  box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.14) !important;
+  transition-duration: 120ms !important;
 }
 
 #panel .panel-button:hover.clock-display {
@@ -2285,14 +2299,14 @@ StEntry StLabel.hint-text {
 }
 
 #panel .panel-button:hover.clock-display .clock {
-  background-color: transparent;
-  box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.15);
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.14) !important;
 }
 
 #panel .panel-button:active, #panel .panel-button:overview, #panel .panel-button:focus, #panel .panel-button:checked {
-  color: white;
-  background-color: transparent;
-  box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.28);
+  color: white !important;
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.24) !important;
 }
 
 #panel .panel-button:active.clock-display, #panel .panel-button:overview.clock-display, #panel .panel-button:focus.clock-display, #panel .panel-button:checked.clock-display {
@@ -2300,8 +2314,8 @@ StEntry StLabel.hint-text {
 }
 
 #panel .panel-button:active.clock-display .clock, #panel .panel-button:overview.clock-display .clock, #panel .panel-button:focus.clock-display .clock, #panel .panel-button:checked.clock-display .clock {
-  background-color: transparent;
-  box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.28);
+  background-color: transparent !important;
+  box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.24) !important;
 }
 
 .unlock-screen #panel .panel-button, .unlock-screen #panel .panel-button:focus, .unlock-screen #panel .panel-button:hover, .unlock-screen #panel .panel-button:active, .login-screen #panel .panel-button, .login-screen #panel .panel-button:focus, .login-screen #panel .panel-button:hover, .login-screen #panel .panel-button:active, .lock-screen #panel .panel-button, .lock-screen #panel .panel-button:focus, .lock-screen #panel .panel-button:hover, .lock-screen #panel .panel-button:active {
@@ -2459,12 +2473,13 @@ StEntry StLabel.hint-text {
 #panel IndicatorTrayIcon.panel-button,
 #panel Gjs_appindicatorsupport_rgcjonas_gmail_com_indicatorStatusIcon_IndicatorStatusIcon.panel-button,
 #panel Gjs_appindicatorsupport_rgcjonas_gmail_com_indicatorStatusIcon_AppIndicatorsIndicatorStatusIcon.panel-button {
-  -natural-hpadding: 3px !important;
-  -minimum-hpadding: 3px !important;
-  padding: 0 2px !important;
-  margin: 2px 1px !important;
-  height: 26px !important;
-  min-height: 26px !important;
+  -natural-hpadding: 7px !important;
+  -minimum-hpadding: 7px !important;
+  padding: 0 6px !important;
+  margin: 2px 2px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  min-width: 30px !important;
   border: none !important;
   border-radius: 9999px !important;
 }
@@ -5979,10 +5994,21 @@ StWidget.focused .app-grid-running-dot {
 
 /* AppIndicator centered icons & macW1Y spacing */
 #panel .panel-button.indicator-status-icon,
+#panel .panel-button.indicator-tray-icon {
+  margin: 2px 2px !important;
+  padding: 0 6px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  min-width: 30px !important;
+  x-align: center !important;
+  y-align: center !important;
+  border-radius: 9999px !important;
+}
+
 #panel .panel-button .appindicator-box,
 #panel .panel-button .appindicator-trayicons-box {
   margin: 0 !important;
-  padding: 0 !important;
+  padding: 0 2px !important;
   x-align: center !important;
   y-align: center !important;
 }

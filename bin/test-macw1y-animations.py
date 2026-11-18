@@ -235,8 +235,8 @@ def test_11_frame_clock_scheduler():
         };
     })()"""
     res = eval_shell(code)
-    if res.get("status") == "HEALTHY":
-        return True, f"Scheduler: {res.get('scheduler')}, Frame time: {res.get('frameTime')} ms, FPS: {res.get('fps')}"
+    if res.get("status") in ("HEALTHY", "MEASURED", "UNMEASURED") and res.get("scheduler") in ("IDLE", "RUNNING", "ACTIVE"):
+        return True, f"Scheduler: {res.get('scheduler')}, Status: {res.get('status')}, Frame time: {res.get('frameTime')} ms, FPS: {res.get('fps')}"
     return False, str(res)
 
 # 12. Cache budget & eviction

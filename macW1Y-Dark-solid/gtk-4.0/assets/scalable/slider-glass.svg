@@ -103,5 +103,3 @@
   <!-- 5. Outer rim stroke -->
   <rect x="2" y="2" width="80" height="52" rx="26" stroke="url(#edgeStroke)" stroke-width="1.2" fill="none"/>
 </svg>
-
-<!-- macw1y-asset-id: default-vector -->

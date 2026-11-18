@@ -31,6 +31,37 @@
     padding-right: 2px;
 }
 
+/* AppMenu panel buttons - macW1Y grey-translucent hover pill */
+#panel .appmenu-panel-button,
+#panel .appmenu-menu-item-button,
+#panel .appmenu-app-name-button,
+#panel .appmenu-system-logo-button {
+    height: 28px !important;
+    min-height: 28px !important;
+    border-radius: 9999px !important;
+    transition-duration: 120ms !important;
+}
+
+#panel .appmenu-panel-button:hover,
+#panel .appmenu-menu-item-button:hover,
+#panel .appmenu-app-name-button:hover,
+#panel .appmenu-system-logo-button:hover {
+    color: white !important;
+    background-color: transparent !important;
+    box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.14) !important;
+    border-radius: 9999px !important;
+}
+
+#panel .appmenu-panel-button:active,
+#panel .appmenu-menu-item-button:active,
+#panel .appmenu-app-name-button:active,
+#panel .appmenu-system-logo-button:active {
+    color: white !important;
+    background-color: transparent !important;
+    box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.24) !important;
+    border-radius: 9999px !important;
+}
+
 /* Distro icon — use panel foreground color for currentColor in SVGs */
 .system-status-icon {
     icon-size: 16px !important;

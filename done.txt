@@ -1559,6 +1559,39 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   3) bin/mac-i18n-verify — 100% PASS
   4) python3 bin/mac-extension-guard verify — 21/21 PASS (LOCKED OK).
 
+
+816. Налаштовано прозоріший сіро-прозорий ховер кнопок верхньої панелі та розширено габарити ховера іконок трею:
+   - Відповідність запиту («прозоріше зроби. продовжуй», «hover кнопок лівого і правого менюбара завжди бути цими сіро прозорими», «на іконки програм збільш висоту у ширину чуть ховера»):
+     1) Зроблено плашку ховера витончено-напівпрозорою (`rgba(255, 255, 255, 0.14)`) без нашарування подвійної непрозорості:
+        - `background-color: transparent !important;`
+        - `box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.14) !important;`
+        - Для активного натискання (click/active): `rgba(255, 255, 255, 0.24)`.
+     2) Застосовано уніфіковане сіро-прозоре напівпрозоре підсвічування для всіх кнопок панелі:
+        - Ліва частина (AppMenu, системний логотип, назва програми, пункти меню, кнопки активностей);
+        - Центральна частина (годинник / календар);
+        - Права частина (іконки трею, системні індикатори, перемикачі розкладки, статусні віджети).
+     3) Збільшено висоту та ширину плашки ховера для іконок програм та статусних індикаторів трею:
+        - Висоту збільшено до `28px !important` (`min-height: 28px !important; margin: 2px 2px !important;`), що усунуло затиснутість та зрізані краї;
+        - Ширину розширено завдяки збалансованому паддінгу `padding: 0 6px !important;` та `-natural-hpadding: 7px !important; min-width: 30px !important;`;
+        - Форму заокруглення уніфіковано до пігулки `border-radius: 9999px !important;`.
+     4) Оновлено всі 5 тем GNOME Shell:
+        - `gnome-shell-theme/gnome-shell.css`
+        - `macW1Y-Dark/gnome-shell/gnome-shell.css`
+        - `macW1Y-Light/gnome-shell/gnome-shell.css`
+        - `macW1Y-Dark-solid/gnome-shell/gnome-shell.css`
+        - `macW1Y-Light-solid/gnome-shell/gnome-shell.css`
+     5) Синхронізовано стилі розширень:
+        - `extensions/appmenu@ChathurangaBW.github.io/stylesheet.css`
+        - `extensions/kiwi@kemma/stylesheet.css`
+        - `extensions/blur-my-shell@aunetx/styles/panel.css`
+        - `extensions/blur-my-shell@aunetx/styles/panel-light-text.css`
+        - Скопійовано оновлені файли до `~/.local/share/gnome-shell/extensions/`, перераховано SHA-256 хеші у `config/extensions.lock.json`.
+     6) Синхронізовано системні та користувацькі теми (`~/.themes/` та `/usr/share/themes/`), наживо перезавантажено стилі GNOME Shell.
+   - Верифікація:
+     - `bin/test-macw1y-animations.py` — 12/12 PASS (100.0%)
+     - `bin/mac-audit-sync check` — 100% PASS
+     - `bin/mac-i18n-verify` — 100% PASS
+     - `python3 bin/mac-extension-guard verify` — 21/21 PASS (LOCKED OK).
 2026-11-18 — Прибрано заливку під плитками Kiwi. Модулі скла спільно утримують дзеркало шпалер до звільнення останнього клона. Після п’яти повноекранних циклів і п’яти відкриттів панелі всі 29 перевірених клонів мали джерело. Знімки підтвердили скло у доку, сповіщенні й Центрі керування. Аудит синхронізації та цілісності пройдено. Загальний тест анімацій 10/12 (Spotlight і планувальник кадрів).
 
 2026-11-18 — Ефект джина малює знімок вікна до координат іконки доку. Перевірено три згортання й відновлення, швидку зміну напрямку та кадри за нижньою межею вікна.
