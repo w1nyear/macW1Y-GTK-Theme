@@ -1576,15 +1576,6 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         else:
             self.fullscreen()
 
-    def tr(self, key, fallback="", **kwargs):
-        res = mac_i18n.t(key, fallback=fallback, override_locale=getattr(self, "selected_language", "uk"))
-        if kwargs:
-            try:
-                return res.format(**kwargs)
-            except Exception:
-                pass
-        return res
-
         self.username = get_target_username()
         self.display_name = get_user_display_name(self.username)
         self.avatar_path = get_user_avatar_path(self.username)
@@ -1645,6 +1636,15 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             if arg.startswith("--open-menu="):
                 m_name = arg.split("=")[1]
                 GLib.timeout_add(1400, lambda name=m_name: self._popup_menu_by_name(name))
+
+    def tr(self, key, fallback="", **kwargs):
+        res = mac_i18n.t(key, fallback=fallback, override_locale=getattr(self, "selected_language", "uk"))
+        if kwargs:
+            try:
+                return res.format(**kwargs)
+            except Exception:
+                pass
+        return res
 
     def _popup_menu_by_name(self, name):
         if name in ["context", "pkm"]:
@@ -1726,7 +1726,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             ("Вимкнути комп'ютер...", "app.poweroff"),
         ]
         self.context_popover = MacMenuPopover(context_items)
-        self.context_popover.set_parent(self)
+        self.context_popover.set_parent(root_box)
 
         # 1. Top Menubar
         self.menubar_box = self._create_menubar()
