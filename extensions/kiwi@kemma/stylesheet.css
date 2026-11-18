@@ -1179,16 +1179,18 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 /* no plate — just the ambient shadow of the whole floating panel */
 .tahoe-qs-panelbg {
-    border-radius: 22px;
-    background-color: transparent;
-    border: none !important;
-    border-top: none !important;
-    border-bottom: none !important;
-    border-left: none !important;
-    border-right: none !important;
+    border-radius: 24px;
+    background-color: rgba(242, 242, 247, 0.85);
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
     /* one shadow for both themes: tight core + wide soft diffusion */
     box-shadow: 0 4px 22px rgba(0, 0, 0, 0.15),
         0 12px 70px rgba(0, 0, 0, 0.10);
+}
+.tahoe-qs-dark.tahoe-qs-panelbg,
+.tahoe-qs-dark .tahoe-qs-panelbg,
+.tahoe-qs-panelbg.tahoe-qs-dark {
+    background-color: rgba(30, 30, 34, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
 }
 .tahoe-qs-cols { spacing: 18px; }
 .tahoe-qs-col { spacing: 12px; }
@@ -1499,16 +1501,29 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 
 /* capsule pill (Wi-Fi, Bluetooth, Airplane, Focus) — glass r32 */
 .tahoe-qs-pill {
-    background-color: transparent;
+    background-color: rgba(0, 0, 0, 0.05);
     border-radius: 999px;
     padding: 10px 12px 10px 10px;
     box-shadow: none;
-    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
     border-left: none !important;
     border-right: none !important;
 }
-.tahoe-qs-dark .tahoe-qs-pill { box-shadow: none; }
+.tahoe-qs-dark .tahoe-qs-pill,
+.tahoe-qs-inklight .tahoe-qs-pill {
+    background-color: rgba(255, 255, 255, 0.10);
+    border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.20) !important;
+    box-shadow: none;
+}
+.tahoe-qs-pill:hover {
+    background-color: rgba(0, 0, 0, 0.09);
+}
+.tahoe-qs-dark .tahoe-qs-pill:hover,
+.tahoe-qs-inklight .tahoe-qs-pill:hover {
+    background-color: rgba(255, 255, 255, 0.18);
+}
 .tahoe-qs-pill-circle {
     width: 40px; height: 40px;
     border-radius: 999px;
@@ -1533,11 +1548,18 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-qs-priv-blue { background-color: #0a84ff; }
 /* privacy pill is slim (lower than regular pills) */
 .tahoe-qs-pill.tahoe-qs-pill-priv {
+    background-color: rgba(0, 0, 0, 0.05);
     padding: 4px 10px;
-    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
     border-left: none !important;
     border-right: none !important;
+}
+.tahoe-qs-dark .tahoe-qs-pill.tahoe-qs-pill-priv,
+.tahoe-qs-inklight .tahoe-qs-pill.tahoe-qs-pill-priv {
+    background-color: rgba(255, 255, 255, 0.10);
+    border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.20) !important;
 }
 .tahoe-qs-pill-priv .tahoe-qs-pill-circle { width: 20px; height: 20px; }
 .tahoe-qs-pill-priv .tahoe-qs-pill-glyph { icon-size: 12px; }
@@ -1546,15 +1568,28 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 
 /* circles 60x60 — glass r32 */
 .tahoe-qs-circle {
-    background-color: transparent;
+    background-color: rgba(0, 0, 0, 0.05);
     border-radius: 999px;
     box-shadow: none;
-    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
     border-left: none !important;
     border-right: none !important;
 }
-.tahoe-qs-dark .tahoe-qs-circle { box-shadow: none; }
+.tahoe-qs-dark .tahoe-qs-circle,
+.tahoe-qs-inklight .tahoe-qs-circle {
+    background-color: rgba(255, 255, 255, 0.10);
+    border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.20) !important;
+    box-shadow: none;
+}
+.tahoe-qs-circle:hover {
+    background-color: rgba(0, 0, 0, 0.09);
+}
+.tahoe-qs-dark .tahoe-qs-circle:hover,
+.tahoe-qs-inklight .tahoe-qs-circle:hover {
+    background-color: rgba(255, 255, 255, 0.18);
+}
 .tahoe-qs-circle-icon { icon-size: 24px; color: #1d1d1f; }
 /* logout glyph is wide-short: bump it so it doesn't read small */
 .tahoe-qs-circle-logout .tahoe-qs-circle-icon { icon-size: 32px; }
@@ -1564,20 +1599,26 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 /* ON state: white wash OVER the dark glass (not instead of it) */
 /* ON state: white wash is painted in-shader (region mask), not here -
    a CSS background would end at the actor rect and read smaller than glass */
-.tahoe-qs-circle.tahoe-qs-on { background-color: transparent; }
+.tahoe-qs-circle.tahoe-qs-on { background-color: rgba(255, 255, 255, 0.25); }
 
 /* music card — glass r26 */
 .tahoe-qs-music {
-    background-color: transparent;
+    background-color: rgba(0, 0, 0, 0.05);
     border-radius: 28px;
     padding: 10px 8px;
     box-shadow: none;
-    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
     border-left: none !important;
     border-right: none !important;
 }
-.tahoe-qs-dark .tahoe-qs-music { box-shadow: none; }
+.tahoe-qs-dark .tahoe-qs-music,
+.tahoe-qs-inklight .tahoe-qs-music {
+    background-color: rgba(255, 255, 255, 0.10);
+    border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.20) !important;
+    box-shadow: none;
+}
 .tahoe-qs-music-box { spacing: 1px; }
 .tahoe-qs-music-art {
     width: 44px; height: 44px;
@@ -1594,14 +1635,19 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 
 /* slider cards — glass r22 matching OSD 1:1 */
 .tahoe-qs-card {
-    background-color: transparent;
+    background-color: rgba(0, 0, 0, 0.05);
     border-radius: 22px !important;
     padding: 8px 14px 10px 14px;
     spacing: 5px;
     box-shadow: none;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
 }
-.tahoe-qs-dark .tahoe-qs-card { box-shadow: none; }
+.tahoe-qs-dark .tahoe-qs-card,
+.tahoe-qs-inklight .tahoe-qs-card {
+    background-color: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    box-shadow: none;
+}
 .tahoe-qs-card-head {
     spacing: 0;
     margin-left: 2px;
@@ -1670,19 +1716,32 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 
 /* bottom centered pill ("Edit Controls") — same geometry as privacy pill */
 .tahoe-qs-edit {
-    background-color: transparent;
+    background-color: rgba(0, 0, 0, 0.05);
     border-radius: 15px;
     padding: 0 10px;
     font-size: 0.85em;
     font-weight: 700;
     color: #1d1d1f;
     box-shadow: none;
-    border-top: 2px solid rgba(200, 200, 200, 0.50) !important;
-    border-bottom: 2px solid rgba(200, 200, 200, 0.50) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.40) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
     border-left: none !important;
     border-right: none !important;
 }
-.tahoe-qs-dark .tahoe-qs-edit { box-shadow: none; }
+.tahoe-qs-dark .tahoe-qs-edit,
+.tahoe-qs-inklight .tahoe-qs-edit {
+    background-color: rgba(255, 255, 255, 0.10);
+    border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.20) !important;
+    box-shadow: none;
+}
+.tahoe-qs-edit:hover {
+    background-color: rgba(0, 0, 0, 0.09);
+}
+.tahoe-qs-dark .tahoe-qs-edit:hover,
+.tahoe-qs-inklight .tahoe-qs-edit:hover {
+    background-color: rgba(255, 255, 255, 0.18);
+}
 
 /* dark theme: white text and glyphs (base above is near-black) */
 /* adaptive ink: white text/glyphs when the background behind is dark

@@ -1509,3 +1509,16 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
 - Оновлено bin/mac-apply-locale для підтримки всіх 209 мов каталогу.
 - Оновлено config/extensions.lock.json (21/21 LOCKED OK).
 - Обов'язкові перевірки пройшли на 100%: bin/test-macw1y-animations.py (12/12 PASS), bin/mac-audit-sync check (100% PASS), bin/mac-i18n-verify (100% PASS), python3 bin/mac-extension-guard verify (21/21 PASS).
+
+2026-11-18 — Виправлення анімації відкриття Центру керування (чистий виїзд без артефактів):
+- Усунено всі візуальні баги та стрибки при відкритті Центру керування (macOS Tahoe Control Center):
+  1) Ліквідовано показ порожнього скелета та «літаючих» іконок: у extensions/kiwi@kemma/stylesheet.css додано нативні напівпрозорі фони для панелі (.tahoe-qs-panelbg), пігулок (.tahoe-qs-pill), карток (.tahoe-qs-card), музичного віджета (.tahoe-qs-music), круглих кнопок (.tahoe-qs-circle) та кнопки редагування (.tahoe-qs-edit) у світлій та темній темах, завдяки чому панель з першого кадру є цілісним елементом інтерфейсу.
+  2) Усунено стрибок висоти та помилки FBO Cogl (cogl_framebuffer_set_viewport: assertion 'width > 0 && height > 0' failed): у extensions/kiwi@kemma/apps/tahoeControlCenter.js попередньо обчислюється природна висота контейнера через box.get_preferred_height(W) та відразу задається для panelBg і box до початку анімації; вимкнено примусовий Clutter.OffscreenRedirect.ALWAYS.
+  3) Реалізовано плавний синхронний виїзд (чистий виїзд): початковий стан translation_x: PANEL_W + 30, opacity: 0, плавний виїзд translation_x: 0, opacity: 255 за 230 мс із функцією плавності Clutter.AnimationMode.EASE_OUT_CUBIC.
+  4) Усунено фріз і пересідання сцени при старті скла: прибрано деструктивний блок remove_child/insert_child_at_index; скляні стеки Liquid Glass коректно розміщуються у Z-порядку через insert_child_below без перебудови сцени, з плавним наростанням прозорості за 160 мс; видалено застарілий 320 мс таймер.
+  5) Виправлено закриття: скляні шари і панель одночасно плавно виїжджають та зникають за 190 мс (Clutter.AnimationMode.EASE_IN_CUBIC), а очищення ресурсів _teardownPanel виконується суворо після завершення анімації в onComplete.
+  6) Ліквідовано витік пам'яті та помилки disposed TahoeSlider у journalctl: збережено ідентифікатори сигналів для state.brightScaleId та state.screenPropId з їхнім гарантованим відключенням у _teardownPanel та перевіркою валідності слайдера перед оновленням значення.
+- Синхронізовано tahoeControlCenter.js та stylesheet.css у ~/.local/share/gnome-shell/extensions/kiwi@kemma/.
+- Оновлено SHA-256 хеш для kiwi@kemma у config/extensions.lock.json.
+- Гаряче перезавантаження модулів виконано в поточному сеансі без виходу та без перезавантаження ПК.
+- Результати перевірок: bin/test-macw1y-animations.py (12/12 PASS, 100%), bin/mac-audit-sync check (100% PASS), bin/mac-i18n-verify (100% PASS), python3 bin/mac-extension-guard verify (21/21 PASS).

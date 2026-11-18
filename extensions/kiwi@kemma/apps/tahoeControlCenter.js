@@ -1566,7 +1566,7 @@ function _buildPanel() {
     const monitor = Main.layoutManager.primaryMonitor;
     const panelH = Main.layoutManager.panelBox?.height ?? 32;
     const W = PANEL_W;
-    const slideOffset = PANEL_W + 40;
+    const slideOffset = PANEL_W + 30;
     const X = monitor.x + monitor.width - W - 12;
     const Y = monitor.y + panelH + 10;
 
@@ -1606,8 +1606,7 @@ function _buildPanel() {
     panelBg.set_position(X, Y);
     panelBg.width = W;
     panelBg.translation_x = slideOffset;
-    panelBg.opacity = 255;
-    panelBg.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
+    panelBg.opacity = 0;
     overlay.add_child(panelBg);
 
     const box = new St.BoxLayout({style_class: `tahoe-qs-panel${darkCls}`, vertical: true});
@@ -1621,9 +1620,8 @@ function _buildPanel() {
     box.set_position(X, Y);
     box.width = W;
     box.translation_x = slideOffset;
-    box.opacity = 255;
+    box.opacity = 0;
     box.set_style('border: none !important; border-top: none !important; border-bottom: none !important; border-left: none !important; border-right: none !important;');
-    box.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
     overlay.add_child(box);
 
     const state = {control: null, nm: null, bt: null,
@@ -1972,19 +1970,20 @@ function _buildPanel() {
             state.brightScale = bm.globalScale;
             disp.slider.value = state.brightScale.value ?? 0.5;
             const upd = () => {
-                if (state.dispGuard)
+                if (state.dispGuard || !_panel)
                     return;
                 try {
                     state.dispGuard = true;
-                    disp.slider.value = state.brightScale.value;
+                    if (disp.slider && !disp.slider.is_finalized?.())
+                        disp.slider.value = state.brightScale.value;
                 } finally {
                     state.dispGuard = false;
                 }
             };
             try {
-                state.brightScale.connect('notify::value', upd);
+                state.brightScaleId = state.brightScale.connect('notify::value', upd);
             } catch (_) {
-
+                state.brightScaleId = 0;
             }
             disp.slider.connect('notify::value', () => {
                 if (state.dispGuard || !state.brightScale)
@@ -2029,12 +2028,12 @@ function _buildPanel() {
                     }
                 });
                 try {
-                    proxy.connect('g-properties-changed', () => {
+                    state.screenPropId = proxy.connect('g-properties-changed', () => {
                         if (!_panel || state.dispGuard)
                             return;
                         try {
                             const v = proxy.get_cached_property('Brightness');
-                            if (v !== null) {
+                            if (v !== null && disp.slider && !disp.slider.is_finalized?.()) {
                                 state.dispGuard = true;
                                 disp.slider.value = v.unpack() / 100;
                                 state.dispGuard = false;
@@ -2044,7 +2043,7 @@ function _buildPanel() {
                         }
                     });
                 } catch (_) {
-
+                    state.screenPropId = 0;
                 }
             }
         } catch (_) {
@@ -2267,6 +2266,13 @@ function _buildPanel() {
         }
     }
 
+    try {
+        const [, natH] = box.get_preferred_height(W);
+        const initialH = Math.max(480, Math.ceil(natH || 520));
+        panelBg.set_size(W, initialH);
+        box.set_size(W, initialH);
+    } catch (_) {}
+
     _panel = {overlay, box, panelBg, state, wifi, bt: btPill, air: modePill, mode: modePill, focus, dark, lock, shot, logout, disp, snd,
         music, mTitle, mArtist, mPlayIcon: play.icon, mPrevIcon: prev.icon,
         mNextIcon: next.icon, artBin: art, artIcon, artUrl: '',
@@ -2411,26 +2417,31 @@ function _buildPanel() {
     box.scale_x = 1.0;
     box.scale_y = 1.0;
     box.translation_x = slideOffset;
-    box.opacity = 255;
+    box.opacity = 0;
     panelBg.set_pivot_point(1.0, 0.0);
     panelBg.scale_x = 1.0;
     panelBg.scale_y = 1.0;
     panelBg.translation_x = slideOffset;
-    panelBg.opacity = 255;
+    panelBg.opacity = 0;
 
     _panelOpening = true;
     _closing = false;
 
     box.ease({
         translation_x: 0,
-        duration: 260,
+        opacity: 255,
+        duration: 230,
         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
         onComplete: () => {
             _panelOpening = false;
-            if (_panel?.box)
+            if (_panel?.box) {
                 _panel.box.translation_x = 0;
-            if (_panel?.panelBg)
+                _panel.box.opacity = 255;
+            }
+            if (_panel?.panelBg) {
                 _panel.panelBg.translation_x = 0;
+                _panel.panelBg.opacity = 255;
+            }
             if (_panel && !_panel.glass && !_closing) {
                 _startGlass();
             }
@@ -2438,14 +2449,9 @@ function _buildPanel() {
     });
     panelBg.ease({
         translation_x: 0,
-        duration: 260,
+        opacity: 255,
+        duration: 230,
         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-    });
-    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 320, () => {
-        if (_panel && !_panel.glass && !_closing && !_panelOpening) {
-            _startGlass();
-        }
-        return GLib.SOURCE_REMOVE;
     });
 }
 
@@ -3585,8 +3591,13 @@ async function _startGlass() {
             ..._makeGlassStack(monitor, g.radius, g.name, g.name === 'backdrop'),
         }));
 
+        const ov = _panel.overlay;
         for (const s of stacks) {
-            _panel.overlay.insert_child_at_index(s.bgActor, 1);
+            if (s.group === 'backdrop') {
+                ov.insert_child_below(s.bgActor, _panel.panelBg);
+            } else {
+                ov.insert_child_below(s.bgActor, _panel.box);
+            }
             try {
                 s.uiSampler?.rebindSelf?.();
                 s.uiSampler?.addExclusion?.(_panel.overlay);
@@ -3594,30 +3605,6 @@ async function _startGlass() {
             } catch (_) {}
         }
 
-
-
-        try {
-            const ov = _panel.overlay;
-            const bd = stacks.find(s => s.group === 'backdrop');
-            if (bd) {
-                const place = () => ov.get_children().indexOf(bd.bgActor);
-                try {
-                    ov.set_child_above_sibling(_panel.panelBg, bd.bgActor);
-                } catch (_) {
-
-                }
-                if (ov.get_children().indexOf(_panel.panelBg) !== place() + 1) {
-                    try {
-                        ov.remove_child(_panel.panelBg);
-                    } catch (_) {
-
-                    }
-                    ov.insert_child_at_index(_panel.panelBg, place() + 1);
-                }
-            }
-        } catch (_) {
-
-        }
         const glass = {stacks, frameId: 0, torndown: false, tickN: 0};
         _panel.glass = glass;
 
@@ -3631,7 +3618,7 @@ async function _startGlass() {
             try {
                 s.bgActor.ease({
                     opacity: _panel?.box?.opacity ?? 255,
-                    duration: 120,
+                    duration: 160,
                     mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                 });
             } catch (_) {
@@ -3933,6 +3920,18 @@ function _teardownPanel(p) {
         if (state.shareInd && state.shareId)
             state.shareInd.disconnect(state.shareId);
     } catch (_) {}
+    try {
+        if (state.brightScale && state.brightScaleId) {
+            state.brightScale.disconnect(state.brightScaleId);
+            state.brightScaleId = 0;
+        }
+    } catch (_) {}
+    try {
+        if (state.screen && state.screenPropId) {
+            state.screen.disconnect(state.screenPropId);
+            state.screenPropId = 0;
+        }
+    } catch (_) {}
     _destroyGlass();
     try {
         overlay.destroy();
@@ -3952,16 +3951,21 @@ function _closePanel(immediate = false) {
     _panelOpening = false;
     globalThis._tahoeQSOpen = false;
 
+    const slideOffset = PANEL_W + 30;
+
     if (p.glass?.stacks) {
         for (const s of p.glass.stacks) {
             try {
                 s.bgActor.remove_all_transitions();
-                s.bgActor.hide();
+                s.bgActor.ease({
+                    opacity: 0,
+                    duration: 190,
+                    mode: Clutter.AnimationMode.EASE_IN_CUBIC,
+                });
             } catch (_) {}
         }
     }
 
-    const slideOffset = PANEL_W + 40;
     try {
         p.box.remove_all_transitions();
         p.panelBg.remove_all_transitions();
@@ -3972,12 +3976,14 @@ function _closePanel(immediate = false) {
 
         p.panelBg.ease({
             translation_x: slideOffset,
-            duration: 230,
+            opacity: 0,
+            duration: 190,
             mode: Clutter.AnimationMode.EASE_IN_CUBIC,
         });
         p.box.ease({
             translation_x: slideOffset,
-            duration: 230,
+            opacity: 0,
+            duration: 190,
             mode: Clutter.AnimationMode.EASE_IN_CUBIC,
             onComplete: () => {
                 _teardownPanel(p);
