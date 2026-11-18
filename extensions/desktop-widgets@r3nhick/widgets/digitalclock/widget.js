@@ -16,10 +16,10 @@ export const defaultSize = 'small';
 export const supportedSizes = ['small', 'medium', 'mini', 'minismall', 'portrait', 'portraitmini'];
 
 const CORNER_RADIUS = 16;
-
-
+// Port of liquidglass clock-digital: how long the comet trail behind the
+// current-second tick is, in degrees of the 60-tick ring.
 const TRAIL_DEGREES = 270;
-
+// Squircle exponent matching our glass shader (exact circular arcs).
 const TICK_ROUNDNESS = 2.0;
 
 function pad(value) {
@@ -55,9 +55,9 @@ function escapeMarkup(text) {
 		.replace(/'/g, '&apos;');
 };
 
-
-
-
+// Port of liquidglass clock-digital's tick ring: 60 ticks that follow the
+// widget's silhouette, the current second lights up (smooth, every frame)
+// and a comet trail fades out behind it over 270 degrees.
 const DigitalClockRing = GObject.registerClass(
 	class DigitalClockRing extends St.DrawingArea {
 		_init(options) {
@@ -71,16 +71,16 @@ const DigitalClockRing = GObject.registerClass(
 			this._theme = options?.theme ?? {};
 			this._radius = options?.radius ?? CORNER_RADIUS;
 			this._dark = this._theme.dark ?? false;
-
-
-
+			// Smooth (default) repaints every frame; stepped pins the head to
+			// whole seconds and repaints once per second — the reference
+			// clock-digital's off state for its smooth-seconds toggle.
 			this._smooth = options?.smoothSeconds ?? true;
 
 			this._ticks = null;
 			this._tickSize = null;
 
-
-
+			// Smooth seconds — repaint every frame while mapped. Clutter's
+			// map/unmap are vfuncs, not signals — track notify::mapped.
 			this._timeline = new Clutter.Timeline({actor: this, duration: 1000, repeat_count: -1});
 			this._timeline.connect('new-frame', () => this.queue_repaint());
 			this._tickSourceId = 0;
@@ -97,7 +97,7 @@ const DigitalClockRing = GObject.registerClass(
 				if (this._smooth) {
 					this._timeline.start();
 				} else {
-
+					// Repaint at the next second boundary, then once a second.
 					this._tickSourceId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000 - (Date.now() % 1000) + 1, () => {
 						this._tickSourceId = 0;
 						this.queue_repaint();
@@ -149,14 +149,14 @@ const DigitalClockRing = GObject.registerClass(
 			const base = 0.26;
 
 			const ms = Date.now() % 60000;
-
+			// Smooth: fractional second (every frame); stepped: whole seconds.
 			const pos = this._smooth ? ms / 1000 : Math.floor(ms / 1000);
 			const current = Math.floor(pos) % 60;
 			const previous = (current + 59) % 60;
 			const frac = pos - Math.floor(pos);
 			const headFade = frac * frac * (3 - 2 * frac);
 
-
+			// cairo_line_cap_t: BUTT=0, ROUND=1
 			cr.setLineCap(1);
 
 			const baseWidth = Math.max(1.2, Math.min(2.2, minSide * 0.012));
@@ -221,15 +221,15 @@ const DigitalClockFace = GObject.registerClass(
 		};
 
 		_scheduleRepaint() {
-
+			// Adaptive interval: update once per minute when seconds are hidden
 			const showSeconds = this._showSeconds;
 			let delay;
-
+			
 			if (showSeconds) {
-
+				// With seconds shown: update every second
 				delay = 1000 - (Date.now() % 1000);
 			} else {
-
+				// Without seconds: update once per minute
 				const now = Date.now();
 				const msInMinute = 60000;
 				delay = msInMinute - (now % msInMinute);
@@ -351,7 +351,7 @@ const DigitalClockFace = GObject.registerClass(
 			const now = new Date();
 			const parts = this._buildTimeParts(now);
 			const minSide = Math.min(width, height);
-
+			// Ticks closer to the widget edges get a thinner stroke inset.
 			const inset = clamp(Math.round(minSide * 0.02), 2, 6);
 			const textColor = colorFromHex(this._theme.text, this._dark ? [1, 1, 1] : [0.1, 0.09, 0.16]);
 
@@ -392,9 +392,9 @@ export function render({body, theme, settings, widget}) {
 	const showAmPm = settings?.get_boolean('digitalclock-show-ampm') !== false;
 	const smoothSeconds = settings?.get_boolean('digitalclock-smooth-seconds') !== false;
 
-
-
-
+	// The tick ring and the digits overlap: a plain St.Widget with a
+	// BinLayout stacks both children in the same box (a vertical BoxLayout
+	// would hand each of them its own row, like the glass bug).
 	const stage = new St.Widget({
 		layout_manager: new Clutter.BinLayout(),
 		x_expand: true,
@@ -403,8 +403,8 @@ export function render({body, theme, settings, widget}) {
 	const ring = new DigitalClockRing({theme, radius: theme.radius, smoothSeconds});
 	const face = new DigitalClockFace({theme, use24h, showSeconds, showAmPm, radius: theme.radius, vertical, sizeKey});
 
-	stage.add_child(ring);
-	stage.add_child(face);
+	stage.add_child(ring);   // below the digits
+	stage.add_child(face);   // digits on top
 
 	body.add_child(stage);
 };

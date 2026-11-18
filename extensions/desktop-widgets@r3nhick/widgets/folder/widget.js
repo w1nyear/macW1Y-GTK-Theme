@@ -1,8 +1,8 @@
-
-
-
-
-
+/*
+ * Folder Launcher widget
+ * Similar to App Launcher but opens folders instead of applications
+ * The grid fills the fixed widget size; rows/columns are chosen to keep icons as large as possible.
+ */
 
 import St from 'gi://St';
 import GLib from 'gi://GLib';
@@ -56,7 +56,7 @@ function computeGridLayout(folderCount, widgetWidth, widgetHeight, showNames = f
 	}
 
 	const content = gridContentSize(widgetWidth, widgetHeight);
-
+	// Reserve space for folder names if they are shown (approximately 20-24px per label)
 	const effectiveHeight = showNames ? content.height - 24 : content.height;
 	let best = null;
 
@@ -97,7 +97,7 @@ function maxFoldersFor(sizeKey) {
 
 function computeIconMetrics(cols, rows, widgetWidth, widgetHeight, showNames = false) {
 	const content = gridContentSize(widgetWidth, widgetHeight);
-
+	// Reserve space for folder names if they are shown
 	const effectiveHeight = showNames ? content.height - 24 : content.height;
 
 	const cellWidth = (content.width - (GRID_GAP * (cols - 1))) / cols;
@@ -122,17 +122,17 @@ export function style(theme) {
 
 export function render({ body, widget, theme, sizeForWidget, settings }) {
 	const textColor = theme.text;
-	const tileBaseBg = 'transparent';
+	const tileBaseBg = 'transparent'; // No background when not hovered
 	const tileHoverBg = cssColorToRgba(textColor, TILE_HOVER_ALPHA);
-
+	
 	const sizeKey = widget?.size ?? 'medium';
 	const [width, height] = sizeForWidget(widget);
-
-
+	
+	// Ensure body clips overflow content
 	body.set_clip_to_allocation(true);
-
+	
 	const dataFilePath = GLib.build_filenamev([getDataDir('folder'), `folder-${widget?.id}.json`]);
-
+	
 	let folders = defaultFolders();
 	let foldersLoaded = false;
 
@@ -145,7 +145,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 		style: `padding: ${OUTER_MARGIN}px;`,
 		clip_to_allocation: true,
 	});
-
+	
 	body.add_child(container);
 
 	const grid = new St.BoxLayout({
@@ -165,14 +165,14 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 
 		try {
 			const file = Gio.File.new_for_path(folderPath);
-
-
+			
+			// Check if folder exists
 			if (!file.query_exists(null)) {
 				Main.notify(_('Folder Launcher'), _('Folder does not exist: %s').format(displayName));
 				return;
 			}
 
-
+			// Try to launch with configured file manager (read from settings each time)
 			const fileManager = settings?.get_string('folder-file-manager') ?? 'org.gnome.Nautilus.desktop';
 			const appInfo = Gio.DesktopAppInfo.new(fileManager);
 			if (appInfo) {
@@ -180,7 +180,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 				return;
 			}
 
-
+			// Fallback to default handler
 			Gio.AppInfo.launch_default_for_uri(file.get_uri(), null);
 		} catch (e) {
 			console.debug(`Failed to open folder ${folderPath}:`, e);
@@ -188,18 +188,18 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 		}
 	};
 
-
+	// Read icon for a folder, preferring custom icon from metadata
 	const getFolderIcon = (folderPath) => {
 		try {
 			const file = Gio.File.new_for_path(folderPath);
 			const fileInfo = file.query_info('standard::icon,metadata::custom-icon,metadata::custom-icon-name', Gio.FileQueryInfoFlags.NONE, null);
-
+			
 			const customIcon = fileInfo.get_attribute_string('metadata::custom-icon');
-
+			// custom-icon-name is a stringv, not a plain string
 			const customIconNames = fileInfo.get_attribute_type('metadata::custom-icon-name') === Gio.FileAttributeType.STRINGV
 				? fileInfo.get_attribute_stringv('metadata::custom-icon-name')
 				: null;
-
+			
 			if (customIcon) {
 				const iconFile = Gio.File.new_for_uri(customIcon);
 				return new Gio.FileIcon({ file: iconFile });
@@ -219,9 +219,9 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 	let destroyed = false;
 
 	const buildGrid = () => {
-
+		// Read current settings values
 		const showFolderNames = settings?.get_boolean('folder-show-names') ?? true;
-
+		
 		if (settleTimer) {
 			GLib.source_remove(settleTimer);
 			settleTimer = null;
@@ -232,13 +232,13 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 				body.disconnect(sizeWatch.width);
 				body.disconnect(sizeWatch.height);
 			} catch (e) {
-
+				// Ignore disconnect errors (body already gone)
 			}
 			sizeWatch = null;
 		}
 
 		grid.destroy_all_children();
-
+		
 		if (folders.length === 0) {
 			const emptyLabel = new St.Label({
 				text: _('No folders configured'),
@@ -262,8 +262,8 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 			cell.padding = padding;
 			cell.button.set_style(buildTileStyle(cell.hovered ? tileHoverBg : tileBaseBg, padding));
 			cell.icon.set_icon_size(iconSize);
-
-
+			
+			// Update label font size if showing names
 			if (cell.label && showFolderNames) {
 				const fontSize = Math.max(8, Math.min(14, Math.round(iconSize * 0.25)));
 				cell.label.set_style(`color: ${textColor}; font-size: ${fontSize}px; margin-top: 4px;`);
@@ -310,7 +310,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 					x_align: Clutter.ActorAlign.CENTER,
 				});
 
-
+				// Get folder icon from file system
 				const gicon = getFolderIcon(folder.path);
 				if (gicon) {
 					folderIcon.gicon = gicon;
@@ -319,8 +319,8 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 				}
 
 				cellBox.add_child(folderIcon);
-
-
+				
+				// Add folder name label if enabled
 				let folderLabel = null;
 				if (showFolderNames) {
 					folderLabel = new St.Label({
@@ -328,7 +328,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 						x_align: Clutter.ActorAlign.CENTER,
 						style: `color: ${textColor}; font-size: 10px; margin-top: 4px;`,
 					});
-					folderLabel.clutter_text.ellipsize = 3;
+					folderLabel.clutter_text.ellipsize = 3; // Pango.EllipsizeMode.END
 					folderLabel.clutter_text.line_wrap = false;
 					cellBox.add_child(folderLabel);
 				}
@@ -336,19 +336,19 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 				button.set_child(cellBox);
 				rowBox.add_child(button);
 
-				const cell = {
-					icon: folderIcon,
+				const cell = { 
+					icon: folderIcon, 
 					label: folderLabel,
-					button,
-					padding: TILE_PADDING_MIN,
-					hovered: false,
-					pressX: 0,
-					pressY: 0,
-					mousePressed: false
+					button, 
+					padding: TILE_PADDING_MIN, 
+					hovered: false, 
+					pressX: 0, 
+					pressY: 0, 
+					mousePressed: false 
 				};
 
-
-
+				// Tiles keep their hover tint; on top of it the icon eases
+				// down to 85% — the same hover shrink every widget button has.
 				button.set_pivot_point(0.5, 0.5);
 				button.connect('enter-event', () => {
 					cell.hovered = true;
@@ -488,23 +488,23 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 		console.debug('Failed to watch folder launcher data file:', e);
 	}
 
-
-
-
-
+	// Real-time icon updates: GVFS metadata (custom folder icons) lives in
+	// ~/.local/share/gvfs-metadata/, not on the folder itself, so FileMonitor
+	// cannot detect icon changes. Poll the metadata every 30 seconds instead.
+	// OPTIMIZED: 3s → 30s (10x less frequent, custom folder icons change rarely)
 	let iconPollTimer = null;
-	const iconFingerprints = new Map();
+	const iconFingerprints = new Map(); // path -> serialized icon state
 
 	const pollFolderIcons = () => {
 		if (destroyed) return GLib.SOURCE_REMOVE;
-
+		
 		let changed = false;
 		for (const folder of folders) {
 			try {
 				const gicon = getFolderIcon(folder.path);
 				const current = gicon ? String(gicon) : 'null';
 				const last = iconFingerprints.get(folder.path);
-
+				
 				if (last === undefined) {
 					iconFingerprints.set(folder.path, current);
 				} else if (current !== last) {
@@ -512,25 +512,25 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 					changed = true;
 				}
 			} catch (e) {
-
+				// Folder disappeared or inaccessible — ignore
 			}
 		}
-
+		
 		if (changed) {
 			buildGrid();
 		}
-
+		
 		return GLib.SOURCE_CONTINUE;
 	};
 
-
+	// Start polling after a short delay (let buildGrid populate fingerprints first)
 	GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
 		if (destroyed) return GLib.SOURCE_REMOVE;
 		iconPollTimer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 30, pollFolderIcons);
 		return GLib.SOURCE_REMOVE;
 	});
 
-
+	// Watch for settings changes
 	let settingsSignals = [];
 	if (settings) {
 		settingsSignals.push(
@@ -541,7 +541,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 		);
 		settingsSignals.push(
 			settings.connect('changed::folder-file-manager', () => {
-
+				// File manager change doesn't need rebuild, just affects click behavior
 			})
 		);
 	}
@@ -559,7 +559,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 				body.disconnect(sizeWatch.width);
 				body.disconnect(sizeWatch.height);
 			} catch (e) {
-
+				// Ignore disconnect errors (body already gone)
 			}
 			sizeWatch = null;
 		}
@@ -573,7 +573,7 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 			try {
 				fileMonitor.cancel();
 			} catch (e) {
-
+				// Ignore cancel errors
 			}
 			fileMonitor = null;
 		}
@@ -584,13 +584,13 @@ export function render({ body, widget, theme, sizeForWidget, settings }) {
 		}
 		iconFingerprints.clear();
 
-
+		// Disconnect settings signals
 		if (settings) {
 			for (const signalId of settingsSignals) {
 				try {
 					settings.disconnect(signalId);
 				} catch (e) {
-
+					// Ignore disconnect errors
 				}
 			}
 		}

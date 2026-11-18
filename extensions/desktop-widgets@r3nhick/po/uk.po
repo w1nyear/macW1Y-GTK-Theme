@@ -117,9 +117,26 @@ msgid "Delete page"
 msgstr "Видалити"
 
 #: extension.js:3872
-#, fuzzy
 msgid "Widget pages"
-msgstr "Віджети"
+msgstr "Стос віджетів"
+
+msgid "Current Stack"
+msgstr "Поточний стос"
+
+msgid "Search Widgets"
+msgstr "Пошук віджетів"
+
+msgid "Add to Stack"
+msgstr "Додати до стосу"
+
+msgid "Matches stack size"
+msgstr "Відповідає розміру стосу"
+
+msgid "Drag widgets anywhere on the desktop or click to add to stack."
+msgstr "Перетягніть віджет або натисніть, щоб додати до стосу."
+
+msgid "Pages flip in vertical order on the desktop. The active page is displayed."
+msgstr "Сторінки гортаються вертикально на стільниці. Відображається активна сторінка."
 
 #: extension.js:3891 extension.js:4361 prefs.js:1107
 msgid "Close"

@@ -16,10 +16,10 @@ import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 import { boxLayoutProps } from '../utils/gnomeCompat.js';
 
-
-
-
-
+// Height in px of the band the dots occupy at the bottom edge of the
+// card: the row's bottom margin + the dot/dash height. Host pages center
+// their content within (page height - this) so the air above the content
+// equals the air between it and the dots.
 export function indicatorBandHeight(settings) {
 	const dashStyle = (settings?.get_int('page-indicator-style') ?? 0) === 1;
 	return (dashStyle ? 3 : 5) + 2;
@@ -34,9 +34,9 @@ export function createPageIndicator({settings, count, color}) {	// dash/dot per 
 		style: `spacing: 6px; margin-bottom: 2px;`,
 	}));
 
-
-
-
+	// Flush with the very bottom of the widget body. Do NOT shift the row
+	// below the body allocation (translation/negative margin): body is
+	// clipped to allocation, the extra pixel got sheared off the circles.
 	const dots = Array.from({length: count}, () => new St.Widget({
 		width: dashStyle ? 10 : 5,
 		height: dashStyle ? 3 : 5,
@@ -54,9 +54,9 @@ export function createPageIndicator({settings, count, color}) {	// dash/dot per 
 	wrap.add_child(row);
 
 	const refresh = (activeIndex) => {
-
-
-
+		// Guards against disposed actors on both usage patterns: the
+		// calendar mounts the overlay wrap, other widgets may nest the raw
+		// row directly — the row is the always-present element either way.
 		if (!row.get_parent()) {
 			return;
 		};

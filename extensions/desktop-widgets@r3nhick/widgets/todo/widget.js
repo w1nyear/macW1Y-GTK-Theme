@@ -1,7 +1,7 @@
-
-
-
-
+/*
+ * Task widget ported from gridgets
+ * Adapted for desktop-widgets@r3nhick rendering system
+ */
 
 import Clutter from 'gi://Clutter';
 import Cogl from 'gi://Cogl';
@@ -79,10 +79,10 @@ export function render({ body, widget, theme, sizeForWidget }) {
     let tasks = DEFAULT_TASKS.map(t => ({ ...t, text: defaultTaskText(t.text) }));
     let tasksLoaded = false;
     const state = { entryVisible: false };
-
-
-
-    const animQueue = new Map();
+    // Completion transitions queued by the checkbox and consumed by
+    // buildTaskRow on the row that the rebuild creates (the clicked row is
+    // destroyed in the same frame, so animations must target the new one).
+    const animQueue = new Map(); // task object → 'toDone' | 'toUndone'
 
     const [refW, refH] = sizeForWidget(widget);
     const contentW = Math.max(1, refW - 34);
@@ -185,6 +185,9 @@ export function render({ body, widget, theme, sizeForWidget }) {
         hint_text: _('New task…'),
         can_focus: true,
         x_expand: true,
+        // The row already carries the translucent band; the shell theme's
+        // solid entry fill painted a dark block over the Glass backdrop.
+        style: `background-color: transparent; border: none; box-shadow: none; padding: 0; color: ${textColor};`,
     });
     entryRow.add_child(taskEntry);
     entryRow.hide();
@@ -193,13 +196,13 @@ export function render({ body, widget, theme, sizeForWidget }) {
 
     const save = () => saveJsonToFile(todosFilePath, { tasks });
 
-
+    // The row being text-edited right now (editor replaces the label).
     let editingTask = null;
     const setImmediateRowFocus = (editor) => {
         GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
             // global.stage.set_key_focus is the notes widget's proven way to
-
-
+            // focus a Clutter.Text; grab_key_focus raced the shell's own
+            // focus routing there.
             if (!isActorDestroyed(editor))
                 global.stage.set_key_focus(editor);
             return GLib.SOURCE_REMOVE;
@@ -220,11 +223,11 @@ export function render({ body, widget, theme, sizeForWidget }) {
             reactive: true,
             style: rowBg + ` border-radius: ${px(TASK_ROW_RADIUS)}px; padding: ${px(TASK_ROW_PADDING_V)}px ${px(TASK_ROW_PADDING_H)}px; spacing: ${px(10)}px;`,
         });
-
-
-
-
-
+        // Hover feedback softer than the buttons' 0.85: the wide row shrinks
+        // just a touch on both axes and springs back on leave. A row flag
+        // gates everything: rows are destroyed wholesale on every re-render
+        // and their enter/leave events keep firing mid-dispose — touching a
+        // disposed actor there crashed the shell.
         let rowAlive = true;
         row.connect('destroy', () => { rowAlive = false; });
         row.set_pivot_point(0.5, 0.5);
@@ -234,14 +237,14 @@ export function render({ body, widget, theme, sizeForWidget }) {
                 editButton.opacity = 255;
             if (anim) return Clutter.EVENT_PROPAGATE;
 
-
-
-
-
-
-
-
-
+            // Screen coords -> row-relative geometry: when the pointer
+            // sits inside the outer 2% band, the infinite squash starts
+            // (scale shrinks its own hit area, the retargeted pointer
+            // falls out, leave cancels and the pointer re-enters in
+            // place — GJS sides it as a flicker/steady-state loop; tall
+            // rows grow the band from ~0.7px into a real fall-in zone).
+            // Those positions hover WITHOUT the squash; the reveal above
+            // still plays.
             let squash = true;
             try {
                 const [rowX, rowY] = row.get_transformed_position();
@@ -255,8 +258,8 @@ export function render({ body, widget, theme, sizeForWidget }) {
                 };
 
             } catch (e) {
-
-
+                // Unallocated row mid-flight: keep the squash (the safest
+                // default for the common hover case).
 
             };
 
@@ -303,9 +306,9 @@ export function render({ body, widget, theme, sizeForWidget }) {
 
         const textLabel = new St.Label({
             x_expand: true,
-
-
-
+            // The codebase's own proven idiom (github card): the label
+            // centers itself in the row height — y_expand inflated the row
+            // instead (user-visible).
             y_align: Clutter.ActorAlign.CENTER,
             style: `font-size: ${fontSize}px; color: ${textColor};`,
         });
@@ -319,8 +322,8 @@ export function render({ body, widget, theme, sizeForWidget }) {
         const toggleTask = () => {
             if (rowAlive === false) return;
             if (isActorDestroyed(body)) return;
-
-
+            // A click on another row while one row is being edited just
+            // closes the editor — the click is not a completion toggle.
             if (editingTask !== null && editingTask !== task) {
                 editingTask = null;
                 GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
@@ -330,13 +333,13 @@ export function render({ body, widget, theme, sizeForWidget }) {
                 });
                 return;
             }
-
-
+            // Transition plays on the rebuilt row: this one is destroyed in
+            // the same frame, animations started here would never run.
             animQueue.set(task, task.done ? 'toUndone' : 'toDone');
             task.done = !task.done;
             save();
-
-
+            // The rebuild destroys rows — never do it inside a dispatched
+            // click/emission on this very row; defer to the next idle.
             GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
                 if (!isActorDestroyed(body) && body.get_parent())
                     renderTasks();
@@ -345,18 +348,18 @@ export function render({ body, widget, theme, sizeForWidget }) {
         };
 
         checkbox.connect('clicked', toggleTask);
-
-
-
+        // Clicking anywhere on the row toggles the task too — the checkbox
+        // and the buttons swallow their own clicks first (EVENT_STOP), so
+        // they never double-fire through the row.
         row.connect('button-release-event', (_actor, event) => {
             if (event.get_button() !== 1) return Clutter.EVENT_PROPAGATE;
             toggleTask();
             return Clutter.EVENT_STOP;
         });
 
-
-
-
+        // Pencil: hover-revealed via the actor's opacity property (a CSS
+        // 'opacity: 0' style may be overridden by the theme, leaving it
+        // always visible).
         const editButton = new St.Button({
             child: new St.Icon({
                 icon_name: 'document-edit-symbolic',
@@ -371,9 +374,9 @@ export function render({ body, widget, theme, sizeForWidget }) {
         editButton.connect('clicked', () => {
             if (isActorDestroyed(body)) return;
             editingTask = task;
-
-
-
+            // Rebuilding rows inside the click's own signal emission leaves
+            // events mid-dispatch on disposed actors — defer it to the next
+            // idle so the editor opens cleanly.
             GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
                 if (!isActorDestroyed(body) && body.get_parent())
                     renderTasks();
@@ -384,9 +387,9 @@ export function render({ body, widget, theme, sizeForWidget }) {
 
         let rowContent = textLabel;
         if (editing) {
-
-
-
+            // Multi-line editor: St.Entry is single-line, plain Clutter.Text
+            // wraps and takes Shift+Enter newlines. Slightly smaller than the
+            // row label (tight paddings, no theme entry chrome).
             const entryText = new Clutter.Text({
                 text: String(task.text || ''),
                 editable: true,
@@ -399,13 +402,13 @@ export function render({ body, widget, theme, sizeForWidget }) {
             entryText.line_wrap = true;
             entryText.line_wrap_mode = Pango.WrapMode.WORD_CHAR;
             entryText.ellipsize = Pango.EllipsizeMode.NONE;
-
-
+            // FILL so the text hugs the left edge: BinLayout centers a
+            // non-expanding child, which visually centered the text.
             entryText.x_expand = true;
             entryText.x_align = Clutter.ActorAlign.FILL;
             entryText.font_name = `Ubuntu ${fontSize - 1}px`;
-
-
+            // Clutter.Color is not exposed in this GJS — build a Cogl.Color
+            // the way the notes widget's editor does.
             const makeColor = () => {
                 const c = parseCssColor(textColor);
                 const color = new Cogl.Color();
@@ -436,10 +439,10 @@ export function render({ body, widget, theme, sizeForWidget }) {
                 editingTask = null;
                 renderTasks();
             };
-
-
-
-
+            // The handler lives on the FOCUSED actor (entryText) so it runs
+            // BEFORE Clutter.Text's default key handling: plain Enter commits
+            // before the newline is inserted, Shift+Enter propagates so the
+            // text inserts the newline itself.
             entryText.connect('key-press-event', (_actor, event) => {
                 const action = editorKeyAction(
                     event.get_key_symbol(),
@@ -458,24 +461,24 @@ export function render({ body, widget, theme, sizeForWidget }) {
                     finishEdit(false);
                     return Clutter.EVENT_STOP;
                 }
-
-
-
-
-
+                // 'newline' = Shift+Enter: Clutter.Text never inserts the
+                // break itself (the notes editor learned this the hard way) —
+                // insert_unichar equals typing it and keeps cursor/selection
+                // bookkeeping coherent; the bound collapse removes any stale
+                // selection after the break.
                 if (action === 'newline') {
                     entryText.insert_unichar('\n');
                     entryText.set_selection_bound(entryText.get_cursor_position());
                     return Clutter.EVENT_STOP;
                 }
-
+                // Everything else (typing) propagates.
                 return Clutter.EVENT_PROPAGATE;
             });
-
-
-
-
-
+            // NO cancel on key-focus-out: the shell re-routes key focus right
+            // after the grab (searchController), firing focus-out within the
+            // same frame — the editor would close itself immediately and the
+            // pencil would look dead. Enter commits, Shift+Enter adds a new
+            // line, Esc cancels.
             setImmediateRowFocus(entryText);
             rowContent = taskEntry;
         }
@@ -488,8 +491,8 @@ export function render({ body, widget, theme, sizeForWidget }) {
             reactive: true,
             can_focus: true,
             style: 'opacity: 0.45;',
-
-
+            // CENTRE like the pencil: with multi-line rows y_align START kept
+            // the trash parked at the top of the grown row.
             y_align: Clutter.ActorAlign.CENTER,
         });
         deleteButton.connect('clicked', () => {
@@ -506,13 +509,13 @@ export function render({ body, widget, theme, sizeForWidget }) {
         row.add_child(rowContent);
         row.add_child(editButton);
         row.add_child(deleteButton);
-
+        // Press feedback on the checkbox and the delete (trash) button.
         attachBounce(checkbox);
         attachBounce(deleteButton);
 
-
-
-
+        // Completion transition — livening up the checked state: the row
+        // gives a soft squash, the checkbox fills in, the tick springs and
+        // the text settles into the muted done look (or lights back up).
         if (anim) {
             row.set_pivot_point(0.5, 0.5);
             row.remove_transition('scale-y');
@@ -569,7 +572,7 @@ export function render({ body, widget, theme, sizeForWidget }) {
         const nextCount = String(tasks.filter(t => !t.done).length);
         if (nextCount !== countLabel.text) {
             countLabel.text = nextCount;
-
+            // Springy pulse so the remaining counter also feels alive.
             countLabel.set_pivot_point(0.5, 0.5);
             countLabel.remove_transition('scale-x');
             countLabel.remove_transition('scale-y');
@@ -584,9 +587,9 @@ export function render({ body, widget, theme, sizeForWidget }) {
         };
         taskList.destroy_all_children();
         if (tasks.length === 0) {
-
-
-
+            // Vertically center the empty hint inside the right column:
+            // equal expanding spacers above and below squeeze the label to
+            // the middle of the viewport (a label alone would hug the top).
             taskList.add_child(new St.Widget({
                 y_expand: true,
             }));
@@ -634,8 +637,8 @@ export function render({ body, widget, theme, sizeForWidget }) {
     });
     attachBounce(addButton);
 
-
-
+    // Enter on GNOME 51 may arrive as Clutter.Text 'activate' (see github
+    // widget); the key-press fallback remains for other key variants.
     taskEntry.clutter_text.connect('activate', () => commitTask());
 
     taskEntry.clutter_text.connect('key-press-event', (_actor, event) => {

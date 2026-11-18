@@ -1,8 +1,8 @@
-
-
-
-
-
+/*
+ * App Launcher widget
+ * Adapted for desktop-widgets@r3nhick rendering system
+ * The grid fills the fixed widget size; rows/columns are chosen to keep icons as large as possible.
+ */
 
 import St from 'gi://St';
 import GLib from 'gi://GLib';
@@ -58,9 +58,9 @@ function gridContentSize(widgetWidth, widgetHeight) {
     };
 }
 
-
-
-
+// Pick the rows/columns that best fill the widget's proportions: of every
+// arrangement that fits appCount items, keep the one whose smallest cell is
+// largest (so icons stay as big as the fixed widget size allows).
 function computeGridLayout(appCount, widgetWidth, widgetHeight) {
     if (appCount <= 0) {
         return { cols: 1, rows: 1 };
@@ -96,7 +96,7 @@ function maxAppsFor(sizeKey) {
         case 'minilarge':
             return 6;
         case 'compact':
-            return 4;
+            return 4;  // compact size: 4 icons, same as mini
         case 'medium':
             return 8;
         case 'large':
@@ -116,7 +116,7 @@ function computeIconMetrics(cols, rows, widgetWidth, widgetHeight, sizeKey) {
     const padding = Math.min(TILE_PADDING_MAX, Math.max(TILE_PADDING_MIN, Math.round(minCell * TILE_PADDING_RATIO)));
     const available = Math.max(MIN_ICON_SIZE, minCell - (padding * 2));
 
-
+    // Bigger icons for the compact size
     const iconSizeRatio = sizeKey === 'compact' ? 0.95 : ICON_SIZE_RATIO;
     const iconSize = Math.min(MAX_ICON_SIZE, Math.max(MIN_ICON_SIZE, Math.round(available * iconSizeRatio)));
 
@@ -135,12 +135,12 @@ export function render({ body, widget, theme, sizeForWidget }) {
     const textColor = theme.text;
     const tileBaseBg = cssColorToRgba(textColor, TILE_BASE_ALPHA);
     const tileHoverBg = cssColorToRgba(textColor, TILE_HOVER_ALPHA);
-
+    
     const sizeKey = widget?.size ?? 'medium';
     const [width, height] = sizeForWidget(widget);
-
+    
     const dataFilePath = GLib.build_filenamev([getDataDir('applauncher'), `applauncher-${widget?.id}.json`]);
-
+    
     let apps = defaultApps();
     let appsLoaded = false;
 
@@ -152,7 +152,7 @@ export function render({ body, widget, theme, sizeForWidget }) {
         y_align: Clutter.ActorAlign.FILL,
         style: `padding: ${OUTER_MARGIN}px;`,
     });
-
+    
     body.add_child(container);
 
     const grid = new St.BoxLayout({
@@ -196,13 +196,13 @@ export function render({ body, widget, theme, sizeForWidget }) {
                 body.disconnect(sizeWatch.width);
                 body.disconnect(sizeWatch.height);
             } catch (e) {
-
+                // Ignore disconnect errors (body already gone)
             }
             sizeWatch = null;
         }
 
         grid.destroy_all_children();
-
+        
         if (apps.length === 0) {
             const emptyLabel = new St.Label({
                 text: _('No apps configured'),
@@ -281,8 +281,8 @@ export function render({ body, widget, theme, sizeForWidget }) {
 
                 const cell = { icon: appIcon, button, padding: TILE_PADDING_MIN, hovered: false, pressX: 0, pressY: 0, mousePressed: false };
 
-
-
+                // Tiles keep their hover tint; on top of it the icon eases
+                // down to 85% — the same hover shrink every widget button has.
                 button.set_pivot_point(0.5, 0.5);
                 button.connect('enter-event', () => {
                     cell.hovered = true;
@@ -333,9 +333,9 @@ export function render({ body, widget, theme, sizeForWidget }) {
                     return Clutter.EVENT_STOP;
                 });
 
-
-
-
+                // Keyboard activation: St.Button emits 'clicked' for Enter/Space
+                // when focused; mouse clicks are handled by button-release-event
+                // with the drag threshold, so skip when a mouse press is active.
                 button.connect('clicked', () => {
                     if (cell.mousePressed)
                         return;
@@ -362,10 +362,10 @@ export function render({ body, widget, theme, sizeForWidget }) {
             }
         };
 
-
-
-
-
+        // Watch allocation changes on the body (fast path). During edit-mode
+        // resize/move the body passes through small transient sizes and the
+        // final size change is not guaranteed to arrive as a notify, so a light
+        // poll re-applies the metrics until the size settles.
         sizeWatch = {
             width: body.connect('notify::width', applyScale),
             height: body.connect('notify::height', applyScale),
@@ -393,7 +393,7 @@ export function render({ body, widget, theme, sizeForWidget }) {
         });
     };
 
-
+    // Reload the grid whenever the data file changes (e.g. edit in preferences)
     let reloadTimer = null;
     const reload = () => {
         if (destroyed || reloadTimer) return;
@@ -443,7 +443,7 @@ export function render({ body, widget, theme, sizeForWidget }) {
                 body.disconnect(sizeWatch.width);
                 body.disconnect(sizeWatch.height);
             } catch (e) {
-
+                // Ignore disconnect errors (body already gone)
             }
             sizeWatch = null;
         }
@@ -457,7 +457,7 @@ export function render({ body, widget, theme, sizeForWidget }) {
             try {
                 fileMonitor.cancel();
             } catch (e) {
-
+                // Ignore cancel errors
             }
             fileMonitor = null;
         }

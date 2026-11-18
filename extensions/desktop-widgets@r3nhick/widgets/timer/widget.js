@@ -1,7 +1,7 @@
-
-
-
-
+/*
+ * Timer widget (Countdown Timer)
+ * Countdown timer with manual time adjustment and clean running view
+ */
 
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
@@ -27,6 +27,13 @@ export const supportedSizes = ['medium'];
 
 const TICK_INTERVAL_MS = 100;
 
+// Skips the GI round-trip when the text did not change: the 100 ms tick
+// changes the mm:ss text only once a second.
+function setTextIfChanged(label, text) {
+	if (label.text !== text)
+		label.set_text(text);
+}
+
 function formatTime(seconds) {
 	const mins = Math.floor(seconds / 60);
 	const secs = Math.floor(seconds % 60);
@@ -47,9 +54,9 @@ function textOnAccentColor(accent) {
 	return lum > 0.55 ? 'rgba(30,30,30,0.92)' : 'rgba(255,255,255,0.92)';
 }
 
-
-
-
+// Control glyphs come from the shared music icon set (icons/widgets_settings/
+// music/dw-<name>.svg, with -black/-white variants for painting on light or
+// dark surfaces). Same files, same look as the music widget's buttons.
 function controlIcon(iconName, suffix = '') {
 	const file = widgetResourcePath('music', `dw-${iconName}${suffix}.svg`);
 
@@ -59,15 +66,15 @@ function controlIcon(iconName, suffix = '') {
 }
 
 function iconOnAccentSuffix(accent) {
-
-
+	// Same luminance rule as textOnAccentColor: a light accent surface takes
+	// the black glyph, a dark one the white glyph.
 	const { r, g, b } = parseCssColor(accent);
 	const lum = 0.299 * r + 0.587 * g + 0.114 * b;
 	return lum > 0.55 ? '-black' : '-white';
 }
 
-
-
+// Bundled dw glyph with the symbolic icon as a fallback so the button never
+// paints empty if the SVG file is missing.
 function dwControlIcon(iconName, suffix, size, fallbackName, fallbackColor) {
 	const icon = new St.Icon({ icon_size: size });
 	const gicon = controlIcon(iconName, suffix);
@@ -82,9 +89,9 @@ function dwControlIcon(iconName, suffix, size, fallbackName, fallbackColor) {
 	return icon;
 }
 
-
-
-
+// Ghost controls read against the surface: the white wash was invisible
+// on light cards, so light mode draws an ink wash plus a visible outline;
+// dark keeps the tuned look.
 function ghostBorderColor(theme) {
 	return theme?.dark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.18)';
 }
@@ -106,13 +113,13 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	let timerId = null;
 	let tickCount = 0;
 
-
-
-
-
-
-
-
+	/*
+	 * The countdown lives in render-closure variables, so a theme or style
+	 * switch (every widget gets rebuilt) used to wipe a running timer.
+	 * The per-instance JSON file survives those rebuilds — and the
+	 * wall-clock stamp even carries a running countdown across a
+	 * GNOME relogin.
+	 */
 	const statePath = widgetStatePath('timer', widget);
 
 	const snapshot = () => ({
@@ -130,7 +137,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 		if (savedSeconds <= 0) {
 			return;
 		}
-
+		// A running countdown keeps ticking from wall-clock truth.
 		remainingSeconds = saved.running
 			? Math.max(0, savedSeconds - elapsedSinceWall(saved.wall) / 1000)
 			: savedSeconds;
@@ -150,7 +157,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	});
 	body.add_child(container);
 
-
+	// Setup view (when not running)
 	const setupBox = new St.BoxLayout({
 		orientation: Clutter.Orientation.HORIZONTAL,
 		x_expand: true,
@@ -161,7 +168,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	});
 	container.add_child(setupBox);
 
-
+	// Left: circular progress
 	const leftBox = new St.Widget({
 		width: px(120),
 		height: px(120),
@@ -184,7 +191,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	});
 	leftBox.add_child(setupCircleTimeLabel);
 
-
+	// Center: big time with +/- controls
 	const centerBox = new St.BoxLayout({
 		orientation: Clutter.Orientation.HORIZONTAL,
 		x_expand: true,
@@ -194,12 +201,12 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	});
 	setupBox.add_child(centerBox);
 
-
-
-
-
-
-
+	// Stepper columns. Ubuntu digits are tabular (measured: two digits at
+	// 72px bold = exactly 80px), so every row gets one exact width: the
+	// digits slot is 88px (80 ink + 4px padding each side) and the button
+	// rows are 42 + 4 + 42 = 88px. Zero slack anywhere means the GNOME 51
+	// BoxLayout cross-axis rule (children get full cross width, x_align
+	// ignored) cannot misplace anything — all three rows align by design.
 	const buildStepper = () => {
 		const makeRowButton = (text, big) => new St.Button({
 			reactive: true,
@@ -218,17 +225,37 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 		plusRow.add_child(plus10Btn);
 		plusRow.add_child(plus1Btn);
 
-
-
-
-
-
+		// Keep a fixed slot width so the two columns stay aligned, but don't
+		// squeeze the label to the glyph ink height: the round zero's black
+		// counterform needs extra vertical room or it gets clipped at the top
+		// and bottom edges. font-family is pinned to the Ubuntu digit set so the
+		// numbers stay visually centered and consistent across theme changes.
 		const label = new St.Label({
 			text: '00',
 			x_align: Clutter.ActorAlign.CENTER,
 			style: `color: ${textColor}; font-family: Ubuntu; font-size: ${px(72)}px; font-weight: 700; padding: 0 ${px(4)}px; width: ${px(88)}px; min-height: ${px(60)}px; line-height: 1;`,
 		});
-		label.translation_y = -px(1);
+		// Center the digits' INK in the label box (paint-only translation,
+		// layout untouched): the line box carries descender room under the
+		// digits, so their ink sat ~7px above the middle — closer to the +
+		// row than to the − row. The label box itself is exactly midway
+		// between the rows (equal column spacing), so ink-centering makes
+		// both gaps equal at any font or scale.
+		const centerInk = () => {
+			try {
+				const text = label.clutter_text;
+				const [ink] = text.get_layout().get_pixel_extents();
+				if (!(ink.height > 0) || !label.has_allocation())
+					return;
+				const box = label.get_allocation_box();
+				const inkMid = text.get_allocation_box().y1 + ink.y + ink.height / 2;
+				const ty = Math.round((box.y2 - box.y1) / 2 - inkMid);
+				if (label.translation_y !== ty)
+					label.translation_y = ty;
+			} catch (_e) {}
+		};
+		label.connect('notify::allocation', centerInk);
+		label.clutter_text.connect('notify::allocation', centerInk);
 
 		const minusRow = new St.BoxLayout({ style: `spacing: ${px(4)}px;` });
 		const minus10Btn = makeRowButton('−', true);
@@ -258,17 +285,45 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	} = buildStepper();
 	centerBox.add_child(minutesBox);
 
-
-
-
-
-	const colonLabel = new St.Label({
-		text: ':',
-		y_align: Clutter.ActorAlign.CENTER,
-		style: `color: ${textColor}; font-size: ${px(72)}px; font-weight: 700;`,
+	// Colon: two round dots drawn on the digits' ink midline (the stopwatch
+	// does the same). The ':' font glyph sat at x-height, ~14 px below the
+	// middle of the 72 px digits. The midline is summed from allocations
+	// relative to the shared row (column → label → text → glyph ink).
+	const colonW = px(18);
+	const colonArea = new St.DrawingArea({y_expand: true});
+	colonArea.set_width(colonW);
+	const digitMidline = () => {
+		try {
+			const text = minutesLabel.clutter_text;
+			const [ink] = text.get_layout().get_pixel_extents();
+			if (!(ink.height > 0) || !minutesBox.has_allocation() || !colonArea.has_allocation())
+				return null;
+			const y = minutesBox.get_allocation_box().y1
+				+ minutesLabel.get_allocation_box().y1 + minutesLabel.translation_y
+				+ text.get_allocation_box().y1
+				+ ink.y + ink.height / 2
+				- colonArea.get_allocation_box().y1;
+			return Number.isFinite(y) ? y : null;
+		} catch (_e) {
+			return null;
+		}
+	};
+	colonArea.connect('repaint', canvas => {
+		const ctx = canvas.get_context();
+		const [w, h] = canvas.get_surface_size();
+		const rgb = parseCssColor(textColor) ?? {r: 1, g: 1, b: 1};
+		ctx.setSourceRGBA(rgb.r, rgb.g, rgb.b, 1);
+		const cy = Math.round(digitMidline() ?? h / 2);
+		const fontPx = px(72);
+		const r = Math.max(1, Math.round(fontPx * 6 / 64));
+		const dy = Math.max(2, Math.round(fontPx * 9 / 64));
+		for (const offset of [-dy, dy]) {
+			ctx.arc(w / 2, cy + offset, r, 0, 2 * Math.PI);
+			ctx.fill();
+		}
+		ctx.$dispose();
 	});
-	colonLabel.translation_x = -px(3);
-	centerBox.add_child(colonLabel);
+	centerBox.add_child(colonArea);
 
 	const {
 		column: secondsBox,
@@ -279,8 +334,12 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 		label: secondsLabel,
 	} = buildStepper();
 	centerBox.add_child(secondsBox);
+	minutesLabel.connectObject('notify::allocation', () => colonArea.queue_repaint(), colonArea);
+	// The digits' ink-centering translation moves them: the dots follow.
+	minutesLabel.connectObject('notify::translation-y', () => colonArea.queue_repaint(), colonArea);
+	minutesBox.connectObject('notify::allocation', () => colonArea.queue_repaint(), colonArea);
 
-
+	// Right: Play button (in setup view)
 	const setupRightBox = new St.BoxLayout({
 		orientation: Clutter.Orientation.VERTICAL,
 		x_align: Clutter.ActorAlign.END,
@@ -299,7 +358,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 
 	setupBox.add_child(setupRightBox);
 
-
+	// Running view (when timer is running)
 	const runningBox = new St.BoxLayout({
 		orientation: Clutter.Orientation.HORIZONTAL,
 		x_expand: true,
@@ -311,7 +370,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	});
 	container.add_child(runningBox);
 
-
+	// Left: circular progress (running)
 	const runningLeftBox = new St.Widget({
 		width: px(140),
 		height: px(140),
@@ -334,7 +393,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	});
 	runningLeftBox.add_child(runningCircleTimeLabel);
 
-
+	// Big time display (center)
 	const runningTimeLabel = new St.Label({
 		text: '00:00',
 		x_expand: true,
@@ -344,7 +403,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	});
 	runningBox.add_child(runningTimeLabel);
 
-
+	// Right: Pause and Stop buttons
 	const runningRightBox = new St.BoxLayout({
 		orientation: Clutter.Orientation.VERTICAL,
 		x_align: Clutter.ActorAlign.END,
@@ -382,13 +441,13 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 		const lineWidth = canvas === runningCircleCanvas ? px(10) : px(8);
 		const radius = Math.min(w, h) / 2 - lineWidth;
 
-
+		// Background circle
 		ctx.setSourceRGBA(0.5, 0.5, 0.5, 0.2);
 		ctx.setLineWidth(lineWidth);
 		ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
 		ctx.stroke();
 
-
+		// Progress arc
 		if (progress > 0) {
 			const accentRgb = parseCssColor(accentHex);
 			ctx.setSourceRGBA(accentRgb.r, accentRgb.g, accentRgb.b, 1.0);
@@ -408,22 +467,26 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 
 	const updateDisplay = () => {
 		const time = formatTime(remainingSeconds);
-		minutesLabel.set_text(time.minutes);
-		secondsLabel.set_text(time.seconds);
-		setupCircleTimeLabel.set_text(`${time.minutes}:${time.seconds}`);
-		runningCircleTimeLabel.set_text(`${time.minutes}:${time.seconds}`);
-		runningTimeLabel.set_text(`${time.minutes}:${time.seconds}`);
+		const mmss = `${time.minutes}:${time.seconds}`;
+		setTextIfChanged(minutesLabel, time.minutes);
+		setTextIfChanged(secondsLabel, time.seconds);
+		setTextIfChanged(setupCircleTimeLabel, mmss);
+		setTextIfChanged(runningCircleTimeLabel, mmss);
+		setTextIfChanged(runningTimeLabel, mmss);
 
 		if (totalSeconds > 0) {
 			progress = Math.max(0, Math.min(1, remainingSeconds / totalSeconds));
 		} else {
 			progress = 0;
 		}
+		
+		// Only the visible ring needs a new frame.
+		if (isRunning)
+			runningCircleCanvas.queue_repaint();
+		else
+			setupCircleCanvas.queue_repaint();
 
-		setupCircleCanvas.queue_repaint();
-		runningCircleCanvas.queue_repaint();
-
-
+		// Show/hide views based on running state
 		if (isRunning) {
 			setupBox.visible = false;
 			runningBox.visible = true;
@@ -445,14 +508,14 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	const startTimer = () => {
 		if (isRunning || remainingSeconds <= 0) return;
 		isRunning = true;
-		totalSeconds = remainingSeconds;
+		totalSeconds = remainingSeconds; // Lock in the total time
 		const startTime = GLib.get_monotonic_time() / 1000;
 		const targetEndTime = startTime + (remainingSeconds * 1000);
 		timerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, TICK_INTERVAL_MS, () => {
 			const now = GLib.get_monotonic_time() / 1000;
 			remainingSeconds = Math.max(0, (targetEndTime - now) / 1000);
 			updateDisplay();
-
+			// Keep the wall stamp fresh (≤ ~1s stale) for surprise teardowns.
 			if (++tickCount % 10 === 0) {
 				saveState();
 			}
@@ -486,13 +549,13 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 		saveState();
 	};
 
-
+	// Minutes controls
 	minutesPlus10Btn.connect('clicked', () => setTimer(remainingSeconds + 600));
 	minutesPlus1Btn.connect('clicked', () => setTimer(remainingSeconds + 60));
 	minutesMinus10Btn.connect('clicked', () => setTimer(remainingSeconds - 600));
 	minutesMinus1Btn.connect('clicked', () => setTimer(remainingSeconds - 60));
 
-
+	// Seconds controls
 	secondsPlus10Btn.connect('clicked', () => setTimer(remainingSeconds + 10));
 	secondsPlus1Btn.connect('clicked', () => setTimer(remainingSeconds + 1));
 	secondsMinus10Btn.connect('clicked', () => setTimer(remainingSeconds - 10));
@@ -507,7 +570,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 	pauseBtn.connect('clicked', () => pauseTimer());
 	stopBtn.connect('clicked', () => stopTimerInternal());
 
-
+	// Squash-and-spring feedback (shared with music) on every control.
 	for (const button of [minutesPlus10Btn, minutesPlus1Btn, minutesMinus10Btn, minutesMinus1Btn,
 		secondsPlus10Btn, secondsPlus1Btn, secondsMinus10Btn, secondsMinus1Btn,
 		startBtn, pauseBtn, stopBtn]) {
@@ -519,7 +582,7 @@ function renderMediumTimer({body, theme, sizeForWidget, widget}) {
 			GLib.Source.remove(timerId);
 			timerId = null;
 		}
-
+		// Exact snapshot for in-process rebuilds and logout teardowns.
 		flushState();
 	});
 

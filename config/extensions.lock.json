@@ -18,7 +18,7 @@
         "49",
         "50"
       ],
-      "sha256": "52c209df9bb4a5525506aa7b8aa8bf77290312e6334d378b8219626a242ed21d",
+      "sha256": "7c95032431baa72771e01cffcf92e8f973c2a7f89aeae20a312301834e5e87f9",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -575,12 +575,12 @@
     "desktop-widgets@r3nhick": {
       "uuid": "desktop-widgets@r3nhick",
       "name": "Desktop Widgets",
-      "pinned_version": 15,
+      "pinned_version": 16,
       "shell_compatibility": [
         "50",
         "51"
       ],
-      "sha256": "e82b9aeccd35128b0c9eb60cbc614bc76d44dfbc7fc1835e2cd87ebbaab34b2e",
+      "sha256": "89052495221a7be28cd391ebe834c783299f0c99c4e70c9c6663e29079ac23d3",
       "status": "locked",
       "source": "github",
       "macw1y_components": [

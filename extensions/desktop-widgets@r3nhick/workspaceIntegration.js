@@ -75,6 +75,7 @@ export class WorkspaceIntegration {
     this._signals.push([
       Main.overview,
       Main.overview.connect('showing', () => {
+        this._syncOverviewPreviews();
         this.queueSync();
       }),
     ]);

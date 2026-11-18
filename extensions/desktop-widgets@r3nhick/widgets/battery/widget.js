@@ -39,7 +39,7 @@ function variantValue(props, name, fallback = null) {
 	return props[name] ? props[name].deep_unpack() : fallback;
 };
 
-
+// Storage-independent color helper for the accent accent pass-through.
 function hexToRgb(color) {
 	const str = String(color ?? '').trim();
 	const hex = str.replace('#', '');
@@ -184,8 +184,8 @@ function isBatteryLike(props) {
 
 Gio._promisify(Gio.DBusConnection.prototype, 'call', 'call_finish');
 
-
-
+// GJS returns the reply variant wrapped in a tuple for the sync path but
+// unwrapped for the promisified async path; normalize both.
 function unwrapReply(reply) {
 	return Array.isArray(reply) ? reply[0] : reply;
 };
@@ -261,41 +261,21 @@ async function readBlueZDevices() {
 			const deviceProps = interfaces['org.bluez.Device1'];
 			const batteryProps = interfaces['org.bluez.Battery1'];
 
-			if (!deviceProps || !variantValue(deviceProps, 'Connected', false)) {
+			if (!deviceProps || !batteryProps || !variantValue(deviceProps, 'Connected', false)) {
 				continue;
 			};
 
-			let percentage = batteryProps ? Number(variantValue(batteryProps, 'Percentage', Number.NaN)) : Number.NaN;
-			let icon = variantValue(deviceProps, 'Icon', null);
-			const nameStr = String(variantValue(deviceProps, 'Alias', '') || variantValue(deviceProps, 'Name', '') || _('Bluetooth'));
-			const nameLower = nameStr.toLowerCase();
-
-			if (!icon) {
-				if (nameLower.includes('airpod') || nameLower.includes('headphone') || nameLower.includes('ear') || nameLower.includes('buds') || nameLower.includes('audio') || nameLower.includes('jbl') || nameLower.includes('sound')) {
-					icon = 'audio-headphones';
-				} else if (nameLower.includes('mouse')) {
-					icon = 'input-mouse';
-				} else if (nameLower.includes('keyboard')) {
-					icon = 'input-keyboard';
-				}
-			}
-
-			const iconName = bluezIconName(icon);
-			const isAudioOrPeripheral = iconName.includes('head') || iconName.includes('audio') || iconName.includes('mouse') || iconName.includes('keyboard');
-
-
+			const percentage = Number(variantValue(batteryProps, 'Percentage', Number.NaN));
 
 			if (!Number.isFinite(percentage)) {
-				if (isAudioOrPeripheral) {
-					percentage = 100;
-				} else {
-					continue;
-				}
-			}
+				continue;
+			};
+
+			const iconName = bluezIconName(variantValue(deviceProps, 'Icon', null));
 
 			devices.push({
 				source: 'bluez',
-				name: nameStr,
+				name: String(variantValue(deviceProps, 'Alias', '') || variantValue(deviceProps, 'Name', '') || _('Bluetooth')),
 				percentage: Math.round(Math.max(0, Math.min(100, percentage))),
 				powerSupply: false,
 				iconName,
@@ -349,9 +329,9 @@ function devicesSignature(devices) {
 		.join(';');
 };
 
-
-
-
+// Renders read this synchronously (never touching DBus), so the shell composer
+// is never blocked; a background refresh updates the cache and notifies once
+// the data actually changed.
 export function getCachedBatteryDevices() {
 	return cachedDevices;
 };
@@ -361,10 +341,10 @@ export function onBatteryDevicesChanged(callback) {
 	return () => deviceListeners.delete(callback);
 };
 
-export function refreshBatteryDevices(force = false) {
+export function refreshBatteryDevices() {
 	const now = Date.now();
 
-	if (refreshPromise || (!force && now - lastRefreshAt < REFRESH_MIN_INTERVAL_MS)) {
+	if (refreshPromise || now - lastRefreshAt < REFRESH_MIN_INTERVAL_MS) {
 		return refreshPromise;
 	};
 
@@ -403,14 +383,13 @@ export function refreshBatteryDevices(force = false) {
 };
 
 const BatteryRing = GObject.registerClass(
-	{GTypeName: `BatteryRing_${Date.now()}`},
 	class BatteryRing extends St.DrawingArea {
 		_init(device, theme, useAccent) {
 			super._init({style_class: 'widget-battery-ring'});
 			this._percentage = device?.percentage ?? null;
 			if (useAccent && theme?.accent) {
-
-
+				// Accent pass-through: system accent or the user's custom
+				// accent color (the theme object already resolves it).
 				const rgb = hexToRgb(theme.accent);
 				this._ringColor = [rgb.r, rgb.g, rgb.b];
 			} else {
@@ -459,12 +438,12 @@ const ICON_RATIOS = {
 	large: 0.46,
 };
 
-
-
+// The original look (ring + centered icon + % label below), scaled so the
+// rings fill the available area instead of overflowing or hanging in free space.
 function batteryPlan(width, height, iconRatio, count) {
 	count = Math.max(1, count);
 	const gap = 12;
-	const padV = 18;
+	const padV = 18; // 8px top + 10px bottom from the widget's inline padding
 	const border = 2;
 	const slotSpacing = 6;
 	const usableHeight = Math.max(0, height - padV - border);

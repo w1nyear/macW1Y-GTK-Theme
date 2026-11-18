@@ -4,18 +4,18 @@ import Shell from 'gi://Shell';
 
 import { warn } from '../logger.js';
 
-
-
+// Desktop-widgets screen time engine: tracks focused windows and accumulates
+// per-app, per-hour seconds. Persists one JSON file per day.
 
 const TICK_INTERVAL_MS = 2000;
 const SAVE_THROTTLE_MS = 15000;
 const MICROSECONDS_PER_SECOND = 1000000;
 const SECONDS_PER_HOUR = 3600;
 const HOURS_PER_DAY = 24;
-const DEFAULT_RETENTION_DAYS = 30;
+const DEFAULT_RETENTION_DAYS = 30; // Keep data for this many days by default
 
-
-
+// Pseudo entry crediting unlocked desktop time (wallpaper, overview,
+// widgets) when no window holds focus. Locked screens never count.
 const DESKTOP_APP_KEY = 'desktop@shell-session';
 
 function getDataDir() {
@@ -40,7 +40,7 @@ function cleanupOldFiles(retentionDays) {
 	const cutoffDate = `${cutoff.get_year()}-${String(cutoff.get_month()).padStart(2, '0')}-${String(cutoff.get_day_of_month()).padStart(2, '0')}`;
 	const dirFile = Gio.File.new_for_path(dir);
 
-
+	// Enumerate asynchronously so startup and midnight rollover don't block the UI thread.
 	dirFile.enumerate_children_async(
 		'standard::name', Gio.FileQueryInfoFlags.NONE, GLib.PRIORITY_LOW, null,
 		(source, result) => {
@@ -48,7 +48,7 @@ function cleanupOldFiles(retentionDays) {
 			try {
 				enumerator = source.enumerate_children_finish(result);
 			} catch (e) {
-
+				// Directory may not exist yet — that's fine.
 				return;
 			}
 
@@ -138,7 +138,7 @@ export const screenTimeEngine = {
 	_retentionDays: DEFAULT_RETENTION_DAYS,
 	_paused: false,
 
-
+	/** Sets how many days of history to keep; older files are cleaned up on next start/rollover. */
 	setRetentionDays(days) {
 		const value = Math.max(1, Math.floor(Number(days) || DEFAULT_RETENTION_DAYS));
 		if (value === this._retentionDays) return;
@@ -146,7 +146,7 @@ export const screenTimeEngine = {
 		cleanupOldFiles(this._retentionDays);
 	},
 
-
+	/** Pause/resume screen time tracking (e.g., when fullscreen or screen locked). */
 	setPaused(paused) {
 		if (this._paused === paused) return;
 		this._paused = paused;
@@ -154,13 +154,13 @@ export const screenTimeEngine = {
 		const now = GLib.get_real_time();
 
 		if (paused) {
-
+			// Keep the current focus and elapsed time while paused
 			this._flushFocused(now);
 			this._saveNow();
 		} else {
-
-
-
+			// Resume: re-anchor the focus start so the paused stretch
+			// (fullscreen / locked — not screen time) is not credited to the
+			// focused app on the next flush. The next tick re-resolves focus.
 			this._focusStartMicro = now;
 		}
 	},
@@ -214,8 +214,8 @@ export const screenTimeEngine = {
 
 	_buildSnapshot(dateString, appsMap) {
 		const hoursAggregate = new Array(HOURS_PER_DAY).fill(0);
-
-
+		// Per-hour dominant app (null where the hour has no activity) — the
+		// widgets color hour buckets and legends after it.
 		const hourKeys = new Array(HOURS_PER_DAY).fill(null);
 		const hourPeak = new Array(HOURS_PER_DAY).fill(0);
 		const apps = [];
@@ -278,8 +278,8 @@ export const screenTimeEngine = {
 		this._listeners.clear();
 		this._focusedKey = null;
 		this._focusStartMicro = null;
-
-
+		// A stopped engine must not wake up still paused: the next widget to
+		// acquire it defines its own pause state.
 		this._paused = false;
 	},
 
@@ -291,15 +291,15 @@ export const screenTimeEngine = {
 	},
 
 	_tick() {
-
+		// Skip ticks while paused (e.g. a fullscreen window)
 		if (this._paused) {
 			return;
 		}
 
 		const now = GLib.get_real_time();
-
-
-
+		// Re-resolve every tick: transitions the focus signal cannot see
+		// (lock/unlock, desktop <-> null focus) otherwise stick until the
+		// next real focus change and those stretches went uncounted.
 		const resolved = this._resolveFocusedKey();
 		if (resolved !== this._focusedKey) {
 			this._flushFocused(now);
@@ -332,10 +332,10 @@ export const screenTimeEngine = {
 			const segmentStart = GLib.DateTime.new_from_unix_local(epochSecond);
 			const secondsIntoHour = segmentStart.get_minute() * 60 + segmentStart.get_second();
 
-
-
-
-
+			// Rollover happens per-SEGMENT, not per-flush: a flush spanning
+			// midnight must credit the pre-midnight hour to the old day's
+			// file (the rollover is what switches the in-memory map, so doing
+			// it first would write hour 23 of yesterday into today's file).
 			const segmentDate = `${segmentStart.get_year()}-${String(segmentStart.get_month()).padStart(2, '0')}-${String(segmentStart.get_day_of_month()).padStart(2, '0')}`;
 			if (segmentDate !== this._currentDate) {
 				this._saveNow();
@@ -376,11 +376,11 @@ export const screenTimeEngine = {
 			return null;
 		}
 
-
-
-
-
-
+		// No window holds focus, yet the session is on: the user lives on the
+		// desktop (wallpaper widgets, overview) — that time is real screen
+		// time too. The previously un-credited stretches were the main reason
+		// the widget showed less time than actually spent. The locked screen
+		// stays exempt.
 		if (global.sessionMode?.isLocked) return null;
 		return DESKTOP_APP_KEY;
 	},

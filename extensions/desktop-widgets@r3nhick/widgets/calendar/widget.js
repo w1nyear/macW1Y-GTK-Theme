@@ -12,6 +12,7 @@ import { isActorDestroyed } from '../../utils/ported.js';
 import { warn } from '../../logger.js';
 import { boxLayoutProps } from '../../utils/gnomeCompat.js';
 import { createPageIndicator } from '../../lib/pageIndicator.js';
+import { createHoldWatch, BUTTON3_MASK } from '../../lib/pager.js';
 
 const EXTENSION_PATH = GLib.path_get_dirname(GLib.path_get_dirname(GLib.path_get_dirname(import.meta.url.replace('file://', ''))));
 
@@ -36,9 +37,9 @@ const CALENDAR_SERVER_PATH = '/org/gnome/Shell/CalendarServer';
 const CALENDAR_SERVER_IFACE = 'org.gnome.Shell.CalendarServer';
 const EVENTS_REFRESH_SECONDS = 300;
 const EVENTS_WINDOW_DAYS = 35;
-
-
-
+// The events list looks this far ahead; the schema stores the index
+// (mirror of the reference widget's lookahead idea: 0 = only today and
+// tomorrow, 1 = 7, 2 = 14, 3 = 30, 4 = 60 days).
 const LOOKAHEAD_DAYS = [1, 7, 14, 30, 60];
 
 function lookaheadDays(settings) {
@@ -51,9 +52,9 @@ const ANIMATION_DURATION = 250;
 const VIEW_CALENDAR = 0;
 const VIEW_EVENTS = 1;
 
-
-
-
+// 1x1 view memory. Theme/style changes rebuild the card in place — the
+// open view must survive that instead of snapping back to the calendar
+// page (in-memory only: a shell restart starts on the calendar view).
 let lastCalendarView = VIEW_CALENDAR;
 
 export class CalendarEventsClient {
@@ -228,8 +229,8 @@ export class CalendarEventsClient {
   };
 
   eventsInRange(since, until) {
-
-
+    // Events starting inside the window — the Calendar app's "upcoming"
+    // semantics for the events list lookahead.
     const out = [];
 
     for (const event of this._events.values()) {
@@ -288,13 +289,13 @@ function uppercaseWeekday(date) {
 
 function weekdayLabels(format, firstDay = 1) {
 	const referenceDates = [
-		new Date(2024, 0, 7),
-		new Date(2024, 0, 1),
-		new Date(2024, 0, 2),
-		new Date(2024, 0, 3),
-		new Date(2024, 0, 4),
-		new Date(2024, 0, 5),
-		new Date(2024, 0, 6),
+		new Date(2024, 0, 7), // Sunday
+		new Date(2024, 0, 1), // Monday
+		new Date(2024, 0, 2), // Tuesday
+		new Date(2024, 0, 3), // Wednesday
+		new Date(2024, 0, 4), // Thursday
+		new Date(2024, 0, 5), // Friday
+		new Date(2024, 0, 6), // Saturday
 	];
 
 	return Array.from({length: 7}, (_unused, column) => {
@@ -310,10 +311,10 @@ function weekdayLabels(format, firstDay = 1) {
 	});
 };
 
-
-
-
-
+// Which days count as weekend, and which day a week starts on — resolved
+// from the user locale (Intl.Locale.getWeekInfo), with the GNOME
+// "first day of week" setting as a fallback. Mirror of the reference
+// calendar widget.
 function localeCalendarInfo() {
 	const localeName = Intl.DateTimeFormat().resolvedOptions().locale;
 	let weekend = new Set([0, 6]);
@@ -386,9 +387,9 @@ function noEventsToday() {
 }
 
 function isAllDayEvent(event) {
-
-
-
+	// The calendar server doesn't report an all-day flag, so infer it from
+	// timestamps: the event starts at local midnight and spans a whole number
+	// of days (a ±1 h tolerance covers DST transitions).
 	const start = new Date(event.start * 1000);
 	if (start.getHours() !== 0 || start.getMinutes() !== 0 || start.getSeconds() !== 0)
 		return false;
@@ -403,7 +404,7 @@ function formatEventTime(event, settings, forceShowMinutes = false) {
 	if (hourFormat === '12') {
 		const hours = ((start.getHours() + 11) % 12) + 1;
 		const amPm = start.getHours() < 12 ? _('AM') : _('PM');
-
+		// For events list, always show minutes and AM/PM
 		const time = (forceShowMinutes || start.getMinutes() !== 0)
 			? `${hours}:${minutes}`
 			: String(hours);
@@ -412,11 +413,11 @@ function formatEventTime(event, settings, forceShowMinutes = false) {
 	return `${String(start.getHours()).padStart(2, '0')}:${minutes}`;
 }
 
-
-
-
-
-
+// Palette used to color event rows. The calendar server doesn't report a
+// per-source color, so each calendar gets a stable color derived from its
+// source UID (embedded in the event id as "source_uid\ncomp_uid\ncomp_rid"),
+// matching how the Calendar app keeps one color per calendar instead of
+// cycling by list position.
 const EVENT_COLORS = ['#ff6600', '#3584e4', '#33d17a', '#f6d32d', '#9141ac', '#e01b24'];
 
 function hashString(str) {
@@ -431,9 +432,9 @@ function sourceColor(eventId) {
 	return EVENT_COLORS[Math.abs(hashString(sourceId)) % EVENT_COLORS.length];
 }
 
-
-
-
+// White or near-black day number so the highlighted day stays readable on
+// any accent color — including white / very light custom accents where a
+// hardcoded white label would vanish into the pill.
 function readableOnColor(color) {
 	const s = String(color ?? '').trim();
 
@@ -449,7 +450,7 @@ function readableOnColor(color) {
 		g = (v >> 8) & 255;
 		b = v & 255;
 	} else {
-
+		// The custom accent arrives as "rgba(R, G, B, A)" (Gdk.RGBA.to_string).
 		const rgb = s.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
 
 		if (rgb) {
@@ -463,7 +464,7 @@ function readableOnColor(color) {
 		return '#ffffff';
 	};
 
-
+	// Perceived (relative) luminance, 0..1
 	const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 
 	return lum > 0.62 ? '#1c1c1e' : '#ffffff';
@@ -478,14 +479,14 @@ function isTomorrowEvent(event, now) {
 };
 
 function isUpcomingEvent(event, now) {
-
+	// Anything from the day after tomorrow onward — gets a date subtitle.
 	const d = new Date(event.start * 1000);
 	const dayAfter = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
 	return d.getTime() >= dayAfter.getTime();
 };
 
-
-
+// "Wed, Oct 24" / "ср, 24 жовт." — locale-driven day label for the
+// upcoming-events lookahead rows.
 function formatEventDay(date) {
 	return date.toLocaleDateString(undefined, {weekday: 'short', month: 'short', day: 'numeric'});
 };
@@ -606,9 +607,9 @@ function buildGrid(options) {
 				: null;
 
 			row.add_child(calendarCell(String(day), labelStyle, cellStyle, createLabel, cellWidth, cellHeight, cellsInteractive, 0, label => {
-
-
-
+				// The accent pill is drawn by the cell style at the cell size;
+				// no extra width anywhere, so the row never shifts around the
+				// highlighted day.
 				label.clutter_text.set_line_wrap(false);
 			}));
 			day++;
@@ -635,8 +636,8 @@ function monthLabel(now, createLabel, dayFont, theme, useAccentColor, scale = 1)
 };
 
 export function style(theme) {
-
-
+	// Inner padding kept tighter than the original framing; the bottom is
+	// 4px so the 1x1 page dots can sit close to the frame edge.
 	return `background-color: ${theme.background}; border-color: ${theme.border}; color: ${theme.text}; border-radius: 16px; padding: 17px 15px 4px 15px;`;
 };
 
@@ -686,7 +687,7 @@ function buildEventsView(options) {
 		style: 'spacing: 8px;',
 	}));
 
-
+	// Header
 	const header = createLabel(
 		_('Events'),
 		'widget-calendar-month',
@@ -698,7 +699,7 @@ function buildEventsView(options) {
 	header.clutter_text.set_ellipsize(Pango.EllipsizeMode.NONE);
 	view.add_child(header);
 
-
+	// Events scroll container
 	const eventsScroll = new St.ScrollView({
 		x_expand: true,
 		y_expand: true,
@@ -742,62 +743,61 @@ function fillEventsBox(container, {eventsClient, now, secondary, createLabel, se
 	const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 	const tomorrowEvents = eventsClient.eventsForDate(tomorrow);
 
-
-
+	// Upcoming events from the day after tomorrow through the lookahead
+	// window (mirror of the reference widget's "upcoming" group).
 	const upcomingSince = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
 	const upcomingSinceUnix = Math.floor(upcomingSince.getTime() / 1000);
 	const horizon = new Date(now.getFullYear(), now.getMonth(), now.getDate() + lookaheadDays(settings));
 	const horizonUnix = Math.floor(horizon.getTime() / 1000) + 86399;
 	const upcomingEvents = eventsClient.eventsInRange?.(upcomingSinceUnix, horizonUnix) ?? [];
 
-
-	const allEvents = [...todayEvents, ...tomorrowEvents, ...upcomingEvents];
-	const shown = allEvents.slice(0, 2);
+	// Show all today's events + tomorrow's + upcoming ones inside the window
+	const shown = [...todayEvents, ...tomorrowEvents, ...upcomingEvents];
 
 	if (!shown.length) {
 		container.add_child(eventLabel(noEventsToday()));
-		return;
+		return 0;
 	};
 
 	for (const event of shown) {
 		const eventText = event.summary && event.summary.trim() ? event.summary.trim() : '…';
-
+		// Use accent color for the event indicator line
 		const eventColor = theme?.accent ?? '#ff6600';
 
-
+		// Event item container - vertical layout like in CALD design
 		const eventItem = new St.BoxLayout(boxLayoutProps({
 			vertical: false,
 			style_class: 'widget-calendar-event-item',
 			style: `spacing: 0;`,
 		}));
 
-
+		// Colored vertical indicator line on the left (4px like in Lua)
 		const colorBar = new St.Widget({
 			style_class: 'widget-calendar-event-color',
-			style: `background-color: ${eventColor}; width: 3.5px; border-radius: 2px; min-height: 24px;`,
+			style: `background-color: ${eventColor}; width: 4px; border-radius: 2px; min-height: 28px;`,
 		});
 		eventItem.add_child(colorBar);
 
-
+		// Text container (title + subtitle)
 		const textBox = new St.BoxLayout(boxLayoutProps({
 			vertical: true,
 			x_expand: true,
-			style: `spacing: 1px; padding-left: 7px;`,
+			style: `spacing: 2px; padding-left: 8px;`,
 		}));
 
-
+		// Event title
 		const eventTextLabel = createLabel(
 			eventText,
 			'widget-calendar-events',
-			`font-size: 13.5px; font-weight: 600; color: ${text};`
+			`font-size: 15px; font-weight: 600; color: ${text};`
 		);
 		eventTextLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
 		eventTextLabel.clutter_text.line_wrap = false;
 		eventTextLabel.x_expand = true;
 		textBox.add_child(eventTextLabel);
 
-
-
+		// Subtitle: time for today, "Tomorrow" for the next day, and a
+		// locale day label for upcoming events (or "All day" variants).
 		let subtitleText;
 		if (isUpcomingEvent(event, now)) {
 			const dayStr = formatEventDay(new Date(event.start * 1000));
@@ -809,7 +809,7 @@ function fillEventsBox(container, {eventsClient, now, secondary, createLabel, se
 				? _('Tomorrow')
 				: _('All day');
 		} else {
-
+			// Show time for both today and tomorrow events (always with minutes and AM/PM)
 			const timeStr = formatEventTime(event, settings, true);
 			subtitleText = isTomorrowEvent(event, now)
 				? _('Tomorrow, %s').format(timeStr)
@@ -819,7 +819,7 @@ function fillEventsBox(container, {eventsClient, now, secondary, createLabel, se
 		const eventSubtitle = createLabel(
 			subtitleText,
 			'widget-calendar-events',
-			`font-size: 11px; font-weight: 500; color: ${secondary};`
+			`font-size: 12px; font-weight: 500; color: ${secondary};`
 		);
 		eventSubtitle.clutter_text.line_wrap = false;
 		eventSubtitle.x_expand = true;
@@ -828,6 +828,7 @@ function fillEventsBox(container, {eventsClient, now, secondary, createLabel, se
 		eventItem.add_child(textBox);
 		container.add_child(eventItem);
 	};
+	return shown.length;
 };
 
 export function render({body, createLabel, events, sizeForWidget, widget, theme, settings}) {
@@ -837,16 +838,16 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 	const weekdayFormat = settings?.get_string('calendar-weekday-format') ?? 'short';
 	const useAccentColor = settings?.get_boolean('calendar-use-accent-color') ?? false;
 	const localeInfo = localeCalendarInfo();
-
-
+	// First day of the week: 0 = auto (locale / GNOME setting), otherwise a
+	// reference-enum day (1 = Sunday, 2 = Monday) mapped to JS getDay().
 	const firstDaySetting = settings?.get_int('calendar-first-day') ?? 0;
 	const firstDay = firstDaySetting === 1
 		? 0
 		: firstDaySetting === 2 ? 1 : localeInfo.firstDay;
 	const weekend = localeInfo.weekend;
-
-
-
+	// Dimmed text for weekend days — slightly lighter on dark themes and
+	// darker gray on light ones (reference calendar treatment). The light
+	// shade is dark enough to hold its own on the milky light glass.
 	const weekendColor = theme?.dark ? 'rgba(255, 255, 255, 0.55)' : 'rgba(36, 31, 49, 0.62)';
 	const weekdays = weekdayLabels(weekdayFormat, firstDay);
 	const now = new Date();
@@ -867,53 +868,103 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 
 	if (wide) {
 		const rightWidth = Math.round(clamp(widgetWidth * 0.45, 168, 230));
-		const cellWidth = Math.round(19 * (rightWidth / 175));
-		const cellHeight = Math.round(cellWidth * (compact ? 0.76 : 0.85));
-		const dayFont = Math.max(9, Math.round(11.5 * (cellWidth / 19)));
+		const cellWidth = Math.round(20 * (rightWidth / 175));
+		// Header sizes keep the width-derived day font (they don't shrink).
+		const baseDayFont = Math.max(9, Math.round(DAY_BASE_FONT * (cellWidth / 20)));
+		// Fit the grid to the card HEIGHT too: a 6-week month (e.g. November
+		// 2026 with Monday first) needed month + weekday row + 6 rows ≈ 181px
+		// in a ~167px card and the last row ("30") was cut off. Rows, gaps
+		// and — when rows get shorter — the day font follow the height.
+		const monthFontPx = Math.max(9, Math.round(13 * (cellWidth / 20) * (baseDayFont / 12)));
+		const monthH = Math.ceil(monthFontPx * 1.3) + 4;
+		const gridH = widgetHeight - 17 - 4 - 2 - monthH;
+		const rows = weekCount + 1;
+		const gap = weekCount >= 6 ? GAP_BASE - 1 : GAP_BASE;
+		const fitH = Math.floor((gridH - gap * (rows - 1)) / rows);
+		const cellHeight = Math.max(12, Math.min(Math.round(cellWidth * (compact ? 0.95 : 1)), fitH));
+		const dayFont = Math.max(9, Math.min(baseDayFont, Math.round(cellHeight * 0.74)));
 		const weekdayFont = fitWeekdayFontSize(weekdays, cellWidth, dayFont);
-		const gap = compact ? 2 : 3;
 
 		const container = new St.BoxLayout(boxLayoutProps({
 			x_expand: true,
 			y_expand: true,
-			style: `spacing: 18px; margin-bottom: 12px;`,
+			style: `spacing: 20px;`,
 		}));
-		container.margin_bottom = 12;
 
 		const left = new St.BoxLayout(boxLayoutProps({
 			vertical: true,
 			x_expand: true,
-			style: 'spacing: 2px;',
+			style: 'spacing: 4px;',
 		}));
 
 		const weekdayNameColor = useAccentColor ? theme.accent : text;
-		left.add_child(createLabel(
+		const dayNameLabel = createLabel(
 			uppercaseWeekday(now),
 			'widget-calendar-day-name',
-			`font-size: 14px; font-weight: 700; color: ${weekdayNameColor};`));
-		left.add_child(createLabel(
+			`font-size: 15px; font-weight: 700; color: ${weekdayNameColor};`);
+		const dayNumberLabel = createLabel(
 			String(today),
 			'widget-calendar-day-number',
-			`font-size: 48px; font-weight: 700; color: ${text};`));
-		left.add_child(new St.Widget({y_expand: true}));
+			`font-size: 58px; font-weight: 700; color: ${text};`);
+		const dateSpacer = new St.Widget({y_expand: true});
+		// "Events" header, as on the 1x1 events page — shown only when the
+		// date block steps aside. Same size/weight as the month header on
+		// the right ("NOVEMBER") so both titles sit on one line.
+		const eventsHeader = createLabel(
+			_('Events'),
+			'widget-calendar-month',
+			`font-size: ${monthFontPx}px; font-weight: 800; color: ${text}; margin-bottom: 4px;`);
+		eventsHeader.x_expand = true;
+		eventsHeader.x_align = Clutter.ActorAlign.START;
+		eventsHeader.clutter_text.set_line_wrap(false);
+		eventsHeader.clutter_text.set_ellipsize(Pango.EllipsizeMode.NONE);
+		eventsHeader.visible = false;
+		left.add_child(eventsHeader);
+		left.add_child(dayNameLabel);
+		left.add_child(dayNumberLabel);
+		left.add_child(dateSpacer);
 
+		// Scroll container for events list
+		const eventsScroll = new St.ScrollView({
+			x_expand: true,
+			y_expand: false,
+			style: 'margin-bottom: 6px;',
+			overlay_scrollbars: true,
+		});
+		eventsScroll.set_policy(St.PolicyType.NEVER, St.PolicyType.AUTOMATIC);
 
 		const eventsBox = new St.BoxLayout(boxLayoutProps({
 			vertical: true,
-			style: 'spacing: 3px;',
+			style: 'spacing: 4px;',
 		}));
-		left.add_child(eventsBox);
-		left.add_child(new St.Widget({height: 14}));
+		eventsScroll.set_child(eventsBox);
+		left.add_child(eventsScroll);
+
+		// Many events: the weekday + big number step aside so the list gets
+		// the whole column (optional, Calendar settings). Capacity = event
+		// rows (title + subtitle ≈ 46px) that fit under the date block.
+		const hideDateWhenBusy = settings?.get_boolean('calendar-hide-date-many-events') ?? true;
+		const EVENT_ROW_H = 46;
+		const dateBlockH = Math.round(15 * 1.4) + Math.round(58 * 1.2) + 8;
+		const eventCapacity = Math.max(1, Math.floor((widgetHeight - 34 - dateBlockH - 6) / EVENT_ROW_H));
+		const applyBusyLayout = (count) => {
+			const busy = hideDateWhenBusy && count > eventCapacity;
+			eventsHeader.visible = busy;
+			dayNameLabel.visible = !busy;
+			dayNumberLabel.visible = !busy;
+			dateSpacer.visible = !busy;
+			eventsScroll.y_expand = busy;
+		};
 
 		if (events) {
 			const refresh = () => {
-
-
-
-
-
-
-				fillEventsBox(eventsBox, {eventsClient: events, now, secondary, createLabel, settings, text, theme});
+				// Fill regardless of mapping: if the body is unmapped when we
+				// render (freshly created layer, rebuild while the overview is
+				// open), the events box would stay empty forever — the client
+				// is already loaded and requestRange() no-ops on the same
+				// range, so nothing ever re-triggers this again. Populating an
+				// unmapped box is harmless; it shows once mapped.
+				applyBusyLayout(fillEventsBox(eventsBox, {eventsClient: events, now, secondary, createLabel, settings, text, theme}) ?? 0);
 			};
 
 			const dispose = events.onChange(refresh);
@@ -930,11 +981,11 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 
 		const right = new St.BoxLayout(boxLayoutProps({
 			vertical: true,
-			style: 'spacing: 2px;',
+			style: 'spacing: 4px;',
 		}));
 
 		right.set_width(rightWidth);
-		right.add_child(monthLabel(now, createLabel, dayFont, theme, useAccentColor, cellWidth / 19));
+		right.add_child(monthLabel(now, createLabel, baseDayFont, theme, useAccentColor, cellWidth / 20));
 
 		right.add_child(buildGrid({
 			now,
@@ -955,7 +1006,6 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 			weekend,
 			weekendColor,
 		}));
-		right.add_child(new St.Widget({height: 12}));
 
 		container.add_child(left);
 		container.add_child(right);
@@ -963,33 +1013,48 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 		return;
 	};
 
-
+	// Small widget (1x1) with swipe navigation
 	const scale = clamp(Math.min(widgetWidth, widgetHeight) / 220, 0.8, 2.2);
-	const dayFont = DAY_BASE_FONT;
 	const availWidth = widgetWidth - 32;
 	const gap = Math.max(2, Math.round(GAP_BASE * scale));
-	const cellWidth = Math.max(dayFont + 6, Math.floor((availWidth - 6 * gap) / 7));
-	const cellHeight = (compact ? COMPACT_CELL_BASE_HEIGHT : CELL_BASE_HEIGHT) * scale;
+	const cellWidth = Math.max(DAY_BASE_FONT + 6, Math.floor((availWidth - 6 * gap) / 7));
+	// Fit the page to the card HEIGHT as well (month label + weekday row +
+	// week rows, with room kept for the page dots overlaid at the bottom).
+	// A 6-week month was ~7px taller than the card: the month label got
+	// cut at the top, and since the events page is shorter, the page stack
+	// changed height mid-swipe — the dots jumped down and back up.
+	const monthH = Math.ceil(Math.max(9, Math.round(13 * (DAY_BASE_FONT / 12))) * 1.3);
+	const DOTS_RESERVE = 10;
+	const gridH = widgetHeight - 17 - 4 - 2 - monthH - DOTS_RESERVE;
+	const rows = weekCount + 1;
+	const fitH = Math.floor((gridH - gap * (rows - 1)) / rows);
+	const cellHeight = Math.max(12, Math.min((compact ? COMPACT_CELL_BASE_HEIGHT : CELL_BASE_HEIGHT) * scale, fitH));
+	const dayFont = Math.max(9, Math.min(DAY_BASE_FONT, Math.round(cellHeight * 0.78)));
 	const weekdayFont = fitWeekdayFontSize(weekdays, cellWidth, dayFont);
 
 	let currentView = lastCalendarView;
 	let viewContainer = null;
 	let currentEventBox = null;
 	const animatingActors = new Set();
-
+	// The 1x1 page-indicator dots are toggleable (prefs → Calendar Widget).
 	const showPageDots = settings?.get_boolean('calendar-show-page-dots') ?? true;
 
-	const container = new St.BoxLayout(boxLayoutProps({
-		vertical: true,
+	// Pages overlap in a BinLayout (a vertical BoxLayout could not hold the
+	// leaving and the entering page at the same time, which is why the old
+	// swipe ran as two separate legs). Clipped so the off-page neighbour
+	// stays hidden.
+	const container = new St.Widget({
+		layout_manager: new Clutter.BinLayout(),
 		x_expand: true,
 		y_expand: true,
-	}));
+		clip_to_allocation: true,
+	});
 
-
-
-
-
-
+	// Page-indicator dots: a BinLayout stacks the pages and the dots in the
+	// same area; the shared component pins the row to the very bottom-center
+	// of the shared rect on both pages. The color is the accent when the
+	// Calendar Widget switch is on, otherwise the neutral theme text
+	// (white on dark, black on light).
 	const indicatorColor = settings?.get_boolean('calendar-page-indicator-accent') ?? true
 		? (theme?.accent ?? text)
 		: text;
@@ -1004,30 +1069,30 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 	container.y_align = Clutter.ActorAlign.FILL;
 	pageStack.add_child(container);
 	if (showPageDots) {
-		pageStack.add_child(indicator.wrap);
+		pageStack.add_child(indicator.wrap); // dots paint above the pages
 	};
 
-
-
+	// The dots delegate to the shared page-indicator component; the wrap
+	// guard lives inside refresh().
 	const refreshDots = () => indicator.refresh(currentView);
 
-
-
-
+	// The events view registers one eventsClient listener per build; each
+	// swipe rebuilds the view, so the CURRENT swap's dispose is kept here
+	// and released when that view goes away (see rebuild + the swipe path).
 	let pendingEventsDispose = null;
 
-	const rebuild = (enterX = 0) => {
+	const rebuild = (enterX = 0, animate = true) => {
 		if (viewContainer) {
 			container.remove_child(viewContainer);
-
-
-
-
-
+			// Swapped-out views are never destroyed (they are only removed),
+			// so an onChange listener registered through viewContainer's
+			// 'destroy' hook would survive every swap. Cancel the previous
+			// one explicitly so events view swipes cannot accumulate
+			// stale refresh closures.
 			pendingEventsDispose?.();
 			pendingEventsDispose = null;
-
-
+			// ...and drop the view itself: its cached layout is useless, and
+			// keeping it alive holds every label actor it created.
 			if (!animatingActors.has(viewContainer)) {
 				viewContainer.destroy();
 			};
@@ -1070,10 +1135,10 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 			viewContainer = result.view;
 			currentEventBox = result.eventsBox;
 
-
-
-
-
+			// Setup events refresh for events view. The dispose handle is
+			// tracked per-swap (pendingEventsDispose): viewContainer is only
+			// ever REMOVED from the container, never destroyed mid-widget —
+			// a 'destroy' hook alone would leak one listener per swipe.
 			if (events) {
 				const refresh = () => {
 					if (currentEventBox && currentView === VIEW_EVENTS) {
@@ -1081,24 +1146,29 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 					}
 				};
 
-				pendingEventsDispose = events.onChange(refresh);
-
-
+				const ownDispose = events.onChange(refresh);
+				pendingEventsDispose = ownDispose;
+				// Maltese-cross: if the view ever IS destroyed (widget teardown),
+				// release ITS listener — not whatever page is current by then
+				// (a swiped-away view is destroyed after the new one exists).
 				viewContainer.connect('destroy', () => {
-					pendingEventsDispose?.();
-					pendingEventsDispose = null;
+					ownDispose();
+					if (pendingEventsDispose === ownDispose)
+						pendingEventsDispose = null;
 				});
 			}
 		}
 
 		viewContainer.translation_x = enterX;
-		viewContainer.opacity = enterX !== 0 ? 0 : 255;
+		viewContainer.opacity = 255;
+		viewContainer.x_expand = true;
+		viewContainer.y_expand = true;
 
 		if (!animatingActors.has(viewContainer)) {
 			container.add_child(viewContainer);
 		}
 
-		if (enterX !== 0) {
+		if (enterX !== 0 && animate) {
 			animatingActors.add(viewContainer);
 			viewContainer.ease({
 				opacity: 255,
@@ -1114,69 +1184,195 @@ export function render({body, createLabel, events, sizeForWidget, widget, theme,
 		refreshDots();
 	};
 
-
+	// Apple-style pager (right button): the current page follows the
+	// pointer and the other page rides right beside it on ONE strip, so
+	// both move in the same frame. Release past the threshold (or a quick
+	// flick) settles on the new page, otherwise the strip springs back.
+	const PAGE_GAP = 12;
+	let drag = null;
+	let settling = false;
 	container.reactive = true;
-	let startX = 0;
-	let dragging = false;
 
+	const pageDistance = () => Math.max(1, Math.round(container.width || widgetWidth)) + PAGE_GAP;
+	const endGrab = () => {
+		if (drag?.grab) {
+			try {
+				drag.grab.dismiss();
+			} catch (_e) {}
+			drag.grab = null;
+		}
+	};
+	container.connect('destroy', () => endGrab());
 
+	// Builds the other page beside the current one (no animation): the old
+	// view, its events listener and kind are kept for a cancel.
+	const beginEntering = (dx) => {
+		const d = pageDistance();
+		const old = {
+			view: viewContainer,
+			dispose: pendingEventsDispose,
+			kind: currentView,
+			eventBox: currentEventBox,
+		};
+		pendingEventsDispose = null;
+		viewContainer = null;
+		currentView = currentView === VIEW_CALENDAR ? VIEW_EVENTS : VIEW_CALENDAR;
+		rebuild(dx < 0 ? d + dx : -d + dx, false);
+		return {old, entering: viewContainer};
+	};
 
 	container.connect('button-press-event', (actor, event) => {
-		if (event.get_button() !== 3) return Clutter.EVENT_PROPAGATE;
-		startX = event.get_coords()[0];
-		dragging = true;
+		// An open gesture here lost its release: close it, then go on.
+		if (drag)
+			finishDrag(false);
+		if (event.get_button() !== 3 || settling)
+			return Clutter.EVENT_PROPAGATE;
+		const [x, y0] = event.get_coords();
+		drag = {startX: x, startY: y0, claimed: false, lastX: x, lastTime: GLib.get_monotonic_time() / 1000, velocity: 0, dx: 0, pair: null, grab: null, hold: createHoldWatch(BUTTON3_MASK)};
 		return Clutter.EVENT_PROPAGATE;
 	});
 
-	container.connect('button-release-event', (actor, event) => {
-		if (!dragging) return Clutter.EVENT_PROPAGATE;
-		dragging = false;
-		const endX = event.get_coords()[0];
-		const delta = endX - startX;
+	container.connect('motion-event', (actor, event) => {
+		if (!drag || isActorDestroyed(container))
+			return Clutter.EVENT_PROPAGATE;
+		if (!drag.hold.held(event)) {
+			finishDrag(false);
+			return Clutter.EVENT_PROPAGATE;
+		}
+		if (!drag.claimed) {
+			const [cx, cy] = event.get_coords();
+			const ax = Math.abs(cx - drag.startX);
+			const ay = Math.abs(cy - drag.startY);
+			if (ax < 8 && ay < 8)
+				return Clutter.EVENT_PROPAGATE;
+			if (ay >= ax) {
+				// Vertical: left to the widget-in-widget stack.
+				drag = null;
+				return Clutter.EVENT_PROPAGATE;
+			}
+			drag.claimed = true;
+			drag.startX = cx;
+			drag.lastX = cx;
+			try {
+				drag.grab = global.stage.grab(container);
+			} catch (_e) {}
+		}
+		const [x] = event.get_coords();
+		const now = GLib.get_monotonic_time() / 1000;
+		drag.velocity = (x - drag.lastX) / Math.max(1, now - drag.lastTime);
+		drag.lastX = x;
+		drag.lastTime = now;
+		drag.dx = x - drag.startX;
+		// Two pages: nothing lies beyond the neighbour — clamp to one page.
+		drag.dx = Math.max(-pageDistance(), Math.min(pageDistance(), drag.dx));
 
-		if (Math.abs(delta) > SWIPE_THRESHOLD) {
-			const oldView = viewContainer;
-			const exitX = delta < 0 ? -widgetWidth : widgetWidth;
-
-			animatingActors.add(oldView);
-			oldView.ease({
-				opacity: 0,
-				translation_x: exitX,
-				duration: ANIMATION_DURATION,
-				mode: Clutter.AnimationMode.EASE_IN_QUAD,
-				onComplete: () => {
-					animatingActors.delete(oldView);
-					if (isActorDestroyed(oldView)) {
-						return;
-					};
-					if (oldView.get_parent()) {
-						oldView.get_parent().remove_child(oldView);
-					}
-
-
-					oldView.destroy();
-				},
-			});
-
-
-			currentView = currentView === VIEW_CALENDAR ? VIEW_EVENTS : VIEW_CALENDAR;
-			lastCalendarView = currentView;
-
-
-
-			GLib.timeout_add(GLib.PRIORITY_DEFAULT, ANIMATION_DURATION / 2, () => {
-				if (!isActorDestroyed(container)) {
-					rebuild(-exitX);
-				};
-				return GLib.SOURCE_REMOVE;
-			});
+		if (!drag.pair && Math.abs(drag.dx) > 2)
+			drag.pair = beginEntering(drag.dx);
+		if (drag.pair) {
+			const d = pageDistance();
+			const {old, entering} = drag.pair;
+			if (old.view && !isActorDestroyed(old.view))
+				old.view.translation_x = drag.dx;
+			if (entering && !isActorDestroyed(entering))
+				entering.translation_x = drag.dx + (drag.dx < 0 ? d : -d);
 		}
 		return Clutter.EVENT_STOP;
 	});
 
+	const finishDrag = (allowCommit) => {
+		if (!drag)
+			return;
+		const {dx, velocity, pair} = drag;
+		endGrab();
+		drag = null;
+		if (!pair || isActorDestroyed(container))
+			return;
+
+		const {old, entering} = pair;
+		const d = pageDistance();
+		const flick = Math.abs(velocity) > 0.5 && Math.sign(velocity) === Math.sign(dx);
+		const commit = allowCommit && (Math.abs(dx) > SWIPE_THRESHOLD || flick);
+		const remaining = commit ? d - Math.abs(dx) : Math.abs(dx);
+		const duration = Math.round(Math.min(380, Math.max(200, remaining * 1.1)));
+		const mode = Clutter.AnimationMode.EASE_OUT_CUBIC;
+		const dropView = view => {
+			animatingActors.delete(view);
+			if (!view || isActorDestroyed(view))
+				return;
+			view.get_parent()?.remove_child(view);
+			view.destroy();
+		};
+
+		settling = true;
+		if (commit) {
+			// The old page's events listener goes with it.
+			old.dispose?.();
+			lastCalendarView = currentView;
+			refreshDots();
+			if (old.view) {
+				animatingActors.add(old.view);
+				old.view.ease({
+					translation_x: dx < 0 ? -d : d,
+					duration,
+					mode,
+					onStopped: () => {
+						settling = false;
+						dropView(old.view);
+					},
+				});
+			} else {
+				settling = false;
+			}
+			entering?.ease({translation_x: 0, duration, mode});
+		} else {
+			// Spring back: the old page (and its listener) is current again.
+			pendingEventsDispose?.();
+			pendingEventsDispose = old.dispose;
+			currentView = old.kind;
+			viewContainer = old.view;
+			currentEventBox = old.eventBox;
+			refreshDots();
+			old.view?.ease({translation_x: 0, duration, mode});
+			if (entering) {
+				animatingActors.add(entering);
+				entering.ease({
+					translation_x: dx < 0 ? d : -d,
+					duration,
+					mode,
+					onStopped: () => {
+						settling = false;
+						dropView(entering);
+					},
+				});
+			} else {
+				settling = false;
+			}
+		}
+	};
+	container.connect('button-release-event', (actor, event) => {
+		if (!drag || event.get_button() !== 3)
+			return Clutter.EVENT_PROPAGATE;
+		finishDrag(true);
+		return Clutter.EVENT_STOP;
+	});
+	// A swallowed release (an app or the overview grabbed the pointer
+	// mid-gesture), hiding, another press or Escape end the gesture —
+	// the pointer grab must never stay stuck on the widget.
+	container.connect('notify::mapped', () => {
+		if (!container.mapped)
+			finishDrag(false);
+	});
+	container.connect('key-press-event', (actor, event) => {
+		if (drag && event.get_key_symbol() === Clutter.KEY_Escape) {
+			finishDrag(false);
+			return Clutter.EVENT_STOP;
+		}
+		return Clutter.EVENT_PROPAGATE;
+	});
+
 	rebuild();
 
-
+	// Request events data
 	if (events) {
 		const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 		const startEpoch = Math.floor(dayStart.getTime() / 1000);

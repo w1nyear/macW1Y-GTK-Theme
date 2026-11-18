@@ -144,19 +144,19 @@ function isValidAccel(mask, keyval) {
 };
 
 export default class WidgetsPrefs extends ExtensionPreferences {
-
-
-
-
-
-
-
+    /**
+     * Extension icons have no `-symbolic` suffix: for such files GTK
+     * takes the path outline and fills it solid, which turns the line
+     * lucide icons into blobs (fill="none" is ignored).
+     * That is why every icon has two color variants; we pick the right one
+     * and repaint all registered spots when the theme changes.
+     */
     fillPreferencesWindow(window) {
         this._window = window;
         this._pages = [];
-
-
-
+        // Handlers and one-shot sources registered while building the pages
+        // close over destroyed widgets once the window closes. Everything is
+        // tracked here and released in _releasePageHandlers() on close-request.
         this._trackedPageSignals = [];
         this._trackedPageSources = [];
 
@@ -164,7 +164,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         window.set_title(_('Desktop Widgets'));
         window.set_search_enabled(false);
 
-
+        // Enlarge the sidebar icons via CSS.
         const cssProvider = new Gtk.CssProvider();
         cssProvider.load_from_data(
             'navigation-sidebar row image { min-width: 32px; min-height: 32px; -gtk-icon-size: 32px; }',
@@ -178,13 +178,13 @@ export default class WidgetsPrefs extends ExtensionPreferences {
 
         const settings = this.getSettings();
 
-
-
-
-
-
-
-
+        // Page builders throughout this file call settings.connect(...) with
+        // callbacks that read exposed GTK widgets. The pages die with the
+        // window, but the GSettings handlers stay connected — they fire on
+        // destroyed widgets later (fresh JS errors in the journal and stale
+        // schema writes). Track every connect so close-request can release
+        // them, and keep our tracking consistent when page code disconnects
+        // explicitly (the folder and app-launcher pages do their own cleanup).
         const trackedConnect = settings.connect.bind(settings);
         const trackedDisconnect = settings.disconnect.bind(settings);
         settings.connect = (signal, callback) => {
@@ -200,16 +200,16 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             trackedDisconnect(id);
         };
 
-
+        // Never leave a slider "grabbed" state behind when the window closes.
         window.connect('close-request', () => {
             settings.set_boolean('drag-active', false);
             return false;
         });
 
-
+        // Check if widget picker should be opened automatically
         if (settings.get_boolean('open-widget-picker')) {
             settings.set_boolean('open-widget-picker', false);
-
+            // Open widget picker after window is shown
             this._trackSource(GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
                 openWidgetPicker(window, this.path, _, (widgetType) => {
                     this._addWidget(settings, widgetType);
@@ -220,139 +220,163 @@ export default class WidgetsPrefs extends ExtensionPreferences {
 
         this._switchToSidebar(window);
 
-
+        // General page
         const generalPage = new Adw.PreferencesPage();
         generalPage.set_title(_('General'));
+        generalPage._dwId = 'general';
         generalPage.set_icon_name('preferences-system-symbolic');
         this._buildGeneralPage(generalPage, settings);
         this._addSidebarPage(generalPage);
 
+        // Every per-widget page lives under one collapsible sidebar section.
+        this._sidebarWidgetGroup = this._addSidebarGroup(_('Widget settings'), 'view-grid-symbolic');
 
+        // Photos page
         const photosPage = this._createPhotosPage(settings);
         photosPage.set_title(_('Photos Widget'));
+        photosPage._dwId = 'photos-widget';
         photosPage.set_icon_name('image-x-generic-symbolic');
-        this._addSidebarPage(photosPage);
+        this._addSidebarPage(photosPage, this._sidebarWidgetGroup);
 
-
+        // Battery page
         const batteryPage = this._createBatteryPage(settings);
         batteryPage.set_title(_('Battery Widget'));
+        batteryPage._dwId = 'battery-widget';
         batteryPage.set_icon_name('battery-symbolic');
-        this._addSidebarPage(batteryPage);
+        this._addSidebarPage(batteryPage, this._sidebarWidgetGroup);
 
-
+        // Screen Time page
         const screentimePage = this._createScreentimePage(settings);
         screentimePage.set_title(_('Screen Time Widget'));
+        screentimePage._dwId = 'screen-time-widget';
         screentimePage.set_icon_name('alarm-symbolic');
-        this._addSidebarPage(screentimePage);
+        this._addSidebarPage(screentimePage, this._sidebarWidgetGroup);
 
-
+        // Music page
         const musicPage = this._createMusicPage(settings);
         musicPage.set_title(_('Music Widget'));
+        musicPage._dwId = 'music-widget';
         musicPage.set_icon_name('folder-music-symbolic');
-        this._addSidebarPage(musicPage);
+        this._addSidebarPage(musicPage, this._sidebarWidgetGroup);
 
-
+        // Calendar page
         const calendarPage = this._createCalendarPage(settings);
         calendarPage.set_title(_('Calendar Widget'));
+        calendarPage._dwId = 'calendar-widget';
         calendarPage.set_icon_name('x-office-calendar-symbolic');
-        this._addSidebarPage(calendarPage);
+        this._addSidebarPage(calendarPage, this._sidebarWidgetGroup);
 
-
+        // Weather page
         const weatherPage = this._createWeatherPage(settings);
         weatherPage.set_title(_('Weather Widget'));
+        weatherPage._dwId = 'weather-widget';
         weatherPage.set_icon_name('weather-clear-symbolic');
-        this._addSidebarPage(weatherPage);
+        this._addSidebarPage(weatherPage, this._sidebarWidgetGroup);
 
-
+        // Analog Clock page
         const analogClockPage = this._createAnalogClockPage(settings);
         analogClockPage.set_title(_('Analog Clock Widget'));
+        analogClockPage._dwId = 'analog-clock-widget';
         analogClockPage.set_icon_name('preferences-system-time-symbolic');
-        this._addSidebarPage(analogClockPage);
+        this._addSidebarPage(analogClockPage, this._sidebarWidgetGroup);
 
-
+        // Digital Clock page
         const digitalClockPage = this._createDigitalClockPage(settings);
         digitalClockPage.set_title(_('Digital Clock Widget'));
+        digitalClockPage._dwId = 'digital-clock-widget';
         digitalClockPage.set_icon_name('preferences-system-time-symbolic');
-        this._addSidebarPage(digitalClockPage);
+        this._addSidebarPage(digitalClockPage, this._sidebarWidgetGroup);
 
-
+        // Binary Clock page
         const binaryClockPage = this._createBinaryClockPage(settings);
         binaryClockPage.set_title(_('Binary Clock Widget'));
+        binaryClockPage._dwId = 'binary-clock-widget';
         binaryClockPage.set_icon_name('preferences-system-time-symbolic');
-        this._addSidebarPage(binaryClockPage);
+        this._addSidebarPage(binaryClockPage, this._sidebarWidgetGroup);
 
-
+        // GitHub page
         const githubPage = this._createGithubPage(settings);
         githubPage.set_title(_('GitHub Widget'));
+        githubPage._dwId = 'github-widget';
         githubPage.set_icon_name('network-server-symbolic');
-        this._addSidebarPage(githubPage);
+        this._addSidebarPage(githubPage, this._sidebarWidgetGroup);
 
-
+        // App Launcher page
         const appLauncherPage = this._createAppLauncherPage(settings);
         appLauncherPage.set_title(_('App Launcher Widget'));
+        appLauncherPage._dwId = 'app-launcher-widget';
         appLauncherPage.set_icon_name('view-app-grid-symbolic');
-        this._addSidebarPage(appLauncherPage);
+        this._addSidebarPage(appLauncherPage, this._sidebarWidgetGroup);
 
-
+        // Folder Launcher page
         const folderLauncherPage = this._createFolderLauncherPage(settings);
         folderLauncherPage.set_title(_('Folder Launcher Widget'));
+        folderLauncherPage._dwId = 'folder-launcher-widget';
         folderLauncherPage.set_icon_name('folder-symbolic');
-        this._addSidebarPage(folderLauncherPage);
+        this._addSidebarPage(folderLauncherPage, this._sidebarWidgetGroup);
 
-
+        // Notes page
         const notesPage = this._createNotesPage(settings);
         notesPage.set_title(_('Notes Widget'));
+        notesPage._dwId = 'notes-widget';
         notesPage.set_icon_name('text-x-generic-symbolic');
-        this._addSidebarPage(notesPage);
+        this._addSidebarPage(notesPage, this._sidebarWidgetGroup);
 
-
+        // Pomodoro page
         const pomodoroPage = this._createPomodoroPage(settings);
         pomodoroPage.set_title(_('Pomodoro Widget'));
+        pomodoroPage._dwId = 'pomodoro-widget';
         pomodoroPage.set_icon_name('alarm-symbolic');
-        this._addSidebarPage(pomodoroPage);
+        this._addSidebarPage(pomodoroPage, this._sidebarWidgetGroup);
 
-
+        // System Monitor page
         const systemMonitorPage = this._createSystemMonitorPage(settings);
         systemMonitorPage.set_title(_('System Monitor Widget'));
+        systemMonitorPage._dwId = 'system-monitor-widget';
         systemMonitorPage.set_icon_name('computer-symbolic');
-        this._addSidebarPage(systemMonitorPage);
+        this._addSidebarPage(systemMonitorPage, this._sidebarWidgetGroup);
 
-
+        // Lava page
         const lavaPage = this._createLavaPage(settings);
         lavaPage.set_title(_('Lava Lamp Widget'));
+        lavaPage._dwId = 'lava-lamp-widget';
         lavaPage.set_icon_name('weather-clear-symbolic');
-        this._addSidebarPage(lavaPage);
+        this._addSidebarPage(lavaPage, this._sidebarWidgetGroup);
 
-
+        // Appearance page
         const appearancePage = this._createAppearancePage(settings);
         appearancePage.set_title(_('Appearance'));
+        appearancePage._dwId = 'appearance';
         appearancePage.set_icon_name('applications-graphics-symbolic');
         this._addSidebarPage(appearancePage);
 
-
-        const aboutPage = this._createAboutPage();
+        // About page
+        const aboutPage = this._createAboutPage(settings, window);
         aboutPage.set_title(_('About'));
+        aboutPage._dwId = 'about';
         aboutPage.set_icon_name('help-about-symbolic');
         this._addSidebarPage(aboutPage);
 
-
-
-
-
+        // Deep link from a widget's context menu: activate the widget's own
+        // settings page right after the window is shown; an unknown page id
+        // falls back to Appearance (the 'open-widget-picker' flag uses the
+        // same set-then-read-through-gsettings handoff).
         const openPage = settings.get_string('open-prefs-page');
         if (openPage) {
             settings.set_string('open-prefs-page', '');
             this._trackSource(GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
                 const row = this._sidebarRows.get(openPage)
                     ?? this._sidebarRows.get('appearance');
+                if (row?._group)
+                    this._setSidebarGroupExpanded(row._group, true);
                 row?.emit('activate');
                 return GLib.SOURCE_REMOVE;
             }));
         }
 
-
-
-
+        // Handle window close: pages are destroyed with the window, but the
+        // handlers/sources they registered while being built live on —release
+        // everything tracked (GSettings handlers, debounces, one-shot timers).
         window.connect('close-request', () => {
             for (const page of this._pages)
                 page?.destroy?.();
@@ -364,19 +388,23 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         });
     }
 
-
+    /** Registers one one-shot GLib source so close-request can cancel it. */
     _trackSource(sourceId) {
         this._trackedPageSources.push(sourceId);
     }
 
-
+    /** Registers one signal so close-request can disconnect it later. */
     _trackSignal(proxy, id) {
         this._trackedPageSignals.push([proxy, id]);
     }
 
     _releasePageHandlers() {
+        // One-shot sources may already have fired: removing those again
+        // logs a GLib-CRITICAL, so only still-pending ones are removed.
+        const context = GLib.MainContext.default();
         for (const sourceId of this._trackedPageSources) {
-            GLib.source_remove(sourceId);
+            if (sourceId && context.find_source_by_id(sourceId))
+                GLib.source_remove(sourceId);
         }
         this._trackedPageSources = [];
 
@@ -384,14 +412,14 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             try {
                 proxy.disconnect(id);
             } catch (error) {
-
+                // Peer already gone.
             }
         }
         this._trackedPageSignals = [];
 
         for (const key in (this._debounceTimers ?? {})) {
             const id = this._debounceTimers[key];
-            if (id) {
+            if (id && context.find_source_by_id(id)) {
                 GLib.source_remove(id);
             }
         }
@@ -399,7 +427,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
     }
 
     _switchToSidebar(window) {
-
+        // Add dummy Adw.PreferencesPage to avoid logs spamming
         const dummyPrefsPage = new Adw.PreferencesPage();
         window.add(dummyPrefsPage);
 
@@ -457,24 +485,72 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         this._firstPageAdded = false;
 
         this._sidebarListBox.connect('row-activated', (_listBox, row) => {
+            if (row._isGroup) {
+                this._setSidebarGroupExpanded(row, !row._expanded);
+                return;
+            }
             splitView.set_show_content(true);
             splitViewContent.set_title(row._title);
             this._stack.set_visible_child_name(row._id);
         });
     }
 
-    _addSidebarPage(page) {
+    // Collapsible section header in the sidebar ("Widget settings ⌄"):
+    // activating it shows/hides the page rows that belong to it.
+    _addSidebarGroup(title, iconName) {
+        const row = new Gtk.ListBoxRow({activatable: true, selectable: false});
+        row._isGroup = true;
+        row._expanded = false;
+        row._members = [];
+
+        const box = new Gtk.Box({
+            spacing: 12,
+            margin_top: 12,
+            margin_bottom: 12,
+            margin_start: 6,
+            margin_end: 6,
+        });
+        box.append(new Gtk.Image({icon_name: iconName}));
+        box.append(new Gtk.Label({label: title, xalign: 0, hexpand: true}));
+        row._arrow = new Gtk.Image({icon_name: 'pan-down-symbolic'});
+        box.append(row._arrow);
+        row.set_child(box);
+        try {
+            row.update_property([Gtk.AccessibleProperty.LABEL], [title]);
+            row.update_state([Gtk.AccessibleState.EXPANDED], [false]);
+        } catch (_e) {
+            // Accessibility metadata only — never break the window over it.
+        }
+
+        this._sidebarListBox.append(row);
+        return row;
+    }
+
+    _setSidebarGroupExpanded(group, expanded) {
+        group._expanded = expanded;
+        group._arrow.set_from_icon_name(expanded ? 'pan-up-symbolic' : 'pan-down-symbolic');
+        try {
+            group.update_state([Gtk.AccessibleState.EXPANDED], [expanded]);
+        } catch (_e) {}
+        for (const member of group._members)
+            member.set_visible(expanded);
+    }
+
+    _addSidebarPage(page, group = null) {
         const row = new Gtk.ListBoxRow();
         row._title = page.get_title();
-        row._id = row._title.toLowerCase().replace(/\s+/g, '-');
+        // Stable id from the ENGLISH title (set next to each set_title):
+        // the translated title made deep links (widget context menu, update
+        // notification) miss their page in every non-English locale.
+        row._id = page._dwId ?? row._title.toLowerCase().replace(/\s+/g, '-');
 
         const rowIcon = new Gtk.Image({
             icon_name: page.get_icon_name(),
         });
-
-
+        
+        // Keep the page → rowIcon mapping so the icons stay in sync
         page._sidebarIcon = rowIcon;
-
+        
         const rowLabel = new Gtk.Label({
             label: row._title,
             xalign: 0,
@@ -483,7 +559,8 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             spacing: 12,
             margin_top: 12,
             margin_bottom: 12,
-            margin_start: 6,
+            // Rows inside a sidebar section are indented under its header.
+            margin_start: group ? 24 : 6,
             margin_end: 6,
         });
         box.append(rowIcon);
@@ -494,6 +571,12 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         this._stack.add_named(page, row._id);
         this._sidebarListBox.append(row);
         this._sidebarRows.set(row._id, row);
+
+        if (group) {
+            row._group = group;
+            group._members.push(row);
+            row.set_visible(group._expanded);
+        }
 
         if (!this._firstPageAdded) {
             this._splitViewContent.set_title(row._title);
@@ -543,6 +626,14 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         });
         widgetsGroup.add(gapRow);
 
+        const placementGridRow = new Adw.SwitchRow({
+            title: _('Show placement grid'),
+            subtitle: _('While dragging a widget in edit mode, show the free 1×1 cells and drop it onto the highlighted ones'),
+        });
+        placementGridRow.set_active(settings.get_boolean('show-placement-grid'));
+        settings.bind('show-placement-grid', placementGridRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        widgetsGroup.add(placementGridRow);
+
         const pauseAnimationsRow = new Adw.SwitchRow({
             title: _('Pause animations in fullscreen'),
             subtitle: _('Automatically pause widget animations when a window is fullscreen to save resources'),
@@ -559,16 +650,16 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         settings.bind('show-panel-icon', showPanelIconRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         widgetsGroup.add(showPanelIconRow);
 
-
+        // Widget theme settings expandable row
         const themeExpanderRow = new Adw.ExpanderRow({
             title: _('Widget theme settings'),
             subtitle: _('Configure custom theme for widgets'),
             show_enable_switch: true,
         });
-
-
+        
+        // Bind the enable switch to settings
         settings.bind('use-custom-widget-theme', themeExpanderRow, 'enable-expansion', Gio.SettingsBindFlags.DEFAULT);
-
+        
         themeExpanderRow.connect('notify::enable-expansion', () => {
             const enabled = themeExpanderRow.enable_expansion;
             if (settings.get_boolean('use-custom-widget-theme') !== enabled) {
@@ -576,10 +667,10 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             }
         });
 
-
-
-
-
+        // Theme switchers are segmented pills (the Focus/Break look): a
+        // linked box of toggle buttons where the active segment carries the
+        // accent fill. Adw.ToggleGroup renders flat inside action rows, so
+        // the manual linked-toggles pill is used instead.
         const makeThemeSwitcher = (items, getActiveName, onActivate) => {
             const box = new Gtk.Box({
                 orientation: Gtk.Orientation.HORIZONTAL,
@@ -602,9 +693,9 @@ export default class WidgetsPrefs extends ExtensionPreferences {
                 const btn = new Gtk.ToggleButton({ label });
                 btn.connect('toggled', () => {
                     if (!btn.active) {
-
-
-
+                        // Clicking the already-active segment un-checks it —
+                        // keep that segment highlighted instead of leaving
+                        // the pill black (image-2 bug).
                         if (getActiveName() === name) {
                             btn.set_active(true);
                         }
@@ -624,7 +715,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             return box;
         };
 
-
+        // Widget theme switcher (Custom | Dark | Light)
         const themeGeneralSwitcher = makeThemeSwitcher(
             [['custom', _('Custom')], ['dark', _('Dark')], ['light', _('Light')]],
             () => {
@@ -652,7 +743,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         themeGeneralRow.add_suffix(themeGeneralSwitcher);
         themeExpanderRow.add_row(themeGeneralRow);
 
-
+        // Theme for light system mode
         const themeLightSwitcher = makeThemeSwitcher(
             [['dark', _('Dark')], ['light', _('Light')]],
             () => (settings.get_string('widget-theme-for-light') === 'light' ? 'light' : 'dark'),
@@ -669,7 +760,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         themeLightRow.add_suffix(themeLightSwitcher);
         themeExpanderRow.add_row(themeLightRow);
 
-
+        // Theme for dark system mode
         const themeDarkSwitcher = makeThemeSwitcher(
             [['dark', _('Dark')], ['light', _('Light')]],
             () => (settings.get_string('widget-theme-for-dark') === 'light' ? 'light' : 'dark'),
@@ -688,9 +779,9 @@ export default class WidgetsPrefs extends ExtensionPreferences {
 
         widgetsGroup.add(themeExpanderRow);
 
-
-
-
+        // Page indicator shape for the swiping widgets (calendar 1x1, system
+        // monitor): round dots or dashes — the same segmented pill look as
+        // the theme switchers.
         const indicatorSwitcher = makeThemeSwitcher(
             [['dot', _('Dot')], ['dash', _('Dash')]],
             () => (settings.get_int('page-indicator-style') === 0 ? 'dot' : 'dash'),
@@ -707,7 +798,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         indicatorRow.add_suffix(indicatorSwitcher);
         widgetsGroup.add(indicatorRow);
 
-
+        // Update theme rows from settings (switcher pills and visibility).
         const updateGeneralDropdown = () => {
             themeGeneralSwitcher.syncTo();
         };
@@ -716,16 +807,16 @@ export default class WidgetsPrefs extends ExtensionPreferences {
 
         settings.connect('changed::widget-theme-for-dark', () => themeDarkSwitcher.syncTo());
 
-
+        // Update visibility of theme rows based on settings
         const updateThemeRowsVisibility = () => {
             const customEnabled = settings.get_boolean('use-custom-widget-theme');
             const sameForBoth = settings.get_boolean('use-same-theme-for-both');
-
+            
             themeLightRow.visible = !sameForBoth;
             themeDarkRow.visible = !sameForBoth;
             updateGeneralDropdown();
         };
-
+        
         updateThemeRowsVisibility();
         settings.connect('changed::use-custom-widget-theme', updateThemeRowsVisibility);
         settings.connect('changed::use-same-theme-for-both', updateThemeRowsVisibility);
@@ -761,14 +852,14 @@ export default class WidgetsPrefs extends ExtensionPreferences {
 
         page.add(widgetsGroup);
 
-
+        // Add widget group
         const addGroup = new Adw.PreferencesGroup({
             title: _('Add Widget'),
             description: _('Add a new widget to your desktop.'),
             margin_top: 12,
         });
 
-
+        // Old dropdown approach
         const dropdownRow = new Adw.ActionRow({
             title: _('Quick add'),
             subtitle: _('Select widget type from dropdown'),
@@ -802,7 +893,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         dropdownRow.add_suffix(addBox);
         addGroup.add(dropdownRow);
 
-
+        // New dialog approach
         const galleryRow = new Adw.ActionRow({
             title: _('Widget gallery'),
             subtitle: _('Browse all widgets with icons and search'),
@@ -865,7 +956,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
 
         page.add(addGroup);
 
-
+        // Saved layouts group
         const savedGroup = new Adw.PreferencesGroup({
             title: _('Saved Layouts'),
             description: _('Save the current widget positions under a name and restore them later.'),
@@ -1089,7 +1180,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
                         this._writePreset(file, settings);
                     };
                 } catch (error) {
-
+                    // Dialog dismissed without a selection
                 };
             });
         } else {
@@ -1329,8 +1420,8 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             settings.set_boolean('battery-show-percent', showPercentRow.get_active());
         });
 
-
-
+        // Accent pass-through for the charge rings (system or the custom
+        // accent color from the Appearance page).
         const useAccentRow = new Adw.SwitchRow({
             title: _('Use accent color'),
             subtitle: _('Charge rings use the accent color instead of the red/orange/green scale'),
@@ -1540,8 +1631,8 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         });
         group.add(hourFormatRow);
 
-
-
+        // First day of the week: the reference widget's enum (locale auto /
+        // Sunday / Monday). 0 keeps the locale/GNOME-derived start.
         const FIRST_DAY_LABELS = [
             _('From the locale'),
             _('Sunday'),
@@ -1559,9 +1650,9 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         });
         group.add(firstDayRow);
 
-
-
-
+        // How far ahead the events list looks (reference widget's lookahead
+        // idea, plus a "today and tomorrow only" option: 0 = today and
+        // tomorrow, 1 = 7, 2 = 14, 3 = 30, 4 = 60 days).
         const LOOKAHEAD_LABELS = [
             _('Today and tomorrow'),
             _('7 days'),
@@ -1601,8 +1692,15 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         });
         group.add(pageDotsRow);
 
+        const hideDateRow = new Adw.SwitchRow({
+            title: _('Hide the date when there are many events'),
+            subtitle: _('2x1 calendar: the weekday and day number make room when the events don’t fit below them'),
+        });
+        settings.bind('calendar-hide-date-many-events', hideDateRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        group.add(hideDateRow);
 
-
+        // Page indicator color: accent when on, neutral theme text when off
+        // (white on the dark theme, black on the light one).
         const pageIndicatorAccentRow = new Adw.SwitchRow({
             title: _('Use accent color for page indicator'),
             subtitle: _('Accent color for the page markers. When off, they follow the theme text color.'),
@@ -1635,7 +1733,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         });
         group.add(accentRow);
 
-
+        // 1x1 weather swipe pages (weather ⇄ hourly): page indicators.
         const pageDotsRow = new Adw.SwitchRow({
             title: _('Show page dots'),
             subtitle: _('Two page-indicator dots at the bottom of the 1x1 weather (weather/hourly swipe pages)'),
@@ -1668,8 +1766,8 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             margin_top: 12,
         });
 
-
-
+        // Smooth second hand (reference clock-analog parity): ON sweeps the
+        // hand continuously (ms fraction), OFF keeps the 1s step.
         const smoothRow = new Adw.SwitchRow({
             title: _('Smooth second hand'),
             subtitle: _('Sweep the second hand continuously; off steps once per second'),
@@ -1726,8 +1824,8 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             settings.set_boolean('digitalclock-show-ampm', showAmPmRow.get_active());
         });
 
-
-
+        // Smooth second ring toggle (reference clock-digital parity): OFF
+        // steps the ring once per second instead of animating every frame.
         const smoothSecondsRow = new Adw.SwitchRow({
             title: _('Smooth second ring'),
             subtitle: _('Animate the ring every frame; off steps it once per second'),
@@ -1750,8 +1848,8 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             margin_top: 12,
         });
 
-
-
+        // The lit dots take the accent color (system or the custom one
+        // from Appearance settings), or fall back to the neutral look.
         const accentRow = new Adw.SwitchRow({
             title: _('Use accent color'),
             subtitle: _('Use system or custom accent color from Appearance settings. When disabled, uses neutral color (white on dark, black on light).'),
@@ -1792,8 +1890,8 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         usernameRow.set_tooltip_text(_('Applied to all GitHub widgets. Empty to set a username per widget'));
         group.add(usernameRow);
 
-
-
+        // Idempotent apply: the checkmark button (accent-color style) and
+        // plain Enter both go through this.
         const applyUsername = () => {
             const value = usernameRow.get_text().trim().replace(/^@/, '');
 
@@ -1805,8 +1903,8 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         const applyUsernameRow = () => {
             applyUsername();
 
-
-
+            // Brief green pulse to confirm the value was committed. Tracked
+            // so a closed window cannot let it touch the destroyed button.
             applyUsernameButton.get_style_context().add_class('suggested-action');
             this._trackSource(GLib.timeout_add(GLib.PRIORITY_DEFAULT, 350, () => {
                 applyUsernameButton.get_style_context().remove_class('suggested-action');
@@ -1823,7 +1921,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         applyUsernameButton.connect('clicked', applyUsernameRow);
         usernameRow.add_suffix(applyUsernameButton);
 
-
+        // Enter (main + keypad) applies the username too.
         const usernameKeyController = new Gtk.EventControllerKey();
         usernameKeyController.connect('key-pressed', (_ctrl, keyval) => {
             if (keyval === Gdk.KEY_Return || keyval === Gdk.KEY_KP_Enter || keyval === Gdk.KEY_ISO_Enter) {
@@ -1967,7 +2065,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             margin_top: 12,
         });
 
-
+        // Swipe-page dashes at the bottom of the 1x1 and 2x1 sizes.
         const pageDashesRow = new Adw.SwitchRow({
             title: _('Show page dashes'),
             subtitle: _('Swipe-page dashes at the bottom of the system monitor'),
@@ -1978,8 +2076,8 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         });
         group.add(pageDashesRow);
 
-
-
+        // Page dash color: accent when on, neutral theme text when off
+        // (white on the dark theme, black on the light one).
         const pageIndicatorAccentRow = new Adw.SwitchRow({
             title: _('Use accent color for page indicator'),
             subtitle: _('Accent color for the page dashes. When off, they follow the theme text color.'),
@@ -2026,7 +2124,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             margin_top: 12,
         });
 
-
+        // Show folder names toggle
         const showNamesRow = new Adw.SwitchRow({
             title: _('Show folder names'),
             subtitle: _('Display folder names below icons'),
@@ -2037,7 +2135,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         });
         globalGroup.add(showNamesRow);
 
-
+        // File manager picker
         const fileManagerRow = new Adw.ComboRow({
             title: _('File Manager'),
             subtitle: _('Application to open folders with'),
@@ -2064,7 +2162,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
 
         page.add(globalGroup);
 
-
+        // Per-widget folders configuration
         const groups = [];
 
         const rebuild = () => {
@@ -2117,7 +2215,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             { id: 'pcmanfm.desktop', name: 'PCManFM' },
         ];
 
-
+        // Filter to only installed file managers
         return fileManagers.filter(fm => {
             try {
                 const appInfo = Gio.DesktopAppInfo.new(fm.id);
@@ -2142,7 +2240,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         const dataFilePath = this._folderLauncherFilePath(widget.id);
         const selectedFolders = this._loadFolderLauncherFolders(dataFilePath);
 
-
+        // Defaults only apply when the widget was never saved
         if (selectedFolders.length === 0
             && !GLib.file_test(dataFilePath, GLib.FileTest.EXISTS)) {
             selectedFolders.push(
@@ -2244,7 +2342,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
 
         renderPinnedFolders();
 
-
+        // Add folder button
         const addButton = new Gtk.Button({
             label: _('Add Folder'),
             css_classes: ['suggested-action'],
@@ -2585,8 +2683,8 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         const dataFilePath = this._launcherAppsFilePath(widget.id);
         const selectedApps = this._loadLauncherApps(dataFilePath);
 
-
-
+        // Defaults only apply when the widget was never saved; once the file
+        // exists (even with no apps) respect what the user actually configured.
         if (selectedApps.size === 0
             && !GLib.file_test(dataFilePath, GLib.FileTest.EXISTS)) {
             for (const app of DEFAULT_LAUNCHER_APPS) {
@@ -2618,7 +2716,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             renderPinnedApps();
         };
 
-
+        // Build app selection UI when expanded
         let uiBuilt = false;
         let allApps = [];
         let builtRows = [];
@@ -2693,7 +2791,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
                 builtRows.push(appRow);
             }
 
-
+            // Add "Add Apps" row at the end
             const addAppsRow = new Adw.ActionRow({
                 title: _('Add Apps'),
             });
@@ -2733,9 +2831,9 @@ export default class WidgetsPrefs extends ExtensionPreferences {
     _createAppearancePage(settings) {
         const page = new Adw.PreferencesPage();
 
-
-
-
+        // Layout: [style cards] → [Widget Styling] → [Glass params] →
+        // [Solid params]. The glass/solid groups are toggled by the selected
+        // card and sit at the bottom of the page, below the shared styling.
         const styleGroup = new Adw.PreferencesGroup({
             title: _('Widget Style'),
             margin_top: 12,
@@ -2757,7 +2855,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             margin_top: 12,
         });
 
-
+        // Border Radius
         const radiusRow = new Adw.SpinRow({
             title: _('Border Radius'),
             subtitle: _('Corner roundness of widgets'),
@@ -2774,10 +2872,10 @@ export default class WidgetsPrefs extends ExtensionPreferences {
                 settings.set_int('style-border-radius', radiusRow.get_value());
             }, 150);
         });
-
+        // Shared with the Glass style too: both widget frames use these keys.
         group.add(radiusRow);
 
-
+        // Border Width
         const borderWidthRow = new Adw.SpinRow({
             title: _('Border Width'),
             subtitle: _('Thickness of widget borders'),
@@ -2796,27 +2894,27 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         });
         group.add(borderWidthRow);
 
-
+        // Background Color
         const bgColorRow = this._createColorRow(
             _('Background Color'),
             _('Choose background color (also used as the glass tint in Glass style)'),
             settings,
             'style-background',
-            '#242424'
+            '#242424' // fallback for dark theme
         );
         group.add(bgColorRow);
 
-
+        // Border Color
         const borderColorRow = this._createColorRow(
             _('Border Color'),
             _('Choose border color'),
             settings,
             'style-border-color',
-            '#3d3d3d'
+            '#3d3d3d' // fallback for light theme
         );
         group.add(borderColorRow);
 
-
+        // Custom Accent Color
         const customAccentRow = new Adw.SwitchRow({
             title: _('Use Custom Accent Color'),
             subtitle: _('Override the system accent color for all widgets'),
@@ -2839,9 +2937,9 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             accentColorRow.sensitive = customAccentRow.get_active();
         });
 
-
-
-
+        // Style mode: two preview cards side by side (Glass | Solid) instead
+        // of a dropdown — the selected one is outlined with the accent color,
+        // and the settings section switches to that style.
         const cardCss = new Gtk.CssProvider();
         cardCss.load_from_string(`
             .dw-style-card {
@@ -2855,64 +2953,97 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             }
         `);
 
+        // Preview = an EMPTY 2×1 widget in each style (no fake wallpaper or
+        // content bars — those read like a photo). Corners follow the
+        // Border Radius setting, scaled to the preview size.
         const drawStylePreview = (cr, width, height, kind) => {
             const R = (x, y, w, h, r) => {
+                r = Math.max(0, Math.min(r, w / 2, h / 2));
                 cr.newPath();
+                if (r <= 0) {
+                    cr.rectangle(x, y, w, h);
+                    return;
+                }
                 cr.arc(x + r, y + r, r, Math.PI, 1.5 * Math.PI);
                 cr.arc(x + w - r, y + r, r, 1.5 * Math.PI, 2 * Math.PI);
                 cr.arc(x + w - r, y + h - r, r, 0, 0.5 * Math.PI);
-                cr.arc(x + r, y + h - r + 0, r, 0.5 * Math.PI, Math.PI);
+                cr.arc(x + r, y + h - r, r, 0.5 * Math.PI, Math.PI);
                 cr.closePath();
             };
 
+            // 2×1 widget proportions (395×190), centered in the preview.
+            const paneH = height - 4;
+            const paneW = Math.min(width - 4, Math.round(paneH * 395 / 190));
+            const paneX = Math.round((width - paneW) / 2) + 0.5;
+            const paneY = 2.5;
+            const radius = settings.get_int('style-border-radius') * (paneH / 190);
 
-            R(0, 0, width, height, 8);
-            cr.clip();
-            cr.setSourceRGB(0.30, 0.49, 0.78);
-            cr.rectangle(0, 0, width, height);
-            cr.fill();
-            cr.setSourceRGBA(0.96, 0.83, 0.45, 0.55);
-            cr.arc(width * 0.72, height * 0.30, height * 0.42, 0, 2 * Math.PI);
-            cr.fill();
-            cr.setSourceRGBA(0.20, 0.55, 0.60, 0.45);
-            cr.arc(width * 0.22, height * 0.75, height * 0.38, 0, 2 * Math.PI);
-            cr.fill();
-
-            const paneX = 12;
-            const paneY = 12;
-            const paneW = width - 24;
-            const paneH = height - 24;
-
-            R(paneX, paneY, paneW, paneH, 6);
-
+            R(paneX, paneY, paneW, paneH, radius);
             if (kind === 'glass') {
-                cr.setSourceRGBA(1, 1, 1, 0.28);
-                cr.fillPreserve();
-                cr.setSourceRGBA(1, 1, 1, 0.65);
-                cr.setLineWidth(1.5);
+                // Liquid glass: what is behind the pane shows only THROUGH it
+                // (soft color blobs, magnified at the center and bent at the
+                // rim), a bright specular rim at the top-left, a softer one
+                // at the bottom-right, and a glossy sheen on top.
+                const cy = paneY + paneH / 2;
+                cr.save();
+                R(paneX, paneY, paneW, paneH, radius);
+                cr.clip();
+
+                // Backdrop seen through the glass.
+                const blob = (x, y, r, rgb, a) => {
+                    const g = new cairo.RadialGradient(x, y, 0, x, y, r);
+                    g.addColorStopRGBA(0, ...rgb, a);
+                    g.addColorStopRGBA(1, ...rgb, 0);
+                    cr.setSource(g);
+                    cr.rectangle(paneX, paneY, paneW, paneH);
+                    cr.fill();
+                };
+                cr.setSourceRGBA(1, 1, 1, 0.06);
+                cr.paint();
+                blob(paneX + paneW * 0.28, paneY + paneH * 0.70, paneH * 0.75, [0.35, 0.62, 1.0], 0.55);
+                blob(paneX + paneW * 0.78, paneY + paneH * 0.30, paneH * 0.70, [1.0, 0.55, 0.75], 0.45);
+                blob(paneX + paneW * 0.55, paneY + paneH * 0.95, paneH * 0.55, [0.55, 1.0, 0.85], 0.30);
+
+                // Refraction band: the edge bends light — a bright inner
+                // ring fading toward the center, with a faint color fringe.
+                for (let i = 0; i < 5; i++) {
+                    const inset = 1.5 + i * 1.6;
+                    R(paneX + inset, paneY + inset, paneW - inset * 2, paneH - inset * 2, Math.max(0, radius - inset));
+                    cr.setLineWidth(1.6);
+                    cr.setSourceRGBA(1, 1, 1, 0.16 * (1 - i / 5));
+                    cr.stroke();
+                }
+                R(paneX + 2.2, paneY + 2.2, paneW - 4.4, paneH - 4.4, Math.max(0, radius - 2.2));
+                cr.setLineWidth(1);
+                cr.setSourceRGBA(0.55, 0.85, 1.0, 0.22);
                 cr.stroke();
-                cr.setSourceRGBA(1, 1, 1, 0.75);
+
+                // Glossy sheen across the top.
+                const sheen = new cairo.LinearGradient(0, paneY, 0, cy);
+                sheen.addColorStopRGBA(0, 1, 1, 1, 0.30);
+                sheen.addColorStopRGBA(1, 1, 1, 1, 0);
+                cr.setSource(sheen);
+                cr.rectangle(paneX, paneY, paneW, paneH / 2);
+                cr.fill();
+                cr.restore();
+
+                // Specular rim: strong top-left, softer bottom-right.
+                const rim = new cairo.LinearGradient(paneX, paneY, paneX + paneW, paneY + paneH);
+                rim.addColorStopRGBA(0, 1, 1, 1, 0.95);
+                rim.addColorStopRGBA(0.35, 1, 1, 1, 0.25);
+                rim.addColorStopRGBA(0.65, 1, 1, 1, 0.15);
+                rim.addColorStopRGBA(1, 1, 1, 1, 0.70);
+                R(paneX, paneY, paneW, paneH, radius);
+                cr.setSource(rim);
+                cr.setLineWidth(1.2);
+                cr.stroke();
             } else {
-                cr.setSourceRGB(0.14, 0.14, 0.14);
+                cr.setSourceRGB(0.14, 0.14, 0.15);
                 cr.fillPreserve();
-                cr.setSourceRGBA(1, 1, 1, 0.20);
-                cr.setLineWidth(1.5);
+                cr.setSourceRGBA(1, 1, 1, 0.16);
+                cr.setLineWidth(1);
                 cr.stroke();
-                cr.setSourceRGBA(1, 1, 1, 0.85);
-            };
-
-
-            const cx = paneX + paneW * 0.55;
-            R(cx, paneY + 6, paneW * 0.38, 5, 2.5);
-            cr.fill();
-            R(cx, paneY + 15, paneW * 0.26, 4, 2);
-            cr.fill();
-            R(paneX + 6, paneY + paneH - 10, paneW * 0.5, 4, 2);
-            cr.fill();
-            cr.setSourceRGBA(1, 1, 1, kind === 'glass' ? 0.55 : 0.35);
-            cr.arc(paneX + paneW - 9, paneY + 9, 3.5, 0, 2 * Math.PI);
-            cr.fill();
-            cr.resetClip();
+            }
         };
 
         const makeStyleCard = (kind, title, subtitle) => {
@@ -2937,6 +3068,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             preview.set_draw_func((_widget, cr, width, height) => {
                 drawStylePreview(cr, width, height, kind);
             });
+            this._trackSignal(settings, settings.connect('changed::style-border-radius', () => preview.queue_draw()));
             box.append(preview);
 
             const nameLabel = new Gtk.Label({
@@ -2948,8 +3080,8 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             const subLabel = new Gtk.Label({
                 label: subtitle,
                 wrap: true,
-                wrap_mode: 1,
-                justify: 2,
+                wrap_mode: 1, // WORD
+                justify: 2,   // CENTER
                 css_classes: ['dim-label'],
             });
             box.append(subLabel);
@@ -2983,7 +3115,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
                 settings.set_int('style-mode', 1);
             };
         });
-
+        // Reset Style (and any external change) re-syncs the cards too.
         settings.connect('changed::style-mode', syncStyleVisibility);
 
         const cardsRow = new Adw.PreferencesRow({
@@ -3002,12 +3134,12 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         cardsRow.child.append(solidCard);
         styleGroup.add(cardsRow);
 
-
-
+        // Signal the shell while a slider is being dragged so it can defer
+        // widget re-renders until the handle is actually released.
         const trackSliderDrag = (scale, key) => {
             const click = new Gtk.GestureClick();
-
-
+            // Capture phase: observe the press/release even though GtkScale
+            // claims the pointer sequence for its own drag handling.
             click.set_propagation_phase(Gtk.PropagationPhase.CAPTURE);
             click.connect('pressed', () => settings.set_boolean('drag-active', true));
             click.connect('released', () => {
@@ -3018,10 +3150,10 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             scale.add_controller(click);
         };
 
-
-
-
-
+        // Helper for the integer glass parameters — slider rows like in the
+        // liquidglass-widgets extension: value scale + right-aligned value
+        // label instead of the +/- SpinRows. All values stay ints in the
+        // schema; the title/subtitle carries any ×10/×100 scale.
         const addGlassSlider = (title, subtitle, key, lower, upper, format) => {
             const adjustment = new Gtk.Adjustment({
                 lower,
@@ -3038,10 +3170,10 @@ export default class WidgetsPrefs extends ExtensionPreferences {
                 valign: Gtk.Align.CENTER,
                 width_request: 220,
             });
-
-
-
-
+            // Signal the shell while a slider is being dragged so it can defer
+            // widget re-renders until the handle is actually released (same as
+            // widget opacity below). No Double writes here: the glass keys are
+            // ints and the debounced set below is the only writer.
             const drag = new Gtk.GestureClick();
             drag.set_propagation_phase(Gtk.PropagationPhase.CAPTURE);
             drag.connect('pressed', () => settings.set_boolean('drag-active', true));
@@ -3068,24 +3200,36 @@ export default class WidgetsPrefs extends ExtensionPreferences {
                 }, 120);
             });
 
-
+            // External changes (Reset Style) move the slider back.
             settings.connect(`changed::${key}`, () => {
                 adjustment.value = settings.get_int(key);
                 value.label = format(settings.get_int(key));
             });
 
-
-
+            // Glass-specific rows live in the Glass group so the whole
+            // section (sliders + GPU warning) hides together on Solid.
             glassGroup.add(row);
             return row;
         };
+
+        // GPU warning: always visible above the glass controls.
+        // Must be a PreferencesRow: plain widgets are added to a separate
+        // box below the group's listbox, so they always render at the very
+        // bottom of the group regardless of add order.
+        const glassGpuWarningRow = new Adw.ActionRow({
+            title: _('⚠ Warning: Glass Style increases GPU usage'),
+            subtitle: _('Glass widgets render a blurred wallpaper backdrop and a shader every frame, which raises GPU load. If the desktop becomes slow or your GPU heats up, switch to Solid style.'),
+        });
+        // First row of the Glass group (rows render in add order), so the
+        // warning is read before the sliders; it hides with the group.
+        glassGroup.add(glassGpuWarningRow);
 
         const blurRow = addGlassSlider(
             _('Blur Radius'),
             _('Background blur radius in pixels (0–60)'),
             'blur-radius-px', 0, 60,
             v => `${v} px`);
-
+        // Roundness removed - now uses fixed squircle shape (6.1) with border-radius
         const refractThicknessRow = addGlassSlider(
             _('Refraction Thickness'),
             _('Width of the refracting edge band in pixels (0 disables refraction)'),
@@ -3121,17 +3265,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         solidGroup.visible = !glassGroup.visible;
 
 
-
-
-
-        const glassGpuWarningRow = new Adw.ActionRow({
-            title: _('⚠ Warning: Glass Style increases GPU usage'),
-            subtitle: _('Glass widgets render a blurred wallpaper backdrop and a shader every frame, which raises GPU load. If the desktop becomes slow or your GPU heats up, switch to Solid style.'),
-        });
-
-        glassGroup.add(glassGpuWarningRow);
-
-
+        // Shadow
         const shadowRow = new Adw.ActionRow({
             title: _('Box Shadow'),
             subtitle: _('Choose shadow color. Leave unset for default.'),
@@ -3174,7 +3308,7 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         shadowRow._fallbackColor = DEFAULT_SHADOW_COLOR;
         solidGroup.add(shadowRow);
 
-
+        // Widget opacity
         const opacityRow = new Adw.ActionRow({
             title: _('Widget opacity'),
             subtitle: _('Transparency of all desktop widgets'),
@@ -3209,28 +3343,28 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         opacityRow.add_suffix(opacityPercent);
         group.add(opacityRow);
 
-
+        // Reset Style
         const resetStyleRow = new Adw.ActionRow({
             title: _('Reset Style'),
             subtitle: _('Restore default widget appearance'),
             activatable: true,
         });
         resetStyleRow.connect('activated', () => {
-
-
-
+            // The reset only touches the CURRENT style's parameters — the
+            // chosen style itself stays as-is (a Solid reset must not flip
+            // to Glass).
             this._resetting = true;
 
             const isGlass = settings.get_int('style-mode') === 0;
 
-
+            // Common settings.
             settings.set_double('style-widget-opacity', 1.0);
             settings.set_string('style-background', '');
             settings.set_string('style-border-color', '');
             settings.set_boolean('style-use-custom-accent', false);
             settings.set_string('style-accent-color', '');
             settings.set_int('appearance', 2);
-
+            // Both widget frames (Glass and Solid) share these keys.
             settings.set_int('style-border-radius', 16);
             settings.set_int('style-border-width', 1);
 
@@ -3240,14 +3374,14 @@ export default class WidgetsPrefs extends ExtensionPreferences {
                 settings.set_int('refract-ior-x100', 170);
                 settings.set_int('refract-scale', 65);
                 settings.set_int('chroma-strength-pct', 30);
-                settings.set_int('tint-alpha-pct', 0);
+                settings.set_int('tint-alpha-pct', 10);
                 settings.set_int('spec-strength-pct', 70);
             } else {
                 settings.set_int('style-shadow-size', 24);
                 settings.set_string('style-shadow', '');
             }
 
-
+            // Reset UI controls
             radiusRow.set_value(16);
             borderWidthRow.set_value(1);
             shadowSizeRow.set_value(24);
@@ -3264,19 +3398,19 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         });
         group.add(resetStyleRow);
 
-
-
+        // Shared options on top; the Glass | Solid parameter groups (toggled
+        // by the cards) come last, at the bottom of the page.
         page.add(styleGroup);
         page.add(group);
         page.add(glassGroup);
         page.add(solidGroup);
-
-
+        // Re-assert the section visibility after the groups are parented, so
+        // Solid never flashes (or sticks with) the Glass settings.
         syncStyleVisibility();
         return page;
     }
 
-    _createAboutPage() {
+    _createAboutPage(settings, window) {
         const page = new Adw.PreferencesPage();
         const group = new Adw.PreferencesGroup({
             margin_top: 12,
@@ -3317,34 +3451,334 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         const headerRow = new Adw.ActionRow({activatable: false});
         headerRow.set_child(headerBox);
         group.add(headerRow);
+        page.add(group);
 
-        group.add(this._aboutLinkRow(
-            _('Report an Issue'),
-            'dw-bug',
-            'https://github.com/r3nhick/desktop-widgets/issues'
-        ));
-        group.add(this._aboutLinkRow(
-            _('View sources on GitHub'),
+        // Updates, help and the bug report — the Isle-style block.
+        const helpGroup = new Adw.PreferencesGroup();
+        for (const row of this._updateRows(settings, window, version))
+            helpGroup.add(row);
+        helpGroup.add(this._aboutLinkRow(
+            _('Website'),
             'dw-share-2',
-            'https://github.com/r3nhick/desktop-widgets'
+            'https://github.com/r3nhick/desktop-widgets',
+            _('Features, installing and updating')
         ));
-        group.add(this._aboutLinkRow(
+        helpGroup.add(this._aboutLinkRow(
+            _('Report a problem'),
+            'dw-bug',
+            'https://github.com/r3nhick/desktop-widgets/issues/new',
+            _('On GitHub; paste the report below in it')
+        ));
+        const reportRow = new Adw.ActionRow({
+            title: _('Copy a bug report'),
+            subtitle: _('What’s installed, your widgets and recent errors, ready to paste into a report'),
+            activatable: true,
+        });
+        reportRow.add_suffix(new Gtk.Image({icon_name: 'edit-copy-symbolic', valign: Gtk.Align.CENTER}));
+        reportRow.connect('activated', () => this._copyBugReport(settings, window, reportRow));
+        helpGroup.add(reportRow);
+        helpGroup.add(this._aboutLinkRow(
             _('License'),
             'dw-scale',
             'https://github.com/r3nhick/desktop-widgets/blob/main/LICENSE',
             _('GNU General Public License, version 3 or later')
         ));
+        page.add(helpGroup);
 
-        page.add(group);
+        // Reset everything but the widgets themselves.
+        const resetGroup = new Adw.PreferencesGroup({title: _('Settings')});
+        const resetRow = new Adw.ActionRow({
+            title: _('Reset all settings'),
+            subtitle: _('Back to the defaults; your widgets and their places stay'),
+            activatable: true,
+        });
+        resetRow.connect('activated', () => {
+            const dialog = new Adw.AlertDialog({
+                heading: _('Reset all settings?'),
+                body: _('Every option goes back to its default. Your widgets, their places and their content stay.'),
+            });
+            dialog.add_response('cancel', _('Cancel'));
+            dialog.add_response('reset', _('Reset'));
+            dialog.set_response_appearance('reset', Adw.ResponseAppearance.DESTRUCTIVE);
+            dialog.set_default_response('cancel');
+            dialog.set_close_response('cancel');
+            dialog.connect('response', (_d, response) => {
+                if (response !== 'reset')
+                    return;
+                // Not options: the widgets' layout and internal state.
+                const keep = new Set(['layout-json', 'edit-mode', 'drag-active', 'open-prefs-page',
+                    'open-widget-picker', 'update-latest', 'update-url', 'update-checked-at', 'update-shown']);
+                for (const key of settings.settings_schema.list_keys()) {
+                    if (!keep.has(key))
+                        settings.reset(key);
+                }
+            });
+            dialog.present(window);
+        });
+        resetGroup.add(resetRow);
+        page.add(resetGroup);
         return page;
     }
 
+    // ── Updates (About page) ──────────────────────────────────────────────
+    // The status row + the opt-in switch. The shell side (lib/updates.js)
+    // asks GitHub once a day and stores what it found in settings; this row
+    // follows those keys. A git checkout updates in one click (git pull);
+    // otherwise the row links to the download.
+    _updateRows(settings, window, version) {
+        const dir = this.path;
+        const isGit = GLib.file_test(GLib.build_filenamev([dir, '.git']), GLib.FileTest.EXISTS);
+        const repoUrl = 'https://github.com/r3nhick/desktop-widgets';
 
+        const isNewer = (a, b) => {
+            const parts = v => String(v ?? '').replace(/^v/i, '').split('.').map(p => parseInt(p, 10) || 0);
+            const [x, y] = [parts(a), parts(b)];
+            for (let i = 0; i < Math.max(x.length, y.length); i++) {
+                if ((x[i] ?? 0) !== (y[i] ?? 0))
+                    return (x[i] ?? 0) > (y[i] ?? 0);
+            }
+            return false;
+        };
+        // The version on disk: after an update it is the new one while the
+        // shell still runs the old one until the next login.
+        const installedVersion = () => {
+            try {
+                const [, bytes] = Gio.File.new_for_path(GLib.build_filenamev([dir, 'metadata.json'])).load_contents(null);
+                return JSON.parse(new TextDecoder().decode(bytes))['version-name'] ?? '';
+            } catch (_e) {
+                return '';
+            }
+        };
+        const checkedWhen = ms => {
+            const then = GLib.DateTime.new_from_unix_local(Math.floor(ms / 1000));
+            const now = GLib.DateTime.new_now_local();
+            const days = now.get_day_of_year() - then.get_day_of_year()
+                + 365 * (now.get_year() - then.get_year());
+            return days <= 0 ? _('today') : days === 1 ? _('yesterday') : then.format('%e %b').trim();
+        };
 
+        // Texts may come from GitHub / git output: never markup.
+        const status = new Adw.ActionRow({use_markup: false});
+        const icon = new Gtk.Image({valign: Gtk.Align.CENTER});
+        const spinner = new Gtk.Spinner({valign: Gtk.Align.CENTER, spinning: true, visible: false});
+        status.add_prefix(icon);
+        status.add_prefix(spinner);
 
+        const button = (label, css) => new Gtk.Button({label, valign: Gtk.Align.CENTER, css_classes: css, visible: false});
+        const download = button(_('Download'), []);
+        download.connect('clicked', () => new Gtk.UriLauncher({
+            uri: settings.get_string('update-url') || repoUrl,
+        }).launch(window, null, null));
+        const update = button(_('Update'), ['suggested-action']);
+        const logOut = button(_('Log Out'), ['suggested-action']);
+        logOut.connect('clicked', () => {
+            Gio.DBus.session.call('org.gnome.SessionManager', '/org/gnome/SessionManager',
+                'org.gnome.SessionManager', 'Logout', new GLib.Variant('(u)', [0]), null,
+                Gio.DBusCallFlags.NONE, -1, null, (bus, res) => {
+                    try {
+                        bus.call_finish(res);
+                    } catch (_e) {
+                        GLib.spawn_async(null, ['gnome-session-quit', '--logout'], null, GLib.SpawnFlags.SEARCH_PATH, null);
+                    }
+                });
+        });
+        const suffixes = [download, update, logOut];
+        for (const suffix of suffixes)
+            status.add_suffix(suffix);
 
+        const check = new Adw.SwitchRow({
+            title: _('Check for new versions'),
+            subtitle: _('Asks GitHub once a day; nothing else is sent'),
+        });
+        settings.bind('check-updates', check, 'active', Gio.SettingsBindFlags.DEFAULT);
 
+        let updating = false;
+        let failure = null;
+        const show = (iconName, css, title, subtitle, buttons = []) => {
+            icon.icon_name = iconName ?? '';
+            icon.css_classes = css;
+            icon.visible = !updating;
+            spinner.visible = updating;
+            status.title = title;
+            status.subtitle = subtitle;
+            for (const suffix of suffixes)
+                suffix.visible = buttons.includes(suffix);
+        };
 
+        const sync = () => {
+            const on = settings.get_boolean('check-updates');
+            const latest = settings.get_string('update-latest');
+            const checkedAt = Number(settings.get_int64('update-checked-at'));
+            const installed = installedVersion();
+
+            if (updating) {
+                show(null, [], _('Updating to Desktop Widgets %s…').format(latest), _('Downloading from GitHub'));
+            } else if (failure) {
+                update.label = _('Try Again');
+                show('dialog-warning-symbolic', ['warning'], _('Couldn’t update'), failure, [download, update]);
+            } else if (installed && isNewer(installed, version)) {
+                show('object-select-symbolic', ['success'], _('Desktop Widgets %s is installed').format(installed),
+                    _('Log out and back in to finish'), [logOut]);
+            } else if (!on) {
+                show('software-update-available-symbolic', ['dim-label'], _('Not checking for new versions'),
+                    _('Turn it on below to hear when one is out'));
+            } else if (latest && isNewer(latest, version)) {
+                update.label = _('Update');
+                show('software-update-available-symbolic', ['accent'], _('Desktop Widgets %s is out').format(latest),
+                    isGit ? _('Your widgets and settings stay') : _('Download it from GitHub'),
+                    isGit ? [update] : [download]);
+            } else if (checkedAt > 0 && latest) {
+                show('object-select-symbolic', ['success'], _('You’re up to date'),
+                    _('Checked %s').format(checkedWhen(checkedAt)));
+            } else {
+                show('software-update-available-symbolic', ['dim-label'], _('Not checked yet'),
+                    _('Desktop Widgets asks GitHub once a day'));
+            }
+        };
+
+        // One-click update for a git checkout: fast-forward only, so local
+        // edits are never overwritten (git refuses and says why).
+        update.connect('clicked', () => {
+            if (updating || !isGit)
+                return;
+            updating = true;
+            failure = null;
+            sync();
+            const run = (argv, done) => {
+                try {
+                    const proc = Gio.Subprocess.new(argv,
+                        Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_MERGE);
+                    proc.communicate_utf8_async(null, null, (p, res) => {
+                        let out = '';
+                        try {
+                            [, out] = p.communicate_utf8_finish(res);
+                        } catch (e) {
+                            out = String(e.message ?? e);
+                        }
+                        done(p.get_successful(), (out ?? '').trim());
+                    });
+                } catch (e) {
+                    done(false, String(e.message ?? e));
+                }
+            };
+            run(['git', '-C', dir, 'pull', '--ff-only'], (ok, out) => {
+                if (!ok) {
+                    updating = false;
+                    const line = out.split('\n').filter(l => l.trim()).pop() ?? '';
+                    failure = /local changes|would be overwritten|uncommitted/i.test(out)
+                        ? _('This copy has local changes; git didn’t overwrite them. Commit or stash them, or download instead')
+                        : /could not resolve|unable to access|network/i.test(out)
+                            ? _('GitHub couldn’t be reached; try again later')
+                            : (line || _('git pull failed'));
+                    sync();
+                    return;
+                }
+                // git succeeded but the files on disk are still not newer
+                // (already at GitHub's commit, or a local edit of
+                // metadata.json): say so instead of silently falling back
+                // to «is out» as if nothing had happened.
+                if (!isNewer(installedVersion(), version)) {
+                    updating = false;
+                    failure = /up to date/i.test(out)
+                        ? _('This copy already matches GitHub; nothing new was downloaded. Check metadata.json for local edits')
+                        : _('git finished, but the version on disk didn’t change');
+                    sync();
+                    return;
+                }
+                // New keys may come with the update: compile the schema.
+                run(['glib-compile-schemas', GLib.build_filenamev([dir, 'schemas'])], () => {
+                    updating = false;
+                    sync();
+                });
+            });
+        });
+
+        const ids = ['check-updates', 'update-latest', 'update-checked-at'].map(key =>
+            settings.connect(`changed::${key}`, () => sync()));
+        for (const id of ids)
+            this._trackSignal(settings, id);
+        sync();
+        return [status, check];
+    }
+
+    // Builds a plain-text report (versions, system, widgets, changed
+    // settings, recent errors) and puts it on the clipboard. Personal values
+    // (user names, places, paths) are left out.
+    async _copyBugReport(settings, window, row) {
+        const original = row.subtitle;
+        const lines = [];
+        const version = this.metadata['version-name'] ?? String(this.metadata.version ?? '');
+        lines.push(`Desktop Widgets ${version} (version ${this.metadata.version ?? '?'})`);
+        try {
+            const Config = await import('resource:///org/gnome/Shell/Extensions/js/misc/config.js');
+            lines.push(`GNOME Shell ${Config.PACKAGE_VERSION}`);
+        } catch (_e) {
+            lines.push('GNOME Shell: unknown');
+        }
+        try {
+            const [, bytes] = Gio.File.new_for_path('/etc/os-release').load_contents(null);
+            const pretty = /^PRETTY_NAME="?([^"\n]*)"?/m.exec(new TextDecoder().decode(bytes))?.[1];
+            if (pretty)
+                lines.push(`OS: ${pretty}`);
+        } catch (_e) {}
+        lines.push(`Session: ${GLib.getenv('XDG_SESSION_TYPE') ?? '?'}, desktop: ${GLib.getenv('XDG_CURRENT_DESKTOP') ?? '?'}`);
+        lines.push(`Install: ${GLib.file_test(GLib.build_filenamev([this.path, '.git']), GLib.FileTest.EXISTS) ? 'git checkout' : 'package'}`);
+        lines.push(`Style: ${settings.get_int('style-mode') === 0 ? 'Glass' : 'Solid'}`);
+
+        try {
+            const doc = JSON.parse(settings.get_string('layout-json') || '{}');
+            const widgets = (doc.widgets ?? []).map(w => `${w.type}${w.size ? ` (${w.size})` : ''}`);
+            lines.push(`Widgets (${widgets.length}): ${widgets.join(', ') || 'none'}`);
+        } catch (_e) {
+            lines.push('Widgets: layout unreadable');
+        }
+
+        const personal = /username|location|photo|path|custom-app|file-manager|binding|theme-|layout|update-/;
+        const changed = settings.settings_schema.list_keys()
+            .filter(key => settings.get_user_value(key) !== null && !personal.test(key))
+            .sort()
+            .map(key => `  ${key} = ${settings.get_value(key).print(false)}`);
+        lines.push(changed.length ? `Changed settings:\n${changed.join('\n')}` : 'Changed settings: none');
+
+        // Recent errors of this extension from the user's journal.
+        const journal = await new Promise(resolve => {
+            try {
+                const proc = Gio.Subprocess.new(
+                    ['journalctl', '--user', '-b', '--no-pager', '-o', 'short-monotonic', '-n', '3000'],
+                    Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE);
+                proc.communicate_utf8_async(null, null, (p, res) => {
+                    try {
+                        const [, out] = p.communicate_utf8_finish(res);
+                        resolve(out ?? '');
+                    } catch (_e) {
+                        resolve('');
+                    }
+                });
+            } catch (_e) {
+                resolve('');
+            }
+        });
+        const recent = journal.split('\n')
+            .filter(l => /desktop-widgets/i.test(l) && /(error|warn|exception|failed|critical)/i.test(l))
+            .slice(-30)
+            // Strip the home folder from paths.
+            .map(l => l.split(GLib.get_home_dir()).join('~'));
+        lines.push(recent.length ? `Recent errors:\n${recent.join('\n')}` : 'Recent errors: none found');
+
+        window.get_display().get_clipboard().set(lines.join('\n'));
+        row.subtitle = _('Copied — paste it into the report on GitHub');
+        this._trackSource(GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2500, () => {
+            row.subtitle = original;
+            return GLib.SOURCE_REMOVE;
+        }));
+    }
+
+    /**
+     * A link row on the About page.
+     * `iconName` is the base name of our icon (no theme suffix), from
+     * `icons/settings/`. GTK does not look these up in the icon theme (no -symbolic),
+     * so we load the file directly and pick -light/-dark by theme.
+     */
     _aboutLinkRow(title, iconName, url, subtitle) {
         const row = new Adw.ActionRow({
             title: title,
@@ -3365,11 +3799,11 @@ export default class WidgetsPrefs extends ExtensionPreferences {
             if (file && Gio.File.new_for_path(file).query_exists(null))
                 icon.set_from_file(file);
             else
-                icon.set_from_icon_name(iconName);
+                icon.set_from_icon_name(iconName); // fallback for third-party icons
         };
         applyIcon();
-
-
+        // Theme flips after the window closes would call set_from_file on a
+        // destroyed Gtk.Image: tracked like every other page signal.
         const applyIconId = Adw.StyleManager.get_default().connect('notify::dark', applyIcon);
         this._trackSignal(Adw.StyleManager.get_default(), applyIconId);
         row.add_prefix(icon);
@@ -3410,19 +3844,19 @@ export default class WidgetsPrefs extends ExtensionPreferences {
     }
 
     _createColorButton(initialColor, fallbackColor, onColorSet) {
-
+        // Determine GTK version for color dialog vs color button
         const major = Gtk.get_major_version();
         const minor = Gtk.get_minor_version();
         let colorButton;
         let signalEmitted;
 
         if (major > 4 || major === 4 && minor >= 10) {
-
+            // GTK 4.10+: use Gtk.ColorDialogButton
             signalEmitted = 'notify::rgba';
             const colorDialog = new Gtk.ColorDialog({with_alpha: false});
             colorButton = new Gtk.ColorDialogButton({dialog: colorDialog});
         } else {
-
+            // GTK < 4.10: use Gtk.ColorButton
             signalEmitted = 'color-set';
             colorButton = new Gtk.ColorButton();
         }
@@ -3432,14 +3866,14 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         colorButton.set_margin_start(12);
         colorButton.set_margin_end(6);
 
-
+        // Initialize color from settings
         const rgba = new Gdk.RGBA();
         let success = Boolean(initialColor && initialColor.length > 0);
         if (success) {
             try {
                 success = rgba.parse(initialColor);
             } catch (e) {
-
+                // parsing failed, fall back to default
                 success = false;
             }
         }
@@ -3448,10 +3882,10 @@ export default class WidgetsPrefs extends ExtensionPreferences {
         }
         colorButton.set_rgba(rgba);
 
-
+        // When color changes, run the callback
         colorButton.connect(signalEmitted, () => {
             if (this._resetting) {
-
+                // Skip saving during reset to avoid writing fallback colors
                 return;
             }
             onColorSet(colorButton.get_rgba());

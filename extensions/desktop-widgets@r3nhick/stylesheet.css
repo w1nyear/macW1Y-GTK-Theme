@@ -238,19 +238,29 @@
 	color: white;
 }
 
-/* Desktop Widgets Context Menu Styling - prevents wallpaper flash and provides authentic macW1Y glass surface */
-.desktop-widgets-context-menu {
-    border-radius: 20px !important;
+/* Context menu: «Remove widget» reads as destructive — red text and icon,
+   a solid red row when hovered / focused. */
+.popup-menu-item.desktop-widgets-destructive-item,
+.popup-menu-item.desktop-widgets-destructive-item .popup-menu-icon {
+  color: #ff7b72;
 }
 
-.desktop-widgets-context-menu .popup-menu-content {
-    background-color: transparent !important;
-    background: transparent !important;
-    border: none !important;
-    border-radius: 20px !important;
-    box-shadow: none !important;
-    padding: 6px !important;
-    min-width: 140px !important;
-    max-width: 480px !important;
-    width: auto !important;
+.popup-menu-item.desktop-widgets-destructive-item-light,
+.popup-menu-item.desktop-widgets-destructive-item-light .popup-menu-icon {
+  color: #c01c28;
+}
+
+.popup-menu-item.desktop-widgets-destructive-item:hover,
+.popup-menu-item.desktop-widgets-destructive-item:focus,
+.popup-menu-item.desktop-widgets-destructive-item:selected,
+.popup-menu-item.desktop-widgets-destructive-item:active {
+  background-color: #e01b24;
+  color: #ffffff;
+}
+
+.popup-menu-item.desktop-widgets-destructive-item:hover .popup-menu-icon,
+.popup-menu-item.desktop-widgets-destructive-item:focus .popup-menu-icon,
+.popup-menu-item.desktop-widgets-destructive-item:selected .popup-menu-icon,
+.popup-menu-item.desktop-widgets-destructive-item:active .popup-menu-icon {
+  color: #ffffff;
 }
