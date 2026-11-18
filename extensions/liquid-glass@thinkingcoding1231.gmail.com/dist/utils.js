@@ -1751,20 +1751,15 @@ export function isBackgroundMirrorEnabled() {
 
 
 
-let _sharedBackgroundSource = null;
+const wallpaperRegistry = (globalThis.__macw1yGlassWallpaper ??= { source: null });
+
 function ensureSharedBackgroundSource() {
-    if (isActorValid(_sharedBackgroundSource))
-        return _sharedBackgroundSource;
-    _sharedBackgroundSource = null;
-    const uiGroup = Main.layoutManager?.uiGroup ?? null;
-    const group = Main.layoutManager?._backgroundGroup ?? null;
-    if (!uiGroup || !group)
-        return null;
-    for (const child of uiGroup.get_children()) {
-        if (child.name === 'lg-bg-mirror-source') {
-            try { child.destroy(); } catch (_) {}
-        }
-    }
+    const current = getSharedBackgroundSource();
+    if (current) return current;
+    const uiGroup = Main.layoutManager?.uiGroup;
+    const group = Main.layoutManager?._backgroundGroup;
+    if (!uiGroup || !group) return null;
+
     const source = new BackgroundMirror();
     source.set_name('lg-bg-mirror-source');
     source.set_position(-10000, -10000);
@@ -1786,12 +1781,12 @@ function ensureSharedBackgroundSource() {
     // NEVER placed in global.window_group, which breaks Mutter window stacking.
     source.opacity = 255;
     source.reactive = false;
+    source._glassCloneCount = 0;
     uiGroup.add_child(source);
+    wallpaperRegistry.source = source;
     source.connect('destroy', () => {
-        if (_sharedBackgroundSource === source)
-            _sharedBackgroundSource = null;
+        if (wallpaperRegistry.source === source) wallpaperRegistry.source = null;
     });
-    _sharedBackgroundSource = source;
     return source;
 }
 
@@ -1950,18 +1945,13 @@ export function isCullOptOutEnabled() {
 }
 
 export function getSharedBackgroundSource() {
-    return isActorValid(_sharedBackgroundSource) ? _sharedBackgroundSource : null;
+    const source = wallpaperRegistry.source;
+    return isActorValid(source) ? source : null;
 }
 
 export function destroySharedBackgroundSource() {
-    const source = _sharedBackgroundSource;
-    _sharedBackgroundSource = null;
-    if (isActorValid(source)) {
-        try {
-            source.destroy();
-        }
-        catch (_) {   }
-    }
+    const source = getSharedBackgroundSource();
+    if (source && source._glassCloneCount === 0) source.destroy();
 }
 
 
@@ -1985,6 +1975,22 @@ export function createBackgroundMirror(name) {
     if (!source)
         source = Main.layoutManager._backgroundGroup;
     const clone = new UnpickableClone({ source });
+    if (source && source === wallpaperRegistry.source) {
+        source._glassCloneCount++;
+        clone.connect('destroy', () => {
+            if (wallpaperRegistry.source !== source) return;
+            if (--source._glassCloneCount === 0 && !source._glassReleasePending) {
+                source._glassReleasePending = true;
+                GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                    if (wallpaperRegistry.source === source) {
+                        source._glassReleasePending = false;
+                        destroySharedBackgroundSource();
+                    }
+                    return GLib.SOURCE_REMOVE;
+                });
+            }
+        });
+    }
     clone.set_name(name);
     return clone;
 }

@@ -1180,7 +1180,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 /* no plate — just the ambient shadow of the whole floating panel */
 .tahoe-qs-panelbg {
     border-radius: 24px;
-    background-color: rgba(242, 242, 247, 0.85);
+    background-color: transparent;
     border: 1px solid rgba(0, 0, 0, 0.08) !important;
     /* one shadow for both themes: tight core + wide soft diffusion */
     box-shadow: 0 4px 22px rgba(0, 0, 0, 0.15),
@@ -1189,7 +1189,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-qs-dark.tahoe-qs-panelbg,
 .tahoe-qs-dark .tahoe-qs-panelbg,
 .tahoe-qs-panelbg.tahoe-qs-dark {
-    background-color: rgba(30, 30, 34, 0.85);
+    background-color: transparent;
     border: 1px solid rgba(255, 255, 255, 0.14) !important;
 }
 .tahoe-qs-cols { spacing: 18px; }

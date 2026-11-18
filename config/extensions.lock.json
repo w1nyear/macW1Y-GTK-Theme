@@ -261,7 +261,7 @@
         "50",
         "51"
       ],
-      "sha256": "dcdebe348d1f79e556407805b45bddebd08dab0f12320e550066b555330a4928",
+      "sha256": "9adcb130f1732b463fa0e9f8c70aa60a26c62cdda4a5905913ce9b959955bdae",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -287,7 +287,7 @@
         "49",
         "50"
       ],
-      "sha256": "4798d02c5429b36ba7819d177145487c8486fd6e546fdbe5969db9d70131e043",
+      "sha256": "2e44a4648105dc5674c9aff847c2b0f3411bf9e36b0c378e66911bac457ab745",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -333,12 +333,12 @@
         "dist/contrastSampler.js": "d9430b72a653efa8838b358af846c400dc30db7e607eb1493a74f7a137a6a832",
         "dist/gpuSaveLiveApply.js": "b1bd14c0f543d7fe3139b56ee6ce27d7734a4e0b76ce2df2d0080265d97c4f43",
         "dist/liquidEffect.js": "990e11580f2a54f150928bed70b0e7b11f46d56596e4460d0146ee850de1c25b",
-        "dist/utils.js": "b80d9320900da5dbb2acd5d267a763537da9906c827b597a5cc29ca1f77d659c",
+        "dist/utils.js": "f1401680b12b5826ee0405222427fb323b71a6b961e7d3bdec255d5a5e0a3f11",
         "dist/rendering/backdropGlass.js": "6683052c975a52177345ee8f8ec8d2afdd2b4139f183a500a332c5e88f047a6d",
         "src/liquidEffect.ts": "c7e88e7e537a3509826da79592057b1b349d6b53c010a6fd34735665308f87a4",
         "src/contrastSampler.ts": "e8089ccd15d1058e8c876e18f1b00cb314cfb90ae2a86c7539f82d9728cda4d1",
         "src/dockManager.ts": "5711cdd97623549cd1205dcab91b2faed1ce8f5eff7b0ea32101e1c2ba633a2e",
-        "src/utils.ts": "3048c8eabfa66f022a76b68c6fa8b125e51dd2d76a558d8e6fcc709f58a4cd43",
+        "src/utils.ts": "d264a17741f02a7140fe1bd2086d28d4419dee8a95f5746f73d3650cc0dade77",
         "src/quickSettingsManager.ts": "50ad95b47a2b4ba78c4dfa342198d8195b5a097f11c160dd71c8c617508dfc3c",
         "src/windowListService.ts": "0bae95a7bd69b932b7c314f8f47de9305633f4ceefbaafb24f8c2d89d6811838",
         "src/notificationManager.ts": "97f13cc8df5a5f231d5412c9d804372aba2bc752862465a785ef8fb6f8a01a52",
