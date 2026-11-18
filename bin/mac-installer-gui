@@ -942,10 +942,10 @@ button.mac-link-btn:hover,
 
 /* Recovery Option Cards & Screen */
 .mac-recovery-card.mac-card-options {
-    padding: 9px 9px 11px 9px;
-    border-radius: 14px;
-    min-width: 0px;
-    min-height: 0px;
+    padding: 14px 16px 14px 16px;
+    border-radius: 16px;
+    min-width: 480px;
+    min-height: 350px;
 }
 
 .mac-option-row {
@@ -1097,13 +1097,26 @@ progressbar.mac-progress > trough > progress {
     border-radius: 10px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     min-width: 380px;
-    min-height: 264px;
     padding: 4px;
 }
 
 .mac-lang-card scrolledwindow,
 .mac-lang-card viewport {
     background-color: transparent;
+    background: transparent;
+}
+
+.mac-lang-card scrolledwindow undershoot,
+.mac-lang-card scrolledwindow undershoot.top,
+.mac-lang-card scrolledwindow undershoot.bottom,
+.mac-lang-card scrolledwindow overshoot,
+.mac-lang-card scrolledwindow overshoot.top,
+.mac-lang-card scrolledwindow overshoot.bottom {
+    background: none !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    border: none !important;
 }
 
 button.mac-lang-item,
@@ -1735,8 +1748,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         # 1. Top Menubar
         self.menubar_box = self._create_menubar()
-        if self._fullscreen_menu_layout:
-            self.menubar_box.set_margin_top(40)
+        self.menubar_box.set_margin_top(0)
         root_box.append(self.menubar_box)
 
         # Right-click context menu gesture on window root
@@ -1979,7 +1991,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.modal_dim.set_visible(True)
         self.modal_sheet_host.start_open_animation()
 
-    def hide_modal(self):
+    def hide_modal(self, immediate=False):
         if not self.modal_dim.get_visible():
             return
         def _on_closed():
@@ -1990,33 +2002,117 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
                 self.lbl_wizard_title.set_opacity(1.0)
             if hasattr(self, "lbl_wizard_sub"):
                 self.lbl_wizard_sub.set_opacity(1.0)
-        self.modal_sheet_host.start_close_animation(on_finish=_on_closed)
+        if immediate:
+            _on_closed()
+        else:
+            self.modal_sheet_host.start_close_animation(on_finish=_on_closed)
+
+    def _animate_screen_fade(self, old_child, new_child, duration=0.28):
+        if hasattr(self, "_fade_anim_tick") and self._fade_anim_tick:
+            try:
+                self.remove_tick_callback(self._fade_anim_tick)
+            except Exception:
+                pass
+            self._fade_anim_tick = 0
+
+        if not old_child or not new_child:
+            return
+
+        start_time = time.time()
+        new_child.set_opacity(0.0)
+
+        def on_tick(widget, frame_clock):
+            elapsed = time.time() - start_time
+            tau = min(1.0, elapsed / duration)
+            p = tau * tau * (3.0 - 2.0 * tau)
+            old_child.set_opacity(max(0.0, 1.0 - p))
+            new_child.set_opacity(min(1.0, p))
+            if tau >= 1.0:
+                old_child.set_opacity(1.0)
+                new_child.set_opacity(1.0)
+                self._fade_anim_tick = 0
+                return False
+            return True
+
+        self._fade_anim_tick = self.add_tick_callback(on_tick)
+
+    def _animate_card_size(self, start_w, start_h, target_w, target_h, duration=0.30, on_done=None):
+        if hasattr(self, "_card_size_anim_tick") and self._card_size_anim_tick:
+            try:
+                self.remove_tick_callback(self._card_size_anim_tick)
+            except Exception:
+                pass
+            self._card_size_anim_tick = 0
+
+        start_time = time.time()
+
+        def on_tick(widget, frame_clock):
+            elapsed = time.time() - start_time
+            tau = min(1.0, elapsed / duration)
+            p = 1.0 - math.pow(1.0 - tau, 3)
+            cur_w = int(start_w + (target_w - start_w) * p)
+            cur_h = int(start_h + (target_h - start_h) * p)
+            self.card.set_size_request(cur_w, cur_h)
+            if tau >= 1.0:
+                self.card.set_size_request(target_w, target_h)
+                self._card_size_anim_tick = 0
+                if on_done:
+                    on_done()
+                return False
+            return True
+
+        self._card_size_anim_tick = self.add_tick_callback(on_tick)
 
     def switch_to_screen(self, screen_name):
-        self.hide_modal()
+        self.hide_modal(immediate=True)
         target = screen_name if screen_name.startswith("screen_") else f"screen_{screen_name}"
         if target in ["screen_lang", "screen_language"]:
             target = "screen_language"
 
+        curr = self.stack.get_visible_child_name()
+        old_child = self.stack.get_visible_child()
+
         if target in ["screen_welcome", "welcome"]:
+            target_child = self.stack.get_child_by_name("screen_welcome")
             self._set_stack_slide_direction("screen_welcome")
+            if old_child and target_child and old_child != target_child:
+                self._animate_screen_fade(old_child, target_child, duration=0.28)
             self.stack.set_visible_child_name("screen_welcome")
             self.morph_terms_to_welcome(animated=False)
             self.card.remove_css_class("mac-card-options")
+            self.card.set_size_request(-1, -1)
             return
         elif target in ["screen_terms", "terms"]:
+            target_child = self.stack.get_child_by_name("screen_welcome")
             self._set_stack_slide_direction("screen_welcome")
+            if old_child and target_child and old_child != target_child:
+                self._animate_screen_fade(old_child, target_child, duration=0.28)
             self.stack.set_visible_child_name("screen_welcome")
             self.morph_welcome_to_terms(animated=False)
             self.card.remove_css_class("mac-card-options")
+            self.card.set_size_request(-1, -1)
             return
 
+        target_child = self.stack.get_child_by_name(target)
         self._set_stack_slide_direction(target)
-        self.stack.set_visible_child_name(target)
-        if target == "screen_options":
+
+        if old_child and target_child and old_child != target_child:
+            self._animate_screen_fade(old_child, target_child, duration=0.28)
+
+        if curr in ["screen_user", "screen_language"] and target == "screen_options":
             self.card.add_css_class("mac-card-options")
+            self._animate_card_size(650, 490, 480, 350, duration=0.30, on_done=lambda: self.card.set_size_request(-1, -1))
+        elif curr == "screen_options" and target in ["screen_user", "screen_language", "screen_welcome"]:
+            self.card.remove_css_class("mac-card-options")
+            self._animate_card_size(480, 350, 650, 490, duration=0.30, on_done=lambda: self.card.set_size_request(-1, -1))
+        elif target == "screen_options":
+            self.card.add_css_class("mac-card-options")
+            self.card.set_size_request(-1, -1)
         else:
             self.card.remove_css_class("mac-card-options")
+            self.card.set_size_request(-1, -1)
+
+        self.stack.set_visible_child_name(target)
 
     def _set_stack_slide_direction(self, target):
         SCREEN_ORDER = [
@@ -2082,15 +2178,16 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         scroll.set_propagate_natural_height(False)
         scroll.set_min_content_width(372)
-        scroll.set_min_content_height(240)
-        scroll.set_max_content_height(240)
+        scroll.set_min_content_height(264)
+        scroll.set_max_content_height(264)
+        scroll.set_vexpand(True)
         card.append(scroll)
 
         items_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
         items_box.set_margin_start(4)
         items_box.set_margin_end(4)
         items_box.set_margin_top(4)
-        items_box.set_margin_bottom(4)
+        items_box.set_margin_bottom(2)
         scroll.set_child(items_box)
 
         self.lang_buttons = {}
@@ -2122,30 +2219,51 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         spacer.set_vexpand(True)
         box.append(spacer)
 
-        # 4. Bottom Action Buttons
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        btn_row.set_halign(Gtk.Align.CENTER)
-        btn_row.set_valign(Gtk.Align.END)
-        btn_row.set_margin_bottom(6)
+        # 4. Bottom Action Buttons (Circular Navigation Buttons)
+        nav_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        nav_box.set_halign(Gtk.Align.CENTER)
+        nav_box.set_valign(Gtk.Align.END)
+        nav_box.set_spacing(100)
+        nav_box.set_margin_top(18)
+        nav_box.set_margin_bottom(6)
 
-        self.rev_lang_restart = Gtk.Revealer()
-        self.rev_lang_restart.set_transition_type(Gtk.RevealerTransitionType.SLIDE_RIGHT)
-        self.rev_lang_restart.set_transition_duration(320)
-        self.rev_lang_restart.set_reveal_child(True)
+        # Left circular button: Back (Назад)
+        b_back = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        b_back.set_halign(Gtk.Align.CENTER)
+        self.btn_lang_back = Gtk.Button()
+        self.btn_lang_back.add_css_class("mac-circle-nav-btn")
+        self.btn_lang_back.set_has_frame(False)
+        self.btn_lang_back.set_halign(Gtk.Align.CENTER)
+        img_back = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "btn_restart.svg"))
+        img_back.set_pixel_size(36)
+        self.btn_lang_back.set_child(img_back)
+        self.btn_lang_back.connect("clicked", lambda b: self._on_language_back())
+        b_back.append(self.btn_lang_back)
 
-        self.btn_lang_restart = Gtk.Button(label=info["restart"])
-        self.btn_lang_restart.add_css_class("mac-btn-pill")
-        self.btn_lang_restart.set_margin_end(14)
-        self.btn_lang_restart.connect("clicked", lambda b: self._on_system_reboot())
-        self.rev_lang_restart.set_child(self.btn_lang_restart)
-        btn_row.append(self.rev_lang_restart)
+        self.lbl_lang_back = Gtk.Label(label=self.tr("btn_back", "Back"))
+        self.lbl_lang_back.add_css_class("mac-subtitle")
+        b_back.append(self.lbl_lang_back)
+        nav_box.append(b_back)
 
-        self.btn_lang_continue = Gtk.Button(label=info["continue"])
-        self.btn_lang_continue.add_css_class("mac-btn-pill-primary")
+        # Right circular button: Continue (Продовжити)
+        b_next = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        b_next.set_halign(Gtk.Align.CENTER)
+        self.btn_lang_continue = Gtk.Button()
+        self.btn_lang_continue.add_css_class("mac-circle-nav-btn")
+        self.btn_lang_continue.set_has_frame(False)
+        self.btn_lang_continue.set_halign(Gtk.Align.CENTER)
+        img_next = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "btn_next.svg"))
+        img_next.set_pixel_size(36)
+        self.btn_lang_continue.set_child(img_next)
         self.btn_lang_continue.connect("clicked", lambda b: self._on_language_continue())
-        btn_row.append(self.btn_lang_continue)
+        b_next.append(self.btn_lang_continue)
 
-        box.append(btn_row)
+        self.lbl_lang_continue = Gtk.Label(label=self.tr("installer_continue_btn", "Continue"))
+        self.lbl_lang_continue.add_css_class("mac-subtitle")
+        b_next.append(self.lbl_lang_continue)
+        nav_box.append(b_next)
+
+        box.append(nav_box)
         return box
 
     def _rebuild_subsequent_screens(self):
@@ -2186,10 +2304,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             self.lbl_lang_title.set_label(self.tr("select_language", "Select Language"))
         if hasattr(self, "lbl_lang_sub") and self.lbl_lang_sub:
             self.lbl_lang_sub.set_label(self.tr("select_language_sub", "Select the main language for the system interface."))
-        if hasattr(self, "btn_lang_continue") and self.btn_lang_continue:
-            self.btn_lang_continue.set_label(self.tr("installer_continue_btn", "Continue"))
-        if hasattr(self, "btn_lang_restart") and self.btn_lang_restart:
-            self.btn_lang_restart.set_label(self.tr("menu_reboot", "Restart…"))
+        if hasattr(self, "lbl_lang_continue") and self.lbl_lang_continue:
+            self.lbl_lang_continue.set_label(self.tr("installer_continue_btn", "Continue"))
+        if hasattr(self, "lbl_lang_back") and self.lbl_lang_back:
+            self.lbl_lang_back.set_label(self.tr("btn_back", "Back"))
 
         for c, (btn, lbl) in getattr(self, "lang_buttons", {}).items():
             if c == lang_code:
@@ -2200,6 +2318,9 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         # Dynamically rebuild all screens in selected language
         self._rebuild_subsequent_screens()
 
+    def _on_language_back(self):
+        self.close()
+
     def _on_language_continue(self):
         try:
             loc_dir = os.path.expanduser("~/.config/mac-styling")
@@ -2208,8 +2329,6 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
                 f.write(f"{self.selected_language}\n")
         except Exception:
             pass
-        if hasattr(self, "rev_lang_restart"):
-            self.rev_lang_restart.set_reveal_child(False)
         self.switch_to_screen("screen_user")
 
     # --------------------------------------------------------------------------
@@ -2273,9 +2392,9 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         img_rst = Gtk.Image.new_from_file(os.path.join(ASSETS_DIR, "btn_restart.svg"))
         img_rst.set_pixel_size(36)
         btn_restart.set_child(img_rst)
-        btn_restart.connect("clicked", lambda b: self._on_system_reboot())
+        btn_restart.connect("clicked", lambda b: self.switch_to_screen("screen_language"))
         b_restart.append(btn_restart)
-        lbl_rst = Gtk.Label(label=self.tr("restart", "Restart"))
+        lbl_rst = Gtk.Label(label=self.tr("btn_back", "Back"))
         lbl_rst.add_css_class("mac-subtitle")
         b_restart.append(lbl_rst)
         nav_box.append(b_restart)

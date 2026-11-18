@@ -11872,11 +11872,8 @@ window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {
 @import url("macw1y-components.css");
 
 
-/* Conditional popover indent: only indent plain items when menu has checkmarks/radios */
-popover.menu:has(check) modelbutton:not(:has(check)):not(:has(radio)):not(:has(image)) label,
-popover.menu:has(radio) modelbutton:not(:has(check)):not(:has(radio)):not(:has(image)) label {
-  margin-left: 24px;
-}
-popover.menu:not(:has(check)):not(:has(radio)) modelbutton label {
-  margin-left: 0;
+/* Popover menu item indentation */
+popover.menu modelbutton check + label,
+popover.menu modelbutton radio + label {
+  margin-left: 6px;
 }

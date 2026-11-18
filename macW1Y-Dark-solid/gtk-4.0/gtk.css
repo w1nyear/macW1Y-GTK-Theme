@@ -9752,7 +9752,7 @@ popover > contents,
 .context-menu > contents {
   border-radius: 20px;
   padding: 14px 6px 12px 6px;
-  min-width: 140px; max-width: 480px; width: auto;
+  min-width: 140px;
 }
 
 popover.menu modelbutton:first-child,
@@ -12032,11 +12032,8 @@ window.mac-settings-window button.suggested-action.circular:active {
 @import url("macw1y-components.css");
 
 
-/* Conditional popover indent: only indent plain items when menu has checkmarks/radios */
-popover.menu:has(check) modelbutton:not(:has(check)):not(:has(radio)):not(:has(image)) label,
-popover.menu:has(radio) modelbutton:not(:has(check)):not(:has(radio)):not(:has(image)) label {
-  margin-left: 24px;
-}
-popover.menu:not(:has(check)):not(:has(radio)) modelbutton label {
-  margin-left: 0;
+/* Popover menu item indentation */
+popover.menu modelbutton check + label,
+popover.menu modelbutton radio + label {
+  margin-left: 6px;
 }
