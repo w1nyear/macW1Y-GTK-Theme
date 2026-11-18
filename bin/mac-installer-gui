@@ -1520,6 +1520,7 @@ class MacModalSheetHost(Gtk.Box):
             snapshot.restore()
 
     def start_open_animation(self):
+        self._on_finish_cb = None
         if self._anim_tick_id:
             self.remove_tick_callback(self._anim_tick_id)
             self._anim_tick_id = 0
@@ -2003,6 +2004,13 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             if hasattr(self, "lbl_wizard_sub"):
                 self.lbl_wizard_sub.set_opacity(1.0)
         if immediate:
+            host = self.modal_sheet_host
+            if host._anim_tick_id:
+                host.remove_tick_callback(host._anim_tick_id)
+                host._anim_tick_id = 0
+            host._on_finish_cb = None
+            host._anim_state = "idle"
+            host.opacity_val = 0.0
             _on_closed()
         else:
             self.modal_sheet_host.start_close_animation(on_finish=_on_closed)

@@ -88,6 +88,16 @@ function _setPanelTrackFullscreen(enable) {
     } catch (_) {}
 }
 
+function _installerOwnsFullscreen() {
+    let win = global.display.get_focus_window();
+    for (let depth = 0; win && depth < 8; depth++) {
+        if (win.get_gtk_application_id?.() === 'org.mactheme.installer.gui' && win.is_fullscreen())
+            return true;
+        win = win.get_transient_for?.();
+    }
+    return false;
+}
+
 function _isAnyPanelMenuOpen() {
     try {
         if (Main.panel?.menuManager?._activeMenu) return true;
@@ -557,6 +567,10 @@ function _startFullscreenWatcher() {
         }
 
         try {
+            if (_installerOwnsFullscreen()) {
+                _fsDragState = null;
+                return GLib.SOURCE_CONTINUE;
+            }
             const [px, py, mask] = global.get_pointer();
             const isLmbDown = (mask & Clutter.ModifierType.BUTTON1_MASK) !== 0;
             const primaryMonitor = Main.layoutManager.primaryMonitor;
@@ -699,6 +713,7 @@ function _startFullscreenWatcher() {
 }
 
 function _showPanelAnimated() {
+    if (_installerOwnsFullscreen()) return;
     if (!_enabled) return;
     if (_panelRevealed && !_panelHiding) return;
     const panelBox = _getPanelBox();
@@ -776,6 +791,7 @@ function _hidePanelAnimated() {
 }
 
 function _showDockAnimated() {
+    if (_installerOwnsFullscreen()) return;
     if (!_enabled || _dockRevealed) return;
     const dc = _getDockContainer();
     if (!dc) return;
@@ -886,6 +902,23 @@ function _recomputeFullscreen() {
     _hasFullscreen = hasFS;
 
     if (hasFS) {
+        if (_installerOwnsFullscreen()) {
+            _destroyEdgeTriggers();
+            _cancelPanelHide();
+            _cancelDockHide();
+            _restoreShrunkActors(false);
+            _panelRevealed = false;
+            _panelHiding = false;
+            const panelBox = _getPanelBox();
+            if (panelBox) {
+                panelBox.remove_all_transitions();
+                panelBox.translation_y = 0;
+                panelBox.hide();
+            }
+            _setPanelSolidDarkStyle(false);
+            _setPanelTrackFullscreen(true);
+            return;
+        }
         if (!_topTriggerActor || !_bottomTriggerActor)
             _createEdgeTriggers();
         _startFullscreenWatcher();
