@@ -24,10 +24,7 @@
  */
 'use strict';
 
-import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
-import St from 'gi://St';
-import GLib from 'gi://GLib';
 import Graphene from 'gi://Graphene';
 
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -36,720 +33,139 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import { SettingsData } from './settings_data.js';
 
-const MINIMIZE_EFFECT_NAME = 'minimize-magic-lamp-effect';
-const UNMINIMIZE_EFFECT_NAME = 'unminimize-magic-lamp-effect';
-const SNAPSHOT_OVERLAY_NAME = 'mac-window-snapshot-overlay';
+function dockIconRect(win) {
+    const [ok, rect] = win.get_icon_geometry();
+    if (ok && rect.width > 0 && rect.height > 0)
+        return rect;
 
-function captureWindowSnapshot(actor) {
-    if (!actor || !actor.mapped || !actor.meta_window) return null;
-    try {
-        const snap = actor.paint_to_content(null);
-        if (snap) {
-            actor.meta_window._macCachedSnapshot = snap;
-            return snap;
-        }
-    } catch (_) {}
-    return actor.meta_window._macCachedSnapshot || null;
-}
-
-function applySnapshotOverlay(actor) {
-    if (!actor || !actor.meta_window) return;
-    const snap = actor.meta_window._macCachedSnapshot;
-    if (!snap) return;
-
-    try {
-        let overlay = actor.get_children().find(c => c.name === SNAPSHOT_OVERLAY_NAME);
-        if (!overlay) {
-            overlay = new Clutter.Actor({
-                name: SNAPSHOT_OVERLAY_NAME,
-                width: actor.width,
-                height: actor.height,
-                content: snap,
-            });
-            actor.add_child(overlay);
-        } else {
-            overlay.width = actor.width;
-            overlay.height = actor.height;
-            overlay.content = snap;
-        }
-    } catch (_) {}
-}
-
-function removeSnapshotOverlay(actor) {
-    if (!actor) return;
-    try {
-        let overlay = actor.get_children().find(c => c.name === SNAPSHOT_OVERLAY_NAME);
-        if (overlay) {
-            overlay.destroy();
-        }
-    } catch (_) {}
-}
-
-function resetWindowActorForMagicLamp(actor) {
-    if (!actor?.meta_window) return;
-
-
-
-
-    actor.remove_all_transitions();
-    actor.set_scale(1, 1);
-    actor.set_opacity(255);
-    actor.set_pivot_point(0, 0);
-
-    const rect = actor.meta_window.get_buffer_rect();
-    actor.set_position(rect.x, rect.y);
+    const monitor = Main.layoutManager.monitors[win.get_monitor()];
+    const dash = Main.overview.dash;
+    const item = dash?._box?.get_children().find(child =>
+        child.child?._delegate?.app?.get_windows().includes(win));
+    const anchor = item?.mapped ? item : dash;
+    if (anchor?.mapped) {
+        const [x, y] = anchor.get_transformed_position();
+        const [width, height] = anchor.get_transformed_size();
+        if (width > 0 && height > 0)
+            return {x: x + width / 2, y: y + height / 2, width: 0, height: 0};
+    }
+    const area = Main.layoutManager.getWorkAreaForMonitor(win.get_monitor());
+    return {x: monitor.x + monitor.width / 2, y: area.y + area.height, width: 0, height: 0};
 }
 
 export default class CompizMagicLampEffectExtension extends Extension {
-
     enable() {
         this.settingsData = new SettingsData(this.getSettings());
-
-
-
-        if (Main.wm._minimizeWindow && !this._origWmMinimizeWindow) {
-            this._origWmMinimizeWindow = Main.wm._minimizeWindow;
-            Main.wm._minimizeWindow = function(shellwm, actor) {
-                shellwm.completed_minimize(actor);
-            };
-        }
-
-        if (Main.wm._unminimizeWindow && !this._origWmUnminimizeWindow) {
-            this._origWmUnminimizeWindow = Main.wm._unminimizeWindow;
-            Main.wm._unminimizeWindow = function(shellwm, actor) {
-                shellwm.completed_unminimize(actor);
-            };
-        }
-
-        Main.wm._shellwm.original_completed_minimize = Main.wm._shellwm.completed_minimize;
-        Main.wm._shellwm.completed_minimize = function(actor) {
-            return;
-        };
-
-        Main.wm._shellwm.original_completed_unminimize = Main.wm._shellwm.completed_unminimize;
-        Main.wm._shellwm.completed_unminimize = function(actor) {
-            return;
-        };
-
-
-        this._lastFocusWindow = null;
-        this._focusNotifyId = global.display.connect('notify::focus-window', () => {
-            if (this._lastFocusWindow && !this._lastFocusWindow.minimized) {
-                const actor = this._lastFocusWindow.get_compositor_private?.();
-                if (actor && actor.mapped) {
-                    captureWindowSnapshot(actor);
-                }
-            }
-            const win = global.display.focus_window;
-            this._lastFocusWindow = win;
-            if (win && !win.minimized) {
-                const actor = win.get_compositor_private?.();
-                if (actor && actor.mapped) {
-                    captureWindowSnapshot(actor);
-                }
-            }
-        });
-
-        this._overviewShowingId = Main.overview.connect('showing', () => {
-            global.get_window_actors().forEach(actor => {
-                if (actor && actor.meta_window) {
-                    if (actor.meta_window.minimized) {
-                        applySnapshotOverlay(actor);
-                    }
-                }
-            });
-        });
-
-        this._windowCreatedId = global.display.connect('window-created', (d, win) => {
-            this._trackWindow(win);
-        });
-        global.get_window_actors().forEach(actor => {
-            if (actor.meta_window) this._trackWindow(actor.meta_window);
-        });
-
-        this.minimizeId = global.window_manager.connect("minimize", (e, actor) => {
-            if (actor) {
-                captureWindowSnapshot(actor);
-
-
-                removeSnapshotOverlay(actor);
-            }
-
-            if (Main.overview.visible) {
-                resetWindowActorForMagicLamp(actor);
-                Main.wm._shellwm.original_completed_minimize(actor);
-                return;
-            }
-
-            resetWindowActorForMagicLamp(actor);
-
-            let icon = this.getIcon(actor);
-
-            this.destroyActorEffect(actor);
-
-            try {
-                actor.get_parent()?.set_child_above_sibling(actor, null);
-            } catch (_) {}
-
-            actor.add_effect_with_name(MINIMIZE_EFFECT_NAME, new MagicLampMinimizeEffect({settingsData: this.settingsData, icon: icon}));
-        });
-
-        this.unminimizeId = global.window_manager.connect("unminimize", (e, actor) => {
-            if (actor) {
-
-
-                removeSnapshotOverlay(actor);
-            }
-
-            if (Main.overview.visible) {
-                resetWindowActorForMagicLamp(actor);
-                Main.wm._shellwm.original_completed_unminimize(actor);
-                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
-                    removeSnapshotOverlay(actor);
-                    return GLib.SOURCE_REMOVE;
-                });
-                return;
-            }
-
-            resetWindowActorForMagicLamp(actor);
-            actor.show();
-
-            let icon = this.getIcon(actor);
-
-            this.destroyActorEffect(actor);
-
-            try {
-                actor.get_parent()?.set_child_above_sibling(actor, null);
-            } catch (_) {}
-
-            actor.add_effect_with_name(UNMINIMIZE_EFFECT_NAME, new MagicLampUnminimizeEffect({settingsData: this.settingsData, icon: icon}));
-        });
+        this.animations = new Map();
+        this.handlers = ['minimize', 'unminimize'].map(signal =>
+            global.window_manager.connect_after(signal, (wm, actor) =>
+                this.animate(wm, actor, signal === 'minimize')));
     }
 
-    _trackWindow(win) {
-        if (!win || win._macLampTracked) return;
-        win._macLampTracked = true;
-        win.connectObject('notify::minimized', () => {
-            const actor = win.get_compositor_private?.();
-            if (!win.minimized && actor) {
-                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 500, () => {
-                    if (!win.minimized && actor) {
-                        removeSnapshotOverlay(actor);
-                    }
-                    return GLib.SOURCE_REMOVE;
-                });
-            } else if (win.minimized && actor &&
-                !actor.get_effect(MINIMIZE_EFFECT_NAME)) {
-                applySnapshotOverlay(actor);
-            }
-        }, this);
+    animate(wm, actor, minimizing) {
+        this.animations.get(actor)?.();
+        const pending = minimizing ? Main.wm._minimizing : Main.wm._unminimizing;
+        if (!pending?.has(actor) || Main.overview.visible)
+            return;
+
+        const win = actor.meta_window;
+        const rect = win.get_buffer_rect();
+        const icon = dockIconRect(win);
+        if (rect.width <= 0 || rect.height <= 0) return;
+        if (!minimizing) {
+            Main.wm._unminimizeWindowDone(wm, actor);
+            actor.set_position(rect.x, rect.y);
+        }
+        const content = actor.paint_to_content(null);
+        if (!content) return;
+        const proxy = new Clutter.Actor({name: 'macw1y-lamp-snapshot',
+            x: rect.x, y: rect.y, width: rect.width, height: rect.height, reactive: false});
+        const draw = makeLamp(proxy, content, rect, icon, this.settingsData);
+        draw(minimizing ? 0 : 1);
+        const timeline = new Clutter.Timeline({actor: proxy,
+            duration: Math.max(1, Math.round(this.settingsData.DURATION.get()))});
+        const finish = () => {
+            if (!this.animations.delete(actor)) return;
+            timeline.stop();
+            actor.disconnect(destroyId);
+            proxy.destroy();
+            if (!minimizing) actor.opacity = 255;
+        };
+        const destroyId = actor.connect('destroy', finish);
+        this.animations.set(actor, finish);
+        Main.uiGroup.insert_child_above(proxy, global.window_group);
+        timeline.connect('new-frame', () => draw(minimizing ? timeline.get_progress() : 1 - timeline.get_progress()));
+        timeline.connect('completed', finish);
+        if (minimizing) {
+            Main.wm._minimizeWindowDone(wm, actor);
+        } else {
+            actor.opacity = 0;
+        }
+        timeline.start();
     }
 
     disable() {
-        if (this.settingsData) {
-            this.settingsData = null;
-        }
-        if (this._focusNotifyId) {
-            global.display.disconnect(this._focusNotifyId);
-            this._focusNotifyId = null;
-        }
-        if (this._overviewShowingId) {
-            Main.overview.disconnect(this._overviewShowingId);
-            this._overviewShowingId = null;
-        }
-        if (this._windowCreatedId) {
-            global.display.disconnect(this._windowCreatedId);
-            this._windowCreatedId = null;
-        }
-        if (this.minimizeId) {
-            global.window_manager.disconnect(this.minimizeId);
-            this.minimizeId = null;
-        }
-        if (this.unminimizeId) {
-            global.window_manager.disconnect(this.unminimizeId);
-            this.unminimizeId = null;
-        }
-
-        global.get_window_actors().forEach((actor) => {
-            if (actor.meta_window) {
-                actor.meta_window.disconnectObject(this);
-                delete actor.meta_window._macLampTracked;
-            }
-            removeSnapshotOverlay(actor);
-            this.destroyActorEffect(actor);
-        });
-
-        if (this._origWmMinimizeWindow && Main.wm) {
-            Main.wm._minimizeWindow = this._origWmMinimizeWindow;
-            this._origWmMinimizeWindow = null;
-        }
-        if (this._origWmUnminimizeWindow && Main.wm) {
-            Main.wm._unminimizeWindow = this._origWmUnminimizeWindow;
-            this._origWmUnminimizeWindow = null;
-        }
-        if (Main.wm._shellwm.original_completed_minimize) {
-            Main.wm._shellwm.completed_minimize = Main.wm._shellwm.original_completed_minimize;
-            Main.wm._shellwm.original_completed_minimize = null;
-        }
-        if (Main.wm._shellwm.original_completed_unminimize) {
-            Main.wm._shellwm.completed_unminimize = Main.wm._shellwm.original_completed_unminimize;
-            Main.wm._shellwm.original_completed_unminimize = null;
-        }
-    }
-
-    getIcon(actor) {
-        let [success, icon] = actor.meta_window.get_icon_geometry();
-        if (success) {
-            return icon;
-        }
-
-        let monitor = Main.layoutManager.monitors[actor.meta_window.get_monitor()];
-        if (monitor && Main.overview.dash) {
-            let dashIcon = null;
-            let transformed_position = null;
-            let pids = null;
-            let pid = actor.get_meta_window() ? actor.get_meta_window().get_pid() : null;
-            if (pid && Main.overview.dash._box) {
-                Main.overview.dash._box.get_children()
-                    .filter(dashElement => dashElement.child && dashElement.child._delegate && dashElement.child._delegate.app)
-                    .forEach(dashElement => {
-                        pids = dashElement.child._delegate.app.get_pids();
-                        if (pids && pids.indexOf(pid) >= 0) {
-                            transformed_position = dashElement.get_transformed_position();
-                            if (transformed_position && transformed_position[0]) {
-                                dashIcon = {x: transformed_position[0], y: monitor.y + monitor.height, width: 0, height: 0};
-                                return;
-                            }
-                        }
-                    });
-            }
-            if (dashIcon) {
-                return dashIcon;
-            }
-
-            return {x: monitor.x + monitor.width / 2, y: monitor.y + monitor.height, width: 0, height: 0};
-        }
-
-        return {x: 0, y: 0, width: 0, height: 0};
-    }
-
-    destroyActorEffect(actor) {
-        if (!actor) {
-            return;
-        }
-
-        let minimizeEffect = actor.get_effect(MINIMIZE_EFFECT_NAME);
-        if (minimizeEffect) {
-            minimizeEffect.destroy();
-        }
-
-        let unminimizeEffect = actor.get_effect(UNMINIMIZE_EFFECT_NAME);
-        if (unminimizeEffect) {
-            unminimizeEffect.destroy();
-        }
+        for (const id of this.handlers) global.window_manager.disconnect(id);
+        for (const finish of this.animations.values()) finish();
     }
 }
 
-class AbstractCommonMagicLampEffect extends Clutter.DeformEffect {
-    static {
-        GObject.registerClass(this);
+function makeLamp(proxy, content, rect, icon, settings) {
+    const cx = icon.x + icon.width / 2;
+    const cy = icon.y + icon.height / 2;
+    const monitor = Main.layoutManager.monitors.find(m => cx >= m.x && cx < m.x + m.width &&
+        cy >= m.y && cy < m.y + m.height) ?? Main.layoutManager.primaryMonitor;
+    const horizontalEdge = Math.min(Math.abs(cy - monitor.y), Math.abs(monitor.y + monitor.height - cy));
+    const verticalEdge = Math.min(Math.abs(cx - monitor.x), Math.abs(monitor.x + monitor.width - cx));
+    const vertical = horizontalEdge <= verticalEdge;
+    const length = vertical ? rect.height : rect.width;
+    const breadth = vertical ? rect.width : rect.height;
+    const end = vertical ? cy - rect.y : cx - rect.x;
+    const center = vertical ? cx - rect.x : cy - rect.y;
+    const tip = Math.min(breadth, Math.max(1, vertical ? icon.width : icon.height));
+    const towardsEnd = end >= length / 2;
+    const tiles = vertical ? settings.Y_TILES.get() : settings.X_TILES.get();
+    const count = Math.min(length, 96, Math.max(24, Math.round(tiles * 4)));
+    const wave = settings.EFFECT.get() === 'sine';
+    const strips = [];
+    for (let i = 0; i < count; i++) {
+        const start = Math.round(i * length / count);
+        const span = Math.round((i + 1) * length / count) - start;
+        const strip = new Clutter.Actor({width: vertical ? breadth : span,
+            height: vertical ? span : breadth, clip_to_allocation: true});
+        strip.add_child(new Clutter.Actor({content, x: vertical ? 0 : -start,
+            y: vertical ? -start : 0, width: rect.width, height: rect.height}));
+        proxy.add_child(strip);
+        strips.push({strip, start, span, matrix: new Graphene.Matrix()});
     }
-
-    _init(params = {}) {
-        super._init();
-
-        this.settingsData = params.settingsData;
-
-        this.EPSILON = 40;
-
-        this.isMinimizeEffect = false;
-        this.newFrameEvent = null;
-        this.completedEvent = null;
-
-        this.timerId = null;
-        this.msecs = 0;
-
-        this.monitor = {x: 0, y: 0, width: 0, height: 0};
-        this.iconMonitor = {x: 0, y: 0, width: 0, height: 0};
-        this.window = {x: 0, y: 0, width: 0, height: 0, scale: 1};
-        this.icon = params.icon;
-
-        this.progress = 0;
-        this.split = 0.3;
-        this.k = 0;
-        this.j = 0;
-        this.expandWidth = 0;
-        this.fullWidth = 0;
-        this.expandHeight = 0;
-        this.fullHeight = 0;
-        this.width = 0;
-        this.height = 0;
-        this.x = 0;
-        this.y = 0;
-        this.offsetX = 0;
-        this.offsetY = 0;
-        this.effectX = 0;
-        this.effectY = 0;
-        this.iconPosition = null;
-
-        this.toTheBorder = true;
-        this.maxIconSize = null;
-        this.alignIcon = 'center';
-
-        this.EFFECT = this.settingsData.EFFECT.get();
-        this.DURATION = this.settingsData.DURATION.get();
-        this.X_TILES = this.settingsData.X_TILES.get();
-        this.Y_TILES = this.settingsData.Y_TILES.get();
-
-        this.initialized = false;
-    }
-
-    destroy_actor(actor) {}
-
-    on_tick_elapsed(timer, msecs) {}
-
-    vfunc_set_actor(actor) {
-        super.vfunc_set_actor(actor);
-
-        if (!this.actor || this.initialized) {
-            return;
+    return progress => {
+        const pull = Math.min(1, progress / 0.35);
+        const fold = Math.max(0, (progress - 0.35) / 0.65);
+        const first = towardsEnd ? fold * end : pull * end;
+        const last = length + (end - length) * (towardsEnd ? pull : fold);
+        const edge = fraction => {
+            const along = towardsEnd ? fraction : 1 - fraction;
+            const curve = along * along * (3 - 2 * along);
+            const bend = fold + (1 - fold) * pull * curve;
+            const width = breadth + (tip - breadth) * bend;
+            const wobble = wave ? Math.sin(along * 2 * Math.PI) * breadth * 0.07 * pull * (1 - fold) : 0;
+            return {width, across: (center - tip / 2) * bend + wobble};
+        };
+        let near = edge(0);
+        for (const {strip, start, span, matrix} of strips) {
+            const far = edge((start + span) / length);
+            const ratio = near.width / far.width;
+            const taper = (ratio - 1) / span;
+            const shear = (far.across - near.across) * ratio / span;
+            const scale = Math.max(0.001, (last - first) / length) * ratio;
+            const crossScale = near.width / breadth;
+            const axis = first + (last - first) * start / length;
+            matrix.init_from_float(vertical
+                ? [crossScale,0,0,0, shear,scale,0,taper, 0,0,1,0, 0,0,0,1]
+                : [scale,shear,0,taper, 0,crossScale,0,0, 0,0,1,0, 0,0,0,1]);
+            strip.set_position(vertical ? near.across : axis, vertical ? axis : near.across);
+            strip.set_transform(matrix);
+            near = far;
         }
-
-        this.initialized = true;
-
-        this.monitor = Main.layoutManager.monitors[actor.meta_window.get_monitor()];
-
-        [this.window.x, this.window.y] = [this.actor.get_x() - this.monitor.x, this.actor.get_y() - this.monitor.y];
-        [this.window.width, this.window.height] = actor.get_size();
-
-        if (!this.icon || (this.icon.x == 0 && this.icon.y == 0 && this.icon.width == 0 && this.icon.height == 0)) {
-            this.icon.x = this.monitor.x + this.monitor.width / 2;
-            this.icon.y = this.monitor.height + this.monitor.y;
-        }
-
-        Main.layoutManager.monitors.forEach((monitor, monitorIndex)  => {
-            let scale = 1;
-            if (global.display && global.display.get_monitor_scale) {
-                scale = global.display.get_monitor_scale(monitorIndex);
-            }
-
-            if (this.icon.x >= monitor.x && this.icon.x <= monitor.x + monitor.width * scale && this.icon.y >= monitor.y && this.icon.y <= monitor.y + monitor.height * scale)  {
-                this.iconMonitor = monitor;
-            }
-        });
-        if (this.iconMonitor.x == 0 && this.iconMonitor.y == 0 && this.iconMonitor.width == 0 && this.iconMonitor.height == 0) {
-            this.iconMonitor = this.monitor;
-
-
-        }
-
-        [this.icon.x, this.icon.y, this.icon.width, this.icon.height] = [this.icon.x - this.monitor.x, this.icon.y - this.monitor.y, this.icon.width, this.icon.height];
-
-        if (this.icon.y + this.icon.height >= this.monitor.height - this.EPSILON) {
-            this.iconPosition = St.Side.BOTTOM;
-            if (this.toTheBorder) {
-                this.icon.y = this.iconMonitor.y + this.iconMonitor.height - this.monitor.y
-                this.icon.height = 0;
-            }
-        } else if (this.icon.x <= this.EPSILON) {
-            this.iconPosition = St.Side.LEFT;
-            if (this.toTheBorder) {
-                this.icon.x = this.iconMonitor.x - this.monitor.x;
-                this.icon.width = 0;
-            }
-        } else if (this.icon.x + this.icon.width >= this.monitor.width - this.EPSILON) {
-            this.iconPosition = St.Side.RIGHT;
-            if (this.toTheBorder) {
-                this.icon.x = this.iconMonitor.x + this.iconMonitor.width - this.monitor.x;
-                this.icon.width = 0;
-            }
-        } else {
-            this.iconPosition = St.Side.TOP;
-            if (this.toTheBorder) {
-                this.icon.y = this.iconMonitor.y - this.monitor.y;
-                this.icon.height = 0;
-            }
-        }
-
-        if (this.iconPosition == St.Side.BOTTOM) {
-            this.expandHeight = (this.iconMonitor.height - this.icon.height - this.window.y - this.window.height);
-        } else if (this.iconPosition == St.Side.RIGHT) {
-            this.expandWidth = (this.iconMonitor.width - this.icon.width - this.window.x - this.window.width);
-        }
-
-        this.set_n_tiles(this.X_TILES, this.Y_TILES);
-
-        this.timerId = new Clutter.Timeline({ actor: this.actor, duration: this.DURATION + (this.monitor.width * this.monitor.height) / (this.window.width * this.window.height) });
-        this.newFrameEvent = this.timerId.connect('new-frame', this.on_tick_elapsed.bind(this));
-        this.completedEvent = this.timerId.connect('completed', this.destroy.bind(this));
-        this.timerId.start();
-    }
-
-    destroy() {
-        if (this.timerId) {
-            if (this.newFrameEvent) {
-                this.timerId.disconnect(this.newFrameEvent);
-                this.newFrameEvent = null;
-            }
-            if (this.completedEvent) {
-                this.timerId.disconnect(this.completedEvent);
-                this.completedEvent = null;
-            }
-            this.timerId = null;
-        }
-
-        let actor = this.get_actor();
-        if (actor) {
-            if (this.paintEvent) {
-                actor.disconnect(this.paintEvent);
-                this.paintEvent = null;
-            }
-            actor.remove_effect(this);
-
-            this.destroy_actor(actor);
-        }
-    }
-
-    updateFrameParams() {
-        if (!this.initialized) return;
-
-        const oneMinusK = 1 - this.k;
-        const oneMinusJ = 1 - this.j;
-
-        if (this.iconPosition == St.Side.BOTTOM) {
-            this.fullHeight = (this.iconMonitor.height - this.icon.height - this.window.y) - this.expandHeight * oneMinusK;
-            this.height = this.fullHeight - this.j * this.fullHeight;
-            this.offsetY = this.iconMonitor.height - this.icon.height - this.window.y - this.height - this.expandHeight * oneMinusK;
-            this.invFullHeight = this.fullHeight > 0 ? 1 / this.fullHeight : 0;
-            this.diffIconWinX = this.icon.x - this.window.x;
-            this.diffWinIconW = this.window.width - this.icon.width;
-            this.oneMinusJ = oneMinusJ;
-            this.oneMinusK = oneMinusK;
-            this.termJ = this.diffIconWinX * this.j;
-            this.termK = this.diffIconWinX * this.k;
-        } else if (this.iconPosition == St.Side.RIGHT) {
-            this.fullWidth = (this.iconMonitor.width - this.icon.width - this.window.x) - this.expandWidth * oneMinusK;
-            this.width = this.fullWidth - this.j * this.fullWidth;
-            this.offsetX = this.iconMonitor.width - this.icon.width - this.window.x - this.width - this.expandWidth * oneMinusK;
-            this.invFullWidth = this.fullWidth > 0 ? 1 / this.fullWidth : 0;
-            this.diffIconWinY = this.icon.y - this.window.y;
-            this.diffWinIconH = this.window.height - this.icon.height;
-            this.oneMinusJ = oneMinusJ;
-            this.oneMinusK = oneMinusK;
-            this.termJ = this.diffIconWinY * this.j;
-            this.termK = this.diffIconWinY * this.k;
-        } else if (this.iconPosition == St.Side.LEFT) {
-            this.width = this.window.width - this.icon.width + this.window.x * this.k;
-            this.offsetX = this.icon.width - this.window.x * this.k;
-            this.invWidth = this.width > 0 ? 1 / this.width : 0;
-            this.diffIconWinY = this.icon.y - this.window.y;
-            this.diffWinIconH = this.window.height - this.icon.height;
-            this.oneMinusJ = oneMinusJ;
-            this.oneMinusK = oneMinusK;
-        } else if (this.iconPosition == St.Side.TOP) {
-            this.height = this.window.height - this.icon.height + this.window.y * this.k;
-            this.offsetY = this.icon.height - this.window.y * this.k;
-            this.invHeight = this.height > 0 ? 1 / this.height : 0;
-            this.diffIconWinX = this.icon.x - this.window.x;
-            this.diffWinIconW = this.window.width - this.icon.width;
-            this.oneMinusJ = oneMinusJ;
-            this.oneMinusK = oneMinusK;
-        }
-    }
-
-    vfunc_deform_vertex(w, h, v) {
-        if (!this.initialized) return;
-
-        let propX = w / this.window.width;
-        let propY = h / this.window.height;
-
-        if (this.iconPosition == St.Side.BOTTOM) {
-            const y = v.ty * this.height;
-            const x = v.tx * this.icon.width +
-                    v.tx * this.diffWinIconW * this.oneMinusJ * (1 - v.ty) +
-                    v.tx * this.diffWinIconW * this.oneMinusK * v.ty;
-
-            const offsetX = this.termK * (y * this.invFullHeight) + this.termJ;
-            let effectX = 0;
-            if (this.EFFECT === 'sine') {
-                effectX = Math.sin((this.height - y) * this.invFullHeight * Math.PI * 4) * this.window.width / 14 * this.k;
-            } else {
-                effectX = Math.sin(((this.height - y) * this.invFullHeight) * 2 * Math.PI + Math.PI) * (this.window.x + this.window.width * v.tx - (this.icon.x + this.icon.width * v.tx)) / 7 * this.k;
-            }
-
-            v.x = (x + offsetX + effectX) * propX;
-            v.y = (y + this.offsetY) * propY;
-        } else if (this.iconPosition == St.Side.RIGHT) {
-            const x = v.tx * this.width;
-            const y = v.ty * this.icon.height +
-                    v.ty * this.diffWinIconH * this.oneMinusJ * (1 - v.tx) +
-                    v.ty * this.diffWinIconH * this.oneMinusK * v.tx;
-
-            const offsetY = this.termK * (x * this.invFullWidth) + this.termJ;
-            let effectY = 0;
-            if (this.EFFECT === 'sine') {
-                effectY = Math.sin((this.width - x) * this.invFullWidth * Math.PI * 4) * this.window.height / 14 * this.k;
-            } else {
-                effectY = Math.sin(((this.width - x) * this.invFullWidth) * 2 * Math.PI + Math.PI) * (this.window.y + this.window.height * v.ty - (this.icon.y + this.icon.height * v.ty)) / 7 * this.k;
-            }
-
-            v.x = (x + this.offsetX) * propX;
-            v.y = (y + offsetY + effectY) * propY;
-        } else if (this.iconPosition == St.Side.LEFT) {
-            const x = (this.width - this.j * this.width) * v.tx;
-            const y = v.ty * this.window.height * (x + (this.width - x) * this.oneMinusK) * this.invWidth +
-                    v.ty * this.icon.height * (this.width - x) * this.invWidth;
-
-            const offsetY = this.diffIconWinY * ((this.width - x) * this.invWidth) * this.k;
-            let effectY = 0;
-            if (this.EFFECT === 'sine') {
-                effectY = Math.sin(x * this.invWidth * Math.PI * 4) * this.window.height / 14 * this.k;
-            } else {
-                effectY = Math.sin((0.5 - (this.width - x) * this.invWidth) * 2 * Math.PI) * (this.window.y + this.window.height * v.ty - (this.icon.y + this.icon.height * v.ty)) / 7 * this.k;
-            }
-
-            v.x = (x + this.offsetX) * propX;
-            v.y = (y + offsetY + effectY) * propY;
-        } else if (this.iconPosition == St.Side.TOP) {
-            const y = (this.height - this.j * this.height) * v.ty;
-            const x = v.tx * this.window.width * (y + (this.height - y) * this.oneMinusK) * this.invHeight +
-                    v.tx * this.icon.width * (this.height - y) * this.invHeight;
-
-            const offsetX = this.diffIconWinX * ((this.height - y) * this.invHeight) * this.k;
-            let effectX = 0;
-            if (this.EFFECT === 'sine') {
-                effectX = Math.sin(y * this.invHeight * Math.PI * 4) * this.window.width / 14 * this.k;
-            } else {
-                effectX = Math.sin((0.5 - (this.height - y) * this.invHeight) * 2 * Math.PI) * (this.window.x + this.window.width * v.tx - (this.icon.x + this.icon.width * v.tx)) / 7 * this.k;
-            }
-
-            v.x = (x + offsetX + effectX) * propX;
-            v.y = (y + this.offsetY) * propY;
-        }
-    }
-
-    vfunc_modify_paint_volume(pv) {
-        if (!this.initialized || !this.actor || !this.icon || !this.window)
-            return false;
-
-        try {
-            const margin = 200;
-            const dx = this.icon.x - this.window.x;
-            const dy = this.icon.y - this.window.y;
-            const iconW = this.icon.width || 0;
-            const iconH = this.icon.height || 0;
-
-            const minX = Math.min(0, dx) - margin;
-            const minY = Math.min(0, dy) - margin;
-            const maxX = Math.max(this.window.width, dx + iconW) + margin;
-            const maxY = Math.max(this.window.height, dy + iconH) + margin;
-
-            const origin = new Graphene.Point3D();
-            origin.x = minX;
-            origin.y = minY;
-            origin.z = 0;
-            pv.set_origin(origin);
-            pv.set_width(maxX - minX);
-            pv.set_height(maxY - minY);
-            return true;
-        } catch (_) {
-            return false;
-        }
-    }
-}
-
-class MagicLampMinimizeEffect extends AbstractCommonMagicLampEffect {
-    static {
-        GObject.registerClass(this);
-    }
-
-    _init(params = {}) {
-        super._init(params);
-
-        this.k = 0;
-        this.j = 0;
-        this.isMinimizeEffect = true;
-    }
-
-    destroy_actor(actor) {
-        if (actor?.meta_window?.minimized)
-            applySnapshotOverlay(actor);
-        Main.wm._shellwm.original_completed_minimize(actor);
-    }
-
-    on_tick_elapsed(timer, msecs) {
-        if (Main.overview.visible) {
-            this.destroy();
-            return;
-        }
-
-        this.progress = timer.get_progress();
-        this.k = this.progress <= this.split ? this.progress * (1 / this.split) : 1;
-        this.j = this.progress > this.split ? (this.progress - this.split) * (1 / (1 - this.split)) : 0;
-
-        this.updateFrameParams();
-
-        const parent = this.actor?.get_parent();
-        if (parent) {
-            try {
-                const lastChild = parent.get_last_child();
-                if (lastChild && lastChild !== this.actor) {
-                    parent.set_child_above_sibling(this.actor, null);
-                }
-            } catch (_) {}
-            parent.queue_redraw();
-        }
-
-        this.invalidate();
-    }
-}
-
-class MagicLampUnminimizeEffect extends AbstractCommonMagicLampEffect {
-    static {
-        GObject.registerClass(this);
-    }
-
-    _init(params = {}) {
-        super._init(params);
-
-        this.k = 1;
-        this.j = 1;
-        this.isMinimizeEffect = false;
-    }
-
-    destroy_actor(actor) {
-        Main.wm._shellwm.original_completed_unminimize(actor);
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
-            if (actor && actor.meta_window && !actor.meta_window.minimized) {
-                removeSnapshotOverlay(actor);
-            }
-            return GLib.SOURCE_REMOVE;
-        });
-    }
-
-    on_tick_elapsed(timer, msecs) {
-        if (Main.overview.visible) {
-            this.destroy();
-            return;
-        }
-
-        this.progress = timer.get_progress();
-        this.k = 1 - (this.progress > (1 - this.split) ? (this.progress - (1 - this.split)) * (1 / (1 - (1 - this.split))) : 0);
-        this.j = 1 - (this.progress <= (1 - this.split) ? this.progress * (1 / (1 - this.split)) : 1);
-
-        this.updateFrameParams();
-
-        const parent = this.actor?.get_parent();
-        if (parent) {
-            try {
-                const lastChild = parent.get_last_child();
-                if (lastChild && lastChild !== this.actor) {
-                    parent.set_child_above_sibling(this.actor, null);
-                }
-            } catch (_) {}
-            parent.queue_redraw();
-        }
-
-        this.invalidate();
-    }
+    };
 }
