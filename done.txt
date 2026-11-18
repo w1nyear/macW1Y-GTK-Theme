@@ -1620,3 +1620,4 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      - `bin/mac-audit-sync check` — 100% PASS
      - `bin/mac-i18n-verify` — 100% PASS
      - `python3 bin/mac-extension-guard verify` — 21/21 PASS (LOCKED OK).
+818. Відновлено пошук меню програми при зміні активного вікна. Невдала відповідь реєстратора більше не вимикає пошук меню до кінця сесії. Змінений модуль скопійовано в користувацьке розширення, SHA-256 оновлено у файлі цілісності. У поточній сесії ChatGPT не експортує меню через AppMenu Registrar або GTK Actions, тому для нього діє запасне меню.

@@ -341,8 +341,6 @@ export class RealMenuManager {
         this._currentWindow = null;
         this._requestGeneration = 0;
         this._requestCancellable = null;
-        this._registrarFailed = false;
-        this._isWayland = (GLib.getenv('XDG_SESSION_TYPE') ?? '').toLowerCase() === 'wayland';
     }
 
     get enabled() {
@@ -358,7 +356,6 @@ export class RealMenuManager {
         this._currentWindow = null;
         this._cachedActions = null;
         this._cachedWinActions = null;
-        this._registrarFailed = false;
         this._setBackend(null, null);
     }
 
@@ -367,7 +364,6 @@ export class RealMenuManager {
         this._currentWindow = null;
         this._cachedActions = null;
         this._cachedWinActions = null;
-        this._registrarFailed = false;
         this._setBackend(null, null);
         this._settings = null;
         this._onChanged = null;
@@ -412,8 +408,7 @@ export class RealMenuManager {
         this._requestCancellable = new Gio.Cancellable();
         const cancellable = this._requestCancellable;
 
-        if (!this._registrarFailed)
-            this._requestRegistration(window, generation, cancellable);
+        this._requestRegistration(window, generation, cancellable);
         this._requestGtkActions(detectedApp, wmClass, generation, cancellable);
     }
 
@@ -446,8 +441,6 @@ export class RealMenuManager {
             this._setBackend('dbusmenu', { service, path });
             this._emitChanged();
         } catch (_e) {
-            if (this._isWayland && this._isCurrentRequest(generation, window))
-                this._registrarFailed = true;
         }
     }
 
