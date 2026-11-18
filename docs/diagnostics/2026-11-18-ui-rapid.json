@@ -1,0 +1,290 @@
+[
+  {
+    "cycle": 0,
+    "step": "overview-open",
+    "call_ms": 233.44,
+    "result": "true"
+  },
+  {
+    "cycle": 0,
+    "step": "overview-close",
+    "call_ms": 259.96,
+    "result": "true"
+  },
+  {
+    "cycle": 0,
+    "step": "launchpad-open",
+    "call_ms": 85.52,
+    "result": "true"
+  },
+  {
+    "cycle": 0,
+    "step": "launchpad-close",
+    "call_ms": 3.23,
+    "result": "true"
+  },
+  {
+    "cycle": 0,
+    "step": "spotlight-open",
+    "call_ms": 13.35,
+    "result": "true"
+  },
+  {
+    "cycle": 0,
+    "step": "spotlight-close",
+    "call_ms": 10.78,
+    "result": "true"
+  },
+  {
+    "cycle": 1,
+    "step": "overview-open",
+    "call_ms": 178.3,
+    "result": "true"
+  },
+  {
+    "cycle": 1,
+    "step": "overview-close",
+    "call_ms": 9.64,
+    "result": "true"
+  },
+  {
+    "cycle": 1,
+    "step": "launchpad-open",
+    "call_ms": 13.66,
+    "result": "true"
+  },
+  {
+    "cycle": 1,
+    "step": "launchpad-close",
+    "call_ms": 10.39,
+    "result": "true"
+  },
+  {
+    "cycle": 1,
+    "step": "spotlight-open",
+    "call_ms": 10.28,
+    "result": "true"
+  },
+  {
+    "cycle": 1,
+    "step": "spotlight-close",
+    "call_ms": 6.88,
+    "result": "true"
+  },
+  {
+    "cycle": 2,
+    "step": "overview-open",
+    "call_ms": 198.67,
+    "result": "true"
+  },
+  {
+    "cycle": 2,
+    "step": "overview-close",
+    "call_ms": 14.21,
+    "result": "true"
+  },
+  {
+    "cycle": 2,
+    "step": "launchpad-open",
+    "call_ms": 8.95,
+    "result": "true"
+  },
+  {
+    "cycle": 2,
+    "step": "launchpad-close",
+    "call_ms": 12.93,
+    "result": "true"
+  },
+  {
+    "cycle": 2,
+    "step": "spotlight-open",
+    "call_ms": 11.14,
+    "result": "true"
+  },
+  {
+    "cycle": 2,
+    "step": "spotlight-close",
+    "call_ms": 86.3,
+    "result": "true"
+  },
+  {
+    "cycle": 3,
+    "step": "overview-open",
+    "call_ms": 205.41,
+    "result": "true"
+  },
+  {
+    "cycle": 3,
+    "step": "overview-close",
+    "call_ms": 182.34,
+    "result": "true"
+  },
+  {
+    "cycle": 3,
+    "step": "launchpad-open",
+    "call_ms": 49.76,
+    "result": "true"
+  },
+  {
+    "cycle": 3,
+    "step": "launchpad-close",
+    "call_ms": 31.75,
+    "result": "true"
+  },
+  {
+    "cycle": 3,
+    "step": "spotlight-open",
+    "call_ms": 13.02,
+    "result": "true"
+  },
+  {
+    "cycle": 3,
+    "step": "spotlight-close",
+    "call_ms": 8.48,
+    "result": "true"
+  },
+  {
+    "cycle": 4,
+    "step": "overview-open",
+    "call_ms": 216.86,
+    "result": "true"
+  },
+  {
+    "cycle": 4,
+    "step": "overview-close",
+    "call_ms": 11.45,
+    "result": "true"
+  },
+  {
+    "cycle": 4,
+    "step": "launchpad-open",
+    "call_ms": 4.67,
+    "result": "true"
+  },
+  {
+    "cycle": 4,
+    "step": "launchpad-close",
+    "call_ms": 8.87,
+    "result": "true"
+  },
+  {
+    "cycle": 4,
+    "step": "spotlight-open",
+    "call_ms": 18.37,
+    "result": "true"
+  },
+  {
+    "cycle": 4,
+    "step": "spotlight-close",
+    "call_ms": 7.4,
+    "result": "true"
+  },
+  {
+    "cycle": 5,
+    "step": "overview-open",
+    "call_ms": 187.65,
+    "result": "true"
+  },
+  {
+    "cycle": 5,
+    "step": "overview-close",
+    "call_ms": 5.96,
+    "result": "true"
+  },
+  {
+    "cycle": 5,
+    "step": "launchpad-open",
+    "call_ms": 28.36,
+    "result": "true"
+  },
+  {
+    "cycle": 5,
+    "step": "launchpad-close",
+    "call_ms": 159.8,
+    "result": "true"
+  },
+  {
+    "cycle": 5,
+    "step": "spotlight-open",
+    "call_ms": 15.28,
+    "result": "true"
+  },
+  {
+    "cycle": 5,
+    "step": "spotlight-close",
+    "call_ms": 17.23,
+    "result": "true"
+  },
+  {
+    "cycle": 6,
+    "step": "overview-open",
+    "call_ms": 222.78,
+    "result": "true"
+  },
+  {
+    "cycle": 6,
+    "step": "overview-close",
+    "call_ms": 179.96,
+    "result": "true"
+  },
+  {
+    "cycle": 6,
+    "step": "launchpad-open",
+    "call_ms": 22.88,
+    "result": "true"
+  },
+  {
+    "cycle": 6,
+    "step": "launchpad-close",
+    "call_ms": 40.49,
+    "result": "true"
+  },
+  {
+    "cycle": 6,
+    "step": "spotlight-open",
+    "call_ms": 96.64,
+    "result": "true"
+  },
+  {
+    "cycle": 6,
+    "step": "spotlight-close",
+    "call_ms": 22.83,
+    "result": "true"
+  },
+  {
+    "cycle": 7,
+    "step": "overview-open",
+    "call_ms": 219.16,
+    "result": "true"
+  },
+  {
+    "cycle": 7,
+    "step": "overview-close",
+    "call_ms": 164.82,
+    "result": "true"
+  },
+  {
+    "cycle": 7,
+    "step": "launchpad-open",
+    "call_ms": 49.9,
+    "result": "true"
+  },
+  {
+    "cycle": 7,
+    "step": "launchpad-close",
+    "call_ms": 10.02,
+    "result": "true"
+  },
+  {
+    "cycle": 7,
+    "step": "spotlight-open",
+    "call_ms": 15.88,
+    "result": "true"
+  },
+  {
+    "cycle": 7,
+    "step": "spotlight-close",
+    "call_ms": 20.97,
+    "result": "true"
+  }
+]
