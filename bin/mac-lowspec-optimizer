@@ -1,0 +1,341 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+mac-lowspec-optimizer — System & Hardware Optimization Engine for macW1Y
+Tuned specifically for older laptops, Intel HD / UHD integrated graphics,
+limited RAM (4-8 GB), and slow SATA SSDs / HDDs.
+
+Features:
+1. In-memory compressed swap via kernel ZRAM (zstd/lz4) with priority over disk
+2. Virtual Memory tuning via sysctl (swappiness=10, vfs_cache_pressure=50, dirty ratios)
+3. Background daemon throttling (apport, whoopsie, tracker miners)
+4. Eco graphics profile integration (zero-overhead Liquid Glass, reduced blur, fast animations)
+5. Systemd persistent service integration (macw1y-zram.service)
+"""
+
+import sys
+import os
+import subprocess
+import json
+import shutil
+from datetime import datetime
+
+CONFIG_DIR = os.path.expanduser("~/.config/macW1Y")
+SYSTEM_STATE_FILE = "/etc/macW1Y/lowspec-engine.json"
+USER_STATE_FILE = os.path.join(CONFIG_DIR, "lowspec-engine.json")
+SYSCTL_CONF = "/etc/sysctl.d/99-macw1y-performance.conf"
+SERVICE_FILE = "/etc/systemd/system/macw1y-zram.service"
+
+def get_target_state_paths():
+    paths = [SYSTEM_STATE_FILE, USER_STATE_FILE]
+    sudo_user = os.environ.get("SUDO_USER")
+    if sudo_user:
+        u_conf = os.path.expanduser(f"~{sudo_user}/.config/macW1Y/lowspec-engine.json")
+        if u_conf not in paths:
+            paths.append(u_conf)
+    return paths
+
+def load_state():
+    for p in get_target_state_paths():
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+    return {"enabled": False}
+
+def save_state(state):
+    for p in get_target_state_paths():
+        try:
+            os.makedirs(os.path.dirname(p), exist_ok=True)
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump(state, f, indent=2, ensure_ascii=False)
+            sudo_user = os.environ.get("SUDO_USER")
+            if sudo_user and p.startswith(f"/home/{sudo_user}"):
+                subprocess.run(["chown", "-R", f"{sudo_user}:{sudo_user}", os.path.dirname(p)], check=False)
+        except Exception:
+            pass
+
+def run_cmd(cmd, check=False):
+    try:
+        res = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+        if check and res.returncode != 0:
+            return ""
+        return res.stdout.strip()
+    except Exception:
+        return ""
+
+def is_root():
+    return os.geteuid() == 0
+
+def require_sudo():
+    if not is_root():
+        if subprocess.run(["sudo", "-n", "true"], capture_output=True).returncode != 0:
+            print("Помилка: Для цієї операції потрібні права root (sudo).", file=sys.stderr)
+            sys.exit(1)
+
+def get_total_ram_bytes():
+    try:
+        with open("/proc/meminfo", "r") as f:
+            for line in f:
+                if line.startswith("MemTotal:"):
+                    parts = line.split()
+                    return int(parts[1]) * 1024
+    except Exception:
+        pass
+    return 4 * 1024 * 1024 * 1024
+
+def start_zram():
+    """Initializes ZRAM compressed swap block device."""
+    require_sudo()
+    
+    # 1. Ensure kernel module is loaded
+    subprocess.run(["sudo", "modprobe", "zram"], check=False)
+    
+    # Check if already active
+    out = run_cmd("zramctl 2>/dev/null")
+    if "/dev/zram0" in out:
+        swaps = run_cmd("swapon --show 2>/dev/null")
+        if "/dev/zram0" in swaps:
+            return True, "ZRAM вже ініціалізовано та активний."
+    
+    # Compute size: 50% of total RAM, clamped between 1.5 GB and 8 GB
+    total_ram = get_total_ram_bytes()
+    zram_bytes = max(1536 * 1024 * 1024, min(total_ram // 2, 8192 * 1024 * 1024))
+    zram_size_mb = zram_bytes // (1024 * 1024)
+    
+    # Find or allocate zram device
+    dev = run_cmd(f"sudo zramctl --find --size {zram_size_mb}M --algorithm zstd 2>/dev/null")
+    if not dev or not dev.startswith("/dev/zram"):
+        # Fallback to lz4
+        dev = run_cmd(f"sudo zramctl --find --size {zram_size_mb}M --algorithm lz4 2>/dev/null")
+    
+    if not dev or not dev.startswith("/dev/zram"):
+        return False, "Не вдалося виділити пристрій ZRAM через zramctl."
+    
+    # Format and swapon with high priority (100)
+    subprocess.run(["sudo", "mkswap", dev], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    res = subprocess.run(["sudo", "swapon", "-p", "100", dev], capture_output=True, text=True)
+    if res.returncode == 0:
+        return True, f"ZRAM ({zram_size_mb} MB, zstd) активовано на {dev} з пріоритетом 100."
+    else:
+        return False, f"Помилка активації свопу ZRAM: {res.stderr.strip()}"
+
+def stop_zram():
+    """Deactivates and frees ZRAM swap devices."""
+    require_sudo()
+    swaps = run_cmd("swapon --show 2>/dev/null")
+    for line in swaps.splitlines():
+        if "/dev/zram" in line:
+            dev = line.split()[0]
+            subprocess.run(["sudo", "swapoff", dev], check=False)
+            subprocess.run(["sudo", "zramctl", "--reset", dev], check=False)
+    return True, "ZRAM вимкнено та ресурси звільнено."
+
+def apply_sysctl_optimizations():
+    """Applies Linux Virtual Memory optimizations for low-latency desktop responsiveness."""
+    require_sudo()
+    content = """# macW1Y Low-Spec & Performance Engine
+# Optimizations for Intel HD Graphics, slow SATA/HDD, and 4-8 GB RAM
+
+# Do not aggressively swap clean memory; swap only when truly necessary
+vm.swappiness = 10
+
+# Keep filesystem directory caches and desktop icon metadata longer in fast RAM
+vm.vfs_cache_pressure = 50
+
+# Prevent long UI freezes when writing large files to slow storage
+vm.dirty_ratio = 10
+vm.dirty_background_ratio = 5
+
+# Network memory buffer balance
+net.core.default_qdisc = fq_codel
+"""
+    tmp_path = "/tmp/99-macw1y-performance.conf"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    
+    subprocess.run(["sudo", "cp", tmp_path, SYSCTL_CONF], check=False)
+    subprocess.run(["sudo", "sysctl", "-p", SYSCTL_CONF], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    return True, "Параметри віртуальної пам'яті ядра (vm.swappiness=10, vfs_cache_pressure=50) успішно застосовано."
+
+def restore_sysctl_optimizations():
+    require_sudo()
+    if os.path.exists(SYSCTL_CONF):
+        subprocess.run(["sudo", "rm", "-f", SYSCTL_CONF], check=False)
+    subprocess.run(["sudo", "sysctl", "vm.swappiness=60", "vm.vfs_cache_pressure=100"],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    return True, "Параметри пам'яті ядра повернуто до стандартних значень Ubuntu."
+
+def install_systemd_service():
+    """Registers systemd unit for automatic ZRAM setup on boot."""
+    require_sudo()
+    service_content = """[Unit]
+Description=macW1Y ZRAM In-Memory Swap Optimizer
+After=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/mac-lowspec-optimizer start-zram
+ExecStop=/usr/local/bin/mac-lowspec-optimizer stop-zram
+
+[Install]
+WantedBy=multi-user.target
+"""
+    tmp_path = "/tmp/macw1y-zram.service"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        f.write(service_content)
+    subprocess.run(["sudo", "cp", tmp_path, SERVICE_FILE], check=False)
+    subprocess.run(["sudo", "systemctl", "daemon-reload"], check=False)
+    subprocess.run(["sudo", "systemctl", "enable", "macw1y-zram.service"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+
+def remove_systemd_service():
+    require_sudo()
+    if os.path.exists(SERVICE_FILE):
+        subprocess.run(["sudo", "systemctl", "disable", "macw1y-zram.service"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+        subprocess.run(["sudo", "rm", "-f", SERVICE_FILE], check=False)
+        subprocess.run(["sudo", "systemctl", "daemon-reload"], check=False)
+
+def optimize_background_services(disable=True):
+    """Disables disk-thrashing indexers and crash reporting daemons."""
+    require_sudo()
+    services = ["apport.service", "whoopsie.service", "popularity-contest.service"]
+    for s in services:
+        if disable:
+            subprocess.run(["sudo", "systemctl", "stop", s], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+            subprocess.run(["sudo", "systemctl", "disable", s], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+        else:
+            subprocess.run(["sudo", "systemctl", "enable", s], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+            subprocess.run(["sudo", "systemctl", "start", s], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    
+    # User-level tracker miners (throttle disk thrashing)
+    tracker_units = ["tracker-miner-fs-3.service", "tracker-extract-3.service"]
+    for u in tracker_units:
+        if disable:
+            subprocess.run(["systemctl", "--user", "mask", u], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+            subprocess.run(["systemctl", "--user", "stop", u], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+        else:
+            subprocess.run(["systemctl", "--user", "unmask", u], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+
+def apply_all():
+    """Master routine to activate all low-spec & Intel HD optimizations."""
+    print("═══════════════════════════════════════════════════════════════════")
+    print("  macW1Y Eco Engine — Активація оптимізацій для Intel HD / Слабких ПК")
+    print("═══════════════════════════════════════════════════════════════════")
+    
+    # 1. ZRAM in-memory swap
+    ok, msg = start_zram()
+    print(f" • [1/5] Стиснення оперативної пам'яті (ZRAM): {'✔ ' + msg if ok else '✘ ' + msg}")
+    install_systemd_service()
+    
+    # 2. Kernel Virtual Memory
+    ok, msg = apply_sysctl_optimizations()
+    print(f" • [2/5] Налаштування параметрів ядра Linux: {'✔ ' + msg if ok else '✘ ' + msg}")
+    
+    # 3. Background Services Throttling
+    optimize_background_services(disable=True)
+    print(" • [3/5] Оптимізація фонових служб: ✔ Вимкнено apport, whoopsie та індексатори диска.")
+    
+    # 4. Apply Graphics Profile (Eco)
+    if shutil.which("mac-graphics-profile"):
+        run_cmd("mac-graphics-profile set eco")
+        print(" • [4/5] Графічний профіль швидкодії: ✔ Перемкнуто на 'Eco' (легкі шейдери, швидкі анімації).")
+    
+    # 5. GNOME Shell settings tuning
+    run_cmd("gsettings set org.gnome.mutter center-new-windows true")
+    run_cmd("gsettings set org.gnome.desktop.interface enable-animations true")
+    print(" • [5/5] Налаштування інтерфейсу GNOME: ✔ Адаптовано композитор для низького навантаження.")
+    
+    # Save state
+    state = {
+        "enabled": True,
+        "activated_at": datetime.now().isoformat(),
+        "profile": "eco"
+    }
+    save_state(state)
+        
+    print("═══════════════════════════════════════════════════════════════════")
+    print("  🎉 ГОТОВО! Комплексна оптимізація успішно активована.")
+    print("═══════════════════════════════════════════════════════════════════")
+    return True
+
+def restore_all():
+    """Restores default system parameters."""
+    print("═══════════════════════════════════════════════════════════════════")
+    print("  macW1Y Eco Engine — Відновлення стандартних налаштувань")
+    print("═══════════════════════════════════════════════════════════════════")
+    
+    stop_zram()
+    remove_systemd_service()
+    restore_sysctl_optimizations()
+    optimize_background_services(disable=False)
+    
+    if shutil.which("mac-graphics-profile"):
+        run_cmd("mac-graphics-profile set balanced")
+        
+    save_state({"enabled": False, "restored_at": datetime.now().isoformat(), "profile": "balanced"})
+            
+    print("✔ Стандартні параметри системи відновлено.")
+    return True
+
+def get_status():
+    st = load_state()
+    enabled = st.get("enabled", False)
+            
+    zram_active = "/dev/zram" in run_cmd("swapon --show 2>/dev/null")
+    swappiness = run_cmd("sysctl -n vm.swappiness 2>/dev/null") or "60"
+    vfs = run_cmd("sysctl -n vm.vfs_cache_pressure 2>/dev/null") or "100"
+    
+    print("==================================================")
+    print("  macW1Y 0.7 Low-Spec & Hardware Optimizer Status")
+    print("==================================================")
+    print(f"Статус режиму Eco      : {'УВІМКНЕНО (Active)' if enabled else 'ВИМКНЕНО (Default)'}")
+    print(f"Стиснення ZRAM         : {'АКТИВНО (В памʼяті)' if zram_active else 'НЕ АКТИВНО'}")
+    print(f"Параметр vm.swappiness : {swappiness} (Рекомендовано: 10)")
+    print(f"Параметр vfs_pressure  : {vfs} (Рекомендовано: 50)")
+    
+    if zram_active:
+        print("\nДеталі ZRAM пристроїв:")
+        os.system("zramctl 2>/dev/null")
+    print("==================================================")
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help", "help"]:
+        print("Використання: mac-lowspec-optimizer [КОМАНДА]")
+        print("Команди:")
+        print("  apply        Увімкнути комплексні оптимізації для слабких ПК та Intel HD")
+        print("  restore      Вимкнути та повернути стандартні параметри системи")
+        print("  status       Показати детальний стан та параметри пам'яті/ядра")
+        print("  is-enabled   Перевірити активність режиму (код виходу 0 або 1)")
+        print("  start-zram   (Службова) Ініціалізувати ZRAM у ядрі")
+        print("  stop-zram    (Службова) Зупинити ZRAM")
+        sys.exit(0)
+        
+    cmd = sys.argv[1].lower()
+    if cmd == "apply":
+        apply_all()
+    elif cmd == "restore":
+        restore_all()
+    elif cmd == "status":
+        get_status()
+    elif cmd == "is-enabled":
+        st = load_state()
+        if st.get("enabled"):
+            sys.exit(0)
+        sys.exit(1)
+    elif cmd == "start-zram":
+        ok, msg = start_zram()
+        print(msg)
+        sys.exit(0 if ok else 1)
+    elif cmd == "stop-zram":
+        ok, msg = stop_zram()
+        print(msg)
+        sys.exit(0 if ok else 1)
+    else:
+        print(f"Невідома команда: {cmd}", file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

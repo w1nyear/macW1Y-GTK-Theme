@@ -1571,7 +1571,12 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         super().__init__(application=app)
         self.set_title("Встановлення macW1Y")
         self.set_decorated(False)
-        if "--preview" in sys.argv or "--no-kiosk" in sys.argv:
+        self._fullscreen_menu_layout = "--fullscreen-preview" in sys.argv or not any(
+            arg in sys.argv for arg in ("--preview", "--no-kiosk")
+        )
+        if "--fullscreen-preview" in sys.argv:
+            self.fullscreen()
+        elif "--preview" in sys.argv or "--no-kiosk" in sys.argv:
             self.set_default_size(1920, 1080)
         else:
             self.fullscreen()
@@ -1730,6 +1735,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         # 1. Top Menubar
         self.menubar_box = self._create_menubar()
+        if self._fullscreen_menu_layout:
+            self.menubar_box.set_margin_top(40)
         root_box.append(self.menubar_box)
 
         # Right-click context menu gesture on window root
@@ -2503,6 +2510,20 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             row_btn.connect("clicked", lambda b, aid=act_id: select_opt(aid))
             cards_box.append(row_btn)
             self.option_widgets[act_id] = row_btn
+
+        self.chk_lowspec = Gtk.CheckButton.new_with_label(
+            "Оптимізація для Intel HD / слабких ПК (ZRAM, твіки ядра та легкі шейдери)"
+            if is_uk
+            else self.tr("installer_lowspec_opt", "Optimize for Intel HD / low-spec PCs (ZRAM, kernel tweaks, eco shaders)")
+        )
+        self.chk_lowspec.set_margin_top(8)
+        self.chk_lowspec.set_margin_bottom(2)
+        try:
+            res = subprocess.run(["mac-lowspec-optimizer", "is-enabled"], capture_output=True)
+            self.chk_lowspec.set_active(res.returncode == 0)
+        except Exception:
+            self.chk_lowspec.set_active(False)
+        box.append(self.chk_lowspec)
 
         btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         btn_row.set_halign(Gtk.Align.END)
@@ -3283,6 +3304,9 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             else:
                 cmd = ["sudo", "-S", "bash", install_script, "--gui-worker", "--install"]
 
+            if getattr(self, "chk_lowspec", None) and self.chk_lowspec.get_active():
+                cmd.append("--low-spec")
+
             try:
                 self.worker_process = subprocess.Popen(
                     cmd,
@@ -3480,7 +3504,7 @@ class MacRecoveryApp(Gtk.Application):
             except Exception:
                 pass
 
-        if not ("--no-kiosk" in sys.argv or "--preview" in sys.argv):
+        if not any(arg in sys.argv for arg in ("--no-kiosk", "--preview", "--fullscreen-preview")):
             setup_installer_session()
             kiosk_guard.enter()
 

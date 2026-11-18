@@ -2160,12 +2160,18 @@ export default class EvalHelper extends Extension {
                         const shadowIntensity = Math.max(0.0, Math.min(1.0, styling.alertShadow / 100.0));
 
                         const isTrash = dialogBox.has_style_class_name('mac-empty-trash-dialog');
-                        const radius = isTrash ? 24.0 : 28.0;
+                        const radius = isTrash ? 30.0 : 34.0;
 
 
                         glass.setResolution(screenW, screenH);
                         glass.setCornerRadius(radius);
                         glass.setTintColor(0.0, 0.0, 0.0);
+                        let darkTheme = false;
+                        try {
+                            const interfaceSettings = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
+                            darkTheme = interfaceSettings.get_string('color-scheme') === 'prefer-dark' ||
+                                interfaceSettings.get_string('gtk-theme').toLowerCase().includes('dark');
+                        } catch (_) {}
                         glass.setTintStrength(tintStrength);
                         glass.setBlurRadius(blurRadius);
                         glass.setPadding(0);
@@ -2182,8 +2188,12 @@ export default class EvalHelper extends Extension {
                         try {
                             const extra = isTrash
                                 ? ' width: 270px !important; min-width: 270px !important; max-width: 270px !important; padding: 22px 18px 18px 18px !important;'
-                                : ' padding: 14px 16px !important;';
-                            dialogBox.set_style(`background-color: rgba(255, 255, 255, 0.05) !important; border-radius: ${Math.round(radius)}px !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; box-shadow: 0 16px 45px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;${extra}`);
+                                : ' width: 360px !important; min-width: 360px !important; max-width: 360px !important; padding: 18px 20px !important;';
+                            const surfaceAlpha = tintStrength.toFixed(2);
+                            dialogBox.set_style(`background-color: ${darkTheme ? `rgba(22, 23, 27, ${surfaceAlpha})` : `rgba(236, 239, 246, ${surfaceAlpha})`} !important; border-radius: ${Math.round(radius)}px !important; border: 1px solid rgba(255, 255, 255, 0.30) !important; box-shadow: 0 16px 45px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;${extra}`);
+                            for (const button of dialogBox.get_children().flatMap(child => child.get_children?.() || []).flatMap(child => child.get_children?.() || []).filter(child => child.has_style_class_name?.('modal-dialog-button') || child.has_style_class_name?.('modal-dialog-linked-button'))) {
+                                button.set_style('min-height: 26px !important; height: 26px !important; border-radius: 999px !important;');
+                            }
                         } catch (_) {}
 
 
@@ -2285,19 +2295,21 @@ export default class EvalHelper extends Extension {
                     ModalDialog.prototype._macOrigClose = ModalDialog.prototype.close;
                     ModalDialog.prototype._macOrigFadeOpen = ModalDialog.prototype._fadeOpen;
                     ModalDialog.prototype._fadeOpen = function (...args) {
-                        const result = ModalDialog.prototype._macOrigFadeOpen.call(this, ...args);
                         const content = this.dialogLayout;
                         if (content) {
                             content.remove_all_transitions();
                             content.set_pivot_point(0.5, 0.5);
-                            content.scale_x = 0.78;
-                            content.scale_y = 0.78;
+                            content.scale_x = 0.72;
+                            content.scale_y = 0.72;
                             content.opacity = 0;
+                        }
+                        const result = ModalDialog.prototype._macOrigFadeOpen.call(this, ...args);
+                        if (content) {
                             content.ease({
                                 scale_x: 1.0,
                                 scale_y: 1.0,
                                 opacity: 255,
-                                duration: 320,
+                                duration: 420,
                                 mode: Clutter.AnimationMode.EASE_OUT_BACK,
                             });
                         }
@@ -2330,6 +2342,27 @@ export default class EvalHelper extends Extension {
                                     mode: Clutter.AnimationMode.EASE_IN_QUAD,
                                 });
                             }
+                            return;
+                        }
+                        const content = this.dialogLayout;
+                        if (content) {
+                            this._setState(ModalDialogMod.State.CLOSING);
+                            this.popModal();
+                            this._savedKeyFocus = null;
+                            content.remove_all_transitions();
+                            content.ease({
+                                scale_x: 0.72,
+                                scale_y: 0.72,
+                                opacity: 0,
+                                duration: 180,
+                                mode: Clutter.AnimationMode.EASE_IN_CUBIC,
+                                onComplete: () => this._closeComplete(),
+                            });
+                            this.ease({
+                                opacity: 0,
+                                duration: 180,
+                                mode: Clutter.AnimationMode.EASE_IN_CUBIC,
+                            });
                             return;
                         }
                         return ModalDialog.prototype._macOrigClose.call(this, ...args);

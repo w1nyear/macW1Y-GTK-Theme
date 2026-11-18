@@ -40,6 +40,19 @@ if [ ! -d "$SCRIPT_DIR/extensions" ]; then
     fi
 fi
 
+# Low-Spec & Eco Engine Detection
+APPLY_LOW_SPEC="false"
+_CLEANED_ARGS=()
+for arg in "$@"; do
+    if [ "$arg" = "--low-spec" ] || [ "$arg" = "--eco" ] || [ "$arg" = "-e" ]; then
+        APPLY_LOW_SPEC="true"
+    else
+        _CLEANED_ARGS+=("$arg")
+    fi
+done
+[ ${#_CLEANED_ARGS[@]} -gt 0 ] && set -- "${_CLEANED_ARGS[@]}" || set --
+export APPLY_LOW_SPEC
+
 # GUI Installer Dispatcher
 GUI_WORKER="false"
 if [ "$1" = "--gui-worker" ]; then
@@ -192,6 +205,19 @@ run_mock_installation() {
         sleep 1
     done
 
+    if [ "$APPLY_LOW_SPEC" = "true" ]; then
+        if [ "$GUI_WORKER" = "true" ]; then
+            echo "PROGRESS:100:lowspec"
+        else
+            echo -e "  [100%] ${C_CYAN}Applying Intel HD and Eco Engine optimizations...${C_RESET}"
+        fi
+        if [ -x "/usr/local/bin/mac-lowspec-optimizer" ]; then
+            /usr/local/bin/mac-lowspec-optimizer apply || true
+        elif [ -x "$SCRIPT_DIR/bin/mac-lowspec-optimizer" ]; then
+            "$SCRIPT_DIR/bin/mac-lowspec-optimizer" apply || true
+        fi
+    fi
+
     if [ "$GUI_WORKER" != "true" ]; then
         echo -e "\n${C_GREEN}[✔] Simulation completed successfully in 10 seconds!${C_RESET}"
         echo -e " ${C_BOLD}No system files or packages were modified.${C_RESET}\n"
@@ -239,6 +265,7 @@ elif [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     echo "  --update, -u            Simulate incremental update (10-second mock)"
     echo "  --clean-update, -c      Simulate clean reinstall (10-second mock)"
     echo "  --uninstall             Simulate uninstall (10-second mock)"
+    echo "  --low-spec, --eco, -e   Enable ZRAM and performance optimizations for low-end / Intel HD hardware"
     echo "  --cli                   Force CLI text mode instead of launching GUI"
     echo "  --help, -h              Show this help message"
     exit 0

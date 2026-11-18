@@ -40,6 +40,19 @@ if [ ! -d "$SCRIPT_DIR/extensions" ]; then
     fi
 fi
 
+# Low-Spec & Eco Engine Detection
+APPLY_LOW_SPEC="false"
+_CLEANED_ARGS=()
+for arg in "$@"; do
+    if [ "$arg" = "--low-spec" ] || [ "$arg" = "--eco" ] || [ "$arg" = "-e" ]; then
+        APPLY_LOW_SPEC="true"
+    else
+        _CLEANED_ARGS+=("$arg")
+    fi
+done
+[ ${#_CLEANED_ARGS[@]} -gt 0 ] && set -- "${_CLEANED_ARGS[@]}" || set --
+export APPLY_LOW_SPEC
+
 # GUI Installer Dispatcher
 GUI_WORKER="false"
 if [ "$1" = "--gui-worker" ]; then
@@ -1878,6 +1891,15 @@ EOF_EVO
 
     # Configure Liquid Glass downscale to 2 for optimal RAM footprint
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com glass-blur-downscale 2 2>/dev/null || true
+
+    if [ "$APPLY_LOW_SPEC" = "true" ]; then
+        log_info "Applying Intel HD and low-spec hardware optimizations (ZRAM, sysctl, Eco profile)..."
+        if [ -x "/usr/local/bin/mac-lowspec-optimizer" ]; then
+            /usr/local/bin/mac-lowspec-optimizer apply || true
+        elif [ -x "$SCRIPT_DIR/bin/mac-lowspec-optimizer" ]; then
+            "$SCRIPT_DIR/bin/mac-lowspec-optimizer" apply || true
+        fi
+    fi
     
     echo -e "\n${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
     echo -e " ${C_BOLD}${C_GREEN}✔ macW1Y v${NEW_VERSION} INSTALLATION / UPDATE COMPLETED SUCCESSFULLY!${C_RESET}"
@@ -2493,6 +2515,15 @@ EOF_EVO
 
     # Configure Liquid Glass downscale to 2 for optimal RAM footprint
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com glass-blur-downscale 2 2>/dev/null || true
+
+    if [ "$APPLY_LOW_SPEC" = "true" ]; then
+        log_info "Applying Intel HD and low-spec hardware optimizations (ZRAM, sysctl, Eco profile)..."
+        if [ -x "/usr/local/bin/mac-lowspec-optimizer" ]; then
+            /usr/local/bin/mac-lowspec-optimizer apply || true
+        elif [ -x "$SCRIPT_DIR/bin/mac-lowspec-optimizer" ]; then
+            "$SCRIPT_DIR/bin/mac-lowspec-optimizer" apply || true
+        fi
+    fi
     
     sudo systemctl daemon-reload 2>/dev/null || true
     sudo systemctl restart mac-touchpad-daemon.service 2>/dev/null || true
@@ -2813,6 +2844,7 @@ elif [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     echo "  --install, -i, --all    Full installation of release v${NEW_VERSION}"
     echo "  --update, -u            Incremental update of existing installation to v${NEW_VERSION}"
     echo "  --clean-update, -c      Clean reinstall (complete removal of old files + fresh install)"
+    echo "  --low-spec, --eco, -e   Enable ZRAM and performance optimizations for low-end / Intel HD hardware"
     echo "  --help, -h              Show this help message"
     exit 0
 fi

@@ -121,6 +121,28 @@ class MacStylingWindow(Adw.ApplicationWindow):
 
         self.profile_combo = self._create_profile_combo(perf_group)
 
+        self.lowspec_switch = Adw.SwitchRow()
+        self.lowspec_switch.set_title(t("lowspec_opt_title", "Комплексна оптимізація для слабких ПК (Eco Engine)"))
+        self.lowspec_switch.set_subtitle(t("lowspec_opt_desc", "ZRAM у пам'яті, твіки ядра (swappiness=10) та вимкнення дискових індексаторів"))
+
+        try:
+            res = subprocess.run(["mac-lowspec-optimizer", "is-enabled"], capture_output=True)
+            self.lowspec_switch.set_active(res.returncode == 0)
+        except Exception:
+            self.lowspec_switch.set_active(False)
+
+        def on_lowspec_toggled(switch, _pspec):
+            if getattr(self, "_initializing", False):
+                return
+            is_active = switch.get_active()
+            cmd_action = "apply" if is_active else "restore"
+            def _apply():
+                run_cmd(f"sudo -n mac-lowspec-optimizer {cmd_action} 2>/dev/null || pkexec mac-lowspec-optimizer {cmd_action}")
+            threading.Thread(target=_apply, daemon=True).start()
+
+        self.lowspec_switch.connect("notify::active", on_lowspec_toggled)
+        perf_group.add(self.lowspec_switch)
+
         # 1. Dock Group
         dock_group = Adw.PreferencesGroup()
         dock_group.set_title(t("dock_title", "Док-панель (Dock)"))
@@ -376,11 +398,12 @@ class MacStylingWindow(Adw.ApplicationWindow):
         row.set_title(t("graphics_profile", "Графічний профіль швидкодії"))
         row.set_subtitle(t("graphics_profile_sub", "Оптимізація шейдерів, розмиття та адаптація до живлення"))
 
-        self.profile_keys = ["balanced", "high", "performance", "auto"]
+        self.profile_keys = ["balanced", "high", "performance", "eco", "auto"]
         model = Gtk.StringList.new([
             t("profile_balanced", "⚖️ Баланс (Balanced — плавні 165 Гц, оптимізований Liquid Glass)"),
             t("profile_high", "✨ Висока якість (High Quality — максимальна деталізація)"),
             t("profile_performance", "🚀 Швидкодія (Performance — для автономності/батареї)"),
+            t("profile_eco", "🍃 Еко / Intel HD (Оптимізація для слабких ПК та Intel HD Graphics)"),
             t("profile_auto", "🔋 Авто (Адаптація від мережі / живлення батареї)")
         ])
         row.set_model(model)

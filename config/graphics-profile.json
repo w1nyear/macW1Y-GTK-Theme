@@ -1,5 +1,5 @@
 {
-  "profile": "auto",
-  "auto_power_adapt": true,
-  "last_updated": "2026-11-01T22:32:11.027758"
+  "profile": "eco",
+  "auto_power_adapt": false,
+  "last_updated": "2026-11-18T21:29:59.281867"
 }

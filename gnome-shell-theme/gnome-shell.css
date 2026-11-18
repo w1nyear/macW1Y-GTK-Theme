@@ -3685,9 +3685,10 @@ StWidget.focused .app-grid-running-dot {
 
 .modal-dialog .modal-dialog-button,
 .modal-dialog .modal-dialog-linked-button {
-  min-height: 44px;
-  min-width: 148px;
-  padding: 0 18px;
+  min-height: 22px;
+  height: 22px;
+  min-width: 104px;
+  padding: 0 14px;
   margin: 0;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 9999px !important;
@@ -3696,6 +3697,13 @@ StWidget.focused .app-grid-running-dot {
   background-color: rgba(255, 255, 255, 0.20) !important;
   text-shadow: none;
   icon-shadow: none;
+}
+
+.modal-dialog .message-dialog-content,
+.modal-dialog .message-dialog-title,
+.modal-dialog .message-dialog-description {
+  text-align: left !important;
+  x-align: start !important;
 }
 
 .modal-dialog .modal-dialog-button:hover,

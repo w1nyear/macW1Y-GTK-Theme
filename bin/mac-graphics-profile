@@ -76,6 +76,25 @@ PROFILES = {
             "debug": False,
         },
         "animation_duration_scale": 0.70,
+    },
+    "eco": {
+        "name": "Eco / Low-Spec (Intel HD)",
+        "description_uk": "Максимальна оптимізація для Intel HD та слабких ноутбуків: матове скло без важких шейдерів, відключені тіні/AO/відблиски, скорочені анімації",
+        "description_en": "Maximum optimization for Intel HD and older laptops: matte glass without heavy shaders, disabled shadows/AO/specular, fast animations",
+        "liquid_glass": {
+            "glass-blur-downscale": 1,      # Full-res buffer (1:1 native clear resolution)
+            "blur-method": 1,               # Dual Kawase
+            "shadow-radius": 0.0,
+            "glass-ao-intensity": 0.0,
+            "glass-rim-intensity": 0.06,
+            "glass-specular-intensity": 0.0,
+            "glass-sheen-intensity": 0.0,
+        },
+        "blur_my_shell": {
+            "sigma": 10,
+            "debug": False,
+        },
+        "animation_duration_scale": 0.55,
     }
 }
 
@@ -225,11 +244,11 @@ def main():
         print(eff)
     elif cmd == "set":
         if len(sys.argv) < 3:
-            print("Usage: mac-graphics-profile set <high|balanced|performance|auto>", file=sys.stderr)
+            print("Usage: mac-graphics-profile set <high|balanced|performance|eco|auto>", file=sys.stderr)
             sys.exit(1)
         target = sys.argv[2].lower()
-        if target not in ["high", "balanced", "performance", "auto"]:
-            print(f"Invalid profile '{target}'. Choose high, balanced, performance, or auto.", file=sys.stderr)
+        if target not in ["high", "balanced", "performance", "eco", "auto"]:
+            print(f"Invalid profile '{target}'. Choose high, balanced, performance, eco, or auto.", file=sys.stderr)
             sys.exit(1)
             
         cfg = load_config()
