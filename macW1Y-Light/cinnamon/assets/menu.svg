@@ -9,3 +9,5 @@
  <rect x="7" y="6" width="64" height="64" rx="12" ry="12" fill="#f5f5f5" opacity=".95" stroke-width="2.9091"/>
  <path d="m19 6c-6.648 0-12 5.352-12 12v40c0 6.648 5.352 12 12 12h40c6.648 0 12-5.352 12-12v-40c0-6.648-5.352-12-12-12zm0 1h40c6.094 0 11 4.906 11 11v40c0 6.094-4.906 11-11 11h-40c-6.094 0-11-4.906-11-11v-40c0-6.094 4.906-11 11-11z" fill="#ffffff" opacity=".1" stroke-width="2.9091"/>
 </svg>
+
+<!-- macw1y-asset-id: default-vector -->

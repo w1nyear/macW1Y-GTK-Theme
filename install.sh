@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-#   macW1Y Sequoia / Tahoe Transformation Modpack (macW1Y Release)
+#  macW1Y Transformation Modpack (macW1Y Release)
 #  Installer & Maintenance System - Version 0.7
 # ==============================================================================
 

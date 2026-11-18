@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-macW1Y macW1Y Tahoe Icon Normalizer & Squircle Generator
+macW1Y macW1Y Icon Normalizer & Squircle Generator
 Scans all installed applications (.desktop files), identifies icons with transparent
 cutouts or incorrect/sharp rectangular corners, and generates standardized macW1Y
 squircle icons (light and dark themes) with authentic macW1Y corner radii, padding,
@@ -607,7 +607,7 @@ if __name__ == "__main__":
             print(f"Failed to load image from {src_path}")
     else:
         print("===================================================================")
-        print("      macW1Y macW1Y Tahoe Icon Normalizer & Squircle Engine         ")
+        print("      macW1Y macW1Y Icon Normalizer & Squircle Engine         ")
         print("===================================================================")
         items = normalize_all_icons(verbose=True)
         print(f"\n🎉 Successfully processed and normalized {len(items)} application icon(s).")

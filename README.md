@@ -16,13 +16,13 @@
 
 ### Visual Experience & Styling
 
-The system delivers the refined aesthetics and behavior of modern macW1Y (Sequoia / Tahoe):
+The system delivers the refined aesthetics and behavior of modern macW1Y:
 - **Top Menubar & Control Center**: Native slide-in Control Center with audio and brightness controls, quick toggles, battery health, and dynamic top-bar OSD icons.
-- **Cupertino Glass Dock**: Floating dock with Liquid Glass reflection, magnification, and smooth application minimization animations.
+- **Liquid Glass Dock**: Floating dock with Liquid Glass reflection, magnification, and smooth application minimization animations.
 - **Mission Control & Window Management**: Intuitive workspace navigation, drag-to-top window zooming with automatic menubar slide-in and window height accommodation.
 - **Spotlight Search & Clipboard**: Super+Space modal search with instant file preview, calculator, and an integrated clipboard history popup.
 - **Finder-Styled Nautilus**: Clean file manager sidebar with authentic iconography, custom pathbars, and folder badging.
-- **Settings (GNOME Control Center)**: Refreshed macW1Y 26-inspired interface with compact leftbar navigation, macW1Y ID user banner, collapsible system alerts, and radio-accordion power modes.
+- **Settings (GNOME Control Center)**: Refreshed modern interface with compact leftbar navigation, user banner, collapsible system alerts, and radio-accordion power modes.
 - **Dark & Light Themes**: Precise rounded geometry, authentic drop shadows, typography, and accent colors.
 
 ---
@@ -192,9 +192,9 @@ The integrated Widgets extension is distributed under the **GNU General Public L
 
 **Legal Notice & Disclaimers:**
 - This project is developed independently for educational, research, and personalization purposes for Linux users.
-- macW1Y, macW1Y, Cupertino, Default, Sequoia, Tahoe, Golden Gates, and related marks are trademarks of macW1Y Project
+- macW1Y, Default, System, and related design elements are created by the macW1Y Project.
 - All open-source components and third-party tools included or referenced are licensed under their respective original licenses (GPL, MIT, LGPL, Apache 2.0).
-- macW1Y Default fonts and brand iconography are referenced solely for personal non-commercial customization.
+- macW1Y Default typography and vector iconography are crafted for open desktop personalization.
 - GNOME Shell extension code interfaces with official GNOME JavaScript APIs under the GNU GPLv3+ license.
 
 ---

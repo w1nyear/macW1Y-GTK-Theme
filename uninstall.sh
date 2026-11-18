@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-#   macW1Y Sequoia / Tahoe Transformation Modpack for Ubuntu 24.04 (GNOME 46)
+#  macW1Y Transformation Modpack for Ubuntu 24.04 (GNOME 46)
 #  Uninstaller Script - Master Version (macW1Y Release)
 # ==============================================================================
 

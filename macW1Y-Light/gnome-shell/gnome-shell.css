@@ -6496,7 +6496,7 @@ StWidget.focused .app-grid-running-dot {
   background-color: rgba(255, 255, 255, 0.12) !important;
 }
 
-/* OSD Original Layout & Authentic Tahoe/macW1Y Corner Radius */
+/* OSD Original Layout & Authentic macW1Y Corner Radius */
 .osd-window {
   border-radius: 22px !important;
   spacing: 8px !important;
@@ -6544,7 +6544,7 @@ StWidget.focused .app-grid-running-dot {
   padding: 0 !important;
 }
 
-/* Notification Center flyout matching macW1Y Tahoe (Image 3) */
+/* Notification Center flyout matching macW1Y default (Image 3) */
 #calendarArea .message-list {
   min-width: 380px !important;
   max-width: 380px !important;
@@ -6942,7 +6942,7 @@ StWidget.focused .app-grid-running-dot {
 }
 
 /* ==========================================================================
-   macW1Y Tahoe Control Center Styles
+   macW1Y default Control Center Styles
    ========================================================================== */
 .mac-control-center-root {
   width: 360px !important;

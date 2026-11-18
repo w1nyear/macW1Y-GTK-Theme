@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-mac-screenshot-process — macW1Y Sequoia/Tahoe Screenshot & Screencast Processing Engine
+mac-screenshot-process — macW1Y default Screenshot & Screencast Processing Engine
 Handles:
 - Immediate macW1Y camera shutter sound on capture
 - Post-processing & upscaling (Native / 1080p / 2K / 4K) using Lanczos3 / Unsharp Mask
@@ -602,7 +602,7 @@ def run_daemon():
             time.sleep(2.0)
 
 def main():
-    parser = argparse.ArgumentParser(description="macW1Y Sequoia/Tahoe Screenshot Processing Engine")
+    parser = argparse.ArgumentParser(description="macW1Y default Screenshot Processing Engine")
     parser.add_argument("--file", "-f", help="Path to screenshot or screencast file to process")
     parser.add_argument("--play-shutter", action="store_true", help="Play the macW1Y camera shutter sound")
     parser.add_argument("--daemon", action="store_true", help="Run background watcher daemon")

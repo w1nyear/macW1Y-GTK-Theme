@@ -9596,7 +9596,7 @@ themeswitcher checkbutton.dark {
 @define-color text_view_bg @view_bg_color;
 
 /* --- MAC-STYLING-START --- */
-/* macW1Y Tahoe Context Menus (System GTK Applications Only) */
+/* macW1Y default Context Menus (System GTK Applications Only) */
 menu,
 menu.popup-menu,
 menu.context-menu,
@@ -9889,7 +9889,7 @@ tooltip label {
 /* --- MAC-STYLING-END --- */
 
 /* --- MAC-NAUTILUS-SIDEBAR-START --- */
-/* macW1Y Tahoe Nautilus Finder - Translucent Glass Sidebar & Solid Dark Pane */
+/* macW1Y default Nautilus Finder - Translucent Glass Sidebar & Solid Dark Pane */
 
 /* Make window root and split container transparent in the sidebar area, with corner patches for rounded sidebar */
 window.nautilus-window,
@@ -10197,7 +10197,7 @@ placessidebar row:hover:not(:selected),
     transition-property: background-color, color;
 }
 
-/* Selected state - system accent color (macW1Y Tahoe style) */
+/* Selected state - system accent color (macW1Y default style) */
 .navigation-sidebar row:selected,
 .navigation-sidebar row:selected:backdrop,
 .navigation-sidebar > row:selected,
@@ -10460,7 +10460,7 @@ scrolledwindow undershoot.right {
 }
 
 /* ============================================================
-   macW1Y Tahoe / Sequoia style gradient fade for scrolled lists
+   macW1Y default / default style gradient fade for scrolled lists
    Smooth edge dissolution at scroll limits (Settings, Nautilus, etc.)
    with gradient blur dissolution (Control Center background blur logic)
    ============================================================ */

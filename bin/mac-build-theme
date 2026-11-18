@@ -332,7 +332,7 @@ window.filechooser headerbar .title {{
 }}
 
 /* =========================================================================
- * 2. Navigation Sidebars (macW1Y Sequoia / Tahoe Item Styling)
+ * 2. Navigation Sidebars (macW1Y default Item Styling)
  * ========================================================================= */
 navigation-split-view list,
 overlay-split-view list,
@@ -1145,7 +1145,7 @@ levelbar trough block.filled {{
 }}
 
 /* =========================================================================
- * 6. Buttons, Segmented Controls & Keycaps (macW1Y Tahoe Flat Push Buttons)
+ * 6. Buttons, Segmented Controls & Keycaps (macW1Y Flat Push Buttons)
  * ========================================================================= */
 button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill),
 button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
@@ -1474,7 +1474,7 @@ NautilusHistoryControls button:active {{
 }}
 
 /* Nautilus View Controls (splitbutton: grid/list + options dropdown) —
-   macW1Y Tahoe Finder pill capsule with circular ends */
+   macW1Y Finder pill capsule with circular ends */
 .nautilus-window headerbar splitbutton,
 .nautilus-window headerbar NautilusViewControls splitbutton,
 .nautilus-window headerbar #view_split_button,
@@ -2044,7 +2044,7 @@ searchbar {{
 }}
 
 /* =========================================================================
- * 8. Dropdowns & Selection Controls (macW1Y Tahoe Flat Seamless + Circular Badge)
+ * 8. Dropdowns & Selection Controls (macW1Y Flat Seamless + Circular Badge)
  * ========================================================================= */
 dropdown,
 combobox,
@@ -2136,7 +2136,7 @@ list.boxed-list row combobox {{
 }}
 
 /* =========================================================================
- * 9. Checkboxes & Radio Buttons (macW1Y Tahoe Solid Circle + Accent Dot)
+ * 9. Checkboxes & Radio Buttons (macW1Y Solid Circle + Accent Dot)
  * ========================================================================= */
 checkbutton check {{
   min-width: 18px;
@@ -3121,7 +3121,7 @@ scale slider {{
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
 }}
 
-/* GTK 3 Base Push Buttons (macW1Y Tahoe Flat Push Buttons) */
+/* GTK 3 Base Push Buttons (macW1Y Flat Push Buttons) */
 button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill) {{
   min-height: {d["button_min_height"]}px;
   padding: 3px 12px;
@@ -3169,7 +3169,7 @@ button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not
   color: @theme_fg_color;
 }}
 
-/* macW1Y Tahoe Universal 1:1 Circular Icon & Action Buttons (Etap 655) */
+/* macW1Y Universal 1:1 Circular Icon & Action Buttons (Etap 655) */
 headerbar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button),
 .titlebar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button),
 headerbar button.image-button,
@@ -3575,7 +3575,7 @@ widget.thumbnail {{
 }}
 
 /* =========================================================================
- * Dropdowns & Selection Controls (macW1Y Tahoe Circular Badge Dropdowns)
+ * Dropdowns & Selection Controls (macW1Y Circular Badge Dropdowns)
  * ========================================================================= */
 combobox,
 combobox > box.linked > button,
@@ -3634,7 +3634,7 @@ combobox > box.linked > button:checked arrow {{
 }}
 
 /* =========================================================================
- * Checkboxes & Radio Buttons (macW1Y Tahoe Solid Circle + Accent Dot)
+ * Checkboxes & Radio Buttons (macW1Y Solid Circle + Accent Dot)
  * ========================================================================= */
 checkbutton check {{
   min-width: 18px;

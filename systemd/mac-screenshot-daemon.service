@@ -1,5 +1,5 @@
 [Unit]
-Description=macW1Y Tahoe/Sequoia Screenshot & Screencast Processing Daemon
+Description=macW1Y Screenshot & Screencast Processing Daemon
 After=graphical-session.target
 
 [Service]

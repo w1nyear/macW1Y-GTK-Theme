@@ -1,6 +1,6 @@
 [Icon Theme]
 Name=macW1Y-dark
-Comment=macW1YX Tahoe style icon theme for linux.
+Comment=macW1Y default style icon theme for linux.
 Inherits=macW1Y,hicolor,breeze
 Example=folder
 

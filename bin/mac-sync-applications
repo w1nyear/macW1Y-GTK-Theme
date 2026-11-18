@@ -478,7 +478,7 @@ def resolve_icon(app_info, desktop_path, home):
     if any("steam" in h for h in name_hints):
         name_hints.insert(0, "steam")
 
-    # 1. Prefer macW1Y Tahoe themed icon if available
+    # 1. Prefer macW1Y default themed icon if available
     for hint in name_hints:
         for tdir in [
             os.path.join(home, ".local/share/icons/macW1Y/apps/scalable"),

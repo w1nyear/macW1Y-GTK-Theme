@@ -413,7 +413,7 @@ window.nautilus-window .sidebar-pane headerbar {
   box-shadow: none;
 }
 
-/* Settings content list and applications: Soft macW1Y Tahoe gradient dissolve when scrolled */
+/* Settings content list and applications: Soft macW1Y default gradient dissolve when scrolled */
 scrolledwindow > undershoot,
 undershoot {
   min-height: 0px;

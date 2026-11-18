@@ -3,3 +3,5 @@
  <path d="m6 1-4 4v1.4141 6.5859c0 1.108 0.892 2 2 2h5v-1h-5c-0.554 0-1-0.446-1-1v-7.5859l3.4141-3.4141h5.5859c0.554 0 1 0.446 1 1v5h1v-5c0-1.108-0.892-2-2-2h-6z" fill="#dedede"/>
  <path d="m13 9c-1.108 0-2 0.892-2 2v1c-0.554 0-1 0.446-1 1v2c0 0.554 0.446 1 1 1h4c0.554 0 1-0.446 1-1v-2c0-0.554-0.446-1-1-1v-1c0-1.108-0.892-2-2-2zm0 1c0.554 0 1 0.446 1 1v1h-2v-1c0-0.554 0.446-1 1-1zm-2 3h4v2h-4z" fill="#dedede" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="paint-order:stroke fill markers"/>
 </svg>
+
+<!-- macw1y-asset-id: default-vector -->

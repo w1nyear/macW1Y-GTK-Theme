@@ -428,7 +428,7 @@ window.mac-recovery-root {
     padding: 3px 6px;
 }
 
-/* Menubar Popover Menus (macW1Y authentic Tahoe/Sequoia style: Frosted Glass, Tint, Shadow, Rounded) */
+/* Menubar Popover Menus (macW1Y authentic default style: Frosted Glass, Tint, Shadow, Rounded) */
 popover.mac-popover-menu,
 popover.menu {
     background-color: transparent;
@@ -472,7 +472,7 @@ popover.mac-popover-menu.mac-popover-closing > contents {
     transform: translateY(-4px) scale(0.97);
 }
 
-/* Hover Sliding Pill Indicator (macW1Y Sequoia / Sonoma / macW1Y authentic style) */
+/* Hover Sliding Pill Indicator (macW1Y / Sonoma / macW1Y authentic style) */
 .mac-menu-hover-pill {
     background-color: @mac_accent_color;
     border-radius: 9999px;
@@ -1137,7 +1137,7 @@ button.mac-lang-item.selected:hover label,
 """
 
 # ------------------------------------------------------------------------------
-# Popover Menu with Tahoe / macW1Y Sliding Hover Pill & Frosted Glass
+# Popover Menu with default / macW1Y Sliding Hover Pill & Frosted Glass
 # ------------------------------------------------------------------------------
 class MacMenuPopover(Gtk.Popover):
     """

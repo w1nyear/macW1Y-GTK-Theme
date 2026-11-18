@@ -11,3 +11,5 @@
  <rect x="7" y="1" width="8" height="1" rx=".5" ry=".5" fill="#fff" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round" style="paint-order:stroke fill markers"/>
  <path d="M4 8c-1.108 0-2 .892-2 2v6c0 1.108.892 2 2 2h14c1.108 0 2-.892 2-2v-6c0-1.108-.892-2-2-2Zm0 1h2v2H3v-1c0-.554.446-1 1-1m3 0h3.5v2H7Zm4.5 0H15v2h-3.5ZM16 9h2c.554 0 1 .446 1 1v1h-3ZM3 12h3v2H3Zm4 0h3.5v2H7Zm4.5 0H15v2h-3.5zm4.5 0h3v2h-3ZM3 15h3v2H4c-.554 0-1-.446-1-1Zm4 0h3.5v2H7Zm4.5 0H15v2h-3.5zm4.5 0h3v1c0 .554-.446 1-1 1h-2z" fill-rule="evenodd" opacity=".15" stroke-linecap="round" stroke-linejoin="round" style="paint-order:stroke fill markers"/>
 </svg>
+
+<!-- macw1y-asset-id: default-vector -->

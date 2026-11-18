@@ -1,5 +1,5 @@
 #!/bin/bash
-# Ensures macW1Y Tahoe / macW1Y cursors override snap fallback directories
+# Ensures macW1Y / macW1Y cursors override snap fallback directories
 SRC="/home/vitaliy/.local/share/icons/macW1Y/cursors"
 [ -d "$SRC" ] || exit 0
 

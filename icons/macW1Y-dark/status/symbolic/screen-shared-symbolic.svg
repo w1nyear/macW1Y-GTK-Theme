@@ -3,3 +3,5 @@
  <rect x="4" y="15" width="8" height="1" rx=".5" ry=".5" fill="#dedede" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.0016"/>
  <path d="m8 3 4 4-4 4v-3c-2.875-0.125-4 3-4 3 0-2.344 0.969-5 4-5z" color="#bebebe" fill="#dedede" overflow="visible"/>
 </svg>
+
+<!-- macw1y-asset-id: default-vector -->
