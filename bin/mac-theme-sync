@@ -172,7 +172,7 @@ def apply_theme_mode(is_light):
         )
     else:
         gtk3_tok_str = (
-            "/* macW1Y 0.6 — Master Design Tokens for GTK 3 (Dark) */\n"
+            "/* macW1Y 0.7 — Master Design Tokens for GTK 3 (Dark) */\n"
             f"@define-color accent_bg_color {accent_col};\n"
             "@define-color accent_fg_color #ffffff;\n"
             "@define-color theme_base_color #202022;\n"

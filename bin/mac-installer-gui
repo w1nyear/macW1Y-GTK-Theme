@@ -220,9 +220,25 @@ def get_battery_info():
         pass
     return "100%"
 
-def get_modpack_version():
+def get_package_version():
     candidates = [
-        VERSION_FILE,
+        os.path.join(SCRIPT_DIR, "version"),
+        os.path.join(SCRIPT_DIR, "config", "mac-styling", "version"),
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            try:
+                with open(c, "r", encoding="utf-8") as f:
+                    v = f.read().strip()
+                    if v:
+                        return v
+            except Exception:
+                pass
+    return "0.7"
+
+def get_installed_version():
+    candidates = [
+        os.path.expanduser("~/.local/share/macW1Y/version"),
         os.path.expanduser("~/.config/mac-styling/version"),
         "/etc/macW1Y/version"
     ]
@@ -235,7 +251,10 @@ def get_modpack_version():
                         return v
             except Exception:
                 pass
-    return "0.7"
+    return None
+
+def get_modpack_version():
+    return get_package_version()
 
 def launch_terminal():
     candidates = [
@@ -2401,19 +2420,45 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         self.option_widgets = {}
 
+        pkg_v = get_package_version()
+        inst_v = get_installed_version()
+        is_uk = getattr(self, "selected_language", "uk") == "uk"
+
+        if inst_v and inst_v != pkg_v:
+            update_title = f"Оновлення до macW1Y {pkg_v}" if is_uk else f"Update to macW1Y {pkg_v}"
+            update_desc = (
+                f"Оновити компоненти macW1Y (поточна v{inst_v} → v{pkg_v}) зі збереженням налаштувань."
+                if is_uk
+                else f"Update macW1Y components (installed v{inst_v} → v{pkg_v}) preserving settings."
+            )
+        else:
+            update_title = f"(Чисте) оновлення модпаку {pkg_v}" if is_uk else f"Clean Modpack Update {pkg_v}"
+            update_desc = (
+                f"Оновити всі компоненти macW1Y {pkg_v} або виконати чисте перевстановлення зі збереженням налаштувань."
+                if is_uk
+                else f"Update all macW1Y {pkg_v} components or clean reinstall preserving settings."
+            )
+
+        install_title = f"Встановлення macW1Y {pkg_v}" if is_uk else f"Install macW1Y {pkg_v}"
+        install_desc = (
+            f"Повне розгортання середовища macW1Y {pkg_v} з Wayland та скляними ефектами"
+            if is_uk
+            else self.tr("installer_opt_install_desc", "Full environment deployment with Wayland and glass effects")
+        )
+
         options_data = [
             ("clean_update",
              os.path.join(ASSETS_DIR, "time_machine.svg"),
-             "(Чисте) оновлення модпаку" if getattr(self, "selected_language", "uk") == "uk" else "Clean Modpack Update",
-             "Оновити всі компоненти macW1Y або виконати чисте перевстановлення зі збереженням налаштувань." if getattr(self, "selected_language", "uk") == "uk" else "Update all macW1Y components or clean reinstall preserving settings."),
+             update_title,
+             update_desc),
             ("install",
              os.path.join(ASSETS_DIR, "install_macw1y.svg"),
-             self.tr("installer_opt_install_title", "Install macW1Y"),
-             self.tr("installer_opt_install_desc", "Full environment deployment with Wayland and glass effects")),
+             install_title,
+             install_desc),
             ("repo",
              os.path.join(ASSETS_DIR, "safari_globe.svg"),
-             "GitHub репозиторій macW1Y" if getattr(self, "selected_language", "uk") == "uk" else "GitHub macW1Y Repository",
-             "Відвідати офіційну сторінку репозиторію macW1Y для отримання детальної інформації." if getattr(self, "selected_language", "uk") == "uk" else "Visit the official macW1Y repository page for details."),
+             "GitHub репозиторій macW1Y" if is_uk else "GitHub macW1Y Repository",
+             "Відвідати офіційну сторінку репозиторію macW1Y для отримання детальної інформації." if is_uk else "Visit the official macW1Y repository page for details."),
             ("uninstall",
              os.path.join(ASSETS_DIR, "disk_utility.svg"),
              self.tr("installer_opt_uninstall_title", "Uninstall macW1Y"),
@@ -2549,13 +2594,18 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.img_wizard_icon.set_margin_top(6)
         box.append(self.img_wizard_icon)
 
-        ver = get_modpack_version()
+        ver = get_package_version()
         self.lbl_wizard_title = Gtk.Label(label=f"macW1Y {ver}")
         self.lbl_wizard_title.add_css_class("mac-title-large")
         self.lbl_wizard_title.set_margin_top(6)
         box.append(self.lbl_wizard_title)
 
-        self.lbl_wizard_sub = Gtk.Label(label=self.tr("installer_wizard_sub", "To configure macW1Y installation, click Continue."))
+        is_uk = getattr(self, "selected_language", "uk") == "uk"
+        if getattr(self, "selected_action", "install") == "clean_update":
+            sub_text = f"Для налаштування оновлення macW1Y {ver} натисніть «Продовжити»." if is_uk else f"To configure macW1Y {ver} update, click Continue."
+        else:
+            sub_text = self.tr("installer_wizard_sub", "To configure macW1Y installation, click Continue.")
+        self.lbl_wizard_sub = Gtk.Label(label=sub_text)
         self.lbl_wizard_sub.add_css_class("mac-subtitle")
         self.lbl_wizard_sub.set_wrap(True)
         self.lbl_wizard_sub.set_halign(Gtk.Align.CENTER)
@@ -2681,7 +2731,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
     def morph_terms_to_welcome(self, animated=True):
         self.wizard_mode = "welcome"
-        self.lbl_wizard_sub.set_label(self.tr("installer_wizard_sub", "To configure macW1Y installation, click Continue."))
+        ver = get_package_version()
+        is_uk = getattr(self, "selected_language", "uk") == "uk"
+        if getattr(self, "selected_action", "install") == "clean_update":
+            sub_text = f"Для налаштування оновлення macW1Y {ver} натисніть «Продовжити»." if is_uk else f"To configure macW1Y {ver} update, click Continue."
+        else:
+            sub_text = self.tr("installer_wizard_sub", "To configure macW1Y installation, click Continue.")
+        self.lbl_wizard_sub.set_label(sub_text)
+        self.lbl_wizard_title.set_label(f"macW1Y {ver}")
         self.btn_wizard_action.set_label(self.tr("installer_continue_btn", "Continue"))
 
         if not animated:
@@ -2995,7 +3052,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         img_circle.set_halign(Gtk.Align.CENTER)
         box.append(img_circle)
 
-        lbl_t = Gtk.Label(label="macW1Y")
+        lbl_t = Gtk.Label(label=f"macW1Y {get_package_version()}")
         lbl_t.add_css_class("mac-title-large")
         box.append(lbl_t)
 
@@ -3428,7 +3485,7 @@ class MacRecoveryApp(Gtk.Application):
             kiosk_guard.enter()
 
         act_about = Gio.SimpleAction.new("about", None)
-        act_about.connect("activate", lambda a, p: self.win._show_simple_alert("Про macW1Y", f"macW1Y Release (v{get_modpack_version()})\nmacW1Y Transformation Modpack for Ubuntu"))
+        act_about.connect("activate", lambda a, p: self.win._show_simple_alert("Про macW1Y", f"macW1Y Release (v{get_package_version()})\nmacW1Y Transformation Modpack for Ubuntu"))
         self.add_action(act_about)
 
         act_reboot = Gio.SimpleAction.new("reboot", None)
@@ -3447,8 +3504,17 @@ class MacRecoveryApp(Gtk.Application):
         act_disk.connect("activate", lambda a, p: launch_disk_utility())
         self.add_action(act_disk)
 
+        def _show_sysinfo():
+            pkg_v = get_package_version()
+            inst_v = get_installed_version()
+            inst_str = f"v{inst_v}" if inst_v else "Не встановлено"
+            self.win._show_simple_alert(
+                "Інформація про систему",
+                f"ОС: Ubuntu 24.04 LTS\nВерсія інсталятора macW1Y: v{pkg_v}\nПоточна встановлена версія: {inst_str}\nДиск: {get_disk_capacity_info()}"
+            )
+
         act_sysinfo = Gio.SimpleAction.new("sysinfo", None)
-        act_sysinfo.connect("activate", lambda a, p: self.win._show_simple_alert("Інформація про систему", f"ОС: Ubuntu 24.04 LTS\nВерсія macW1Y: v{get_modpack_version()}\nДиск: {get_disk_capacity_info()}"))
+        act_sysinfo.connect("activate", lambda a, p: _show_sysinfo())
         self.add_action(act_sysinfo)
 
         act_close = Gio.SimpleAction.new("close", None)
