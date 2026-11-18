@@ -405,14 +405,15 @@
     "Rounded_Corners@lennart-k": {
       "uuid": "Rounded_Corners@lennart-k",
       "name": "Rounded Corners",
-      "pinned_version": 18,
+      "pinned_version": 19,
       "shell_compatibility": [
         "45",
         "46",
         "47",
         "48",
         "49",
-        "50"
+        "50",
+        "51"
       ],
       "sha256": "a28915da19b1e453b1d120008e875f1c06f66e18f83d07a6426cecc238ef9422",
       "status": "locked",
@@ -422,7 +423,7 @@
       ],
       "has_custom_patches": false,
       "patch_description": "Upstream verified",
-      "last_verified": "2026-10-31",
+      "last_verified": "2026-11-18",
       "pinned_sha256": "a28915da19b1e453b1d120008e875f1c06f66e18f83d07a6426cecc238ef9422"
     },
     "run-cmd@custom.extension": {
