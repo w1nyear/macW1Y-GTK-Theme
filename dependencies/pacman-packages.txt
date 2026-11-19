@@ -30,3 +30,7 @@ vulkan-tools
 vulkan-icd-loader
 icoutils
 ffmpeg
+python-gobject
+python-cairo
+nautilus
+mutter

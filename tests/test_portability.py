@@ -1,0 +1,63 @@
+"""Регресійні перевірки без зміни завантажувача та пакетів хоста."""
+import importlib.util
+import pathlib
+import subprocess
+import tempfile
+import unittest
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+spec = importlib.util.spec_from_file_location('platform_check', ROOT / 'dependencies/check-platform.py')
+check = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(check)
+
+
+class PortabilityTests(unittest.TestCase):
+    def test_version_matrix(self):
+        self.assertFalse(check.incompatible_extensions(ROOT, '50'))
+        for version in ('43', '46', '47', '48', '49', '51'):
+            self.assertTrue(check.incompatible_extensions(ROOT, version), version)
+
+    def test_native_failure_preserves_existing_outputs(self):
+        with tempfile.TemporaryDirectory() as folder:
+            temp = pathlib.Path(folder)
+            fake = temp / 'pkg-config'
+            fake.write_text('#!/bin/sh\nexit 42\n')
+            fake.chmod(0o755)
+            output = temp / 'output'
+            output.mkdir()
+            artifact = output / 'libmacpopover.so'
+            artifact.write_bytes(b'previous build')
+            import os
+            env = dict(os.environ, PATH=str(temp) + ':' + os.environ['PATH'])
+            result = subprocess.run(['bash', str(ROOT / 'dependencies/build-native.sh'), str(output)], env=env, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(artifact.read_bytes(), b'previous build')
+
+    def test_legacy_shell_restore_without_dpkg(self):
+        script = (ROOT / 'uninstall.sh').read_text()
+        start = script.index('    if [ -f "/usr/bin/gnome-shell.real" ]; then')
+        end = script.index('    sudo rm -f /etc/dconf/db/gdm.d/99-macw1y-auth', start)
+        block = script[start:end]
+        for current in (None, b'# GNOME Shell Launch Wrapper', b'new packaged executable'):
+            with self.subTest(current=current), tempfile.TemporaryDirectory() as folder:
+                temp = pathlib.Path(folder)
+                (temp / 'gnome-shell.real').write_bytes(b'original executable')
+                if current is not None:
+                    (temp / 'gnome-shell').write_bytes(current)
+                body = block.replace('/usr/bin/', folder + '/')
+                prefix = "log_info() { :; }; sudo() { \"$@\"; }; command() { if [ \"$2\" = dpkg-divert ]; then return 1; else builtin command \"$@\"; fi; }; "
+                subprocess.run(['bash', '-ec', prefix + body], check=True)
+                expected = current if current == b'new packaged executable' else b'original executable'
+                self.assertEqual((temp / 'gnome-shell').read_bytes(), expected)
+
+    def test_boot_and_package_commands(self):
+        installer = (ROOT / 'install.sh').read_text()
+        deps = (ROOT / 'dependencies/install-deps.sh').read_text()
+        self.assertNotIn('-o /boot/efi/EFI/fedora/grub.cfg', installer)
+        self.assertNotIn('pacman -Sy ', installer + deps)
+        self.assertIn('pacman -Syu --needed', deps)
+        self.assertNotIn('sudo mv /usr/bin/gnome-shell ', installer)
+
+
+if __name__ == '__main__':
+    unittest.main()

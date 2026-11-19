@@ -1755,3 +1755,12 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      - `python3 bin/mac-extension-guard verify` — 21/21 LOCKED OK.
      - `python3 bin/test-macw1y-animations.py` — 12/12 PASS (100.0%).
      - `python3 bin/test-macw1y-performance-guards.py` — 13/13 PASS.
+
+[2026-11-19] Виправлення безпеки кросдистрибутивного інсталятора після аудиту a25bcc7a.
+- Безпечне відновлення GNOME Shell при видаленні без dpkg; прибрано нову підміну Shell на RPM/Pacman.
+- Fedora GRUB використовує /boot/grub2/grub.cfg; Arch залежності встановлюються з повним оновленням, без -Sy + -S.
+- Обов’язкові залежності не пропускаються мовчки. Сім бібліотек збираються локально до копіювання; fallback на готові .so прибрано.
+- Перед встановленням перевіряється сумісність версій розширень, після оновлення пакетів — повторно. Наразі спільний номер — GNOME 50; підтримку Debian 12/13 та Fedora 40/41 НЕ сертифіковано.
+- GDM: спільний dconf та динамічний custom.conf, без редагування PAM.
+- 4 регресійні тести PASS, 7 бібліотек зібрано, анімації 12/12, guard 21/21, audit PASS; i18n structural/fallback PASS.
+- Подробиці та залишкові обмеження: docs/diagnostics/2026-11-19-portability.md. Інсталятор на хості не запускався; VM відсутні.

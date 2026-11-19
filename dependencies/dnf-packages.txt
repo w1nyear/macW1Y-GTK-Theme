@@ -36,3 +36,7 @@ vulkan-tools
 vulkan-loader
 icoutils
 ffmpeg-free
+python3-gobject
+python3-cairo
+nautilus-devel
+mutter-devel

@@ -66,6 +66,7 @@ elif [ "$1" = "--cli" ] || [ "$1" = "-cli" ]; then
 elif [ -z "$MAC_INSTALLER_CLI" ]; then
     if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
         if [ -x "$SCRIPT_DIR/bin/mac-installer-gui" ] && command -v python3 >/dev/null 2>&1; then
+            python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || exit 1
             # Pre-activate macW1Y environment and disable legacy extensions
             for ext in "ubuntu-dock@ubuntu.com" "tiling-assistant@ubuntu.com" "ding@rastersoft.com" "dash-to-dock@micxgx.gmail.com" "stage-manager@gnome-stage-manager" "snapd-prompting@canonical.com" "web-search-provider@ubuntu.com"; do
                 gnome-extensions disable "$ext" 2>/dev/null || true
@@ -368,8 +369,10 @@ detect_distro_and_paths() {
     fi
 
     SYS_LIB_DIR="/usr/lib"
-    if [ -d "/usr/lib/x86_64-linux-gnu" ]; then
-        SYS_LIB_DIR="/usr/lib/x86_64-linux-gnu"
+    local multiarch
+    multiarch=$(gcc -print-multiarch 2>/dev/null || true)
+    if [ -n "$multiarch" ] && [ -d "/usr/lib/$multiarch" ]; then
+        SYS_LIB_DIR="/usr/lib/$multiarch"
     elif [ -d "/usr/lib64" ]; then
         SYS_LIB_DIR="/usr/lib64"
     fi
@@ -431,59 +434,7 @@ install_dependencies() {
     detect_distro_and_paths
     log_info "Detected OS: $DISTRO_NAME ($DISTRO_FAMILY family, libdir: $SYS_LIB_DIR)"
 
-    if [ "$DISTRO_FAMILY" = "debian" ] && [ -f "$SCRIPT_DIR/dependencies/apt-packages.txt" ]; then
-        log_info "Updating package lists via APT..."
-        sudo dpkg --add-architecture i386 2>/dev/null || true
-        sudo apt-get update -qq
-
-        log_info "Installing packages from dependencies/apt-packages.txt..."
-        local RAW_PKGS
-        RAW_PKGS=$(grep -v "^#" "$SCRIPT_DIR/dependencies/apt-packages.txt" | tr "\n" " ")
-        local VALID_PKGS=()
-        for p in $RAW_PKGS; do
-            if apt-cache show "$p" >/dev/null 2>&1; then
-                VALID_PKGS+=("$p")
-            fi
-        done
-        # Dynamic selection of libmutter-dev version for current Debian/Ubuntu release
-        for mdev in libmutter-18-dev libmutter-17-dev libmutter-16-dev libmutter-15-dev libmutter-14-dev; do
-            if apt-cache show "$mdev" >/dev/null 2>&1; then
-                VALID_PKGS+=("$mdev")
-                break
-            fi
-        done
-        sudo apt-get install -y "${VALID_PKGS[@]}"
-        log_info "Ensuring system glibc locales are generated for internationalization..."
-        sudo locale-gen en_US.UTF-8 uk_UA.UTF-8 pl_PL.UTF-8 de_DE.UTF-8 fr_FR.UTF-8 es_ES.UTF-8 it_IT.UTF-8 >/dev/null 2>&1 || true
-        log_success "System dependencies installed successfully via APT!"
-    elif [ "$DISTRO_FAMILY" = "fedora" ] && [ -f "$SCRIPT_DIR/dependencies/dnf-packages.txt" ]; then
-        log_info "Installing dependencies via DNF..."
-        local RAW_PKGS
-        RAW_PKGS=$(grep -v "^#" "$SCRIPT_DIR/dependencies/dnf-packages.txt" | tr "\n" " ")
-        local VALID_PKGS=()
-        for p in $RAW_PKGS; do
-            if dnf list "$p" >/dev/null 2>&1; then
-                VALID_PKGS+=("$p")
-            fi
-        done
-        sudo dnf install -y "${VALID_PKGS[@]}"
-        log_success "System dependencies installed successfully via DNF!"
-    elif [ "$DISTRO_FAMILY" = "arch" ] && [ -f "$SCRIPT_DIR/dependencies/pacman-packages.txt" ]; then
-        log_info "Installing dependencies via Pacman..."
-        sudo pacman -Sy --needed --noconfirm
-        local RAW_PKGS
-        RAW_PKGS=$(grep -v "^#" "$SCRIPT_DIR/dependencies/pacman-packages.txt" | tr "\n" " ")
-        local VALID_PKGS=()
-        for p in $RAW_PKGS; do
-            if pacman -Si "$p" >/dev/null 2>&1; then
-                VALID_PKGS+=("$p")
-            fi
-        done
-        sudo pacman -S --needed --noconfirm "${VALID_PKGS[@]}"
-        log_success "System dependencies installed successfully via Pacman!"
-    else
-        log_warning "No matching package list found for $DISTRO_NAME. Skipping automatic package manager installation."
-    fi
+    bash "$SCRIPT_DIR/dependencies/install-deps.sh"
 
     if ! command -v opendrop &>/dev/null; then
         log_info "Installing macW1Y AirDrop utility (opendrop)..."
@@ -603,18 +554,12 @@ install_themes() {
         cp -r "$SCRIPT_DIR/gnome-shell-theme/"* "$THEMES_DIR/macW1Y-Dark/gnome-shell/"
     fi
     
-    if [ -f "$SCRIPT_DIR/src/mac_popover.c" ] && command -v gcc >/dev/null 2>&1; then
-        gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmacpopover.so" "$SCRIPT_DIR/src/mac_popover.c" $(pkg-config --cflags --libs gtk4 glib-2.0 gobject-2.0 2>/dev/null) -ldl -lm 2>/dev/null || true
-    fi
     if [ -f "$SCRIPT_DIR/lib/libmacpopover.so" ]; then
         install_mac_shared_lib "$SCRIPT_DIR/lib/libmacpopover.so"
         rm -f "$TARGET_HOME/.config/environment.d/10-mac-theme.conf" 2>/dev/null || true
         sudo sed -i "/libmacpopover.so/d" /etc/environment 2>/dev/null || true
     fi
 
-    if [ -f "$SCRIPT_DIR/src/mac_terminal.c" ] && command -v gcc >/dev/null 2>&1; then
-        gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmac_terminal.so" "$SCRIPT_DIR/src/mac_terminal.c" $(pkg-config --cflags --libs gtk4 libadwaita-1 2>/dev/null) -ldl 2>/dev/null || true
-    fi
     if [ -f "$SCRIPT_DIR/lib/libmac_terminal.so" ]; then
         install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_terminal.so"
     fi
@@ -623,9 +568,6 @@ install_themes() {
         sudo chmod 755 /usr/local/bin/ptyxis
     fi
 
-    if [ -f "$SCRIPT_DIR/src/mac_memtrim.c" ] && command -v gcc >/dev/null 2>&1; then
-        gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmac_memtrim.so" "$SCRIPT_DIR/src/mac_memtrim.c" $(pkg-config --cflags --libs glib-2.0 2>/dev/null) 2>/dev/null || true
-    fi
     if [ -f "$SCRIPT_DIR/lib/libmac_memtrim.so" ]; then
         install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_memtrim.so"
     fi
@@ -635,9 +577,6 @@ install_themes() {
     
     # Configuring macW1Y Nautilus Finder Sidebar and Applications section
     log_info "Installing macW1Y Nautilus Finder Sidebar and extensions..."
-    if [ -f "$SCRIPT_DIR/src/mac_nautilus.c" ] && command -v gcc >/dev/null 2>&1; then
-        gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmac_nautilus.so" "$SCRIPT_DIR/src/mac_nautilus.c" $(pkg-config --cflags --libs gtk4 libadwaita-1 gio-2.0 2>/dev/null) -ldl 2>/dev/null || true
-    fi
     if [ -f "$SCRIPT_DIR/lib/libmac_nautilus.so" ]; then
         install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_nautilus.so"
     fi
@@ -1116,14 +1055,8 @@ install_settings_overlay() {
     fi
     
     log_info "Compiling libmac_settings.so dynamic library..."
-    if command -v gcc >/dev/null 2>&1; then
-        gcc -shared -fPIC -O2 -o "$LOCAL_LIB/libmac_settings.so" "$OVERLAY_DIR/libmac_settings.c" $(pkg-config --cflags --libs glib-2.0 gio-2.0 json-glib-1.0 gtk4 libadwaita-1 2>/dev/null) -ldl -lm 2>/dev/null || {
-            [ -f "$SCRIPT_DIR/lib/libmac_settings.so" ] && cp "$SCRIPT_DIR/lib/libmac_settings.so" "$LOCAL_LIB/libmac_settings.so"
-        }
-    else
-        [ -f "$SCRIPT_DIR/lib/libmac_settings.so" ] && cp "$SCRIPT_DIR/lib/libmac_settings.so" "$LOCAL_LIB/libmac_settings.so"
-    fi
-    
+    cp "$SCRIPT_DIR/lib/libmac_settings.so" "$LOCAL_LIB/libmac_settings.so"
+
     # System-wide installation of library and overlays for all users
     sudo mkdir -p /usr/share/mactheme/gnome-control-center-overlay
     if [ -f "$LOCAL_LIB/libmac_settings.so" ]; then
@@ -1148,14 +1081,8 @@ install_settings_overlay() {
     fi
 
     log_info "Compiling libmac_extension_manager.so dynamic library..."
-    if [ -f "$SCRIPT_DIR/extension-manager/libmac_extension_manager.c" ] && command -v gcc >/dev/null 2>&1; then
-        gcc -shared -fPIC -O2 -o "$LOCAL_LIB/libmac_extension_manager.so" "$SCRIPT_DIR/extension-manager/libmac_extension_manager.c" $(pkg-config --cflags --libs glib-2.0 gio-2.0 2>/dev/null) -ldl 2>/dev/null || {
-            [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ] && cp "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so"
-        }
-    else
-        [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ] && cp "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so"
-    fi
-    
+    cp "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so"
+
     [ -f "$SCRIPT_DIR/bin/gnome-control-center" ] && cp "$SCRIPT_DIR/bin/gnome-control-center" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/gnome-control-center"
     [ -f "$SCRIPT_DIR/bin/mac-widgets-settings" ] && cp "$SCRIPT_DIR/bin/mac-widgets-settings" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/mac-widgets-settings"
     [ -f "$SCRIPT_DIR/bin/mac-styling-settings" ] && cp "$SCRIPT_DIR/bin/mac-styling-settings" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/mac-styling-settings"
@@ -1653,15 +1580,13 @@ install_gnome_shell_overlay() {
     local shell_bin="/usr/bin/gnome-shell.real"
     [ ! -x "$shell_bin" ] && shell_bin="/usr/bin/gnome-shell"
     
-    # 1. Compatibility check (Supported: GNOME 45..52)
-    if [ -x "$shell_bin" ]; then
-        local ver=$("$shell_bin" --version 2>/dev/null | grep -oE '[0-9]+(\.[0-9]+)?' | head -n1)
-        local major=$(echo "$ver" | cut -d. -f1)
-        if [ -n "$major" ] && { [ "$major" -lt 45 ] || [ "$major" -gt 52 ]; }; then
-            log_warn "GNOME Shell version $ver is outside tested range (45-52). Overlay installation skipped for safety."
-            return 0
+    python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || return 1
+    if [ "$DISTRO_FAMILY" != "debian" ]; then
+        if [ -x /usr/bin/gnome-shell.real ] && { [ ! -e /usr/bin/gnome-shell ] || grep -q 'GNOME Shell Launch Wrapper' /usr/bin/gnome-shell; }; then
+            sudo install -m 755 /usr/bin/gnome-shell.real /usr/bin/gnome-shell
         fi
-        log_info "GNOME Shell version $ver verified compatible."
+        log_warning "Shell watchdog overlay is disabled on RPM/Pacman systems; the packaged executable is preserved."
+        return 0
     fi
 
     # 2. Back up original upstream layout.js
@@ -1683,22 +1608,11 @@ install_gnome_shell_overlay() {
         log_success "Deployed layout.js overlay to /usr/share/mactheme/gnome-shell-overlay/ui/layout.js"
     fi
 
-    # 4. Set up safe launcher diversion
-    if [ ! -f "/usr/bin/gnome-shell.real" ]; then
-        if command -v dpkg-divert >/dev/null 2>&1; then
-            log_info "Configuring dpkg-divert for /usr/bin/gnome-shell..."
-            sudo dpkg-divert --add --rename --divert /usr/bin/gnome-shell.real /usr/bin/gnome-shell 2>/dev/null || true
-        elif [ -f "/usr/bin/gnome-shell" ]; then
-            log_info "Renaming /usr/bin/gnome-shell to /usr/bin/gnome-shell.real..."
-            sudo mv /usr/bin/gnome-shell /usr/bin/gnome-shell.real
-        fi
+    if [ ! -f /usr/bin/gnome-shell.real ]; then
+        sudo dpkg-divert --add --rename --divert /usr/bin/gnome-shell.real /usr/bin/gnome-shell
     fi
+    sudo install -m 755 "$SCRIPT_DIR/bin/gnome-shell" /usr/bin/gnome-shell
 
-    if [ -f "$SCRIPT_DIR/bin/gnome-shell" ]; then
-        sudo cp -f "$SCRIPT_DIR/bin/gnome-shell" /usr/bin/gnome-shell
-        sudo chmod 755 /usr/bin/gnome-shell
-        log_success "Installed GNOME Shell watchdog wrapper to /usr/bin/gnome-shell"
-    fi
 }
 
 # ------------------------------------------------------------------------------
@@ -1848,16 +1762,8 @@ install_gdm_transition() {
         fi
     fi
 
-    # 10. Disabling fingerprint authentication to eliminate GDM delays
-    if [ -f /etc/gdm3/greeter.dconf-defaults ]; then
-        if ! grep -q "enable-fingerprint-authentication=false" /etc/gdm3/greeter.dconf-defaults; then
-            echo "enable-fingerprint-authentication=false" | sudo tee -a /etc/gdm3/greeter.dconf-defaults >/dev/null
-        fi
-    fi
-    if [ -f /etc/pam.d/gdm-fingerprint ]; then
-        sudo sed -i "s/.*pam_fprintd.so.*/auth requisite pam_deny.so/" /etc/pam.d/gdm-fingerprint 2>/dev/null || true
-    fi
-    run_as_user gsettings set org.gnome.login-screen enable-fingerprint-authentication false 2>/dev/null || true
+    sudo mkdir -p /etc/dconf/db/gdm.d
+    printf '[org/gnome/login-screen]\nenable-fingerprint-authentication=false\n' | sudo tee /etc/dconf/db/gdm.d/99-macw1y-auth >/dev/null
     run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock lockscreen-mode 'cupertino' 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock cupertino-always-show-user true 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.wack-lockscreen-clock lockscreen-wallpaper-enable false 2>/dev/null || true
@@ -1865,9 +1771,11 @@ install_gdm_transition() {
     run_as_user gsettings set org.gnome.desktop.screensaver picture-uri "file:///usr/share/backgrounds/GoldenGate_Day.jpg" 2>/dev/null || true
 
     # 11. Disabling automatic login to display GDM lock screen
-    if [ -f /etc/gdm3/custom.conf ]; then
-        sudo sed -i 's|^AutomaticLoginEnable=.*|AutomaticLoginEnable=false|' /etc/gdm3/custom.conf
-        sudo sed -i 's|^AutomaticLogin=.*|# AutomaticLogin=vitaliy|' /etc/gdm3/custom.conf
+    local gdm_config=/etc/gdm/custom.conf
+    [ ! -f /etc/gdm3/custom.conf ] || gdm_config=/etc/gdm3/custom.conf
+    if [ -f "$gdm_config" ]; then
+        sudo sed -i 's|^AutomaticLoginEnable=.*|AutomaticLoginEnable=false|' "$gdm_config"
+        sudo sed -i 's|^AutomaticLogin=.*|# AutomaticLogin=vitaliy|' "$gdm_config"
     fi
 
     sudo dconf update 2>/dev/null || true
@@ -2028,11 +1936,7 @@ install_grub() {
     if command -v update-grub >/dev/null 2>&1; then
         sudo update-grub
     elif command -v grub2-mkconfig >/dev/null 2>&1; then
-        if [ -d "/boot/efi/EFI/fedora" ]; then
-            sudo grub2-mkconfig -o /boot/efi/EFI/fedora/grub.cfg 2>/dev/null || sudo grub2-mkconfig -o /boot/grub2/grub.cfg
-        else
-            sudo grub2-mkconfig -o /boot/grub2/grub.cfg
-        fi
+        sudo grub2-mkconfig -o /boot/grub2/grub.cfg
     elif command -v grub-mkconfig >/dev/null 2>&1; then
         sudo grub-mkconfig -o /boot/grub/grub.cfg
     fi
@@ -2119,7 +2023,10 @@ EOF_EVO
 
 # 1. Full Installation
 run_full_install() {
+    python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || return 1
     install_dependencies
+    python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || return 1
+    bash "$SCRIPT_DIR/dependencies/build-native.sh" "$SCRIPT_DIR/lib"
     install_fonts
     install_themes
     install_icons
@@ -2138,12 +2045,14 @@ run_full_install() {
 # 2. Incremental Update [installed version] -> [new version]
 # Verifies every file, replaces modified, and adds missing
 run_incremental_update() {
+    python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || return 1
     local cur_ver="$1"
     local new_ver="$2"
     
     log_step "Update [v$cur_ver] -> [v$new_ver]: Verifying and syncing modified or missing files"
     require_root
     
+    bash "$SCRIPT_DIR/dependencies/build-native.sh" "$SCRIPT_DIR/lib"
     MODIFIED_COUNT=0
     UNCHANGED_COUNT=0
     
@@ -2549,9 +2458,6 @@ EOF_CUR_THEME_UP
 
     # Nautilus Finder Sidebar and extensions
     log_info "Updating macW1Y Nautilus Finder Sidebar..."
-    if [ -f "$SCRIPT_DIR/src/mac_nautilus.c" ] && command -v gcc >/dev/null 2>&1; then
-        gcc -shared -fPIC -O2 -o "$SCRIPT_DIR/lib/libmac_nautilus.so" "$SCRIPT_DIR/src/mac_nautilus.c" $(pkg-config --cflags --libs gtk4 libadwaita-1 gio-2.0 2>/dev/null) -ldl 2>/dev/null || true
-    fi
     if [ -f "$SCRIPT_DIR/lib/libmac_nautilus.so" ]; then
         install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_nautilus.so"
     fi
@@ -2663,11 +2569,7 @@ EOF
     if command -v update-grub >/dev/null 2>&1; then
         sudo update-grub 2>/dev/null || true
     elif command -v grub2-mkconfig >/dev/null 2>&1; then
-        if [ -d "/boot/efi/EFI/fedora" ]; then
-            sudo grub2-mkconfig -o /boot/efi/EFI/fedora/grub.cfg 2>/dev/null || sudo grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null || true
-        else
-            sudo grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null || true
-        fi
+        sudo grub2-mkconfig -o /boot/grub2/grub.cfg
     elif command -v grub-mkconfig >/dev/null 2>&1; then
         sudo grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || true
     fi
@@ -2747,6 +2649,7 @@ EOF_EVO
 # 3. Clean Reinstall [installed version] -> [new version]
 # Completely removes all theme pack files and reinstalls from scratch
 run_clean_update() {
+    python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || return 1
     local cur_ver="$1"
     local new_ver="$2"
     

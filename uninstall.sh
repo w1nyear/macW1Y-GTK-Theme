@@ -207,10 +207,21 @@ restore_system() {
     # Відновлення оригінального бінарника gnome-shell
     if [ -f "/usr/bin/gnome-shell.real" ]; then
         log_info "Відновлення оригінального /usr/bin/gnome-shell (зняття dpkg-divert)..."
-        sudo rm -f /usr/bin/gnome-shell
-        sudo dpkg-divert --remove --rename /usr/bin/gnome-shell 2>/dev/null || true
+        if command -v dpkg-divert >/dev/null 2>&1 && [ "$(dpkg-divert --truename /usr/bin/gnome-shell)" = /usr/bin/gnome-shell.real ]; then
+            sudo cp -p /usr/bin/gnome-shell /usr/bin/gnome-shell.macw1y-backup
+            sudo rm /usr/bin/gnome-shell
+            if ! sudo dpkg-divert --remove --rename --divert /usr/bin/gnome-shell.real /usr/bin/gnome-shell; then
+                sudo cp -p /usr/bin/gnome-shell.real /usr/bin/gnome-shell
+                return 1
+            fi
+        elif [ ! -e /usr/bin/gnome-shell ] || grep -q 'GNOME Shell Launch Wrapper' /usr/bin/gnome-shell; then
+            sudo install -m 755 /usr/bin/gnome-shell.real /usr/bin/gnome-shell
+        fi
     fi
     
+    sudo rm -f /etc/dconf/db/gdm.d/99-macw1y-auth
+    sudo dconf update
+
     # Plymouth
     log_info "Відновлення стандартного завантажувача Plymouth..."
     sudo systemctl stop plymouth-verbose-logger.service 2>/dev/null || true
