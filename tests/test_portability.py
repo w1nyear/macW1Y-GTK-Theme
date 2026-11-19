@@ -64,6 +64,18 @@ class PortabilityTests(unittest.TestCase):
         self.assertIn('pacman -Syu --needed', deps)
         self.assertNotIn('sudo mv /usr/bin/gnome-shell ', installer)
 
+    def test_no_hardcoded_user_paths_in_extensions(self):
+        for js_file in (ROOT / 'extensions').rglob('*.js'):
+            if 'node_modules' in js_file.parts:
+                continue
+            content = js_file.read_text(encoding='utf-8', errors='ignore')
+            self.assertNotIn('/home/vitaliy', content, f'Found hardcoded /home/vitaliy in {js_file}')
+
+    def test_installer_does_not_mutate_extensions(self):
+        installer = (ROOT / 'install.sh').read_text()
+        self.assertNotIn('find "$EXT_USER_DIR" -type f', installer)
+        self.assertNotIn('sed -i "s|/home/vitaliy|$TARGET_HOME|g" {} +', installer)
+
 
 if __name__ == '__main__':
     unittest.main()

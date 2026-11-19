@@ -28,6 +28,7 @@ CONFIG_DIR = os.path.expanduser("~/.config/macw1y")
 UPDATES_FILE = os.path.join(CONFIG_DIR, "extension-updates.json")
 BACKUPS_DIR = os.path.join(CONFIG_DIR, "backups/extensions")
 USER_EXT_DIR = os.path.expanduser("~/.local/share/gnome-shell/extensions")
+USER_UPDATES_DIR = os.path.expanduser("~/.local/share/gnome-shell/extension-updates")
 SYS_EXT_DIR = "/usr/share/gnome-shell/extensions"
 
 os.makedirs(CONFIG_DIR, exist_ok=True)
@@ -253,12 +254,33 @@ def cmd_status():
         print(f"{uuid:<42} {str(pinned_v):<8} {str(inst_v):<10} {st:<18}")
     print("="*80 + "\n")
 
+def clean_staged_updates(locked):
+    """Quarantine unverified staged EGO updates that would overwrite locked extensions on login."""
+    if not os.path.isdir(USER_UPDATES_DIR):
+        return
+    quarantine_dir = os.path.join(CONFIG_DIR, "quarantine-updates")
+    try:
+        items = os.listdir(USER_UPDATES_DIR)
+    except OSError:
+        return
+    for item in items:
+        if item in locked:
+            staged_path = os.path.join(USER_UPDATES_DIR, item)
+            os.makedirs(quarantine_dir, exist_ok=True)
+            dest = os.path.join(quarantine_dir, f"{item}_{int(time.time())}")
+            try:
+                shutil.move(staged_path, dest)
+                print(f"[mac-extension-guard] Quarantined staged EGO update for locked extension: {item}")
+            except Exception as e:
+                print(f"[mac-extension-guard] Warning: could not quarantine {staged_path}: {e}", file=sys.stderr)
+
 def cmd_verify():
     try:
         locked = load_lock()
     except (OSError, ValueError, TypeError) as error:
         print(f"VERIFICATION FAILED: {error}", file=sys.stderr)
         return False
+    clean_staged_updates(locked)
     errors = []
     for uuid, info in locked.items():
         p = os.path.join(USER_EXT_DIR, uuid)

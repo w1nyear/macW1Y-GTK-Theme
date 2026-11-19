@@ -1029,6 +1029,13 @@ install_extensions() {
     run_as_user gsettings set org.freedesktop.Tracker3.Miner.Files index-single-directories "[]" 2>/dev/null || true
     run_as_user gsettings set org.freedesktop.Tracker3.Miner.Files throttle 20 2>/dev/null || true
 
+    # Prevent GNOME Software from automatically staging untrusted extension updates
+    if [ -d "$TARGET_HOME/.local/share/gnome-shell/extension-updates" ]; then
+        rm -rf "$TARGET_HOME/.local/share/gnome-shell/extension-updates"/* 2>/dev/null || true
+    fi
+    run_as_user gsettings set org.gnome.software download-updates false 2>/dev/null || true
+    run_as_user gsettings set org.gnome.software download-updates-notify false 2>/dev/null || true
+
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-corner-radius 26.0 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-toggle-corner-radius 40.0 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com osd-corner-radius 18.0 2>/dev/null || true

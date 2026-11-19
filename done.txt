@@ -2329,3 +2329,28 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-i18n-verify — 100% PASS.
      * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
      * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), виконано локальний git-коміт (без git push).
+
+
+846. 2026-11-19 — Захист від пошкодження розширень через EGO staged updates, адаптація DING для Debian/Ubuntu та нові регресійні тести:
+   - Змінені файли та рядки:
+     * bin/mac-extension-guard (рядки 30-32, 257-285)
+     * install.sh (рядки 1029-1037)
+     * dependencies/install-deps.sh (рядки 17-23)
+     * tests/test_portability.py (рядки 67-78)
+   - Опис змін:
+     1) Захист від неконтрольованих оновлень EGO (GNOME Shell extension-updates):
+        * У `bin/mac-extension-guard` реалізовано функцію `clean_staged_updates(locked)`: вона сканує каталог `~/.local/share/gnome-shell/extension-updates/` та автоматично ізолює (карантинує) будь-які завантажені незатверджені оновлення з extensions.gnome.org, що блокує перезаписування або спустошення керованих розширень (зокрема User Themes / DDC) під час перезапуску сесії.
+        * У `install.sh` додано автоматичне очищення каталогу `extension-updates` та відключення фонового автозавантаження оновлень у GNOME Software (`download-updates false`).
+     2) Диференціація встановлення DING для Debian та Ubuntu:
+        * У `dependencies/install-deps.sh` додано перевірку дистрибутива: для Ubuntu встановлюється `gnome-shell-ubuntu-extensions`, для чистого Debian 13 (Trixie) — `gnome-shell-extension-desktop-icons-ng`.
+     3) Нові регресійні тести переносності:
+        * У `tests/test_portability.py` додано тести `test_no_hardcoded_user_paths_in_extensions` (перевіряє відсутність персональних шляхів у всіх `.js` розширень) та `test_installer_does_not_mutate_extensions` (перевіряє відсутність `sed`-мутацій над розширеннями в інсталяторі). Загальна кількість тестів люксу зросла до 19 PASS.
+     4) Синхронізація системних скриптів:
+        * Оновлений `bin/mac-extension-guard` скопійовано до `/usr/local/bin/mac-extension-guard` з правами 755; перевірка `mac-audit-sync` повернула 100% PASS.
+   - Результати перевірок:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 19/19 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
+     * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), виконано локальний git-коміт (без git push).
