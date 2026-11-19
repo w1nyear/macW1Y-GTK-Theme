@@ -1901,3 +1901,32 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
      * python3 bin/mac-audit-sync check — 100% PASS.
      * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
+
+
+831. 2026-11-19 — Виправлення деінсталяції macW1Y для повного відновлення стандартного вигляду GNOME:
+   - Змінені файли та рядки:
+     1) uninstall.sh (рядки 33-365) — глобальне вдосконалення процедури деінсталяції:
+        * Додано автовизначення дистрибутиву (Ubuntu, Fedora, Arch Linux, Debian).
+        * Повне вимкнення та фізичне видалення з ~/.local/share/gnome-shell/extensions/ усіх 21 розширень macW1Y (включно з appmenu, dash2dock-motion, cupertino-dock-lite, kiwi, desktop-widgets, top-bar-organizer, liquid-glass тощо, які раніше залишалися активними і зберігали макоподібний вигляд).
+        * Скидання списків enabled-extensions та disabled-extensions до заводських значень; повторна штатна активація рідних розширень дистрибутиву (ubuntu-dock, tiling-assistant, ding, ubuntu-appindicators на Ubuntu; background-logo на Fedora).
+        * Очищення схем dconf від налаштувань кастомних розширень (dash2dock-motion, dash-to-dock, blur-my-shell, appmenu, liquid-glass тощо).
+        * Відновлення оригінальних тем інтерфейсу (Yaru на Ubuntu, Adwaita на Fedora/Arch/Debian), системних іконок, теми курсора та схеми розташування кнопок вікон праворуч (:minimize,maximize,close на Ubuntu; скидання на чистих GNOME).
+        * Відновлення стандартних шрифтів GNOME (font-name, document-font-name, monospace-font-name, titlebar-font) та видалення launchpad.desktop зі списку закріплених програм favorite-apps.
+        * Повернення заводських шпалер робочого столу та екрана блокування.
+        * Повне очищення користувацьких каталогів ~/.themes/macW1Y*, ~/.icons/macW1Y*, ~/.local/share/sounds/macW1Y, шрифтів SF_Pro, оверлеїв та ярликів.
+        * Відновлення системної теми курсора в /usr/share/icons/default/index.theme, видалення загальносистемних тем, зупинка та видалення служб mac-touchpad-daemon, mac-snap-cursor-override, mac-gamemode, відновлення оригінальних бінарників Nautilus, Параметрів та Ptyxis із захистом від дублювання, зняття оверлеїв GNOME Shell, відновлення Plymouth та GRUB.
+     2) install.sh:
+        * рядки 60-62: додано ключ --uninstall до функції show_usage().
+        * рядки 2814-2818: підключено запуск uninstall.sh --all при виклику --uninstall або -debug_uninstall.
+        * рядки 2860-2915: додано пункт [4] Uninstall macW1Y (Restore original GNOME appearance) до інтерактивного CLI-меню інсталятора.
+   - Синхронізація:
+     * done.txt скопійовано до ~/Desktop/done.txt.
+   - Тестування та перевірка:
+     * ./install.sh -? — відображає параметр --uninstall, код 0.
+     * ./uninstall.sh -? — відображає довідку оновленого деінсталятора, код 0.
+     * tests/test_portability.py — 5/5 PASS.
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 12/12 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * Перевірка відсутності кирилиці в install.sh — 0 знайдено.

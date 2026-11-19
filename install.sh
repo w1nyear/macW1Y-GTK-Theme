@@ -57,7 +57,7 @@ show_usage() {
     echo "  --low-spec, --eco, -e            Enable ZRAM and performance optimizations for low-end / Intel HD hardware"
     echo "  --cli, -cli                      Force CLI text mode instead of launching GUI installer"
     echo "  -debug_install, --debug_install  Interactive CLI installation & maintenance menu"
-    echo "  -debug_uninstall                 Simulated / debug uninstallation procedure"
+    echo "  --uninstall, -debug_uninstall    Completely uninstall macW1Y and restore original GNOME appearance"
     echo "  --help, -h, -?                   Show all launch parameters and options"
 }
 
@@ -2812,10 +2812,9 @@ elif [ "$MOCK_MODE" = "true" ]; then
 elif [ "$1" = "-debug_install" ] || [ "$1" = "--debug_install" ]; then
     interactive_debug_menu "$@"
     exit 0
-elif [ "$1" = "-debug_uninstall" ] || [ "$1" = "--debug_uninstall" ]; then
-    print_debug_banner
-    run_debug_uninstall
-    exit 0
+elif [ "$1" = "-debug_uninstall" ] || [ "$1" = "--debug_uninstall" ] || [ "$1" = "--uninstall" ]; then
+    print_banner
+    exec "$SCRIPT_DIR/uninstall.sh" --all
 elif [ "$1" = "--install" ] || [ "$1" = "-i" ] || [ "$1" = "--all" ] || [ "$1" = "-y" ] || [ "$1" = "--yes" ]; then
     print_banner
     run_full_install
@@ -2858,26 +2857,29 @@ HAS_OPT2=false
 HAS_OPT3=true
 
 if [ -z "$INSTALLED_VER" ]; then
-    # Nothing installed: show options 1 and 3
+    # Nothing installed: show options 1, 3 and 4
     HAS_OPT1=true
     HAS_OPT2=false
     echo -e "  ${C_GREEN}[1]${C_RESET} ${C_BOLD}Full Installation [v${NEW_VERSION}]${C_RESET} (Initial complete installation of macW1Y)"
     echo -e "  ${C_YELLOW}[3]${C_RESET} ${C_BOLD}Clean Reinstall [v${NEW_VERSION}]${C_RESET} (Completely removes all theme pack remnants and performs fresh installation)"
-    echo -e "  ${C_RED}[4]${C_RESET} Exit installer\n"
+    echo -e "  ${C_RED}[4]${C_RESET} ${C_BOLD}Uninstall macW1Y${C_RESET} (Restore original GNOME appearance and remove all modpack files)"
+    echo -e "  ${C_CYAN}[0]${C_RESET} Exit installer\n"
 elif [ "$CMP_RES" -eq 2 ]; then
-    # Previous version found: show options 2 and 3
+    # Previous version found: show options 2, 3 and 4
     HAS_OPT1=false
     HAS_OPT2=true
     echo -e "  ${C_CYAN}[2]${C_RESET} ${C_BOLD}Update [v${INSTALLED_VER}] -> [v${NEW_VERSION}]${C_RESET} (Verifies every file and updates modified or missing components)"
     echo -e "  ${C_YELLOW}[3]${C_RESET} ${C_BOLD}Clean Reinstall [v${INSTALLED_VER}] -> [v${NEW_VERSION}]${C_RESET} (Completely removes all theme pack files and reinstalls from scratch)"
-    echo -e "  ${C_RED}[4]${C_RESET} Exit installer\n"
+    echo -e "  ${C_RED}[4]${C_RESET} ${C_BOLD}Uninstall macW1Y${C_RESET} (Restore original GNOME appearance and remove all modpack files)"
+    echo -e "  ${C_CYAN}[0]${C_RESET} Exit installer\n"
 else
-    # Version matches or is newer: show options 2 and 3
+    # Version matches or is newer: show options 2, 3 and 4
     HAS_OPT1=false
     HAS_OPT2=true
     echo -e "  ${C_CYAN}[2]${C_RESET} ${C_BOLD}Update / Integrity Check [v${INSTALLED_VER}] -> [v${NEW_VERSION}]${C_RESET} (Verifies files and restores missing or damaged components)"
     echo -e "  ${C_YELLOW}[3]${C_RESET} ${C_BOLD}Clean Reinstall [v${INSTALLED_VER}] -> [v${NEW_VERSION}]${C_RESET} (Completely removes all theme pack files and reinstalls from scratch)"
-    echo -e "  ${C_RED}[4]${C_RESET} Exit installer\n"
+    echo -e "  ${C_RED}[4]${C_RESET} ${C_BOLD}Uninstall macW1Y${C_RESET} (Restore original GNOME appearance and remove all modpack files)"
+    echo -e "  ${C_CYAN}[0]${C_RESET} Exit installer\n"
 fi
 
 if [ -n "$1" ]; then
@@ -2906,7 +2908,10 @@ case "$CHOICE" in
     3)
         run_clean_update "$INSTALLED_VER" "$NEW_VERSION"
         ;;
-    4|0)
+    4)
+        exec "$SCRIPT_DIR/uninstall.sh" --all
+        ;;
+    0)
         echo -e "\nOperation complete. Exiting installer."
         exit 0
         ;;
