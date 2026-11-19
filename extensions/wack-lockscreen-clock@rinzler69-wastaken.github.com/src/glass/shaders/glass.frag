@@ -894,10 +894,10 @@ void main() {
     float whiteWidth = 1.5;
     float whiteLine = 1.0 - smoothstep(0.0, whiteWidth, edgeDist);
     float inwardSheen = (1.0 - smoothstep(0.0, 5.2, inwardDist));
-    inwardSheen = pow(inwardSheen, 1.2) * 0.38;
+    inwardSheen = pow(inwardSheen, 1.2) * 0.19;
 
-    float topIntensity = 0.95;
-    float bottomIntensity = 0.55;
+    float topIntensity = 0.48;
+    float bottomIntensity = 0.28;
     float whiteIntensity = mix(bottomIntensity, topIntensity, isTop / max(horizWeight, 1e-4));
     float whiteFalloff = pow(horizWeight, 1.2);
     float whiteBorder = (whiteLine * 0.85 + inwardSheen) * whiteIntensity * whiteFalloff * cornerSuppression;

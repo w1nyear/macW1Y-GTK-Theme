@@ -2026,3 +2026,24 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-audit-sync check — 100% PASS.
      * python3 bin/mac-i18n-verify — 100% PASS.
      * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
+
+836. 2026-11-19 — Зменшення інтенсивності білого відблиску скла наполовину (50% прозоріший):
+   - Файли та рядки змін:
+     1) extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag:
+        * рядки 1150-1156: зменшено інтенсивність білого відблиску скла вдвічі: `topIntensity` з 0.95 до 0.48, `bottomIntensity` з 0.55 до 0.28, а внутрішній розмитий відблиск `inwardSheen` з коефіцієнта 0.38 до 0.19; це зробило білі відблиски та спекулярні грані на спливаючих сповіщеннях, меню, панелях і вікнах на 50% прозорішими, м'якшими й природними без надмірної яскравості.
+     2) extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/glass/shaders/glass.frag:
+        * рядки 896-902: дзеркально зменшено параметри білого відблиску `topIntensity = 0.48`, `bottomIntensity = 0.28`, `inwardSheen` multiplier `0.19` для повної узгодженості скляних елементів екрана блокування.
+     3) extensions/desktop-widgets@r3nhick/lib/glass.js:
+        * рядки 154-158: аналогічно синхронізовано інтенсивність відблиску у функції `lg_edgeSpec` для віджетів робочого столу (`topIntensity = 0.48`, `bottomIntensity = 0.28`, `inwardSheen` multiplier `0.19`).
+     4) config/extensions.lock.json:
+        * оновлено хеші sha256 для 3 модифікованих розширень (liquid-glass: a819b68d, wack-lockscreen-clock: 6fc553b8, desktop-widgets: 5ce431cd).
+   - Синхронізація:
+     * Модифіковані шейдери скопійовано до каталогів розширень у ~/.local/share/gnome-shell/extensions/ та /usr/share/gnome-shell/extensions/.
+     * Гаряче перезавантажено liquid-glass та віджети через EvalHelper у поточному сеансі GNOME Shell без перезапуску оболонки.
+     * done.txt скопійовано до ~/Desktop/done.txt.
+   - Тестування та перевірка:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 14/14 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
