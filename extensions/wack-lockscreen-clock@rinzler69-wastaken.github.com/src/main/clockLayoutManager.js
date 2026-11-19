@@ -46,7 +46,9 @@ export class ClockLayoutManager {
         }
         if (this.timeLabel) {
             this.timeLabel.add_style_class_name('wack-time');
-            this.timeLabel.set_style("color: #ffffff !important; font-family: 'Default Rounded', 'Default Display', default, system-ui, sans-serif, sans-serif !important; font-size: 128px !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important; letter-spacing: -4px !important; margin: 0 !important; padding: 0 !important;");
+            this.timeLabel.set_style("color: #ffffff !important; font-family: 'Default Rounded', sans-serif !important; font-size: 128px !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important; letter-spacing: -4px !important; margin: 0 !important; padding: 0 !important;");
+            if (this.timeLabel.clutter_text)
+                this.timeLabel.clutter_text.font_name = "Default Rounded Semi-Bold 128px";
             this.timeLabel.ensure_style();
         }
 
@@ -124,7 +126,7 @@ export class ClockLayoutManager {
         dateLabel.ensure_style();
         const [, dateHeight] = dateLabel.get_preferred_height(-1) || [0, 36];
         const effectiveDateH = Math.max(42, Math.ceil(dateHeight));
-        const timeY = effectiveDateH - 4;
+        const timeY = Math.max(10, effectiveDateH - 28);
 
         const oldDateConstraint = dateLabel.get_constraint('wack-clock-center-x');
         if (oldDateConstraint) {

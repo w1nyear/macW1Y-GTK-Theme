@@ -190,14 +190,16 @@ export const WackClock = GObject.registerClass(
         _applyTextStyle() {
             const timeColor = '#ffffff';
             const dateColor = '#ffffff';
-            const font = "font-family: 'Default Rounded', 'Default Display', default, system-ui, sans-serif, sans-serif;";
-            const weight = `font-weight: ${this._weight || '600'};`;
-            const timeShadow = 'text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42);';
-            const dateShadow = 'text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42);';
+            const font = "font-family: 'Default Rounded', sans-serif !important;";
+            const weight = `font-weight: ${this._weight || '600'} !important;`;
+            const timeShadow = 'text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important;';
+            const dateShadow = 'text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important;';
             const letterSpacing = (this._letterSpacing != null)
-                ? ` letter-spacing: ${this._letterSpacing}px;` : '';
-            this._time.set_style(`color: ${timeColor}; ${font} ${weight} font-size: 128px; ${timeShadow}${letterSpacing}`);
-            this._dateOutput.set_style(`color: ${dateColor}; font-family: 'Default Display', default, system-ui, sans-serif, sans-serif; font-size: 28px; font-weight: 600; text-align: center; margin-bottom: 0px; padding: 4px 8px; ${dateShadow}`);
+                ? ` letter-spacing: ${this._letterSpacing}px !important;` : '';
+            this._time.set_style(`color: ${timeColor} !important; ${font} ${weight} font-size: 128px !important; ${timeShadow}${letterSpacing} margin: 0 !important; padding: 0 !important;`);
+            if (this._time.clutter_text)
+                this._time.clutter_text.font_name = 'Default Rounded Semi-Bold 128px';
+            this._dateOutput.set_style(`color: ${dateColor} !important; font-family: 'Default Display', default, system-ui, sans-serif, sans-serif !important; font-size: 28px !important; font-weight: 600 !important; text-align: center !important; margin-bottom: 0px !important; padding: 4px 8px !important; ${dateShadow}`);
 
             this._applyColonMarkup();
         }

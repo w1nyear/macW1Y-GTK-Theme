@@ -585,7 +585,7 @@
 
 .wack-time,
 .unlock-dialog-clock-time.wack-time {
-    font-family: 'Default Rounded', 'Default Display', default, system-ui, sans-serif, sans-serif !important;
+    font-family: 'Default Rounded', sans-serif !important;
     font-size: 128px !important;
     font-weight: 600 !important;
     letter-spacing: -4px !important;

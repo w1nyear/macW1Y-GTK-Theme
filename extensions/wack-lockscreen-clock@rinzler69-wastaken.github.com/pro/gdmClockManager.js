@@ -114,7 +114,9 @@ export class GdmClockManager {
         dateLabel.visible = true;
         dateLabel.opacity = 255;
         timeLabel.add_style_class_name('wack-time');
-        timeLabel.set_style("color: #ffffff !important; font-family: 'Default Rounded', 'Default Display', default, system-ui, sans-serif, sans-serif !important; font-size: 128px !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important; letter-spacing: -4px !important; margin: 0 !important; padding: 0 !important;");
+        timeLabel.set_style("color: #ffffff !important; font-family: 'Default Rounded', sans-serif !important; font-size: 128px !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important; letter-spacing: -4px !important; margin: 0 !important; padding: 0 !important;");
+        if (timeLabel.clutter_text)
+            timeLabel.clutter_text.font_name = "Default Rounded Semi-Bold 128px";
         timeLabel.ensure_style();
         timeLabel.visible = true;
         timeLabel.opacity = 255;
@@ -191,19 +193,16 @@ export class GdmClockManager {
     positionClock(dialogBox = null) {
         if (!this.clock || !this.clockWrapper) return;
         const monitor = Main.layoutManager.primaryMonitor || { x: 0, y: 0, width: 1920, height: 1080 };
-        const alloc = dialogBox || (this._gdm._dialog ? this._gdm._dialog.get_allocation_box() : null);
-        let w = alloc ? (alloc.x2 - alloc.x1) : monitor.width;
-        let h = alloc ? (alloc.y2 - alloc.y1) : monitor.height;
-        if (w <= 0 || w > 32768) w = monitor.width;
-        if (h <= 0 || h > 32768) h = monitor.height;
-        let startX = (alloc && alloc.x1 >= 0 && alloc.x1 < 32768) ? alloc.x1 : monitor.x;
+        const w = monitor.width;
+        const h = monitor.height;
+        const startX = monitor.x;
 
         const topY = monitor.y + Math.floor(h * GDM_DATETIME_TOP_FRACTION);
         this.clock._dateOutput.ensure_style();
         const rawDateH = this.clock._dateOutput.get_preferred_height(-1)[1];
         const preferredDateH = (rawDateH > 0 && rawDateH < 500) ? rawDateH : 36;
         const effectiveDateH = Math.max(42, Math.min(80, Math.ceil(preferredDateH)));
-        const timeY = effectiveDateH - 4;
+        const timeY = Math.max(10, effectiveDateH - 28);
 
         const oldDateConstraint = this.clock._dateOutput.get_constraint('wack-clock-center-x');
         if (oldDateConstraint) {
@@ -291,6 +290,9 @@ export class GdmClockManager {
 
         if (typeof this.clock?.setWeight === 'function') {
             this.clock.setWeight('600');
+        }
+        if (this.timeLabel?.clutter_text) {
+            this.timeLabel.clutter_text.font_name = "Default Rounded Semi-Bold 128px";
         }
     }
 

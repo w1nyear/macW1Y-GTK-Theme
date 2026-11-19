@@ -17,7 +17,7 @@
 
 .wack-time,
 .unlock-dialog-clock-time.wack-time {
-    font-family: 'Default Rounded', 'Default Display', default, system-ui, sans-serif, sans-serif !important;
+    font-family: 'Default Rounded', sans-serif !important;
     color: #ffffff !important;
     font-size: 128px !important;
     font-weight: 600 !important;
@@ -28,7 +28,7 @@
     margin: 0 !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
-    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.22) !important;
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important;
 }
 
 .wack-gdm-auth-subtitle {

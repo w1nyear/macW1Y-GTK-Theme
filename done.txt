@@ -2164,3 +2164,34 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-i18n-verify — 100% PASS.
      * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
      * Без push, без перезавантаження та вимикання ПК.
+
+841. 2026-11-19 — Підтягування часу до дати та виправлення шрифту Default Rounded на GDM екрані блокування:
+   - Причина звернення:
+     * На екрані блокування GDM час був зміщений занадто низько від дати (великий вертикальний проміжок 31px), а шрифт цифр часу не рендерився округлим (Default Rounded), скочуючись до звичайного square Default через специфіку парсингу font-family у Clutter/St CSS.
+   - Файли та внесені зміни:
+     1) extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/pro/gdmClockManager.js та src/pro/gdmClockManager.js:
+        * Піднято час вище до дати: змінено розрахунок `timeY` з `effectiveDateH - 4` на `Math.max(10, effectiveDateH - 28)`, що скоротило видимий зазор між нижнім краєм тексту дати та верхнім краєм чорнил цифр часу з 31px до природних 7px (ідеальна відповідність естетиці macOS Sonoma).
+        * Забезпечено центрування годинника відносно монітора (`monitor.width`, `monitor.height`, `monitor.x`) без звуження при наявності діалогового вікна авторизації.
+        * Виправлено стек шрифтів для часу: замінено некоректний ланцюжок на `font-family: 'Default Rounded', sans-serif !important;` та додано пряме призначення `clutter_text.font_name = "Default Rounded Semi-Bold 128px"`.
+     2) extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/clockLayoutManager.js:
+        * Оновлено вертикальну позицію `timeY = Math.max(10, effectiveDateH - 28)`.
+        * Оновлено стиль `timeLabel` на `font-family: 'Default Rounded', sans-serif !important;` та встановлено `clutter_text.font_name = "Default Rounded Semi-Bold 128px"`.
+     3) extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/wackClock.js:
+        * У методі `_applyTextStyle()` встановлено `font-family: 'Default Rounded', sans-serif !important;` та `this._time.clutter_text.font_name = 'Default Rounded Semi-Bold 128px'`.
+     4) extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/stylesheet.css, pro/gdm.css, src/pro/gdm.css:
+        * Для селектора `.wack-time` оновлено правило шрифту на `font-family: 'Default Rounded', sans-serif !important;`.
+     5) wack-system/ (усі 7 аналогічних файлів):
+        * Повністю синхронізовано всі зміни з системним пакетом WACK.
+     6) config/extensions.lock.json:
+        * Оновлено контрольний хеш sha256 для `wack-lockscreen-clock@rinzler69-wastaken.github.com` до `ba6f960a2498209e876236bd4300fec993a88bed54a335b284feaa4175bac099`.
+   - Синхронізація:
+     * Усі файли розширення синхронізовано до `~/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/` та `/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/`.
+     * `config/extensions.lock.json` синхронізовано до `/usr/share/mactheme/config/extensions.lock.json`.
+     * `done.txt` синхронізовано з `~/Desktop/done.txt`.
+   - Тестування та перевірка:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 17/17 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
+     * Без виходу з сеансу, без перезавантаження та вимикання ПК, без git push.
