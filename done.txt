@@ -1849,3 +1849,25 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
      * python3 bin/mac-audit-sync check — 100% PASS.
      * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh gui.sh — 0 збігів.
+
+
+829. 2026-11-19 — Практичне тестування та налагодження встановлення на Fedora 41 та Arch Linux у QEMU VM:
+   - Змінені файли та рядки:
+     1) dependencies/dnf-packages.txt (рядок 17) — додано обов'язковий пакет plymouth-plugin-script (містить /usr/lib64/plymouth/script.so для завантажувальної теми macW1Y).
+     2) install.sh:
+        * рядки 907-915: додано вилучення системної схеми [org/gnome/login-screen] через awk під час імпорту dconf load /, усуваючи помилку захищених ключів на Fedora та відновлюючи коректне завантаження конфігурації дока dash2dock-motion.
+        * рядки 1600-1605: додано перевірку наявності модуля modinfo i915 >/dev/null 2>&1 перед копіюванням 10-intel-kms.conf у /etc/dracut.conf.d, що усунуло помилку генерації initramfs на VM та не-Intel платформах.
+        * рядок 1614: додано захист 2>/dev/null || true до plymouth-set-default-theme macw1y-boot.
+        * рядки 1637-1641: виправлено розпізнавання завантажувача — перевіряється bootctl is-installed замість наявності /boot/loader/entries, що усунуло хибне визначення Fedora GRUB2 (BLS) як systemd-boot.
+        * рядки 1647-1650: додано автоматичне створення безпечного симлінка /boot/grub -> grub2 на Fedora.
+     3) docs/diagnostics/2026-11-19-portability.md (рядки 65-92) — додано розділ п'ятого етапу з детальним звітом про дефекти, виправлення та верифікацію на Fedora 41 та Arch Linux.
+   - Практичні результати тестування у QEMU VM (6 ГБ ОЗП, 4 vCPU):
+     * Fedora 41 (GNOME 47.10): повне проходження 13/13 етапів інсталяції, 100% PASS у mac-audit-sync, 21/21 LOCKED у mac-extension-guard, 12/12 PASS у тестах, 7/7 скомпільованих C-бібліотек.
+     * Arch Linux (GNOME 51.1-1): повне проходження 13/13 етапів інсталяції, 100% PASS у mac-audit-sync, 21/21 LOCKED у mac-extension-guard, 12/12 PASS у тестах, генерація mkinitcpio -P успішна, 7/7 скомпільованих C-бібліотек.
+   - Синхронізація:
+     * done.txt скопійовано до ~/Desktop/done.txt.
+   - Верифікація:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 12/12 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 -c '...' перевірка відсутності кирилиці в install.sh та gui.sh — 0 знайдено.

@@ -904,16 +904,17 @@ install_extensions() {
         PREV_MRU_SOURCES="$(run_as_user gsettings get org.gnome.desktop.input-sources mru-sources 2>/dev/null || true)"
         PREV_XKB_OPTS="$(run_as_user gsettings get org.gnome.desktop.input-sources xkb-options 2>/dev/null || true)"
 
-        # Importing Dconf configuration with guaranteed exclusion of keyboard layout section
+        # Importing Dconf configuration with guaranteed exclusion of keyboard layout and system login-screen sections
         if command -v awk >/dev/null 2>&1; then
             awk '
                 BEGIN { skip=0 }
                 /^\[org\/gnome\/desktop\/input-sources\]/ { skip=1; next }
+                /^\[org\/gnome\/login-screen\]/ { skip=1; next }
                 /^\[/ { skip=0 }
                 !skip { print }
-            ' "$SCRIPT_DIR/dconf/gnome-all.dconf" | run_as_user dconf load /
+            ' "$SCRIPT_DIR/dconf/gnome-all.dconf" | run_as_user dconf load / 2>/dev/null || true
         else
-            run_as_user dconf load / < "$SCRIPT_DIR/dconf/gnome-all.dconf"
+            run_as_user dconf load / < "$SCRIPT_DIR/dconf/gnome-all.dconf" 2>/dev/null || true
         fi
 
         # Restoring native user keyboard layout (never altering user language or keyboard preferences)
@@ -1598,7 +1599,9 @@ install_plymouth() {
     
     if [ -d "$SCRIPT_DIR/dracut.conf.d" ]; then
         sudo mkdir -p /etc/dracut.conf.d
-        sudo cp -r "$SCRIPT_DIR/dracut.conf.d/"* /etc/dracut.conf.d/ 2>/dev/null || true
+        if modinfo i915 >/dev/null 2>&1; then
+            sudo cp -r "$SCRIPT_DIR/dracut.conf.d/"* /etc/dracut.conf.d/ 2>/dev/null || true
+        fi
     fi
     
     # Registering theme in Plymouth alternatives and setting default
@@ -1608,7 +1611,7 @@ install_plymouth() {
             sudo update-alternatives --set default.plymouth "$PLYMOUTH_TARGET/macw1y-boot.plymouth" 2>/dev/null || true
         fi
         if command -v plymouth-set-default-theme >/dev/null 2>&1; then
-            sudo plymouth-set-default-theme macw1y-boot
+            sudo plymouth-set-default-theme macw1y-boot 2>/dev/null || true
         fi
         sudo mkdir -p /etc/plymouth
         sudo tee /etc/plymouth/plymouthd.conf >/dev/null << 'EOF'
@@ -1632,13 +1635,18 @@ install_grub() {
     require_root
     
     # Systemd-boot or non-GRUB bootloader check
-    if [ -d /boot/loader/entries ] || { command -v bootctl >/dev/null 2>&1 && bootctl is-installed 2>/dev/null; }; then
+    if command -v bootctl >/dev/null 2>&1 && bootctl is-installed 2>/dev/null; then
         log_info "systemd-boot detected; skipping GRUB configuration."
         return 0
     fi
     if ! command -v update-grub >/dev/null 2>&1 && ! command -v grub2-mkconfig >/dev/null 2>&1 && ! command -v grub-mkconfig >/dev/null 2>&1; then
         log_warning "No GRUB configuration utility found; skipping GRUB setup."
         return 0
+    fi
+    
+    # Ensure /boot/grub exists (symlink to /boot/grub2 on Fedora/RHEL if needed)
+    if [ -d /boot/grub2 ] && [ ! -d /boot/grub ]; then
+        sudo ln -sf grub2 /boot/grub 2>/dev/null || true
     fi
     
     local GRUB_TARGET="/boot/grub/themes/macw1y-boot"

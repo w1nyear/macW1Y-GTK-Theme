@@ -65,3 +65,29 @@
   - Демон жестів тачпада `mac-touchpad-daemon.service` переведено у стан `enabled`.
   - Модульні тести `python3 -m unittest discover -s tests -p 'test_*.py'`: **12/12 PASS**.
 
+## П'ятий етап: Практичне тестування та налагодження у QEMU VM на Fedora 41 (GNOME 47) та Arch Linux (GNOME 51)
+
+- **Fedora 41 Cloud (GNOME Shell 47.10, Linux 6.11, 6 ГБ ОЗП, 4 vCPU)**:
+  - *Дефекти та виправлення*:
+    1. **Plymouth script.so**: на Fedora плагін `script.so` виділено в окремий RPM-пакет `plymouth-plugin-script`. Додано до `dependencies/dnf-packages.txt`; виклик `plymouth-set-default-theme` захищено `2>/dev/null || true`.
+    2. **Конфігурація Dracut KMS**: файл `10-intel-kms.conf` із директивою `force_drivers+=" i915 "` зупиняв генерацію initramfs на VM та не-Intel системах, де модуль ядра `i915` відсутній. В `install.sh` додано перевірку наявності модуля `modinfo i915 >/dev/null 2>&1` перед копіюванням у `/etc/dracut.conf.d`.
+    3. **Розпізнавання завантажувача Fedora**: Fedora GRUB2 використовує BootLoaderSpec (`/boot/loader/entries`), що хибно розпізнавалося як `systemd-boot`. Перевірку оптимізовано: статус `systemd-boot` визначається виключно за умови, що `bootctl is-installed` повертає 0.
+    4. **Шляхи GRUB2**: на Fedora кореневим каталогом GRUB є `/boot/grub2`. Додано автоматичне створення безпечного симлінка `/boot/grub -> grub2`.
+    5. **Блокування запису Dconf для системних схем**: спроба завантаження `[org/gnome/login-screen]` у сеансі звичайного користувача переривала імпорт dconf помилкою прав доступу, через що налаштування дока не застосовувалися. У конвеєр імпорту `dconf load /` додано вилучення секції `[org/gnome/login-screen]` через `awk`.
+  - *Результати верифікації на Fedora 41*:
+    - Повна інсталяція 13/13 етапів: **✔ SUCCESS**.
+    - `mac-audit-sync check`: **100% PASS** (досліджено док, бібліотеки, скрипти, 21 розширення, оверлеї).
+    - `mac-extension-guard verify`: **21/21 PASS**.
+    - 7 нативних C-бібліотек: **PASS**.
+    - Модульні тести (12 тестів): **12/12 PASS**.
+
+- **Arch Linux Rolling (GNOME Shell 51.1-1, Linux 7.3.4, 6 ГБ ОЗП, 4 vCPU)**:
+  - Встановлення базових залежностей через `dependencies/install-deps.sh` (`pacman-packages.txt`): успішно.
+  - Збірка 7 бібліотек C: **PASS: збірка та символи семи бібліотек**.
+  - Пакетне оновлення образу ядра `mkinitcpio -P`: успішно.
+  - Повна інсталяція 13/13 етапів `sudo ./install.sh --all`: **✔ SUCCESS**.
+  - `mac-audit-sync check`: **100% PASS**.
+  - `mac-extension-guard verify`: **21/21 PASS**.
+  - Модульні тести: **12/12 PASS**.
+
+
