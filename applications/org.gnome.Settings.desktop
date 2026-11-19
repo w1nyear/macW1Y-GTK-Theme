@@ -2,7 +2,7 @@
 Name=Settings
 Name[uk]=Параметри
 Icon=org.gnome.Settings
-Exec=/home/vitaliy/.local/bin/gnome-control-center
+Exec=/usr/local/bin/gnome-control-center
 Terminal=false
 Type=Application
 StartupNotify=true

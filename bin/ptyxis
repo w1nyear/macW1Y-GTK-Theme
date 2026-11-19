@@ -1,6 +1,6 @@
 #!/bin/bash
 find_mac_lib() {
-    for d in /usr/lib/x86_64-linux-gnu /usr/lib64 /usr/lib /usr/local/lib "$HOME/.local/lib"; do
+    for d in /usr/local/lib "$HOME/.local/lib" /usr/lib/*-linux-gnu /usr/lib64 /usr/lib; do
         if [ -f "$d/$1" ]; then
             echo "$d/$1"
             return 0
@@ -42,8 +42,14 @@ if [ "$HAS_ACTION" -eq 0 ]; then
     NEW_ARGS=("--new-window" "${NEW_ARGS[@]}")
 fi
 
-if [ -f /usr/bin/ptyxis.orig ]; then
-    exec /usr/bin/ptyxis.orig "${NEW_ARGS[@]}"
-else
-    exec /usr/bin/ptyxis "${NEW_ARGS[@]}"
-fi
+# Пакетний виконуваний файл має пріоритет перед старою резервною копією.
+for candidate in /usr/bin/ptyxis /usr/bin/ptyxis.orig; do
+    [ -x "$candidate" ] || continue
+    [ "$(readlink -f "$candidate")" != "$(readlink -f "$0")" ] || continue
+    if grep -q 'find_mac_lib()' "$candidate"; then
+        continue
+    fi
+    exec "$candidate" "${NEW_ARGS[@]}"
+done
+printf '%s\n' 'macW1Y: не знайдено оригінальний виконуваний файл ptyxis.' >&2
+exit 127

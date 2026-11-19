@@ -40,6 +40,8 @@ if [ ! -d "$SCRIPT_DIR/extensions" ]; then
     fi
 fi
 
+source "$SCRIPT_DIR/dependencies/boot-tools.sh"
+
 # Low-Spec & Eco Engine Detection
 APPLY_LOW_SPEC="false"
 _CLEANED_ARGS=()
@@ -380,6 +382,15 @@ detect_distro_and_paths() {
 }
 detect_distro_and_paths
 
+install_app_wrapper() {
+    local app="$1"
+    local executable="/usr/bin/$app"
+    if [ -f "$executable.orig" ] && { [ ! -e "$executable" ] || { grep -Iq . "$executable" && grep -Eq 'find_mac_lib\(\)|/usr/bin/[^ ]+\.orig' "$executable"; }; }; then
+        sudo install -m 755 "$executable.orig" "$executable"
+    fi
+    sudo install -Dm755 "$SCRIPT_DIR/bin/$app" "/usr/local/bin/$app"
+}
+
 install_mac_shared_lib() {
     local src="$1"
     local filename
@@ -583,13 +594,7 @@ install_themes() {
     if [ -f "$SCRIPT_DIR/lib/libmac_nautilus_menu.so" ]; then
         install_nautilus_extension "$SCRIPT_DIR/lib/libmac_nautilus_menu.so"
     fi
-    if [ -f "/usr/bin/nautilus" ] && [ ! -f "/usr/bin/nautilus.orig" ]; then
-        sudo mv /usr/bin/nautilus /usr/bin/nautilus.orig
-    fi
-    if [ -f "$SCRIPT_DIR/bin/nautilus" ]; then
-        sudo cp -f "$SCRIPT_DIR/bin/nautilus" /usr/bin/nautilus
-        sudo chmod 755 /usr/bin/nautilus
-    fi
+    install_app_wrapper nautilus
 
     if [ -f "$SCRIPT_DIR/bin/mac-sync-applications" ]; then
         sudo cp -f "$SCRIPT_DIR/bin/mac-sync-applications" /usr/local/bin/mac-sync-applications
@@ -1070,15 +1075,7 @@ install_settings_overlay() {
     fi
     
     # System wrapper for gnome-control-center
-    if [ -f "/usr/bin/gnome-control-center" ] && [ ! -f "/usr/bin/gnome-control-center.orig" ]; then
-        sudo cp -p /usr/bin/gnome-control-center /usr/bin/gnome-control-center.orig
-    fi
-    if [ -f "$SCRIPT_DIR/bin/gnome-control-center" ]; then
-        sudo cp -f "$SCRIPT_DIR/bin/gnome-control-center" /usr/bin/gnome-control-center
-        sudo chmod 755 /usr/bin/gnome-control-center
-        sudo cp -f "$SCRIPT_DIR/bin/gnome-control-center" /usr/local/bin/gnome-control-center
-        sudo chmod 755 /usr/local/bin/gnome-control-center
-    fi
+    install_app_wrapper gnome-control-center
 
     log_info "Compiling libmac_extension_manager.so dynamic library..."
     cp "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so"
@@ -1304,14 +1301,6 @@ install_gamemode() {
         done
     fi
 
-    # 2. Game Mode background optimization service
-    if [ -f "$SCRIPT_DIR/systemd/mac-gamemode.service" ]; then
-        sudo cp "$SCRIPT_DIR/systemd/mac-gamemode.service" /etc/systemd/system/
-        sudo systemctl daemon-reload
-        sudo systemctl enable mac-gamemode.service
-    fi
-    sudo touch /etc/mac-gamemode.state
-
     # 2b. Snap Cursor Override background synchronization service
     if [ -f "$SCRIPT_DIR/systemd/mac-snap-cursor-override.service" ]; then
         sudo cp "$SCRIPT_DIR/systemd/mac-snap-cursor-override.service" /etc/systemd/system/
@@ -1324,251 +1313,7 @@ install_gamemode() {
         sudo systemctl start mac-snap-cursor-override.service 2>/dev/null || true
     fi
 
-    # 3. Multiarch support (i386 for Steam, Wine, Proton)
-    if command -v dpkg >/dev/null 2>&1; then
-        sudo dpkg --add-architecture i386 2>/dev/null || true
-    fi
-
-    # 4. Automatic detection and installation of GPU drivers
-    local HAS_NVIDIA=false
-    local HAS_AMD=false
-    local HAS_INTEL=false
-
-    if lspci -nn 2>/dev/null | grep -Ei "vga|3d|display" | grep -Ei "nvidia" >/dev/null 2>&1; then
-        HAS_NVIDIA=true
-    fi
-    if lspci -nn 2>/dev/null | grep -Ei "vga|3d|display" | grep -Ei "amd|ati|radeon" >/dev/null 2>&1; then
-        HAS_AMD=true
-    fi
-    if lspci -nn 2>/dev/null | grep -Ei "vga|3d|display" | grep -Ei "intel" >/dev/null 2>&1; then
-        HAS_INTEL=true
-    fi
-
-    if [ "$HAS_NVIDIA" = true ]; then
-        log_info "NVIDIA GPU detected. Checking for proprietary driver..."
-        local NV_VER=""
-        if ! command -v nvidia-smi &>/dev/null && ! lsmod | grep -q "^nvidia"; then
-            log_info "Searching and automatically installing recommended NVIDIA driver..."
-            if [ "$DISTRO_FAMILY" = "debian" ]; then
-                local RECOMMENDED_DRIVER=""
-                if command -v ubuntu-drivers >/dev/null 2>&1; then
-                    RECOMMENDED_DRIVER=$(ubuntu-drivers devices 2>/dev/null | grep 'recommended' | awk '{print $3}' | head -n1)
-                fi
-                if [ -n "$RECOMMENDED_DRIVER" ]; then
-                    log_info "Installing $RECOMMENDED_DRIVER and PRIME/Wayland components..."
-                    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$RECOMMENDED_DRIVER" nvidia-prime nvidia-settings libnvidia-egl-wayland1 2>/dev/null || true
-                    NV_VER=$(echo "$RECOMMENDED_DRIVER" | grep -oP '\d+')
-                elif command -v ubuntu-drivers >/dev/null 2>&1; then
-                    sudo DEBIAN_FRONTEND=noninteractive ubuntu-drivers autoinstall 2>/dev/null || true
-                    NV_VER=$(dpkg -l 2>/dev/null | grep -oP 'nvidia-driver-\K\d+' | head -n1)
-                elif apt-cache show nvidia-driver >/dev/null 2>&1; then
-                    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nvidia-driver 2>/dev/null || true
-                fi
-            elif [ "$DISTRO_FAMILY" = "fedora" ]; then
-                if dnf list "*nvidia*" >/dev/null 2>&1; then
-                    sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda 2>/dev/null || true
-                else
-                    log_info "RPM Fusion may be required for NVIDIA drivers on Fedora."
-                fi
-            elif [ "$DISTRO_FAMILY" = "arch" ]; then
-                sudo pacman -S --needed --noconfirm nvidia-dkms nvidia-utils lib32-nvidia-utils 2>/dev/null || \
-                sudo pacman -S --needed --noconfirm nvidia-utils 2>/dev/null || true
-            fi
-        else
-            log_info "NVIDIA driver already installed on the system."
-        fi
-
-        # Installing 32-bit NVIDIA OpenGL/Vulkan libraries for Steam and games
-        if [ "$DISTRO_FAMILY" = "debian" ]; then
-            NV_VER=$(dpkg -l 2>/dev/null | grep -oP 'nvidia-driver-\K\d+' | head -n1)
-            if [ -n "$NV_VER" ]; then
-                log_info "Installing 32-bit libnvidia-gl-$NV_VER:i386 and Vulkan libraries for Steam/gaming..."
-                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "libnvidia-gl-${NV_VER}:i386" libvulkan1:i386 mesa-vulkan-drivers:i386 2>/dev/null || true
-            else
-                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y libvulkan1:i386 mesa-vulkan-drivers:i386 2>/dev/null || true
-            fi
-        fi
-
-        # Blacklisting nouveau and updating initramfs for proper nvidia module loading
-        sudo mkdir -p /etc/modprobe.d
-        cat << 'EOF' | sudo tee /etc/modprobe.d/blacklist-nouveau.conf >/dev/null
-blacklist nouveau
-blacklist lbm-nouveau
-options nouveau modeset=0
-alias nouveau off
-alias lbm-nouveau off
-EOF
-
-        # Configuring Dynamic Power Management (RTD3) for instant wake without lag
-        cat << 'EOF' | sudo tee /etc/modprobe.d/nvidia-runtimepm.conf >/dev/null
-options nvidia "NVreg_DynamicPowerManagement=0x02"
-options nvidia-drm modeset=1
-options nvidia-drm fbdev=1
-EOF
-        sudo systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service 2>/dev/null || true
-        if command -v update-initramfs >/dev/null 2>&1; then
-            if command -v update-initramfs >/dev/null 2>&1; then
-            sudo update-initramfs -u 2>/dev/null || true
-        elif command -v dracut >/dev/null 2>&1; then
-            sudo dracut --force 2>/dev/null || true
-        elif command -v mkinitcpio >/dev/null 2>&1; then
-            sudo mkinitcpio -P 2>/dev/null || true
-        fi
-        elif command -v dracut >/dev/null 2>&1; then
-            sudo dracut --force 2>/dev/null || true
-        elif command -v mkinitcpio >/dev/null 2>&1; then
-            sudo mkinitcpio -P 2>/dev/null || true
-        fi
-    fi
-
-    if [ "$HAS_AMD" = true ]; then
-        log_info "AMD Radeon graphics detected. Installing Mesa Vulkan/VA-API drivers..."
-        if [ "$DISTRO_FAMILY" = "debian" ]; then
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mesa-vulkan-drivers mesa-vulkan-drivers:i386 mesa-va-drivers vulkan-tools 2>/dev/null || true
-        elif [ "$DISTRO_FAMILY" = "fedora" ]; then
-            sudo dnf install -y mesa-vulkan-drivers mesa-va-drivers vulkan-tools 2>/dev/null || true
-        elif [ "$DISTRO_FAMILY" = "arch" ]; then
-            sudo pacman -S --needed --noconfirm vulkan-radeon libva-mesa-driver vulkan-tools 2>/dev/null || true
-        fi
-    fi
-
-    if [ "$HAS_INTEL" = true ]; then
-        log_info "Intel graphics detected. Installing hardware acceleration drivers..."
-        if [ "$DISTRO_FAMILY" = "debian" ]; then
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y intel-media-va-driver-non-free mesa-vulkan-drivers mesa-vulkan-drivers:i386 vulkan-tools 2>/dev/null || \
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y intel-media-va-driver mesa-vulkan-drivers mesa-vulkan-drivers:i386 vulkan-tools 2>/dev/null || true
-        elif [ "$DISTRO_FAMILY" = "fedora" ]; then
-            sudo dnf install -y intel-media-driver mesa-vulkan-drivers vulkan-tools 2>/dev/null || true
-        elif [ "$DISTRO_FAMILY" = "arch" ]; then
-            sudo pacman -S --needed --noconfirm intel-media-driver vulkan-intel vulkan-tools 2>/dev/null || true
-        fi
-    fi
-
-    # 5. Installing GameMode, Vulkan libraries, and Preload daemon
-    if [ "$DISTRO_FAMILY" = "debian" ]; then
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y gamemode libgamemode0 libgamemodeauto0 libvulkan1 vulkan-tools preload 2>/dev/null || true
-    elif [ "$DISTRO_FAMILY" = "fedora" ]; then
-        sudo dnf install -y gamemode vulkan-tools 2>/dev/null || true
-    elif [ "$DISTRO_FAMILY" = "arch" ]; then
-        sudo pacman -S --needed --noconfirm gamemode vulkan-tools 2>/dev/null || true
-    fi
-    sudo systemctl enable --now preload 2>/dev/null || true
-    sudo systemctl enable --now preload 2>/dev/null || true
-
-    # 6. sysctl kernel optimizations (vm.max_map_count for gaming/Proton, caching, and low latency)
-    if [ -f "$SCRIPT_DIR/etc/sysctl.d/99-macw1y-performance.conf" ]; then
-        sudo mkdir -p /etc/sysctl.d
-        sudo cp "$SCRIPT_DIR/etc/sysctl.d/99-macw1y-performance.conf" /etc/sysctl.d/
-        sudo sysctl -p /etc/sysctl.d/99-macw1y-performance.conf 2>/dev/null || true
-    fi
-
-    # 6.1. CPU thermal and power limits (RAPL/DTT power profiles)
-    if [ -f "$SCRIPT_DIR/etc/tmpfiles.d/cpu-power-limits.conf" ]; then
-        sudo mkdir -p /etc/tmpfiles.d
-        sudo cp "$SCRIPT_DIR/etc/tmpfiles.d/cpu-power-limits.conf" /etc/tmpfiles.d/
-        sudo systemd-tmpfiles --create /etc/tmpfiles.d/cpu-power-limits.conf 2>/dev/null || true
-    fi
-
-    # 7. Cleaning legacy background nautilus services
-    rm -f "$TARGET_HOME/.config/autostart/nautilus-daemon.desktop" 2>/dev/null || true
-    sudo rm -f /etc/xdg/autostart/nautilus-daemon.desktop 2>/dev/null || true
-
-    # GPU shader caching to eliminate compilation stutter in apps and games
-    mkdir -p "$TARGET_HOME/.cache/mesa_shader_cache" "$TARGET_HOME/.cache/nv_shader_cache"
-    chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.cache/mesa_shader_cache" "$TARGET_HOME/.cache/nv_shader_cache" 2>/dev/null || true
-    mkdir -p "$TARGET_HOME/.config/environment.d"
-    cat << EOF > "$TARGET_HOME/.config/environment.d/20-macw1y-performance.conf"
-__GL_SHADER_DISK_CACHE=1
-__GL_SHADER_DISK_CACHE_PATH=$TARGET_HOME/.cache/nv_shader_cache
-__GL_SHADER_DISK_CACHE_SIZE=10737418240
-MESA_SHADER_CACHE_DIR=$TARGET_HOME/.cache/mesa_shader_cache
-EOF
-    chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/environment.d" 2>/dev/null || true
-
-    log_success "Hardware drivers, gaming libraries, and application acceleration configured successfully!"
-
-    # v0.4: Extended section — CPU microcode, GameMode config, game-focus scripts
-    _install_hardware_extras
-}
-
-# v0.4: Additional hardware optimizations (CPU microcode, GameMode, game-focus scripts)
-_install_hardware_extras() {
-    log_info "v0.4: Installing extended hardware optimizations..."
-
-    # ── CPU Microcode ──────────────────────────────────────────────────────────
-    local CPU_VENDOR
-    CPU_VENDOR=$(grep -m1 "vendor_id" /proc/cpuinfo 2>/dev/null | awk '{print $3}' || echo "Unknown")
-
-    if echo "$CPU_VENDOR" | grep -qi "Intel"; then
-        log_info "Intel CPU detected. Installing microcode..."
-        if [ "$DISTRO_FAMILY" = "debian" ]; then
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y intel-microcode 2>/dev/null || true
-        elif [ "$DISTRO_FAMILY" = "fedora" ]; then
-            sudo dnf install -y microcode_ctl 2>/dev/null || true
-        elif [ "$DISTRO_FAMILY" = "arch" ]; then
-            sudo pacman -S --needed --noconfirm intel-ucode 2>/dev/null || true
-        fi
-    elif echo "$CPU_VENDOR" | grep -qi "AMD\|AuthenticAMD"; then
-        log_info "AMD CPU detected. Installing microcode..."
-        if [ "$DISTRO_FAMILY" = "debian" ]; then
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y amd64-microcode 2>/dev/null || true
-        elif [ "$DISTRO_FAMILY" = "fedora" ]; then
-            sudo dnf install -y microcode_ctl 2>/dev/null || true
-        elif [ "$DISTRO_FAMILY" = "arch" ]; then
-            sudo pacman -S --needed --noconfirm amd-ucode 2>/dev/null || true
-        fi
-    fi
-
-    # -- Firmware --
-    if [ "$DISTRO_FAMILY" = "debian" ]; then
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y linux-firmware fwupd fwupdate 2>/dev/null || true
-    elif [ "$DISTRO_FAMILY" = "fedora" ]; then
-        sudo dnf install -y linux-firmware fwupd 2>/dev/null || true
-    elif [ "$DISTRO_FAMILY" = "arch" ]; then
-        sudo pacman -S --needed --noconfirm linux-firmware fwupd 2>/dev/null || true
-    fi
-
-    # ── GameMode Config (Windows 11 Game Mode style) ──────────────────
-    log_info "Installing GameMode configuration (Windows 11 style)..."
-    cat > "$TARGET_HOME/.config/gamemode.ini" << 'GAMEMODE_CFG'
-[general]
-reaper_freq=5
-desiredgov=performance
-defaultgov=performance
-igpu_desiredgov=performance
-igpu_power_threshold=0.3
-softrealtime=auto
-renice=-10
-ioprio=0
-inhibit_screensaver=1
-
-[filter]
-whitelist=cs2,cstrike,steam,gamescope,heroic,lutris,wine,wine64,watch_dogs2
-
-[cpu]
-park_cores=no
-pin_cores=yes
-
-[gpu]
-apply_gpu_optimisations=accept-responsibility
-gpu_device=1
-nv_powermizer_mode=1
-amd_performance_level=high
-
-[custom]
-start=/usr/local/bin/mac-gamemode on
-end=/usr/local/bin/mac-gamemode auto
-GAMEMODE_CFG
-    chown "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/gamemode.ini" 2>/dev/null || true
-
-    # ── Enable gamemoded ──────────────────────────────────────────────
-    sudo -u "$TARGET_USER" systemctl --user enable gamemoded 2>/dev/null || true
-    sudo -u "$TARGET_USER" systemctl --user start gamemoded 2>/dev/null || true
-
-    # ── Add user to gamemode group ──────────────────────────────
-    sudo usermod -aG gamemode "$TARGET_USER" 2>/dev/null || true
-
-    log_success "v0.4: Hardware optimizations installed (CPU microcode + Windows 11 GameMode profile)"
+    log_info "Existing GPU drivers, firmware and power limits are preserved."
 }
 
 # ------------------------------------------------------------------------------
@@ -1819,8 +1564,13 @@ install_plymouth() {
         sudo cp "$SCRIPT_DIR/systemd/plymouth-quit.service.d/override.conf" /etc/systemd/system/plymouth-quit.service.d/
     fi
     
-    if [ -f "$SCRIPT_DIR/etc/initramfs-tools/modules" ]; then
-        sudo cp "$SCRIPT_DIR/etc/initramfs-tools/modules" /etc/initramfs-tools/modules
+    if [ -d /etc/initramfs-tools ] && [ -f "$SCRIPT_DIR/etc/initramfs-tools/modules" ]; then
+        while IFS= read -r module; do
+            case "$module" in ''|\#*) continue ;; esac
+            if ! grep -Fxq "$module" /etc/initramfs-tools/modules; then
+                printf '%s\n' "$module" | sudo tee -a /etc/initramfs-tools/modules >/dev/null
+            fi
+        done < "$SCRIPT_DIR/etc/initramfs-tools/modules"
     fi
     
     if [ -d "$SCRIPT_DIR/dracut.conf.d" ]; then
@@ -1835,7 +1585,7 @@ install_plymouth() {
             sudo update-alternatives --set default.plymouth "$PLYMOUTH_TARGET/macw1y-boot.plymouth" 2>/dev/null || true
         fi
         if command -v plymouth-set-default-theme >/dev/null 2>&1; then
-            sudo plymouth-set-default-theme -R macw1y-boot 2>/dev/null || true
+            sudo plymouth-set-default-theme macw1y-boot
         fi
         sudo mkdir -p /etc/plymouth
         sudo tee /etc/plymouth/plymouthd.conf >/dev/null << 'EOF'
@@ -1847,19 +1597,7 @@ EOF
     fi
     
     log_info "Updating initramfs..."
-    if command -v update-initramfs >/dev/null 2>&1; then
-        if command -v update-initramfs >/dev/null 2>&1; then
-            sudo update-initramfs -u 2>/dev/null || true
-        elif command -v dracut >/dev/null 2>&1; then
-            sudo dracut --force 2>/dev/null || true
-        elif command -v mkinitcpio >/dev/null 2>&1; then
-            sudo mkinitcpio -P 2>/dev/null || true
-        fi
-    elif command -v dracut >/dev/null 2>&1; then
-        sudo dracut --force 2>/dev/null || true
-    elif command -v mkinitcpio >/dev/null 2>&1; then
-        sudo mkinitcpio -P 2>/dev/null || true
-    fi
+    macw1y_rebuild_initramfs
     log_success "macW1Y Boot Splash activated successfully!"
 }
 
@@ -2274,15 +2012,7 @@ EOF_CUR_THEME_UP
         sudo cp -f "$SCRIPT_DIR/gnome-control-center-overlay"/cc-*.ui /usr/share/mactheme/gnome-control-center-overlay/ 2>/dev/null || true
         sudo chmod 644 /usr/share/mactheme/gnome-control-center-overlay/* 2>/dev/null || true
     fi
-    if [ -f "/usr/bin/gnome-control-center" ] && [ ! -f "/usr/bin/gnome-control-center.orig" ]; then
-        sudo cp -p /usr/bin/gnome-control-center /usr/bin/gnome-control-center.orig 2>/dev/null || true
-    fi
-    if [ -f "$SCRIPT_DIR/bin/gnome-control-center" ]; then
-        sudo cp -f "$SCRIPT_DIR/bin/gnome-control-center" /usr/bin/gnome-control-center 2>/dev/null || true
-        sudo chmod 755 /usr/bin/gnome-control-center 2>/dev/null || true
-        sudo cp -f "$SCRIPT_DIR/bin/gnome-control-center" /usr/local/bin/gnome-control-center 2>/dev/null || true
-        sudo chmod 755 /usr/local/bin/gnome-control-center 2>/dev/null || true
-    fi
+    install_app_wrapper gnome-control-center
     if [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so" false
     fi
@@ -2437,17 +2167,6 @@ EOF_CUR_THEME_UP
     [ -f "$SCRIPT_DIR/systemd/mac-gamemode.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-gamemode.service" "/etc/systemd/system/mac-gamemode.service" true
 
     # Performance and gaming optimizations in update mode
-    if [ -f "$SCRIPT_DIR/etc/sysctl.d/99-macw1y-performance.conf" ]; then
-        sync_or_update_file "$SCRIPT_DIR/etc/sysctl.d/99-macw1y-performance.conf" "/etc/sysctl.d/99-macw1y-performance.conf" true
-        sudo sysctl -p /etc/sysctl.d/99-macw1y-performance.conf 2>/dev/null || true
-    fi
-    if [ -f "$SCRIPT_DIR/etc/tmpfiles.d/cpu-power-limits.conf" ]; then
-        sync_or_update_file "$SCRIPT_DIR/etc/tmpfiles.d/cpu-power-limits.conf" "/etc/tmpfiles.d/cpu-power-limits.conf" true
-        sudo systemd-tmpfiles --create /etc/tmpfiles.d/cpu-power-limits.conf 2>/dev/null || true
-    fi
-    if [ -f "$SCRIPT_DIR/etc/modprobe.d/nvidia-runtimepm.conf" ]; then
-        sync_or_update_file "$SCRIPT_DIR/etc/modprobe.d/nvidia-runtimepm.conf" "/etc/modprobe.d/nvidia-runtimepm.conf" true
-    fi
     if [ -f "$SCRIPT_DIR/autostart/nautilus-daemon.desktop" ]; then
         mkdir -p "$TARGET_HOME/.config/autostart"
         sync_or_update_file "$SCRIPT_DIR/autostart/nautilus-daemon.desktop" "$TARGET_HOME/.config/autostart/nautilus-daemon.desktop" false
@@ -2464,13 +2183,7 @@ EOF_CUR_THEME_UP
     if [ -f "$SCRIPT_DIR/lib/libmac_nautilus_menu.so" ]; then
         install_nautilus_extension "$SCRIPT_DIR/lib/libmac_nautilus_menu.so"
     fi
-    if [ -f "/usr/bin/nautilus" ] && [ ! -f "/usr/bin/nautilus.orig" ]; then
-        sudo mv /usr/bin/nautilus /usr/bin/nautilus.orig
-    fi
-    if [ -f "$SCRIPT_DIR/bin/nautilus" ]; then
-        sync_or_update_file "$SCRIPT_DIR/bin/nautilus" "/usr/bin/nautilus" true
-        sudo chmod 755 /usr/bin/nautilus
-    fi
+    install_app_wrapper nautilus
 
     if [ -f "$SCRIPT_DIR/bin/mac-sync-applications" ]; then
         sync_or_update_file "$SCRIPT_DIR/bin/mac-sync-applications" "/usr/local/bin/mac-sync-applications" true
@@ -2541,13 +2254,7 @@ Theme=macw1y-boot
 ShowDelay=0
 DeviceTimeout=8
 EOF
-        if command -v update-initramfs >/dev/null 2>&1; then
-            sudo update-initramfs -u 2>/dev/null || true
-        elif command -v dracut >/dev/null 2>&1; then
-            sudo dracut --force 2>/dev/null || true
-        elif command -v mkinitcpio >/dev/null 2>&1; then
-            sudo mkinitcpio -P 2>/dev/null || true
-        fi
+        macw1y_rebuild_initramfs
     fi
 
     log_info "10/10 Checking GRUB bootloader..."

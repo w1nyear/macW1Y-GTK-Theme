@@ -17,6 +17,7 @@ C_RED="\033[1;31m"
 C_MAGENTA="\033[1;35m"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/dependencies/boot-tools.sh"
 
 # Detect user context
 if [ -n "$SUDO_USER" ]; then
@@ -177,9 +178,16 @@ restore_system() {
 
     # Nautilus
     log_info "Відновлення стандартного Nautilus..."
-    if [ -f /usr/bin/nautilus.orig ]; then
-        sudo mv -f /usr/bin/nautilus.orig /usr/bin/nautilus
-    fi
+    for app in nautilus gnome-control-center ptyxis; do
+        if [ -f "/usr/bin/$app.orig" ] && { [ ! -e "/usr/bin/$app" ] || { grep -Iq . "/usr/bin/$app" && grep -Eq 'find_mac_lib\(\)|/usr/bin/[^ ]+\.orig' "/usr/bin/$app"; }; }; then
+            sudo install -m 755 "/usr/bin/$app.orig" "/usr/bin/$app"
+        fi
+        for wrapper in "/usr/local/bin/$app" "$TARGET_HOME/.local/bin/$app"; do
+            if [ -f "$wrapper" ] && { grep -Iq . "$wrapper" && grep -Eq 'find_mac_lib\(\)|/usr/bin/[^ ]+\.orig' "$wrapper"; }; then
+                sudo rm "$wrapper"
+            fi
+        done
+    done
     sudo rm -f /usr/lib/x86_64-linux-gnu/libmac_nautilus.so /usr/lib64/libmac_nautilus.so /usr/lib/libmac_nautilus.so /usr/local/lib/libmac_nautilus.so
     sudo rm -f /usr/lib/x86_64-linux-gnu/nautilus/extensions-4/libmac_nautilus_menu.so /usr/lib64/nautilus/extensions-4/libmac_nautilus_menu.so /usr/lib/nautilus/extensions-4/libmac_nautilus_menu.so
     sudo rm -f /usr/lib/x86_64-linux-gnu/libmacpopover.so /usr/lib64/libmacpopover.so /usr/lib/libmacpopover.so /usr/local/lib/libmacpopover.so
@@ -256,13 +264,7 @@ restore_system() {
     
     sudo systemctl daemon-reload
     log_info "Оновлення initramfs..."
-    if command -v update-initramfs >/dev/null 2>&1; then
-        sudo update-initramfs -u 2>/dev/null || true
-    elif command -v dracut >/dev/null 2>&1; then
-        sudo dracut --force 2>/dev/null || true
-    elif command -v mkinitcpio >/dev/null 2>&1; then
-        sudo mkinitcpio -P 2>/dev/null || true
-    fi
+    macw1y_rebuild_initramfs
     log_success "Системні служби, Plymouth та GRUB відновлено до стандарту!"
 }
 

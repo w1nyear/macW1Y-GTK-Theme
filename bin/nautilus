@@ -1,6 +1,6 @@
 #!/bin/sh
 find_mac_lib() {
-    for d in /usr/lib/x86_64-linux-gnu /usr/lib64 /usr/lib /usr/local/lib "$HOME/.local/lib"; do
+    for d in /usr/local/lib "$HOME/.local/lib" /usr/lib/*-linux-gnu /usr/lib64 /usr/lib; do
         if [ -f "$d/$1" ]; then
             echo "$d/$1"
             return 0
@@ -17,8 +17,14 @@ if [ -n "$POPOVER_LIB" ]; then
     [ -n "$PRELOAD_LIBS" ] && PRELOAD_LIBS="$PRELOAD_LIBS:$POPOVER_LIB" || PRELOAD_LIBS="$POPOVER_LIB"
 fi
 [ -n "$PRELOAD_LIBS" ] && export LD_PRELOAD="$PRELOAD_LIBS${LD_PRELOAD:+:$LD_PRELOAD}"
-if [ -f /usr/bin/nautilus.orig ]; then
-    exec /usr/bin/nautilus.orig "$@"
-else
-    exec /usr/bin/nautilus "$@"
-fi
+# Пакетний виконуваний файл має пріоритет перед старою резервною копією.
+for candidate in /usr/bin/nautilus /usr/bin/nautilus.orig; do
+    [ -x "$candidate" ] || continue
+    [ "$(readlink -f "$candidate")" != "$(readlink -f "$0")" ] || continue
+    if grep -q 'find_mac_lib()' "$candidate"; then
+        continue
+    fi
+    exec "$candidate" "$@"
+done
+printf '%s\n' 'macW1Y: не знайдено оригінальний виконуваний файл nautilus.' >&2
+exit 127

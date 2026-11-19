@@ -1,7 +1,6 @@
 #!/bin/sh
 OVERLAY_DIR="/usr/share/mactheme/gnome-control-center-overlay"
 [ ! -d "$OVERLAY_DIR" ] && OVERLAY_DIR="$HOME/.local/share/gnome-control-center-overlay"
-[ ! -d "$OVERLAY_DIR" ] && OVERLAY_DIR="/home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay"
 
 LOCALE="en"
 if [ -f "$HOME/.config/mac-styling/locale" ]; then
@@ -24,7 +23,7 @@ fi
 export G_RESOURCE_OVERLAYS="/org/gnome/Settings/gtk/cc-window.ui=$LOC_DIR/cc-window.ui:/org/gnome/control-center/system/cc-system-panel.ui=$LOC_DIR/cc-system-panel.ui:/org/gnome/control-center/power/cc-power-panel.ui=$LOC_DIR/cc-power-panel.ui:/org/gnome/control-center/mouse/cc-mouse-panel.ui=$LOC_DIR/cc-mouse-panel.ui:/org/gnome/control-center/background/cc-background-panel.ui=$LOC_DIR/cc-background-panel.ui:/org/gnome/control-center/background/preview.css=$OVERLAY_DIR/preview.css"
 
 find_mac_lib() {
-    for d in /usr/lib/x86_64-linux-gnu /usr/lib64 /usr/lib /usr/local/lib "$HOME/.local/lib"; do
+    for d in /usr/local/lib "$HOME/.local/lib" /usr/lib/*-linux-gnu /usr/lib64 /usr/lib; do
         if [ -f "$d/$1" ]; then
             echo "$d/$1"
             return 0
@@ -63,8 +62,14 @@ if [ "$1" = "mac-styling" ] || [ "$1" = "styling" ]; then
     shift
 fi
 
-if [ -f "/usr/bin/gnome-control-center.orig" ]; then
-    exec /usr/bin/gnome-control-center.orig "$@"
-else
-    exec /usr/bin/gnome-control-center "$@"
-fi
+# Пакетний виконуваний файл має пріоритет перед старою резервною копією.
+for candidate in /usr/bin/gnome-control-center /usr/bin/gnome-control-center.orig; do
+    [ -x "$candidate" ] || continue
+    [ "$(readlink -f "$candidate")" != "$(readlink -f "$0")" ] || continue
+    if grep -q 'find_mac_lib()' "$candidate"; then
+        continue
+    fi
+    exec "$candidate" "$@"
+done
+printf '%s\n' 'macW1Y: не знайдено оригінальний виконуваний файл gnome-control-center.' >&2
+exit 127
