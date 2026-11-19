@@ -3791,7 +3791,13 @@ export default class EvalHelper extends Extension {
                 };
             }
 
-            import('file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog.js?t=' + Date.now())
+            const _getSearchDialogUrl = () => {
+                const appMenuExt = Main.extensionManager?.lookup?.('appmenu@ChathurangaBW.github.io');
+                const basePath = appMenuExt?.path || `${GLib.get_user_data_dir()}/gnome-shell/extensions/appmenu@ChathurangaBW.github.io`;
+                return `file://${basePath}/searchDialog.js?t=${Date.now()}`;
+            };
+
+            import(_getSearchDialogUrl())
                 .then(mod => {
                     globalThis.toggleMacApplications = () => mod.toggleSearchDialog('apps');
                     globalThis.toggleApplicationsMenu = () => mod.toggleSearchDialog('apps');
@@ -3809,7 +3815,7 @@ export default class EvalHelper extends Extension {
                 } else if (typeof globalThis.toggleMacSpotlight === 'function') {
                     globalThis.toggleMacSpotlight('apps');
                 } else {
-                    import('file:///home/vitaliy/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog.js?t=' + Date.now())
+                    import(_getSearchDialogUrl())
                         .then(mod => {
                             globalThis.toggleMacApplications = () => mod.toggleSearchDialog('apps');
                             mod.toggleSearchDialog('apps');

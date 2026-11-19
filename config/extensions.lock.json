@@ -19,7 +19,7 @@
         "50",
         "51"
       ],
-      "sha256": "aca9528afad708bd7e289d573054502ee46aa642b6247c9a791ad0b53a153ed5",
+      "sha256": "dac8b224545ba635b2f739b6f69b532bc66572a4909627be9b83087ec02248f3",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -31,7 +31,7 @@
       "has_custom_patches": true,
       "patch_description": "macW1Y Monterey style spotlight, main menu, finder naming, wine exclusions; clipboard dialog copy-and-close & click-to-paste injection",
       "last_verified": "2026-11-04",
-      "pinned_sha256": "b349e7f6da46cd8b15b022e1c1a91bae424e83f1008467a04b7d90e8e9308466"
+      "pinned_sha256": "dac8b224545ba635b2f739b6f69b532bc66572a4909627be9b83087ec02248f3"
     },
     "blur-my-shell@aunetx": {
       "uuid": "blur-my-shell@aunetx",
@@ -246,7 +246,7 @@
         "50",
         "51"
       ],
-      "sha256": "fb0d90e508f5962c4c6c678ecb14998ea029a4cd05ff8cc348e7229b62b78e02",
+      "sha256": "66eec8bb76fa81789b84621b2284c572925af78482c29a67e9be74530beb2edd",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -257,7 +257,7 @@
       "has_custom_patches": true,
       "patch_description": "Local D-Bus EvalHelper service and macW1Y Alt+Tab switcher enhancements",
       "last_verified": "2026-11-10",
-      "pinned_sha256": "100ba8df1a4c7fc61dc62dba759775281b8f3ff145caebed26dc3f513cc95ef2"
+      "pinned_sha256": "66eec8bb76fa81789b84621b2284c572925af78482c29a67e9be74530beb2edd"
     },
     "kiwi@kemma": {
       "uuid": "kiwi@kemma",
@@ -381,7 +381,7 @@
         "50",
         "51"
       ],
-      "sha256": "26c2fa622e346faea3014653dc7720026dad487141ae007aea06c86c37cddd44",
+      "sha256": "6c3a65ffc33769cab51bdbe031b3fc266016014646b344e0c59c8697e11e54e0",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -392,7 +392,7 @@
       "has_custom_patches": true,
       "patch_description": "Local custom macW1Y touchpad gesture suite",
       "last_verified": "2026-10-27",
-      "pinned_sha256": "2cb9979eafd57372dd45c5140bbc90194db54b2831b901c8812cc1f263efdf68"
+      "pinned_sha256": "6c3a65ffc33769cab51bdbe031b3fc266016014646b344e0c59c8697e11e54e0"
     },
     "quick-settings-scroll@diskmth.fr": {
       "uuid": "quick-settings-scroll@diskmth.fr",
@@ -546,7 +546,7 @@
         "50",
         "51"
       ],
-      "sha256": "ba6f960a2498209e876236bd4300fec993a88bed54a335b284feaa4175bac099",
+      "sha256": "ee13130c404ff94837da7f55dd13146fffd4f5d34f4d04c206598cbafd59f84c",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -555,7 +555,7 @@
       "has_custom_patches": true,
       "patch_description": "Curtain slide & fullscreen dimming elimination (Task 575); GDM lockscreen date and prompt positioning (Task 669); static-first GDM wallpaper and deferred video startup (Phase 7); corrected GDM module paths, isolated optional UI failures, restored native actors/state on teardown, and hardened video/player lifecycle (Phase 8)",
       "last_verified": "2026-11-13",
-      "pinned_sha256": "2a7941963036cff573704bc60ebdec1e46ee22375bc118c6bf7cb0e6db31ae55"
+      "pinned_sha256": "ee13130c404ff94837da7f55dd13146fffd4f5d34f4d04c206598cbafd59f84c"
     },
     "wifi-hotspot-quick-settings@aryan10.github.io": {
       "uuid": "wifi-hotspot-quick-settings@aryan10.github.io",

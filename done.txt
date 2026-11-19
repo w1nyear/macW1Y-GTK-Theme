@@ -2297,3 +2297,35 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-i18n-verify — 100% PASS.
      * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
      * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), виконано локальний git-коміт (без git push).
+
+
+845. 2026-11-19 — Усунення персональних шляхів у розширеннях, скасування sed-мутацій інсталятором та синхронізація DNF-залежностей:
+   - Змінені файли та рядки:
+     * extensions/appmenu@ChathurangaBW.github.io/searchDialog.js (рядки 18-28)
+     * extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/lockscreenMenuBar.js (рядки 387-394)
+     * extensions/macw1y-touchpad-gestures@mactheme/gestureImpl.js (рядки 8-15, 60-98)
+     * extensions/eval-helper@mactheme/extension.js (рядки 3794-3825)
+     * install.sh (рядки 915-920)
+     * dependencies/dnf-packages.txt (рядок 45)
+     * config/extensions.lock.json (контрольні суми sha256 4 розширень)
+     * docs/diagnostics/2026-11-19-portability.md (розділ «П'ятий етап»)
+   - Опис змін:
+     1) Викорінення хардкоду `/home/vitaliy` у розширеннях:
+        * У `searchDialog.js`: константу `ICONS_DIR` переведено на динамічне визначення з перевіркою наявності `/usr/share/mactheme/icons` та фолбеком на `$HOME/macW1Y/icons`.
+        * У `lockscreenMenuBar.js`: шляхи до `control-center.png` замінено на системний `/usr/share/themes/macW1Y-Dark/...` та динамічний `GLib.build_filenamev([GLib.get_home_dir(), ...])`.
+        * У `gestureImpl.js`: прямі імпорти скрипта майстра налаштувань замінено на динамічний пошук через `Main.extensionManager.lookup('eval-helper@mactheme')?.path` та `GLib.get_user_data_dir()`.
+        * У `eval-helper/extension.js`: прямі імпорти `searchDialog.js` переведено на динамічне обчислення через `Main.extensionManager.lookup('appmenu@ChathurangaBW.github.io')?.path`.
+     2) Скасування мутації коду розширень під час встановлення:
+        * У `install.sh` видалено команду `sed -i "s|/home/vitaliy|$TARGET_HOME|g"` по файлах розширень, що усуває порушення контрольних сум та забезпечує проходження валідації `mac-extension-guard verify` на будь-якому обліковому записі користувача.
+     3) Доповнення списку пакетів Fedora:
+        * До `dependencies/dnf-packages.txt` додано `gnome-shell-extension-desktop-icons-ng`.
+     4) Оновлення та синхронізація цілісності:
+        * Перераховано контрольні суми sha256 `dir_hash` для всіх 4 модифікованих розширень у `config/extensions.lock.json` та синхронізовано з `/usr/share/mactheme/config/extensions.lock.json`.
+        * Усі модифіковані розширення синхронізовано до `~/.local/share/gnome-shell/extensions/` та системного `/usr/share/gnome-shell/extensions/`.
+   - Результати перевірок:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 17/17 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
+     * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), виконано локальний git-коміт (без git push).

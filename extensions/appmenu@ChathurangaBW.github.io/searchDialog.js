@@ -15,7 +15,16 @@ import { applyGradientBlurFade } from './gradientBlurFade.js';
 
 const RECENT_ITEMS_FILE = GLib.build_filenamev([GLib.get_user_data_dir(), 'recently-used.xbel']);
 const CLIPBOARD_CACHE_FILE = GLib.build_filenamev([GLib.get_home_dir(), '.cache', 'mac-clipboard', 'history.json']);
-const ICONS_DIR = '/home/vitaliy/macW1Y/icons';
+const ICONS_DIR = (() => {
+    if (GLib.file_test('/usr/share/mactheme/icons', GLib.FileTest.IS_DIR)) {
+        return '/usr/share/mactheme/icons';
+    }
+    const homeRepo = GLib.build_filenamev([GLib.get_home_dir(), 'macW1Y', 'icons']);
+    if (GLib.file_test(homeRepo, GLib.FileTest.IS_DIR)) {
+        return homeRepo;
+    }
+    return '/usr/share/mactheme/icons';
+})();
 
 const SEARCH_DEBOUNCE_MS = 180;
 const DIALOG_WIDTH = 714;

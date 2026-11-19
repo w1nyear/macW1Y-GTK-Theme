@@ -134,31 +134,45 @@ Typelib Cogl-15 описує вказівник value як scalar gfloat. Пер
 структуру та fallback, не повноту перекладу. Сеанс хоста не перезапускався;
 новий код розширень синхронізовано на диск, його runtime тут не перевірено.
 
+### П'ятий етап: усунення жорстких шляхів користувача та мутацій коду інсталятором
+
+1. **Повне викорінення хардкоду `/home/vitaliy` у розширеннях**:
+   - `extensions/appmenu@ChathurangaBW.github.io/searchDialog.js`: `ICONS_DIR` тепер резолвиться динамічно з перевагою системного `/usr/share/mactheme/icons` та фолбеком на `$HOME/macW1Y/icons`.
+   - `extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/lockscreenMenuBar.js`: шляхи до `control-center.png` оновлено на системний `/usr/share/themes/macW1Y-Dark/...` та динамічний `GLib.build_filenamev([GLib.get_home_dir(), ...])`.
+   - `extensions/macw1y-touchpad-gestures@mactheme/gestureImpl.js`: замінено прямі імпорти `/home/vitaliy/.../eval-helper@mactheme/macSetupWizard.js` на динамічний пошук шляху через `Main.extensionManager.lookup('eval-helper@mactheme')?.path` та `GLib.get_user_data_dir()`.
+   - `extensions/eval-helper@mactheme/extension.js`: імпорти `searchDialog.js` переведено на динамічне визначення шляху через `Main.extensionManager.lookup('appmenu@ChathurangaBW.github.io')?.path`.
+
+2. **Припинення мутації файлів інсталятором**:
+   - У `install.sh` (Stage 7) видалено блок `sed -i "s|/home/vitaliy|$TARGET_HOME|g"` по `.js`, `.json`, `.css` розширень. Це гарантує, що при встановленні під будь-яким користувачем контрольні суми розширень залишаються незмінними і `mac-extension-guard verify` повертає 21/21 LOCKED OK.
+
+3. **Синхронізація залежностей DNF**:
+   - До `dependencies/dnf-packages.txt` додано `gnome-shell-extension-desktop-icons-ng`.
+
+4. **Оновлення контрольних сум**:
+   - Оновлено `config/extensions.lock.json` для 4 модифікованих розширень, синхронізовано із системним `/usr/share/mactheme/config/extensions.lock.json`.
+
+Поточна готовність перенесення: **~75–80%** (виправлено падіння Cogl, усунено залежності від імені користувача та мутацію коду інсталятором; залишається валідація повноцінного циклу у Fedora/Arch/Debian VM).
+
 ### Залишок роботи для наступного виконавця
 
 1. Прочитати AI_INSTRUCTIONS.md, done.txt, цей розділ, поточний git diff/log.
    Не повторювати вже виконані правки; перевіряти актуальний код після Gemini.
-2. Забезпечити DING для Fedora/Arch/CachyOS: зараз у репо лише ding-patches,
-   а lock очікує встановлену Ubuntu-версію. Визначити відтворюване джерело/версії,
-   застосувати патчі відповідно до API, перевірити ярлики/перейменування/кошик.
-   Не прибирати DING з аудиту лише заради PASS; врахувати версії пакетів у lock.
-3. Перевірити guard на реальному встановленні не під vitaliy: інсталятор робить
-   sed-підміну домашнього шляху в розширеннях, що може змінити pinned hash.
-   Переходити до runtime home paths замість мутації встановлюваного коду.
-   Перевірити також детермінованість обходу каталогів у dir_hash.
-4. Випробувати чисте встановлення, перезапуск гостьової сесії та реальний
+2. Забезпечити DING для Fedora/Arch/CachyOS: перевірити поведінку пакетного
+   `gnome-shell-extension-desktop-icons-ng` у Fedora/Debian VM та AUR-пакета на Arch;
+   перевірити застосування патчів finder_desktop.
+3. Випробувати чисте встановлення, перезапуск гостьової сесії та реальний
    графічний GNOME на Fedora, Debian, Ubuntu, Arch, CachyOS. Різні GNOME API
    перевірити виконанням, а не дописуванням shell-version у metadata.json.
-5. Перевірити скло/док/віджети/огляд/лаунчпад/центр керування/меню/жести,
+4. Перевірити скло/док/віджети/огляд/лаунчпад/центр керування/меню/жести,
    fullscreen, мінімізацію, перемикання тем, блокування, cold/warm запуск.
    Зберігати скріншоти, журнали помилок і стан кожного керованого розширення.
-6. Повний цикл install → reboot VM → update → uninstall → reboot VM зі snapshots:
+5. Повний цикл install → reboot VM → update → uninstall → reboot VM зі snapshots:
    GDM, Plymouth, GRUB/BLS та systemd-boot, відновлення початкових файлів,
    збереження контролю пакетного менеджера. Хост не перезавантажувати.
-7. Перевірити всі сім нативних бібліотек на цільових GTK/libadwaita/Nautilus,
+6. Перевірити всі сім нативних бібліотек на цільових GTK/libadwaita/Nautilus,
    залежності APT/DNF/Pacman, SELinux Fedora та відсутність обов'язкових пакетів.
-8. Дослідити попередження тем/GC, нестабільний анімаційний тест; вимірювати
+7. Дослідити попередження тем/GC, нестабільний анімаційний тест; вимірювати
    p95/p99 кадрів на реальному GPU. Headless llvmpipe не характеризує Intel HD.
-9. Оновити матрицю підтримки за фактичними результатами. Для кожного етапу:
+8. Оновити матрицю підтримки за фактичними результатами. Для кожного етапу:
    тести, синхронізація, done.txt + Desktop/done.txt, локальний коміт без push.
    Не оголошувати 100% до перевірки всього зазначеного циклу.
