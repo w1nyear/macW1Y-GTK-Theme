@@ -1929,15 +1929,19 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         if (typeof styling.spotlight_blur === 'number') {
             spotBlur = (styling.spotlight_blur === 1) ? 25.0 : styling.spotlight_blur;
         }
-        const spotTint = (typeof styling.spotlight_tint === 'number') ? (styling.spotlight_tint / 100.0) : tintStrength;
-        const spotShadow = (typeof styling.spotlight_shadow === 'number') ? (styling.spotlight_shadow / 100.0) : (isDark ? 0.35 : 0.22);
+        const spotTint = (typeof styling.liquid_tint === 'number')
+            ? (styling.liquid_tint / 100.0)
+            : ((typeof styling.spotlight_tint === 'number') ? (styling.spotlight_tint / 100.0) : tintStrength);
+        const spotShadow = (typeof styling.liquid_shadow === 'number')
+            ? (styling.liquid_shadow / 100.0)
+            : ((typeof styling.spotlight_shadow === 'number') ? (styling.spotlight_shadow / 100.0) : (isDark ? 0.35 : 0.22));
         const spotShadowRadius = Math.max(10.0, spotShadow * 50.0);
 
         // Global Liquid Glass parameters
         const refraction = (typeof styling.liquid_refraction === 'number') ? (styling.liquid_refraction / 100.0) : 0.60;
         const chroma = (typeof styling.liquid_chroma === 'number') ? (styling.liquid_chroma / 100.0 * 0.04) : 0.008;
         const rim = (typeof styling.liquid_rim === 'number') ? (styling.liquid_rim / 100.0 * 0.40) : 0.18;
-        const specular = (typeof styling.liquid_specular === 'number') ? (styling.liquid_specular / 100.0 * 0.40) : 0.15;
+        const specular = (typeof styling.liquid_specular === 'number') ? (styling.liquid_specular / 100.0 * 0.40) : 0.0;
 
         const mon = Main.layoutManager.primaryMonitor;
         this._setGlassResolution(mon);
@@ -1976,7 +1980,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             effect._setFloat('rim_light_color_intensity', 1.6);
 
             effect._setFloat('specular_intensity', specular);
-            effect._setFloat('sheen_intensity', 0.10);
+            effect._setFloat('sheen_intensity', specular > 0.001 ? 0.10 : 0.0);
             effect._setFloat('chroma_strength', chroma);
 
             effect._setFloat('shadow_intensity', spotShadow);
@@ -2071,13 +2075,13 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             },
         });
 
-        this._box.set_style(
-            'background-color: transparent !important; ' +
-            'background: none !important; ' +
-            `border-radius: ${CORNER_RADIUS}px !important; ` +
-            'border: none !important; ' +
-            'box-shadow: none !important;'
-        );
+        if (_isGlassAlive(this._glass)) {
+            this._box.set_style(SPOTLIGHT_GLASS_STYLE);
+            this._box._isUsingFallback = false;
+        } else {
+            this._box.set_style(SPOTLIGHT_FALLBACK_STYLE);
+            this._box._isUsingFallback = true;
+        }
 
         this._searchPill.set_style(PILL_EXPANDED_STYLE);
         try { this._searchPill.remove_all_transitions(); } catch (_) {}
@@ -2274,7 +2278,9 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
 
             const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
             const styling = this._readStyling() || {};
-            const spotTint = (typeof styling.spotlight_tint === 'number') ? (styling.spotlight_tint / 100.0) : tintStrength;
+            const spotTint = (typeof styling.liquid_tint === 'number')
+                ? (styling.liquid_tint / 100.0)
+                : ((typeof styling.spotlight_tint === 'number') ? (styling.spotlight_tint / 100.0) : tintStrength);
 
             if (!isExpanded && this._searchPill && this._btnApps && this._btnFiles && this._btnClipboard) {
                 const pillPos = this._searchPill.get_transformed_position();
@@ -2341,10 +2347,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 const [boxScreenX, boxScreenY] = box.get_transformed_position();
                 const localBgX = Math.round(boxScreenX - mon.x);
                 const localBgY = Math.round(boxScreenY - mon.y);
-                const activeW = (this._searchPill && this._searchPill.width > 0 && this._searchPill.width < rawW)
-                    ? this._searchPill.width
-                    : rawW;
-                const bgW = Math.round(activeW * scaleX);
+                const bgW = Math.round(rawW * scaleX);
                 const bgH = Math.round(rawH * scaleY);
 
                 const key = `s:${localBgX},${localBgY},${bgW},${bgH}:${targetOpacity}:${spotTint}`;

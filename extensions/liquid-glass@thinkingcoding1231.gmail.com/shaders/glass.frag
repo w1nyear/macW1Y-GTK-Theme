@@ -910,6 +910,7 @@ void main() {
     }
 
     vec2 refractedUv = (displacement_scale > 0.001) ? stabilizedUV(uv + disp, uv) : uv;
+    vec2 uvG = refractedUv;
 
     vec2 chromaVec = vec2(0.0);
     bool chromaActive = false;

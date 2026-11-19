@@ -2263,3 +2263,37 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-i18n-verify — 100% PASS.
      * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
      * Без виходу з сеансу, без перезавантаження та вимикання ПК, без git push.
+
+
+844. Відновлено та виправлено скло Liquid Glass для Spotlight та меню Програми / Файли / Буфер обміну:
+   - Відповідність запиту («виправи те що спотлайт меню не мають скла liquid glass»):
+     * Усунено проблему, через яку спливаюче вікно Spotlight (зокрема режим «Програми» з сіткою додатків та категоріями) відображалося повністю прозорим без підкладки скла Liquid Glass, спричиняючи нашарування тексту та іконок на відкриті фонові вікна.
+   - Розслідування та першопричина:
+     * У `extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag` під час попередньої оптимізації було випадково видалено оголошення змінної `vec2 uvG = refractedUv;`. Через це компілятор GLSL у графічному драйвері видавав помилку `undeclared identifier: uvG` при спробі скомпілювати фрагментний шейдер, внаслідок чого Cogl скасовував композитинг шейдера і шар скла `BackdropGlass` залишався повністю прозорим.
+     * У `extensions/appmenu@ChathurangaBW.github.io/searchDialog.js`:
+       - У `_applyGlassUniforms()` та `_syncGlass()` параметри скла (`tint_strength`, `shadow_intensity`, `shadow_radius`, `specular_intensity`, `sheen_intensity`) не повністю узгоджувалися з глобальним блоком Liquid Glass Мак стилізації (`liquid_tint`, `liquid_shadow`, `liquid_refraction`, `liquid_chroma`, `liquid_rim`, `liquid_specular`).
+       - При згортанні кнопок у `_collapseButtonsAndExpandPill()` контейнер `_box` примусово перемикався на `SPOTLIGHT_GLASS_STYLE` (повна прозорість фону) без перевірки готовності скла `_isGlassAlive(this._glass)`, через що при ініціалізації або збоях скла вікно ставало прозорим замість використання темного матового фолбеку `SPOTLIGHT_FALLBACK_STYLE`.
+       - При розрахунку геометрії скла в розгорнутому стані `activeW` обмежувалося шириною пігулки пошуку `_searchPill`, що могло звужувати зону скла відносно повного діалогового вікна `_box`.
+   - Внесені зміни:
+     1) extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag:
+        * Оголошено змінну `vec2 uvG = refractedUv;`, завдяки чому шейдер успішно та валідно компілюється на всіх GPU без жодних помилок GLSL.
+     2) extensions/appmenu@ChathurangaBW.github.io/searchDialog.js:
+        * У `_applyGlassUniforms()`: примусово зв'язано параметри базового шару скла з глобальними налаштуваннями Liquid Glass у Мак стилізації (`liquid_tint`, `liquid_shadow`, `liquid_refraction`, `liquid_chroma`, `liquid_rim`, `specular_intensity` = 0.0, `sheen_intensity` вимикається при 0).
+        * У `_syncGlass()`: розрахунок геометрії скла у розгорнутому режимі зафіксовано на повну ширину та висоту `_box` (`bgW = rawW * scaleX`, `bgH = rawH * scaleY`).
+        * У `_collapseButtonsAndExpandPill()` та `_syncGlass()`: додано автоматичне безпечне перемикання на `SPOTLIGHT_FALLBACK_STYLE`, якщо шар скла не готовий, що виключає появу повністю прозорого вікна.
+     3) control-center/libmac_settings.c та gnome-control-center-overlay/libmac_settings.c:
+        * Додано оголошення та виклик `apply_spotlight_settings();` всередині `apply_liquid_glass()`, завдяки чому при будь-якій зміні повзунків Liquid Glass у налаштуваннях параметри шейдера Spotlight оновлюються миттєво.
+        * Перекомпільовано `libmac_settings.so` та розгорнуто по всіх системних шляхах (`control-center/`, `gnome-control-center-overlay/`, `lib/`, `/usr/lib/x86_64-linux-gnu/`, `/usr/local/lib/`, `~/.local/lib/`, `/usr/share/mactheme/...`).
+     4) config/extensions.lock.json:
+        * Оновлено контрольні суми sha256 для `appmenu@ChathurangaBW.github.io` та `liquid-glass@thinkingcoding1231.gmail.com` і синхронізовано з `/usr/share/mactheme/config/extensions.lock.json`.
+   - Синхронізація та живий сеанс:
+     * Оновлені розширення синхронізовано до `~/.local/share/gnome-shell/extensions/` та `/usr/share/gnome-shell/extensions/`.
+     * У живому сеансі GNOME Shell через EvalHelper перезавантажено шейдери (`reloadShaders()`) та переініціалізовано конвеєр скла Spotlight; перевірено успішне композитування (`pipelineOk: true`, `diagCompositedPaintCount: 1251+`).
+     * `done.txt` синхронізовано з `~/Desktop/done.txt`.
+   - Результати тестування:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 17/17 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
+     * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), виконано локальний git-коміт (без git push).

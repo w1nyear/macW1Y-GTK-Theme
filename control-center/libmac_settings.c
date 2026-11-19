@@ -100,6 +100,7 @@ static void apply_notification_settings(void);
 static void schedule_notification_apply(void);
 static void apply_osd_settings(void);
 static void schedule_osd_apply(void);
+static void apply_spotlight_settings(void);
 
 static void redraw_menubar_preview(void);
 static void redraw_dock_preview(void);
@@ -817,8 +818,9 @@ static void apply_liquid_glass(void) {
 
     apply_widget_settings();
 
-
     apply_dock_settings();
+
+    apply_spotlight_settings();
 }
 
 static gboolean apply_liquid_glass_cb(gpointer user_data) {
