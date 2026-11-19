@@ -16,9 +16,10 @@
         "47",
         "48",
         "49",
-        "50"
+        "50",
+        "51"
       ],
-      "sha256": "7c95032431baa72771e01cffcf92e8f973c2a7f89aeae20a312301834e5e87f9",
+      "sha256": "8f9be315008d24dffdb70ff26dcd93739b67d08132dcccf0a49d24eed8ee997f",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -92,9 +93,10 @@
         "47",
         "48",
         "49",
-        "50"
+        "50",
+        "51"
       ],
-      "sha256": "53d21eb2a556bfe948e99ea625ef923e76790dc2eddc177ea221bea22fa74f7f",
+      "sha256": "aa4090e769ffa2da15265dc409306ba6aa88e2fbd53cec3124ecdf0235cfb868",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -136,9 +138,14 @@
       "name": "Dash2Dock Motion",
       "pinned_version": "custom",
       "shell_compatibility": [
-        "50"
+        "46",
+        "47",
+        "48",
+        "49",
+        "50",
+        "51"
       ],
-      "sha256": "bd42b344a9978b3dad79d23979dd5a2be22ed9a50171acfb6a71aa80cb42dcff",
+      "sha256": "f9dc04ebd6f314f1b3eb3e133d7ca268d104c305f78f5020e79e9779a1223fc4",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -176,7 +183,7 @@
         "dash.js": "43ffb6e2a87326539e43009df03bfcedb3ec3945e5c8104fcfb2637dab4b805a",
         "intellihide.js": "67f3dffcbb3dcd53c90e779656cca4082c086f049c8682b8e2ba995289f2600e",
         "appIconsDecorator.js": "40021e47f6431fbc37ec19e095fc828cab44157fa104385e75008345bb549391",
-        "metadata.json": "61b3e0ac209b99d63be48fab23f38e29bcb8e49a7c5f2e34cd682db6bcfbcd34",
+        "metadata.json": "3d5e4f14251f8ace3fe5e7990cd118d7d2a83140307664ab88c1eb319e0ae874",
         "utils.js": "0dd4d1f336fe9a009ddc24ea455f0fd373d24ae501805080188417f4bb66a2a9",
         "notificationsMonitor.js": "8acdb3f4134c97d98e9daaefa904afbc8df053d3cf7bbd7758a98d7d15806bbc",
         "appIconIndicators.js": "e2629de13906c2bdc68052bcdaff5d46e9df5d5656e464dc6545a09fb325ea31",
@@ -236,9 +243,10 @@
         "47",
         "48",
         "49",
-        "50"
+        "50",
+        "51"
       ],
-      "sha256": "b6a1ce330a6855aea9b288ee67267f948261131384faeb5d3a9ca9832e77d07a",
+      "sha256": "b8126125fb21576211f295fbd448f5fdff28ee9678603d20e406b33c25852b5a",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -256,12 +264,14 @@
       "name": "Kiwi Component Suite",
       "pinned_version": 99999,
       "shell_compatibility": [
+        "46",
+        "47",
         "48",
         "49",
         "50",
         "51"
       ],
-      "sha256": "adf892f2e05f964f929d59d17b9f47827642e3687c6470396226076c7cb39e7f",
+      "sha256": "cbf7225c0d15da34842415112cc703080111bbc9ca90efbf4dc493b9b0fb822b",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -284,10 +294,14 @@
       "name": "Liquid Glass",
       "pinned_version": "custom",
       "shell_compatibility": [
+        "46",
+        "47",
+        "48",
         "49",
-        "50"
+        "50",
+        "51"
       ],
-      "sha256": "643730480119f2bd5c64aeeb3dd14a9d555f4d1f2d09ea566241c97b2d802377",
+      "sha256": "f56e85170428070b0e7238083cb93c2d58cf4922ae0a3258dbf5a38ba27d67ec",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -308,7 +322,7 @@
         "package.json": "bedde7d0176d01a34ba1e6512bfc48b17db8f547f5cfe1ab1adc51d6515396b3",
         "prefs.js": "6bfeecdf6aead9c2da88d0eaea8cd5fa75d91d2fd4552b8534586d401adfad4b",
         "resources.gresource": "0b27aab3330db160302da89ad14ceb38731c5b954c699e70820a9fb1466efbbb",
-        "metadata.json": "97108174bf8da3b7bde6e6bb56478399cdcdbbdae342ddf4c80a591fe0220ef7",
+        "metadata.json": "eb2f8ffdc06de14cfa855cf34a3b967daddcb1b31171ea7db0d66325df40327b",
         "tsconfig.json": "0b308b88e46f61b483baad1333944e23c05ef635bfb12cd8968a441ab4925636",
         "resources.gresource.xml": "86360a8830d1479d3ccb1b1698762f9cb65d90833e30b94c90855a633c666fa3",
         "shaders/gaussian_v.frag": "604b318b9750f807b3ad52b08cba8181638a16f73d12cf3bb2c46733d1937c55",
@@ -364,9 +378,10 @@
         "47",
         "48",
         "49",
-        "50"
+        "50",
+        "51"
       ],
-      "sha256": "cb75c1c9cc0cd710f4dbf2edad661d7782d4fdfe888d7fd5fd3d46a729165012",
+      "sha256": "26c2fa622e346faea3014653dc7720026dad487141ae007aea06c86c37cddd44",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -431,11 +446,14 @@
       "name": "Ydotool Trigger",
       "pinned_version": "custom",
       "shell_compatibility": [
+        "46",
+        "47",
+        "48",
         "49",
         "50",
         "51"
       ],
-      "sha256": "49c9f35462e2948ee8b25646b5e89de606741746340d612531265eb8bdc29234",
+      "sha256": "4e23100c58a43cdf3345c903e4df98621e96e02fcfe5ecdb598a4a2352da8372",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -456,9 +474,10 @@
         "47",
         "48",
         "49",
-        "50"
+        "50",
+        "51"
       ],
-      "sha256": "afddfc8033dd2872a7861c45211f4d57180aa824120737fd8537d0110c62e46b",
+      "sha256": "4bb695aeb2e2fbfb1b5ad9f44de3275a4e03a2100b53f93215c0a289b4617b13",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -474,9 +493,14 @@
       "name": "User Themes",
       "pinned_version": 79,
       "shell_compatibility": [
-        "50"
+        "46",
+        "47",
+        "48",
+        "49",
+        "50",
+        "51"
       ],
-      "sha256": "8fda2d3dc29313838fbffefaa6811efa74596e15273b28943c13b0a50f2c8f08",
+      "sha256": "cf358a9de5430e05c4636b6df4bc94048d6aac9fe8a45b34c3b1e71d2b329e60",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -496,9 +520,10 @@
         "47",
         "48",
         "49",
-        "50"
+        "50",
+        "51"
       ],
-      "sha256": "a70cfa7489ff254b9518923c735c45b67d63141d45c877cea8ad5c0bf7059b7e",
+      "sha256": "97339affd391f0da6e746a72cc83c247e1b12d60c9cbe88052b767454b3906e2",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -518,9 +543,10 @@
         "47",
         "48",
         "49",
-        "50"
+        "50",
+        "51"
       ],
-      "sha256": "6862285985c1eeea35cb8a468ca86c80dee83b3d2a94782332dd1a89eec01d30",
+      "sha256": "b15b8d558a4d282d27ada06d1d0cc6d93bcefaa93d43e01e19fbbf0c9c445f68",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -536,9 +562,14 @@
       "name": "Wi-Fi Hotspot Quick Settings",
       "pinned_version": 4,
       "shell_compatibility": [
-        "50"
+        "46",
+        "47",
+        "48",
+        "49",
+        "50",
+        "51"
       ],
-      "sha256": "7f3cb900ef69114c6f5726509ff3cdb0495cd4932215a88127e7018f08f5e0a2",
+      "sha256": "ccdf8609f946a348cc6abee6c151fbf7cd5d01b90607f5dc45ea9699072ee10e",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -577,10 +608,14 @@
       "name": "Desktop Widgets",
       "pinned_version": 16,
       "shell_compatibility": [
+        "46",
+        "47",
+        "48",
+        "49",
         "50",
         "51"
       ],
-      "sha256": "cd77494a0c9a9f06042834f392412788238657dd280b1d6e53b48ea3fae59265",
+      "sha256": "727beed5de4b26bc0463711eaa68246607977f9c825133024a382e7f485256e6",
       "status": "locked",
       "source": "github",
       "macw1y_components": [
@@ -603,9 +638,10 @@
         "47",
         "48",
         "49",
-        "50"
+        "50",
+        "51"
       ],
-      "sha256": "f782af7f8949bd120b6be800737aeff78583adf6e8a4c9c97757a7d7b5915e9a",
+      "sha256": "ef34b9257feb57605e51b81a434666467233093e5391a7d8f1967ce072e9f221",
       "status": "locked",
       "source": "apt_system",
       "macw1y_components": [

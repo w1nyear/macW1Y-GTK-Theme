@@ -30,6 +30,9 @@ def main():
             major = re.search(r'\b(\d+)\b', version)
         if not major:
             raise ValueError(version)
+        major_num = int(major[1])
+        if major_num < 46:
+            sys.exit(f'Встановлення зупинено: підтримуються лише GNOME 46 і новіші (виявлено {major[1]}). Ubuntu 24.04+, Debian 13+, Fedora 40+, Arch Linux / CachyOS.')
         incompatible = incompatible_extensions(root, major[1])
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
         sys.exit(f'Не вдалося перевірити GNOME: {error}')

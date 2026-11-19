@@ -1,0 +1,5 @@
+[org.gnome.shell.ubuntu]
+startup-sound = 'warty-startup'
+
+[org.gnome.shell.ubuntu:ubuntu]
+startup-sound = 'warty-startup'

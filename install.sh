@@ -715,8 +715,13 @@ EOF_CUR_THEME
     if [ -w "/usr/share/icons" ] || sudo -n true 2>/dev/null; then
         sudo ln -sfn "$ICONS_DIR/macW1Y" /usr/share/icons/macW1Y
         sudo ln -sfn "$ICONS_DIR/macW1Y" /usr/share/icons/macW1Y
-        sudo update-alternatives --install /usr/share/icons/default/index.theme x-cursor-theme "$ICONS_DIR/macW1Y/cursor.theme" 100 2>/dev/null || true
-        sudo update-alternatives --set x-cursor-theme "$ICONS_DIR/macW1Y/cursor.theme" 2>/dev/null || true
+        if command -v update-alternatives >/dev/null 2>&1; then
+            sudo update-alternatives --install /usr/share/icons/default/index.theme x-cursor-theme "$ICONS_DIR/macW1Y/cursor.theme" 100 2>/dev/null || true
+            sudo update-alternatives --set x-cursor-theme "$ICONS_DIR/macW1Y/cursor.theme" 2>/dev/null || true
+        else
+            sudo mkdir -p /usr/share/icons/default
+            printf '[Icon Theme]\nInherits=macW1Y\n' | sudo tee /usr/share/icons/default/index.theme >/dev/null 2>&1 || true
+        fi
     fi
     
     # System Control Center icons (user-independent and protected from removal)
@@ -1408,6 +1413,10 @@ install_gdm_transition() {
         sudo cp "$SCRIPT_DIR/macw1y-gdm/99_mactheme.gschema.override" /usr/share/glib-2.0/schemas/
         sudo chmod 644 /usr/share/glib-2.0/schemas/99_mactheme.gschema.override
     fi
+    if [ "$DISTRO_FAMILY" = "debian" ] && [ -f "$SCRIPT_DIR/macw1y-gdm/99_ubuntu.gschema.override" ] && [ -f /usr/share/glib-2.0/schemas/org.gnome.shell.ubuntu.gschema.xml ]; then
+        sudo cp "$SCRIPT_DIR/macw1y-gdm/99_ubuntu.gschema.override" /usr/share/glib-2.0/schemas/
+        sudo chmod 644 /usr/share/glib-2.0/schemas/99_ubuntu.gschema.override
+    fi
 
     # 5. Neutralizing Ubuntu Yaru theme overrides
     if [ -f /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override ]; then
@@ -1485,11 +1494,15 @@ install_gdm_transition() {
 
     # 8. update-alternatives for GDM theme and icons
     if [ -f "$GRES_TARGET" ]; then
-        sudo update-alternatives --install /usr/share/gnome-shell/gdm-theme.gresource gdm-theme.gresource "$GRES_TARGET" 100 2>/dev/null || true
-        sudo update-alternatives --set gdm-theme.gresource "$GRES_TARGET" 2>/dev/null || true
+        if command -v update-alternatives >/dev/null 2>&1; then
+            sudo update-alternatives --install /usr/share/gnome-shell/gdm-theme.gresource gdm-theme.gresource "$GRES_TARGET" 100 2>/dev/null || true
+            sudo update-alternatives --set gdm-theme.gresource "$GRES_TARGET" 2>/dev/null || true
+        fi
     fi
     if [ -f /usr/share/gnome-shell/gnome-shell-icons.gresource ]; then
-        sudo update-alternatives --set gdm-icons.gresource /usr/share/gnome-shell/gnome-shell-icons.gresource 2>/dev/null || true
+        if command -v update-alternatives >/dev/null 2>&1; then
+            sudo update-alternatives --set gdm-icons.gresource /usr/share/gnome-shell/gnome-shell-icons.gresource 2>/dev/null || true
+        fi
     fi
 
     # 9. Configuring user avatar in AccountsService
@@ -1520,7 +1533,7 @@ install_gdm_transition() {
     [ ! -f /etc/gdm3/custom.conf ] || gdm_config=/etc/gdm3/custom.conf
     if [ -f "$gdm_config" ]; then
         sudo sed -i 's|^AutomaticLoginEnable=.*|AutomaticLoginEnable=false|' "$gdm_config"
-        sudo sed -i 's|^AutomaticLogin=.*|# AutomaticLogin=vitaliy|' "$gdm_config"
+        sudo sed -i "s|^AutomaticLogin=.*|# AutomaticLogin=$TARGET_USER|" "$gdm_config"
     fi
 
     sudo dconf update 2>/dev/null || true
@@ -1607,6 +1620,16 @@ EOF
 install_grub() {
     log_step "Stage 13/13: Installing macW1Y horizontal GRUB boot menu"
     require_root
+    
+    # Systemd-boot or non-GRUB bootloader check
+    if [ -d /boot/loader/entries ] || { command -v bootctl >/dev/null 2>&1 && bootctl is-installed 2>/dev/null; }; then
+        log_info "systemd-boot detected; skipping GRUB configuration."
+        return 0
+    fi
+    if ! command -v update-grub >/dev/null 2>&1 && ! command -v grub2-mkconfig >/dev/null 2>&1 && ! command -v grub-mkconfig >/dev/null 2>&1; then
+        log_warning "No GRUB configuration utility found; skipping GRUB setup."
+        return 0
+    fi
     
     local GRUB_TARGET="/boot/grub/themes/macw1y-boot"
     if [ -d "$SCRIPT_DIR/grub/macw1y-boot" ]; then

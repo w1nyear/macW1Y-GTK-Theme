@@ -1771,3 +1771,27 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
 - 11 тестів PASS; анімації 12/12; guard 21/21; audit PASS; i18n structural/fallback PASS. Nautilus і Параметри успішно запущено з --version на хості.
 - Обгортки синхронізовано з резервною копією. Пакети, завантажувач, режими живлення та поточний сеанс хоста не змінювалися.
 - Повні VM-тести і портування старіших GNOME залишаються відкритими; див. docs/diagnostics/2026-11-19-portability.md.
+
+
+825. 2026-11-19 — Повне перенесення проекту macW1Y на інші дистрибутиви (Debian, Fedora, Arch Linux, CachyOS):
+   - Матриця сумісності розширень GNOME 46–51:
+     1) Оновлено metadata.json для всіх 24 розширень (включно з dash2dock-motion, desktop-widgets, kiwi, liquid-glass, user-theme, wifi-hotspot-quick-settings тощо) з підтримкою версій GNOME Shell: ['46', '47', '48', '49', '50', '51'].
+     2) dependencies/check-platform.py адаптовано для підтримки систем GNOME 46+ (Ubuntu 24.04+, Debian 13+, Fedora 40+, Arch Linux, CachyOS); застарілі несумісні версії (< 46) безпечно блокуються на старті.
+     3) Оновлено config/extensions.lock.json з актуальними гешами каталогів і файлів: mac-extension-guard verify підтверджує 21/21 LOCKED OK.
+   - Відокремлення специфічних системних схем GDM:
+     1) Специфічні схеми Ubuntu (org.gnome.shell.ubuntu) перенесено з 99_mactheme.gschema.override у macw1y-gdm/99_ubuntu.gschema.override.
+     2) install.sh встановлює 99_ubuntu.gschema.override виключно на системах сімейства Debian за наявності встановленого постачальника схеми, що запобігає збоям glib-compile-schemas на Fedora та Arch Linux.
+   - Підтримка systemd-boot та безпека завантажувачів:
+     1) У install.sh (Stage 13) та uninstall.sh додано визначення активного завантажувача: при виявленні systemd-boot (/boot/loader/entries або bootctl is-installed) етап конфігурації GRUB коректно та безпечно пропускається без аварійного виходу.
+     2) Якщо у системі відсутні інструменти генерації GRUB (update-grub, grub2-mkconfig, grub-mkconfig), виводиться попередження без переривання установки.
+   - Відмовостійкість пакетного менеджера та тем курсора:
+     1) У dependencies/install-deps.sh додано поштучний фолбек для менеджерів dnf та pacman у разі помилок масового пакетного завантаження.
+     2) Для систем без update-alternatives (Fedora, Arch) реалізовано пряме налаштування default курсора у /usr/share/icons/default/index.theme.
+     3) Усунено хардкод імені користувача 'vitaliy' у конфігурації вимкнення автоматичного входу GDM, замінено на змінну $TARGET_USER.
+   - Верифікація:
+     1) Регресійні тести: python3 -m unittest discover -s tests -p 'test_*.py' — 12/12 PASS.
+     2) Безпека бібліотек: tests/portability/check-native.sh — 7/7 бібліотек збірка та лінкування PASS.
+     3) Аудит цілісності: python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     4) Аудит синхронізації: python3 bin/mac-audit-sync check — 100% PASS.
+     5) Інтернаціоналізація: bin/mac-i18n-verify — 100% PASS.
+     6) Анімаційний рушій: python3 bin/test-macw1y-animations.py — 12/12 PASS (100.0%).

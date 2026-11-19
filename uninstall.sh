@@ -243,23 +243,28 @@ restore_system() {
     fi
     
     # GRUB
-    log_info "Відновлення оригінальної конфігурації GRUB..."
-    if [ -f /etc/default/grub.bak_mactheme ]; then
-        sudo cp /etc/default/grub.bak_mactheme /etc/default/grub
+    if [ -d /boot/loader/entries ] || { command -v bootctl >/dev/null 2>&1 && bootctl is-installed 2>/dev/null; }; then
+        log_info "Виявлено systemd-boot; пропуск повернення GRUB..."
+        sudo rm -rf /boot/grub/themes/macw1y-boot
     else
-        sudo sed -i '/GRUB_THEME.*macw1y-boot/d' /etc/default/grub 2>/dev/null || true
-    fi
-    
-    if [ -f /etc/grub.d/10_linux.bak_mactheme ]; then
-        sudo cp /etc/grub.d/10_linux.bak_mactheme /etc/grub.d/10_linux
-    fi
-    sudo rm -rf /boot/grub/themes/macw1y-boot
-    if command -v update-grub >/dev/null 2>&1; then
-        sudo update-grub
-    elif command -v grub2-mkconfig >/dev/null 2>&1; then
-        sudo grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null || true
-    elif command -v grub-mkconfig >/dev/null 2>&1; then
-        sudo grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || true
+        log_info "Відновлення оригінальної конфігурації GRUB..."
+        if [ -f /etc/default/grub.bak_mactheme ]; then
+            sudo cp /etc/default/grub.bak_mactheme /etc/default/grub
+        else
+            sudo sed -i '/GRUB_THEME.*macw1y-boot/d' /etc/default/grub 2>/dev/null || true
+        fi
+        
+        if [ -f /etc/grub.d/10_linux.bak_mactheme ]; then
+            sudo cp /etc/grub.d/10_linux.bak_mactheme /etc/grub.d/10_linux
+        fi
+        sudo rm -rf /boot/grub/themes/macw1y-boot
+        if command -v update-grub >/dev/null 2>&1; then
+            sudo update-grub
+        elif command -v grub2-mkconfig >/dev/null 2>&1; then
+            sudo grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null || true
+        elif command -v grub-mkconfig >/dev/null 2>&1; then
+            sudo grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || true
+        fi
     fi
     
     sudo systemctl daemon-reload

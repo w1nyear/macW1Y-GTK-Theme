@@ -8,7 +8,12 @@
   ],
   "settings-schema": "org.gnome.shell.extensions.user-theme",
   "shell-version": [
-    "50"
+    "46",
+    "47",
+    "48",
+    "49",
+    "50",
+    "51"
   ],
   "session-modes": [
     "user",

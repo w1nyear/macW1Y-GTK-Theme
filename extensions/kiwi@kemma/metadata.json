@@ -9,6 +9,8 @@
   "name": "Kiwi Component Suite",
   "settings-schema": "org.gnome.shell.extensions.kiwi",
   "shell-version": [
+    "46",
+    "47",
     "48",
     "49",
     "50",

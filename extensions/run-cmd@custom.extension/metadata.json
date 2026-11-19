@@ -2,5 +2,12 @@
   "name": "Ydotool Trigger",
   "description": "Запускает эмуляцию нажатия клавиш через ydotool",
   "uuid": "run-cmd@custom.extension",
-  "shell-version": [ "49", "50", "51" ]
+  "shell-version": [
+    "46",
+    "47",
+    "48",
+    "49",
+    "50",
+    "51"
+  ]
 }
