@@ -2005,3 +2005,24 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-audit-sync check — 100% PASS.
      * python3 bin/mac-i18n-verify — 100% PASS.
      * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
+
+835. 2026-11-19 — Усунення збою компіляції GLSL-шейдера фонового скла у віджетах робочого столу (cogl_sampler0):
+   - Файли та рядки змін:
+     1) extensions/desktop-widgets@r3nhick/lib/glass.js:
+        * рядок 64: додано обов'язкове оголошення `uniform sampler2D cogl_sampler0;` у DECLARATIONS для шейдера скла віджетів; у GNOME 50+ / Mutter 18 при використанні Clutter.ShaderEffect.prototype.set_shader_source шейдер компілюється напряму в OpenGL без автоматичного додавання Cogl-сніпетів, через що компілятор GLSL завершував роботу з фатальною помилкою `cogl_sampler0 undeclared` і Mutter повністю вимикав ефект фонового скла віджетів.
+        * рядок 400: додано оголошення `uniform sampler2D cogl_sampler0;` до CLIP_SHADER_SOURCE для коректної компіляції округленого маскування без помилок лінкування.
+        * рядки 299, 344, 382, 445, 474, 498, 521, 525: оновлено GType-імена та ключі кешу глобального простору імен (DesktopWidgets_LiquidGlassEffectV5, DesktopWidgets_LiquidGlassEffectV5Compat, DesktopWidgets_RoundedClipEffectV3, DesktopWidgets_RoundedClipEffectV3Compat, DesktopWidgets_LiquidGlassV5), що гарантує негайне завантаження виправлених класів шейдерів без конфліктів зі застарілими версіями у globalThis.
+        * рядки 612-615: у методі `setParams()` встановлено мінімальний ефективний радіус розмиття `Math.max(18, Math.round(p.blurRadius * BLUR_RADIUS_SCALE))` за наявності розмиття, завдяки чому віджети отримують виразний, красивий ефект матового скла Liquid Glass над шпалерами навіть при малих базових значеннях налаштувань.
+     2) config/extensions.lock.json:
+        * оновлено хеш sha256 для розширення desktop-widgets@r3nhick до 69ce120b940e1827bf05e5db3f838c533e942c442cf8b05aabb099ee6b4e90e7.
+   - Синхронізація:
+     * Модифікований glass.js синхронізовано з ~/.local/share/gnome-shell/extensions/desktop-widgets@r3nhick/lib/glass.js та /usr/share/gnome-shell/extensions/desktop-widgets@r3nhick/lib/glass.js.
+     * За допомогою EvalHelper гаряче замінено актори view.glass на всіх 5 активних віджетах у GNOME Shell; перевірено за допомогою journalctl — помилки компіляції GLSL та лінкування зникли повністю, усі шейдери скомпільовані успішно, ефект активний.
+     * done.txt скопійовано до ~/Desktop/done.txt.
+   - Тестування та перевірка:
+     * Отримано статус контролера desktop-widgets через D-Bus: усі 5 віджетів (годинник, календар, батарея, система, музика) мають активний LiquidGlassEffectCompat, blurRadius=18, effEnabled=true.
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 14/14 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * Перевірка відсутності кирилиці в install.sh — 0 знайдено.

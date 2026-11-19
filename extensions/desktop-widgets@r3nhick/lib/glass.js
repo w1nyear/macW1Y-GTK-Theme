@@ -61,6 +61,7 @@ export function effectFrame(x, y, width, height) {
 // prefixed lg_ to stay clear of Cogl's names, and the texture is passed in
 // as a parameter because only the snippet body can name cogl_sampler0.
 const DECLARATIONS = `
+uniform sampler2D cogl_sampler0;
 uniform vec2  lg_size;
 uniform float lg_radius;
 uniform float lg_roundness;
@@ -295,7 +296,7 @@ function defineLiquidGlassEffect() {
         // Explicit GTypeName: the automatic one is derived from the module
         // path and would collide with other extensions that also ship a
         // lib/glass.js (e.g. liquidglass-widgets).
-        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV4'},
+        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV5'},
         class LiquidGlassEffect extends Clutter.ShaderEffect {
             _init() {
                 super._init();
@@ -340,7 +341,7 @@ function defineLiquidGlassEffect() {
 // claimed the first one.
 function defineLiquidGlassEffectCompat() {
     return GObject.registerClass(
-        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV4Compat'},
+        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV5Compat'},
         class LiquidGlassEffectCompat extends Clutter.ShaderEffect {
             _init() {
                 super._init();
@@ -376,9 +377,9 @@ function defineLiquidGlassEffectCompat() {
 }
 
 // Register the effect class only once, store in globalThis to survive reloads
-// V4: a fresh key, so an enable/disable cycle cannot reuse a class cached by
+// V5: a fresh key, so an enable/disable cycle cannot reuse a class cached by
 // an earlier build in this shell session.
-const EFFECT_CLASS_KEY = 'DesktopWidgets_LiquidGlassEffectV4';
+const EFFECT_CLASS_KEY = 'DesktopWidgets_LiquidGlassEffectV5';
 if (!globalThis[EFFECT_CLASS_KEY]) {
     try {
         globalThis[EFFECT_CLASS_KEY] = defineLiquidGlassEffect();
@@ -396,6 +397,7 @@ const LiquidGlassEffect = globalThis[EFFECT_CLASS_KEY];
 // rounded rect of the widget's own border-radius (1 px AA feather).
 // Used only while a page flight runs, so idle rendering is untouched.
 const CLIP_SHADER_SOURCE = `
+uniform sampler2D cogl_sampler0;
 uniform vec2  rc_size;
 uniform float rc_radius;
 uniform vec4  rc_frame;
@@ -440,7 +442,7 @@ function clipSetRect(effect, x, y, width, height, radius) {
 
 function defineRoundedClipEffect() {
     return GObject.registerClass(
-        {GTypeName: 'DesktopWidgets_RoundedClipEffectV2'},
+        {GTypeName: 'DesktopWidgets_RoundedClipEffectV3'},
         class RoundedClipEffect extends Clutter.ShaderEffect {
             _init() {
                 super._init();
@@ -469,7 +471,7 @@ function defineRoundedClipEffect() {
 
 function defineRoundedClipEffectCompat() {
     return GObject.registerClass(
-        {GTypeName: 'DesktopWidgets_RoundedClipEffectV2Compat'},
+        {GTypeName: 'DesktopWidgets_RoundedClipEffectV3Compat'},
         class RoundedClipEffectCompat extends Clutter.ShaderEffect {
             _init() {
                 super._init();
@@ -493,7 +495,7 @@ function defineRoundedClipEffectCompat() {
     );
 }
 
-const CLIP_CLASS_KEY = 'DesktopWidgets_RoundedClipEffectV2';
+const CLIP_CLASS_KEY = 'DesktopWidgets_RoundedClipEffectV3';
 if (!globalThis[CLIP_CLASS_KEY]) {
     try {
         globalThis[CLIP_CLASS_KEY] = defineRoundedClipEffect();
@@ -516,11 +518,11 @@ export function monitorIndexAt(x, y) {
 }
 
 // Register the LiquidGlass class only once, store in globalThis to survive reloads
-const GLASS_CLASS_KEY = 'DesktopWidgets_LiquidGlassV4';
+const GLASS_CLASS_KEY = 'DesktopWidgets_LiquidGlassV5';
 if (!globalThis[GLASS_CLASS_KEY]) {
     globalThis[GLASS_CLASS_KEY] = GObject.registerClass(
         // Same as the effect class: collision-proof GType name.
-        {GTypeName: 'DesktopWidgets_LiquidGlassV4'},
+        {GTypeName: 'DesktopWidgets_LiquidGlassV5'},
         class LiquidGlass extends St.Widget {
             _init() {
                 super._init({clip_to_allocation: true, style: 'background-color: transparent;'});
@@ -607,9 +609,11 @@ if (!globalThis[GLASS_CLASS_KEY]) {
             : [0, 0, 0, 0]);
 
         this._blurBox.visible = !p.solid;
-        this._blurEffect.enabled = p.blurRadius > 0;
-        this._blurEffect.radius =
-            Math.min(MAX_BLUR_RADIUS, Math.round(p.blurRadius * BLUR_RADIUS_SCALE));
+        const effectiveRadius = p.blurRadius > 0
+            ? Math.max(18, Math.round(p.blurRadius * BLUR_RADIUS_SCALE))
+            : 0;
+        this._blurEffect.enabled = effectiveRadius > 0;
+        this._blurEffect.radius = Math.min(MAX_BLUR_RADIUS, effectiveRadius);
 
         e.queue_repaint();
     }
