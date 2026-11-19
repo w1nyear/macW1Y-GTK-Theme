@@ -2195,3 +2195,31 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-i18n-verify — 100% PASS.
      * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
      * Без виходу з сеансу, без перезавантаження та вимикання ПК, без git push.
+
+842. 2026-11-19 — Синхронізація розмиття віджетів з пунктом Мак стилізації (усунення фіксованого блюру):
+   - Причина звернення:
+     * У налаштуваннях "Мак стилізація" розмиття віджетів було встановлено на 1 піксель (`widget_blur = 1`, `blur-radius-px = 1`), проте на робочому столі віджети зберігали фіксоване розмите зображення (18px), ігноруючи будь-які зміни повзунка розмиття у параметрах.
+   - Розслідування та причина проблеми:
+     * У методі `LiquidGlass.setParams()` файлу `lib/glass.js` розрахунок радіуса розмиття містив примусове штучне обмеження `Math.max(18, Math.round(p.blurRadius * BLUR_RADIUS_SCALE))`. Через `Math.max(18, ...)` будь-яке значення радіуса від 1 до 6 пікселів примусово перетворювалося на фіксовані 18px розмиття, блокуючи тонке налаштування з Центру керування / Мак стилізації.
+   - Файли та внесені зміни:
+     1) extensions/desktop-widgets@r3nhick/lib/glass.js:
+        * Виправлено розрахунок `effectiveRadius`: прибрано штучне обмеження `Math.max(18, ...)` та масштабування. Радіус ефекту розмиття `Shell.BlurEffect` тепер точно відповідає налаштуванню `p.blurRadius` в пікселях (`Math.min(MAX_BLUR_RADIUS, Math.max(0, Math.round(rawRadius)))`). При `blurRadius = 0` ефект розмиття коректно вимикається (`enabled = false`), а при `blurRadius = 1` встановлюється точне 1px розмиття.
+        * Оновлено клас `DesktopWidgets_LiquidGlassV8` та ключ кешу `GLASS_CLASS_KEY = 'DesktopWidgets_LiquidGlassV8'` для безшовного оновлення у поточному сеансі.
+     2) extensions/desktop-widgets@r3nhick/extension.js:
+        * Оновлено виклик `getLiquidGlass() = () => globalThis.DesktopWidgets_LiquidGlassV8 || LiquidGlass`.
+     3) extensions/desktop-widgets@r3nhick/lib/widgetGlass.js:
+        * Оновлено фабрику класу до `DesktopWidgets_LiquidGlassV8`.
+     4) config/extensions.lock.json:
+        * Оновлено sha256 для `desktop-widgets@r3nhick` (`82581b23936c54a6329e87020a92bab2fe1122e74823dbd61d806c6a208e0e63`).
+   - Синхронізація:
+     * Усі файли розширення синхронізовано до `~/.local/share/gnome-shell/extensions/desktop-widgets@r3nhick/` та `/usr/share/gnome-shell/extensions/desktop-widgets@r3nhick/`.
+     * `config/extensions.lock.json` синхронізовано до `/usr/share/mactheme/config/extensions.lock.json`.
+     * У живому сеансі GNOME Shell через EvalHelper усі 5 активних віджетів оновлено до версії V8; підтверджено динамічну зміну радіуса розмиття наживо при зміні налаштувань (`blur-radius-px: 1 -> 1`, `5 -> 5`, `1 -> 1`).
+     * `done.txt` синхронізовано з `~/Desktop/done.txt`.
+   - Тестування та перевірка:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 17/17 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
+     * Без виходу з сеансу, без перезавантаження та вимикання ПК, без git push.

@@ -713,11 +713,11 @@ export function monitorIndexAt(x, y) {
 }
 
 // Register the LiquidGlass class only once, store in globalThis to survive reloads
-const GLASS_CLASS_KEY = 'DesktopWidgets_LiquidGlassV7';
+const GLASS_CLASS_KEY = 'DesktopWidgets_LiquidGlassV8';
 if (!globalThis[GLASS_CLASS_KEY]) {
     globalThis[GLASS_CLASS_KEY] = GObject.registerClass(
         // Same as the effect class: collision-proof GType name.
-        {GTypeName: 'DesktopWidgets_LiquidGlassV7'},
+        {GTypeName: 'DesktopWidgets_LiquidGlassV8'},
         class LiquidGlass extends St.Widget {
             _init() {
                 super._init({clip_to_allocation: true, style: 'background-color: transparent;'});
@@ -728,7 +728,7 @@ if (!globalThis[GLASS_CLASS_KEY]) {
                 this._blurEffect = new Shell.BlurEffect({
                     mode: Shell.BlurMode.ACTOR,
                     brightness: 1.0,
-                    radius: 6 * BLUR_RADIUS_SCALE,
+                    radius: 1,
                 });
                 this._blurBox = new St.Widget({clip_to_allocation: true, style: 'background-color: transparent;'});
                 this._blurBox.add_effect(this._blurEffect);
@@ -804,11 +804,12 @@ if (!globalThis[GLASS_CLASS_KEY]) {
             : [0, 0, 0, 0]);
 
         this._blurBox.visible = !p.solid;
-        const effectiveRadius = p.blurRadius > 0
-            ? Math.max(18, Math.round(p.blurRadius * BLUR_RADIUS_SCALE))
+        const rawRadius = typeof p.blurRadius === 'number' ? p.blurRadius : 0;
+        const effectiveRadius = rawRadius > 0
+            ? Math.min(MAX_BLUR_RADIUS, Math.max(0, Math.round(rawRadius)))
             : 0;
         this._blurEffect.enabled = effectiveRadius > 0;
-        this._blurEffect.radius = Math.min(MAX_BLUR_RADIUS, effectiveRadius);
+        this._blurEffect.radius = effectiveRadius;
 
         e.queue_repaint();
     }

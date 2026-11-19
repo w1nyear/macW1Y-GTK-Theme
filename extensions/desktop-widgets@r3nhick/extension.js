@@ -48,7 +48,7 @@ import * as TimerWidget from './widgets/timer/widget.js';
 import { configureLogger, resetLogger, warn } from './logger.js';
 import { assetPath } from './paths.js';
 import { LiquidGlass } from './lib/glass.js';
-const getLiquidGlass = () => globalThis.DesktopWidgets_LiquidGlassV7 || LiquidGlass;
+const getLiquidGlass = () => globalThis.DesktopWidgets_LiquidGlassV8 || LiquidGlass;
 import { UpdateChecker } from './lib/updates.js';
 import { createHoldWatch, BUTTON1_MASK } from './lib/pager.js';
 // (The screen-time engine runs inside the screentime widget; extension.js no
