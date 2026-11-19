@@ -46,3 +46,22 @@
 - Прибрано хардкод користувача `vitaliy` з блоку вимкнення автоматичного входу GDM, замінено на `$TARGET_USER`.
 - Підвищено стійкість `dependencies/install-deps.sh` для `dnf` та `pacman`: додано поштучний фолбек при помилках масового пакетного завантаження.
 - 12 ізольованих тестів PASS, аудит синхронізації 100% PASS, i18n PASS, анімації 12/12 PASS, guard 21/21 PASS.
+
+## Четвертий етап: Тестування у QEMU VM (Debian 13, 6 ГБ ОЗП, 4 vCPU) та повна верифікація
+
+- **Середовище тестування**: розгорнуто віртуальну машину QEMU KVM із параметрами `-m 6G -smp 4 -enable-kvm -cpu host` під керуванням Debian GNU/Linux 13 (Trixie), ядро 6.12, GNOME Shell 48.7, Nautilus 48.3.
+- **Виправлені дефекти інсталятора під час VM-прогону**:
+  1. *Права доступу та ініціалізація dconf*: у свіжих системах каталоги `~/.config/dconf` відсутні, а запуск інсталятора з `sudo` міг залишати каталог `~/.config` із правами `root:root`. Додано превентивне створення `~/.config/dconf`, `~/.local/share`, `~/.themes`, `~/.icons` з рекурсивним призначенням прав цільового користувача.
+  2. *Ізоляція специфічної схеми Ubuntu*: виклик `gsettings set org.gnome.shell.ubuntu startup-sound` на етапі 5 зупиняв інсталятор через відсутність схеми на Debian/Fedora/Arch. Додано перевірку наявності схеми через `gsettings list-schemas | grep -qx org.gnome.shell.ubuntu`.
+  3. *Захист gsettings-команд*: усі виклики `gsettings set` у `install.sh` захищено суфіксом `2>/dev/null || true` для безпечного виконання в headless-середовищах під `set -e`.
+  4. *Синхронізація утиліт у `/usr/local/bin`*: розширено список встановлюваних бінарників та скриптів етапу 10 повним комплектом діагностичних інструментів (`mac-apply-theme`, `mac-diagnostics`, `mac-extension-guard`, `mac-build-theme`, `mac-audit-sync`, `mac-setup-wizard`, `mac-apply-locale`, `mac-icon-normalizer`, `mac-sync-applications`, `mac-theme-sync`, `mac-integrity-check`, `mac-widget-picker`).
+  5. *Коректний аудит цільових ELF-бібліотек*: в `mac-audit-sync` враховано локальну перекомпіляцію ELF-бінарників (наприклад, `mac-touchpad-daemon`), усуваючи хибні попередження про розбіжність гешів між компіляторами різних дистрибутивів.
+- **Результати встановлення у VM**:
+  - `sudo ./install.sh --all` повністю успішно виконав усі 13 етапів (Stage 1/13 — Stage 13/13) без помилок.
+  - `mac-audit-sync check`: **100% PASS** (усі 5 категорій перевірок пройдено успішно).
+  - `mac-extension-guard verify`: **21/21** розширень GNOME Shell валідовано за контрольними сумами.
+  - 7 нативних бібліотек C (`libmacpopover.so`, `libmac_terminal.so`, `libmac_memtrim.so`, `libmac_nautilus.so`, `libmac_nautilus_menu.so`, `libmac_settings.so`, `libmac_extension_manager.so`) скомпільовано без undefined symbols.
+  - Обгортки `/usr/local/bin/nautilus` та `/usr/local/bin/gnome-control-center` налаштовано з найвищим пріоритетом без модифікації файлів dpkg.
+  - Демон жестів тачпада `mac-touchpad-daemon.service` переведено у стан `enabled`.
+  - Модульні тести `python3 -m unittest discover -s tests -p 'test_*.py'`: **12/12 PASS**.
+

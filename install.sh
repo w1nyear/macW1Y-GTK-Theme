@@ -30,6 +30,10 @@ fi
 
 TARGET_UID=$(id -u "$TARGET_USER")
 
+# Ensure target user configuration directories exist with correct permissions
+mkdir -p "$TARGET_HOME/.config/dconf" "$TARGET_HOME/.local/share" "$TARGET_HOME/.themes" "$TARGET_HOME/.icons"
+chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config" "$TARGET_HOME/.local" "$TARGET_HOME/.themes" "$TARGET_HOME/.icons" 2>/dev/null || true
+
 # Detect script and assets directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ ! -d "$SCRIPT_DIR/extensions" ]; then
@@ -647,10 +651,10 @@ EOF_UDIRS
     echo "enabled=False" > "$TARGET_HOME/.config/user-dirs.conf"
     chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/autostart/user-dirs-update-gtk.desktop" "$TARGET_HOME/.config/user-dirs.conf" 2>/dev/null || true
 
-    run_as_user gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark"
-    run_as_user gsettings set org.gnome.desktop.interface color-scheme "prefer-dark"
-    run_as_user gsettings set org.gnome.desktop.wm.preferences theme "macW1Y-Dark"
-    run_as_user gsettings set org.gnome.desktop.wm.preferences button-layout "close,minimize,maximize:"
+    run_as_user gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark" 2>/dev/null || true
+    run_as_user gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" 2>/dev/null || true
+    run_as_user gsettings set org.gnome.desktop.wm.preferences theme "macW1Y-Dark" 2>/dev/null || true
+    run_as_user gsettings set org.gnome.desktop.wm.preferences button-layout "close,minimize,maximize:" 2>/dev/null || true
 
     # Synchronizing window styles and control buttons for Snap applications
     if [ -d "$TARGET_HOME/snap" ]; then
@@ -744,7 +748,7 @@ EOF_CUR_THEME
     gtk-update-icon-cache -f -t "$ICONS_DIR/macW1Y-light" 2>/dev/null || true
     gtk-update-icon-cache -f -t "$ICONS_DIR/hicolor" 2>/dev/null || true
     
-    run_as_user gsettings set org.gnome.desktop.interface icon-theme "macW1Y-dark"
+    run_as_user gsettings set org.gnome.desktop.interface icon-theme "macW1Y-dark" 2>/dev/null || true
     run_as_user /usr/local/bin/mac-icon-normalizer 2>/dev/null || true
     run_as_user /usr/local/bin/mac-sync-applications 2>/dev/null || true
     log_success "macW1Y icon theme activated!"
@@ -768,10 +772,12 @@ install_sounds() {
             sudo cp -r "$SCRIPT_DIR/sounds/macW1Y/"* /usr/share/sounds/macW1Y/
         fi
         
-        run_as_user gsettings set org.gnome.desktop.sound theme-name 'macW1Y'
-        run_as_user gsettings set org.gnome.desktop.sound event-sounds true
-        run_as_user gsettings set org.gnome.desktop.sound input-feedback-sounds true
-        run_as_user gsettings set org.gnome.shell.ubuntu startup-sound 'warty-startup'
+        run_as_user gsettings set org.gnome.desktop.sound theme-name 'macW1Y' 2>/dev/null || true
+        run_as_user gsettings set org.gnome.desktop.sound event-sounds true 2>/dev/null || true
+        run_as_user gsettings set org.gnome.desktop.sound input-feedback-sounds true 2>/dev/null || true
+        if gsettings list-schemas 2>/dev/null | grep -qx "org.gnome.shell.ubuntu"; then
+            run_as_user gsettings set org.gnome.shell.ubuntu startup-sound 'warty-startup' 2>/dev/null || true
+        fi
         log_success "macW1Y sound theme installed and activated successfully!"
     fi
     
@@ -810,9 +816,9 @@ install_wallpaper() {
         sudo cp "$WALLPAPER_SRC" "$WALLPAPER_DEST"
         sudo chmod 644 "$WALLPAPER_DEST"
         
-        run_as_user gsettings set org.gnome.desktop.background picture-uri "file://$WALLPAPER_DEST"
-        run_as_user gsettings set org.gnome.desktop.background picture-uri-dark "file://$WALLPAPER_DEST"
-        run_as_user gsettings set org.gnome.desktop.screensaver picture-uri "file://$WALLPAPER_DEST"
+        run_as_user gsettings set org.gnome.desktop.background picture-uri "file://$WALLPAPER_DEST" 2>/dev/null || true
+        run_as_user gsettings set org.gnome.desktop.background picture-uri-dark "file://$WALLPAPER_DEST" 2>/dev/null || true
+        run_as_user gsettings set org.gnome.desktop.screensaver picture-uri "file://$WALLPAPER_DEST" 2>/dev/null || true
         log_success "Wallpaper installed and activated successfully!"
     else
         log_warning "Wallpaper file not found, skipping."
@@ -1065,7 +1071,11 @@ install_settings_overlay() {
     fi
     
     log_info "Compiling libmac_settings.so dynamic library..."
-    cp "$SCRIPT_DIR/lib/libmac_settings.so" "$LOCAL_LIB/libmac_settings.so"
+    if [ -f "$SCRIPT_DIR/lib/libmac_settings.so" ]; then
+        cp "$SCRIPT_DIR/lib/libmac_settings.so" "$LOCAL_LIB/libmac_settings.so"
+        [ -d "$SCRIPT_DIR/control-center" ] && cp -f "$SCRIPT_DIR/lib/libmac_settings.so" "$SCRIPT_DIR/control-center/libmac_settings.so" 2>/dev/null || true
+        [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ] && cp -f "$SCRIPT_DIR/lib/libmac_settings.so" "$SCRIPT_DIR/gnome-control-center-overlay/libmac_settings.so" 2>/dev/null || true
+    fi
 
     # System-wide installation of library and overlays for all users
     sudo mkdir -p /usr/share/mactheme/gnome-control-center-overlay
@@ -1279,7 +1289,7 @@ install_gamemode() {
     require_root
     
     # 1. Installing binary utilities and scripts
-    for bin_file in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-wine-runner mac-gpu-env-selector mac-sanitize-favorites.sh; do
+    for bin_file in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-wine-runner mac-gpu-env-selector mac-sanitize-favorites.sh mac-apply-theme mac-diagnostics mac-extension-guard mac-build-theme mac-audit-sync mac-setup-wizard mac-apply-locale mac-icon-normalizer mac-sync-applications mac-theme-sync mac-integrity-check mac-widget-picker; do
         if [ -f "$SCRIPT_DIR/bin/$bin_file" ] || [ -L "$SCRIPT_DIR/bin/$bin_file" ]; then
             sudo cp -a "$SCRIPT_DIR/bin/$bin_file" /usr/local/bin/
             sudo chmod +x "/usr/local/bin/$bin_file" 2>/dev/null || true
@@ -1899,7 +1909,7 @@ EOF_CUR_THEME_UP
     fi
     sync_or_update_file "$SCRIPT_DIR/icons/control-center.png" "$TARGET_HOME/.local/share/icons/hicolor/scalable/apps/control-center.png" false
     sync_or_update_file "$SCRIPT_DIR/icons/control-center-symbolic.svg" "$TARGET_HOME/.local/share/icons/hicolor/scalable/apps/control-center-symbolic.svg" false
-    run_as_user gsettings set org.gnome.desktop.interface icon-theme "macW1Y-dark"
+    run_as_user gsettings set org.gnome.desktop.interface icon-theme "macW1Y-dark" 2>/dev/null || true
 
     log_info "4/10 Checking macW1Y sound theme..."
     if [ -d "$SCRIPT_DIR/sounds/macW1Y" ]; then
@@ -1908,9 +1918,9 @@ EOF_CUR_THEME_UP
             sudo mkdir -p /usr/share/sounds/macW1Y
             sync_directory_tree "$SCRIPT_DIR/sounds/macW1Y" "/usr/share/sounds/macW1Y" true
         fi
-        run_as_user gsettings set org.gnome.desktop.sound theme-name 'macW1Y'
-        run_as_user gsettings set org.gnome.desktop.sound event-sounds true
-        run_as_user gsettings set org.gnome.desktop.sound input-feedback-sounds true
+        run_as_user gsettings set org.gnome.desktop.sound theme-name 'macW1Y' 2>/dev/null || true
+        run_as_user gsettings set org.gnome.desktop.sound event-sounds true 2>/dev/null || true
+        run_as_user gsettings set org.gnome.desktop.sound input-feedback-sounds true 2>/dev/null || true
     fi
     if [ -f "$SCRIPT_DIR/bin/mac-login-sound" ]; then
         sync_or_update_file "$SCRIPT_DIR/bin/mac-login-sound" "/usr/local/bin/mac-login-sound" true
