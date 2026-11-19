@@ -2081,3 +2081,27 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
    - config/extensions.lock.json: оновлено чотири змінені розширення. Скрипт, lock і зміни розширень синхронізовано на диск хоста; також синхронізовано вже наявне в репо виправлення appindicator/dbusMenu.js після резервного копіювання старого файла. Shell хоста не перезапускався.
    - docs/diagnostics/2026-11-19-portability.md: докази, обмеження й повний план продовження; 2026-11-19-fedora-runtime.json: машинний стан розширень.
    - Оцінка готовності 70–75%, орієнтовно. done.txt скопійовано на Desktop. Без push, змін режимів живлення та перезапуску хоста.
+
+838. 2026-11-19 — Відновлення радіуса заокруглень (31px) та форми скла у віджетах робочого столу:
+   - Причина виникнення проблеми:
+     * У GNOME 50.1 / Mutter 18 для offscreen шейдерних ефектів (`Clutter.ShaderEffect`) рендеринг виконується через конвеєр `CoglPipeline`, а не застарілий `CoglProgram`.
+     * Попередній виклик `this.set_uniform_value` в `LiquidGlassEffect` записував значення уніформ лише у `CoglProgram`, залишаючи значення уніформ на активному `CoglPipeline` нульовими за замовчуванням (`lg_radius = 0.0`). Через це SDF-шейдер скляного віджета обчислював прямокутну форму з прямими кутами 90° замість заокругленого сквиркла/прямокутника з радіусом 31px.
+   - Файли та рядки змін:
+     1) extensions/desktop-widgets@r3nhick/lib/glass.js:
+        * рядки 294-391: оновлено класи `DesktopWidgets_LiquidGlassEffectV6` та `DesktopWidgets_LiquidGlassEffectV6Compat` — впроваджено кешування уніформ `_cachedUniforms = new Map()` при їх передачі з JS; додано метод `_applyCachedUniforms(pipe)` для прямого встановлення уніформ на `CoglPipeline` за допомогою `pipe.set_uniform_1f(loc, val)`; додано хук віртуальної функції `vfunc_paint_target(...args)`, який гарантовано передає закешовані уніформи (зокрема `lg_radius: 31.0`, `lg_size`, `lg_frame`, `lg_roundness`, `lg_specStrength`, `lg_tint`) на `CoglPipeline` під час кожного оновлення конвеєра рендерингу перед малюванням;
+        * рядки 430-520: аналогічно оновлено `DesktopWidgets_RoundedClipEffectV4` та `DesktopWidgets_RoundedClipEffectV4Compat` з кешуванням уніформ та їх передачею на конвеєр `CoglPipeline` через `pipe.set_uniform_1f`;
+        * рядки 520-535: оновлено клас `DesktopWidgets_LiquidGlassV6` для створення та прив'язки ефекту версії V6.
+     2) config/extensions.lock.json:
+        * оновлено хеш sha256 для розширення `desktop-widgets@r3nhick` (`08e542f2c3dcf8764ff744cb2d1a3cf4d7299d55e82c4e16db631ece487e7b04`).
+   - Синхронізація:
+     * Модифікований `lib/glass.js` синхронізовано до `~/.local/share/gnome-shell/extensions/desktop-widgets@r3nhick/lib/glass.js` та `/usr/share/gnome-shell/extensions/desktop-widgets@r3nhick/lib/glass.js`.
+     * `config/extensions.lock.json` синхронізовано до `/usr/share/mactheme/config/extensions.lock.json`.
+     * У GNOME Shell через EvalHelper перепідключено всі 5 активних віджетів (clock-1, calendar-1, battery-1, system, music) до ефекту V6 з безпосереднім застосуванням `lg_radius = 31.0` на `CoglPipeline` без перезавантаження оболонки.
+     * `done.txt` синхронізовано з `~/Desktop/done.txt`.
+   - Тестування та перевірка:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 17/17 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
+     * Перевірка journalctl на помилки GLSL/Cogl/Shader/JS — 0 помилок.

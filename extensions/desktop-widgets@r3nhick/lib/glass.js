@@ -296,10 +296,13 @@ function defineLiquidGlassEffect() {
         // Explicit GTypeName: the automatic one is derived from the module
         // path and would collide with other extensions that also ship a
         // lib/glass.js (e.g. liquidglass-widgets).
-        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV5'},
+        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV6'},
         class LiquidGlassEffect extends Clutter.ShaderEffect {
             _init() {
                 super._init();
+                this._cachedUniforms = new Map();
+                this._pipelineInitialized = null;
+                this._uniformsDirty = true;
                 if (!USES_SHADER_SNIPPET_API) {
                     try {
                         this.set_shader_source(SHADER_SOURCE);
@@ -315,19 +318,70 @@ function defineLiquidGlassEffect() {
                 return createFragmentShaderSnippet(SHADER_SOURCE);
             }
 
+            _applyCachedUniforms(pipe) {
+                if (!this._cachedUniforms)
+                    return;
+                const pipeline = pipe || (this.get_pipeline ? this.get_pipeline() : null);
+                if (pipeline) {
+                    for (const [uname, val] of this._cachedUniforms) {
+                        try {
+                            const loc = pipeline.get_uniform_location(uname);
+                            if (loc >= 0)
+                                pipeline.set_uniform_1f(loc, val);
+                        } catch (e) {}
+                    }
+                    this._pipelineInitialized = pipeline;
+                }
+            }
+
+            vfunc_paint_target(...args) {
+                const pipe = this.get_pipeline ? this.get_pipeline() : null;
+                if (pipe && (this._pipelineInitialized !== pipe || this._uniformsDirty)) {
+                    this._applyCachedUniforms(pipe);
+                    this._uniformsDirty = false;
+                }
+                super.vfunc_paint_target(...args);
+            }
+
             setUniform(name, values) {
                 const arr = Array.isArray(values) ? values : [values];
-                try {
-                    if (arr.length === 1) {
-                        this.set_uniform_value(`lg_${name}`, Number(arr[0]));
-                    } else {
-                        for (let i = 0; i < arr.length; i++) {
-                            this.set_uniform_value(`lg_${name}_${i}`, Number(arr[i]));
-                        }
+                if (!this._cachedUniforms)
+                    this._cachedUniforms = new Map();
+
+                const pipe = this.get_pipeline ? this.get_pipeline() : null;
+
+                if (arr.length === 1) {
+                    const uname = `lg_${name}`;
+                    const val = Number(arr[0]);
+                    this._cachedUniforms.set(uname, val);
+                    if (pipe) {
+                        try {
+                            const loc = pipe.get_uniform_location(uname);
+                            if (loc >= 0)
+                                pipe.set_uniform_1f(loc, val);
+                        } catch (e) {}
                     }
-                } catch (e) {
-                    console.warn(`[desktop-widgets glass] set_uniform_value failed for lg_${name}:`, e);
+                    try {
+                        this.set_uniform_value(uname, val);
+                    } catch (e) {}
+                } else {
+                    for (let i = 0; i < arr.length; i++) {
+                        const uname = `lg_${name}_${i}`;
+                        const val = Number(arr[i]);
+                        this._cachedUniforms.set(uname, val);
+                        if (pipe) {
+                            try {
+                                const loc = pipe.get_uniform_location(uname);
+                                if (loc >= 0)
+                                    pipe.set_uniform_1f(loc, val);
+                            } catch (e) {}
+                        }
+                        try {
+                            this.set_uniform_value(uname, val);
+                        } catch (e) {}
+                    }
                 }
+                this._uniformsDirty = true;
             }
         }
     );
@@ -341,10 +395,13 @@ function defineLiquidGlassEffect() {
 // claimed the first one.
 function defineLiquidGlassEffectCompat() {
     return GObject.registerClass(
-        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV5Compat'},
+        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV6Compat'},
         class LiquidGlassEffectCompat extends Clutter.ShaderEffect {
             _init() {
                 super._init();
+                this._cachedUniforms = new Map();
+                this._pipelineInitialized = null;
+                this._uniformsDirty = true;
                 try {
                     if (typeof this.set_shader_source === 'function') {
                         this.set_shader_source(SHADER_SOURCE);
@@ -358,28 +415,78 @@ function defineLiquidGlassEffectCompat() {
                 }
             }
 
+            _applyCachedUniforms(pipe) {
+                if (!this._cachedUniforms)
+                    return;
+                const pipeline = pipe || (this.get_pipeline ? this.get_pipeline() : null);
+                if (pipeline) {
+                    for (const [uname, val] of this._cachedUniforms) {
+                        try {
+                            const loc = pipeline.get_uniform_location(uname);
+                            if (loc >= 0)
+                                pipeline.set_uniform_1f(loc, val);
+                        } catch (e) {}
+                    }
+                    this._pipelineInitialized = pipeline;
+                }
+            }
+
+            vfunc_paint_target(...args) {
+                const pipe = this.get_pipeline ? this.get_pipeline() : null;
+                if (pipe && (this._pipelineInitialized !== pipe || this._uniformsDirty)) {
+                    this._applyCachedUniforms(pipe);
+                    this._uniformsDirty = false;
+                }
+                super.vfunc_paint_target(...args);
+            }
+
             setUniform(name, values) {
                 const arr = Array.isArray(values) ? values : [values];
-                try {
-                    if (arr.length === 1) {
-                        this.set_uniform_value(`lg_${name}`, Number(arr[0]));
-                    } else {
-                        for (let i = 0; i < arr.length; i++) {
-                            this.set_uniform_value(`lg_${name}_${i}`, Number(arr[i]));
-                        }
+                if (!this._cachedUniforms)
+                    this._cachedUniforms = new Map();
+
+                const pipe = this.get_pipeline ? this.get_pipeline() : null;
+
+                if (arr.length === 1) {
+                    const uname = `lg_${name}`;
+                    const val = Number(arr[0]);
+                    this._cachedUniforms.set(uname, val);
+                    if (pipe) {
+                        try {
+                            const loc = pipe.get_uniform_location(uname);
+                            if (loc >= 0)
+                                pipe.set_uniform_1f(loc, val);
+                        } catch (e) {}
                     }
-                } catch (e) {
-                    console.warn(`[desktop-widgets glass] set_uniform_value failed for lg_${name}:`, e);
+                    try {
+                        this.set_uniform_value(uname, val);
+                    } catch (e) {}
+                } else {
+                    for (let i = 0; i < arr.length; i++) {
+                        const uname = `lg_${name}_${i}`;
+                        const val = Number(arr[i]);
+                        this._cachedUniforms.set(uname, val);
+                        if (pipe) {
+                            try {
+                                const loc = pipe.get_uniform_location(uname);
+                                if (loc >= 0)
+                                    pipe.set_uniform_1f(loc, val);
+                            } catch (e) {}
+                        }
+                        try {
+                            this.set_uniform_value(uname, val);
+                        } catch (e) {}
+                    }
                 }
+                this._uniformsDirty = true;
             }
         }
     );
 }
 
 // Register the effect class only once, store in globalThis to survive reloads
-// V5: a fresh key, so an enable/disable cycle cannot reuse a class cached by
-// an earlier build in this shell session.
-const EFFECT_CLASS_KEY = 'DesktopWidgets_LiquidGlassEffectV5';
+// V6: fresh keys to cleanly register and apply pipeline uniforms in GNOME 50.
+const EFFECT_CLASS_KEY = 'DesktopWidgets_LiquidGlassEffectV6';
 if (!globalThis[EFFECT_CLASS_KEY]) {
     try {
         globalThis[EFFECT_CLASS_KEY] = defineLiquidGlassEffect();
@@ -417,6 +524,10 @@ void main() {
 const CLIP_SHADER_SOURCE_PREPARED = prepareShaderDeclarations(CLIP_SHADER_SOURCE);
 
 function clipSetUniform(effect, name, values) {
+    if (typeof effect?.setUniform === 'function') {
+        effect.setUniform(name, values);
+        return;
+    }
     const arr = Array.isArray(values) ? values : [values];
     try {
         if (arr.length === 1) {
@@ -442,10 +553,13 @@ function clipSetRect(effect, x, y, width, height, radius) {
 
 function defineRoundedClipEffect() {
     return GObject.registerClass(
-        {GTypeName: 'DesktopWidgets_RoundedClipEffectV3'},
+        {GTypeName: 'DesktopWidgets_RoundedClipEffectV4'},
         class RoundedClipEffect extends Clutter.ShaderEffect {
             _init() {
                 super._init();
+                this._cachedUniforms = new Map();
+                this._pipelineInitialized = null;
+                this._uniformsDirty = true;
                 if (!USES_SHADER_SNIPPET_API) {
                     try {
                         this.set_shader_source(CLIP_SHADER_SOURCE_PREPARED);
@@ -461,6 +575,72 @@ function defineRoundedClipEffect() {
                 return createFragmentShaderSnippet(CLIP_SHADER_SOURCE_PREPARED);
             }
 
+            _applyCachedUniforms(pipe) {
+                if (!this._cachedUniforms)
+                    return;
+                const pipeline = pipe || (this.get_pipeline ? this.get_pipeline() : null);
+                if (pipeline) {
+                    for (const [uname, val] of this._cachedUniforms) {
+                        try {
+                            const loc = pipeline.get_uniform_location(uname);
+                            if (loc >= 0)
+                                pipeline.set_uniform_1f(loc, val);
+                        } catch (e) {}
+                    }
+                    this._pipelineInitialized = pipeline;
+                }
+            }
+
+            vfunc_paint_target(...args) {
+                const pipe = this.get_pipeline ? this.get_pipeline() : null;
+                if (pipe && (this._pipelineInitialized !== pipe || this._uniformsDirty)) {
+                    this._applyCachedUniforms(pipe);
+                    this._uniformsDirty = false;
+                }
+                super.vfunc_paint_target(...args);
+            }
+
+            setUniform(name, values) {
+                const arr = Array.isArray(values) ? values : [values];
+                if (!this._cachedUniforms)
+                    this._cachedUniforms = new Map();
+
+                const pipe = this.get_pipeline ? this.get_pipeline() : null;
+
+                if (arr.length === 1) {
+                    const uname = `rc_${name}`;
+                    const val = Number(arr[0]);
+                    this._cachedUniforms.set(uname, val);
+                    if (pipe) {
+                        try {
+                            const loc = pipe.get_uniform_location(uname);
+                            if (loc >= 0)
+                                pipe.set_uniform_1f(loc, val);
+                        } catch (e) {}
+                    }
+                    try {
+                        this.set_uniform_value(uname, val);
+                    } catch (e) {}
+                } else {
+                    for (let i = 0; i < arr.length; i++) {
+                        const uname = `rc_${name}_${i}`;
+                        const val = Number(arr[i]);
+                        this._cachedUniforms.set(uname, val);
+                        if (pipe) {
+                            try {
+                                const loc = pipe.get_uniform_location(uname);
+                                if (loc >= 0)
+                                    pipe.set_uniform_1f(loc, val);
+                            } catch (e) {}
+                        }
+                        try {
+                            this.set_uniform_value(uname, val);
+                        } catch (e) {}
+                    }
+                }
+                this._uniformsDirty = true;
+            }
+
             // x, y: the actor's stage position; width/height: its size.
             setRect(x, y, width, height, radius) {
                 clipSetRect(this, x, y, width, height, radius);
@@ -471,10 +651,13 @@ function defineRoundedClipEffect() {
 
 function defineRoundedClipEffectCompat() {
     return GObject.registerClass(
-        {GTypeName: 'DesktopWidgets_RoundedClipEffectV3Compat'},
+        {GTypeName: 'DesktopWidgets_RoundedClipEffectV4Compat'},
         class RoundedClipEffectCompat extends Clutter.ShaderEffect {
             _init() {
                 super._init();
+                this._cachedUniforms = new Map();
+                this._pipelineInitialized = null;
+                this._uniformsDirty = true;
                 try {
                     if (typeof this.set_shader_source === 'function') {
                         this.set_shader_source(CLIP_SHADER_SOURCE_PREPARED);
@@ -488,6 +671,72 @@ function defineRoundedClipEffectCompat() {
                 }
             }
 
+            _applyCachedUniforms(pipe) {
+                if (!this._cachedUniforms)
+                    return;
+                const pipeline = pipe || (this.get_pipeline ? this.get_pipeline() : null);
+                if (pipeline) {
+                    for (const [uname, val] of this._cachedUniforms) {
+                        try {
+                            const loc = pipeline.get_uniform_location(uname);
+                            if (loc >= 0)
+                                pipeline.set_uniform_1f(loc, val);
+                        } catch (e) {}
+                    }
+                    this._pipelineInitialized = pipeline;
+                }
+            }
+
+            vfunc_paint_target(...args) {
+                const pipe = this.get_pipeline ? this.get_pipeline() : null;
+                if (pipe && (this._pipelineInitialized !== pipe || this._uniformsDirty)) {
+                    this._applyCachedUniforms(pipe);
+                    this._uniformsDirty = false;
+                }
+                super.vfunc_paint_target(...args);
+            }
+
+            setUniform(name, values) {
+                const arr = Array.isArray(values) ? values : [values];
+                if (!this._cachedUniforms)
+                    this._cachedUniforms = new Map();
+
+                const pipe = this.get_pipeline ? this.get_pipeline() : null;
+
+                if (arr.length === 1) {
+                    const uname = `rc_${name}`;
+                    const val = Number(arr[0]);
+                    this._cachedUniforms.set(uname, val);
+                    if (pipe) {
+                        try {
+                            const loc = pipe.get_uniform_location(uname);
+                            if (loc >= 0)
+                                pipe.set_uniform_1f(loc, val);
+                        } catch (e) {}
+                    }
+                    try {
+                        this.set_uniform_value(uname, val);
+                    } catch (e) {}
+                } else {
+                    for (let i = 0; i < arr.length; i++) {
+                        const uname = `rc_${name}_${i}`;
+                        const val = Number(arr[i]);
+                        this._cachedUniforms.set(uname, val);
+                        if (pipe) {
+                            try {
+                                const loc = pipe.get_uniform_location(uname);
+                                if (loc >= 0)
+                                    pipe.set_uniform_1f(loc, val);
+                            } catch (e) {}
+                        }
+                        try {
+                            this.set_uniform_value(uname, val);
+                        } catch (e) {}
+                    }
+                }
+                this._uniformsDirty = true;
+            }
+
             setRect(x, y, width, height, radius) {
                 clipSetRect(this, x, y, width, height, radius);
             }
@@ -495,7 +744,7 @@ function defineRoundedClipEffectCompat() {
     );
 }
 
-const CLIP_CLASS_KEY = 'DesktopWidgets_RoundedClipEffectV3';
+const CLIP_CLASS_KEY = 'DesktopWidgets_RoundedClipEffectV4';
 if (!globalThis[CLIP_CLASS_KEY]) {
     try {
         globalThis[CLIP_CLASS_KEY] = defineRoundedClipEffect();
@@ -518,11 +767,11 @@ export function monitorIndexAt(x, y) {
 }
 
 // Register the LiquidGlass class only once, store in globalThis to survive reloads
-const GLASS_CLASS_KEY = 'DesktopWidgets_LiquidGlassV5';
+const GLASS_CLASS_KEY = 'DesktopWidgets_LiquidGlassV6';
 if (!globalThis[GLASS_CLASS_KEY]) {
     globalThis[GLASS_CLASS_KEY] = GObject.registerClass(
         // Same as the effect class: collision-proof GType name.
-        {GTypeName: 'DesktopWidgets_LiquidGlassV5'},
+        {GTypeName: 'DesktopWidgets_LiquidGlassV6'},
         class LiquidGlass extends St.Widget {
             _init() {
                 super._init({clip_to_allocation: true, style: 'background-color: transparent;'});
