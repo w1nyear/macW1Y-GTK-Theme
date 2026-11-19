@@ -12,6 +12,11 @@ spec.loader.exec_module(check)
 
 
 class PortabilityTests(unittest.TestCase):
+    def test_missing_extensions_fail_closed(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaises(ValueError):
+                check.incompatible_extensions(pathlib.Path(folder), "50")
+
     def test_version_matrix(self):
         self.assertFalse(check.incompatible_extensions(ROOT, '50'))
         for version in ('43', '46', '47', '48', '49', '51'):

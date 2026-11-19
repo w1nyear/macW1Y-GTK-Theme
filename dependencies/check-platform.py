@@ -9,7 +9,10 @@ import sys
 
 def incompatible_extensions(root, major):
     result = []
-    for path in sorted((root / 'extensions').glob('*/metadata.json')):
+    metadata = sorted((root / 'extensions').glob('*/metadata.json'))
+    if not metadata:
+        raise ValueError('Не знайдено метаданих розширень: неповний пакет інсталятора')
+    for path in metadata:
         data = json.loads(path.read_text())
         if str(major) not in data.get('shell-version', []):
             result.append(path.parent.name)
