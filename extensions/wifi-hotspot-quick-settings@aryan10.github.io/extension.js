@@ -119,7 +119,7 @@ class HotspotMenuController {
 
 export default class WifiHotspotQuickSettingsMenuExtension extends Extension {
     enable() {
-        this._logger = this.getLogger();
+        this._logger = (this.getLogger?.() ?? { message: (...args) => console.log(...args), warn: (...args) => console.warn(...args), error: (...args) => console.error(...args), debug: (...args) => console.debug(...args) });
         this._controller = new HotspotMenuController(this._logger);
 
         const controller = this._controller;

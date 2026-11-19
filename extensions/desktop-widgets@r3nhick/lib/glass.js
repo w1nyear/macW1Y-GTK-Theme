@@ -138,22 +138,25 @@ vec3 lg_cornerSpec(vec2 p, float depthPx) {
 
 vec3 lg_edgeSpec(vec2 ndir, float depthPx) {
     float cornerFactor = clamp(2.0 * abs(ndir.x) * abs(ndir.y), 0.0, 1.0);
+    float cornerSuppression = 1.0 - smoothstep(0.05, 0.65, cornerFactor);
     float horizWeight = abs(ndir.y);
     float isTop = clamp(-ndir.y, 0.0, 1.0);
     float edgeDist = abs(depthPx);
+    float inwardDist = max(depthPx, 0.0);
 
-    // 1. White borders on top & bottom (diffusing at corners)
-    float whiteWidth = mix(1.2, 4.5, cornerFactor);
+    // 1. Crisp border line at the edge
+    float whiteWidth = 1.5;
     float whiteLine = 1.0 - smoothstep(0.0, whiteWidth, edgeDist);
-    float cornerBlur = (1.0 - smoothstep(0.0, 6.0, edgeDist)) * cornerFactor * 0.45;
-    float diffusedWhite = mix(whiteLine, whiteLine * 0.60 + cornerBlur, cornerFactor);
+
+    // 2. Inward blur / diffuse sheen toward the center of the glass
+    float inwardSheen = (1.0 - smoothstep(0.0, 5.2, inwardDist));
+    inwardSheen = pow(inwardSheen, 1.2) * 0.38;
 
     float topIntensity = 0.95;
-    float bottomIntensity = 0.60;
+    float bottomIntensity = 0.55;
     float whiteIntensity = mix(bottomIntensity, topIntensity, isTop / max(horizWeight, 1e-4));
-    float whiteFalloff = pow(horizWeight, 1.15);
-    float topInnerSheen = (1.0 - smoothstep(0.0, mix(3.0, 5.5, cornerFactor), depthPx)) * 0.22 * isTop * (1.0 - cornerFactor * 0.5);
-    float whiteBorder = (diffusedWhite * whiteIntensity * whiteFalloff) + topInnerSheen;
+    float whiteFalloff = pow(horizWeight, 1.2);
+    float whiteBorder = (whiteLine * 0.85 + inwardSheen) * whiteIntensity * whiteFalloff * cornerSuppression;
 
     return vec3(1.0, 0.99, 0.97) * whiteBorder;
 }
@@ -192,16 +195,18 @@ vec4 lg_glass(sampler2D tex, vec2 uv) {
     vec3 tintColor = mix(lg_tint.rgb, lg_tintBottom.rgb, lg_tintBottom.a > 0.0 ? uv.y : 0.0);
     col = mix(col, tintColor, lg_tint.a);
 
-    // 2. Translucent dark borders on left & right (smaller, diffusing at corners)
+    // 2. Translucent dark borders on left & right (blurring inward, fading before corners)
     float cornerFactor = clamp(2.0 * abs(ndir.x) * abs(ndir.y), 0.0, 1.0);
+    float cornerSuppression = 1.0 - smoothstep(0.05, 0.65, cornerFactor);
     float vertWeight = abs(ndir.x);
-    float darkWidth = mix(0.95, 2.8, cornerFactor);
+    float darkWidth = 1.2;
     float darkLine = 1.0 - smoothstep(0.0, darkWidth, abs(depthPx));
-    float darkCornerBlur = (1.0 - smoothstep(0.0, 4.5, abs(depthPx))) * cornerFactor * 0.35;
-    float diffusedDark = mix(darkLine, darkLine * 0.65 + darkCornerBlur, cornerFactor);
+    float darkInwardDist = max(depthPx, 0.0);
+    float darkInwardSheen = (1.0 - smoothstep(0.0, 4.0, darkInwardDist));
+    darkInwardSheen = pow(darkInwardSheen, 1.3) * 0.22;
     float darkIntensity = 0.28;
     float darkFalloff = pow(vertWeight, 1.35);
-    float darkBorder = diffusedDark * darkIntensity * darkFalloff;
+    float darkBorder = (darkLine * 0.75 + darkInwardSheen) * darkIntensity * darkFalloff * cornerSuppression;
 
     col *= (1.0 - darkBorder);
     col += lg_edgeSpec(ndir, depthPx);
@@ -213,8 +218,16 @@ vec4 lg_glass(sampler2D tex, vec2 uv) {
 }
 `;
 
+function prepareShaderDeclarations(source) {
+    return source.replace(/uniform\s+vec([234])\s+(\w+)\s*;/g, (_m, size, name) => {
+        const n = parseInt(size, 10);
+        const parts = Array.from({length: n}, (_, i) => `${name}_${i}`);
+        return `uniform float ${parts.join(', ')};\n#define ${name} vec${size}(${parts.join(', ')})\n`;
+    });
+}
+
 // Full shader source, split into declarations and a fragment snippet below.
-const SHADER_SOURCE = DECLARATIONS + `
+const SHADER_SOURCE = prepareShaderDeclarations(DECLARATIONS) + `
 void main() {
     cogl_color_out = lg_glass(cogl_sampler0, (cogl_tex_coord_in[0].xy - lg_frame.xy) / lg_frame.zw) *
         cogl_color_in.a;
@@ -282,7 +295,7 @@ function defineLiquidGlassEffect() {
         // Explicit GTypeName: the automatic one is derived from the module
         // path and would collide with other extensions that also ship a
         // lib/glass.js (e.g. liquidglass-widgets).
-        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV3'},
+        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV4'},
         class LiquidGlassEffect extends Clutter.ShaderEffect {
             _init() {
                 super._init();
@@ -302,12 +315,17 @@ function defineLiquidGlassEffect() {
             }
 
             setUniform(name, values) {
-                const count = Array.isArray(values) ? values.length : 1;
                 const arr = Array.isArray(values) ? values : [values];
                 try {
-                    this.set_uniform_float(`lg_${name}`, count, arr);
+                    if (arr.length === 1) {
+                        this.set_uniform_value(`lg_${name}`, Number(arr[0]));
+                    } else {
+                        for (let i = 0; i < arr.length; i++) {
+                            this.set_uniform_value(`lg_${name}_${i}`, Number(arr[i]));
+                        }
+                    }
                 } catch (e) {
-                    console.warn(`[desktop-widgets glass] set_uniform_float failed for lg_${name}:`, e);
+                    console.warn(`[desktop-widgets glass] set_uniform_value failed for lg_${name}:`, e);
                 }
             }
         }
@@ -322,7 +340,7 @@ function defineLiquidGlassEffect() {
 // claimed the first one.
 function defineLiquidGlassEffectCompat() {
     return GObject.registerClass(
-        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV3Compat'},
+        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV4Compat'},
         class LiquidGlassEffectCompat extends Clutter.ShaderEffect {
             _init() {
                 super._init();
@@ -340,12 +358,17 @@ function defineLiquidGlassEffectCompat() {
             }
 
             setUniform(name, values) {
-                const count = Array.isArray(values) ? values.length : 1;
                 const arr = Array.isArray(values) ? values : [values];
                 try {
-                    this.set_uniform_float(`lg_${name}`, count, arr);
+                    if (arr.length === 1) {
+                        this.set_uniform_value(`lg_${name}`, Number(arr[0]));
+                    } else {
+                        for (let i = 0; i < arr.length; i++) {
+                            this.set_uniform_value(`lg_${name}_${i}`, Number(arr[i]));
+                        }
+                    }
                 } catch (e) {
-                    console.warn(`[desktop-widgets glass] set_uniform_float failed for lg_${name}:`, e);
+                    console.warn(`[desktop-widgets glass] set_uniform_value failed for lg_${name}:`, e);
                 }
             }
         }
@@ -353,9 +376,9 @@ function defineLiquidGlassEffectCompat() {
 }
 
 // Register the effect class only once, store in globalThis to survive reloads
-// V3: a fresh key, so an enable/disable cycle cannot reuse a class cached by
+// V4: a fresh key, so an enable/disable cycle cannot reuse a class cached by
 // an earlier build in this shell session.
-const EFFECT_CLASS_KEY = 'DesktopWidgets_LiquidGlassEffectV3';
+const EFFECT_CLASS_KEY = 'DesktopWidgets_LiquidGlassEffectV4';
 if (!globalThis[EFFECT_CLASS_KEY]) {
     try {
         globalThis[EFFECT_CLASS_KEY] = defineLiquidGlassEffect();
@@ -389,9 +412,18 @@ void main() {
 }
 `;
 
+const CLIP_SHADER_SOURCE_PREPARED = prepareShaderDeclarations(CLIP_SHADER_SOURCE);
+
 function clipSetUniform(effect, name, values) {
+    const arr = Array.isArray(values) ? values : [values];
     try {
-        effect.set_uniform_float(`rc_${name}`, values.length, values);
+        if (arr.length === 1) {
+            effect.set_uniform_value(`rc_${name}`, Number(arr[0]));
+        } else {
+            for (let i = 0; i < arr.length; i++) {
+                effect.set_uniform_value(`rc_${name}_${i}`, Number(arr[i]));
+            }
+        }
     } catch (e) {
         console.warn(`[desktop-widgets glass] rounded clip uniform rc_${name} failed: ${e}`);
     }
@@ -408,13 +440,13 @@ function clipSetRect(effect, x, y, width, height, radius) {
 
 function defineRoundedClipEffect() {
     return GObject.registerClass(
-        {GTypeName: 'DesktopWidgets_RoundedClipEffectV1'},
+        {GTypeName: 'DesktopWidgets_RoundedClipEffectV2'},
         class RoundedClipEffect extends Clutter.ShaderEffect {
             _init() {
                 super._init();
                 if (!USES_SHADER_SNIPPET_API) {
                     try {
-                        this.set_shader_source(CLIP_SHADER_SOURCE);
+                        this.set_shader_source(CLIP_SHADER_SOURCE_PREPARED);
                     } catch (e) {
                         console.warn(`[desktop-widgets glass] rounded clip shader failed: ${e}`);
                     }
@@ -424,7 +456,7 @@ function defineRoundedClipEffect() {
             vfunc_get_static_snippet() {
                 if (!USES_SHADER_SNIPPET_API)
                     return null;
-                return createFragmentShaderSnippet(CLIP_SHADER_SOURCE);
+                return createFragmentShaderSnippet(CLIP_SHADER_SOURCE_PREPARED);
             }
 
             // x, y: the actor's stage position; width/height: its size.
@@ -437,16 +469,16 @@ function defineRoundedClipEffect() {
 
 function defineRoundedClipEffectCompat() {
     return GObject.registerClass(
-        {GTypeName: 'DesktopWidgets_RoundedClipEffectV1Compat'},
+        {GTypeName: 'DesktopWidgets_RoundedClipEffectV2Compat'},
         class RoundedClipEffectCompat extends Clutter.ShaderEffect {
             _init() {
                 super._init();
                 try {
                     if (typeof this.set_shader_source === 'function') {
-                        this.set_shader_source(CLIP_SHADER_SOURCE);
+                        this.set_shader_source(CLIP_SHADER_SOURCE_PREPARED);
                         return;
                     }
-                    const snippet = createFragmentShaderSnippet(CLIP_SHADER_SOURCE);
+                    const snippet = createFragmentShaderSnippet(CLIP_SHADER_SOURCE_PREPARED);
                     const pipeline = snippet ? this.get_pipeline?.() : null;
                     pipeline?.add_snippet(snippet);
                 } catch (e) {
@@ -461,7 +493,7 @@ function defineRoundedClipEffectCompat() {
     );
 }
 
-const CLIP_CLASS_KEY = 'DesktopWidgets_RoundedClipEffectV1';
+const CLIP_CLASS_KEY = 'DesktopWidgets_RoundedClipEffectV2';
 if (!globalThis[CLIP_CLASS_KEY]) {
     try {
         globalThis[CLIP_CLASS_KEY] = defineRoundedClipEffect();
@@ -484,11 +516,11 @@ export function monitorIndexAt(x, y) {
 }
 
 // Register the LiquidGlass class only once, store in globalThis to survive reloads
-const GLASS_CLASS_KEY = 'DesktopWidgets_LiquidGlassV3';
+const GLASS_CLASS_KEY = 'DesktopWidgets_LiquidGlassV4';
 if (!globalThis[GLASS_CLASS_KEY]) {
     globalThis[GLASS_CLASS_KEY] = GObject.registerClass(
         // Same as the effect class: collision-proof GType name.
-        {GTypeName: 'DesktopWidgets_LiquidGlassV3'},
+        {GTypeName: 'DesktopWidgets_LiquidGlassV4'},
         class LiquidGlass extends St.Widget {
             _init() {
                 super._init({clip_to_allocation: true, style: 'background-color: transparent;'});

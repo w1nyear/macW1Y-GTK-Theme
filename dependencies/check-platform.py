@@ -13,6 +13,8 @@ def incompatible_extensions(root, major):
     if not metadata:
         raise ValueError('Не знайдено метаданих розширень: неповний пакет інсталятора')
     for path in metadata:
+        if not (path.parent / 'extension.js').is_file():
+            raise ValueError(f'Неповне розширення {path.parent.name}: немає extension.js')
         data = json.loads(path.read_text())
         if str(major) not in data.get('shell-version', []):
             result.append(path.parent.name)

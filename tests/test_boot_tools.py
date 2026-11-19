@@ -33,6 +33,13 @@ class BootToolsTests(unittest.TestCase):
         result = self.run_case(['dracut', 'mkinitcpio'], None)
         self.assertEqual(result.stdout.strip(), 'dracut --regenerate-all --force')
 
+    def test_grub_is_never_selected_with_systemd_boot(self):
+        source = (ROOT / 'dependencies/boot-tools.sh').read_text()
+        for installed in (0, 1):
+            stub = 'command() { return 0; }; bootctl() { return '+str(installed)+'; };\n'
+            result = subprocess.run(['bash', '-c', stub + source + '\nmacw1y_has_grub'], capture_output=True)
+            self.assertEqual(result.returncode, 1 if installed == 0 else 0)
+
     def test_unknown_fails(self):
         self.assertNotEqual(self.run_case([], None).returncode, 0)
 

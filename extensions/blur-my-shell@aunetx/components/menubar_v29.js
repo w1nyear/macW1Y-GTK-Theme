@@ -4099,7 +4099,9 @@ export const MenuBarController = class MenuBarController {
 
         const contentBox = new St.BoxLayout({
             name: 'macNotificationCenterContentBox',
-            orientation: Clutter.Orientation.VERTICAL,
+            ...('orientation' in St.BoxLayout.prototype
+                ? { orientation: Clutter.Orientation.VERTICAL }
+                : { vertical: true }),
             x_expand: true,
             y_expand: false,
             reactive: true,
@@ -4110,7 +4112,9 @@ export const MenuBarController = class MenuBarController {
 
         const headerBox = new St.BoxLayout({
             name: 'macNotificationCenterHeaderBox',
-            orientation: Clutter.Orientation.HORIZONTAL,
+            ...('orientation' in St.BoxLayout.prototype
+                ? { orientation: Clutter.Orientation.HORIZONTAL }
+                : { vertical: false }),
             style: 'padding: 4px 8px 10px 8px; margin: 0; background: transparent !important;',
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
@@ -4170,7 +4174,9 @@ export const MenuBarController = class MenuBarController {
         });
 
         const cardsBox = new St.BoxLayout({
-            orientation: Clutter.Orientation.VERTICAL,
+            ...('orientation' in St.BoxLayout.prototype
+                ? { orientation: Clutter.Orientation.VERTICAL }
+                : { vertical: true }),
             style: 'spacing: 10px; padding: 0 16px 16px 8px; background: transparent !important;',
             x_expand: true,
             y_expand: false,

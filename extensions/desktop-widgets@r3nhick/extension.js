@@ -5701,7 +5701,7 @@ export default class DesktopWidgetsExtension extends Extension {
   };
 
   enable() {
-    configureLogger(this.getLogger());
+    configureLogger((this.getLogger?.() ?? { message: (...args) => console.log(...args), warn: (...args) => console.warn(...args), error: (...args) => console.error(...args), debug: (...args) => console.debug(...args) }));
     this._loadWidgetStylesheets();
     this._controller = new WidgetController(this);
     this._controller.enable();

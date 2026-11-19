@@ -34,3 +34,4 @@ python-gobject
 python-cairo
 nautilus
 mutter
+libdbusmenu-glib

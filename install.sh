@@ -1680,16 +1680,11 @@ install_grub() {
     log_step "Stage 13/13: Installing macW1Y horizontal GRUB boot menu"
     require_root
     
-    # Systemd-boot or non-GRUB bootloader check
-    if command -v bootctl >/dev/null 2>&1 && bootctl is-installed 2>/dev/null; then
-        log_info "systemd-boot detected; skipping GRUB configuration."
+    if ! macw1y_has_grub; then
+        log_info "No active GRUB configuration required; skipping GRUB setup."
         return 0
     fi
-    if ! command -v update-grub >/dev/null 2>&1 && ! command -v grub2-mkconfig >/dev/null 2>&1 && ! command -v grub-mkconfig >/dev/null 2>&1; then
-        log_warning "No GRUB configuration utility found; skipping GRUB setup."
-        return 0
-    fi
-    
+
     # Ensure /boot/grub exists (symlink to /boot/grub2 on Fedora/RHEL if needed)
     if [ -d /boot/grub2 ] && [ ! -d /boot/grub ]; then
         sudo ln -sf grub2 /boot/grub 2>/dev/null || true
@@ -2347,6 +2342,7 @@ EOF
         macw1y_rebuild_initramfs
     fi
 
+    if macw1y_has_grub; then
     log_info "10/10 Checking GRUB bootloader..."
     if [ -d "$SCRIPT_DIR/grub/macw1y-boot" ]; then
         sync_directory_tree "$SCRIPT_DIR/grub/macw1y-boot" "/boot/grub/themes/macw1y-boot" true
@@ -2369,6 +2365,10 @@ EOF
         sudo grub2-mkconfig -o /boot/grub2/grub.cfg
     elif command -v grub-mkconfig >/dev/null 2>&1; then
         sudo grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || true
+    fi
+
+    else
+        log_info "GRUB update skipped for this bootloader."
     fi
 
     log_info "Updating system caches..."

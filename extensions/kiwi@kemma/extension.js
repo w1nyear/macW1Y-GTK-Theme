@@ -39,7 +39,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] tahoeInkEnable: ${e}`);
         }
         try {
-            const ncUri = this.dir.get_child('apps').get_child('tahoeNotifications.js').get_uri() + '?v=notif_v26';
+            const ncUri = this.dir.get_child('apps').get_child('tahoeNotifications.js').get_uri();
             import(ncUri).then(mod => {
                 if (this._tahoeNC && this._tahoeNC !== mod) {
                     try { this._tahoeNC.disable(); } catch (_) {}
@@ -54,7 +54,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] tahoeNCEnable: ${e}`);
         }
         try {
-            const ccUri = this.dir.get_child('apps').get_child('tahoeControlCenter.js').get_uri() + '?v=tahoe_v19';
+            const ccUri = this.dir.get_child('apps').get_child('tahoeControlCenter.js').get_uri();
             import(ccUri).then(mod => {
                 if (this._tahoeCC && this._tahoeCC !== mod) {
                     try { this._tahoeCC.disable(); } catch (_) {}
@@ -69,7 +69,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] tahoeQuickSettingsEnable: ${e}`);
         }
         try {
-            const tbUri = this.dir.get_child('apps').get_child('topbarButtons.js').get_uri() + '?v=tb_v12';
+            const tbUri = this.dir.get_child('apps').get_child('topbarButtons.js').get_uri();
             import(tbUri).then(mod => {
                 if (this._topbarButtonsMod && this._topbarButtonsMod !== mod) {
                     try { this._topbarButtonsMod.disable(); } catch (_) {}
@@ -84,7 +84,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] topbarButtons: ${e}`);
         }
         try {
-            const kbUri = this.dir.get_child('apps').get_child('keyboardIndicator.js').get_uri() + '?v=kb_v10';
+            const kbUri = this.dir.get_child('apps').get_child('keyboardIndicator.js').get_uri();
             import(kbUri).then(mod => {
                 if (this._keyboardIndicatorMod && this._keyboardIndicatorMod !== mod) {
                     try { this._keyboardIndicatorMod.disable(); } catch (_) {}
@@ -99,7 +99,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] keyboardIndicator: ${e}`);
         }
         try {
-            const lbUri = this.dir.get_child('apps').get_child('labelBlur.js').get_uri() + '?v=lb_v3';
+            const lbUri = this.dir.get_child('apps').get_child('labelBlur.js').get_uri();
             import(lbUri).then(mod => {
                 if (this._labelBlurMod && this._labelBlurMod !== mod) {
                     try { this._labelBlurMod.disable(); } catch (_) {}
@@ -114,7 +114,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] labelBlur: ${e}`);
         }
         try {
-            const osdUri = this.dir.get_child('apps').get_child('tahoeOSD.js').get_uri() + '?v=osd_v15_' + Date.now();
+            const osdUri = this.dir.get_child('apps').get_child('tahoeOSD.js').get_uri();
             import(osdUri).then(mod => {
                 if (this._tahoeOSD && this._tahoeOSD !== mod) {
                     try { this._tahoeOSD.disable(); } catch (_) {}
@@ -136,7 +136,7 @@ export default class KiwiExtension extends Extension {
         } catch (_) {}
 
         try {
-            const wmUri = this.dir.get_child('apps').get_child('macWindowManagement.js').get_uri() + '?v=wm_v3';
+            const wmUri = this.dir.get_child('apps').get_child('macWindowManagement.js').get_uri();
             import(wmUri).then(mod => {
                 if (this._macWindowManagementMod && this._macWindowManagementMod !== mod) {
                     try { this._macWindowManagementMod.disable(); } catch (_) {}
@@ -152,7 +152,7 @@ export default class KiwiExtension extends Extension {
         }
 
         try {
-            const wcUri = this.dir.get_child('apps').get_child('windowControls.js').get_uri() + '?v=wc_v3';
+            const wcUri = this.dir.get_child('apps').get_child('windowControls.js').get_uri();
             import(wcUri).then(mod => {
                 if (this._windowControlsMod && this._windowControlsMod !== mod) {
                     try { this._windowControlsMod.disable(); } catch (_) {}
@@ -174,7 +174,7 @@ export default class KiwiExtension extends Extension {
         }
 
         try {
-            const scUri = this.dir.get_child('apps').get_child('tahoeScreenCast.js').get_uri() + '?v=sc_v1';
+            const scUri = this.dir.get_child('apps').get_child('tahoeScreenCast.js').get_uri();
             import(scUri).then(mod => {
                 if (this._tahoeScreenCastMod && this._tahoeScreenCastMod !== mod) {
                     try { this._tahoeScreenCastMod.disable(); } catch (_) {}

@@ -5,7 +5,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 
-const SOCKET_PATH = `/run/user/${GLib.get_user_name() === 'vitaliy' ? '1000' : GLib.get_uid()}/mac_touchpad.sock`;
+const SOCKET_PATH = GLib.build_filenamev([GLib.get_user_runtime_dir(), "mac_touchpad.sock"]);
 
 export default class GestureImpl {
     constructor(ext) {

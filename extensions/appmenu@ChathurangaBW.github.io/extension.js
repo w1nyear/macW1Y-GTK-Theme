@@ -44,7 +44,7 @@ export default class AppMenuExtension extends Extension {
         this._removeStalePanelButtons(uuid);
         try {
             const baseUri = this.dir.get_uri();
-            const mmMod = await import(`${baseUri}/menuManager.js?t=${Date.now()}`);
+            const mmMod = await import(`${baseUri}/menuManager.js`);
             this._menuManager = new mmMod.MenuManager(uuid, this._settings);
         } catch (e) {
             console.error(`[AppMenu] dynamic import menuManager error: ${e}`);
@@ -94,7 +94,7 @@ export default class AppMenuExtension extends Extension {
 
         this._userSwitcherController = new UserSwitcherController(this, this._settings);
         try {
-            const wsModule = await import(`./workspaceIndicator.js?t=${Date.now()}`);
+            const wsModule = await import(`./workspaceIndicator.js`);
             this._workspaceIndicatorController = new wsModule.WorkspaceIndicatorController(this._settings);
         } catch (_) {
             this._workspaceIndicatorController = new WorkspaceIndicatorController(this._settings);
@@ -103,7 +103,7 @@ export default class AppMenuExtension extends Extension {
         this._addClipboardKeybinding();
         const baseUri = this.dir.get_uri();
         try {
-            const m = await import(`${baseUri}/searchDialog.js?t=${Date.now()}`);
+            const m = await import(`${baseUri}/searchDialog.js`);
             globalThis._macSpotlightToggle = (mode = 'search') => m.toggleSearchDialog(typeof mode === 'string' ? mode : 'search');
             globalThis.toggleMacSpotlight = (mode = 'search') => m.toggleSearchDialog(typeof mode === 'string' ? mode : 'search');
             globalThis.toggleMacApplications = () => m.toggleSearchDialog('apps');

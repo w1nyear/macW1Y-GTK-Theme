@@ -1976,3 +1976,32 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-audit-sync check — 100% PASS.
      * python3 bin/mac-i18n-verify — 100% PASS.
      * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
+
+834. 2026-11-19 — Виправлення фонового скла віджетів робочого столу та оптимізація відблисків і кутів шейдера скла:
+   - Файли та рядки змін:
+     1) extensions/desktop-widgets@r3nhick/lib/glass.js:
+        * рядки 60-77, 220-228: впроваджено функцію `prepareShaderDeclarations()` для динамічної декомпозиції векторних уніформ (vec2, vec4) на скалярні змінні float з макросами `#define` (наприклад, `uniform float lg_size_0, lg_size_1; #define lg_size vec2(lg_size_0, lg_size_1)`), що забезпечило повну сумісність із рушієм Clutter.ShaderEffect у GNOME 50+ / Mutter 18.
+        * рядки 304-315, 345-356, 420-435: замінено неіснуючий виклик `this.set_uniform_float()` на коректний метод GJS `set_uniform_value()`, що усунуло критичну помилку TypeError і повністю відновило роботу рендерингу скла під усіма 5 віджетами робочого столу (годинник, календар, батарея, система, плеєр).
+        * рядки 139-160: оновлено спекулярні межі `lg_edgeSpec()` — товщину зафіксовано на 1.5px, реалізовано плавне внутрішнє розмиття (inward sheen) вглиб скла (`max(depthPx, 0.0)` до 5.2px) для створення м'якого відблиску, та додано пригнічення на кутах `cornerSuppression = 1.0 - smoothstep(0.05, 0.65, cornerFactor)`.
+        * рядки 198-212: оновлено темні бічні фаски з внутрішнім градієнтом до 4.0px та кутовим пригніченням.
+        * рядки 360-375, 470-515: оновлено ключі та класи реєстрації до V4/V2 (DesktopWidgets_LiquidGlassEffectV4, DesktopWidgets_RoundedClipEffectV2, DesktopWidgets_LiquidGlassV4).
+     2) extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag:
+        * рядки 1138-1157: прибрано розширення товщини межі `whiteWidth = mix(1.2, 4.5, cornerFactor)` та розмиття на 6.0px на кутах, які створювали масивні грубі дуги на заокругленнях малих меню та пігулок.
+        * реалізовано пригнічення білого відблиску на кутах: біла лінія доходить зверху та знизу акуратно до кутів, але згасає перед заокругленням (`cornerSuppression = 1.0 - smoothstep(0.05, 0.65, cornerFactor)`), залишаючи кути ідеально тонкими та витонченими.
+        * реалізовано внутрішнє розмиття межі до центру (`inwardDist = max(-d, 0.0)`, `inwardSheen = pow(1.0 - smoothstep(0.0, 5.2, inwardDist), 1.2) * 0.38`), що формує природний глибинний відблиск поверхні скла.
+        * рядки 1159-1168: бічні темні межі адаптовано за аналогічним внутрішнім градієнтом з кутовим пригніченням.
+     3) extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/glass/shaders/glass.frag:
+        * рядки 884-915: дзеркально синхронізовано математику внутрішнього розмиття межі (inwardSheen) та кутового пригнічення (cornerSuppression) для збереження єдиної естетики macOS Liquid Glass на екрані блокування.
+     4) config/extensions.lock.json:
+        * оновлено хеші sha256 для 3 модифікованих розширень (liquid-glass, wack-lockscreen-clock, desktop-widgets).
+   - Синхронізація:
+     * Модифіковані файли синхронізовано з ~/.local/share/gnome-shell/extensions/ та /usr/share/gnome-shell/extensions/.
+     * За допомогою EvalHelper гаряче оновлено всі 5 віджетів робочого столу в поточному сеансі GNOME Shell без перезавантаження.
+     * done.txt скопійовано до ~/Desktop/done.txt.
+   - Тестування та перевірка:
+     * Перевірено стан віджетів через D-Bus — усі 5 віджетів активні з Meta_BackgroundActor, blurEnabled=true, без помилок TypeError у логах journalctl.
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 14/14 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * Перевірка відсутності кирилиці в install.sh — 0 знайдено.

@@ -245,7 +245,9 @@ export function buildNotificationCard(source, notification, options = {}) {
 
 
     const mainBox = new St.BoxLayout({
-        orientation: Clutter.Orientation.HORIZONTAL,
+        ...('orientation' in St.BoxLayout.prototype
+                ? { orientation: Clutter.Orientation.HORIZONTAL }
+                : { vertical: false }),
         x_expand: true,
         y_expand: true,
         clip_to_allocation: true,
@@ -285,7 +287,9 @@ export function buildNotificationCard(source, notification, options = {}) {
 
 
     const contentBox = new St.BoxLayout({
-        orientation: Clutter.Orientation.VERTICAL,
+        ...('orientation' in St.BoxLayout.prototype
+                ? { orientation: Clutter.Orientation.VERTICAL }
+                : { vertical: true }),
         x_expand: false,
         y_align: Clutter.ActorAlign.START,
         style_class: 'mac-notification-content-box',
@@ -298,7 +302,9 @@ export function buildNotificationCard(source, notification, options = {}) {
 
 
     const appHeaderBox = new St.BoxLayout({
-        orientation: Clutter.Orientation.HORIZONTAL,
+        ...('orientation' in St.BoxLayout.prototype
+                ? { orientation: Clutter.Orientation.HORIZONTAL }
+                : { vertical: false }),
         x_expand: true,
         y_align: Clutter.ActorAlign.CENTER,
     });
@@ -414,7 +420,9 @@ export function buildNotificationCard(source, notification, options = {}) {
     if (notification.actions && notification.actions.length > 0) {
         actionsBox = new St.BoxLayout({
             style_class: 'mac-notification-actions-box',
-            orientation: Clutter.Orientation.HORIZONTAL,
+            ...('orientation' in St.BoxLayout.prototype
+                ? { orientation: Clutter.Orientation.HORIZONTAL }
+                : { vertical: false }),
             x_expand: false,
             x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.CENTER,
@@ -591,7 +599,9 @@ export class MacNotificationGroup {
         this.timeoutId = 0;
 
         this.actor = new St.BoxLayout({
-            orientation: Clutter.Orientation.VERTICAL,
+            ...('orientation' in St.BoxLayout.prototype
+                ? { orientation: Clutter.Orientation.VERTICAL }
+                : { vertical: true }),
             x_expand: true,
             y_expand: false,
             clip_to_allocation: false,
@@ -707,7 +717,9 @@ export class MacNotificationGroup {
 
 
         this.expandedCardsBox = new St.BoxLayout({
-            orientation: Clutter.Orientation.VERTICAL,
+            ...('orientation' in St.BoxLayout.prototype
+                ? { orientation: Clutter.Orientation.VERTICAL }
+                : { vertical: true }),
             x_expand: true,
             y_expand: false,
             style: 'spacing: 8px;',
@@ -1220,7 +1232,9 @@ export const NotificationsController = class NotificationsController {
         this._stackBox = new St.BoxLayout({
             name: 'mac-notification-stack',
             style_class: 'mac-notification-stack',
-            orientation: Clutter.Orientation.VERTICAL,
+            ...('orientation' in St.BoxLayout.prototype
+                ? { orientation: Clutter.Orientation.VERTICAL }
+                : { vertical: true }),
             style: 'spacing: 12px;',
             y_align: Clutter.ActorAlign.START,
             x_align: Clutter.ActorAlign.END,

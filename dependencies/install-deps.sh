@@ -17,21 +17,7 @@ case "$manager" in
         sudo apt-get update
         sudo apt-get install -y "${packages[@]}"
         ;;
-    dnf)
-        sudo dnf install -y "${packages[@]}" || {
-            echo "Попередження: масове встановлення dnf не вдалося, спроба встановлення по одному..." >&2
-            for pkg in "${packages[@]}"; do
-                sudo dnf install -y "$pkg" 2>/dev/null || echo "Пропущено необов'язковий пакет: $pkg" >&2
-            done
-        }
-        ;;
-    pacman)
-        sudo pacman -Syu --needed --noconfirm "${packages[@]}" || {
-            echo "Попередження: масове встановлення pacman не вдалося, спроба окремо..." >&2
-            for pkg in "${packages[@]}"; do
-                sudo pacman -S --needed --noconfirm "$pkg" 2>/dev/null || echo "Пропущено необов'язковий пакет: $pkg" >&2
-            done
-        }
-        ;;
+    dnf) sudo dnf install -y "${packages[@]}" ;;
+    pacman) sudo pacman -Syu --needed --noconfirm "${packages[@]}" ;;
 esac
 printf 'Обов’язкові залежності встановлено.\n'

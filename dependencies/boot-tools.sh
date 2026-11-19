@@ -12,3 +12,10 @@ macw1y_rebuild_initramfs() {
         return 1
     fi
 }
+
+macw1y_has_grub() {
+    if command -v bootctl >/dev/null 2>&1 && bootctl is-installed >/dev/null 2>&1; then
+        return 1
+    fi
+    command -v update-grub >/dev/null 2>&1 || command -v grub2-mkconfig >/dev/null 2>&1 || command -v grub-mkconfig >/dev/null 2>&1
+}

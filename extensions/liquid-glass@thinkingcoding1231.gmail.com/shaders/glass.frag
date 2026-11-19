@@ -1128,41 +1128,42 @@ void main() {
 
     // -------------------------------------------------------------
     // Directional Glass Edge Highlights & Specular Borders
-    // - Top and bottom: white borders, diffusing/blurring at corners
-    // - Left and right: smaller, translucent dark borders, diffusing/blurring at corners
+    // - Top and bottom: white borders, diffusing inward toward the center, fading before corners
+    // - Left and right: translucent dark borders, diffusing inward, fading before corners
     // -------------------------------------------------------------
     vec2 outDir = (multi_region_mode > 0.5)
         ? sdShapeDir(local_pos, box_size, corner_radius, shape_type)
         : sdPopoverDir(local_pos, box_size, corner_radius, arrow_side, arrow_origin, arrow_base, arrow_rise, arrow_radius, arrow_fillet);
 
     float cornerFactor = clamp(2.0 * abs(outDir.x) * abs(outDir.y), 0.0, 1.0);
+    float cornerSuppression = 1.0 - smoothstep(0.05, 0.65, cornerFactor);
     float horizWeight = abs(outDir.y);
     float vertWeight = abs(outDir.x);
     float isTop = clamp(-outDir.y, 0.0, 1.0);
     float isBottom = clamp(outDir.y, 0.0, 1.0);
     float edgeDist = abs(d);
+    float inwardDist = max(-d, 0.0);
 
-    // 1. White borders on top & bottom (diffusing at corners)
-    float whiteWidth = mix(1.2, 4.5, cornerFactor);
+    // 1. White borders on top & bottom (crisp edge + inward blur toward center, suppressed at corners)
+    float whiteWidth = 1.5;
     float whiteLine = 1.0 - smoothstep(0.0, whiteWidth, edgeDist);
-    float cornerBlur = (1.0 - smoothstep(0.0, 6.0, edgeDist)) * cornerFactor * 0.45;
-    float diffusedWhite = mix(whiteLine, whiteLine * 0.60 + cornerBlur, cornerFactor);
+    float inwardSheen = (1.0 - smoothstep(0.0, 5.2, inwardDist));
+    inwardSheen = pow(inwardSheen, 1.2) * 0.38;
 
     float topIntensity = 0.95;
-    float bottomIntensity = 0.60;
+    float bottomIntensity = 0.55;
     float whiteIntensity = mix(bottomIntensity, topIntensity, isTop / max(horizWeight, 1e-4));
-    float whiteFalloff = pow(horizWeight, 1.15);
-    float topInnerSheen = (1.0 - smoothstep(0.0, mix(3.0, 5.5, cornerFactor), -d)) * 0.22 * isTop * (1.0 - cornerFactor * 0.5);
-    float whiteBorder = (diffusedWhite * whiteIntensity * whiteFalloff) + topInnerSheen;
+    float whiteFalloff = pow(horizWeight, 1.2);
+    float whiteBorder = (whiteLine * 0.85 + inwardSheen) * whiteIntensity * whiteFalloff * cornerSuppression;
 
-    // 2. Translucent dark borders on left & right (smaller, diffusing at corners)
-    float darkWidth = mix(0.95, 2.8, cornerFactor);
+    // 2. Translucent dark borders on left & right (crisp edge + inward blur, suppressed at corners)
+    float darkWidth = 1.2;
     float darkLine = 1.0 - smoothstep(0.0, darkWidth, edgeDist);
-    float darkCornerBlur = (1.0 - smoothstep(0.0, 4.5, edgeDist)) * cornerFactor * 0.35;
-    float diffusedDark = mix(darkLine, darkLine * 0.65 + darkCornerBlur, cornerFactor);
+    float darkInwardSheen = (1.0 - smoothstep(0.0, 4.0, inwardDist));
+    darkInwardSheen = pow(darkInwardSheen, 1.3) * 0.22;
     float darkIntensity = 0.28;
     float darkFalloff = pow(vertWeight, 1.35);
-    float darkBorder = diffusedDark * darkIntensity * darkFalloff;
+    float darkBorder = (darkLine * 0.75 + darkInwardSheen) * darkIntensity * darkFalloff * cornerSuppression;
 
     // Apply dark border directly to base glass color
     baseColor *= (1.0 - darkBorder * insideMask);

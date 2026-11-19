@@ -58,14 +58,17 @@ class MacAnimationCacheEngine {
 
     _initSignalListeners() {
         try {
-            if (global.display) {
-                const monId = global.display.connect('monitors-changed', () => {
+            if (Main.layoutManager) {
+                const monId = Main.layoutManager.connect('monitors-changed', () => {
                     this.invalidate('monitors-changed');
                 });
+                this._signals.push([Main.layoutManager, monId]);
+            }
+            if (global.display) {
                 const waId = global.display.connect('workareas-changed', () => {
                     this.invalidate('workareas-changed');
                 });
-                this._signals.push([global.display, monId], [global.display, waId]);
+                this._signals.push([global.display, waId]);
             }
 
             const themeContext = St.ThemeContext.get_for_stage(global.stage);
