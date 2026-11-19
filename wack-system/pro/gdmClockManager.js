@@ -9,20 +9,12 @@ import {
 } from '../main/constants.js';
 import { GDM_DATETIME_TOP_FRACTION } from './gdmUtils.js';
 
-let GdmGlassClockClass = null;
-import('./gdmGlassClock.js').then(m => {
-    GdmGlassClockClass = m.GdmGlassClock;
-}).catch(err => {
-    console.error(`[WACK/GDM] Warning: could not pre-load GdmGlassClock: ${err.message}`);
-});
-
 export class GdmClockManager {
     constructor(gdmManager) {
         this._gdm = gdmManager;
         this.clock = null;
         this.clockWrapper = null;
         this.timeLabel = null;
-        this.glassClock = null;
         this.clockPressed = false;
         this.menuWasOpenOnPress = false;
         this.dateMenuOpenStateId = 0;
@@ -33,11 +25,6 @@ export class GdmClockManager {
             dialogParent = dialog?.get_parent() || Main.screenShield?._lockDialogGroup || Main.layoutManager?.uiGroup;
         }
 
-
-        if (this.glassClock) {
-            try { this.glassClock.destroy(); } catch (_) {}
-            this.glassClock = null;
-        }
         if (this.clockWrapper) {
             try { this.clockWrapper.destroy(); } catch (_) {}
             this.clockWrapper = null;
@@ -109,36 +96,6 @@ export class GdmClockManager {
         this.clockWrapper.add_child(dateLabel);
         this.clockWrapper.add_child(timeLabel);
 
-
-        const initGlassClock = (Cls) => {
-            if (!Cls || !this.clockWrapper) return;
-            try {
-                const extPath = this._gdm?._extension?.path ||
-                    Main.extensionManager?.lookup('wack-lockscreen-clock@rinzler69-wastaken.github.com')?.path ||
-                    '/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com';
-                this.glassClock = new Cls(extPath, () => this.positionClock());
-                this.clockWrapper.add_child(this.glassClock.actor);
-                if (this.timeLabel?.text) {
-                    this.glassClock.setText(this.timeLabel.text);
-                }
-                this.positionClock();
-            } catch (e) {
-                console.error(`[WACK/GDM] Failed to initialize Liquid Glass Clock: ${e}`);
-                this.glassClock = null;
-            }
-        };
-
-        if (GdmGlassClockClass) {
-            initGlassClock(GdmGlassClockClass);
-        } else {
-            import('./gdmGlassClock.js').then(m => {
-                GdmGlassClockClass = m.GdmGlassClock;
-                initGlassClock(GdmGlassClockClass);
-            }).catch(e => {
-                console.error(`[WACK/GDM] Failed to dynamically load gdmGlassClock: ${e.message}`);
-            });
-        }
-
         centerClockLabel(timeLabel, this.clockWrapper);
         centerClockLabel(dateLabel, this.clockWrapper);
 
@@ -156,6 +113,9 @@ export class GdmClockManager {
         dateLabel.set_style("color: #ffffff !important; font-family: 'Default Display', default, system-ui, sans-serif, sans-serif !important; font-size: 28px !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important; padding: 4px 8px !important;");
         dateLabel.visible = true;
         dateLabel.opacity = 255;
+        timeLabel.add_style_class_name('wack-time');
+        timeLabel.set_style("color: #ffffff !important; font-family: 'Default Rounded', 'Default Display', default, system-ui, sans-serif, sans-serif !important; font-size: 128px !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important; letter-spacing: -4px !important; margin: 0 !important; padding: 0 !important;");
+        timeLabel.ensure_style();
         timeLabel.visible = true;
         timeLabel.opacity = 255;
 
@@ -165,9 +125,6 @@ export class GdmClockManager {
             this._gdm._connectAllocation(dialog, () => this.positionClock());
 
         this.timeLabel.connectObject('notify::text', () => {
-            if (this.glassClock && this.timeLabel?.text) {
-                this.glassClock.setText(this.timeLabel.text);
-            }
             this.positionClock();
         }, this);
 
@@ -185,10 +142,6 @@ export class GdmClockManager {
     }
 
     teardown() {
-        if (this.glassClock) {
-            this.glassClock.destroy();
-            this.glassClock = null;
-        }
 
         if (this.timeLabel) {
             this.timeLabel.disconnectObject(this);
@@ -268,73 +221,29 @@ export class GdmClockManager {
         }
         this.clock._dateOutput.set_x_align(Clutter.ActorAlign.CENTER);
 
-        if (this.glassClock) {
-            this.glassClock.sync();
-            const [fw, fh] = this.glassClock.fieldSize;
-            const rx = 48;
-            const ry = 48;
-
-            if (this.glassClock.isReady && fw > 1 && fh > 1) {
-                const glassX = Math.round((w - fw) / 2);
-                const glassY = Math.round(timeY - ry);
-                this.glassClock.actor.set_position(glassX, glassY);
-                this.glassClock.actor.set_size(fw, fh);
-                this.glassClock.actor.visible = true;
-                this.glassClock.actor.opacity = 255;
-
-                this.timeLabel.visible = false;
-                this.timeLabel.opacity = 0;
-
-                const visibleClockH = Math.max(120, fh - 2 * ry);
-                this.clockWrapper.set_size(w, timeY + visibleClockH + 20);
-            } else {
-                this.glassClock.actor.visible = false;
-                this.glassClock.actor.opacity = 0;
-
-                const oldTimeConstraint = this.clock._time.get_constraint('wack-clock-center-x');
-                if (oldTimeConstraint) {
-                    this.clock._time.remove_constraint(oldTimeConstraint);
-                }
-
-                const [, rawTimeW] = this.clock._time.get_preferred_width(-1);
-                const preferredTimeW = (rawTimeW > 0 && rawTimeW < w) ? Math.ceil(rawTimeW) : Math.min(800, w);
-                const timeX = Math.round((w - preferredTimeW) / 2);
-                this.timeLabel.set_position(timeX, timeY);
-                this.timeLabel.set_size(preferredTimeW, 150);
-                if (this.timeLabel.clutter_text) {
-                    this.timeLabel.clutter_text.set_line_alignment(Pango.Alignment.CENTER);
-                    this.timeLabel.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
-                }
-                this.timeLabel.set_x_align(Clutter.ActorAlign.CENTER);
-                this.timeLabel.visible = true;
-                this.timeLabel.opacity = 255;
-
-                this.clockWrapper.set_size(w, timeY + 150 + 20);
-            }
-        } else {
-            const rawTimeH = this.clock._time.get_preferred_height(-1)[1];
-            const preferredTimeH = (rawTimeH > 0 && rawTimeH < 1000) ? rawTimeH : 150;
-            const effectiveTimeH = Math.max(120, Math.min(250, Math.ceil(preferredTimeH)));
-
-            const oldTimeConstraint = this.clock._time.get_constraint('wack-clock-center-x');
-            if (oldTimeConstraint) {
-                this.clock._time.remove_constraint(oldTimeConstraint);
-            }
-            const [, rawTimeW] = this.clock._time.get_preferred_width(-1);
-            const preferredTimeW = (rawTimeW > 0 && rawTimeW < w) ? Math.ceil(rawTimeW) : Math.min(800, w);
-            const timeX = Math.round((w - preferredTimeW) / 2);
-
-            this.clockWrapper.set_size(w, timeY + effectiveTimeH + 20);
-            this.clock._time.set_position(timeX, timeY);
-            this.clock._time.set_size(preferredTimeW, effectiveTimeH);
-            if (this.timeLabel.clutter_text) {
-                this.timeLabel.clutter_text.set_line_alignment(Pango.Alignment.CENTER);
-                this.timeLabel.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
-            }
-            this.timeLabel.set_x_align(Clutter.ActorAlign.CENTER);
-            this.timeLabel.visible = true;
-            this.timeLabel.opacity = 255;
+        const oldTimeConstraint = this.clock._time.get_constraint('wack-clock-center-x');
+        if (oldTimeConstraint) {
+            this.clock._time.remove_constraint(oldTimeConstraint);
         }
+
+        this.timeLabel.ensure_style();
+        const pSize = this.timeLabel.clutter_text?.get_layout()?.get_pixel_size();
+        const rawTimeW = (pSize && pSize[0] > 0) ? pSize[0] : (this.timeLabel.get_preferred_width(-1)[1] || 350);
+        const rawTimeH = (pSize && pSize[1] > 0) ? pSize[1] : (this.timeLabel.get_preferred_height(-1)[1] || 166);
+        const effectiveTimeW = Math.min(rawTimeW, w);
+        const effectiveTimeH = Math.max(120, Math.min(250, Math.ceil(rawTimeH)));
+        const timeX = Math.round((w - effectiveTimeW) / 2);
+
+        this.clockWrapper.set_size(w, timeY + effectiveTimeH + 20);
+        this.timeLabel.set_position(timeX, timeY);
+        this.timeLabel.set_size(effectiveTimeW, effectiveTimeH);
+        if (this.timeLabel.clutter_text) {
+            this.timeLabel.clutter_text.set_line_alignment(Pango.Alignment.CENTER);
+            this.timeLabel.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
+        }
+        this.timeLabel.set_x_align(Clutter.ActorAlign.CENTER);
+        this.timeLabel.visible = true;
+        this.timeLabel.opacity = 255;
 
         this.clockWrapper.set_position(startX, topY);
         this.clockWrapper.set_pivot_point(0.5, 0.5);

@@ -196,7 +196,7 @@ export const WackClock = GObject.registerClass(
             const dateShadow = 'text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42);';
             const letterSpacing = (this._letterSpacing != null)
                 ? ` letter-spacing: ${this._letterSpacing}px;` : '';
-            this._time.set_style(`color: ${timeColor}; ${font} ${weight} ${timeShadow}${letterSpacing}`);
+            this._time.set_style(`color: ${timeColor}; ${font} ${weight} font-size: 128px; ${timeShadow}${letterSpacing}`);
             this._dateOutput.set_style(`color: ${dateColor}; font-family: 'Default Display', default, system-ui, sans-serif, sans-serif; font-size: 28px; font-weight: 600; text-align: center; margin-bottom: 0px; padding: 4px 8px; ${dateShadow}`);
 
             this._applyColonMarkup();

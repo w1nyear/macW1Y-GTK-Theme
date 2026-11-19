@@ -1,4 +1,5 @@
 import Clutter from 'gi://Clutter';
+import Pango from 'gi://Pango';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {
@@ -35,11 +36,21 @@ export class ClockLayoutManager {
         this.clockWrapper.set_pivot_point(0.5, 0.5);
         this.clockWrapper.add_child(dateLabel);
         this.clockWrapper.add_child(timeLabel);
+
         lockDialogGroup.add_child(this.clockWrapper);
 
         this.dateLabel = dateLabel;
         this.timeLabel = timeLabel;
+        if (this.dateLabel) {
+            this.dateLabel.set_style("color: #ffffff !important; font-family: 'Default Display', default, system-ui, sans-serif, sans-serif !important; font-size: 28px !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important; padding: 4px 8px !important;");
+        }
+        if (this.timeLabel) {
+            this.timeLabel.add_style_class_name('wack-time');
+            this.timeLabel.set_style("color: #ffffff !important; font-family: 'Default Rounded', 'Default Display', default, system-ui, sans-serif, sans-serif !important; font-size: 128px !important; font-weight: 600 !important; text-align: center !important; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42) !important; letter-spacing: -4px !important; margin: 0 !important; padding: 0 !important;");
+            this.timeLabel.ensure_style();
+        }
 
+        dateLabel.connectObject('notify::text', () => this.positionClock(), this);
         timeLabel.connectObject('notify::text', () => this.positionClock(), this);
         centerClockLabel(timeLabel, this.clockWrapper);
         centerClockLabel(dateLabel, this.clockWrapper);
@@ -110,15 +121,52 @@ export class ClockLayoutManager {
 
         const topY = monitorY + Math.floor(monitorHeight * DATETIME_TOP_FRACTION);
 
-        const [, dateHeight] = dateLabel.get_preferred_height(-1) || [0, 24];
-        const effectiveDateH = Math.max(20, Math.ceil(dateHeight));
+        dateLabel.ensure_style();
+        const [, dateHeight] = dateLabel.get_preferred_height(-1) || [0, 36];
+        const effectiveDateH = Math.max(42, Math.ceil(dateHeight));
         const timeY = effectiveDateH - 4;
 
-        dateLabel.set_position(0, 0);
-        timeLabel.set_position(0, timeY);
+        const oldDateConstraint = dateLabel.get_constraint('wack-clock-center-x');
+        if (oldDateConstraint) {
+            dateLabel.remove_constraint(oldDateConstraint);
+        }
+        const [, dateWidth] = dateLabel.get_preferred_width(-1) || [0, 200];
+        const effectiveDateW = (dateWidth > 0 && dateWidth < monitorWidth) ? Math.ceil(dateWidth) : Math.min(600, monitorWidth);
+        const dateX = Math.round((monitorWidth - effectiveDateW) / 2);
+
+        dateLabel.set_position(dateX, 0);
+        dateLabel.set_size(effectiveDateW, effectiveDateH);
+        if (dateLabel.clutter_text) {
+            dateLabel.clutter_text.set_line_alignment(Pango.Alignment.CENTER);
+            dateLabel.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
+        }
+        dateLabel.set_x_align(Clutter.ActorAlign.CENTER);
+
+        const oldTimeConstraint = timeLabel.get_constraint('wack-clock-center-x');
+        if (oldTimeConstraint) {
+            timeLabel.remove_constraint(oldTimeConstraint);
+        }
+
+        timeLabel.ensure_style();
+        const pSize = timeLabel.clutter_text?.get_layout()?.get_pixel_size();
+        const rawTimeW = (pSize && pSize[0] > 0) ? pSize[0] : (timeLabel.get_preferred_width(-1)[1] || 350);
+        const rawTimeH = (pSize && pSize[1] > 0) ? pSize[1] : (timeLabel.get_preferred_height(-1)[1] || 166);
+        const effectiveTimeW = Math.min(rawTimeW, monitorWidth);
+        const effectiveTimeH = Math.max(120, Math.min(250, Math.ceil(rawTimeH)));
+        const timeX = Math.round((monitorWidth - effectiveTimeW) / 2);
+
+        timeLabel.set_position(timeX, timeY);
+        timeLabel.set_size(effectiveTimeW, effectiveTimeH);
+        if (timeLabel.clutter_text) {
+            timeLabel.clutter_text.set_line_alignment(Pango.Alignment.CENTER);
+            timeLabel.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
+        }
+        timeLabel.set_x_align(Clutter.ActorAlign.CENTER);
+        timeLabel.visible = true;
+        timeLabel.opacity = 255;
 
         wrapper.set_position(monitorX, topY);
-        wrapper.set_width(monitorWidth);
+        wrapper.set_size(monitorWidth, timeY + effectiveTimeH + 20);
         wrapper.set_pivot_point(0.5, 0.5);
     }
 

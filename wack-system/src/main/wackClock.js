@@ -189,15 +189,15 @@ export const WackClock = GObject.registerClass(
 
         _applyTextStyle() {
             const timeColor = '#ffffff';
-            const dateColor = 'rgba(255, 255, 255, 0.98)';
-            const font = "font-family: Open Runde, Default Rounded, Default Display, Cantarell, sans-serif;";
+            const dateColor = '#ffffff';
+            const font = "font-family: 'Default Rounded', 'Default Display', default, system-ui, sans-serif, sans-serif;";
             const weight = `font-weight: ${this._weight || '600'};`;
             const timeShadow = 'text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42);';
-            const dateShadow = 'text-shadow: 0 1px 5px rgba(0, 0, 0, 0.38);';
+            const dateShadow = 'text-shadow: 0 1px 10px rgba(0, 0, 0, 0.42);';
             const letterSpacing = (this._letterSpacing != null)
                 ? ` letter-spacing: ${this._letterSpacing}px;` : '';
-            this._time.set_style(`color: ${timeColor}; ${font} ${weight} ${timeShadow}${letterSpacing}`);
-            this._dateOutput.set_style(`color: ${dateColor}; font-family: Default Display, Cantarell, sans-serif; font-weight: 600; margin-bottom: 0px; ${dateShadow}`);
+            this._time.set_style(`color: ${timeColor}; ${font} ${weight} font-size: 128px; ${timeShadow}${letterSpacing}`);
+            this._dateOutput.set_style(`color: ${dateColor}; font-family: 'Default Display', default, system-ui, sans-serif, sans-serif; font-size: 28px; font-weight: 600; text-align: center; margin-bottom: 0px; padding: 4px 8px; ${dateShadow}`);
 
             this._applyColonMarkup();
         }

@@ -2105,3 +2105,34 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-i18n-verify — 100% PASS.
      * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
      * Перевірка journalctl на помилки GLSL/Cogl/Shader/JS — 0 помилок.
+
+839. 2026-11-19 — Виправлення відображення годинника на екрані блокування (Lock Screen / GDM):
+   - Причина виникнення проблеми:
+     * У розширенні `wack-lockscreen-clock@rinzler69-wastaken.github.com` експериментальний `glassClock` (`GdmGlassClock`) на базі BackdropGlass під час ініціалізації (`isReady = true`, через 200 мс після відкриття екрана блокування) примусово ховав нативний годинник (`timeLabel.visible = false; timeLabel.opacity = 0;`).
+     * Сам `BackdropGlass` на екрані блокування збирав 0 віконних джерел через відсутність звичайних вікон у сцені діалогу блокування, через що рендерив 100% прозорі/невидимі пікселі; крім того, фоновий процес `digitsWorker.js` періодично аварійно завершувався.
+     * Також у `wackClock.js` функція `_applyTextStyle()` перезаписувала інлайн-стилі `this._time` без явної властивості `font-size: 128px;`, через що розмір шрифту і розміри віджета могли обчислюватися некоректно.
+   - Файли та внесені зміни:
+     1) extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/clockLayoutManager.js:
+        * Видалено завантаження та виклики `glassClock` (`GdmGlassClockClass`).
+        * У `setup()`: для `this.timeLabel` додано клас `wack-time` та обов'язковий інлайн-стиль macOS Sonoma: `font-size: 128px !important; font-weight: 600 !important; color: #ffffff !important; letter-spacing: -4px !important; text-shadow: 0 1px 10px rgba(0,0,0,0.42) !important;` з викликом `ensure_style()`.
+        * У `positionClock()`: видалено логіку `if (this.glassClock)`, реалізовано надійне обчислення реальних розмірів через `timeLabel.clutter_text.get_layout().get_pixel_size()`, гарантовано постійну видимість (`timeLabel.visible = true; timeLabel.opacity = 255;`), точне центрування та коректну висоту обгортки `wrapper.set_size(monitorWidth, timeY + effectiveTimeH + 20)`.
+     2) extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/pro/gdmClockManager.js та src/pro/gdmClockManager.js:
+        * Аналогічно видалено `glassClock`, зафіксовано стиль 128px, гарантовано постійну видимість на екрані GDM (`visible = true; opacity = 255`) та точне позиціонування.
+     3) extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/wackClock.js:
+        * У `_applyTextStyle()` додано `font-size: 128px;` до стилів `this._time`.
+     4) wack-system/ (src/main/clockLayoutManager.js, pro/gdmClockManager.js, src/pro/gdmClockManager.js, src/main/wackClock.js):
+        * Синхронізовано ідентичні зміни до каталогу `wack-system/`.
+     5) config/extensions.lock.json:
+        * Оновлено sha256 для `wack-lockscreen-clock@rinzler69-wastaken.github.com` на `6363fed241a05cce495eaa6018d30fd69da955cf2704d481d76fef939c1414bc`.
+   - Синхронізація:
+     * Усі файли синхронізовано до `~/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/` та `/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/`.
+     * `config/extensions.lock.json` синхронізовано до `/usr/share/mactheme/config/extensions.lock.json`.
+     * Розширення успішно активовано в робочому сеансі GNOME Shell через EvalHelper; на екрані блокування підтверджено: `timeLabelVisible: true, timeLabelOpacity: 255, timeLabelSize: [350, 166]`.
+     * `done.txt` синхронізовано з `~/Desktop/done.txt`.
+   - Тестування та перевірка:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 17/17 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
+     * Без push, без перезавантаження та вимикання ПК.
