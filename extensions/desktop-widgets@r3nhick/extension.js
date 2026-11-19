@@ -48,7 +48,7 @@ import * as TimerWidget from './widgets/timer/widget.js';
 import { configureLogger, resetLogger, warn } from './logger.js';
 import { assetPath } from './paths.js';
 import { LiquidGlass } from './lib/glass.js';
-const getLiquidGlass = () => globalThis.DesktopWidgets_LiquidGlassV8 || LiquidGlass;
+const getLiquidGlass = () => globalThis.DesktopWidgets_LiquidGlassV9 || LiquidGlass;
 import { UpdateChecker } from './lib/updates.js';
 import { createHoldWatch, BUTTON1_MASK } from './lib/pager.js';
 // (The screen-time engine runs inside the screentime widget; extension.js no
@@ -2760,7 +2760,7 @@ class WidgetController {
       chromaStrength: s.get_int('chroma-strength-pct') / 100,
       tint,
       tintAlpha,
-      specStrength: s.get_int('spec-strength-pct') / 100,
+      specStrength: 0.0,
       blurRadius: s.get_int('blur-radius-px'),
       solid: false,
     };
@@ -4571,7 +4571,7 @@ sizeButton.connectObject('destroy', () => {
         chromaStrength: 0.04,
         tint: theme.dark ? { r: 0.12, g: 0.12, b: 0.16 } : { r: 0.95, g: 0.95, b: 0.98 },
         tintAlpha: theme.dark ? 0.35 : 0.22,
-        specStrength: 0.45,
+        specStrength: 0.0,
         blurRadius: 18,
         solid: false,
       });

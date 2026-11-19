@@ -127,11 +127,11 @@ static MacStylingData state = {
 
     .liquid_shape = 2,
     .liquid_refraction = 80,
-    .liquid_blur = 9,
+    .liquid_blur = 0,
     .liquid_tint = 15,
     .liquid_chroma = 10,
     .liquid_rim = 40,
-    .liquid_specular = 10,
+    .liquid_specular = 0,
     .liquid_shadow = 49,
 
     .dock_tint = 0,
@@ -266,9 +266,9 @@ static void load_config(void) {
                 state.liquid_rim = 40;
 
             if (json_object_has_member(obj, "liquid_specular"))
-                state.liquid_specular = (int)json_object_get_int_member(obj, "liquid_specular");
+                state.liquid_specular = 0;
             else
-                state.liquid_specular = 10;
+                state.liquid_specular = 0;
 
             if (json_object_has_member(obj, "liquid_shadow"))
                 state.liquid_shadow = (int)json_object_get_int_member(obj, "liquid_shadow");
@@ -749,40 +749,13 @@ static void apply_liquid_glass(void) {
     const char *tint_col = is_light ? "#ffffff" : "#000000";
     const char *dock_col = is_light ? "#ffffff" : "#29292e";
 
-    int radius = state.liquid_blur;
+    int radius = 0;
     double tint = (double)state.liquid_tint / 100.0;
     double disp_scale = (double)state.liquid_refraction * 1.5;
     double ior = 1.0 + ((double)state.liquid_refraction / 100.0) * 1.0;
     double chroma = ((double)state.liquid_chroma / 100.0) * 0.04;
     double rim = (double)state.liquid_rim / 100.0;
-    double specular = (double)state.liquid_specular / 100.0;
-
-
-    const char *blur_keys[] = {
-        "quick-settings-blur-radius",
-        "notification-blur-radius",
-        "application-blur-radius",
-        "osd-blur-radius",
-        NULL
-    };
-
-    for (int i = 0; blur_keys[i] != NULL; i++) {
-        safe_set_int(lg, schema, blur_keys[i], radius);
-    }
-
-
-    const char *tint_keys[] = {
-        "quick-settings-tint-strength",
-        "quick-settings-toggle-tint-strength",
-        "notification-tint-strength",
-        "application-tint-strength",
-        "osd-tint-strength",
-        NULL
-    };
-
-    for (int i = 0; tint_keys[i] != NULL; i++) {
-        safe_set_double(lg, schema, tint_keys[i], tint);
-    }
+    double specular = 0.0; /* Specular is permanently removed */
 
     /* Global Liquid Glass physical shader optics */
     safe_set_int(lg, schema, "glass-shape-type", state.liquid_shape);
@@ -790,7 +763,7 @@ static void apply_liquid_glass(void) {
     safe_set_double(lg, schema, "glass-ior", ior);
     safe_set_double(lg, schema, "glass-chroma-strength", chroma);
     safe_set_double(lg, schema, "glass-rim-intensity", rim);
-    safe_set_double(lg, schema, "glass-specular-intensity", specular);
+    safe_set_double(lg, schema, "glass-specular-intensity", 0.0);
 
 
     safe_set_int(lg, schema, "dock-blur-radius", state.dock_blur);
@@ -1234,6 +1207,13 @@ static void apply_widget_settings(void) {
     g_settings_set_int(dw, "blur-radius-px", state.widget_blur);
     g_settings_set_int(dw, "tint-alpha-pct", state.widget_tint);
     g_settings_set_int(dw, "style-shadow-size", state.widget_shadow);
+
+    /* Enforce unified Liquid Glass parameters onto widgets base glass layer */
+    g_settings_set_int(dw, "refract-scale", state.liquid_refraction);
+    g_settings_set_int(dw, "refract-thickness", (state.liquid_refraction > 0) ? (int)round((double)state.liquid_refraction * 0.35) : 0);
+    g_settings_set_int(dw, "refract-ior-x100", (int)round((1.0 + ((double)state.liquid_refraction / 100.0)) * 100.0));
+    g_settings_set_int(dw, "chroma-strength-pct", state.liquid_chroma);
+    g_settings_set_int(dw, "spec-strength-pct", 0);
     g_object_unref(dw);
 }
 
@@ -2445,7 +2425,7 @@ static void draw_repo_glass_element(cairo_t *cr, cairo_surface_t *bg, int width,
     double rim_directional_power = 2.7;
     double rim_light_color_intensity = 1.4;
     double sheen_intensity = 0.30;
-    double spec_intensity = ((double)state.liquid_specular / 50.0) * 0.50;
+    double spec_intensity = 0.0; /* Specular disabled */
     double shininess = 32.0;
     double ao_intensity = 0.30;
     double ao_radius = 8.0;
@@ -2620,10 +2600,8 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
 
 
     cairo_surface_t *bg_for_glass = bg;
-    if (state.liquid_blur > 0) {
-        cairo_surface_t *bl = get_cached_blurred_wallpaper_surface(width, height, CLAMP(state.liquid_blur * 2, 1, 40));
-        if (bl) bg_for_glass = bl;
-    }
+    cairo_surface_t *bl = get_cached_blurred_wallpaper_surface(width, height, 16);
+    if (bl) bg_for_glass = bl;
 
     draw_repo_glass_element(cr, bg_for_glass, width, height, gx, gy, gw, gh, gr, state.liquid_shape);
 

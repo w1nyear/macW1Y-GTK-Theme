@@ -137,7 +137,7 @@ vec4 lg_glass(sampler2D tex, vec2 uv) {
     float depthPx = -d;
     vec3 col;
 
-    if (lg_refractThickness <= 0.0 || depthPx >= lg_refractThickness) {
+    if (lg_refractThickness <= 0.001 || depthPx >= lg_refractThickness || lg_refractScale <= 0.001) {
         col = lg_sample(tex, uv);
     } else {
         // Snell on a dome across the edge band.
@@ -148,16 +148,23 @@ vec4 lg_glass(sampler2D tex, vec2 uv) {
         float edgeMag = tan(thetaI - thetaT);
 
         vec2 displaceUV = -ndir * edgeMag * lg_refractScale / lg_size;
-        float chromaPx = lg_chromaStrength * lg_refractThickness * 0.35 * (1.0 - t);
-        vec2 chromaUV = -ndir * chromaPx / lg_size;
 
-        col.r = lg_sample(tex, uv + displaceUV + chromaUV).r;
-        col.g = lg_sample(tex, uv + displaceUV).g;
-        col.b = lg_sample(tex, uv + displaceUV - chromaUV).b;
+        if (lg_chromaStrength > 0.001) {
+            float chromaPx = lg_chromaStrength * lg_refractThickness * 0.35 * (1.0 - t);
+            vec2 chromaUV = -ndir * chromaPx / lg_size;
+
+            col.r = lg_sample(tex, uv + displaceUV + chromaUV).r;
+            col.g = lg_sample(tex, uv + displaceUV).g;
+            col.b = lg_sample(tex, uv + displaceUV - chromaUV).b;
+        } else {
+            col = lg_sample(tex, uv + displaceUV);
+        }
     }
 
-    vec3 tintColor = mix(lg_tint.rgb, lg_tintBottom.rgb, lg_tintBottom.a > 0.0 ? uv.y : 0.0);
-    col = mix(col, tintColor, lg_tint.a);
+    if (lg_tint.a > 0.001) {
+        vec3 tintColor = mix(lg_tint.rgb, lg_tintBottom.rgb, lg_tintBottom.a > 0.0 ? uv.y : 0.0);
+        col = mix(col, tintColor, lg_tint.a);
+    }
 
     // ~1px AA feather on the silhouette; output is premultiplied.
     float mask = 1.0 - smoothstep(-0.5, 0.5, d);
@@ -242,7 +249,7 @@ function defineLiquidGlassEffect() {
         // Explicit GTypeName: the automatic one is derived from the module
         // path and would collide with other extensions that also ship a
         // lib/glass.js (e.g. liquidglass-widgets).
-        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV7'},
+        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV9'},
         class LiquidGlassEffect extends Clutter.ShaderEffect {
             _init() {
                 super._init();
@@ -341,7 +348,7 @@ function defineLiquidGlassEffect() {
 // claimed the first one.
 function defineLiquidGlassEffectCompat() {
     return GObject.registerClass(
-        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV7Compat'},
+        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV9Compat'},
         class LiquidGlassEffectCompat extends Clutter.ShaderEffect {
             _init() {
                 super._init();
@@ -431,8 +438,8 @@ function defineLiquidGlassEffectCompat() {
 }
 
 // Register the effect class only once, store in globalThis to survive reloads
-// V7: clean glass with no specular reflections in widgets.
-const EFFECT_CLASS_KEY = 'DesktopWidgets_LiquidGlassEffectV7';
+// V9: zero-check shader bypass optimizations & unified Liquid Glass parameters.
+const EFFECT_CLASS_KEY = 'DesktopWidgets_LiquidGlassEffectV9';
 if (!globalThis[EFFECT_CLASS_KEY]) {
     try {
         globalThis[EFFECT_CLASS_KEY] = defineLiquidGlassEffect();
@@ -713,11 +720,11 @@ export function monitorIndexAt(x, y) {
 }
 
 // Register the LiquidGlass class only once, store in globalThis to survive reloads
-const GLASS_CLASS_KEY = 'DesktopWidgets_LiquidGlassV8';
+const GLASS_CLASS_KEY = 'DesktopWidgets_LiquidGlassV9';
 if (!globalThis[GLASS_CLASS_KEY]) {
     globalThis[GLASS_CLASS_KEY] = GObject.registerClass(
         // Same as the effect class: collision-proof GType name.
-        {GTypeName: 'DesktopWidgets_LiquidGlassV8'},
+        {GTypeName: 'DesktopWidgets_LiquidGlassV9'},
         class LiquidGlass extends St.Widget {
             _init() {
                 super._init({clip_to_allocation: true, style: 'background-color: transparent;'});

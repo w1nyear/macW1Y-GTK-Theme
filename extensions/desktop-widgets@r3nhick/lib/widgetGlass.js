@@ -98,7 +98,7 @@ export class WidgetGlass {
             return null;
         }
 
-        const LGClass = globalThis.DesktopWidgets_LiquidGlassV8 || LiquidGlass;
+        const LGClass = globalThis.DesktopWidgets_LiquidGlassV9 || LiquidGlass;
         const glass = new LGClass();
 
         // Keep the glass right below its widget, not at the bottom of the

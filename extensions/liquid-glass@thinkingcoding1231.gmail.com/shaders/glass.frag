@@ -901,48 +901,24 @@ void main() {
     vec2 gradH = heightGradient(local_pos, box_size, corner_radius, max_z, resolution);
     vec3 normal = getNormal(gradH);
 
-    vec2 disp = getDisplacement(d, normal, resolution);
+    vec2 disp = vec2(0.0);
+    float edgeDampen = 0.0;
+    if (displacement_scale > 0.001) {
+        disp = getDisplacement(d, normal, resolution);
+        edgeDampen = smoothstep(0.0, edgeFeather * 3.0, -d);
+        disp *= edgeDampen;
+    }
 
+    vec2 refractedUv = (displacement_scale > 0.001) ? stabilizedUV(uv + disp, uv) : uv;
 
-    float edgeDampen = smoothstep(0.0, edgeFeather * 3.0, -d);
-    disp *= edgeDampen;
-
-    vec2 refractedUv = stabilizedUV(uv + disp, uv);
-
-    vec2 chromaDir = length(disp) > 0.00001 ? normalize(disp) : vec2(0.0);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    vec2 chromaVec = chromaDir * (chroma_strength / resolution) * edgeDampen;
-    vec2 uvG = refractedUv;
-
-
-
-
-
-
-
-
-
-    vec2 chromaPx = chromaVec * resolution;
-    bool chromaActive = dot(chromaPx, chromaPx) > 1.0e-4;
+    vec2 chromaVec = vec2(0.0);
+    bool chromaActive = false;
+    if (chroma_strength > 0.0001 && length(disp) > 0.00001) {
+        vec2 chromaDir = normalize(disp);
+        chromaVec = chromaDir * (chroma_strength / resolution) * edgeDampen;
+        vec2 chromaPx = chromaVec * resolution;
+        chromaActive = dot(chromaPx, chromaPx) > 1.0e-4;
+    }
 
 
 
@@ -965,9 +941,8 @@ void main() {
 
 
     vec3 refractedRgb;
+    float sampledAlpha;
     if (chromaActive) {
-
-
         vec2 uvR = stabilizedUV(refractedUv + chromaVec, refractedUv);
         vec2 uvB = stabilizedUV(refractedUv - chromaVec, refractedUv);
 
@@ -987,29 +962,24 @@ void main() {
              texture2D(cogl_sampler1, SAFE(uvB + off3)).b +
              texture2D(cogl_sampler1, SAFE(uvB + off4)).b) * 0.25
         );
+        sampledAlpha = (texture2D(cogl_sampler1, SAFE(uvG + off1)).a +
+                        texture2D(cogl_sampler1, SAFE(uvG + off2)).a +
+                        texture2D(cogl_sampler1, SAFE(uvG + off3)).a +
+                        texture2D(cogl_sampler1, SAFE(uvG + off4)).a) * 0.25;
+    } else if (displacement_scale <= 0.001) {
+        // Direct single-tap fetch when refraction is 0: massive GPU performance boost!
+        refractedRgb = texture2D(cogl_sampler1, SAFE(uvG)).rgb;
+        sampledAlpha = texture2D(cogl_sampler1, SAFE(uvG)).a;
     } else {
-
-
-
-
-
-
-
-
-
-
-
-
         refractedRgb = (texture2D(cogl_sampler1, SAFE(uvG + off1)).rgb +
                         texture2D(cogl_sampler1, SAFE(uvG + off2)).rgb +
                         texture2D(cogl_sampler1, SAFE(uvG + off3)).rgb +
                         texture2D(cogl_sampler1, SAFE(uvG + off4)).rgb) * 0.25;
+        sampledAlpha = (texture2D(cogl_sampler1, SAFE(uvG + off1)).a +
+                        texture2D(cogl_sampler1, SAFE(uvG + off2)).a +
+                        texture2D(cogl_sampler1, SAFE(uvG + off3)).a +
+                        texture2D(cogl_sampler1, SAFE(uvG + off4)).a) * 0.25;
     }
-
-    float sampledAlpha = (texture2D(cogl_sampler1, SAFE(uvG + off1)).a +
-                          texture2D(cogl_sampler1, SAFE(uvG + off2)).a +
-                          texture2D(cogl_sampler1, SAFE(uvG + off3)).a +
-                          texture2D(cogl_sampler1, SAFE(uvG + off4)).a) * 0.25;
     if (sampledAlpha < 0.20) {
         vec3 fallbackBg = mix(vec3(0.12, 0.12, 0.14), activeTint, activeBaseStrength);
         refractedRgb = mix(fallbackBg, refractedRgb, clamp(sampledAlpha / 0.20, 0.0, 1.0));
@@ -1036,7 +1006,9 @@ void main() {
 
 
     vec3 insideBaseColor = mix(refracted, activeTint, activeBaseStrength);
-    insideBaseColor = mix(insideBaseColor, vec3(tint_r, tint_g, tint_b), tint_strength);
+    if (tint_strength > 0.001) {
+        insideBaseColor = mix(insideBaseColor, vec3(tint_r, tint_g, tint_b), tint_strength);
+    }
 
 
 
@@ -1088,8 +1060,10 @@ void main() {
 
 
 
-    float aoMask = 1.0 - smoothstep(0.0, max(ao_radius, 0.001), -d);
-    baseColor *= (1.0 - aoMask * ao_intensity);
+    if (ao_intensity > 0.001) {
+        float aoMask = 1.0 - smoothstep(0.0, max(ao_radius, 0.001), -d);
+        baseColor *= (1.0 - aoMask * ao_intensity);
+    }
 
 
 
@@ -1171,28 +1145,32 @@ void main() {
     float safeRimWidth = max(rim_width, 0.001);
     float edgeBand = (1.0 - smoothstep(0.0, safeRimWidth, abs(d))) * step(0.0005, rim_width);
 
-    float rimDot = 1.0 - max(dot(normal, viewDir), 0.0);
-    float rimFresnel = pow(max(rimDot, 0.0), max(rim_power, 0.001));
-    float lightMask = pow(abs(dot(normal, lightDir)), max(rim_directional_power, 1.0));
+    float finalRimLight = 0.0;
+    if (rim_intensity > 0.001) {
+        float rimDot = 1.0 - max(dot(normal, viewDir), 0.0);
+        float rimFresnel = pow(max(rimDot, 0.0), max(rim_power, 0.001));
+        float lightMask = pow(abs(dot(normal, lightDir)), max(rim_directional_power, 1.0));
+        float rimShape = mix(pow(edgeBand, 0.85), rimFresnel, 0.55) * edgeBand;
+        finalRimLight = rimShape * lightMask * rim_intensity * rim_light_color_intensity * 0.4 * response;
+    }
 
-
-    float rimShape = mix(pow(edgeBand, 0.85), rimFresnel, 0.55) * edgeBand;
-    float finalRimLight = rimShape * lightMask * rim_intensity * rim_light_color_intensity * 0.4;
-    finalRimLight *= response;
-
-    float specularDot = max(dot(reflectDir, viewDir), 0.0);
-    float specularLight = pow(specularDot, max(shininess, 1.0));
-    specularLight *= specular_intensity * response;
-    float specMask = mix(0.25, 1.0, insideMask) * clamp(edgeBand + insideMask * 0.65, 0.0, 1.0);
-    specularLight *= specMask;
+    float specularLight = 0.0;
+    if (specular_intensity > 0.001) {
+        float specularDot = max(dot(reflectDir, viewDir), 0.0);
+        specularLight = pow(specularDot, max(shininess, 1.0)) * specular_intensity * response;
+        float specMask = mix(0.25, 1.0, insideMask) * clamp(edgeBand + insideMask * 0.65, 0.0, 1.0);
+        specularLight *= specMask;
+    }
 
     float idleRim = edgeBand * 0.005;
 
-    float sheenFacing = max(dot(normal, lightDir), 0.0);
-    float surfaceSheen = pow(sheenFacing, 1.65);
-
-    surfaceSheen *= mix(1.0, 0.55, edgeBand);
-    vec3 sheenColor = vec3(1.0) * surfaceSheen * sheen_intensity;
+    vec3 sheenColor = vec3(0.0);
+    if (sheen_intensity > 0.001) {
+        float sheenFacing = max(dot(normal, lightDir), 0.0);
+        float surfaceSheen = pow(sheenFacing, 1.65);
+        surfaceSheen *= mix(1.0, 0.55, edgeBand);
+        sheenColor = vec3(1.0) * surfaceSheen * sheen_intensity;
+    }
 
     float alpha = insideMask;
 

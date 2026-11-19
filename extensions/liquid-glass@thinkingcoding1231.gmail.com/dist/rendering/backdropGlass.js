@@ -113,25 +113,6 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
         this._effect.setSaturation(1.0);
         this._effect.setBrightness(1.0);
         this._effect.setContrast(1.0);
-        try {
-            this._effect._setFloat('displacement_scale', 20.0);
-            this._effect._setFloat('ior', 1.50);
-            this._effect._setFloat('sheen_intensity', 0.0);
-            this._effect._setFloat('rim_intensity', 0.08);
-            this._effect._setFloat('rim_width', 5.0);
-            this._effect._setFloat('rim_power', 6.0);
-            this._effect._setFloat('rim_directional_power', 2.7);
-            this._effect._setFloat('rim_light_color_intensity', 1.4);
-            this._effect._setFloat('specular_intensity', 0.0);
-            this._effect._setFloat('chroma_strength', 0.0);
-            this._effect._setFloat('edge_smoothing', 2.0);
-            this._effect._setFloat('profile_shape_n', 5.40);
-            this._effect._setFloat('max_z', 6.0);
-            this._effect._setFloat('shadow_intensity', 0.0);
-            this._effect._setFloat('shadow_radius', 0.0);
-            this._effect._setFloat('ao_intensity', 0.0);
-            this._effect._setFloat('ao_radius', 0.0);
-        } catch (_) {}
 
         this._liquidBox.add_effect(this._effect);
 

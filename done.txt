@@ -2223,3 +2223,43 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-i18n-verify — 100% PASS.
      * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
      * Без виходу з сеансу, без перезавантаження та вимикання ПК, без git push.
+
+843. 2026-11-19 — Оптимізація шейдера Liquid Glass (bypass при нульових значеннях), уніфікація параметрів скла для всіх елементів та видалення пунктів розмиття і відблиску:
+   - Причина звернення:
+     * Навантаження на відеокарту через неоптимальний рендеринг шейдера скла: якщо параметри у повзунках (наприклад, хроматична аберація, рефракція тощо) дорівнюють нулю, шейдер повинен повністю пропускати відповідні обчислення та багаторазові вибірки текстур.
+     * У блоці "Liquid Glass" налаштувань Мак стилізації було зайве налаштування розмиття, яке перетирало індивідуальні налаштування розмиття окремих компонентів.
+     * Необхідно було повністю видалити відблиск (Specular).
+     * Усі елементи інтерфейсу (віджети, док, контекстні меню, панелі тощо) на базовому шарі скла повинні примусово використовувати єдині оптичні параметри з розділу Liquid Glass у Мак стилізації (замість власних ізольованих значень, через які у віджетах була надмірна хроматична аберація 30% та відблиски).
+   - Розслідування та причина проблеми:
+     * У `desktop-widgets@r3nhick/lib/glass.js` шейдер безумовно виконував 3 вибірки текстури (`col.r`, `col.g`, `col.b`) навіть при нульовій аберації або відсутності рефракції. Крім того, схема віджетів містила дефолтні значення `chroma-strength-pct: 30`, `refract-scale: 65`, `spec-strength-pct: 70`, оскільки `apply_widget_settings()` у `libmac_settings.c` не синхронізував оптику Liquid Glass до віджетів.
+     * У `liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag` багаторазовий 4-вибірковий AA-луп, формули рефракції Снелла, крайове світло, specular та sheen обчислювалися навіть за нульових значень uniform-змінних.
+     * `backdropGlass.js` мав жорсткі оверрайди параметрів (`displacement_scale: 20.0`), що блокувало синхронізацію із загальними налаштуваннями.
+   - Файли та внесені зміни:
+     1) control-center/cc-mac-styling-panel.ui та gnome-control-center-overlay/cc-mac-styling-panel.ui (+ 14 локалей у locales/*/cc-mac-styling-panel.ui):
+        * Видалено рядки `liquid_blur_row` ("Розмиття скла") та `liquid_specular_row` ("Відблиск (Specular)").
+     2) control-center/libmac_settings.c та gnome-control-center-overlay/libmac_settings.c:
+        * У `apply_liquid_glass()`: прибрано перезаписування розмиття (`blur_keys`), оскільки кожен компонент має власне розмиття; встановлено `glass-specular-intensity` на `0.0`.
+        * У `apply_widget_settings()`: додано примусову синхронізацію оптичних параметрів Liquid Glass до віджетів (`refract-scale` = `state.liquid_refraction`, `refract-thickness`, `refract-ior-x100`, `chroma-strength-pct` = `state.liquid_chroma`, `spec-strength-pct` = 0).
+        * У `redraw_liquid_preview()`: вимкнено `spec_intensity` (0.0) та зафіксовано автономне чітке розмиття прев'ю (16px).
+        * Перекомпільовано `libmac_settings.so` та синхронізовано на всі шляхи хоста (`lib/`, `control-center/`, `gnome-control-center-overlay/`, `/usr/lib/x86_64-linux-gnu/`, `/usr/local/lib/`, `~/.local/lib/`, `/usr/share/mactheme/...`).
+     3) extensions/desktop-widgets@r3nhick/lib/glass.js, lib/widgetGlass.js, extension.js:
+        * Оптимізовано шейдер `lg_glass`: при `lg_refractThickness <= 0.001 || lg_refractScale <= 0.001` виконується одна пряма вибірка текстури без тригонометрії Снелла; при `lg_chromaStrength <= 0.001` виконується єдина вибірка текстури зі зміщенням замість 3 вибірок; при `lg_tint.a <= 0.001` пропускається змішування кольору; specular повністю вимкнено (0.0).
+        * Оновлено класи до `DesktopWidgets_LiquidGlassEffectV9`, `DesktopWidgets_LiquidGlassEffectV9Compat` та `DesktopWidgets_LiquidGlassV9` для безшовного оновлення у поточному сеансі.
+     4) extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag:
+        * Додано перевірки для нульових значень (zero-bypass): при `displacement_scale <= 0.001` зміщення дорівнює 0; при відсутності аберації та рефракції шейдер виконує лише 1 пряму вибірку замість 4-точкового фільтра; обчислення `rim_intensity`, `specular_intensity`, `sheen_intensity`, `tint_strength` та `ao_intensity` повністю пропускаються, якщо значення дорівнюють нулю.
+     5) extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js:
+        * Видалено жорсткі оверрайди параметрів зміщення та оптики, завдяки чому backdropGlass наслідує глобальні налаштування Liquid Glass.
+     6) config/extensions.lock.json:
+        * Оновлено контрольні суми sha256 для `desktop-widgets@r3nhick` та `liquid-glass@thinkingcoding1231.gmail.com`.
+   - Синхронізація:
+     * Усі розширення синхронізовано до `~/.local/share/gnome-shell/extensions/` та `/usr/share/gnome-shell/extensions/`.
+     * `config/extensions.lock.json` синхронізовано до `/usr/share/mactheme/config/extensions.lock.json`.
+     * У живому сеансі через EvalHelper усі 5 віджетів оновлено на версію V9 з оптимізованим шейдером; оновлено параметри GSettings (chroma 10%, spec 0%, refract 80).
+     * `done.txt` синхронізовано з `~/Desktop/done.txt`.
+   - Тестування та перевірка:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 17/17 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
+     * Без виходу з сеансу, без перезавантаження та вимикання ПК, без git push.
