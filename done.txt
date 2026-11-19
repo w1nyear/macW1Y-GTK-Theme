@@ -2047,3 +2047,25 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-audit-sync check — 100% PASS.
      * python3 bin/mac-i18n-verify — 100% PASS.
      * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
+
+837. 2026-11-19 — Видалення білого фону та шару світлості (тінту) у меню попереджень і діалогах:
+   - Файли та рядки змін:
+     1) extensions/eval-helper@mactheme/extension.js:
+        * рядок 2193: у функції syncDialogGlass прибрано накладання фонового шару світлості (rgba(236, 239, 246) / rgba(22, 23, 27)) та внутрішній білий блік (inset 0 1px 0 rgba(255, 255, 255, 0.28)), встановивши `background-color: transparent !important;` та пом'якшивши рамку до `border: 1px solid rgba(255, 255, 255, 0.14) !important;`; це повністю усуває білий тінт поверх скла діалогів підтвердження та завершення сеансу.
+     2) gnome-shell-theme/gnome-shell.css, macW1Y-Dark/gnome-shell/gnome-shell.css, macW1Y-Light/gnome-shell/gnome-shell.css:
+        * рядки 3589-3593 (Dark/Theme) та 3553-3557 (Light): для правил `.modal-dialog, .candidate-popup-content, .prompt-dialog, .end-session-dialog, .audio-device-selection-dialog, .access-dialog, .run-dialog` змінено `background-color: rgba(255, 255, 255, 0.05) !important;` на `background-color: transparent !important;`, видалено внутрішню білу тінь `inset 0 1px 0 rgba(255, 255, 255, 0.28)` та пом'якшено рамку до `rgba(255, 255, 255, 0.14)`.
+     3) config/mac-styling/styling.json, config/styling.json, ~/.config/mac-styling/styling.json:
+        * встановлено `"alert_tint": 0` для запобігання появі будь-якого штучного світлого/сірого шару тінтування діалогових вікон.
+     4) config/extensions.lock.json:
+        * оновлено хеш sha256 для розширення eval-helper@mactheme (fb0d90e508f5962c4c6c678ecb14998ea029a4cd05ff8cc348e7229b62b78e02).
+   - Синхронізація:
+     * Модифікований eval-helper@mactheme/extension.js синхронізовано до ~/.local/share/gnome-shell/extensions/eval-helper@mactheme/extension.js.
+     * Теми gnome-shell.css оновлено в ~/.themes/macW1Y-Dark/gnome-shell/ та /usr/share/themes/macW1Y-Dark/gnome-shell/.
+     * Гаряче перезавантажено стилі діалогів та тему оболонки GNOME Shell через EvalHelper без перезапуску оболонки чи системи.
+     * done.txt синхронізовано з ~/Desktop/done.txt.
+   - Тестування та перевірка:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 14/14 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * Перевірка відсутності кирилиці в install.sh — 0 знайдено.

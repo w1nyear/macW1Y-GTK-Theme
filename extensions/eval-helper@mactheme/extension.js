@@ -2189,8 +2189,7 @@ export default class EvalHelper extends Extension {
                             const extra = isTrash
                                 ? ' width: 270px !important; min-width: 270px !important; max-width: 270px !important; padding: 22px 18px 18px 18px !important;'
                                 : ' width: 360px !important; min-width: 360px !important; max-width: 360px !important; padding: 18px 20px !important;';
-                            const surfaceAlpha = tintStrength.toFixed(2);
-                            dialogBox.set_style(`background-color: ${darkTheme ? `rgba(22, 23, 27, ${surfaceAlpha})` : `rgba(236, 239, 246, ${surfaceAlpha})`} !important; border-radius: ${Math.round(radius)}px !important; border: 1px solid rgba(255, 255, 255, 0.30) !important; box-shadow: 0 16px 45px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;${extra}`);
+                            dialogBox.set_style(`background-color: transparent !important; border-radius: ${Math.round(radius)}px !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; box-shadow: 0 16px 45px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important;${extra}`);
                             for (const button of dialogBox.get_children().flatMap(child => child.get_children?.() || []).flatMap(child => child.get_children?.() || []).filter(child => child.has_style_class_name?.('modal-dialog-button') || child.has_style_class_name?.('modal-dialog-linked-button'))) {
                                 button.set_style('min-height: 26px !important; height: 26px !important; border-radius: 999px !important;');
                             }

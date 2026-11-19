@@ -19,7 +19,7 @@
   "label_blur": 30,
   "label_tint": 28,
   "label_shadow": 25,
-  "alert_tint": 26,
+  "alert_tint": 0,
   "alert_blur": 30,
   "alert_shadow": 20,
   "notification_blur": 34,
