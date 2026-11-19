@@ -2069,3 +2069,15 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-audit-sync check — 100% PASS.
      * python3 bin/mac-i18n-verify — 100% PASS.
      * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
+
+838. 2026-11-19 — Переносність: виправлення падіння Cogl GNOME 47 та запуск розширень Fedora:
+   - extensions/liquid-glass@thinkingcoding1231.gmail.com/src/liquidEffect.ts і dist/liquidEffect.js (імпорт, створення shader pipelines, методи uniforms), нові src/uniformCompat.js і dist/uniformCompat.js (1–32): scalar fallback для помилково анотованого Cogl API GNOME 46/47; усунено відтворений SIGSEGV на Fedora 41 GNOME 47.10.
+   - extensions/desktop-widgets@r3nhick/extension.js (511–512, 645, 788): GNOME Weather settings необов'язкові; без установленої програми інші віджети запускаються.
+   - extensions/wifi-hotspot-quick-settings@aryan10.github.io/extension.js (33–35, 54, 68–76): перевірки відсутніх menu/binding та знищеного entry.
+   - extensions/ubuntu-appindicators@ubuntu.com/schemas/ (нові XML та compiled): локальна схема налаштувань замість залежності від глобального пакунка Ubuntu.
+   - bin/mac-extension-guard (20–25, 50–60, 255–277), install.sh (900 та виклики build-native): переносний шлях lock, відмова на порожньому/неправильному lock, перевірка необхідних файлів; розгортання системного lock.
+   - tests/test_extension_guard.py, tests/test_uniform_compat.py: нові регресійні перевірки. Разом 17/17 PASS; guard хоста 21/21; audit-sync 100% PASS; bash -n та відсутність кирилиці install.sh PASS. Анімації: перший прогін 11/12, повторний 12/12 — нестабільність не приховано. i18n: структурні/fallback перевірки, не повнота перекладів.
+   - Fedora VM: актуальний snapshot, скомпільовані схеми, Shell пережив 25 с; D-Bus підтверджує 20/21 керованих розширень ENABLED. DING відсутній — підтримку ще не завершено. Візуальний тест повного сеансу цим не замінено.
+   - config/extensions.lock.json: оновлено чотири змінені розширення. Скрипт, lock і зміни розширень синхронізовано на диск хоста; також синхронізовано вже наявне в репо виправлення appindicator/dbusMenu.js після резервного копіювання старого файла. Shell хоста не перезапускався.
+   - docs/diagnostics/2026-11-19-portability.md: докази, обмеження й повний план продовження; 2026-11-19-fedora-runtime.json: машинний стан розширень.
+   - Оцінка готовності 70–75%, орієнтовно. done.txt скопійовано на Desktop. Без push, змін режимів живлення та перезапуску хоста.

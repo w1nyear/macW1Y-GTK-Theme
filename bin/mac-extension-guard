@@ -18,8 +18,12 @@ import urllib.error
 import urllib.parse
 import subprocess
 
-REPO_DIR = "/home/vitaliy/MACTHEMEFILES"
-LOCK_FILE = os.path.join(REPO_DIR, "config/extensions.lock.json")
+REPO_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+LOCK_CANDIDATES = [
+    os.path.join(REPO_DIR, "config/extensions.lock.json"),
+    "/usr/share/mactheme/config/extensions.lock.json",
+]
+LOCK_FILE = next((path for path in LOCK_CANDIDATES if os.path.isfile(path)), LOCK_CANDIDATES[0])
 CONFIG_DIR = os.path.expanduser("~/.config/macw1y")
 UPDATES_FILE = os.path.join(CONFIG_DIR, "extension-updates.json")
 BACKUPS_DIR = os.path.join(CONFIG_DIR, "backups/extensions")
@@ -44,10 +48,15 @@ def dir_hash(d):
     return h.hexdigest()
 
 def load_lock():
-    if not os.path.exists(LOCK_FILE):
-        return {}
     with open(LOCK_FILE, "r", encoding="utf-8") as f:
-        return json.load(f).get("extensions", {})
+        document = json.load(f)
+        entries = document.get("extensions") if isinstance(document, dict) else None
+    if not isinstance(entries, dict) or not entries:
+        raise ValueError("Lock-файл не містить жодного розширення")
+    for uuid, entry in entries.items():
+        if not isinstance(entry, dict) or not isinstance(entry.get("sha256"), str) or len(entry["sha256"]) != 64:
+            raise ValueError(f"Неповний запис контрольної суми: {uuid}")
+    return entries
 
 def load_updates():
     if not os.path.exists(UPDATES_FILE):
@@ -245,7 +254,11 @@ def cmd_status():
     print("="*80 + "\n")
 
 def cmd_verify():
-    locked = load_lock()
+    try:
+        locked = load_lock()
+    except (OSError, ValueError, TypeError) as error:
+        print(f"VERIFICATION FAILED: {error}", file=sys.stderr)
+        return False
     errors = []
     for uuid, info in locked.items():
         p = os.path.join(USER_EXT_DIR, uuid)
@@ -254,6 +267,9 @@ def cmd_verify():
         if not os.path.exists(p):
             errors.append(f"{uuid}: directory missing from system!")
             continue
+        for required in ("metadata.json", "extension.js"):
+            if not os.path.isfile(os.path.join(p, required)):
+                errors.append(f"{uuid}: missing {required}")
         h = dir_hash(p)
         if h != info.get("sha256"):
             errors.append(f"{uuid}: integrity hash mismatch (expected {info.get('sha256')[:8]}, got {h[:8]})")

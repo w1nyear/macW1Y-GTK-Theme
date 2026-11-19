@@ -1,0 +1,91 @@
+{
+  "environment": "Fedora 41 / GNOME 47.10 / QEMU KVM / software rendering / headless",
+  "duration_seconds": 25,
+  "scope": "Запуск та стан розширень; не візуальна перевірка і не повний цикл встановлення",
+  "extensions": {
+    "appmenu@ChathurangaBW.github.io": {
+      "state": 1.0,
+      "error": ""
+    },
+    "blur-my-shell@aunetx": {
+      "state": 1.0,
+      "error": ""
+    },
+    "compiz-alike-magic-lamp-effect@hermes83.github.com": {
+      "state": 1.0,
+      "error": ""
+    },
+    "cupertino-dock-lite@rinzler69-wastaken.github.com": {
+      "state": 1.0,
+      "error": ""
+    },
+    "custom-command-toggle@storageb.github.com": {
+      "state": 1.0,
+      "error": ""
+    },
+    "dash2dock-motion@unmade.space": {
+      "state": 1.0,
+      "error": ""
+    },
+    "eval-helper@mactheme": {
+      "state": 1.0,
+      "error": ""
+    },
+    "kiwi@kemma": {
+      "state": 1.0,
+      "error": ""
+    },
+    "liquid-glass@thinkingcoding1231.gmail.com": {
+      "state": 1.0,
+      "error": ""
+    },
+    "macw1y-touchpad-gestures@mactheme": {
+      "state": 1.0,
+      "error": ""
+    },
+    "quick-settings-scroll@diskmth.fr": {
+      "state": 1.0,
+      "error": ""
+    },
+    "Rounded_Corners@lennart-k": {
+      "state": 1.0,
+      "error": ""
+    },
+    "run-cmd@custom.extension": {
+      "state": 1.0,
+      "error": ""
+    },
+    "top-bar-organizer@julian.gse.jsts.xyz": {
+      "state": 1.0,
+      "error": ""
+    },
+    "user-theme@gnome-shell-extensions.gcampax.github.com": {
+      "state": 1.0,
+      "error": ""
+    },
+    "volume-percentage-quick-settings@imdarktom": {
+      "state": 1.0,
+      "error": ""
+    },
+    "wack-lockscreen-clock@rinzler69-wastaken.github.com": {
+      "state": 1.0,
+      "error": ""
+    },
+    "wifi-hotspot-quick-settings@aryan10.github.io": {
+      "state": 1.0,
+      "error": ""
+    },
+    "ding@rastersoft.com": {
+      "state": null,
+      "error": "Не встановлено"
+    },
+    "desktop-widgets@r3nhick": {
+      "state": 1.0,
+      "error": ""
+    },
+    "ubuntu-appindicators@ubuntu.com": {
+      "state": 1.0,
+      "error": ""
+    }
+  }
+}

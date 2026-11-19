@@ -30,8 +30,8 @@ class HotspotMenuController {
     }
 
     attachIndicator(indicator) {
-        const menu = indicator._wirelessToggle.menu;
-        if (this._entries.has(menu))
+        const menu = indicator._wirelessToggle?.menu;
+        if (!menu || this._entries.has(menu))
             return;
 
         const item = menu.addAction(HOTSPOT_LABEL, () => {
@@ -50,7 +50,7 @@ class HotspotMenuController {
     }
 
     _moveBeforeAllNetworks(menu, item) {
-        const allNetworksItem = menu._settingsActions[WIFI_PANEL_DESKTOP_FILE];
+        const allNetworksItem = menu._settingsActions?.[WIFI_PANEL_DESKTOP_FILE];
         if (!allNetworksItem)
             return;
 
@@ -63,12 +63,13 @@ class HotspotMenuController {
 
     _syncEntry(menu, indicator) {
         const entry = this._entries.get(menu);
-        entry.item.visible = !this._isHotspotActive(indicator);
+        if (entry)
+            entry.item.visible = !this._isHotspotActive(indicator);
     }
 
     _isHotspotActive(indicator) {
-        const primaryItem = indicator._wirelessToggle._itemBinding.source;
-        return primaryItem.is_hotspot;
+        const primaryItem = indicator._wirelessToggle?._itemBinding?.source;
+        return primaryItem?.is_hotspot ?? false;
     }
 
     async _turnOnHotspot(indicator) {

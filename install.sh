@@ -897,6 +897,7 @@ install_wallpaper() {
 # ------------------------------------------------------------------------------
 install_extensions() {
     log_step "Stage 7/13: Installing and configuring GNOME Shell extensions"
+    sudo install -Dm644 "$SCRIPT_DIR/config/extensions.lock.json" /usr/share/mactheme/config/extensions.lock.json
     local EXT_USER_DIR="$TARGET_HOME/.local/share/gnome-shell/extensions"
     mkdir -p "$EXT_USER_DIR"
     
@@ -1850,6 +1851,7 @@ run_full_install() {
     install_dependencies
     python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || return 1
     bash "$SCRIPT_DIR/dependencies/build-native.sh" "$SCRIPT_DIR/lib"
+    sudo install -Dm644 "$SCRIPT_DIR/config/extensions.lock.json" /usr/share/mactheme/config/extensions.lock.json
     install_fonts
     install_themes
     install_icons
@@ -1876,6 +1878,7 @@ run_incremental_update() {
     require_root
     
     bash "$SCRIPT_DIR/dependencies/build-native.sh" "$SCRIPT_DIR/lib"
+    sudo install -Dm644 "$SCRIPT_DIR/config/extensions.lock.json" /usr/share/mactheme/config/extensions.lock.json
     MODIFIED_COUNT=0
     UNCHANGED_COUNT=0
     

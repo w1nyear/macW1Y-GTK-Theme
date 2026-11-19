@@ -1,3 +1,4 @@
+import { uniformDeclarations, setUniformVector, setUniformArray } from './uniformCompat.js';
 
 
 
@@ -1421,7 +1422,7 @@ export const LiquidEffect = GObject.registerClass({
 
     if (this._downsampleSource) {
       const downSnippet = this._splitShader(this._downsampleSource);
-      const s = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, downSnippet.decl, null);
+      const s = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, uniformDeclarations(downSnippet.decl), null);
       s.set_replace(downSnippet.body);
       this._downsamplePipeline.add_snippet(s);
     }
@@ -1432,7 +1433,7 @@ export const LiquidEffect = GObject.registerClass({
 
     if (this._upsampleSource) {
       const upSnippet = this._splitShader(this._upsampleSource);
-      const s = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, upSnippet.decl, null);
+      const s = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, uniformDeclarations(upSnippet.decl), null);
       s.set_replace(upSnippet.body);
       this._upsamplePipeline.add_snippet(s);
     }
@@ -1466,7 +1467,7 @@ export const LiquidEffect = GObject.registerClass({
     this._configureSamplerLayer(this._boxDownPipeline, 0);
     {
       const boxSnip = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT,
-        'uniform vec2 inv_size;\n', null);
+        uniformDeclarations('uniform vec2 inv_size;\n'), null);
       boxSnip.set_replace(
         'vec2 uv = cogl_tex_coord_in[0].st;\n' +
         'vec4 c  = texture2D(cogl_sampler0, uv + vec2( 1.0,  1.0) * inv_size);\n' +
@@ -1562,7 +1563,7 @@ export const LiquidEffect = GObject.registerClass({
     decl = decl.replace(/uniform\s+sampler2D\s+cogl_sampler\d*\s*;[^\n]*/g, '');
     body = body.replace(/\bcogl_sampler\b/g, 'cogl_sampler0');
 
-    const snippet = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, decl, null);
+    const snippet = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, uniformDeclarations(decl), null);
     snippet.set_replace(body);
     this._compositePipeline.add_snippet(snippet);
   }
@@ -1659,14 +1660,14 @@ export const LiquidEffect = GObject.registerClass({
     this._gaussianHPipeline = Cogl.Pipeline.new(ctx);
     this._configureSamplerLayer(this._gaussianHPipeline, 0);
     const hSnippet = this._buildGaussianSnippet(kernel, 'h');
-    const hSnip = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, hSnippet.decl, null);
+    const hSnip = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, uniformDeclarations(hSnippet.decl), null);
     hSnip.set_replace(hSnippet.body);
     this._gaussianHPipeline.add_snippet(hSnip);
 
     this._gaussianVPipeline = Cogl.Pipeline.new(ctx);
     this._configureSamplerLayer(this._gaussianVPipeline, 0);
     const vSnippet = this._buildGaussianSnippet(kernel, 'v');
-    const vSnip = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, vSnippet.decl, null);
+    const vSnip = Cogl.Snippet.new(Cogl.SnippetHook.FRAGMENT, uniformDeclarations(vSnippet.decl), null);
     vSnip.set_replace(vSnippet.body);
     this._gaussianVPipeline.add_snippet(vSnip);
 
@@ -3084,9 +3085,7 @@ export const LiquidEffect = GObject.registerClass({
   private _setPipelineVec2(
     pipeline: Cogl.Pipeline, name: string, x: number, y: number
   ): void {
-    const loc = pipeline.get_uniform_location(name);
-
-    pipeline.set_uniform_float(loc, 2, 1, [x, y]);
+    setUniformVector(pipeline, name, [x, y]);
   }
 
 
@@ -3096,7 +3095,7 @@ export const LiquidEffect = GObject.registerClass({
     pipeline: Cogl.Pipeline, name: string, value: number
   ): void {
     const loc = pipeline.get_uniform_location(name);
-    pipeline.set_uniform_float(loc, 1, 1, [value]);
+    pipeline.set_uniform_1f(loc, value);
   }
 
 
@@ -3143,7 +3142,7 @@ export const LiquidEffect = GObject.registerClass({
     }
 
     this._uniformScratch[0] = value;
-    this._compositePipeline.set_uniform_float(loc, 1, 1, this._uniformScratch);
+    this._compositePipeline.set_uniform_1f(loc, value);
     this._appliedUniforms.set(name, value);
   }
 
@@ -3203,7 +3202,7 @@ export const LiquidEffect = GObject.registerClass({
       this._compUniformArrays.set(name, loc);
     }
 
-    this._compositePipeline.set_uniform_float(loc, 1, values.length, values);
+    setUniformArray(this._compositePipeline, loc, name, values);
     this._appliedUniformArrays.set(name, values.slice());
   }
 

@@ -508,7 +508,8 @@ class WidgetController {
     this._workspaceIntegration = new WorkspaceIntegration();
     this._layoutSettings = extension.getSettings();
     this._interfaceSettings = new Gio.Settings({schema_id: INTERFACE_SCHEMA});
-    this._weatherSettings = new Gio.Settings({schema_id: WeatherWidget.settingsSchema});
+    const weatherSchema = Gio.SettingsSchemaSource.get_default()?.lookup(WeatherWidget.settingsSchema, true);
+    this._weatherSettings = weatherSchema ? new Gio.Settings({settings_schema: weatherSchema}) : null;
     this._weather = null;
     this._weatherLocation = null;
     this._weatherInfo = null;
@@ -641,7 +642,7 @@ class WidgetController {
       this
     );
 
-    this._weatherSettings.connectObject('changed::locations', () => {
+    this._weatherSettings?.connectObject('changed::locations', () => {
       this._weather = null;
       this._weatherUpdateTime = 0;
       this._refreshWeather(true);
@@ -784,7 +785,7 @@ class WidgetController {
     Main.wm.removeKeybinding(EDIT_MODE_BINDING_KEY);
     this._layoutSettings.disconnectObject(this);
     this._interfaceSettings.disconnectObject(this);
-    this._weatherSettings.disconnectObject(this);
+    this._weatherSettings?.disconnectObject(this);
 
     for (const id of this._dbusSignalIds) {
       Gio.DBus.system.signal_unsubscribe(id);
