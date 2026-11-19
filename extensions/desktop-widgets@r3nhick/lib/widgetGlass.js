@@ -98,7 +98,8 @@ export class WidgetGlass {
             return null;
         }
 
-        const glass = new LiquidGlass();
+        const LGClass = globalThis.DesktopWidgets_LiquidGlassV7 || LiquidGlass;
+        const glass = new LGClass();
 
         // Keep the glass right below its widget, not at the bottom of the
         // layer: another widget may overlap this one.
@@ -268,7 +269,7 @@ export class WidgetGlass {
             chromaStrength: s.get_int('chroma-strength-pct') / 100,
             tint,
             tintAlpha,
-            specStrength: s.get_int('spec-strength-pct') / 100,
+            specStrength: 0.0,
             blurRadius: s.get_int('blur-radius-px'),
             solid: false,
         });

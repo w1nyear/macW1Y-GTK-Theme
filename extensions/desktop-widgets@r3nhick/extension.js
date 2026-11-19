@@ -48,6 +48,7 @@ import * as TimerWidget from './widgets/timer/widget.js';
 import { configureLogger, resetLogger, warn } from './logger.js';
 import { assetPath } from './paths.js';
 import { LiquidGlass } from './lib/glass.js';
+const getLiquidGlass = () => globalThis.DesktopWidgets_LiquidGlassV7 || LiquidGlass;
 import { UpdateChecker } from './lib/updates.js';
 import { createHoldWatch, BUTTON1_MASK } from './lib/pager.js';
 // (The screen-time engine runs inside the screentime widget; extension.js no
@@ -2605,7 +2606,7 @@ class WidgetController {
     let glass = null;
 
     if (usesGlass) {
-      glass = new LiquidGlass();
+      glass = new (getLiquidGlass())();
       glass.set_size(width, height);
       wrapper.add_child(glass);
     }
@@ -2903,7 +2904,7 @@ class WidgetController {
     const [width, height] = this._sizeFor(widget);
 
     if (wantsGlass && !view.glass) {
-      const glass = new LiquidGlass();
+      const glass = new (getLiquidGlass())();
       glass.set_size(width, height);
       view.actor.insert_child_at_index(glass, 0);
       view.glass = glass;
@@ -4559,7 +4560,7 @@ sizeButton.connectObject('destroy', () => {
     // Liquid Glass frosted backdrop
     let glass = null;
     try {
-      glass = new LiquidGlass();
+      glass = new (getLiquidGlass())();
       glass.setGeometry(cardX, cardY, cardW, cardH);
       glass.setParams({
         radius: 24,

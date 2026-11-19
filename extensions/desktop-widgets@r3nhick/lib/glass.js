@@ -118,48 +118,11 @@ vec3 lg_sample(sampler2D tex, vec2 uv) {
 }
 
 vec3 lg_cornerSpec(vec2 p, float depthPx) {
-    if (lg_specStrength <= 0.0)
-        return vec3(0.0);
-
-    vec2 b = lg_size * 0.5;
-    vec2 restLight = vec2(-b.x, b.y) * 1.2;
-    bool hovering = lg_mouseFade > 0.0 && lg_mousePos.x >= 0.0 && lg_mousePos.y >= 0.0;
-    vec2 cursorPx = (lg_mousePos - vec2(0.5)) * lg_size;
-    vec2 lightPx = hovering ? mix(restLight, cursorPx, lg_mouseFade) : restLight;
-    vec2 antiLight = -lightPx;
-
-    float taper = max(lg_size.x, lg_size.y) * 0.7;
-    float primaryAtt = exp(-distance(p, lightPx) / taper);
-    float secondaryAtt = exp(-distance(p, antiLight) / taper) * 0.65;
-
-    float tPx = max(primaryAtt, secondaryAtt) * 3.0;
-    float stroke = 1.0 - smoothstep(tPx - 2.0, tPx, depthPx);
-    return vec3(1.0, 0.98, 0.94) * (stroke * lg_specStrength * 0.55);
+    return vec3(0.0);
 }
 
 vec3 lg_edgeSpec(vec2 ndir, float depthPx) {
-    float cornerFactor = clamp(2.0 * abs(ndir.x) * abs(ndir.y), 0.0, 1.0);
-    float cornerSuppression = 1.0 - smoothstep(0.05, 0.65, cornerFactor);
-    float horizWeight = abs(ndir.y);
-    float isTop = clamp(-ndir.y, 0.0, 1.0);
-    float edgeDist = abs(depthPx);
-    float inwardDist = max(depthPx, 0.0);
-
-    // 1. Crisp border line at the edge
-    float whiteWidth = 1.5;
-    float whiteLine = 1.0 - smoothstep(0.0, whiteWidth, edgeDist);
-
-    // 2. Inward blur / diffuse sheen toward the center of the glass
-    float inwardSheen = (1.0 - smoothstep(0.0, 5.2, inwardDist));
-    inwardSheen = pow(inwardSheen, 1.2) * 0.19;
-
-    float topIntensity = 0.48;
-    float bottomIntensity = 0.28;
-    float whiteIntensity = mix(bottomIntensity, topIntensity, isTop / max(horizWeight, 1e-4));
-    float whiteFalloff = pow(horizWeight, 1.2);
-    float whiteBorder = (whiteLine * 0.85 + inwardSheen) * whiteIntensity * whiteFalloff * cornerSuppression;
-
-    return vec3(1.0, 0.99, 0.97) * whiteBorder;
+    return vec3(0.0);
 }
 
 vec4 lg_glass(sampler2D tex, vec2 uv) {
@@ -195,23 +158,6 @@ vec4 lg_glass(sampler2D tex, vec2 uv) {
 
     vec3 tintColor = mix(lg_tint.rgb, lg_tintBottom.rgb, lg_tintBottom.a > 0.0 ? uv.y : 0.0);
     col = mix(col, tintColor, lg_tint.a);
-
-    // 2. Translucent dark borders on left & right (blurring inward, fading before corners)
-    float cornerFactor = clamp(2.0 * abs(ndir.x) * abs(ndir.y), 0.0, 1.0);
-    float cornerSuppression = 1.0 - smoothstep(0.05, 0.65, cornerFactor);
-    float vertWeight = abs(ndir.x);
-    float darkWidth = 1.2;
-    float darkLine = 1.0 - smoothstep(0.0, darkWidth, abs(depthPx));
-    float darkInwardDist = max(depthPx, 0.0);
-    float darkInwardSheen = (1.0 - smoothstep(0.0, 4.0, darkInwardDist));
-    darkInwardSheen = pow(darkInwardSheen, 1.3) * 0.22;
-    float darkIntensity = 0.28;
-    float darkFalloff = pow(vertWeight, 1.35);
-    float darkBorder = (darkLine * 0.75 + darkInwardSheen) * darkIntensity * darkFalloff * cornerSuppression;
-
-    col *= (1.0 - darkBorder);
-    col += lg_edgeSpec(ndir, depthPx);
-    col += lg_cornerSpec(p, depthPx);
 
     // ~1px AA feather on the silhouette; output is premultiplied.
     float mask = 1.0 - smoothstep(-0.5, 0.5, d);
@@ -296,7 +242,7 @@ function defineLiquidGlassEffect() {
         // Explicit GTypeName: the automatic one is derived from the module
         // path and would collide with other extensions that also ship a
         // lib/glass.js (e.g. liquidglass-widgets).
-        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV6'},
+        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV7'},
         class LiquidGlassEffect extends Clutter.ShaderEffect {
             _init() {
                 super._init();
@@ -395,7 +341,7 @@ function defineLiquidGlassEffect() {
 // claimed the first one.
 function defineLiquidGlassEffectCompat() {
     return GObject.registerClass(
-        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV6Compat'},
+        {GTypeName: 'DesktopWidgets_LiquidGlassEffectV7Compat'},
         class LiquidGlassEffectCompat extends Clutter.ShaderEffect {
             _init() {
                 super._init();
@@ -485,8 +431,8 @@ function defineLiquidGlassEffectCompat() {
 }
 
 // Register the effect class only once, store in globalThis to survive reloads
-// V6: fresh keys to cleanly register and apply pipeline uniforms in GNOME 50.
-const EFFECT_CLASS_KEY = 'DesktopWidgets_LiquidGlassEffectV6';
+// V7: clean glass with no specular reflections in widgets.
+const EFFECT_CLASS_KEY = 'DesktopWidgets_LiquidGlassEffectV7';
 if (!globalThis[EFFECT_CLASS_KEY]) {
     try {
         globalThis[EFFECT_CLASS_KEY] = defineLiquidGlassEffect();
@@ -767,11 +713,11 @@ export function monitorIndexAt(x, y) {
 }
 
 // Register the LiquidGlass class only once, store in globalThis to survive reloads
-const GLASS_CLASS_KEY = 'DesktopWidgets_LiquidGlassV6';
+const GLASS_CLASS_KEY = 'DesktopWidgets_LiquidGlassV7';
 if (!globalThis[GLASS_CLASS_KEY]) {
     globalThis[GLASS_CLASS_KEY] = GObject.registerClass(
         // Same as the effect class: collision-proof GType name.
-        {GTypeName: 'DesktopWidgets_LiquidGlassV6'},
+        {GTypeName: 'DesktopWidgets_LiquidGlassV7'},
         class LiquidGlass extends St.Widget {
             _init() {
                 super._init({clip_to_allocation: true, style: 'background-color: transparent;'});
