@@ -65,9 +65,11 @@ chmod +x install.sh
 ### Installation Modes
 
 - **Interactive GUI Wizard (Default):** `./install.sh`
+- **Visual Simulation Mode (No Install):** `./install.sh -let_me_try_bradar`
 - **Low-Spec / Eco Mode:** `./install.sh --low-spec` (or `./install.sh --eco`)
 - **Full Automated Unattended:** `./install.sh --all`
 - **CLI Mode (No GUI):** `./install.sh --cli`
+- **Help & Launch Options:** `./install.sh -?` (or `./install.sh --help`)
 
 ---
 

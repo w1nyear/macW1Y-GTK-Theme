@@ -145,7 +145,7 @@ def main():
         all_ok &= check(f"{rel} exists and populated ({size} bytes)", exists and size > 500)
 
     print(f"\n{C_BOLD}4. Installer Script Syntax (localization is not implied):{C_RESET}")
-    for sh_name in ["install.sh", "gui.sh"]:
+    for sh_name in ["install.sh"]:
         sh_path = os.path.join(REPO_ROOT, sh_name)
         if not os.path.exists(sh_path):
             continue

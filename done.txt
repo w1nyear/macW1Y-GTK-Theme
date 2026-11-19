@@ -1871,3 +1871,33 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
      * python3 bin/mac-audit-sync check — 100% PASS.
      * python3 -c '...' перевірка відсутності кирилиці в install.sh та gui.sh — 0 знайдено.
+
+
+830. 2026-11-19 — Видалення gui.sh, додавання параметра -let_me_try_bradar та обробки -? у install.sh:
+   - Змінені файли та рядки:
+     1) gui.sh — повністю видалено файл з репозиторію (git rm gui.sh).
+     2) install.sh:
+        * рядки 49-63: додано функцію show_usage() з переліком усіх параметрів запуску та ранній перехоплювач прапорців довідки (-?, -h, --help, -help) для миттєвого виведення довідки у термінал без запуску GUI чи інтерактивного меню.
+        * рядки 65-79: додано розпізнавання параметрів -let_me_try_bradar та --let_me_try_bradar з виставленням прапорця MOCK_MODE="true".
+        * рядки 82-125: у диспетчері GUI при MOCK_MODE="true" попередньо активується візуальне середовище macW1Y, передається параметр -let_me_try_bradar у mac-installer-gui та експортується MAC_MOCK_INSTALLER="1".
+        * рядки 126-127: у функції print_banner додано умову пропускання виведення банера у режимі воркера GUI ([ "$GUI_WORKER" = "true" ] && return 0).
+        * рядки 2703-2748: перенесено рушій 10-секундного таймера-симуляції run_mock_installation (10 етапів з секундним інтервалом) без модифікації файлів ОС.
+        * рядки 2750-2815: додано повну підтримку запусків у режимі симуляції (як для графічного воркера через PROGRESS:pct:id, так і для автономного текстового режиму CLI з інтерактивним меню).
+     3) bin/mac-installer-gui:
+        * рядок 2926: додано розпізнавання -let_me_try_bradar та --let_me_try_bradar для пропуску запиту пароля адміністратора на екрані ліцензії/умов.
+        * рядок 3354: оновлено перевірку режиму тестування для симуляції перезавантаження без виклику системного reboot.
+        * рядки 3438-3453: прибрано звернення до gui.sh, воркер викликає install.sh --gui-worker -let_me_try_bradar напряму без sudo.
+     4) bin/mac-i18n-verify (рядок 148) — вилучено gui.sh зі списку синтаксичної валідації bash.
+     5) AI_INSTRUCTIONS.md (рядки 14, 66) — оновлено правило заборони кирилиці, вилучено згадки gui.sh.
+     6) README.md (рядки 68, 72) — додано опис параметрів ./install.sh -let_me_try_bradar та ./install.sh -?.
+   - Синхронізація:
+     * bin/mac-installer-gui та bin/mac-i18n-verify синхронізовано до /usr/local/bin.
+     * done.txt синхронізовано з ~/Desktop/done.txt.
+   - Тестування та перевірка:
+     * ./install.sh -? — виводить перелік усіх ключів та параметрів запуску у термінал, код 0.
+     * ./install.sh -let_me_try_bradar --cli --all — бездоганно виконує 10-секундну симуляцію встановлення без модифікації системи, код 0.
+     * ./install.sh --gui-worker -let_me_try_bradar --install — видає чисті протокольні події PROGRESS:10..100 для GUI, код 0.
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 12/12 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * Перевірка відсутності кирилиці в install.sh — 0 знайдено.

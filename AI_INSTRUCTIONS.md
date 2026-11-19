@@ -11,7 +11,7 @@
 3. **НЕ ЧІПАТИ GRUB PNG-ІКОНКИ**: Каталоги `grub/apple-mac/icons/`, `grub/apple-mac-usb/icons/` не чіпати і не додавати в коміти.
 4. **МОВА СПІЛКУВАННЯ ТА ЗВІТІВ**: Усі відповіді, описи комітів та записи у `done.txt` ведуться виключно українською мовою.
 5. **КЛІКАБЕЛЬНІ ПОСИЛАННЯ `file://`**: Усі згадані файли обов'язково оформлюються як посилання `file:///шлях/до/файлу`.
-6. **БЕЗ КИРИЛИЦІ В СКРИПТАХ**: Файли `install.sh` та `gui.sh` не повинні містити кириличних символів.
+6. **БЕЗ КИРИЛИЦІ В СКРИПТАХ**: Файл `install.sh` не повинен містити кириличних символів.
 
 ---
 
@@ -63,7 +63,7 @@
 python3 -m unittest discover -s tests -p 'test_*.py' # 12/12 PASS
 python3 bin/mac-extension-guard verify               # 21/21 LOCKED OK
 python3 bin/mac-audit-sync check                     # 100% PASS
-perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh gui.sh # 0 збігів
+perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh # 0 збігів
 python3 bin/test-macw1y-animations.py                # 12/12 PASS (на хості)
 ```
 Завдання вважається завершеним лише за 100% проходження всіх тестів.

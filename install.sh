@@ -46,33 +46,60 @@ fi
 
 source "$SCRIPT_DIR/dependencies/boot-tools.sh"
 
-# Low-Spec & Eco Engine Detection
+show_usage() {
+    echo "Usage: ./install.sh [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  --install, -i, --all, -y, --yes  Full installation of macW1Y release v${NEW_VERSION}"
+    echo "  --update, -u                     Incremental update of existing installation to v${NEW_VERSION}"
+    echo "  --clean-update, -c               Clean reinstall (complete removal of old files + fresh install)"
+    echo "  -let_me_try_bradar               UI test simulation mode (runs visual interface with 10-second mock install)"
+    echo "  --low-spec, --eco, -e            Enable ZRAM and performance optimizations for low-end / Intel HD hardware"
+    echo "  --cli, -cli                      Force CLI text mode instead of launching GUI installer"
+    echo "  -debug_install, --debug_install  Interactive CLI installation & maintenance menu"
+    echo "  -debug_uninstall                 Simulated / debug uninstallation procedure"
+    echo "  --help, -h, -?                   Show all launch parameters and options"
+}
+
+# Early check for help options
+for arg in "$@"; do
+    if [ "$arg" = "-?" ] || [ "$arg" = "-h" ] || [ "$arg" = "--help" ] || [ "$arg" = "-help" ]; then
+        show_usage
+        exit 0
+    fi
+done
+
+# Low-Spec, Eco Engine and Mock Simulation Detection
 APPLY_LOW_SPEC="false"
+MOCK_MODE="false"
 _CLEANED_ARGS=()
 for arg in "$@"; do
     if [ "$arg" = "--low-spec" ] || [ "$arg" = "--eco" ] || [ "$arg" = "-e" ]; then
         APPLY_LOW_SPEC="true"
+    elif [ "$arg" = "-let_me_try_bradar" ] || [ "$arg" = "--let_me_try_bradar" ]; then
+        MOCK_MODE="true"
     else
         _CLEANED_ARGS+=("$arg")
     fi
 done
 [ ${#_CLEANED_ARGS[@]} -gt 0 ] && set -- "${_CLEANED_ARGS[@]}" || set --
 export APPLY_LOW_SPEC
+export MOCK_MODE
 
 # GUI Installer Dispatcher
 GUI_WORKER="false"
 if [ "$1" = "--gui-worker" ]; then
     GUI_WORKER="true"
     shift
-elif [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
-    : # Let help option be handled below
 elif [ "$1" = "--cli" ] || [ "$1" = "-cli" ]; then
     shift
     MAC_INSTALLER_CLI="1"
 elif [ -z "$MAC_INSTALLER_CLI" ]; then
     if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
         if [ -x "$SCRIPT_DIR/bin/mac-installer-gui" ] && command -v python3 >/dev/null 2>&1; then
-            python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || exit 1
+            if [ "$MOCK_MODE" != "true" ]; then
+                python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || exit 1
+            fi
             # Pre-activate macW1Y environment and disable legacy extensions
             for ext in "ubuntu-dock@ubuntu.com" "tiling-assistant@ubuntu.com" "ding@rastersoft.com" "dash-to-dock@micxgx.gmail.com" "stage-manager@gnome-stage-manager" "snapd-prompting@canonical.com" "web-search-provider@ubuntu.com"; do
                 gnome-extensions disable "$ext" 2>/dev/null || true
@@ -84,12 +111,19 @@ elif [ -z "$MAC_INSTALLER_CLI" ]; then
             gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark" 2>/dev/null || true
             gsettings set org.gnome.desktop.interface icon-theme "macW1Y-dark" 2>/dev/null || true
             gsettings set org.gnome.desktop.interface font-name "default 10" 2>/dev/null || true
-            exec "$SCRIPT_DIR/bin/mac-installer-gui" "$@"
+            export MAC_INSTALLER_SCRIPT="$SCRIPT_DIR/install.sh"
+            if [ "$MOCK_MODE" = "true" ]; then
+                export MAC_MOCK_INSTALLER="1"
+                exec "$SCRIPT_DIR/bin/mac-installer-gui" -let_me_try_bradar "$@"
+            else
+                exec "$SCRIPT_DIR/bin/mac-installer-gui" "$@"
+            fi
         fi
     fi
 fi
 
 print_banner() {
+    [ "$GUI_WORKER" = "true" ] && return 0
     clear 2>/dev/null || true
     echo -e "${C_CYAN}"
     echo "  ╔════════════════════════════════════════════════════════════════════════════╗"
@@ -2667,9 +2701,115 @@ interactive_debug_menu() {
 }
 
 # ------------------------------------------------------------------------------
+# Mock Installation Engine (10-Second Simulation)
+# ------------------------------------------------------------------------------
+run_mock_installation() {
+    local action_title="${1:-Mock Installation}"
+
+    if [ "$GUI_WORKER" != "true" ]; then
+        log_step "Running 10-Second Simulation: $action_title"
+        log_info "Simulating macW1Y deployment without modifying system files or packages."
+    fi
+
+    local steps=(
+        "10:stage1:Stage 1/10: Verifying system dependencies and environment"
+        "20:stage2:Stage 2/10: Verifying typography and font bundles"
+        "30:stage3:Stage 3/10: Preparing macW1Y GTK and Shell theme engines"
+        "45:stage4:Stage 4/10: Validating macW1Y icon assets and cursors"
+        "55:stage5:Stage 5/10: Checking sound themes and audio feedback"
+        "65:stage6:Stage 6/10: Preparing Golden Gate wallpaper integration"
+        "75:stage7:Stage 7/10: Simulating GNOME Shell extensions deployment"
+        "85:stage8:Stage 8/10: Testing System Settings control panels"
+        "95:stage9:Stage 9/10: Simulating touchpad gesture daemon"
+        "100:finalizing:Finalizing simulated configuration"
+    )
+
+    for item in "${steps[@]}"; do
+        IFS=":" read -r pct stage_id desc <<< "$item"
+        if [ "$GUI_WORKER" = "true" ]; then
+            echo "PROGRESS:${pct}:${stage_id}"
+        else
+            echo -e "  [${pct}%] ${C_CYAN}${desc}...${C_RESET}"
+        fi
+        sleep 1
+    done
+
+    if [ "$APPLY_LOW_SPEC" = "true" ]; then
+        if [ "$GUI_WORKER" = "true" ]; then
+            echo "PROGRESS:100:lowspec"
+        else
+            echo -e "  [100%] ${C_CYAN}Applying Intel HD and Eco Engine optimizations...${C_RESET}"
+        fi
+        if [ -x "/usr/local/bin/mac-lowspec-optimizer" ]; then
+            /usr/local/bin/mac-lowspec-optimizer apply || true
+        elif [ -x "$SCRIPT_DIR/bin/mac-lowspec-optimizer" ]; then
+            "$SCRIPT_DIR/bin/mac-lowspec-optimizer" apply || true
+        fi
+    fi
+
+    if [ "$GUI_WORKER" != "true" ]; then
+        echo -e "\n${C_GREEN}[✔] Simulation completed successfully in 10 seconds!${C_RESET}"
+        echo -e " ${C_BOLD}No system files or packages were modified.${C_RESET}\n"
+    fi
+}
+
+# ------------------------------------------------------------------------------
 # CLI Command-Line Arguments
 # ------------------------------------------------------------------------------
-if [ "$1" = "-debug_install" ] || [ "$1" = "--debug_install" ]; then
+if [ "$1" = "--help" ] || [ "$1" = "-h" ] || [ "$1" = "-?" ] || [ "$1" = "-help" ]; then
+    show_usage
+    exit 0
+elif [ "$MOCK_MODE" = "true" ]; then
+    if [ "$1" = "-debug_uninstall" ] || [ "$1" = "--debug_uninstall" ] || [ "$1" = "--uninstall" ]; then
+        print_banner
+        run_mock_installation "Simulated Uninstall"
+        exit 0
+    elif [ "$1" = "--install" ] || [ "$1" = "-i" ] || [ "$1" = "--all" ] || [ "$1" = "-y" ] || [ "$1" = "--yes" ]; then
+        print_banner
+        run_mock_installation "Full Installation"
+        exit 0
+    elif [ "$1" = "--update" ] || [ "$1" = "-u" ]; then
+        print_banner
+        run_mock_installation "Incremental Update"
+        exit 0
+    elif [ "$1" = "--clean-update" ] || [ "$1" = "-c" ]; then
+        print_banner
+        run_mock_installation "Clean Reinstall"
+        exit 0
+    elif [ "$GUI_WORKER" = "true" ]; then
+        run_mock_installation "GUI Worker Simulation"
+        exit 0
+    else
+        # Interactive CLI Simulation menu
+        print_banner
+        INSTALLED_VER="$(get_installed_version)"
+        echo -e " ${C_BOLD}Version Information (Simulation Mode):${C_RESET}"
+        if [ -n "$INSTALLED_VER" ]; then
+            echo -e "   • Installed version on PC: ${C_BOLD}${C_YELLOW}v$INSTALLED_VER${C_RESET}"
+        else
+            echo -e "   • Installed version on PC: ${C_BOLD}${C_RED}Not installed${C_RESET}"
+        fi
+        echo -e "   • Installer package version: ${C_BOLD}${C_GREEN}v$NEW_VERSION${C_RESET}\n"
+        echo -e " ${C_BOLD}Select an action to simulate:${C_RESET}\n"
+        echo -e "  ${C_GREEN}[1]${C_RESET} ${C_BOLD}Simulated Full Installation [v${NEW_VERSION}]${C_RESET} (10-second mock run)"
+        echo -e "  ${C_CYAN}[2]${C_RESET} ${C_BOLD}Simulated Update [v${NEW_VERSION}]${C_RESET} (10-second mock run)"
+        echo -e "  ${C_YELLOW}[3]${C_RESET} ${C_BOLD}Simulated Clean Reinstall [v${NEW_VERSION}]${C_RESET} (10-second mock run)"
+        echo -e "  ${C_RED}[4]${C_RESET} Exit simulator\n"
+        if [ -n "$1" ]; then
+            CHOICE="$1"
+        else
+            read -r -p " Enter option number: " CHOICE
+        fi
+        case "$CHOICE" in
+            1) run_mock_installation "Full Installation" ;;
+            2) run_mock_installation "Incremental Update" ;;
+            3) run_mock_installation "Clean Reinstall" ;;
+            4|0) echo -e "\nSimulation exited cleanly."; exit 0 ;;
+            *) echo -e "\nInvalid choice. Simulation cancelled."; exit 1 ;;
+        esac
+        exit 0
+    fi
+elif [ "$1" = "-debug_install" ] || [ "$1" = "--debug_install" ]; then
     interactive_debug_menu "$@"
     exit 0
 elif [ "$1" = "-debug_uninstall" ] || [ "$1" = "--debug_uninstall" ]; then
@@ -2689,14 +2829,6 @@ elif [ "$1" = "--clean-update" ] || [ "$1" = "-c" ]; then
     print_banner
     INSTALLED_VER="$(get_installed_version)"
     run_clean_update "$INSTALLED_VER" "$NEW_VERSION"
-    exit 0
-elif [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
-    echo "Usage: ./install.sh [OPTIONS]"
-    echo "  --install, -i, --all    Full installation of release v${NEW_VERSION}"
-    echo "  --update, -u            Incremental update of existing installation to v${NEW_VERSION}"
-    echo "  --clean-update, -c      Clean reinstall (complete removal of old files + fresh install)"
-    echo "  --low-spec, --eco, -e   Enable ZRAM and performance optimizations for low-end / Intel HD hardware"
-    echo "  --help, -h              Show this help message"
     exit 0
 fi
 

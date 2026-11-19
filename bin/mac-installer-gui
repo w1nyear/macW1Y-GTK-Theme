@@ -2923,7 +2923,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         if self.wizard_mode == "welcome":
             self._show_modal_loading_info()
         elif self.wizard_mode == "terms":
-            if self.cached_password or "--preview" in sys.argv or "--mock-installer" in sys.argv or os.environ.get("MAC_INSTALLER_SCRIPT"):
+            is_mock = "--preview" in sys.argv or "--mock-installer" in sys.argv or "-let_me_try_bradar" in sys.argv or "--let_me_try_bradar" in sys.argv or os.environ.get("MAC_MOCK_INSTALLER") == "1"
+            if self.cached_password or is_mock or os.environ.get("MAC_INSTALLER_SCRIPT"):
                 self.switch_to_screen("screen_progress")
                 self._start_worker_execution()
             else:
@@ -3351,7 +3352,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
     def _execute_reboot(self):
         self.hide_modal()
-        is_mock = "--preview" in sys.argv or "--mock-installer" in sys.argv or (os.environ.get("MAC_INSTALLER_SCRIPT") and "gui.sh" in os.environ.get("MAC_INSTALLER_SCRIPT", ""))
+        is_mock = "--preview" in sys.argv or "--mock-installer" in sys.argv or "-let_me_try_bradar" in sys.argv or "--let_me_try_bradar" in sys.argv or os.environ.get("MAC_MOCK_INSTALLER") == "1"
         if is_mock:
             print("Mock mode: reboot simulated")
             self._show_simple_alert("Тестування завершено", "Встановлення macW1Y успішно протестовано в тестовому режимі!\nУ режимі муляжу перезавантаження комп'ютера не виконується.")
@@ -3432,24 +3433,28 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         def run_thread():
             custom_script = os.environ.get("MAC_INSTALLER_SCRIPT")
             if not custom_script or not os.path.exists(custom_script):
-                if "--mock-installer" in sys.argv:
-                    custom_script = os.path.join(SCRIPT_DIR, "gui.sh")
-                else:
-                    custom_script = os.path.join(SCRIPT_DIR, "install.sh")
+                custom_script = os.path.join(SCRIPT_DIR, "install.sh")
 
             install_script = custom_script
             uninstall_script = os.path.join(SCRIPT_DIR, "uninstall.sh")
-            is_mock = "--mock-installer" in sys.argv or "gui.sh" in os.path.basename(install_script)
+            is_mock = "--preview" in sys.argv or "--mock-installer" in sys.argv or "-let_me_try_bradar" in sys.argv or "--let_me_try_bradar" in sys.argv or os.environ.get("MAC_MOCK_INSTALLER") == "1"
+            mock_arg = ["-let_me_try_bradar"] if is_mock else []
 
             if self.selected_action == "uninstall":
                 if is_mock:
-                    cmd = ["sudo", "-S", "bash", install_script, "--gui-worker", "--uninstall"]
+                    cmd = ["bash", install_script, "--gui-worker"] + mock_arg + ["--uninstall"]
                 else:
                     cmd = ["sudo", "-S", "bash", uninstall_script, "--yes"]
             elif self.selected_action == "clean_update":
-                cmd = ["sudo", "-S", "bash", install_script, "--gui-worker", "--clean-update"]
+                if is_mock:
+                    cmd = ["bash", install_script, "--gui-worker"] + mock_arg + ["--clean-update"]
+                else:
+                    cmd = ["sudo", "-S", "bash", install_script, "--gui-worker", "--clean-update"]
             else:
-                cmd = ["sudo", "-S", "bash", install_script, "--gui-worker", "--install"]
+                if is_mock:
+                    cmd = ["bash", install_script, "--gui-worker"] + mock_arg + ["--install"]
+                else:
+                    cmd = ["sudo", "-S", "bash", install_script, "--gui-worker", "--install"]
 
             if getattr(self, "chk_lowspec", None) and self.chk_lowspec.get_active():
                 cmd.append("--low-spec")
