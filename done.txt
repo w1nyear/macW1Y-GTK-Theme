@@ -1930,3 +1930,23 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-audit-sync check — 100% PASS.
      * python3 bin/mac-i18n-verify — 100% PASS.
      * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
+
+832. 2026-11-19 — Редизайн та зменшення кнопки «Продовжити» у меню вибору дій інсталятора macW1Y за фото-референсом macOS Recovery:
+   - Файли та рядки змін:
+     1) bin/mac-installer-gui:
+        * рядки 1003-1035: оновлено CSS-клас button.mac-btn-options-continue / .mac-btn-options-continue:
+          - Зменшено габарити кнопки приблизно у два рази: висота зменшена з 36px до 22px, ширина — з 121px до 74px, площа зменшилась на ~63% (font-size: 11.5px, padding: 3px 14px, min-height: 22px, min-width: 60px).
+          - Замінено великий овальний pill-радіус (border-radius: 9999px) на акуратне мале заокруглення (border-radius: 6px) точно за референсом вікна macOS Recovery Assistant.
+          - Колірну схему переведено з яскраво-синього монолітного кольору на напівпрозоре темне скло (background-color: rgba(255, 255, 255, 0.22)) з тонкою рамкою (border: 1px solid rgba(255, 255, 255, 0.12)), білим текстом і м'якими станами :hover/:active, що ідеально відповідає кнопці «Продолжить» на наданому фото.
+        * рядки 1145-1149: видалено синтаксично непідтримувані у GTK4 CSS директиви !important для undershoot/overshoot у mac-lang-card, усунуто попередження GTK Theme parser error.
+   - Синхронізація:
+     * bin/mac-installer-gui синхронізовано з /usr/local/bin/mac-installer-gui (права 755).
+     * done.txt скопійовано до ~/Desktop/done.txt.
+   - Тестування та перевірка:
+     * Отримано снепшот рендерингу GTK4 вікна screen_options (517x350) — кнопка успішно зменшена до 74x22px із заокругленням 6px без помилок та збоїв.
+     * tests/test_portability.py — 5/5 PASS.
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 12/12 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
