@@ -1,83 +1,69 @@
-# macW1Y Environment Transformation Pack for Ubuntu
-## Головний маніфест, технічна архітектура та керівництво розробника для ШІ / AI Master Handbook
+# macW1Y — AI Instructions & Developer Manifesto
 
-Цей документ є **єдиним джерелом істини (Single Source of Truth)** і обов'язковим технічним маніфестом для будь-якого ШІ-асистента, який працює з цим проектом. Проект розробляється як високоякісне, продуктивне середовище інтерфейсу на базі GNOME Shell та Wayland.
-
-> [!IMPORTANT]
-> **ГОЛОВНИЙ ПРИНЦИП РОБОТИ — ВИКОНАННЯ ЗАВДАННЯ ЗА ОДИН ЗАПИТ (Single-Turn Execution):**
-> Користувач цінує швидкість, точність і повну автономність. ШІ не повинен зупинятися на півдорозі, задавати тривіальні питання або залишати систему в неробочому стані. Отримавши запит, ви зобов'язані:
-> 1. Проаналізувати проблему в повному обсязі;
-> 2. Внести всі необхідні зміни в код, стилі та конфігурації;
-> 3. Скомпільувати всі необхідні C-бібліотеки (`libmac_settings.so`, `libmac_nautilus.so` тощо);
-> 4. Розгорнути та синхронізувати зміни на **всі** системні шляхи (`/usr/lib/...`, `/usr/local/bin/...`, `~/.local/...`);
-> 5. Оновити хеші цілісності в `config/extensions.lock.json` та пройти автоматичний аудит (`bin/mac-audit-sync check`, `bin/mac-i18n-verify`, `python3 bin/mac-extension-guard verify`);
-> 6. Додати запис про виконану роботу у файл [`done.txt`](file:///home/vitaliy/MACTHEMEFILES/done.txt) та оновити `~/Desktop/done.txt`;
-> 7. Зробити локальний git-коміт;
-> 8. Надати вичерпну відповідь українською мовою з обов'язковими клікабельними посиланнями `file://`.
+Цей документ є обов'язковим технічним маніфестом та єдиним джерелом істини (Single Source of Truth) для будь-якого ШІ-асистента, що працює з проектом `macW1Y` (`/home/vitaliy/macW1Y`).
 
 ---
 
-## 1. Залізні правила та непорушні обмеження (Iron Rules)
+## 1. Головні непорушні правила
 
-> [!CAUTION]
-> **ПРАВИЛО 1: СУВОРО ЗАБОРОНЕНО `git push`**
-> Ніколи, ні за яких умов не виконуйте команду `git push`, не налаштовуйте віддалені пуші і не надсилайте дані у віддалені репозиторії! Усі коміти мають бути виключно **локальними** (`git commit -m "..."`).
-
-> [!CAUTION]
-> **ПРАВИЛО 2: НІКОЛИ НЕ ВИМИКАТИ ТА НЕ ПЕРЕЗАВАНТАЖУВАТИ ПК**
-> Категорично заборонено виконувати `reboot`, `shutdown`, `poweroff`, `systemctl reboot`, `loginctl terminate-session` або будь-які операції, що вимикають комп'ютер чи завершують графічний сеанс користувача. Тестування проводиться виключно через D-Bus, eval-helper та безперервні сесійні інструменти.
-
-> [!CAUTION]
-> **ПРАВИЛО 3: БЕЗПЕКА GIT ТА ЗБЕРЕЖЕННЯ ДАНИХ**
-> Заборонено використовувати деструктивні операції `git reset --hard`, `git clean -fd` або видаляти невідстежувані користувацькі файли. Усі користувацькі зміни повинні акуратно зберігатися.
-
-> [!CAUTION]
-> **ПРАВИЛО 4: НІКОЛИ НЕ ЧІПАТИ ТА НЕ КОМІТИТИ GRUB PNG-ІКОНКИ**
-> Каталоги `grub/apple-mac/icons/`, `grub/apple-mac-usb/icons/`, `grub/apple-mac-usb2/icons/` містять специфічні графічні ресурси. **Ніколи не додавайте їх у `git add`** і не модифікуйте без прямої вимоги користувача.
-
-> [!IMPORTANT]
-> **ПРАВИЛО 5: МОВА СПІЛКУВАННЯ ТА ЖУРНАЛІВ — ВИКЛЮЧНО УКРАЇНСЬКА**
-> Усі відповіді користувачеві в чаті, коментарі до коду, описи комітів та звіти у файлі `done.txt` ведуться **суворо українською мовою**.
-
-> [!IMPORTANT]
-> **ПРАВИЛО 6: ЮРИДИЧНА ЧИСТОТА ТА ВІДСУТНІСТЬ ТОРГОВИХ МАРОК**
-> Заборонено використовувати чужі фірмові назви (зокрема «macOS», «Apple HIG» тощо) у нових файлах чи назвах компонентів. Використовуйте нейтральні загальні позначення: `macW1Y`, `default`, `System`, `Tahoe Environment`. Шрифти позначаються аліасом `default`.
-
-> [!IMPORTANT]
-> **ПРАВИЛО 7: ОБОВ'ЯЗКОВІ КЛІКАБЕЛЬНІ ПОСИЛАННЯ `file://`**
-> Кожен згаданий у вашій відповіді файл, каталог, клас або звіт **МУСИТЬ** бути оформлений як клікабельне markdown-посилання формату GitHub із протоколом `file://`, наприклад:
-> - [`libmac_settings.c`](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
-> - [`macAnimationCache.js`](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/macAnimationCache.js)
-> - [`layout.js`](file:///home/vitaliy/MACTHEMEFILES/gnome-shell-overlay/ui/layout.js)
-> - [`done.txt`](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+1. **СУВОРО ЗАБОРОНЕНО `git push`**: Усі git-коміти мають бути виключно локальними (`git commit -am "..."`). Жодних віддалених пушів.
+2. **ЗАБОРОНА ПЕРЕЗАВАНТАЖЕННЯ ХОСТА**: Категорично заборонено виконувати `reboot`, `poweroff`, `shutdown`, `loginctl terminate-session` чи переривати графічну сесію користувача.
+3. **НЕ ЧІПАТИ GRUB PNG-ІКОНКИ**: Каталоги `grub/apple-mac/icons/`, `grub/apple-mac-usb/icons/` не чіпати і не додавати в коміти.
+4. **МОВА СПІЛКУВАННЯ ТА ЗВІТІВ**: Усі відповіді, описи комітів та записи у `done.txt` ведуться виключно українською мовою.
+5. **КЛІКАБЕЛЬНІ ПОСИЛАННЯ `file://`**: Усі згадані файли обов'язково оформлюються як посилання `file:///шлях/до/файлу`.
+6. **БЕЗ КИРИЛИЦІ В СКРИПТАХ**: Файли `install.sh` та `gui.sh` не повинні містити кириличних символів.
 
 ---
 
-## 2. Ключова архітектура macW1Y
+## 2. Синхронізація системи та проекту
 
-### 2.1. Рушій анімацій та кешування (`MacAnimationCache`)
-- Файл: [`extensions/eval-helper@mactheme/macAnimationCache.js`](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/macAnimationCache.js)
-- Ліміт пам'яті: 64 MB VRAM/RAM.
-- Автоматична інвалідація при зміні конфігурації моніторів або тем.
-- Перевірка через CLI: [`/usr/local/bin/mac-animation-diag`](file:///home/vitaliy/MACTHEMEFILES/bin/mac-animation-diag).
-
-### 2.2. Запуск та паралельний бар'єр (`layout.js`)
-- Файл: [`gnome-shell-overlay/ui/layout.js`](file:///home/vitaliy/MACTHEMEFILES/gnome-shell-overlay/ui/layout.js)
-- Системне дзеркало: `/usr/share/mactheme/gnome-shell-overlay/ui/layout.js`.
-- Паралельне опитування розширень, доку та віджетів із тайм-аутом `Promise.race` у 1200 мс.
-- Тривалість reveal-анімації стільниці: 380 мс.
-
-### 2.3. Бібліотека інжекцій Параметрів (`libmac_settings.so`)
-- Джерело: [`control-center/libmac_settings.c`](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
-- Компіляція: `gcc -shared -fPIC -O2 -o control-center/libmac_settings.so control-center/libmac_settings.c $(pkg-config --cflags --libs glib-2.0 gio-2.0 json-glib-1.0 gtk4 libadwaita-1) -ldl -lm`
-- Усі 5 розташувань мають бути синхронізовані через `bin/mac-audit-sync apply`.
+Будь-які зміни в проекті мають негайно та повністю синхронізуватися з поточною живою системою:
+- **Утиліти та скрипти**: файли з `bin/` синхронізуються до `/usr/local/bin/` з правами `755`.
+- **Спільні C-бібліотеки**: після редагування компілюються локально через `dependencies/build-native.sh` і розгортаються на всі системні шляхи (`/usr/lib/x86_64-linux-gnu`, `/usr/lib64`, `/usr/lib`, `/usr/local/lib`, `~/.local/lib`, `/usr/share/mactheme/...`).
+- **Теми та ресурси**: синхронізуються між репозиторієм та каталогами `~/.themes/`, `~/.icons/`, `/usr/share/themes/`, `/usr/share/icons/`, `/usr/share/backgrounds/`.
+- **Контроль розбіжностей**: команда `python3 bin/mac-audit-sync check` обов'язково повинна повертати **100% PASS** (0 розбіжностей).
 
 ---
 
-## 3. Обов'язковий чек-лист валідації перед завершенням завдання
+## 3. Кросплатформна синхронізація (Ubuntu, Debian, Fedora, Arch Linux, CachyOS)
 
-Кожне завдання вважається завершеним тільки тоді, коли всі чотири перевірки дають 100% успіху:
-1. `bin/test-macw1y-animations.py` -> 12/12 PASS (100.0%)
-2. `bin/mac-audit-sync check` -> 100% PASS
-3. `bin/mac-i18n-verify` -> 100% SUCCESS
-4. `python3 bin/mac-extension-guard verify` -> VERIFICATION SUCCESS (21/21)
+Усі модулі проекту розробляються та оновлюються синхронно для всіх підтримуваних систем:
+- **Пакетні менеджери**: оновлення залежностей синхронно вноситься до `apt-packages.txt` (Debian/Ubuntu), `dnf-packages.txt` (Fedora) та `pacman-packages.txt` (Arch/CachyOS).
+- **Бібліотечні шляхи**: враховувати відмінності `SYS_LIB_DIR` — multiarch (`/usr/lib/x86_64-linux-gnu` у Debian/Ubuntu), `/usr/lib64` (Fedora), `/usr/lib` (Arch/CachyOS).
+- **Безпечні обгортки (Wrappers)**: обгортки Nautilus, GNOME Control Center та Ptyxis встановлюються виключно в `/usr/local/bin`, використовують динамічне визначення системного оригінального бінарника (`orig`) із захистом від рекурсії і не модифікують файли пакунків (`dpkg`, `rpm`, `pacman`).
+- **Завантажувачі**: автоматичне розпізнавання GRUB 2 (`update-grub`, `grub2-mkconfig -o /boot/grub2/grub.cfg`, `grub-mkconfig -o /boot/grub/grub.cfg`) та безпечний пропуск без помилок для `systemd-boot` (CachyOS/Arch).
+- **Initramfs**: підтримка генераторів через `macw1y_rebuild_initramfs` (`initramfs-tools`, `dracut`, `mkinitcpio`).
+- **Схеми GSettings**: ізоляція специфічних для Ubuntu схем (`org.gnome.shell.ubuntu`) у `macw1y-gdm/99_ubuntu.gschema.override`. Усі виклики `gsettings set` захищаються суфіксом `2>/dev/null || true`.
+- **Матриця версій GNOME**: суворе дотримання діапазону GNOME 46–51 у `metadata.json` усіх 21 керованих розширень та синхронізація хешів у `config/extensions.lock.json`.
+
+---
+
+## 4. Правила ведення журналу done.txt
+
+Кожен новий запис у [`done.txt`](file:///home/vitaliy/macW1Y/done.txt) оформлюється за чіткою структурою:
+1. **Номер запису та дата**: наприклад, `828. 2026-11-19 — Назва виконаного завдання:`.
+2. **Змінені файли та рядки**: точний список змінених файлів із зазначенням конкретних рядків або діапазонів змін (наприклад, `- install.sh (рядки 30-36, 772-780)`).
+3. **Опис змін**: конкретний технічний опис внесених правок, виправлених помилок та результатів тестів.
+4. **Синхронізація**: обов'язкове копіювання актуального `macW1Y/done.txt` до [`~/Desktop/done.txt`](file:///home/vitaliy/Desktop/done.txt).
+
+---
+
+## 5. Локальні коміти (Git Commits)
+
+- Кожен завершений етап або виправлення фіксується окремим локальним комітом: `git commit -am "тип: опис змін українською мовою"`.
+- Заборонено залишати незафіксовані робочі зміни перед завершенням завдання.
+- Заборонено виконувати `git push`.
+
+---
+
+## 6. Обов'язковий чек-лист валідації перед здачею
+
+Перед наданням фінальної відповіді користувачу обов'язково виконати перевірки:
+```bash
+python3 -m unittest discover -s tests -p 'test_*.py' # 12/12 PASS
+python3 bin/mac-extension-guard verify               # 21/21 LOCKED OK
+python3 bin/mac-audit-sync check                     # 100% PASS
+perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh gui.sh # 0 збігів
+python3 bin/test-macw1y-animations.py                # 12/12 PASS (на хості)
+```
+Завдання вважається завершеним лише за 100% проходження всіх тестів.
