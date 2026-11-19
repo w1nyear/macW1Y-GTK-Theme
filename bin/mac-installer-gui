@@ -1659,6 +1659,11 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.worker_thread = None
         self.worker_cancelled = False
         self.worker_process = None
+        self.current_fraction = 0.02
+        self.target_fraction = 0.02
+        self._prog_tick_id = 0
+        self.last_progress_time = time.time()
+        self.worker_done = False
 
         settings = Gtk.Settings.get_default()
         if settings and hasattr(settings.props, "gtk_entry_select_on_focus"):
@@ -3245,11 +3250,11 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.prog_bar.set_fraction(0.02)
         prog_box.append(self.prog_bar)
 
-        self.lbl_prog_status = Gtk.Label(label="Підготовка до встановлення...")
+        self.lbl_prog_status = Gtk.Label(label="Підготовка до встановлення..." if getattr(self, "selected_language", "uk") == "uk" else self.tr("installer_stage1", "Preparing system setup…"))
         self.lbl_prog_status.add_css_class("mac-subtitle")
         prog_box.append(self.lbl_prog_status)
 
-        self.lbl_prog_time = Gtk.Label(label="Залишилось приблизно 2 хв.")
+        self.lbl_prog_time = Gtk.Label(label=self.tr("installer_time_2m", "About 2 minutes remaining…"))
         self.lbl_prog_time.add_css_class("mac-subtitle")
         prog_box.append(self.lbl_prog_time)
 
@@ -3375,6 +3380,12 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
     def _on_abort_installation(self, btn):
         self.worker_cancelled = True
+        if hasattr(self, "_prog_tick_id") and self._prog_tick_id:
+            try:
+                self.remove_tick_callback(self._prog_tick_id)
+            except Exception:
+                pass
+            self._prog_tick_id = 0
         if self.worker_process:
             try:
                 self.worker_process.terminate()
@@ -3435,6 +3446,11 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     # --------------------------------------------------------------------------
     def _start_worker_execution(self):
         self.worker_cancelled = False
+        self.worker_done = False
+        self.current_fraction = 0.02
+        self.target_fraction = 0.02
+        self.last_progress_time = time.time()
+        self._start_progress_animation()
 
         if "--demo" in sys.argv or "--preview" in sys.argv:
             self._start_demo_progress()
@@ -3508,8 +3524,16 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
                 def on_done():
                     if not self.worker_cancelled:
                         if rc == 0:
-                            self.switch_to_screen("screen_reboot")
+                            self.target_fraction = 1.0
+                            self.worker_done = True
+                            self._update_progress(1.0, "finalizing")
                         else:
+                            if hasattr(self, "_prog_tick_id") and self._prog_tick_id:
+                                try:
+                                    self.remove_tick_callback(self._prog_tick_id)
+                                except Exception:
+                                    pass
+                                self._prog_tick_id = 0
                             self._show_simple_alert("Помилка інсталяції", f"Процес завершився з кодом {rc}. Перевірте системні журнали.")
 
                 GLib.idle_add(on_done)
@@ -3521,6 +3545,47 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         self.worker_thread = threading.Thread(target=run_thread, daemon=True)
         self.worker_thread.start()
+
+    def _start_progress_animation(self):
+        if not hasattr(self, "_prog_tick_id") or self._prog_tick_id == 0:
+            self._prog_tick_id = self.add_tick_callback(self._on_progress_tick)
+
+    def _on_progress_tick(self, widget, frame_clock):
+        now = time.time()
+        diff = self.target_fraction - self.current_fraction
+        if diff > 0.0005:
+            step = max(0.0008, diff * 0.08)
+            self.current_fraction = min(self.target_fraction, self.current_fraction + step)
+        elif self.target_fraction < 0.985 and (now - self.last_progress_time) > 0.6:
+            ceiling = min(0.985, self.target_fraction + 0.035)
+            if self.current_fraction < ceiling:
+                self.current_fraction += 0.00016
+
+        self.prog_bar.set_fraction(self.current_fraction)
+        self._update_time_label(self.current_fraction)
+
+        if getattr(self, "worker_done", False) and self.current_fraction >= 0.998:
+            self.prog_bar.set_fraction(1.0)
+            if hasattr(self, "_prog_tick_id") and self._prog_tick_id:
+                try:
+                    self.remove_tick_callback(self._prog_tick_id)
+                except Exception:
+                    pass
+                self._prog_tick_id = 0
+            GLib.timeout_add(350, lambda: self.switch_to_screen("screen_reboot"))
+            return False
+        return True
+
+    def _update_time_label(self, frac):
+        if frac < 0.25:
+            rem = self.tr("installer_time_2m", "About 2 minutes remaining…")
+        elif frac < 0.60:
+            rem = self.tr("installer_time_1m", "About 1 minute remaining…")
+        elif frac < 0.88:
+            rem = self.tr("installer_time_less_1m", "Less than a minute remaining…")
+        else:
+            rem = self.tr("installer_time_almost", "Almost finished…")
+        self.lbl_prog_time.set_text(rem)
 
     def _update_progress(self, pct, msg):
         stage_names = {
@@ -3538,61 +3603,66 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             "stage12": self.tr("installer_stage12", "Installing Plymouth boot splash…"),
             "stage13": self.tr("installer_stage13", "Configuring GRUB bootloader…"),
             "finalizing": self.tr("installer_stage_final", "Finalizing system setup…"),
+            "done": self.tr("installer_stage_final", "Finalizing system setup…"),
         }
         display_msg = stage_names.get(msg, msg)
-        self.prog_bar.set_fraction(pct)
+        self.target_fraction = max(self.target_fraction, pct)
+        self.last_progress_time = time.time()
         self.lbl_prog_status.set_text(display_msg)
-        if pct < 0.2:
-            rem = self.tr("installer_time_2m", "About 2 minutes remaining…")
-        elif pct < 0.5:
-            rem = self.tr("installer_time_1m", "About 1 minute remaining…")
-        elif pct < 0.8:
-            rem = self.tr("installer_time_less_1m", "Less than a minute remaining…")
-        else:
-            rem = self.tr("installer_time_almost", "Almost finished…")
-        self.lbl_prog_time.set_text(rem)
+        self._start_progress_animation()
 
     def _parse_stage_line(self, line):
         stage_map = {
-            "Stage 1/": (0.10, "Встановлення системних залежностей..."),
-            "Stage 2/": (0.20, "Встановлення шрифтів за замовчуванням..."),
-            "Stage 3/": (0.35, "Встановлення тем macW1Y (GTK3, GTK4, Shell)..."),
-            "Stage 4/": (0.45, "Встановлення macW1Y іконок та панелей..."),
-            "Stage 5/": (0.55, "Встановлення звукової теми macW1Y..."),
-            "Stage 6/": (0.65, "Встановлення шпалер Golden Gate..."),
-            "Stage 7/": (0.75, "Налаштування розширень GNOME Shell..."),
-            "Stage 8/": (0.82, "Інтеграція в меню Налаштування (Settings)..."),
-            "Stage 9/": (0.88, "Налаштування жестів та тачпада..."),
-            "Stage 10/": (0.92, "Конфігурація апаратного прискорення..."),
-            "Stage 11/": (0.95, "Налаштування екрана блокування GDM..."),
-            "Stage 12/": (0.97, "Встановлення Plymouth boot splash..."),
-            "Stage 13/": (0.98, "Налаштування завантажувача GRUB..."),
-            "Finalizing": (0.99, "Завершення налаштування системи..."),
+            "Stage 1/": (0.10, "stage1"),
+            "Stage 2/": (0.20, "stage2"),
+            "Stage 3/": (0.35, "stage3"),
+            "Stage 4/": (0.45, "stage4"),
+            "Stage 5/": (0.55, "stage5"),
+            "Stage 6/": (0.65, "stage6"),
+            "Stage 7/": (0.75, "stage7"),
+            "Stage 8/": (0.82, "stage8"),
+            "Stage 9/": (0.88, "stage9"),
+            "Stage 10/": (0.92, "stage10"),
+            "Stage 11/": (0.95, "stage11"),
+            "Stage 12/": (0.97, "stage12"),
+            "Stage 13/": (0.98, "stage13"),
+            "Finalizing": (0.99, "finalizing"),
         }
-        for k, (pct, desc) in stage_map.items():
+        for k, (pct, stage_key) in stage_map.items():
             if k in line:
-                self._update_progress(pct, desc)
+                self._update_progress(pct, stage_key)
                 break
 
     def _start_demo_progress(self):
+        self.worker_cancelled = False
+        self.worker_done = False
+        self.current_fraction = 0.02
+        self.target_fraction = 0.02
+        self.last_progress_time = time.time()
+        self._start_progress_animation()
+
         steps = [
-            (0.05, "Перевірка системи та цільового диска..."),
-            (0.15, "Встановлення системних залежностей..."),
-            (0.30, "Встановлення шрифтів за замовчуванням..."),
-            (0.45, "Встановлення тем оформлення macW1Y..."),
-            (0.60, "Налаштування розширень GNOME Shell..."),
-            (0.75, "Оновлення конфігурацій Dock та OSD..."),
-            (0.90, "Оновлення системних кешів..."),
-            (1.00, "Встановлення завершено!")
+            (0.08, "stage1"),
+            (0.18, "stage2"),
+            (0.32, "stage3"),
+            (0.46, "stage4"),
+            (0.58, "stage5"),
+            (0.68, "stage6"),
+            (0.78, "stage7"),
+            (0.86, "stage8"),
+            (0.92, "stage9"),
+            (0.96, "stage12"),
+            (1.00, "finalizing")
         ]
         def run_demo():
-            for pct, msg in steps:
+            for pct, stage in steps:
                 if self.worker_cancelled:
                     break
-                GLib.idle_add(self._update_progress, pct, msg)
-                time.sleep(1.0)
+                GLib.idle_add(self._update_progress, pct, stage)
+                time.sleep(0.9)
             if not self.worker_cancelled:
-                GLib.idle_add(lambda: self.switch_to_screen("screen_reboot"))
+                self.worker_done = True
+                self.target_fraction = 1.0
         threading.Thread(target=run_demo, daemon=True).start()
 
     def _show_simple_alert(self, title, text):

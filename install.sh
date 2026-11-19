@@ -177,6 +177,17 @@ log_step() {
     fi
 }
 
+emit_progress() {
+    local pct="$1"
+    local stage_id="$2"
+    local desc="$3"
+    if [ "$GUI_WORKER" = "true" ]; then
+        echo "PROGRESS:${pct}:${stage_id}"
+    elif [ -n "$desc" ]; then
+        echo -e "  ${C_CYAN}[${pct}%]${C_RESET} ${desc}..."
+    fi
+}
+
 run_as_user() {
     if [ "$TARGET_USER" != "$USER" ]; then
         sudo -u "$TARGET_USER" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${TARGET_UID}/bus" "$@"
@@ -1656,6 +1667,7 @@ DeviceTimeout=8
 EOF
     fi
     
+    emit_progress 96 "stage12" "Regenerating initramfs image"
     log_info "Updating initramfs..."
     macw1y_rebuild_initramfs
     log_success "macW1Y Boot Splash activated successfully!"
@@ -1745,6 +1757,7 @@ install_grub() {
         sudo systemctl enable mac-grub-status.service 2>/dev/null || true
     fi
 
+    emit_progress 98 "stage13" "Regenerating GRUB bootloader configuration"
     log_info "Updating GRUB configuration..."
     if command -v update-grub >/dev/null 2>&1; then
         sudo update-grub
@@ -1814,6 +1827,8 @@ EOF_EVO
         fi
     fi
     
+    emit_progress 100 "finalizing" "Installation completed successfully"
+
     echo -e "\n${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
     echo -e " ${C_BOLD}${C_GREEN}✔ macW1Y v${NEW_VERSION} INSTALLATION / UPDATE COMPLETED SUCCESSFULLY!${C_RESET}"
     echo -e "${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
@@ -2420,6 +2435,8 @@ EOF_EVO
     sleep 1
     run_as_user gnome-extensions enable blur-my-shell@aunetx 2>/dev/null || true
     
+    emit_progress 100 "finalizing" "Installation completed successfully"
+
     echo -e "\n${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
     echo -e " ${C_BOLD}${C_GREEN}✔ UPDATE [v$cur_ver] -> [v$new_ver] COMPLETED SUCCESSFULLY!${C_RESET}"
     echo -e "${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
@@ -2712,16 +2729,26 @@ run_mock_installation() {
     fi
 
     local steps=(
-        "10:stage1:Stage 1/10: Verifying system dependencies and environment"
-        "20:stage2:Stage 2/10: Verifying typography and font bundles"
-        "30:stage3:Stage 3/10: Preparing macW1Y GTK and Shell theme engines"
-        "45:stage4:Stage 4/10: Validating macW1Y icon assets and cursors"
-        "55:stage5:Stage 5/10: Checking sound themes and audio feedback"
-        "65:stage6:Stage 6/10: Preparing Golden Gate wallpaper integration"
-        "75:stage7:Stage 7/10: Simulating GNOME Shell extensions deployment"
-        "85:stage8:Stage 8/10: Testing System Settings control panels"
-        "95:stage9:Stage 9/10: Simulating touchpad gesture daemon"
-        "100:finalizing:Finalizing simulated configuration"
+        "5:stage1:Stage 1/13: Verifying system dependencies and environment"
+        "10:stage1:Checking platform toolchain and native libraries"
+        "18:stage1:Verifying Python runtime packages and meson"
+        "25:stage2:Stage 2/13: Validating Apple SF Pro typography"
+        "30:stage2:Rebuilding font cache and fontconfig rules"
+        "38:stage3:Stage 3/13: Preparing macW1Y GTK and Shell themes"
+        "45:stage4:Stage 4/13: Testing icon caches and macOS cursors"
+        "52:stage5:Stage 5/13: Validating sound effects and login chime"
+        "60:stage6:Stage 6/13: Verifying dynamic wallpapers integration"
+        "68:stage7:Stage 7/13: Simulating GNOME Shell extensions deployment"
+        "76:stage7:Applying extension configuration schemas"
+        "82:stage8:Stage 8/13: Testing System Settings control panel overlay"
+        "86:stage9:Stage 9/13: Simulating touchpad gesture daemon"
+        "90:stage10:Stage 10/13: Testing GameMode and GPU acceleration"
+        "93:stage11:Stage 11/13: Testing GDM lock screen transition"
+        "96:stage12:Stage 12/13: Simulating Plymouth boot splash"
+        "97:stage12:Checking initramfs generation prerequisites"
+        "98:stage13:Stage 13/13: Simulating GRUB bootloader configuration"
+        "99:finalizing:Finalizing simulated configuration"
+        "100:finalizing:Complete"
     )
 
     for item in "${steps[@]}"; do
@@ -2731,7 +2758,7 @@ run_mock_installation() {
         else
             echo -e "  [${pct}%] ${C_CYAN}${desc}...${C_RESET}"
         fi
-        sleep 1
+        sleep 0.5
     done
 
     if [ "$APPLY_LOW_SPEC" = "true" ]; then

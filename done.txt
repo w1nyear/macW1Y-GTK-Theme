@@ -1950,3 +1950,29 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-audit-sync check — 100% PASS.
      * python3 bin/mac-i18n-verify — 100% PASS.
      * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
+
+833. 2026-11-19 — Впровадження плавного та анімованого прогрес-бару в інсталяторі macW1Y:
+   - Файли та рядки змін:
+     1) bin/mac-installer-gui:
+        * рядки 1660-1666: ініціалізовано атрибути плавного рендерингу (current_fraction, target_fraction, _prog_tick_id, last_progress_time, worker_done).
+        * рядки 3253-3258: підключено локалізовані повідомлення статусу підготовки та очікуваного часу завантаження.
+        * рядки 3381-3389: додано безпечне очищення та видалення tick-колбека _prog_tick_id при скасуванні інсталяції.
+        * рядки 3447-3453, 3524-3532: реалізовано плавне доведення шкали до 100% перед показом екрана перезавантаження screen_reboot.
+        * рядки 3549-3610: впроваджено 60 FPS апаратний тікер інтерполяції (_start_progress_animation, _on_progress_tick, _update_time_label, _update_progress) з плавним ease-out згладжуванням та асимптотичним мікро-рухом (micro-creep) під час тривалих фонових операцій (update-initramfs, apt), що усуває зависання і ривки індикатора.
+        * рядки 3635-3665: оновлено демо-режим _start_demo_progress на базі плавного прогресу.
+     2) install.sh:
+        * рядки 180-189: додано допоміжну функцію emit_progress() для передачі проміжних відсотків у GUI-воркер (PROGRESS:<pct>:<stage>) та детальних логів у термінал без використання кирилиці.
+        * рядки 1667, 1757, 1830, 2438: додано проміжні точки прогресу перед важкими етапами оновлення initramfs, конфігурації GRUB та завершення.
+        * рядки 2728-2760: покращено run_mock_installation() для параметра -let_me_try_bradar — розширено до 20 суб-етапів по 0.5с (разом рівно 10 секунд), що забезпечує безперервний плавний рух смуги у тестовому режимі.
+   - Синхронізація:
+     * bin/mac-installer-gui синхронізовано з /usr/local/bin/mac-installer-gui (права 755).
+     * done.txt скопійовано до ~/Desktop/done.txt.
+   - Тестування та перевірка:
+     * Протестовано роботу 60 FPS тікера в GTK4 — плавне згладжування з 0.02 до 0.40 за 200 мс (PASS).
+     * Протестовано асимптотичний мікро-рух (micro-creep) при утриманні цілі (PASS).
+     * Перевірено виконання ./install.sh --gui-worker -let_me_try_bradar — 20 суб-етапів з кодом 0 за 10с.
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 12/12 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * Перевірка відсутності кирилиці в install.sh — 0 знайдено.
