@@ -1795,3 +1795,20 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      4) Аудит синхронізації: python3 bin/mac-audit-sync check — 100% PASS.
      5) Інтернаціоналізація: bin/mac-i18n-verify — 100% PASS.
      6) Анімаційний рушій: python3 bin/test-macw1y-animations.py — 12/12 PASS (100.0%).
+
+
+826. 2026-11-19 — Оновлення документації README.md: додано детальні характеристики системи, матрицю сумісності та підтримувані дистрибутиви:
+   - Додано бейджі дистрибутивів: Ubuntu (24.04/24.10/26.04), Debian (13/Sid), Fedora (40/41/42), Arch Linux (Rolling), CachyOS (Optimized) та GNOME (46-51).
+   - Створено зведену таблицю підтримуваних платформ та сумісності (Supported Systems & Compatibility Matrix):
+     * Дистрибутиви: Ubuntu 24.04+, Debian 13+, Fedora 40+, Arch Linux, CachyOS.
+     * Робоче середовище: GNOME Shell 46–51+ на Wayland (X11 з шейдерними фолбеками).
+     * Завантажувачі: GRUB 2 та systemd-boot (з автоматичним визначенням).
+     * Генератори initramfs: initramfs-tools, dracut, mkinitcpio.
+     * Пакетні менеджери: apt, dnf, pacman з відмовостійким фолбеком.
+     * Архітектура: x86_64 / amd64.
+   - Оновлено та структуровано апаратні характеристики (System Specifications & Hardware Profiles):
+     * Low-Spec & Eco Profile (для старих ноутбуків з Intel HD Graphics / інтегрованими iGPU): ліміт кешу 64 МБ, 2x даунскейл шейдерів розмиття скла, 15с тротлінг GC, 2 ГБ RAM мінімум.
+     * Стандартні мінімальні вимоги (4 ГБ RAM, 4-ядерний процесор, OpenGL 4.0+/Vulkan 1.2+).
+     * Рекомендовані характеристики (8-16+ ГБ RAM, сучасні гібридні/дискретні GPU RTX/Radeon/Arc/Iris Xe, NVMe SSD).
+   - Оновлено розділи інсталятора (GUI, Low-Spec, Automated, CLI) та деінсталятора з відновленням стандартних тем (Ubuntu Yaru, Fedora Adwaita тощо).
+   - Усі аудити та тести: 100% PASS (регресійні 12/12, анімації 12/12, guard 21/21, i18n PASS, sync 100% PASS).
