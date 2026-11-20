@@ -21,6 +21,6 @@ class DingBundleTests(unittest.TestCase):
     def test_package_owned_ding_is_not_overwritten(self):
         installer = (ROOT / 'install.sh').read_text()
         self.assertNotIn('sudo cp "$SCRIPT_DIR/extensions/ding-patches/', installer)
-        self.assertIn('"ding@rastersoft.com"', (ROOT / 'uninstall.sh').read_text())
+        self.assertIn('"ding@rastersoft.com"', (ROOT / 'libexec/macw1y-uninstall').read_text())
         for file in ('COPYING', 'COPYRIGHT.packaging', 'ORIGIN.txt', 'extension.js', 'app/ding.js'):
             self.assertTrue((BUNDLE / file).is_file(), file)

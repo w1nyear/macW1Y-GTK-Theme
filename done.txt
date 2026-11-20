@@ -2529,3 +2529,8 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
 855. 2026-11-20 — Галерея на початку README:
    - README.md: після опису додано Desktop, Spotlight, Launchpad, Control Center, Full desktop with apps із п’ятьма зображеннями lookatme. Відео у поточному README вже відсутнє. Використано фактичні назви desktop.png та laucnhpad.png.
    - Перевірено існування всіх п’яти файлів та git diff --check. done.txt синхронізовано на Desktop; коміт без push.
+
+856. 2026-11-20 — Спрощення README та єдиний вхід до видалення:
+   - README.md: компактні flat-бейджі одним рядком, характеристики у таблицях, прибрано перелік параметрів запуску; встановлення й видалення через install.sh.
+   - Кореневий uninstall.sh видалено; реалізацію перенесено в libexec/macw1y-uninstall зі скоригованим шляхом до кореня. CLI й GUI інсталятора та тести оновлено.
+   - Bash-синтаксис, Python-компіляція GUI та 35/35 тестів PASS. Жодних операцій деінсталяції на хості не виконано.

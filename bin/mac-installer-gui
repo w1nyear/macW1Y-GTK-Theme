@@ -3462,7 +3462,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
                 custom_script = os.path.join(SCRIPT_DIR, "install.sh")
 
             install_script = custom_script
-            uninstall_script = os.path.join(SCRIPT_DIR, "uninstall.sh")
+            uninstall_script = os.path.join(SCRIPT_DIR, "libexec", "macw1y-uninstall")
             is_mock = "--preview" in sys.argv or "--mock-installer" in sys.argv or "-let_me_try_bradar" in sys.argv or "--let_me_try_bradar" in sys.argv or os.environ.get("MAC_MOCK_INSTALLER") == "1"
             mock_arg = ["-let_me_try_bradar"] if is_mock else []
 

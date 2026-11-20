@@ -2922,7 +2922,7 @@ elif [ "$1" = "-debug_install" ] || [ "$1" = "--debug_install" ]; then
     exit 0
 elif [ "$1" = "-debug_uninstall" ] || [ "$1" = "--debug_uninstall" ] || [ "$1" = "--uninstall" ]; then
     print_banner
-    exec "$SCRIPT_DIR/uninstall.sh" --all
+    exec "$SCRIPT_DIR/libexec/macw1y-uninstall" --all
 elif [ "$1" = "--install" ] || [ "$1" = "-i" ] || [ "$1" = "--all" ] || [ "$1" = "-y" ] || [ "$1" = "--yes" ]; then
     print_banner
     run_full_install
@@ -3017,7 +3017,7 @@ case "$CHOICE" in
         run_clean_update "$INSTALLED_VER" "$NEW_VERSION"
         ;;
     4)
-        exec "$SCRIPT_DIR/uninstall.sh" --all
+        exec "$SCRIPT_DIR/libexec/macw1y-uninstall" --all
         ;;
     0)
         echo -e "\nOperation complete. Exiting installer."

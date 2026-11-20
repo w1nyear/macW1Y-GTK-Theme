@@ -40,7 +40,7 @@ class PortabilityTests(unittest.TestCase):
             self.assertEqual(artifact.read_bytes(), b'previous build')
 
     def test_legacy_shell_restore_without_dpkg(self):
-        script = (ROOT / 'uninstall.sh').read_text()
+        script = (ROOT / 'libexec/macw1y-uninstall').read_text()
         start = script.index('    if [ -f "/usr/bin/gnome-shell.real" ]; then')
         end = script.index('    sudo rm -f /etc/dconf/db/gdm.d/99-macw1y-auth', start)
         block = script[start:end]

@@ -16,7 +16,7 @@ C_YELLOW="\033[1;33m"
 C_RED="\033[1;31m"
 C_MAGENTA="\033[1;35m"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$SCRIPT_DIR/dependencies/boot-tools.sh"
 
 # Detect user context
@@ -555,7 +555,7 @@ elif [ "$1" = "--system" ]; then
     restore_system
     exit 0
 elif [ "$1" = "--help" ] || [ "$1" = "-h" ] || [ "$1" = "-?" ] || [ "$1" = "-help" ]; then
-    echo "Використання: ./uninstall.sh [ОПЦІЇ]"
+    echo "Для видалення запустіть ./install.sh і виберіть пункт видалення."
     echo "  --all, -y, --yes  Повне видалення та повернення стандартного вигляду GNOME"
     echo "  --ui              Відновлення лише теми, іконок, шрифтів, дока та розширень"
     echo "  --system          Відновлення системних компонентів (GRUB, Plymouth, служби, обгортки)"
