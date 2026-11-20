@@ -46,6 +46,24 @@ if [ -f /etc/os-release ]; then
     esac
 fi
 
+BACKUP_THEME_FILE="$TARGET_HOME/.config/mac-styling/backup_theme_state.conf"
+SAVED_ORIG_GTK=""
+SAVED_ORIG_ICON=""
+SAVED_ORIG_CURSOR=""
+SAVED_ORIG_WM=""
+SAVED_ORIG_BUTTONS=""
+SAVED_ORIG_SOUND=""
+SAVED_ORIG_SYS_CURSOR=""
+if [ -f "$BACKUP_THEME_FILE" ]; then
+    SAVED_ORIG_GTK=$(grep "^ORIG_GTK=" "$BACKUP_THEME_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"\r')
+    SAVED_ORIG_ICON=$(grep "^ORIG_ICON=" "$BACKUP_THEME_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"\r')
+    SAVED_ORIG_CURSOR=$(grep "^ORIG_CURSOR=" "$BACKUP_THEME_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"\r')
+    SAVED_ORIG_WM=$(grep "^ORIG_WM=" "$BACKUP_THEME_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"\r')
+    SAVED_ORIG_BUTTONS=$(grep "^ORIG_BUTTONS=" "$BACKUP_THEME_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"\r')
+    SAVED_ORIG_SOUND=$(grep "^ORIG_SOUND=" "$BACKUP_THEME_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"\r')
+    SAVED_ORIG_SYS_CURSOR=$(grep "^ORIG_SYS_CURSOR=" "$BACKUP_THEME_FILE" 2>/dev/null | cut -d= -f2- | tr -d '"\r')
+fi
+
 print_banner() {
     clear 2>/dev/null || true
     echo -e "${C_RED}"
@@ -182,21 +200,40 @@ restore_ui() {
 
     # Відновлення тем GTK, іконок, курсорів, кнопок вікон та звуків
     log_info "Відновлення тем GTK, іконок, курсорів та розташування кнопок вікон..."
+    local orig_gtk="$SAVED_ORIG_GTK"
+    local orig_icon="$SAVED_ORIG_ICON"
+    local orig_cursor="$SAVED_ORIG_CURSOR"
+    local orig_wm="$SAVED_ORIG_WM"
+    local orig_buttons="$SAVED_ORIG_BUTTONS"
+    local orig_sound="$SAVED_ORIG_SOUND"
+
+    local default_theme="Adwaita"
+    local default_cursor="Adwaita"
+    local default_sound="freedesktop"
     if [ "$IS_UBUNTU" = "true" ]; then
-        run_as_user gsettings set org.gnome.desktop.interface gtk-theme 'Yaru' 2>/dev/null || true
-        run_as_user gsettings set org.gnome.desktop.interface icon-theme 'Yaru' 2>/dev/null || true
-        run_as_user gsettings set org.gnome.desktop.interface cursor-theme 'Yaru' 2>/dev/null || true
-        run_as_user gsettings set org.gnome.desktop.wm.preferences theme 'Yaru' 2>/dev/null || true
-        run_as_user gsettings set org.gnome.desktop.wm.preferences button-layout ':minimize,maximize,close' 2>/dev/null || true
-        run_as_user gsettings set org.gnome.desktop.sound theme-name 'Yaru' 2>/dev/null || true
-    else
-        run_as_user gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita' 2>/dev/null || true
-        run_as_user gsettings set org.gnome.desktop.interface icon-theme 'Adwaita' 2>/dev/null || true
-        run_as_user gsettings set org.gnome.desktop.interface cursor-theme 'Adwaita' 2>/dev/null || true
-        run_as_user gsettings set org.gnome.desktop.wm.preferences theme 'Adwaita' 2>/dev/null || true
-        run_as_user gsettings reset org.gnome.desktop.wm.preferences button-layout 2>/dev/null || true
-        run_as_user gsettings set org.gnome.desktop.sound theme-name 'freedesktop' 2>/dev/null || true
+        default_theme="Yaru"
+        default_cursor="Yaru"
+        default_sound="Yaru"
     fi
+
+    [ -z "$orig_gtk" ] || [[ "$orig_gtk" =~ macW1Y ]] && orig_gtk="$default_theme"
+    [ -z "$orig_icon" ] || [[ "$orig_icon" =~ macW1Y ]] && orig_icon="$default_theme"
+    [ -z "$orig_cursor" ] || [[ "$orig_cursor" =~ macW1Y ]] && orig_cursor="$default_cursor"
+    [ -z "$orig_wm" ] || [[ "$orig_wm" =~ macW1Y ]] && orig_wm="$default_theme"
+    [ -z "$orig_sound" ] || [[ "$orig_sound" =~ (macW1Y|mac-styling) ]] && orig_sound="$default_sound"
+
+    run_as_user gsettings set org.gnome.desktop.interface gtk-theme "$orig_gtk" 2>/dev/null || true
+    run_as_user gsettings set org.gnome.desktop.interface icon-theme "$orig_icon" 2>/dev/null || true
+    run_as_user gsettings set org.gnome.desktop.interface cursor-theme "$orig_cursor" 2>/dev/null || true
+    run_as_user gsettings set org.gnome.desktop.wm.preferences theme "$orig_wm" 2>/dev/null || true
+    if [ -n "$orig_buttons" ]; then
+        run_as_user gsettings set org.gnome.desktop.wm.preferences button-layout "$orig_buttons" 2>/dev/null || true
+    elif [ "$IS_UBUNTU" = "true" ]; then
+        run_as_user gsettings set org.gnome.desktop.wm.preferences button-layout ':minimize,maximize,close' 2>/dev/null || true
+    else
+        run_as_user gsettings reset org.gnome.desktop.wm.preferences button-layout 2>/dev/null || true
+    fi
+    run_as_user gsettings set org.gnome.desktop.sound theme-name "$orig_sound" 2>/dev/null || true
 
     # Скидання кольорової схеми та акцентного кольору
     run_as_user gsettings reset org.gnome.desktop.interface accent-color 2>/dev/null || true
@@ -253,7 +290,7 @@ restore_ui() {
     rm -rf "$TARGET_HOME/.local/share/icons/macW1Y"* "$TARGET_HOME/.local/share/icons/macw1y"*
     rm -rf "$TARGET_HOME/.local/share/fonts/SF_Pro" "$TARGET_HOME/.local/share/fonts/Default"*
     rm -rf "$TARGET_HOME/.config/gtk-3.0" "$TARGET_HOME/.config/gtk-4.0"
-    rm -rf "$TARGET_HOME/.config/mac-styling" "$TARGET_HOME/.config/macW1Y" "$TARGET_HOME/.local/share/macW1Y"
+    rm -rf "$TARGET_HOME/.config/macW1Y" "$TARGET_HOME/.local/share/macW1Y"
     rm -rf "$TARGET_HOME/.local/share/sounds/macW1Y"
     rm -rf "$TARGET_HOME/.cache/mac-clipboard"
     rm -rf "$TARGET_HOME/.local/share/gnome-control-center-overlay"
@@ -303,9 +340,12 @@ restore_system() {
         default_cursor="Yaru"
     fi
 
+    local restore_sys_cursor="$SAVED_ORIG_SYS_CURSOR"
+    [ -z "$restore_sys_cursor" ] || [[ "$restore_sys_cursor" =~ macW1Y ]] && restore_sys_cursor="$default_cursor"
+
     if [ ! -e /usr/share/icons/default/index.theme ] || grep -q "macW1Y" /usr/share/icons/default/index.theme 2>/dev/null; then
         if [ -d /usr/share/icons/default ]; then
-            printf "[Icon Theme]\nInherits=%s\n" "$default_cursor" | sudo tee /usr/share/icons/default/index.theme >/dev/null 2>&1 || true
+            printf "[Icon Theme]\nInherits=%s\n" "$restore_sys_cursor" | sudo tee /usr/share/icons/default/index.theme >/dev/null 2>&1 || true
         fi
     fi
 
@@ -448,14 +488,27 @@ restore_system() {
         log_info "Відновлення оригінальної конфігурації GRUB..."
         if [ -f /etc/default/grub.bak_mactheme ]; then
             sudo cp /etc/default/grub.bak_mactheme /etc/default/grub
+            sudo rm -f /etc/default/grub.bak_mactheme
         else
             sudo sed -i '/GRUB_THEME.*macw1y-boot/d' /etc/default/grub 2>/dev/null || true
         fi
 
         if [ -f /etc/grub.d/10_linux.bak_mactheme ]; then
             sudo cp /etc/grub.d/10_linux.bak_mactheme /etc/grub.d/10_linux
+            sudo rm -f /etc/grub.d/10_linux.bak_mactheme
         fi
+        [ -f /etc/grub.d/30_uefi-firmware ] && sudo chmod 755 /etc/grub.d/30_uefi-firmware 2>/dev/null || true
         sudo rm -f /etc/grub.d/06_mac_theme_select /etc/grub.d/08_mac_usb_entry
+        if grep -q "macW1Y Startup Manager" /etc/grub.d/40_custom 2>/dev/null; then
+            cat << 'EOF_CUSTOM' | sudo tee /etc/grub.d/40_custom >/dev/null
+#!/bin/sh
+exec tail -n +3 $0
+# This file provides an easy way to add custom menu entries.  Simply type the
+# menu entries you want to add after this comment.  Be careful not to change
+# the 'exec tail' line above.
+EOF_CUSTOM
+            sudo chmod 755 /etc/grub.d/40_custom 2>/dev/null || true
+        fi
         sudo rm -rf /boot/grub/themes/macw1y-boot /boot/grub2/themes/macw1y-boot /boot/grub/themes/macw1y-boot-usb
         sudo rm -f /etc/systemd/system/mac-grub-status.service
 
@@ -480,6 +533,7 @@ restore_system() {
 run_full_uninstall() {
     restore_ui
     restore_system
+    rm -rf "$TARGET_HOME/.config/mac-styling" 2>/dev/null || true
     echo -e "\n${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
     echo -e " ${C_BOLD}${C_GREEN}✔ ДЕІНСТАЛЯЦІЮ УСПІШНО ЗАВЕРШЕНО!${C_RESET}"
     echo -e "${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
@@ -494,6 +548,7 @@ if [ "$1" = "--all" ] || [ "$1" = "-y" ] || [ "$1" = "--yes" ]; then
 elif [ "$1" = "--ui" ]; then
     print_banner
     restore_ui
+    rm -rf "$TARGET_HOME/.config/mac-styling" 2>/dev/null || true
     exit 0
 elif [ "$1" = "--system" ]; then
     print_banner

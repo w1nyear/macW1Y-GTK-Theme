@@ -391,24 +391,76 @@ Headless GNOME не завжди завершує звичайну startup-по�
      * Усунено залишок `Inherits=macW1Y` у `/usr/share/icons/default/index.theme`: на системах без `update-alternatives` відновлено стандартну системну тему `Inherits=Adwaita`.
    - Повторне перезавантаження після деінсталяції: чистий запуск чистого Arch Linux 7.3.5 без залишків macW1Y.
 
-5. **Підсумкова матриця результатів переносності**:
+5. **Підсумкова матриця результатів переносності (актуальний чесний статус)**:
 
-| Дистрибутив | Версія GNOME | Інсталяція (13/13) | Runtime UI / Shell | Оновлення | Деінсталяція | Перезавантаження | Відкриті дефекти | Докази / Журнали |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Ubuntu 24.04/26.04** | GNOME 46 / 50 | ✔ 100% PASS | ✔ Бездоганно (60 FPS скло) | ✔ PASS | ✔ Відновлює Yaru/bgrt | ✔ Clean | Немає | Хост-система, `test-macw1y-animations.py` 12/12 |
-| **Debian 13 (Trixie)** | GNOME 48.7 | ✔ 100% PASS | ✔ Бездоганно, 21/21 OK | ✔ PASS | ✔ Повертає Adwaita/bgrt | ✔ Clean | Немає | QEMU KVM debian13, звіт етапу 4 |
-| **Fedora 41** | GNOME 47.10 | ✔ 100% PASS | ✔ Cogl fix OK, GTK3 CSS OK | ✔ PASS | ✔ Повертає Adwaita/bgrt | ✔ Clean | Немає | QEMU KVM fedora41, звіт етапу 5, `fedora-final-shell.log` |
-| **Arch Linux** | GNOME 51.1 | ✔ 100% PASS | ✔ Mutter/Shell 51 OK, DING OK | ✔ PASS | ✔ Повертає Adwaita/bgrt | ✔ Clean | Немає | QEMU KVM arch-test, звіт етапу 6, `test_package_managers.py` |
-| **CachyOS** | GNOME 51 | ✔ 100% PASS* | ✔ Сумісно з Arch base | ✔ PASS* | ✔ systemd-boot safe | ✔ Clean | Немає | Спільна база з Arch, pacman/mkinitcpio/systemd-boot |
+| Середовище / Дистрибутив | Версія GNOME | Інсталяція (13/13) | Runtime UI / Shell | Оновлення | Деінсталяція | Завантаження ядра / Boot | Відкриті дефекти | Статус верифікації | Докази / Журнали |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Ubuntu 26.04 (Хост розробки)** | GNOME 50.0 | ✔ 100% PASS | ✔ 21/21 OK, анімації PASS | ✔ PASS | ✔ Відновлює Yaru | ✔ Чистий старт | Немає | **ВЕРИФІКОВАНО (Хост)** | `test-macw1y-animations.py` 12/12, audit 100% PASS |
+| **Debian 13 (Trixie)** | GNOME 48.7 | ✔ 100% PASS | ✔ 21/21 OK, Shell стабільний | ✔ PASS | ✔ Відновлює Adwaita/bgrt | ✔ Чистий reboot | Немає | **ВЕРИФІКОВАНО (VM)** | QEMU KVM debian13, звіт етапу 4 |
+| **Fedora 41** | GNOME 47.10 | ✔ 100% PASS | ✔ Cogl fix OK, GTK3 CSS 0 err | ✔ PASS | ✔ Відновлює Adwaita/bgrt | ✔ Чистий reboot | Немає | **ВЕРИФІКОВАНО (VM)** | QEMU KVM fedora41, Cogl introspection fix, Gtk.CssProvider 0 err |
+| **Arch Linux Rolling** | GNOME 51.1 | ✔ 100% PASS | ✔ 21/21 OK, DING process OK, GIO Desktop icons OK | ✔ PASS | ✔ Відновлює власні теми (Nordic/Bibata) | ✔ Чистий reboot (Linux 7.3.5) | Немає | **ВЕРИФІКОВАНО (VM)** | QEMU KVM arch-test port 2224, 21/21 locked, GIO test PASS |
+| **CachyOS** (systemd-boot / GRUB) | GNOME 51 | ⚠ Баг виправлено | ⚠ Потребує тесту у VM | ⚠ В процесі | ⚠ Перевірено код | ⚠ GRUB panic усунено | Було: Kernel Panic `(0,0)` через `10_linux` | **НЕ ПЕРЕВІРЕНО У ВИДІЛЕНІЙ VM** | Виправлено перезапис `10_linux` та `grub.default` |
+| **Ubuntu 24.04 LTS** | GNOME 46 | ⚠ Не тестувався | ⚠ Потребує тесту у VM | ⚠ В процесі | ⚠ Перевірено код | ⚠ Не перевірено | Немає | **НЕ ПЕРЕВІРЕНО У ВИДІЛЕНІЙ VM** | Хост використовує GNOME 50; вимагає окремої VM |
 
-*\* За результатами верифікації Arch Linux Rolling та спільних модулів завантажувача/пакетного менеджера.*
+---
 
-6. **Фінальні перевірки валідації на хості**:
-   - `python3 -m unittest discover -s tests -p 'test_*.py'`: **32/32 PASS** (включно з новими тестами інтеграції пакетних менеджерів).
-   - `python3 bin/mac-extension-guard verify`: **21/21 LOCKED OK**.
-   - `python3 bin/mac-audit-sync check`: **100% PASS**.
-   - `python3 bin/mac-i18n-verify`: **100% PASS**.
-   - `perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh`: **0 знайдено**.
-   - `python3 bin/test-macw1y-animations.py`: **12/12 PASS** (Spotlight 12.77 мс < 30 мс).
-   - `tests/portability/check-native.sh`: **PASS** (збірка 7 бібліотек C).
-- Підсумкова готовність кросплатформного перенесення: **~98–100% (Повністю завершено та верифіковано)**.
+## 20 листопада: Розслідування та виправлення Kernel Panic на CachyOS, очищення GTK3 CSS у bin/mac-build-theme та безпечне відновлення кастомних тем користувача
+
+### 1. Розслідування критичного збою завантаження CachyOS (Kernel Panic `unknown-block(0,0)`)
+- **Симптоми користувача (скріншоти з GNOME Boxes)**:
+  1. `помилка: script/function.c:grub_script_function_find:119: не вдалося знайти команду «recordfail».`
+  2. Синій екран ядра: `KERNEL PANIC! Please reboot your computer. VFS: Unable to mount root fs on unknown-block(0,0)`
+- **Аналіз першопричини**:
+  * У функціях `install_grub()` та `sync_system()` скрипт інсталятора копіював специфічний для Ubuntu файл `$SCRIPT_DIR/grub/10_linux` у системний каталог `/etc/grub.d/10_linux`, а також переписував `/etc/default/grub` вмістом `grub/grub.default`.
+  * Файл `10_linux` з Ubuntu містить виклики команди `recordfail`, яка відсутня у GRUB на Arch/CachyOS.
+  * Файл `10_linux` з Ubuntu використовує парсер версій `sed -e "s,^[^0-9]*-,,g"`, який очікує імена ядер формату `vmlinuz-<version>`. На Arch Linux та CachyOS ядра називаються `vmlinuz-linux` або `vmlinuz-linux-cachyos` (без цифр версії в назві файлу). В результаті змінна `initrd_real` залишалася пустою, і GRUB згенерував пункт завантаження **без директиви `initrd /boot/initramfs-linux.img`**.
+  * Ядро Linux стартувало без образу initramfs, не змогло змонтувати кореневий розділ (особливо Btrfs із `subvol=@`) і впало в Kernel Panic `unknown-block(0,0)`.
+  * Перезапис `/etc/default/grub` знищував унікальні параметри ядра CachyOS (`rootflags=subvol=@`, параметри мікрокоду, resume тощо) та встановлював `GRUB_DEFAULT="Ubuntu"`.
+- **Впроваджене виправлення**:
+  1. Копіювання `grub/10_linux` та повна заміна `/etc/default/grub` суворо обмежені виключно Ubuntu: `[ "$DISTRO_ID" = "ubuntu" ]`.
+  2. На всіх інших дистрибутивах (Arch, CachyOS, Fedora, Debian) нативний системний `/etc/grub.d/10_linux` **ніколи не перезаписується**. Якщо існує резервна копія `10_linux.bak_mactheme`, вона негайно відновлюється.
+  3. Конфігурація `/etc/default/grub` на не-Ubuntu дистрибутивах виконується **неруйнівним способом**: додаються або оновлюються лише параметри `GRUB_THEME`, `GRUB_GFXMODE` та `GRUB_GFXPAYLOAD_LINUX="keep"`, без затирання `GRUB_CMDLINE_LINUX_DEFAULT`, UUID або параметрів файлових систем.
+  4. У `grub/06_mac_theme_select` вилучено жорстко зашиті UUID розробника (`B621-3DF3` та `f4b30137-e957-4560-bf5a-e8dfd9164736`). Реалізовано динамічне визначення UUID розділів ESP (`/boot/efi`, `/efi`, `/boot`) та Root (`/`) через `findmnt -no UUID`.
+  5. Бінарне патчення клавіш `patch_grub_keys.py` обмежено Ubuntu, оскільки воно розраховане на бінарні зміщення Ubuntu grub-модулів.
+  6. При генерації `grub-mkconfig` на Arch/CachyOS гарантовано додається правильний рядок `initrd /boot/initramfs-linux.img`.
+
+### 2. Усунення попереджень GTK3 CSS `'var' is not a valid color name` у bin/mac-build-theme
+- **Першопричина**:
+  * У функції `generate_gtk3_components_css` файлу `bin/mac-build-theme` було виявлено 10 рядків (селектори кнопок та полів вводу `entry`), де генерувалися CSS Custom Properties `var(...)` (наприклад, `background-color: var(--mac-row-hover, rgba(255, 255, 255, 0.16));`).
+  * Специфікація парсера GTK 3 CSS не підтримує змінні `var(...)` — це призводило до повідомлень `Theme parsing error: macw1y-components.css: 'var' is not a valid color name` при запуску DING та будь-яких програм GTK 3.
+- **Виправлення**:
+  * У `bin/mac-build-theme` видалено конструкції `var(...)` для GTK 3 компонентів; встановлено валідні для GTK 3 статичні кольори та `@theme_text_color`.
+  * Перегенеровано всі 4 теми та конфігурації. Перевірка через `Gtk.CssProvider.load_from_path()` підтвердила: **0 попереджень, 0 помилок**.
+
+### 3. Безпечне збереження та точне відновлення власних тем і курсорів користувача
+- **Проблема**:
+  * Раніше при видаленні (`uninstall.sh`) теми GTK, іконок та курсора скидалися примусово на `Adwaita` (або `Yaru` на Ubuntu), що ламало налаштування користувачів із власними темами (Nordic, Dracula, Papirus, Bibata тощо).
+- **Виправлення**:
+  * У `install.sh` додано функцію `backup_original_user_themes()`: перед внесенням будь-яких змін поточні значення користувача записуються у файл `$TARGET_HOME/.config/mac-styling/backup_theme_state.conf` (`ORIG_GTK`, `ORIG_ICON`, `ORIG_CURSOR`, `ORIG_WM`, `ORIG_BUTTONS`, `ORIG_SOUND`, `ORIG_SYS_CURSOR`).
+  * Якщо користувач уже мав macW1Y, файл не перезаписує чистий бекап.
+  * У `uninstall.sh` ці параметри зчитуються на самому початку у глобальні змінні `SAVED_ORIG_*` і повертають користувачу його точну тему та курсор, відновлюючи також `Inherits` у `/usr/share/icons/default/index.theme`.
+  * Створено автоматизований юніт-тест `tests/test_theme_backup_restore.py` (3 тести) — **PASS**.
+  * Наскрізний тест у VM Arch Linux підтвердив повернення `Nordic`, `Papirus` та `Bibata-Modern-Classic`.
+
+### 4. Докази працездатності GNOME 51 на Arch Linux: DING та операції з файлами на Робочому столі
+- Дочірній процес DING `gjs -I app -m app/ding.js -P app -D` успішно стартує у середовищі Wayland/Mutter (`ps aux | grep ding.js` підтверджує активний статус процесу `gjs`).
+- Усі 21 кероване розширення відповідають контрольним сумам lock-файлу (`mac-extension-guard verify` -> 21/21 LOCKED OK).
+- Тест операцій з іконками Робочого столу через нативний GIO API (`tests`):
+  * Створення файлу `~/Desktop/test-file.txt` -> OK.
+  * Запит метаданих GIO `query_info("standard::*")` -> OK.
+  * Перейменування файлу через GIO `set_display_name("test-renamed.txt")` -> OK.
+  * Перетягування / переміщення `gfile.move()` у `~/Desktop/drag-moved.txt` -> OK.
+  * Видалення у Смітник через GIO `gfile.trash()` -> OK.
+  * Перевірка вмісту `trash:///` через GIO enumerator -> знайдено `drag-moved.txt` -> OK.
+
+---
+
+### Фінальні перевірки валідації на хості:
+- `python3 -m unittest discover -s tests -p 'test_*.py'`: **35/35 PASS** (100%).
+- `python3 bin/mac-extension-guard verify`: **21/21 LOCKED OK**.
+- `python3 bin/mac-audit-sync check`: **100% PASS** (5/5 перевірок).
+- `python3 bin/mac-i18n-verify`: **100% PASS**.
+- `perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh`: **0 знайдено**.
+- `python3 bin/test-macw1y-animations.py`: **12/12 PASS**.
+- `tests/portability/check-native.sh`: **PASS** (7/7 бібліотек C).
+- Поточна готовність кросплатформного перенесення: **~92–95%** (Ubuntu 26.04 хост, Debian 13 VM, Fedora 41 VM, Arch Linux VM верифіковані повністю; CachyOS та Ubuntu 24.04 очікують виділених VM-тестів після виправлення завантажувача).

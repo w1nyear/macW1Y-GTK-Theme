@@ -2490,3 +2490,38 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * tests/portability/check-native.sh — PASS (7/7 бібліотек C).
      * Перевірка кирилиці в install.sh — 0 знайдено.
      * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), коміт локальний (без push). Оцінка готовності перенесення: 100% (повністю завершено та верифіковано).
+
+854. 2026-11-20 — Усунення Kernel Panic у GRUB для CachyOS/Arch, виправлення GTK3 CSS `var()` у bin/mac-build-theme, збереження та відновлення кастомних тем користувача:
+   - Змінені файли та рядки:
+     * install.sh (рядки 583–620, 1755–1820)
+     * grub/06_mac_theme_select (рядки 6–45)
+     * bin/mac-build-theme (рядки 3337–3505)
+     * config/gtk-3.0/ (рядки в macw1y-components.css, gtk.css), macW1Y-*/gtk-3.0/
+     * uninstall.sh (рядки 48–60, 310–355)
+     * tests/test_theme_backup_restore.py (рядки 1–95, 3 нові тести)
+     * docs/diagnostics/2026-11-19-portability.md (рядки 394–480)
+   - Опис змін:
+     1) Виправлення критичного збою завантаження CachyOS (Kernel Panic `unknown-block(0,0)` та помилки `recordfail`):
+        * Першопричина: `install.sh` та `sync_system()` копіювали специфічний для Ubuntu файл `grub/10_linux` до `/etc/grub.d/10_linux` та перезаписували `/etc/default/grub`. У скрипті Ubuntu регулярний вираз `sed` розрахований виключно на імена ядер `vmlinuz-<version>` із числовим індексом версії. На Arch та CachyOS ядра називаються `vmlinuz-linux` або `vmlinuz-linux-cachyos`, через що змінна `initrd_real` залишалася пустою, і GRUB генерував завантажувальний пункт **повністю без директиви `initrd`**, що спричиняло падіння ядра у Kernel Panic `unable to mount root fs on unknown-block(0,0)`. Також команда `recordfail` була специфічна для Ubuntu і викликала помилку GRUB.
+        * Виправлення: копіювання `10_linux` та заміну `/etc/default/grub` суворо обмежено Ubuntu (`[ "$DISTRO_ID" = "ubuntu" ]`). Для інших систем (Arch, CachyOS, Fedora, Debian) нативний `10_linux` ніколи не чіпається (а бекап відновлюється), а `/etc/default/grub` модифікується неруйнівно через додавання параметрів оформлення.
+        * У `grub/06_mac_theme_select` вилучено жорстко зашиті UUID розробника (`B621-3DF3` та `f4b30137-e957-4560-bf5a-e8dfd9164736`) та реалізовано динамічний пошук UUID розділів ESP та Root через `findmnt -no UUID`.
+     2) Виправлення GTK3 CSS `'var' is not a valid color name` у bin/mac-build-theme:
+        * Усунено 10 рядків у `generate_gtk3_components_css` з використанням несумісних із GTK 3 CSS змінних `var(...)`. Замінено на валідні статичні кольори та `@theme_text_color`.
+        * Перекомпільовано всі теми та перевірено через `Gtk.CssProvider.load_from_path()` — 0 попереджень, 0 помилок.
+     3) Збереження та точне відновлення власних тем і курсорів користувача (Nordic, Papirus, Bibata тощо):
+        * В `install.sh` додано `backup_original_user_themes()`: збереження оригінальних налаштувань користувача у `backup_theme_state.conf` перед модифікацією.
+        * В `uninstall.sh` збережені параметри зчитуються на самому початку і точно відновлюють GTK, іконки, курсор користувача та системний курсор у `/usr/share/icons/default/index.theme`.
+        * Додано юніт-тест `tests/test_theme_backup_restore.py` (3 тести PASS), наскрізний тест у VM Arch підтвердив точне повернення теми Nordic та курсора Bibata.
+     4) Runtime валідація Arch Linux GNOME 51:
+        * Перевірено стабільний старт дочірнього процесу DING `app/ding.js` під Wayland/Mutter.
+        * Перевірено повний цикл операцій Робочого столу через GIO (створення, метадані, перейменування, переміщення, смітник).
+     5) Оновлено звіт переносності та матрицю: чесно позначено CachyOS та Ubuntu 24.04 як не перевірені у виділених VM до проходження чистих окремих запусків. Поточна готовність перенесення ~92–95%.
+   - Результати перевірок валідації на хості:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 35/35 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS (5/5).
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
+     * python3 bin/test-macw1y-animations.py — 12/12 PASS.
+     * tests/portability/check-native.sh — PASS (7/7 бібліотек C).
+     * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), коміт локальний (без push).

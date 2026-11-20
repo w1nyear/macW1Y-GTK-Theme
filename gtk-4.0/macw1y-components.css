@@ -1031,7 +1031,7 @@ levelbar trough block.filled {
 }
 
 /* =========================================================================
- * 6. Buttons, Segmented Controls & Keycaps (macW1Y default Flat Push Buttons)
+ * 6. Buttons, Segmented Controls & Keycaps (macW1Y Flat Push Buttons)
  * ========================================================================= */
 button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill),
 button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
@@ -1360,7 +1360,7 @@ NautilusHistoryControls button:active {
 }
 
 /* Nautilus View Controls (splitbutton: grid/list + options dropdown) —
-   macW1Y default Finder pill capsule with circular ends */
+   macW1Y Finder pill capsule with circular ends */
 .nautilus-window headerbar splitbutton,
 .nautilus-window headerbar NautilusViewControls splitbutton,
 .nautilus-window headerbar #view_split_button,
@@ -1930,7 +1930,7 @@ searchbar {
 }
 
 /* =========================================================================
- * 8. Dropdowns & Selection Controls (macW1Y default Flat Seamless + Circular Badge)
+ * 8. Dropdowns & Selection Controls (macW1Y Flat Seamless + Circular Badge)
  * ========================================================================= */
 dropdown,
 combobox,
@@ -2022,7 +2022,7 @@ list.boxed-list row combobox {
 }
 
 /* =========================================================================
- * 9. Checkboxes & Radio Buttons (macW1Y default Solid Circle + Accent Dot)
+ * 9. Checkboxes & Radio Buttons (macW1Y Solid Circle + Accent Dot)
  * ========================================================================= */
 checkbutton check {
   min-width: 18px;
@@ -2174,6 +2174,17 @@ menu {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
   padding: 4px;
   min-width: 140px;
+  max-width: 480px;
+  width: auto;
+}
+
+/* Conditional popover indent: only indent plain items when menu has checkmarks/radios */
+popover.menu:has(check) modelbutton:not(:has(check)):not(:has(radio)):not(:has(image)) label,
+popover.menu:has(radio) modelbutton:not(:has(check)):not(:has(radio)):not(:has(image)) label {
+  margin-left: 24px;
+}
+popover.menu:not(:has(check)):not(:has(radio)) modelbutton label {
+  margin-left: 0;
 }
 
 popover modelbutton,
@@ -2888,11 +2899,4 @@ gridview > child:selected .icon-ui-labels-box #label {
 window.nautilus-window gridview > child:selected label.caption,
 gridview > child:selected label.caption {
   color: rgba(255, 255, 255, 0.70);
-}
-
-
-/* Popover menu item indentation */
-popover.menu modelbutton check + label,
-popover.menu modelbutton radio + label {
-  margin-left: 6px;
 }

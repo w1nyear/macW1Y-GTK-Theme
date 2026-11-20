@@ -580,8 +580,51 @@ install_fonts() {
 # ------------------------------------------------------------------------------
 # 3. Themes (GTK3, GTK4, GNOME Shell)
 # ------------------------------------------------------------------------------
+backup_original_user_themes() {
+    local backup_file="$TARGET_HOME/.config/mac-styling/backup_theme_state.conf"
+    if [ ! -f "$backup_file" ]; then
+        mkdir -p "$TARGET_HOME/.config/mac-styling"
+        local orig_gtk orig_icon orig_cursor orig_wm orig_buttons orig_sound orig_sys_cursor
+        orig_gtk=$(run_as_user gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null | tr -d "'")
+        orig_icon=$(run_as_user gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "'")
+        orig_cursor=$(run_as_user gsettings get org.gnome.desktop.interface cursor-theme 2>/dev/null | tr -d "'")
+        orig_wm=$(run_as_user gsettings get org.gnome.desktop.wm.preferences theme 2>/dev/null | tr -d "'")
+        orig_buttons=$(run_as_user gsettings get org.gnome.desktop.wm.preferences button-layout 2>/dev/null | tr -d "'")
+        orig_sound=$(run_as_user gsettings get org.gnome.desktop.sound theme-name 2>/dev/null | tr -d "'")
+        orig_sys_cursor=""
+        if [ -f /usr/share/icons/default/index.theme ]; then
+            orig_sys_cursor=$(grep "^Inherits=" /usr/share/icons/default/index.theme 2>/dev/null | cut -d= -f2 | tr -d '\r')
+        fi
+
+        local fallback_theme="Adwaita"
+        local fallback_cursor="Adwaita"
+        if [ "$DISTRO_ID" = "ubuntu" ]; then
+            fallback_theme="Yaru"
+            fallback_cursor="Yaru"
+        fi
+
+        [ -z "$orig_gtk" ] || [[ "$orig_gtk" =~ macW1Y ]] && orig_gtk="$fallback_theme"
+        [ -z "$orig_icon" ] || [[ "$orig_icon" =~ macW1Y ]] && orig_icon="$fallback_theme"
+        [ -z "$orig_cursor" ] || [[ "$orig_cursor" =~ macW1Y ]] && orig_cursor="$fallback_cursor"
+        [ -z "$orig_wm" ] || [[ "$orig_wm" =~ macW1Y ]] && orig_wm="$fallback_theme"
+        [ -z "$orig_sys_cursor" ] || [[ "$orig_sys_cursor" =~ macW1Y ]] && orig_sys_cursor="$fallback_cursor"
+
+        cat << EOF_THEME_BACKUP > "$backup_file"
+ORIG_GTK="$orig_gtk"
+ORIG_ICON="$orig_icon"
+ORIG_CURSOR="$orig_cursor"
+ORIG_WM="$orig_wm"
+ORIG_BUTTONS="$orig_buttons"
+ORIG_SOUND="$orig_sound"
+ORIG_SYS_CURSOR="$orig_sys_cursor"
+EOF_THEME_BACKUP
+        chown "${TARGET_USER}:${TARGET_USER}" "$backup_file" 2>/dev/null || true
+    fi
+}
+
 install_themes() {
     log_step "Stage 3/13: Installing macW1Y themes (GTK3, GTK4, Shell)"
+    backup_original_user_themes
     local THEMES_DIR="$TARGET_HOME/.themes"
     mkdir -p "$THEMES_DIR"
     
@@ -1709,15 +1752,56 @@ install_grub() {
         sudo cp -r "$SCRIPT_DIR/grub/macw1y-boot-usb/"* "$GRUB_USB_TARGET/"
     fi
     
-    [ -f /etc/default/grub ] && [ ! -f /etc/default/grub.bak_mactheme ] && sudo cp /etc/default/grub /etc/default/grub.bak_mactheme
-    [ -f /etc/grub.d/10_linux ] && [ ! -f /etc/grub.d/10_linux.bak_mactheme ] && sudo cp /etc/grub.d/10_linux /etc/grub.d/10_linux.bak_mactheme
-    
-    if [ -f "$SCRIPT_DIR/grub/grub.default" ]; then
-        sudo cp "$SCRIPT_DIR/grub/grub.default" /etc/default/grub
+    if [ "$DISTRO_ID" = "ubuntu" ]; then
+        [ -f /etc/default/grub ] && [ ! -f /etc/default/grub.bak_mactheme ] && sudo cp /etc/default/grub /etc/default/grub.bak_mactheme
+        [ -f /etc/grub.d/10_linux ] && [ ! -f /etc/grub.d/10_linux.bak_mactheme ] && sudo cp /etc/grub.d/10_linux /etc/grub.d/10_linux.bak_mactheme
+
+        if [ -f "$SCRIPT_DIR/grub/grub.default" ]; then
+            sudo cp "$SCRIPT_DIR/grub/grub.default" /etc/default/grub
+        else
+            sudo sed -i "s/^GRUB_THEME=.*/#GRUB_THEME=\"\/boot\/grub\/themes\/macw1y-boot\/theme.txt\"/" /etc/default/grub
+        fi
+
+        if [ -f "$SCRIPT_DIR/grub/10_linux" ]; then
+            sudo cp "$SCRIPT_DIR/grub/10_linux" /etc/grub.d/10_linux
+            sudo chmod 755 /etc/grub.d/10_linux
+        fi
+
+        if [ -f "$SCRIPT_DIR/grub/30_uefi-firmware" ]; then
+            sudo cp "$SCRIPT_DIR/grub/30_uefi-firmware" /etc/grub.d/30_uefi-firmware
+            sudo chmod 644 /etc/grub.d/30_uefi-firmware
+        fi
+
+        if [ -f "$SCRIPT_DIR/grub/patch_grub_keys.py" ]; then
+            log_info "Applying binary key navigation patches for GRUB..."
+            sudo python3 "$SCRIPT_DIR/grub/patch_grub_keys.py" 2>/dev/null || true
+        fi
     else
-        sudo sed -i "s/^GRUB_THEME=.*/#GRUB_THEME=\"\/boot\/grub\/themes\/macw1y-boot\/theme.txt\"/" /etc/default/grub
+        # Non-Ubuntu (Debian, Fedora, Arch, CachyOS):
+        # 1. Restore native 10_linux if previously overwritten
+        if [ -f /etc/grub.d/10_linux.bak_mactheme ]; then
+            sudo cp /etc/grub.d/10_linux.bak_mactheme /etc/grub.d/10_linux
+            sudo rm -f /etc/grub.d/10_linux.bak_mactheme
+        fi
+        # 2. Restore native /etc/default/grub if it was overwritten with Ubuntu template
+        if [ -f /etc/default/grub.bak_mactheme ] && grep -q 'GRUB_DEFAULT="Ubuntu"' /etc/default/grub 2>/dev/null; then
+            sudo cp /etc/default/grub.bak_mactheme /etc/default/grub
+        fi
+        # 3. Non-destructively configure macW1Y theme and gfxmode in /etc/default/grub
+        if [ -f /etc/default/grub ]; then
+            [ ! -f /etc/default/grub.bak_mactheme ] && sudo cp /etc/default/grub /etc/default/grub.bak_mactheme
+            if grep -q '^GRUB_THEME=' /etc/default/grub; then
+                sudo sed -i 's|^GRUB_THEME=.*|#GRUB_THEME="/boot/grub/themes/macw1y-boot/theme.txt"|' /etc/default/grub
+            fi
+            if ! grep -q '^GRUB_GFXMODE=' /etc/default/grub; then
+                echo 'GRUB_GFXMODE="3840x2160,2560x1440,1920x1080,auto"' | sudo tee -a /etc/default/grub >/dev/null
+            fi
+            if ! grep -q '^GRUB_GFXPAYLOAD_LINUX=' /etc/default/grub; then
+                echo 'GRUB_GFXPAYLOAD_LINUX="keep"' | sudo tee -a /etc/default/grub >/dev/null
+            fi
+        fi
     fi
-    
+
     if [ -f "$SCRIPT_DIR/grub/06_mac_theme_select" ]; then
         sudo cp "$SCRIPT_DIR/grub/06_mac_theme_select" /etc/grub.d/06_mac_theme_select
         sudo chmod 755 /etc/grub.d/06_mac_theme_select
@@ -1728,24 +1812,9 @@ install_grub() {
         sudo chmod 755 /etc/grub.d/08_mac_usb_entry
     fi
 
-    if [ -f "$SCRIPT_DIR/grub/10_linux" ]; then
-        sudo cp "$SCRIPT_DIR/grub/10_linux" /etc/grub.d/10_linux
-        sudo chmod 755 /etc/grub.d/10_linux
-    fi
-
-    if [ -f "$SCRIPT_DIR/grub/30_uefi-firmware" ]; then
-        sudo cp "$SCRIPT_DIR/grub/30_uefi-firmware" /etc/grub.d/30_uefi-firmware
-        sudo chmod 644 /etc/grub.d/30_uefi-firmware
-    fi
-
     if [ -f "$SCRIPT_DIR/grub/40_custom" ]; then
         sudo cp "$SCRIPT_DIR/grub/40_custom" /etc/grub.d/40_custom
         sudo chmod 755 /etc/grub.d/40_custom
-    fi
-
-    if [ -f "$SCRIPT_DIR/grub/patch_grub_keys.py" ]; then
-        log_info "Applying binary key navigation patches for GRUB..."
-        sudo python3 "$SCRIPT_DIR/grub/patch_grub_keys.py" 2>/dev/null || true
     fi
 
     if [ -f "$SCRIPT_DIR/grub/generate_icons.py" ]; then
@@ -2359,15 +2428,18 @@ EOF
     if [ -d "$SCRIPT_DIR/grub/macw1y-boot-usb" ]; then
         sync_directory_tree "$SCRIPT_DIR/grub/macw1y-boot-usb" "/boot/grub/themes/macw1y-boot-usb" true
     fi
-    [ -f "$SCRIPT_DIR/grub/grub.default" ] && sync_or_update_file "$SCRIPT_DIR/grub/grub.default" "/etc/default/grub" true
+    if [ "$DISTRO_ID" = "ubuntu" ]; then
+        [ -f "$SCRIPT_DIR/grub/grub.default" ] && sync_or_update_file "$SCRIPT_DIR/grub/grub.default" "/etc/default/grub" true
+        [ -f "$SCRIPT_DIR/grub/10_linux" ] && sync_or_update_file "$SCRIPT_DIR/grub/10_linux" "/etc/grub.d/10_linux" true
+        [ -f "$SCRIPT_DIR/grub/30_uefi-firmware" ] && sync_or_update_file "$SCRIPT_DIR/grub/30_uefi-firmware" "/etc/grub.d/30_uefi-firmware" true
+        sudo chmod 755 /etc/grub.d/10_linux 2>/dev/null || true
+        sudo chmod 644 /etc/grub.d/30_uefi-firmware 2>/dev/null || true
+    fi
     [ -f "$SCRIPT_DIR/grub/06_mac_theme_select" ] && sync_or_update_file "$SCRIPT_DIR/grub/06_mac_theme_select" "/etc/grub.d/06_mac_theme_select" true
     [ -f "$SCRIPT_DIR/grub/08_mac_usb_entry" ] && sync_or_update_file "$SCRIPT_DIR/grub/08_mac_usb_entry" "/etc/grub.d/08_mac_usb_entry" true
-    [ -f "$SCRIPT_DIR/grub/10_linux" ] && sync_or_update_file "$SCRIPT_DIR/grub/10_linux" "/etc/grub.d/10_linux" true
-    [ -f "$SCRIPT_DIR/grub/30_uefi-firmware" ] && sync_or_update_file "$SCRIPT_DIR/grub/30_uefi-firmware" "/etc/grub.d/30_uefi-firmware" true
     [ -f "$SCRIPT_DIR/grub/40_custom" ] && sync_or_update_file "$SCRIPT_DIR/grub/40_custom" "/etc/grub.d/40_custom" true
     [ -f "$SCRIPT_DIR/systemd/mac-grub-status.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-grub-status.service" "/etc/systemd/system/mac-grub-status.service" true
-    sudo chmod 755 /etc/grub.d/06_mac_theme_select /etc/grub.d/08_mac_usb_entry /etc/grub.d/10_linux /etc/grub.d/40_custom 2>/dev/null || true
-    sudo chmod 644 /etc/grub.d/30_uefi-firmware 2>/dev/null || true
+    sudo chmod 755 /etc/grub.d/06_mac_theme_select /etc/grub.d/08_mac_usb_entry /etc/grub.d/40_custom 2>/dev/null || true
     if command -v update-grub >/dev/null 2>&1; then
         sudo update-grub 2>/dev/null || true
     elif command -v grub2-mkconfig >/dev/null 2>&1; then

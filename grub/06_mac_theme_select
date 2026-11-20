@@ -3,8 +3,10 @@ set -e
 
 # macW1Y Startup Manager: Theme selector & dynamic USB / Thunderbolt device detection
 
-esp_uuid="$(findmnt -no UUID /boot/efi 2>/dev/null || echo "B621-3DF3")"
+esp_uuid="$(findmnt -no UUID /boot/efi 2>/dev/null || findmnt -no UUID /efi 2>/dev/null || findmnt -no UUID /boot 2>/dev/null || true)"
 esp_uuid_lower="$(echo "$esp_uuid" | tr '[:upper:]' '[:lower:]')"
+root_uuid="$(findmnt -no UUID / 2>/dev/null || true)"
+root_uuid_lower="$(echo "$root_uuid" | tr '[:upper:]' '[:lower:]')"
 
 cat << EOF
 # Ensure all partition and filesystem drivers are loaded for USB, Thunderbolt, NVMe and external SATA
@@ -34,7 +36,13 @@ set mac_ext2_class="usb2"
 for dev in (*); do
     if [ "\$dev" != "(\$root)" -a "\$dev" != "proc" -a "\$dev" != "memdisk" ]; then
         probe --fs-uuid "\$dev" --set=dev_uuid
-        if [ "\$dev_uuid" != "$esp_uuid" -a "\$dev_uuid" != "$esp_uuid_lower" -a "\$dev_uuid" != "\$root_uuid" -a "\$dev_uuid" != "f4b30137-e957-4560-bf5a-e8dfd9164736" ]; then
+        set is_own_dev=0
+        if [ -n "$esp_uuid" -a "\$dev_uuid" = "$esp_uuid" ]; then set is_own_dev=1; fi
+        if [ -n "$esp_uuid_lower" -a "\$dev_uuid" = "$esp_uuid_lower" ]; then set is_own_dev=1; fi
+        if [ -n "$root_uuid" -a "\$dev_uuid" = "$root_uuid" ]; then set is_own_dev=1; fi
+        if [ -n "$root_uuid_lower" -a "\$dev_uuid" = "$root_uuid_lower" ]; then set is_own_dev=1; fi
+        if [ "\$dev_uuid" = "\$root_uuid" ]; then set is_own_dev=1; fi
+        if [ "\$is_own_dev" = "0" ]; then
             set dev_boot_path=""
             for p in /EFI/BOOT/BOOTX64.EFI /efi/boot/bootx64.efi /EFI/BOOT/bootx64.efi /EFI/BOOT/BOOTX64.efi /EFI/BOOT/grubx64.efi /efi/boot/grubx64.efi /EFI/Microsoft/Boot/bootmgfw.efi /efi/microsoft/boot/bootmgfw.efi /EFI/ubuntu/grubx64.efi /efi/ubuntu/grubx64.efi /EFI/fedora/grubx64.efi /efi/arch/grubx64.efi /EFI/systemd/systemd-bootx64.efi /bootmgr.efi /ventoy/ventoy.disk; do
                 if [ -f "\$dev\$p" ]; then

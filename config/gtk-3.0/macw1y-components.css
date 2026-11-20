@@ -76,7 +76,7 @@ scale slider {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
 }
 
-/* GTK 3 Base Push Buttons (macW1Y default Flat Push Buttons) */
+/* GTK 3 Base Push Buttons (macW1Y Flat Push Buttons) */
 button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill) {
   min-height: 24px;
   padding: 3px 12px;
@@ -124,7 +124,7 @@ button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not
   color: @theme_fg_color;
 }
 
-/* macW1Y default Universal 1:1 Circular Icon & Action Buttons (Etap 655) */
+/* macW1Y Universal 1:1 Circular Icon & Action Buttons (Etap 655) */
 headerbar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button),
 .titlebar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button),
 headerbar button.image-button,
@@ -530,7 +530,7 @@ widget.thumbnail {
 }
 
 /* =========================================================================
- * Dropdowns & Selection Controls (macW1Y default Circular Badge Dropdowns)
+ * Dropdowns & Selection Controls (macW1Y Circular Badge Dropdowns)
  * ========================================================================= */
 combobox,
 combobox > box.linked > button,
@@ -589,7 +589,7 @@ combobox > box.linked > button:checked arrow {
 }
 
 /* =========================================================================
- * Checkboxes & Radio Buttons (macW1Y default Solid Circle + Accent Dot)
+ * Checkboxes & Radio Buttons (macW1Y Solid Circle + Accent Dot)
  * ========================================================================= */
 checkbutton check {
   min-width: 18px;
