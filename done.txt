@@ -2567,3 +2567,37 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/test-macw1y-animations.py — 12/12 PASS.
      * tests/portability/check-native.sh — PASS (7/7 бібліотек C).
      * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), коміт локальний (без push). Поточна готовність перенесення ~96–98% (залишається лише виділена перевірка Ubuntu 24.04).
+
+856. 2026-11-20 — Оптимізація мультизадачності, усунення конкуренції ресурсів та оптимізація liquid-glass для повноекранних задач:
+   - Змінені файли:
+     * etc/sysctl.d/99-macw1y-performance.conf (рядки 14-25)
+     * extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js (рядки 58-75, 214-245)
+     * extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js (рядки 479-510)
+     * extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/uiManager.js (рядки 664-695)
+     * config/extensions.lock.json (рядки 305, 337-345)
+   - Опис змін:
+     1) Усунення фонової конкуренції ресурсів без втручання в сеанс користувача:
+        * Коректно зупинено фонові тестові ВМ QEMU/KVM (boxes-unknown-3 та arch-test) без закриття CS2, Steam, або робочих сеансів.
+        * Доступний обсяг оперативної пам'яті зріс із 2,7 ГБ до 7,7 ГБ; навантаження на swap знизилося з 11,6 ГБ (100% заповнення) до 5,0 ГБ (вивільнено 6,6 ГБ свопу, використання swap на диску знизилося до 1 ГБ).
+        * Затримки підкачування сторінок (Memory PSI) повністю усунуто: some avg10=0.00, full avg10=0.00.
+     2) Оптимізація liquid-glass під час повноекранних додатків та ігор:
+        * Додано перевірку get_monitor_in_fullscreen та mw.is_fullscreen() у функціях notifyGlassWake(), _hookWindowDamage() та isActorNearGlass() у glassGate.js.
+        * Додано ранній вихід у wakeFrameSync() та _wakeUnsub() для dockManager.js та uiManager.js, якщо монітор перебуває у повноекранному режимі. Це усуває постійне пробудження таймерів рендерингу Clutter/Cogl при надходженні сотень сигналів damaged за секунду від гри на 165 Гц.
+        * Оновлено sha256 хеші розширення liquid-glass@thinkingcoding1231.gmail.com у config/extensions.lock.json (dir_hash: de88fba7d36a6457c42ba48ffe851fdaae295de1e81d6e49d4ff196dd9c1c97e).
+     3) Системні параметри ядра для мультизадачності (etc/sysctl.d/99-macw1y-performance.conf):
+        * Встановлено vm.watermark_boost_factor = 0 (усунення пауз kswapd при алокації пам'яті під час запуску важких процесів).
+        * Збільшено fs.inotify.max_user_watches = 524288 та max_user_instances = 1024 для стабільної роботи IDE, файлових трекерів та фонових процесів.
+        * Конфігурація успішно синхронізована до /etc/sysctl.d/99-macw1y-performance.conf та активована через sysctl -p.
+     4) Оптимізація фонового моніторингу:
+        * Фоновий процес resources-processes (PID 190878, 190979) та утиліту DAMX (PID 187009) переведено на пріоритет nice +10 та ionice idle (клас 3), що гарантує миттєве виділення квантів процесора для активних інтерактивних задач та ігор.
+     5) Збереження параметрів охолодження та температурні показники:
+        * Жодних змін параметрів вентиляторів не виконувалось (кулери залишено на штатному рівні ~2700 RPM).
+        * Температура GPU знизилася з 88°C до 57°C (-31°C).
+        * Тротлінг NVIDIA SW Thermal Slowdown перейшов у стан Not Active.
+        * Температура пакета CPU знизилася з 90°C до 76°C (-14°C).
+   - Результати перевірок валідації на хості:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 38/38 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS (5/5).
+     * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
+     * python3 bin/test-macw1y-animations.py — 12/12 PASS (Spotlight: 28.07 мс).

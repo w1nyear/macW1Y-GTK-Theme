@@ -56,6 +56,14 @@ export function removeGlassWakeListener(fn) {
 }
 
 export function notifyGlassWake(actor, reason = null) {
+    if (actor && reason !== 'fullscreen' && reason !== 'restacked') {
+        try {
+            const mw = actor.get_meta_window?.();
+            if (mw && (mw.is_fullscreen() || global.display?.get_monitor_in_fullscreen?.(mw.get_monitor()))) {
+                return;
+            }
+        } catch (_) {}
+    }
     for (const fn of _wakeListeners) {
         try {
             fn(actor, reason);
@@ -209,6 +217,12 @@ function _hookWindowDamage(actor) {
             return;
         _backdropDamageHooked.add(actor);
         actor.connect('damaged', () => {
+            try {
+                const mw = actor.get_meta_window?.();
+                if (mw && (mw.is_fullscreen() || global.display?.get_monitor_in_fullscreen?.(mw.get_monitor()))) {
+                    return;
+                }
+            } catch (_) {}
             actor._lastDamageUs = GLib.get_monotonic_time();
             noteWindowContentDamaged();
             notifyGlassWake(actor);
@@ -230,6 +244,12 @@ export function isActorNearGlass(windowActor, glassActor) {
             return false;
         if (!glassActor || !_isActorValid(glassActor))
             return false;
+        try {
+            const mw = windowActor.get_meta_window?.();
+            if (mw && mw.is_fullscreen()) {
+                return false;
+            }
+        } catch (_) {}
 
         const wRect = windowActor.get_buffer_rect?.();
         let wX = wRect?.x;

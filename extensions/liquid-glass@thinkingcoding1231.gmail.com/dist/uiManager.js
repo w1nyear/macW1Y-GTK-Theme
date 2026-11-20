@@ -662,6 +662,11 @@ export class UIManager {
             return GLib.SOURCE_REMOVE;
         };
         this.wakeFrameSync = () => {
+            try {
+                if (global.display?.get_monitor_in_fullscreen?.(Main.layoutManager.primaryIndex)) {
+                    return;
+                }
+            } catch (_) {}
             this._idleCount = 0;
             if (this._idleTimeoutId) {
                 GLib.source_remove(this._idleTimeoutId);
@@ -674,6 +679,12 @@ export class UIManager {
         this._wakeUnsub = (damagedActor, reason) => {
             if (this._torndown || !this.bgActor || !this.targetActor?.mapped) return;
             if (this.menu && !this.menu.isOpen) return;
+            try {
+                if (global.display?.get_monitor_in_fullscreen?.(Main.layoutManager.primaryIndex) &&
+                    !['restacked', 'fullscreen', 'overview', 'layout'].includes(reason)) {
+                    return;
+                }
+            } catch (_) {}
             if (['restacked', 'fullscreen', 'overview', 'layout'].includes(reason)) {
                 glassForceRefresh?.(this.bgActor);
                 try { this._windowCloneManager?.rebuildClones?.(); } catch (_) {}
