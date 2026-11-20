@@ -292,9 +292,9 @@ window box.inline-toolbar#devtab-grid-toolbar button:last-child:hover,
 window box.inline-toolbar#devtab-grid-toolbar button.destructive-action:hover,
 button.image-button:not(.text-button):hover,
 button.circular:hover {
-  background-color: var(--mac-row-hover, rgba(255, 255, 255, 0.16));
-  border-color: var(--mac-card-border, rgba(255, 255, 255, 0.12));
-  color: var(--mac-text-primary, @theme_text_color);
+  background-color: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: @theme_text_color;
   border-radius: 9999px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
@@ -371,9 +371,9 @@ button.image-button:not(.text-button):active,
 button.image-button:not(.text-button):checked,
 button.circular:active,
 button.circular:checked {
-  background-color: var(--mac-row-active, rgba(255, 255, 255, 0.24));
-  border-color: var(--mac-card-border, rgba(255, 255, 255, 0.16));
-  color: var(--mac-text-primary, @theme_text_color);
+  background-color: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: @theme_text_color;
   border-radius: 9999px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
 }
@@ -448,14 +448,14 @@ entry {
   min-height: 28px;
   padding: 2px 10px;
   border-radius: 8px;
-  background-color: var(--mac-input-bg, rgba(0, 0, 0, 0.04));
-  border: 1px solid var(--mac-input-border, rgba(0, 0, 0, 0.12));
-  color: var(--mac-text-primary, @theme_text_color);
+  background-color: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: @theme_text_color;
 }
 
 entry:focus {
-  background-color: var(--mac-input-focus-bg, #ffffff);
-  border-color: var(--mac-input-focus-border, rgba(255, 106, 0, 0.50));
+  background-color: #ffffff;
+  border-color: rgba(255, 106, 0, 0.50);
 }
 
 /* GTK 3 Scrollbars */

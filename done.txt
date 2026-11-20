@@ -2373,3 +2373,18 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
    - config/extensions.lock.json: джерело bundled_snapshot та новий хеш. Копію DING і lock синхронізовано на хості без перезапуску Shell. Guard 21/21, audit-sync 100% PASS, анімаційний прогін 12/12, bash -n PASS.
    - Fedora 41: DING ввімкнувся, запущено окремий gjs-процес, усунено знайдений JS-збій. Візуальні тести та GTK3-попередження теми залишаються відкритими. Headless-перевірка не замінює графічного сеансу.
    - Докладний звіт: docs/diagnostics/2026-11-19-portability.md. Готовність приблизно 75%. done.txt скопійовано на Desktop, коміт локальний, без push.
+
+849. 2026-11-20 — Виправлення GTK3 CSS та адаптація DING до матриці GNOME 51:
+   - macW1Y-Dark/gtk-3.0/macw1y-components.css, macW1Y-Dark-solid/gtk-3.0/macw1y-components.css, macW1Y-Light/gtk-3.0/macw1y-components.css, macW1Y-Light-solid/gtk-3.0/macw1y-components.css, gtk-3.0/macw1y-components.css, config/gtk-3.0/macw1y-components.css (рядки 295–297, 374–376, 451–458): видалено несумісну з GTK 3 конструкцію CSS Custom Properties `var(...)` ('var' is not a valid color name), замінено на статичні кольори та @theme_text_color. Теми синхронізовано з ~/.themes/ та /usr/share/themes/. У Fedora 41 перевірено завантаження CSS через Gtk.CssProvider — 0 попереджень.
+   - extensions/ding@rastersoft.com/metadata.json (рядок 4): додано сумісність із GNOME 51 після аудиту стабільних API (layoutManager, get_window_actors, GJS ES modules). Всі 21 керовані розширення тепер мають однакову матрицю GNOME 46–51.
+   - config/extensions.lock.json: оновлено sha256 (a17e1e97686d5b6b4a6c3278e077122c01d0d74905ec473eb21347b9a592cef5) та shell_compatibility для ding@rastersoft.com. Розгорнуто до /usr/share/mactheme/config/extensions.lock.json.
+   - tests/test_portability.py (рядок 21): оновлено тест матриці сумісності, версія 51 тепер повністю сумісна для всіх розширень репозиторію.
+   - 7 нативних бібліотек C перевірено тестом tests/portability/check-native.sh: PASS (збірка та відсутність невизначених символів).
+   - Результати перевірок валідації:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 26/26 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * python3 bin/test-macw1y-animations.py — 12/12 PASS (Spotlight 22.14 мс < 30 мс).
+     * Перевірка кирилиці в install.sh — 0 знайдено.
+     * Сеанс користувача збережено (без виходу/блокування/перезавантаження), локальний коміт (без git push). Готовність перенесення ~80%.

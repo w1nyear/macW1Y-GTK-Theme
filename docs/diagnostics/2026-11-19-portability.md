@@ -246,3 +246,26 @@ Headless GNOME не завжди завершує звичайну startup-по�
 Хост: 26/26 тестів, guard 21/21, audit-sync 100% PASS, анімації 12/12 у цьому
 прогоні; попередню нестабільність швидкості це не спростовує. Bash-синтаксис
 перевірено. i18n — лише структура/fallback. Готовність приблизно 75%.
+
+## 20 листопада: усунення несумісності GTK3 CSS та адаптація DING до GNOME 51
+
+- Усунено синтаксичні помилки GTK3 CSS `'var' is not a valid color name` у шести файлах
+  `gtk-3.0/macw1y-components.css` (`macW1Y-Dark`, `macW1Y-Dark-solid`, `macW1Y-Light`,
+  `macW1Y-Light-solid`, `gtk-3.0/`, `config/gtk-3.0/`). Замінено `var(...)` на прямі статичні
+  fallback-значення (`rgba(255, 255, 255, ...)` / `rgba(0, 0, 0, ...)` / `#ffffff`) та
+  `@theme_text_color`. Зміни синхронізовано до `~/.themes/` та `/usr/share/themes/`.
+  У середовищі Fedora 41 завантаження через `Gtk.CssProvider` підтвердило повну відсутність
+  попереджень GTK3 CSS.
+- Проведено аудит API розширення DING (`extensions/ding@rastersoft.com`):
+  виклики `Main.layoutManager` (`_startingUp`, `monitors`, `monitors-changed`, `startup-complete`),
+  перехоплення `Shell.Global.prototype.get_window_actors`, модуль `visibleArea.js` та окремий GTK3
+  процес не залежать від версійних зламів GNOME 51. До `metadata.json` додано підтримку `"51"`.
+  Усі 21 керовані розширення тепер строго покривають діапазон GNOME 46–51.
+- Оновлено цілісність у `config/extensions.lock.json` (новий хеш `a17e1e97686d5b6b4a6c3278e077122c01d0d74905ec473eb21347b9a592cef5`
+  для `ding@rastersoft.com`), розгорнуто до `/usr/share/mactheme/config/extensions.lock.json`.
+  `mac-extension-guard verify` повертає **21/21 LOCKED OK**.
+- Оновлено модульні тести у `tests/test_portability.py`: перевірка матриці сумісності GNOME 46–51
+  проходить для всього набору розширень. Загальний результат: **26/26 PASS**.
+- Тест 7 нативних бібліотек C `tests/portability/check-native.sh`: **PASS** (збірка та символи).
+- Анімаційний тест `test-macw1y-animations.py`: **12/12 PASS** (Spotlight 22.14 мс).
+- Оцінка готовності перенесення підвищена до **~80%**.
