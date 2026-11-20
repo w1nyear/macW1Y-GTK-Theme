@@ -13,10 +13,22 @@ import re
 import hashlib
 from pathlib import Path
 
+def find_repo_dir():
+    candidates = [
+        Path(__file__).resolve().parent.parent,
+        Path.cwd(),
+        Path(os.environ.get("MACW1Y_REPO", "")),
+        Path(os.path.expanduser("~/macW1Y")),
+        Path(os.path.expanduser("~/MACTHEMEFILES")),
+        Path("/usr/share/mactheme"),
+    ]
+    for c in candidates:
+        if c and (c / "dconf" / "gnome-all.dconf").exists():
+            return c
+    return Path(__file__).resolve().parent.parent
+
 # Base paths
-REPO_DIR = Path(__file__).resolve().parent.parent
-if not (REPO_DIR / "dconf").exists():
-    REPO_DIR = Path("/home/vitaliy/MACTHEMEFILES")
+REPO_DIR = find_repo_dir()
 BIN_DIR = REPO_DIR / "bin"
 DCONF_DIR = REPO_DIR / "dconf"
 LIB_DIR = REPO_DIR / "lib"

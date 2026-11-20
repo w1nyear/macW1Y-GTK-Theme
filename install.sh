@@ -1342,6 +1342,13 @@ install_gamemode() {
         fi
     done
 
+    # 1.1 Deploy dconf templates for system-wide audit baseline
+    sudo mkdir -p /usr/share/mactheme/dconf
+    if [ -d "$SCRIPT_DIR/dconf" ]; then
+        sudo cp -f "$SCRIPT_DIR/dconf"/*.dconf /usr/share/mactheme/dconf/ 2>/dev/null || true
+        sudo chmod 644 /usr/share/mactheme/dconf/* 2>/dev/null || true
+    fi
+
     # Steam wrapper: installed only if Steam is present on the system
     if [ -x "/snap/bin/steam" ] || [ -x "/usr/games/steam" ] || [ -x "/usr/bin/steam" ] || { which flatpak >/dev/null 2>&1 && flatpak list 2>/dev/null | grep -q "com.valvesoftware.Steam"; }; then
         if [ -f "$SCRIPT_DIR/bin/steam" ]; then

@@ -2388,3 +2388,22 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/test-macw1y-animations.py — 12/12 PASS (Spotlight 22.14 мс < 30 мс).
      * Перевірка кирилиці в install.sh — 0 знайдено.
      * Сеанс користувача збережено (без виходу/блокування/перезавантаження), локальний коміт (без git push). Готовність перенесення ~80%.
+
+850. 2026-11-20 — Динамічний пошук репозиторію в mac-audit-sync та системне розгортання dconf-шаблонів:
+   - bin/mac-audit-sync (рядки 16–28, 31): додано функцію find_repo_dir() із послідовною перевіркою кореня скрипту, Path.cwd(), $MACW1Y_REPO, ~/macW1Y, ~/MACTHEMEFILES та системного каталогу /usr/share/mactheme. Усунено жорстко зашитий шлях /home/vitaliy/MACTHEMEFILES, що спричиняв FileNotFoundError під час запуску аудиту з-під інших облікових записів (наприклад, tester у віртуальних машинах Debian 13 та Fedora).
+   - install.sh (розділ 1.1 етапу install_gamemode, рядки 1345–1350): додано копіювання файлів dconf/*.dconf до загальносистемного каталогу /usr/share/mactheme/dconf із правами 644, що забезпечує коректну роботу mac-audit-sync незалежно від наявності репозиторію в домашній директорії користувача.
+   - Скрипти та шаблони синхронізовано на хості (/usr/local/bin/mac-audit-sync та /usr/share/mactheme/dconf/).
+   - Тестування в Debian 13 VM (Trixie):
+     * Повна інсталяція sudo ./install.sh --all завершилася успішно (INSTALL FINISHED OK).
+     * Перевірка цілісності mac-audit-sync check — 100% PASS.
+     * Перевірка розширень mac-extension-guard verify — 21/21 LOCKED OK.
+     * Перевірка 7 нативних бібліотек C (tests/portability/check-native.sh) — PASS.
+     * 26/26 unit-тестів пройшли успішно на guest Debian 13.
+   - Результати перевірок валідації на хості:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 26/26 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * python3 bin/test-macw1y-animations.py — 12/12 PASS (Spotlight 10.12 мс < 30 мс).
+     * Перевірка кирилиці в install.sh — 0 знайдено.
+     * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), коміт локальний (без push).
