@@ -14,6 +14,30 @@
 
 ---
 
+## Screenshots
+
+### Desktop
+
+![Desktop](lookatme/desktop.png)
+
+### Spotlight
+
+![Spotlight](lookatme/spotlight.png)
+
+### Launchpad
+
+![Launchpad](lookatme/laucnhpad.png)
+
+### Control Center
+
+![Control Center](lookatme/control.png)
+
+### Full desktop with apps
+
+![Full desktop with apps](lookatme/full.png)
+
+---
+
 ## Supported Systems & Compatibility Matrix
 
 | Component | Supported Targets | Technical Details |

@@ -2525,3 +2525,7 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/test-macw1y-animations.py — 12/12 PASS.
      * tests/portability/check-native.sh — PASS (7/7 бібліотек C).
      * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), коміт локальний (без push).
+
+855. 2026-11-20 — Галерея на початку README:
+   - README.md: після опису додано Desktop, Spotlight, Launchpad, Control Center, Full desktop with apps із п’ятьма зображеннями lookatme. Відео у поточному README вже відсутнє. Використано фактичні назви desktop.png та laucnhpad.png.
+   - Перевірено існування всіх п’яти файлів та git diff --check. done.txt синхронізовано на Desktop; коміт без push.
