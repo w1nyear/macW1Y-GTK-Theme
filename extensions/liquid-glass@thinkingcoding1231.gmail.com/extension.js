@@ -1,18 +1,18 @@
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import { UIManager } from './dist/uiManager.js?v=fix2';
+import { UIManager } from './dist/uiManager.js?v=fix3';
 import { PanelMenuManager } from './dist/panelMenuManager.js?v=fix2';
-import { DashManager } from './dist/dockManager.js?v=fix5';
-import { NotificationManager } from './dist/notificationManager.js?v=fix2';
-import { QuickSettingsManager } from './dist/quickSettingsManager.js?v=fix2';
-import { OsdManager } from './dist/osdManager.js?v=fix2';
+import { DashManager } from './dist/dockManager.js?v=fix6';
+import { NotificationManager } from './dist/notificationManager.js?v=fix3';
+import { QuickSettingsManager } from './dist/quickSettingsManager.js?v=fix3';
+import { OsdManager } from './dist/osdManager.js?v=fix3';
 import { ApplicationManager } from './dist/applicationManager.js?v=fix6';
 import { WindowListService } from './dist/windowListService.js?v=fix2';
 import { Logger } from './dist/logger.js?v=fix2';
 import { setUtilsLogger, adaptiveColorTweener, destroySharedBackgroundSource,
   releaseAllClonedWindowActors, installGlassSceneListeners,
-  removeGlassSceneListeners } from './dist/utils.js?v=fix3';
-import { startGlassRingSampler, flushGlassRing } from './dist/liquidEffect.js?v=fix2';
+  removeGlassSceneListeners } from './dist/utils.js?v=fix4';
+import { startGlassRingSampler, flushGlassRing } from './dist/liquidEffect.js?v=fix3';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';

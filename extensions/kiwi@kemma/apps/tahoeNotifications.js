@@ -51,6 +51,9 @@ let ensureGlassAllocated = () => {};
 let glassRefreshDue = null;
 let glassRefreshDone = null;
 let glassForceRefresh = null;
+let addGlassWakeListener = null;
+let removeGlassWakeListener = null;
+let isActorNearGlass = null;
 
 const _LG_BASE = 'file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist';
 
@@ -192,6 +195,12 @@ import(_LG_BASE + '/utils.js').then(m => {
         glassRefreshDone = m.glassRefreshDone;
     if (m.glassForceRefresh)
         glassForceRefresh = m.glassForceRefresh;
+    if (m.addGlassWakeListener)
+        addGlassWakeListener = m.addGlassWakeListener;
+    if (m.removeGlassWakeListener)
+        removeGlassWakeListener = m.removeGlassWakeListener;
+    if (m.isActorNearGlass)
+        isActorNearGlass = m.isActorNearGlass;
     _utilsDone();
 }).catch(e => {
     _toastGlassDead = true;
@@ -1278,6 +1287,41 @@ function _readIntSetting(s, key, dflt) {
 
 
 
+let _toastWakeUnsub = null;
+function _hookToastWake() {
+    if (_toastWakeUnsub || !addGlassWakeListener)
+        return;
+    _toastWakeUnsub = (damagedActor, reason) => {
+        if (!_toastBox || _toastBox.get_children().length === 0 || !_toastStack)
+            return;
+        if (['restacked', 'fullscreen', 'overview', 'layout', 'overview-scroll', 'overview-transition', 'window-moved'].includes(reason)) {
+            glassForceRefresh?.(_toastStack.bgActor);
+            try { _toastStack.wcm?.rebuildClones?.(); } catch (_) {}
+            try { _toastStack.uiSampler?.rebindSelf?.(); } catch (_) {}
+            try { _toastStack.effect?.markBackdropDirty?.(); } catch (_) {}
+            _toastTickStart();
+            return;
+        }
+        if (!damagedActor || isActorNearGlass?.(damagedActor, _toastBox) || isActorNearGlass?.(damagedActor, _toastStack.bgActor)) {
+            glassForceRefresh?.(_toastStack.bgActor);
+            try { _toastStack.effect?.markBackdropDirty?.(); } catch (_) {}
+            _toastTickStart();
+        }
+    };
+    try {
+        addGlassWakeListener(_toastWakeUnsub);
+    } catch (_) {}
+}
+
+function _unhookToastWake() {
+    if (_toastWakeUnsub) {
+        try {
+            removeGlassWakeListener?.(_toastWakeUnsub);
+        } catch (_) {}
+        _toastWakeUnsub = null;
+    }
+}
+
 function _ensureToastGlass() {
     if (_toastStack)
         return true;
@@ -1297,6 +1341,7 @@ function _ensureToastGlass() {
         try { s.uiSampler?.addExclusion?.(_toastBox); } catch (_) {}
         _toastStack = s;
         Main.layoutManager.uiGroup.insert_child_below(s.bgActor, _toastBox);
+        _hookToastWake();
         return true;
     } catch (e) {
         return false;
@@ -1304,6 +1349,7 @@ function _ensureToastGlass() {
 }
 
 function _destroyToastGlass() {
+    _unhookToastWake();
     const s = _toastStack;
     _toastStack = null;
     if (!s)
@@ -1426,6 +1472,7 @@ function _syncToastGlass(monitor, s) {
         if (s.wcm)
             s.wcm.sync();
         try {
+            s.effect?.markBackdropDirty?.();
             glassRefreshDone(s.bgActor, extraH);
         } catch (_) {}
     } catch (e) {
@@ -2504,6 +2551,7 @@ function _syncCards(p, monitor, s) {
         s.uiSampler?.sync(monitor.x, monitor.y, monitor.width, monitor.height);
         s.wcm?.sync();
         try {
+            s.effect?.markBackdropDirty?.();
             glassRefreshDone(s.bgActor, extraH);
         } catch (_) {}
     } catch (_) {}
@@ -2596,6 +2644,7 @@ function _syncGlass(p, monitor, s) {
         s.uiSampler?.sync(monitor.x, monitor.y, monitor.width, monitor.height);
         s.wcm?.sync();
         try {
+            s.effect?.markBackdropDirty?.();
             glassRefreshDone(s.bgActor, extraH);
         } catch (_) {}
     } catch (_) {}

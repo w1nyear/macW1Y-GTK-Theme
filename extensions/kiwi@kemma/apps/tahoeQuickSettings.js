@@ -2879,6 +2879,9 @@ function _syncStack(s, monitor) {
     s.uiSampler.refresh();
     s.uiSampler.sync(monitorX, monitorY, screenW, screenH);
     s.wcm.sync();
+    try {
+        s.effect?.markBackdropDirty?.();
+    } catch (_) {}
 }
 
 function _destroyGlass() {

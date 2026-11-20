@@ -4435,7 +4435,7 @@ export const MenuBarController = class MenuBarController {
             this._notifGlass.setBrightness(1.0);
             this._notifGlass.setIsDock(true);
             this._notifGlass.setGlassRegions(regions);
-            if (!this._notifGlass._backdropLocked) {
+            if (this._notifGlass) {
                 this._notifGlass.syncSources();
             }
             if (!this._notifGlass.visible)
@@ -5180,7 +5180,6 @@ export const MenuBarController = class MenuBarController {
                 if (typeof this._notifGlass.forceRefresh === 'function') {
                     this._notifGlass.forceRefresh(1);
                 }
-                this._notifGlass._backdropLocked = true;
             }
             if (this._notifCenterOpen) this._syncNotifGlassRegions();
         });
@@ -5194,7 +5193,7 @@ export const MenuBarController = class MenuBarController {
             onComplete: () => {
                 this._syncNotifGlassRegions();
                 if (this._notifGlass && !this._notifGlass.is_finalized?.()) {
-                    this._notifGlass._backdropLocked = true;
+                    this._notifGlass.wakeFrameSync?.();
                 }
             },
         });

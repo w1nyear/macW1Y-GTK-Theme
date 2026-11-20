@@ -23,13 +23,31 @@ import {getTopbarInk} from './tahoeInk.js';
 let ensureGlassAllocated = () => {};
 let setClipIfChanged = () => {};
 let syncGlassCaptureClip = () => {};
-import('file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/utils.js').then(m => {
+let addGlassWakeListener = () => {};
+let removeGlassWakeListener = () => {};
+let isActorNearGlass = () => true;
+let glassRefreshDue = () => true;
+let glassRefreshDone = () => {};
+let glassForceRefresh = () => {};
+import('file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/utils.js?v=fix4').then(m => {
     if (m.ensureGlassAllocated)
         ensureGlassAllocated = m.ensureGlassAllocated;
     if (m.setClipIfChanged)
         setClipIfChanged = m.setClipIfChanged;
     if (m.syncGlassCaptureClip)
         syncGlassCaptureClip = m.syncGlassCaptureClip;
+    if (m.addGlassWakeListener)
+        addGlassWakeListener = m.addGlassWakeListener;
+    if (m.removeGlassWakeListener)
+        removeGlassWakeListener = m.removeGlassWakeListener;
+    if (m.isActorNearGlass)
+        isActorNearGlass = m.isActorNearGlass;
+    if (m.glassRefreshDue)
+        glassRefreshDue = m.glassRefreshDue;
+    if (m.glassRefreshDone)
+        glassRefreshDone = m.glassRefreshDone;
+    if (m.glassForceRefresh)
+        glassForceRefresh = m.glassForceRefresh;
 }).catch(e => console.warn(`[tahoe-osd] liquid-glass utils unavailable: ${e}`));
 
 const OSD_W = 280;
@@ -196,6 +214,8 @@ let _iconR = null;
 let _slider = null;
 let _hideId = 0;
 let _glass = null;
+let _osdTickId = 0;
+let _osdWakeUnsub = null;
 let _control = null;
 let _sinkIds = [];
 let _sinkReady = false;
@@ -616,6 +636,69 @@ function _osdBlur() {
     return blur;
 }
 
+function _startOsdTick() {
+    if (_osdTickId || !_box || !_box.visible)
+        return;
+    const tick = () => {
+        _osdTickId = 0;
+        if (!_box || !_box.visible || _box.opacity <= 0 || !_glass)
+            return GLib.SOURCE_REMOVE;
+        try {
+            _syncGlass();
+        } catch (_) {}
+        if (_box && _box.visible && _box.opacity > 0 && _glass) {
+            _osdTickId = global.compositor.get_laters().add(Meta.LaterType.BEFORE_REDRAW, tick);
+        }
+        return GLib.SOURCE_REMOVE;
+    };
+    try {
+        _osdTickId = global.compositor.get_laters().add(Meta.LaterType.BEFORE_REDRAW, tick);
+    } catch (_) {
+        _osdTickId = 0;
+    }
+}
+
+function _stopOsdTick() {
+    if (_osdTickId) {
+        try { global.compositor.get_laters().remove(_osdTickId); } catch (_) {}
+        _osdTickId = 0;
+    }
+}
+
+function _hookOsdWake() {
+    if (_osdWakeUnsub)
+        return;
+    _osdWakeUnsub = (damagedActor, reason) => {
+        if (!_box || !_box.visible || !_glass)
+            return;
+        if (['restacked', 'fullscreen', 'overview', 'layout', 'overview-scroll', 'overview-transition', 'window-moved'].includes(reason)) {
+            glassForceRefresh?.(_glass.bgActor);
+            try { _glass.wcm?.rebuildClones?.(); } catch (_) {}
+            try { _glass.uiSampler?.rebindSelf?.(); } catch (_) {}
+            try { _glass.effect?.markBackdropDirty?.(); } catch (_) {}
+            _startOsdTick();
+            return;
+        }
+        if (!damagedActor || isActorNearGlass(damagedActor, _box) || isActorNearGlass(damagedActor, _glass.bgActor)) {
+            glassForceRefresh?.(_glass.bgActor);
+            try { _glass.effect?.markBackdropDirty?.(); } catch (_) {}
+            _startOsdTick();
+        }
+    };
+    try {
+        addGlassWakeListener(_osdWakeUnsub);
+    } catch (_) {}
+}
+
+function _unhookOsdWake() {
+    if (_osdWakeUnsub) {
+        try {
+            removeGlassWakeListener(_osdWakeUnsub);
+        } catch (_) {}
+        _osdWakeUnsub = null;
+    }
+}
+
 function _ensureGlass() {
     if (_glass)
         return true;
@@ -657,6 +740,7 @@ function _ensureGlass() {
         s.uiSampler.rebindSelf();
         s.uiSampler.refresh();
         _glass = s;
+        _hookOsdWake();
         return true;
     } catch (_) {
         _glass = null;
@@ -725,6 +809,13 @@ function _syncGlass() {
         s.liquidBox.set_size(monitor.width, monitor.height);
         setClipIfChanged(s.bgActor, rx - 100, ry - 100,
             bw + OSD_PAD * 2 + 200, bh + OSD_PAD * 2 + 200);
+
+        const extraH = ((Math.round(rx * 4) * 73856093) ^ (Math.round(ry * 4) * 19349663) ^
+            (Math.round(bw * 4) * 83492791) ^ (Math.round(bh * 4) * 2654435761)) | 0;
+
+        if (!glassRefreshDue?.(s.bgActor, extraH))
+            return true;
+
         s.wcm.setOffset(-monitor.x, -monitor.y);
         syncGlassCaptureClip({
             cloneContainer: s.cloneContainer,
@@ -738,12 +829,16 @@ function _syncGlass() {
         s.uiSampler.refresh();
         s.uiSampler.sync(monitor.x, monitor.y, monitor.width, monitor.height);
         s.wcm.sync();
+        s.effect?.markBackdropDirty?.();
+        glassRefreshDone?.(s.bgActor, extraH);
         return true;
     } catch (_) {}
     return false;
 }
 
 function _destroyGlass() {
+    _stopOsdTick();
+    _unhookOsdWake();
     const s = _glass;
     _glass = null;
     if (s) {
@@ -910,6 +1005,7 @@ function _restoreCcIcon() {
 
 function _hideNow() {
     _hideId = 0;
+    _stopOsdTick();
     _cancelAnim();
     _restoreCcIcon();
     if (_glass?.bgActor) {
@@ -1119,6 +1215,7 @@ function _show(kind, title, iconL, iconR, value) {
                                 mode: Clutter.AnimationMode.EASE_OUT_QUAD
                             });
                         }
+                        _startOsdTick();
                         return GLib.SOURCE_REMOVE;
                     }
                 } catch (_) {
@@ -1160,6 +1257,7 @@ function _show(kind, title, iconL, iconR, value) {
                 GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
                     try {
                         _syncGlass();
+                        _startOsdTick();
                     } catch (_) {}
                     return GLib.SOURCE_REMOVE;
                 });

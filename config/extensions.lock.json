@@ -1,658 +1,658 @@
 {
-  "_meta": {
-    "macw1y_version": "1.0",
-    "target_shell": "46",
-    "generated_at": "2026-10-27 16:12:53",
-    "total_managed": 21,
-    "hash_algorithm": "sha256-tree-v2"
-  },
-  "extensions": {
-    "appmenu@ChathurangaBW.github.io": {
-      "uuid": "appmenu@ChathurangaBW.github.io",
-      "name": "AppMenu",
-      "pinned_version": 15,
-      "shell_compatibility": [
-        "45",
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "c4b2f6f448e1b2c1ae9d6de73b202d7133809b0af00822dcd1c9847e39882b15",
-      "status": "locked",
-      "source": "local_custom",
-      "macw1y_components": [
-        "menubar",
-        "system_logo_menu",
-        "spotlight_search",
-        "finder_fallback"
-      ],
-      "has_custom_patches": true,
-      "patch_description": "macW1Y Monterey style spotlight, main menu, finder naming, wine exclusions; clipboard dialog copy-and-close & click-to-paste injection",
-      "last_verified": "2026-11-04",
-      "pinned_sha256": "dac8b224545ba635b2f739b6f69b532bc66572a4909627be9b83087ec02248f3"
+    "_meta": {
+        "macw1y_version": "1.0",
+        "target_shell": "46",
+        "generated_at": "2026-10-27 16:12:53",
+        "total_managed": 21,
+        "hash_algorithm": "sha256-tree-v2"
     },
-    "blur-my-shell@aunetx": {
-      "uuid": "blur-my-shell@aunetx",
-      "name": "Blur my Shell",
-      "pinned_version": 99999,
-      "shell_compatibility": [
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "d7adac292469a1534d65d4ce0d880446103ca3b2fd8a23f225c627629a25d607",
-      "status": "locked",
-      "source": "extensions.gnome.org",
-      "macw1y_components": [
-        "menubar_blur",
-        "overview_blur",
-        "applications_blur",
-        "liquid_glass_mutter_actor"
-      ],
-      "has_custom_patches": true,
-      "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macW1Y horizontal Cairo battery indicator",
-      "last_verified": "2026-11-08",
-      "pinned_sha256": "5ae218eb0eff236be0d91d4ef5bfd20db50ba9d456ca98892b4718a892941c4d",
-      "dir_hash": "1a7fe0cf"
-    },
-    "compiz-alike-magic-lamp-effect@hermes83.github.com": {
-      "uuid": "compiz-alike-magic-lamp-effect@hermes83.github.com",
-      "name": "Compiz alike magic lamp effect",
-      "pinned_version": 25,
-      "shell_compatibility": [
-        "45",
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "99afe20e71439f0abefa4ceaff5675c2fc5bc7ff88be170d3c047a784ea99542",
-      "status": "locked",
-      "source": "extensions.gnome.org",
-      "macw1y_components": [
-        "genie_minimize_effect"
-      ],
-      "has_custom_patches": true,
-      "patch_description": "Extended paint volume & parent queue_redraw during mesh deform to prevent clipping at dock/background window boundaries",
-      "last_verified": "2026-11-14",
-      "pinned_sha256": "47a429f266a0cb4290e3298b28b98236b4cf96e99ee24618d60602015579312e"
-    },
-    "cupertino-dock-lite@rinzler69-wastaken.github.com": {
-      "uuid": "cupertino-dock-lite@rinzler69-wastaken.github.com",
-      "name": "WACK - Cupertino Dock Lite",
-      "pinned_version": 6,
-      "shell_compatibility": [
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "596d67c134c1594c239df5dfec15437c8a750a6278ddcc552eb936489fa5e80e",
-      "status": "locked",
-      "source": "extensions.gnome.org",
-      "macw1y_components": [
-        "dock_cupertino_animations",
-        "bounce_effect",
-        "dock_indicators"
-      ],
-      "has_custom_patches": true,
-      "patch_description": "macW1Y-style smooth dock reordering, duplicate prevention, and trash drop handling in animator.js and extension.js",
-      "last_verified": "2026-11-12",
-      "pinned_sha256": "00a7c13a3e6322f6a3e0d83d3ca7af7d97bc2b5aee6dcb7113c5a7ac41a9cd01"
-    },
-    "custom-command-toggle@storageb.github.com": {
-      "uuid": "custom-command-toggle@storageb.github.com",
-      "name": "Custom Command Toggle",
-      "pinned_version": 15,
-      "shell_compatibility": [
-        "45",
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "842089bdea0f22be406354ce5fc2ce7f154788e5042b51c74f8ee12f487fe10a",
-      "status": "locked",
-      "source": "extensions.gnome.org",
-      "macw1y_components": [
-        "quick_settings_custom_toggles"
-      ],
-      "has_custom_patches": false,
-      "patch_description": "Upstream verified",
-      "last_verified": "2026-10-27",
-      "pinned_sha256": "f77abdb11fa65e53e0d60a57bcc5656eaeb9c325fd17f36ac6e567ad28eb62bf"
-    },
-    "dash2dock-motion@unmade.space": {
-      "uuid": "dash2dock-motion@unmade.space",
-      "name": "Dash2Dock Motion",
-      "pinned_version": "custom",
-      "shell_compatibility": [
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "c5332c542f15f8fc5555120a43a24c2eddca3382d3b77dcf78448661102617d9",
-      "status": "locked",
-      "source": "local_custom",
-      "macw1y_components": [
-        "dock_glass_slab",
-        "icon_magnification",
-        "dock_bounce"
-      ],
-      "has_custom_patches": true,
-      "patch_description": "Smooth opacity animation and ghost overlap prevention for dock tags",
-      "last_verified": "2026-11-12",
-      "files": {
-        "windowPreview.js": "61829213a92e864511c4d4eb81f3dc98f785d390beb67d2872b78e414f727815",
-        "locationsWorker.js": "c740392c5ad16b60f3871dabf76ddb9e95e642c7e50b6fa225ed128f2207363c",
-        "Settings.ui": "8009c119a40a11c0079878a2825c6099e8aba191b82847962e1eeb638ebc114d",
-        "tahoeClockIcon.js": "cbf04baf035a7c9dd419d8657d7a11dc538d25bd9fc14350de289eae4818863d",
-        "locations.js": "ec66ffd58943e5be72eecd77224104c048fd115ecf465b38aaa79ffa48698d05",
-        "dbusmenuUtils.js": "21409665e15d1ef310516f39dc9d492d61d1a7b4fecc1a105405489bf4b7291e",
-        "stylesheet.css": "8e93fdcaac6f73aba68a21c36e485e312b3346678fc622912e3df6b3d1980062",
-        "dragOutToRemove.js": "b62ee7174c5f7f885e828c9d917bcbf7ffc6aa5a078e30947f870217311fdc34",
-        "extension.js": "6943580f458ecb499d8583ec44af4909fe340b428a234d8f755c6d43ea0d9171",
-        "launcherAPI.js": "1c3506bc72c6fc980bf3a45f25e914c2529399164511ff23df6fc7c99608027e",
-        "COPYING": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643",
-        "NOTICE": "66c7fc93e297defd7770d8b29b4c505f56dbe15542e9bb21e5c77c97a2aed95c",
-        "desktopIconsIntegration.js": "d53dad8c6f0475e3b6a23939ddfd3c6fdb709238f3392e4897e892da4761fdbf",
-        "theming.js": "2e4df7ef6b086d1592d8405889e243003e6fedcba712a8ad23051a0fedad326a",
-        "docking.js": "5a1da662a0987fb62d213606050ed2bc069500de33312fdd0e22cc3112252e2e",
-        "fileManager1API.js": "141341f2fc7a5cea14a543e17fc8d89b1d5ff7d694b67cf50ae561df749c2eda",
-        "prefs.js": "f58463bdf01d1016e4d2e0f26781d52d9f986e4821c0fcaf430bfca1b7d9c096",
-        "appIcons.js": "2639ed928505d84b9e4e3fc766bf10521861cd22db487d483f8d62e8ca702274",
-        "appSpread.js": "2c4a7f8a4aab3f2829b8523809a005aaee4b56686c0dabdb9dc48e6c3131527f",
-        "magnifier.js": "cd8b3ddd13cebaa5af2d2251f4238ee65e1b7420264044b9eee15fe1f93f140f",
-        "iconTint.js": "d51338b4c4458ce78a6ae6956d87c22f5a502d74ce0756fc0f78680b8a501c6f",
-        "glass.js": "90a7b45a9a2493e5104be31e05480b5c2ed1a3950caeb36261029e67c3a76bdb",
-        "imports.js": "1c9ee0e2f78ee65f0091d623f6308a6b568de1011c4ba63c0c450585457cf354",
-        "dash.js": "43ffb6e2a87326539e43009df03bfcedb3ec3945e5c8104fcfb2637dab4b805a",
-        "intellihide.js": "67f3dffcbb3dcd53c90e779656cca4082c086f049c8682b8e2ba995289f2600e",
-        "appIconsDecorator.js": "40021e47f6431fbc37ec19e095fc828cab44157fa104385e75008345bb549391",
-        "metadata.json": "3d5e4f14251f8ace3fe5e7990cd118d7d2a83140307664ab88c1eb319e0ae874",
-        "utils.js": "0dd4d1f336fe9a009ddc24ea455f0fd373d24ae501805080188417f4bb66a2a9",
-        "notificationsMonitor.js": "8acdb3f4134c97d98e9daaefa904afbc8df053d3cf7bbd7758a98d7d15806bbc",
-        "appIconIndicators.js": "e2629de13906c2bdc68052bcdaff5d46e9df5d5656e464dc6545a09fb325ea31",
-        "dependencies/gi.js": "aa650b8948e8dd9c31b7aa3d36567d796f03b1f7a6a72fe83a5e9ce8cace9835",
-        "dependencies/shell/ui.js": "98b15a9694f9d7ce0a6245ca04bc5da9106ee16c1eeffac9d78a08d9671afe60",
-        "dependencies/shell/misc.js": "36782a199841e905229cd05b00a1127c3f55a806f62cf0ba27671c3fe9784df2",
-        "dependencies/shell/extensions/extension.js": "158d35274cd8a4fe9631e378f14a60daa42c2e021a2a72da3e1a32694bb0be17",
-        "media/highlight_stacked_bg_h.svg": "20e08e04646379c0f2ede04aa4e12ce8700470e24a48563a814cc82824f19c72",
-        "media/highlight_stacked_bg.svg": "a0a8709c37ef059411b488f6c304bd03bf7cbf53adf26a1283486b79e248acd0",
-        "media/logo.svg": "859981d4b9a14b8b2b3345fbf6020f3bf81cf4a017089a1018ea1a01200cbbec",
-        "media/glossy.svg": "7453df1f7495328cea038400d041831ab4176d93f028fb72d5b9cf5574dad3ee",
-        "schemas/org.gnome.shell.extensions.dash2dock-motion.gschema.xml": "4c5faf1d2106ee1780a69613b3bfa2edb9c22c5f29e581bfabb78587161f42d0",
-        "schemas/gschemas.compiled": "86d36862c7def6cf5cdaa3c41e42b89b187efb064cbf3bcc21142eb3c881377a",
-        "locale/pl/LC_MESSAGES/dash2dock-motion.mo": "dfc98de1967ee2c70484dae6f479672deefe2d67ab0a27d0d22dfc12bcfd90ce",
-        "locale/lv/LC_MESSAGES/dash2dock-motion.mo": "8ef18ba9de3e2cee7cc4fd1734df73c12679d44e8ae87628d74de8715a6ad255",
-        "locale/ko/LC_MESSAGES/dash2dock-motion.mo": "923cc8ab0953724c66d8a71363bb47a75d91fededd1248329f4442a8ce51000e",
-        "locale/fr/LC_MESSAGES/dash2dock-motion.mo": "5fe771a3ddbd5ee8214c0b971e25f10ec272fc319b5cb6546edc3864cacc6cb5",
-        "locale/ar/LC_MESSAGES/dash2dock-motion.mo": "9540a80fcc480d115baa41467c89d22243491e69daec9c99b8d522980d1f65ab",
-        "locale/ja/LC_MESSAGES/dash2dock-motion.mo": "eb3d4c724fc96f31921666806feb8780fa0625e5b19c1962979dded80f151ea9",
-        "locale/sl/LC_MESSAGES/dash2dock-motion.mo": "4b3cb54cbe3969ea92aa34278271972795a6e4bd4f6587b96c5a4ba78f8eda7a",
-        "locale/sv/LC_MESSAGES/dash2dock-motion.mo": "6f34a8cc8f86dcd753d1efbe5867969c769e74426efad0562987dd9dc67d37a6",
-        "locale/de/LC_MESSAGES/dash2dock-motion.mo": "e003e24b8703e6accce3d46141336cc50e9ae350ee41d50bab3c59aecf3356ac",
-        "locale/id/LC_MESSAGES/dash2dock-motion.mo": "e370a81596eae9ce7117c4b02d8890bef2c272065b1d04b384c5e93fc4634bd5",
-        "locale/pt_BR/LC_MESSAGES/dash2dock-motion.mo": "fd058ba57e7356aabc9d2762810003b3cff8353e236d7b240ad59b0742122ca4",
-        "locale/el/LC_MESSAGES/dash2dock-motion.mo": "af696427142b203cecf204f2c5e1a97603bb1d43f0fa932ae86056ed6862ae59",
-        "locale/tr/LC_MESSAGES/dash2dock-motion.mo": "d5ca6e6e241a1772411da0958e10a58fc49b53e4e0421cbb2b1a83cc4f59f033",
-        "locale/sr/LC_MESSAGES/dash2dock-motion.mo": "9cc05f4ba6e9b27c9e1d90d4e6e48bd2820025fb9dc9642c3b992d6975185259",
-        "locale/be/LC_MESSAGES/dash2dock-motion.mo": "1b81f2eb844a3dbf9b17079ef6b43fa464a15c92687198785a496100d657c1be",
-        "locale/ka/LC_MESSAGES/dash2dock-motion.mo": "6d812c68f69f6fb4981a837d8a6c106631153278ded37d56b3f5f9b0d3348524",
-        "locale/ru/LC_MESSAGES/dash2dock-motion.mo": "eb9c3bd50b986f104fdb22cb91afbe88b835a0145ea3e00dd3bb6c238e748b5d",
-        "locale/pt/LC_MESSAGES/dash2dock-motion.mo": "1cc23b94854efab5ed71a700b363085f38b921162c5eb8141fc415798e7b60a7",
-        "locale/es/LC_MESSAGES/dash2dock-motion.mo": "4f9349697d50eb7be4df9cf0b95fbee631c5361dda3b4c5db3953bdcc4260fb3",
-        "locale/zh_CN/LC_MESSAGES/dash2dock-motion.mo": "525521d5ddbf2b13d0850c4829c6c51bc5c37cc1236dc712db2a5c6fa9b85ee2",
-        "locale/nb/LC_MESSAGES/dash2dock-motion.mo": "29be8ee9b264fd6ef359cbf5e1be3121ffbefdd610df045a228f328c7b08db13",
-        "locale/uk_UA/LC_MESSAGES/dash2dock-motion.mo": "4e3c15e81205f099115ea6d290fc881ef2654bf3408fb91f42c42222e0e94608",
-        "locale/kk/LC_MESSAGES/dash2dock-motion.mo": "15ffd75cd4e6699133422a1845d0cb1d8157c6a021b7e5f6616813918ff2c5e1",
-        "locale/sr@latin/LC_MESSAGES/dash2dock-motion.mo": "c05b18fbc84493526e16bb53bf62be7f90c59251983a6c0b04fbf0b9f40c21e4",
-        "locale/gl/LC_MESSAGES/dash2dock-motion.mo": "7ccbeadfb87dd398d03c73e7775500b2fa668c02cf28b3e425f273df9560ba5e",
-        "locale/sk/LC_MESSAGES/dash2dock-motion.mo": "f09aa315ba049db88524e2ac7fc1da73826daed7515d24c084c7f277e8724c07",
-        "locale/hu/LC_MESSAGES/dash2dock-motion.mo": "99e9ac0638f71bdcd24f1ed3e045d144f542bd7e88c1a27f362a685856358441",
-        "locale/zh_TW/LC_MESSAGES/dash2dock-motion.mo": "ec39ba7301406742b0c8059ecb8011aea69a2f14a44550790ec27f27bad61bd8",
-        "locale/eu/LC_MESSAGES/dash2dock-motion.mo": "b380b3528e23e0bfb6e89a6c0c36a4121df7f2de19cb89c687fbb57d08114d49",
-        "locale/it/LC_MESSAGES/dash2dock-motion.mo": "471d8356c78fee9d071c82f084bb644af050468151ffec37f50391c0bac9ef33",
-        "locale/cs/LC_MESSAGES/dash2dock-motion.mo": "259b05ccf0664b6966acc8d09ee839787af170a06db1573584e19849e9bd42c3",
-        "locale/bg/LC_MESSAGES/dash2dock-motion.mo": "72c57c7741406e26abf8da255178d16de5236f1f2f45a135296f94121e19e5bf",
-        "locale/nl/LC_MESSAGES/dash2dock-motion.mo": "ba7e144e0ee6edcb4f84f5ffbd0727eb3104c1b1bd2c1e520cc3af49affd5d39",
-        "locale/ro/LC_MESSAGES/dash2dock-motion.mo": "3c44204f5671296cb522d7ee5769b18e0506870f8a413f79a23983ebc04bd3fe"
-      },
-      "pinned_sha256": "931d89521eb4a7671117dd3d3b1f898604e0fc91bd98e1b2c72ca51def811ead"
-    },
-    "eval-helper@mactheme": {
-      "uuid": "eval-helper@mactheme",
-      "name": "Eval Helper",
-      "pinned_version": "custom",
-      "shell_compatibility": [
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "aa6ec9b1fa18b67a92281c8738723e1231aa28665cd745bbd4e9bd585351d5fd",
-      "status": "locked",
-      "source": "local_custom",
-      "macw1y_components": [
-        "dbus_eval_helper",
-        "notification_grouping",
-        "switcher_popup_mac_liquid_glass"
-      ],
-      "has_custom_patches": true,
-      "patch_description": "Local D-Bus EvalHelper service and macW1Y Alt+Tab switcher enhancements",
-      "last_verified": "2026-11-10",
-      "pinned_sha256": "66eec8bb76fa81789b84621b2284c572925af78482c29a67e9be74530beb2edd"
-    },
-    "kiwi@kemma": {
-      "uuid": "kiwi@kemma",
-      "name": "Kiwi Component Suite",
-      "pinned_version": 99999,
-      "shell_compatibility": [
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "f2a7b1bd93d141157cfb18b2b0be9e23e26f24b2248b6b9584202ca3448fd0c7",
-      "status": "locked",
-      "source": "extensions.gnome.org",
-      "macw1y_components": [
-        "quick_settings_styling",
-        "traffic_lights_buttons",
-        "control_center_sliders",
-        "screencast_indicator",
-        "control_center_liquid_glass_submenus"
-      ],
-      "has_custom_patches": true,
-      "patch_description": "macW1Y Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macW1Y Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macW1Y Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macW1Y horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
-      "last_verified": "2026-11-09",
-      "integrity_hash": "408cf0e45df8c5eaefa45c0f36cc0125c669d4bcc42bfa86de8b1cace9e0c94f",
-      "pinned_sha256": "7041e6f9efeb55e7f574bf8b08a591e7dd335546de8f9be488556431e356dfaf",
-      "expected_hash": "3986c471",
-      "dir_hash": "e154ab41"
-    },
-    "liquid-glass@thinkingcoding1231.gmail.com": {
-      "uuid": "liquid-glass@thinkingcoding1231.gmail.com",
-      "name": "Liquid Glass",
-      "pinned_version": "custom",
-      "shell_compatibility": [
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "9c43f3d25cb7f044f53f87041f008d076560b156f46693b6d430d4928a256fb8",
-      "status": "locked",
-      "source": "local_custom",
-      "macw1y_components": [
-        "liquid_glass_shader",
-        "specular_highlight",
-        "panel_menu_glass",
-        "dock_glass"
-      ],
-      "has_custom_patches": true,
-      "patch_description": "Local custom Liquid Glass GLSL refraction & border shader; UI container owner check for strict rounded rectangle radius enforcement and setShapeType API",
-      "last_verified": "2026-11-04",
-      "integrity_hash": "86bb1febda65991cf8178b7937151597e897260b045ab53d267fab9b18167d0f",
-      "files": {
-        "global.d.ts": "02492c5b3b37afc11cb19dee9ae1e9ae8f4e6f8502920b57ae6d0b6f8175c41a",
-        "package-lock.json": "2610757c38df98269142accd24a1e84a464bbd02e884569ae6d4c9bec586f5db",
-        "stylesheet.css": "c2b39a7032cc770616cfceb967149a11edd796480fa74284946337755082e44a",
-        "extension.js": "6fc4af7bc3df55678c4e5a9d7080f1a5ac3aa539db0741b17d2c623d3044e973",
-        "package.json": "bedde7d0176d01a34ba1e6512bfc48b17db8f547f5cfe1ab1adc51d6515396b3",
-        "prefs.js": "6bfeecdf6aead9c2da88d0eaea8cd5fa75d91d2fd4552b8534586d401adfad4b",
-        "resources.gresource": "0b27aab3330db160302da89ad14ceb38731c5b954c699e70820a9fb1466efbbb",
-        "metadata.json": "eb2f8ffdc06de14cfa855cf34a3b967daddcb1b31171ea7db0d66325df40327b",
-        "tsconfig.json": "0b308b88e46f61b483baad1333944e23c05ef635bfb12cd8968a441ab4925636",
-        "resources.gresource.xml": "86360a8830d1479d3ccb1b1698762f9cb65d90833e30b94c90855a633c666fa3",
-        "shaders/gaussian_v.frag": "604b318b9750f807b3ad52b08cba8181638a16f73d12cf3bb2c46733d1937c55",
-        "shaders/downsample.frag": "35d971052c1730e7da0e5edf15c57c04300573a0c2fdd9de197739b9aa1c9b4c",
-        "shaders/gaussian_h.frag": "1375ac86287fce5a2a1878bfebb4cb39d90eccd3e3128381bc0611e8feaa734d",
-        "shaders/glass.frag": "6c01299816b60b70e7c61c5d37df1fffa0756094379c9c83bdf17d5dbf1e08c8",
-        "shaders/upsample.frag": "5b499e75ee05a69429948049ba130b6b160a8cf35e63bdc709aec754688e0b03",
-        "schemas/gschemas.compiled": "61af4893ac7b5510f13e548a81c72f4cb707dfd24239788a2944fe785caeacd9",
-        "schemas/org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com.gschema.xml": "8069d7797fd064f2583643d1b54cf94b61bfdb14d11854a706ff328258078d13",
-        "dist/panelMenuManager.js": "7daf9116ef83bb73aa3f09dbc436b60e556bce008d863c0bbce4f7952067c0e3",
-        "dist/uiManager.js": "571ea514d57e6bafb6d691e30a1c15e917dc21931f9d88b35d8706a3356f94a5",
-        "dist/windowListService.js": "d3269524445c9faf0f5688d3188885c792fd18ff691219fd48eda9531c8bb2a5",
-        "dist/glassGate.js": "80f860cfdc8dcaefc2fd91cc24fcbff48893f66374a48075aa97ce6fa8a141d4",
-        "dist/osdManager.js": "3092fa16249d820c8a803845752f80b7dfd5bfbb7d9c318fd57c8090849ea6d8",
-        "dist/applicationManager_v2.js": "15f84a22c7995625d6c98b251cde13abebe9827f34d91b7ce66cecea0b21f454",
-        "dist/liquidEffect_v2.js": "1c6eaef2b3ae0dfc03f6d7403073037cb9c79abea3afc680e2b9325241f92833",
-        "dist/applicationManager.js": "9c54cb0f124cdf2fa8da58f097d30f3baed44498ad9d16d233631a0ac553d6c8",
-        "dist/dockManager.js": "cd59685ee8a6441f574a895b14b4c0fb47c656385c4d4b2edd1d12f38d85e4f6",
-        "dist/notificationManager.js": "fc90ddcd72137f129ed8e2a2e748b7d2b3e5f280f837ba951b50594a86a14d1c",
-        "dist/logger.js": "8481ce8b27fa284d9f151ef625067adad971cf34f8912d4165c64a90e30bc7d3",
-        "dist/quickSettingsManager.js": "f14aab10ad9ed56cbfb7b9dab8a6d62fa060eb8742c3a2c1d043a9b3c289b0db",
-        "dist/contrastSampler.js": "d9430b72a653efa8838b358af846c400dc30db7e607eb1493a74f7a137a6a832",
-        "dist/gpuSaveLiveApply.js": "b1bd14c0f543d7fe3139b56ee6ce27d7734a4e0b76ce2df2d0080265d97c4f43",
-        "dist/liquidEffect.js": "1fb1b6c9276a84d0742e69fd0e021b0769d9721cd625768f36ceb19058460e8a",
-        "dist/utils.js": "7a19e841ca9b4ccf22ec693e56027e8586b02d4e3d994127cb24a8ccf9e59907",
-        "dist/rendering/backdropGlass.js": "6683052c975a52177345ee8f8ec8d2afdd2b4139f183a500a332c5e88f047a6d",
-        "src/liquidEffect.ts": "ab3e6630fc2b3eb7d0a45e50228c5e942c3d69e07adb100791a9b4f10b539913",
-        "src/contrastSampler.ts": "e8089ccd15d1058e8c876e18f1b00cb314cfb90ae2a86c7539f82d9728cda4d1",
-        "src/dockManager.ts": "5711cdd97623549cd1205dcab91b2faed1ce8f5eff7b0ea32101e1c2ba633a2e",
-        "src/utils.ts": "6efe743fcaf87c563fd44efd334c4577ff99202273b609a4b5a9b4572be06622",
-        "src/quickSettingsManager.ts": "50ad95b47a2b4ba78c4dfa342198d8195b5a097f11c160dd71c8c617508dfc3c",
-        "src/windowListService.ts": "0bae95a7bd69b932b7c314f8f47de9305633f4ceefbaafb24f8c2d89d6811838",
-        "src/notificationManager.ts": "97f13cc8df5a5f231d5412c9d804372aba2bc752862465a785ef8fb6f8a01a52",
-        "src/panelMenuManager.ts": "873c0495997ee409b03a1c70010b11f439013138ba3125b41cd6be12819fb2cb",
-        "src/uiManager.ts": "7717bc5c4c967b901318395c90d71b9dc9c5518852086f81b52bbf64bea9b790",
-        "src/applicationManager.ts": "3cf276bcc5fde06d96e1bcba1e27a68cd4e7e2b248812fc588d5a5a500284300",
-        "src/osdManager.ts": "9c618a83deecd190b86aa1b60398762c8ee7feff6159f5377b0c19ac71063202",
-        "src/logger.ts": "6ba0a6c6216513488a8fd136136e17156c7e3fb3b278d48c5cbe0fe97040ca9e",
-        "icons/image-adjust-shadows-symbolic.svg": "1859a445a4e8de6f770575030013cead24bdcdef409f5727df2bfb7d2425052f",
-        "icons/dock-bottom-symbolic.svg": "5ea4c71cd6fe7e775fdf98f85ae05402deedf497bbe76ead9db8417e7c279f12",
-        "icons/audio-volume-medium-symbolic.svg": "8447a2300f7d0fda2c3be92ca17736079661de4cc6942571468220bb2a25ee82",
-        "icons/shapes-large-symbolic.svg": "713fe56bf2d550a9c99600a1ce8cd87b993b40101f9d5fa7b007907efc9cdd11"
-      },
-      "pinned_sha256": "da124f57fc8940a746879d5aae58d5bb79bbca9960f92d6d423f1b5eba225c37"
-    },
-    "macw1y-touchpad-gestures@mactheme": {
-      "uuid": "macw1y-touchpad-gestures@mactheme",
-      "name": "macW1Y Touchpad Gestures",
-      "pinned_version": "custom",
-      "shell_compatibility": [
-        "45",
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "055509b7d08283ab4cf870ef0d7e1736fa07f07e5a4f6fe388aa157de143b7f2",
-      "status": "locked",
-      "source": "local_custom",
-      "macw1y_components": [
-        "touchpad_gestures",
-        "three_finger_drag",
-        "mission_control_swipe"
-      ],
-      "has_custom_patches": true,
-      "patch_description": "Local custom macW1Y touchpad gesture suite",
-      "last_verified": "2026-10-27",
-      "pinned_sha256": "6c3a65ffc33769cab51bdbe031b3fc266016014646b344e0c59c8697e11e54e0"
-    },
-    "quick-settings-scroll@diskmth.fr": {
-      "uuid": "quick-settings-scroll@diskmth.fr",
-      "name": "Quick Settings Scroll",
-      "pinned_version": 3,
-      "shell_compatibility": [
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "b8d8e614c7e7b1a5c31107d91607816b6dc2be01b63dbc149fde500ee8365cfa",
-      "status": "locked",
-      "source": "extensions.gnome.org",
-      "macw1y_components": [
-        "quick_settings_scroll"
-      ],
-      "has_custom_patches": false,
-      "patch_description": "Upstream verified",
-      "last_verified": "2026-10-27",
-      "pinned_sha256": "67ea6c3417df44d85ac40b3ef26744f88f553394b84fb7c3f9c4754461320bad"
-    },
-    "Rounded_Corners@lennart-k": {
-      "uuid": "Rounded_Corners@lennart-k",
-      "name": "Rounded Corners",
-      "pinned_version": 19,
-      "shell_compatibility": [
-        "45",
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "c49efd734f86925faef7276a2997aad527448d83411405b20d674bfe2aac252d",
-      "status": "locked",
-      "source": "extensions.gnome.org",
-      "macw1y_components": [
-        "screen_rounded_corners"
-      ],
-      "has_custom_patches": false,
-      "patch_description": "Upstream verified",
-      "last_verified": "2026-11-18",
-      "pinned_sha256": "a28915da19b1e453b1d120008e875f1c06f66e18f83d07a6426cecc238ef9422"
-    },
-    "run-cmd@custom.extension": {
-      "uuid": "run-cmd@custom.extension",
-      "name": "Ydotool Trigger",
-      "pinned_version": "custom",
-      "shell_compatibility": [
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "4dd35aecacd995a8a5aec5310af0c9dee14145431078fc5be7896364f8d079da",
-      "status": "locked",
-      "source": "local_custom",
-      "macw1y_components": [
-        "ydotool_shortcut_trigger"
-      ],
-      "has_custom_patches": true,
-      "patch_description": "Local custom ydotool trigger",
-      "last_verified": "2026-11-02",
-      "pinned_sha256": "ebd1bac7764a63e6b71568bdd8b737a67393b05355255aa373c090e7582f554a"
-    },
-    "top-bar-organizer@julian.gse.jsts.xyz": {
-      "uuid": "top-bar-organizer@julian.gse.jsts.xyz",
-      "name": "Top Bar Organizer",
-      "pinned_version": 16,
-      "shell_compatibility": [
-        "45",
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "b52589e7ad9b931a2220fc9492a76654e7cb73036bea3f4ace7278a71a37a813",
-      "status": "locked",
-      "source": "extensions.gnome.org",
-      "macw1y_components": [
-        "menubar_items_order"
-      ],
-      "has_custom_patches": false,
-      "patch_description": "Upstream verified",
-      "last_verified": "2026-10-27",
-      "pinned_sha256": "9afcc51c3b1293ada97a0f2faa5f3d3959d664e5e5ca08ef7d0c8d297cb34291"
-    },
-    "user-theme@gnome-shell-extensions.gcampax.github.com": {
-      "uuid": "user-theme@gnome-shell-extensions.gcampax.github.com",
-      "name": "User Themes",
-      "pinned_version": 79,
-      "shell_compatibility": [
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "898faaf7c74f07a6a681c7a3160efb3092d343001e7bb30285ba59172b3317b1",
-      "status": "locked",
-      "source": "extensions.gnome.org",
-      "macw1y_components": [
-        "shell_theme_loading"
-      ],
-      "has_custom_patches": false,
-      "patch_description": "Upstream verified",
-      "last_verified": "2026-10-27",
-      "pinned_sha256": "f56c1eb63f1b830c70ce4d7a815003a3c29964c46dbd355555cf2f5486ed886c"
-    },
-    "volume-percentage-quick-settings@imdarktom": {
-      "uuid": "volume-percentage-quick-settings@imdarktom",
-      "name": "Volume Percentage in Quick Settings",
-      "pinned_version": 3,
-      "shell_compatibility": [
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "d4d6d8facb2fe1ca4fe4305265e1dbccb617efb88984b62724268d5c293dc3ca",
-      "status": "locked",
-      "source": "extensions.gnome.org",
-      "macw1y_components": [
-        "volume_percentage_display"
-      ],
-      "has_custom_patches": false,
-      "patch_description": "Upstream verified",
-      "last_verified": "2026-10-27",
-      "pinned_sha256": "fb258d9f2e4e933a91e00f7503ecd831b316ad08495866a0db13067aa704b71e"
-    },
-    "wack-lockscreen-clock@rinzler69-wastaken.github.com": {
-      "uuid": "wack-lockscreen-clock@rinzler69-wastaken.github.com",
-      "name": "WACK - Sonoma Lockscreen",
-      "pinned_version": 46,
-      "shell_compatibility": [
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "6cb5d5fbd9b095a5739025ce4022eea8af69dea864f34495c07f0035dbc9a6fb",
-      "status": "locked",
-      "source": "extensions.gnome.org",
-      "macw1y_components": [
-        "sonoma_lockscreen_clock"
-      ],
-      "has_custom_patches": true,
-      "patch_description": "Curtain slide & fullscreen dimming elimination (Task 575); GDM lockscreen date and prompt positioning (Task 669); static-first GDM wallpaper and deferred video startup (Phase 7); corrected GDM module paths, isolated optional UI failures, restored native actors/state on teardown, and hardened video/player lifecycle (Phase 8)",
-      "last_verified": "2026-11-13",
-      "pinned_sha256": "ee13130c404ff94837da7f55dd13146fffd4f5d34f4d04c206598cbafd59f84c"
-    },
-    "wifi-hotspot-quick-settings@aryan10.github.io": {
-      "uuid": "wifi-hotspot-quick-settings@aryan10.github.io",
-      "name": "Wi-Fi Hotspot Quick Settings",
-      "pinned_version": 4,
-      "shell_compatibility": [
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "9337157a41e12e76690b3fa937448159babff42deb5aeecfe2861c49a8c4726d",
-      "status": "locked",
-      "source": "extensions.gnome.org",
-      "macw1y_components": [
-        "wifi_hotspot_toggle"
-      ],
-      "has_custom_patches": false,
-      "patch_description": "Upstream verified",
-      "last_verified": "2026-10-27",
-      "pinned_sha256": "ee3a2ff8e928cc79508fbd336fab1d694a9bd961c2d6ac1295c83c19d9ae8987"
-    },
-    "ding@rastersoft.com": {
-      "uuid": "ding@rastersoft.com",
-      "name": "Desktop Icons NG (DING)",
-      "pinned_version": "macw1y-ding-2026-11-20",
-      "shell_compatibility": [
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "a17e1e97686d5b6b4a6c3278e077122c01d0d74905ec473eb21347b9a592cef5",
-      "status": "locked",
-      "source": "bundled_snapshot",
-      "macw1y_components": [
-        "desktop_icons",
-        "finder_desktop"
-      ],
-      "has_custom_patches": true,
-      "patch_description": "Bundled DING with macW1Y app patches and local schema; installed per user without overwriting distro files.",
-      "last_verified": "2026-11-14",
-      "pinned_sha256": "9227d6b42b31e2e3af402eb6cd251628ab6ade784e16e7934c61e25db0004b86"
-    },
-    "desktop-widgets@r3nhick": {
-      "uuid": "desktop-widgets@r3nhick",
-      "name": "Desktop Widgets",
-      "pinned_version": 16,
-      "shell_compatibility": [
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "7fb45f5b84a650e295518a58d3cf66f6c976fb49b82cb14bcdef0e1fd2736435",
-      "status": "locked",
-      "source": "github",
-      "macw1y_components": [
-        "desktop_widgets",
-        "settings_tab",
-        "clock_battery_weather_system"
-      ],
-      "has_custom_patches": true,
-      "patch_description": "Liquid Glass GLSL shader scalar uniform binding fix, frosted card styling, and safe snippet support for GNOME 50",
-      "last_verified": "2026-11-17",
-      "pinned_sha256": "0e1b87b97356ba0a10540af8920a3886f4154b91be1b1c1ac564b1f119c55553"
-    },
-    "ubuntu-appindicators@ubuntu.com": {
-      "uuid": "ubuntu-appindicators@ubuntu.com",
-      "name": "Ubuntu AppIndicators",
-      "pinned_version": "custom",
-      "shell_compatibility": [
-        "45",
-        "46",
-        "47",
-        "48",
-        "49",
-        "50",
-        "51"
-      ],
-      "sha256": "049e2f0a13af6d4d969978a235ce0fcac3a9788eac662e68b8178b270cfbd1ea",
-      "status": "locked",
-      "source": "apt_system",
-      "macw1y_components": [
-        "menubar_appindicators"
-      ],
-      "has_custom_patches": false,
-      "patch_description": "System tray indicators",
-      "last_verified": "2026-11-08",
-      "pinned_sha256": "cb5a70bc9bdad6c8eee8be4eec63e03df9b80069cbac9ffea4d7b326d83faffd"
+    "extensions": {
+        "appmenu@ChathurangaBW.github.io": {
+            "uuid": "appmenu@ChathurangaBW.github.io",
+            "name": "AppMenu",
+            "pinned_version": 15,
+            "shell_compatibility": [
+                "45",
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "c4b2f6f448e1b2c1ae9d6de73b202d7133809b0af00822dcd1c9847e39882b15",
+            "status": "locked",
+            "source": "local_custom",
+            "macw1y_components": [
+                "menubar",
+                "system_logo_menu",
+                "spotlight_search",
+                "finder_fallback"
+            ],
+            "has_custom_patches": true,
+            "patch_description": "macW1Y Monterey style spotlight, main menu, finder naming, wine exclusions; clipboard dialog copy-and-close & click-to-paste injection",
+            "last_verified": "2026-11-04",
+            "pinned_sha256": "dac8b224545ba635b2f739b6f69b532bc66572a4909627be9b83087ec02248f3"
+        },
+        "blur-my-shell@aunetx": {
+            "uuid": "blur-my-shell@aunetx",
+            "name": "Blur my Shell",
+            "pinned_version": 99999,
+            "shell_compatibility": [
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "9ef7073cdcc9e4e0f5403badf8c1456c03ea39619fd3faa38905158c29fba274",
+            "status": "locked",
+            "source": "extensions.gnome.org",
+            "macw1y_components": [
+                "menubar_blur",
+                "overview_blur",
+                "applications_blur",
+                "liquid_glass_mutter_actor"
+            ],
+            "has_custom_patches": true,
+            "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macW1Y horizontal Cairo battery indicator",
+            "last_verified": "2026-11-08",
+            "pinned_sha256": "5ae218eb0eff236be0d91d4ef5bfd20db50ba9d456ca98892b4718a892941c4d",
+            "dir_hash": "1a7fe0cf"
+        },
+        "compiz-alike-magic-lamp-effect@hermes83.github.com": {
+            "uuid": "compiz-alike-magic-lamp-effect@hermes83.github.com",
+            "name": "Compiz alike magic lamp effect",
+            "pinned_version": 25,
+            "shell_compatibility": [
+                "45",
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "99afe20e71439f0abefa4ceaff5675c2fc5bc7ff88be170d3c047a784ea99542",
+            "status": "locked",
+            "source": "extensions.gnome.org",
+            "macw1y_components": [
+                "genie_minimize_effect"
+            ],
+            "has_custom_patches": true,
+            "patch_description": "Extended paint volume & parent queue_redraw during mesh deform to prevent clipping at dock/background window boundaries",
+            "last_verified": "2026-11-14",
+            "pinned_sha256": "47a429f266a0cb4290e3298b28b98236b4cf96e99ee24618d60602015579312e"
+        },
+        "cupertino-dock-lite@rinzler69-wastaken.github.com": {
+            "uuid": "cupertino-dock-lite@rinzler69-wastaken.github.com",
+            "name": "WACK - Cupertino Dock Lite",
+            "pinned_version": 6,
+            "shell_compatibility": [
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "596d67c134c1594c239df5dfec15437c8a750a6278ddcc552eb936489fa5e80e",
+            "status": "locked",
+            "source": "extensions.gnome.org",
+            "macw1y_components": [
+                "dock_cupertino_animations",
+                "bounce_effect",
+                "dock_indicators"
+            ],
+            "has_custom_patches": true,
+            "patch_description": "macW1Y-style smooth dock reordering, duplicate prevention, and trash drop handling in animator.js and extension.js",
+            "last_verified": "2026-11-12",
+            "pinned_sha256": "00a7c13a3e6322f6a3e0d83d3ca7af7d97bc2b5aee6dcb7113c5a7ac41a9cd01"
+        },
+        "custom-command-toggle@storageb.github.com": {
+            "uuid": "custom-command-toggle@storageb.github.com",
+            "name": "Custom Command Toggle",
+            "pinned_version": 15,
+            "shell_compatibility": [
+                "45",
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "842089bdea0f22be406354ce5fc2ce7f154788e5042b51c74f8ee12f487fe10a",
+            "status": "locked",
+            "source": "extensions.gnome.org",
+            "macw1y_components": [
+                "quick_settings_custom_toggles"
+            ],
+            "has_custom_patches": false,
+            "patch_description": "Upstream verified",
+            "last_verified": "2026-10-27",
+            "pinned_sha256": "f77abdb11fa65e53e0d60a57bcc5656eaeb9c325fd17f36ac6e567ad28eb62bf"
+        },
+        "dash2dock-motion@unmade.space": {
+            "uuid": "dash2dock-motion@unmade.space",
+            "name": "Dash2Dock Motion",
+            "pinned_version": "custom",
+            "shell_compatibility": [
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "c5332c542f15f8fc5555120a43a24c2eddca3382d3b77dcf78448661102617d9",
+            "status": "locked",
+            "source": "local_custom",
+            "macw1y_components": [
+                "dock_glass_slab",
+                "icon_magnification",
+                "dock_bounce"
+            ],
+            "has_custom_patches": true,
+            "patch_description": "Smooth opacity animation and ghost overlap prevention for dock tags",
+            "last_verified": "2026-11-12",
+            "files": {
+                "windowPreview.js": "61829213a92e864511c4d4eb81f3dc98f785d390beb67d2872b78e414f727815",
+                "locationsWorker.js": "c740392c5ad16b60f3871dabf76ddb9e95e642c7e50b6fa225ed128f2207363c",
+                "Settings.ui": "8009c119a40a11c0079878a2825c6099e8aba191b82847962e1eeb638ebc114d",
+                "tahoeClockIcon.js": "cbf04baf035a7c9dd419d8657d7a11dc538d25bd9fc14350de289eae4818863d",
+                "locations.js": "ec66ffd58943e5be72eecd77224104c048fd115ecf465b38aaa79ffa48698d05",
+                "dbusmenuUtils.js": "21409665e15d1ef310516f39dc9d492d61d1a7b4fecc1a105405489bf4b7291e",
+                "stylesheet.css": "8e93fdcaac6f73aba68a21c36e485e312b3346678fc622912e3df6b3d1980062",
+                "dragOutToRemove.js": "b62ee7174c5f7f885e828c9d917bcbf7ffc6aa5a078e30947f870217311fdc34",
+                "extension.js": "6943580f458ecb499d8583ec44af4909fe340b428a234d8f755c6d43ea0d9171",
+                "launcherAPI.js": "1c3506bc72c6fc980bf3a45f25e914c2529399164511ff23df6fc7c99608027e",
+                "COPYING": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643",
+                "NOTICE": "66c7fc93e297defd7770d8b29b4c505f56dbe15542e9bb21e5c77c97a2aed95c",
+                "desktopIconsIntegration.js": "d53dad8c6f0475e3b6a23939ddfd3c6fdb709238f3392e4897e892da4761fdbf",
+                "theming.js": "2e4df7ef6b086d1592d8405889e243003e6fedcba712a8ad23051a0fedad326a",
+                "docking.js": "5a1da662a0987fb62d213606050ed2bc069500de33312fdd0e22cc3112252e2e",
+                "fileManager1API.js": "141341f2fc7a5cea14a543e17fc8d89b1d5ff7d694b67cf50ae561df749c2eda",
+                "prefs.js": "f58463bdf01d1016e4d2e0f26781d52d9f986e4821c0fcaf430bfca1b7d9c096",
+                "appIcons.js": "2639ed928505d84b9e4e3fc766bf10521861cd22db487d483f8d62e8ca702274",
+                "appSpread.js": "2c4a7f8a4aab3f2829b8523809a005aaee4b56686c0dabdb9dc48e6c3131527f",
+                "magnifier.js": "cd8b3ddd13cebaa5af2d2251f4238ee65e1b7420264044b9eee15fe1f93f140f",
+                "iconTint.js": "d51338b4c4458ce78a6ae6956d87c22f5a502d74ce0756fc0f78680b8a501c6f",
+                "glass.js": "90a7b45a9a2493e5104be31e05480b5c2ed1a3950caeb36261029e67c3a76bdb",
+                "imports.js": "1c9ee0e2f78ee65f0091d623f6308a6b568de1011c4ba63c0c450585457cf354",
+                "dash.js": "43ffb6e2a87326539e43009df03bfcedb3ec3945e5c8104fcfb2637dab4b805a",
+                "intellihide.js": "67f3dffcbb3dcd53c90e779656cca4082c086f049c8682b8e2ba995289f2600e",
+                "appIconsDecorator.js": "40021e47f6431fbc37ec19e095fc828cab44157fa104385e75008345bb549391",
+                "metadata.json": "3d5e4f14251f8ace3fe5e7990cd118d7d2a83140307664ab88c1eb319e0ae874",
+                "utils.js": "0dd4d1f336fe9a009ddc24ea455f0fd373d24ae501805080188417f4bb66a2a9",
+                "notificationsMonitor.js": "8acdb3f4134c97d98e9daaefa904afbc8df053d3cf7bbd7758a98d7d15806bbc",
+                "appIconIndicators.js": "e2629de13906c2bdc68052bcdaff5d46e9df5d5656e464dc6545a09fb325ea31",
+                "dependencies/gi.js": "aa650b8948e8dd9c31b7aa3d36567d796f03b1f7a6a72fe83a5e9ce8cace9835",
+                "dependencies/shell/ui.js": "98b15a9694f9d7ce0a6245ca04bc5da9106ee16c1eeffac9d78a08d9671afe60",
+                "dependencies/shell/misc.js": "36782a199841e905229cd05b00a1127c3f55a806f62cf0ba27671c3fe9784df2",
+                "dependencies/shell/extensions/extension.js": "158d35274cd8a4fe9631e378f14a60daa42c2e021a2a72da3e1a32694bb0be17",
+                "media/highlight_stacked_bg_h.svg": "20e08e04646379c0f2ede04aa4e12ce8700470e24a48563a814cc82824f19c72",
+                "media/highlight_stacked_bg.svg": "a0a8709c37ef059411b488f6c304bd03bf7cbf53adf26a1283486b79e248acd0",
+                "media/logo.svg": "859981d4b9a14b8b2b3345fbf6020f3bf81cf4a017089a1018ea1a01200cbbec",
+                "media/glossy.svg": "7453df1f7495328cea038400d041831ab4176d93f028fb72d5b9cf5574dad3ee",
+                "schemas/org.gnome.shell.extensions.dash2dock-motion.gschema.xml": "4c5faf1d2106ee1780a69613b3bfa2edb9c22c5f29e581bfabb78587161f42d0",
+                "schemas/gschemas.compiled": "86d36862c7def6cf5cdaa3c41e42b89b187efb064cbf3bcc21142eb3c881377a",
+                "locale/pl/LC_MESSAGES/dash2dock-motion.mo": "dfc98de1967ee2c70484dae6f479672deefe2d67ab0a27d0d22dfc12bcfd90ce",
+                "locale/lv/LC_MESSAGES/dash2dock-motion.mo": "8ef18ba9de3e2cee7cc4fd1734df73c12679d44e8ae87628d74de8715a6ad255",
+                "locale/ko/LC_MESSAGES/dash2dock-motion.mo": "923cc8ab0953724c66d8a71363bb47a75d91fededd1248329f4442a8ce51000e",
+                "locale/fr/LC_MESSAGES/dash2dock-motion.mo": "5fe771a3ddbd5ee8214c0b971e25f10ec272fc319b5cb6546edc3864cacc6cb5",
+                "locale/ar/LC_MESSAGES/dash2dock-motion.mo": "9540a80fcc480d115baa41467c89d22243491e69daec9c99b8d522980d1f65ab",
+                "locale/ja/LC_MESSAGES/dash2dock-motion.mo": "eb3d4c724fc96f31921666806feb8780fa0625e5b19c1962979dded80f151ea9",
+                "locale/sl/LC_MESSAGES/dash2dock-motion.mo": "4b3cb54cbe3969ea92aa34278271972795a6e4bd4f6587b96c5a4ba78f8eda7a",
+                "locale/sv/LC_MESSAGES/dash2dock-motion.mo": "6f34a8cc8f86dcd753d1efbe5867969c769e74426efad0562987dd9dc67d37a6",
+                "locale/de/LC_MESSAGES/dash2dock-motion.mo": "e003e24b8703e6accce3d46141336cc50e9ae350ee41d50bab3c59aecf3356ac",
+                "locale/id/LC_MESSAGES/dash2dock-motion.mo": "e370a81596eae9ce7117c4b02d8890bef2c272065b1d04b384c5e93fc4634bd5",
+                "locale/pt_BR/LC_MESSAGES/dash2dock-motion.mo": "fd058ba57e7356aabc9d2762810003b3cff8353e236d7b240ad59b0742122ca4",
+                "locale/el/LC_MESSAGES/dash2dock-motion.mo": "af696427142b203cecf204f2c5e1a97603bb1d43f0fa932ae86056ed6862ae59",
+                "locale/tr/LC_MESSAGES/dash2dock-motion.mo": "d5ca6e6e241a1772411da0958e10a58fc49b53e4e0421cbb2b1a83cc4f59f033",
+                "locale/sr/LC_MESSAGES/dash2dock-motion.mo": "9cc05f4ba6e9b27c9e1d90d4e6e48bd2820025fb9dc9642c3b992d6975185259",
+                "locale/be/LC_MESSAGES/dash2dock-motion.mo": "1b81f2eb844a3dbf9b17079ef6b43fa464a15c92687198785a496100d657c1be",
+                "locale/ka/LC_MESSAGES/dash2dock-motion.mo": "6d812c68f69f6fb4981a837d8a6c106631153278ded37d56b3f5f9b0d3348524",
+                "locale/ru/LC_MESSAGES/dash2dock-motion.mo": "eb9c3bd50b986f104fdb22cb91afbe88b835a0145ea3e00dd3bb6c238e748b5d",
+                "locale/pt/LC_MESSAGES/dash2dock-motion.mo": "1cc23b94854efab5ed71a700b363085f38b921162c5eb8141fc415798e7b60a7",
+                "locale/es/LC_MESSAGES/dash2dock-motion.mo": "4f9349697d50eb7be4df9cf0b95fbee631c5361dda3b4c5db3953bdcc4260fb3",
+                "locale/zh_CN/LC_MESSAGES/dash2dock-motion.mo": "525521d5ddbf2b13d0850c4829c6c51bc5c37cc1236dc712db2a5c6fa9b85ee2",
+                "locale/nb/LC_MESSAGES/dash2dock-motion.mo": "29be8ee9b264fd6ef359cbf5e1be3121ffbefdd610df045a228f328c7b08db13",
+                "locale/uk_UA/LC_MESSAGES/dash2dock-motion.mo": "4e3c15e81205f099115ea6d290fc881ef2654bf3408fb91f42c42222e0e94608",
+                "locale/kk/LC_MESSAGES/dash2dock-motion.mo": "15ffd75cd4e6699133422a1845d0cb1d8157c6a021b7e5f6616813918ff2c5e1",
+                "locale/sr@latin/LC_MESSAGES/dash2dock-motion.mo": "c05b18fbc84493526e16bb53bf62be7f90c59251983a6c0b04fbf0b9f40c21e4",
+                "locale/gl/LC_MESSAGES/dash2dock-motion.mo": "7ccbeadfb87dd398d03c73e7775500b2fa668c02cf28b3e425f273df9560ba5e",
+                "locale/sk/LC_MESSAGES/dash2dock-motion.mo": "f09aa315ba049db88524e2ac7fc1da73826daed7515d24c084c7f277e8724c07",
+                "locale/hu/LC_MESSAGES/dash2dock-motion.mo": "99e9ac0638f71bdcd24f1ed3e045d144f542bd7e88c1a27f362a685856358441",
+                "locale/zh_TW/LC_MESSAGES/dash2dock-motion.mo": "ec39ba7301406742b0c8059ecb8011aea69a2f14a44550790ec27f27bad61bd8",
+                "locale/eu/LC_MESSAGES/dash2dock-motion.mo": "b380b3528e23e0bfb6e89a6c0c36a4121df7f2de19cb89c687fbb57d08114d49",
+                "locale/it/LC_MESSAGES/dash2dock-motion.mo": "471d8356c78fee9d071c82f084bb644af050468151ffec37f50391c0bac9ef33",
+                "locale/cs/LC_MESSAGES/dash2dock-motion.mo": "259b05ccf0664b6966acc8d09ee839787af170a06db1573584e19849e9bd42c3",
+                "locale/bg/LC_MESSAGES/dash2dock-motion.mo": "72c57c7741406e26abf8da255178d16de5236f1f2f45a135296f94121e19e5bf",
+                "locale/nl/LC_MESSAGES/dash2dock-motion.mo": "ba7e144e0ee6edcb4f84f5ffbd0727eb3104c1b1bd2c1e520cc3af49affd5d39",
+                "locale/ro/LC_MESSAGES/dash2dock-motion.mo": "3c44204f5671296cb522d7ee5769b18e0506870f8a413f79a23983ebc04bd3fe"
+            },
+            "pinned_sha256": "931d89521eb4a7671117dd3d3b1f898604e0fc91bd98e1b2c72ca51def811ead"
+        },
+        "eval-helper@mactheme": {
+            "uuid": "eval-helper@mactheme",
+            "name": "Eval Helper",
+            "pinned_version": "custom",
+            "shell_compatibility": [
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "aa6ec9b1fa18b67a92281c8738723e1231aa28665cd745bbd4e9bd585351d5fd",
+            "status": "locked",
+            "source": "local_custom",
+            "macw1y_components": [
+                "dbus_eval_helper",
+                "notification_grouping",
+                "switcher_popup_mac_liquid_glass"
+            ],
+            "has_custom_patches": true,
+            "patch_description": "Local D-Bus EvalHelper service and macW1Y Alt+Tab switcher enhancements",
+            "last_verified": "2026-11-10",
+            "pinned_sha256": "66eec8bb76fa81789b84621b2284c572925af78482c29a67e9be74530beb2edd"
+        },
+        "kiwi@kemma": {
+            "uuid": "kiwi@kemma",
+            "name": "Kiwi Component Suite",
+            "pinned_version": 99999,
+            "shell_compatibility": [
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "d9a77d6e3bc181c539102c27c3c498f3a7475e3618a8b2dffd1a161839a1d25a",
+            "status": "locked",
+            "source": "extensions.gnome.org",
+            "macw1y_components": [
+                "quick_settings_styling",
+                "traffic_lights_buttons",
+                "control_center_sliders",
+                "screencast_indicator",
+                "control_center_liquid_glass_submenus"
+            ],
+            "has_custom_patches": true,
+            "patch_description": "macW1Y Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macW1Y Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macW1Y Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macW1Y horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
+            "last_verified": "2026-11-09",
+            "integrity_hash": "408cf0e45df8c5eaefa45c0f36cc0125c669d4bcc42bfa86de8b1cace9e0c94f",
+            "pinned_sha256": "7041e6f9efeb55e7f574bf8b08a591e7dd335546de8f9be488556431e356dfaf",
+            "expected_hash": "3986c471",
+            "dir_hash": "e154ab41"
+        },
+        "liquid-glass@thinkingcoding1231.gmail.com": {
+            "uuid": "liquid-glass@thinkingcoding1231.gmail.com",
+            "name": "Liquid Glass",
+            "pinned_version": "custom",
+            "shell_compatibility": [
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "1d54c6d754cc9a4dd88b5cdf139ed42f6e5be0c58ffa66fc8ad7fd13b5737242",
+            "status": "locked",
+            "source": "local_custom",
+            "macw1y_components": [
+                "liquid_glass_shader",
+                "specular_highlight",
+                "panel_menu_glass",
+                "dock_glass"
+            ],
+            "has_custom_patches": true,
+            "patch_description": "Local custom Liquid Glass GLSL refraction & border shader; UI container owner check for strict rounded rectangle radius enforcement and setShapeType API",
+            "last_verified": "2026-11-04",
+            "integrity_hash": "86bb1febda65991cf8178b7937151597e897260b045ab53d267fab9b18167d0f",
+            "files": {
+                "global.d.ts": "02492c5b3b37afc11cb19dee9ae1e9ae8f4e6f8502920b57ae6d0b6f8175c41a",
+                "package-lock.json": "2610757c38df98269142accd24a1e84a464bbd02e884569ae6d4c9bec586f5db",
+                "stylesheet.css": "c2b39a7032cc770616cfceb967149a11edd796480fa74284946337755082e44a",
+                "extension.js": "528a8d4c343e7525f53a4823af16e470ce797d4f4ff8c1b46b8ce0e1b1f24e08",
+                "package.json": "bedde7d0176d01a34ba1e6512bfc48b17db8f547f5cfe1ab1adc51d6515396b3",
+                "prefs.js": "6bfeecdf6aead9c2da88d0eaea8cd5fa75d91d2fd4552b8534586d401adfad4b",
+                "resources.gresource": "0b27aab3330db160302da89ad14ceb38731c5b954c699e70820a9fb1466efbbb",
+                "metadata.json": "eb2f8ffdc06de14cfa855cf34a3b967daddcb1b31171ea7db0d66325df40327b",
+                "tsconfig.json": "0b308b88e46f61b483baad1333944e23c05ef635bfb12cd8968a441ab4925636",
+                "resources.gresource.xml": "86360a8830d1479d3ccb1b1698762f9cb65d90833e30b94c90855a633c666fa3",
+                "shaders/gaussian_v.frag": "604b318b9750f807b3ad52b08cba8181638a16f73d12cf3bb2c46733d1937c55",
+                "shaders/downsample.frag": "35d971052c1730e7da0e5edf15c57c04300573a0c2fdd9de197739b9aa1c9b4c",
+                "shaders/gaussian_h.frag": "1375ac86287fce5a2a1878bfebb4cb39d90eccd3e3128381bc0611e8feaa734d",
+                "shaders/glass.frag": "a56345018ef05808ccb99ddc10ad4c3e58ddedd8b929e884486930b63a4a77c0",
+                "shaders/upsample.frag": "5b499e75ee05a69429948049ba130b6b160a8cf35e63bdc709aec754688e0b03",
+                "schemas/gschemas.compiled": "61af4893ac7b5510f13e548a81c72f4cb707dfd24239788a2944fe785caeacd9",
+                "schemas/org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com.gschema.xml": "8069d7797fd064f2583643d1b54cf94b61bfdb14d11854a706ff328258078d13",
+                "dist/panelMenuManager.js": "8abc38ce13f4e8a8cbb0e3b935773da6461999d3b3bb73dfec5755c91f7735ff",
+                "dist/uiManager.js": "3140ca6115927be0511fb40248ee2a8affc6738115997b23b7e10f8f511e5eb8",
+                "dist/windowListService.js": "d3269524445c9faf0f5688d3188885c792fd18ff691219fd48eda9531c8bb2a5",
+                "dist/glassGate.js": "9b9328b7d74dab848bdab9794ec1247b97a933219a34f3d6548f776c3ffd3e0c",
+                "dist/osdManager.js": "43dc81dde3df9077ff7f36189d5cfa45cd2a987205f54d5da4f024b6ea527978",
+                "dist/applicationManager_v2.js": "15f84a22c7995625d6c98b251cde13abebe9827f34d91b7ce66cecea0b21f454",
+                "dist/liquidEffect_v2.js": "1c6eaef2b3ae0dfc03f6d7403073037cb9c79abea3afc680e2b9325241f92833",
+                "dist/applicationManager.js": "95ee1e8613e9f49258b3a6009c3d9a67c229e9177235a48e38552d8394735c64",
+                "dist/dockManager.js": "b1deaee36ebbd321d83b3b2cb2d455450dd06d07700911c0ff897ab9a3389e5a",
+                "dist/notificationManager.js": "96d0a89ca404388b19599704108dfc69013583eedd9f3b796ad987c7d3eeca0c",
+                "dist/logger.js": "8481ce8b27fa284d9f151ef625067adad971cf34f8912d4165c64a90e30bc7d3",
+                "dist/quickSettingsManager.js": "575f3a04bc2abf3725ccacd1eba8fcb80e811ceb4daebf4773daf189ab237561",
+                "dist/contrastSampler.js": "95afa45e3be640c342cdc967faca8d42e31ea6bea7cb31ea34d00adcfb9b61e9",
+                "dist/gpuSaveLiveApply.js": "ffe8a7c6e803914d4afeb8770b9a9d3752a8580e531c99dc5f75ef212d5136ca",
+                "dist/liquidEffect.js": "9d57fb1ee7bcaae56384dfb6febb1ae9838f732fff876699b8a190f3e9db7957",
+                "dist/utils.js": "24370900c20d4ed3d1fd00ce2ca6b16b6190f4a9a2b0507b75de0c81f6d817ee",
+                "dist/rendering/backdropGlass.js": "61ac8142d145101e061b7e63df7542398c2584a321ee18beaa422d2635d16e11",
+                "src/liquidEffect.ts": "ff7876d11cb2daf233ddb5b2a82ae19d514f849eb43edafae1f73c0daf11c0c6",
+                "src/contrastSampler.ts": "e8089ccd15d1058e8c876e18f1b00cb314cfb90ae2a86c7539f82d9728cda4d1",
+                "src/dockManager.ts": "5711cdd97623549cd1205dcab91b2faed1ce8f5eff7b0ea32101e1c2ba633a2e",
+                "src/utils.ts": "6efe743fcaf87c563fd44efd334c4577ff99202273b609a4b5a9b4572be06622",
+                "src/quickSettingsManager.ts": "50ad95b47a2b4ba78c4dfa342198d8195b5a097f11c160dd71c8c617508dfc3c",
+                "src/windowListService.ts": "0bae95a7bd69b932b7c314f8f47de9305633f4ceefbaafb24f8c2d89d6811838",
+                "src/notificationManager.ts": "97f13cc8df5a5f231d5412c9d804372aba2bc752862465a785ef8fb6f8a01a52",
+                "src/panelMenuManager.ts": "873c0495997ee409b03a1c70010b11f439013138ba3125b41cd6be12819fb2cb",
+                "src/uiManager.ts": "7717bc5c4c967b901318395c90d71b9dc9c5518852086f81b52bbf64bea9b790",
+                "src/applicationManager.ts": "3cf276bcc5fde06d96e1bcba1e27a68cd4e7e2b248812fc588d5a5a500284300",
+                "src/osdManager.ts": "9c618a83deecd190b86aa1b60398762c8ee7feff6159f5377b0c19ac71063202",
+                "src/logger.ts": "6ba0a6c6216513488a8fd136136e17156c7e3fb3b278d48c5cbe0fe97040ca9e",
+                "icons/image-adjust-shadows-symbolic.svg": "1859a445a4e8de6f770575030013cead24bdcdef409f5727df2bfb7d2425052f",
+                "icons/dock-bottom-symbolic.svg": "5ea4c71cd6fe7e775fdf98f85ae05402deedf497bbe76ead9db8417e7c279f12",
+                "icons/audio-volume-medium-symbolic.svg": "8447a2300f7d0fda2c3be92ca17736079661de4cc6942571468220bb2a25ee82",
+                "icons/shapes-large-symbolic.svg": "713fe56bf2d550a9c99600a1ce8cd87b993b40101f9d5fa7b007907efc9cdd11"
+            },
+            "pinned_sha256": "da124f57fc8940a746879d5aae58d5bb79bbca9960f92d6d423f1b5eba225c37"
+        },
+        "macw1y-touchpad-gestures@mactheme": {
+            "uuid": "macw1y-touchpad-gestures@mactheme",
+            "name": "macW1Y Touchpad Gestures",
+            "pinned_version": "custom",
+            "shell_compatibility": [
+                "45",
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "055509b7d08283ab4cf870ef0d7e1736fa07f07e5a4f6fe388aa157de143b7f2",
+            "status": "locked",
+            "source": "local_custom",
+            "macw1y_components": [
+                "touchpad_gestures",
+                "three_finger_drag",
+                "mission_control_swipe"
+            ],
+            "has_custom_patches": true,
+            "patch_description": "Local custom macW1Y touchpad gesture suite",
+            "last_verified": "2026-10-27",
+            "pinned_sha256": "6c3a65ffc33769cab51bdbe031b3fc266016014646b344e0c59c8697e11e54e0"
+        },
+        "quick-settings-scroll@diskmth.fr": {
+            "uuid": "quick-settings-scroll@diskmth.fr",
+            "name": "Quick Settings Scroll",
+            "pinned_version": 3,
+            "shell_compatibility": [
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "b8d8e614c7e7b1a5c31107d91607816b6dc2be01b63dbc149fde500ee8365cfa",
+            "status": "locked",
+            "source": "extensions.gnome.org",
+            "macw1y_components": [
+                "quick_settings_scroll"
+            ],
+            "has_custom_patches": false,
+            "patch_description": "Upstream verified",
+            "last_verified": "2026-10-27",
+            "pinned_sha256": "67ea6c3417df44d85ac40b3ef26744f88f553394b84fb7c3f9c4754461320bad"
+        },
+        "Rounded_Corners@lennart-k": {
+            "uuid": "Rounded_Corners@lennart-k",
+            "name": "Rounded Corners",
+            "pinned_version": 19,
+            "shell_compatibility": [
+                "45",
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "c49efd734f86925faef7276a2997aad527448d83411405b20d674bfe2aac252d",
+            "status": "locked",
+            "source": "extensions.gnome.org",
+            "macw1y_components": [
+                "screen_rounded_corners"
+            ],
+            "has_custom_patches": false,
+            "patch_description": "Upstream verified",
+            "last_verified": "2026-11-18",
+            "pinned_sha256": "a28915da19b1e453b1d120008e875f1c06f66e18f83d07a6426cecc238ef9422"
+        },
+        "run-cmd@custom.extension": {
+            "uuid": "run-cmd@custom.extension",
+            "name": "Ydotool Trigger",
+            "pinned_version": "custom",
+            "shell_compatibility": [
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "4dd35aecacd995a8a5aec5310af0c9dee14145431078fc5be7896364f8d079da",
+            "status": "locked",
+            "source": "local_custom",
+            "macw1y_components": [
+                "ydotool_shortcut_trigger"
+            ],
+            "has_custom_patches": true,
+            "patch_description": "Local custom ydotool trigger",
+            "last_verified": "2026-11-02",
+            "pinned_sha256": "ebd1bac7764a63e6b71568bdd8b737a67393b05355255aa373c090e7582f554a"
+        },
+        "top-bar-organizer@julian.gse.jsts.xyz": {
+            "uuid": "top-bar-organizer@julian.gse.jsts.xyz",
+            "name": "Top Bar Organizer",
+            "pinned_version": 16,
+            "shell_compatibility": [
+                "45",
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "b52589e7ad9b931a2220fc9492a76654e7cb73036bea3f4ace7278a71a37a813",
+            "status": "locked",
+            "source": "extensions.gnome.org",
+            "macw1y_components": [
+                "menubar_items_order"
+            ],
+            "has_custom_patches": false,
+            "patch_description": "Upstream verified",
+            "last_verified": "2026-10-27",
+            "pinned_sha256": "9afcc51c3b1293ada97a0f2faa5f3d3959d664e5e5ca08ef7d0c8d297cb34291"
+        },
+        "user-theme@gnome-shell-extensions.gcampax.github.com": {
+            "uuid": "user-theme@gnome-shell-extensions.gcampax.github.com",
+            "name": "User Themes",
+            "pinned_version": 79,
+            "shell_compatibility": [
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "898faaf7c74f07a6a681c7a3160efb3092d343001e7bb30285ba59172b3317b1",
+            "status": "locked",
+            "source": "extensions.gnome.org",
+            "macw1y_components": [
+                "shell_theme_loading"
+            ],
+            "has_custom_patches": false,
+            "patch_description": "Upstream verified",
+            "last_verified": "2026-10-27",
+            "pinned_sha256": "f56c1eb63f1b830c70ce4d7a815003a3c29964c46dbd355555cf2f5486ed886c"
+        },
+        "volume-percentage-quick-settings@imdarktom": {
+            "uuid": "volume-percentage-quick-settings@imdarktom",
+            "name": "Volume Percentage in Quick Settings",
+            "pinned_version": 3,
+            "shell_compatibility": [
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "d4d6d8facb2fe1ca4fe4305265e1dbccb617efb88984b62724268d5c293dc3ca",
+            "status": "locked",
+            "source": "extensions.gnome.org",
+            "macw1y_components": [
+                "volume_percentage_display"
+            ],
+            "has_custom_patches": false,
+            "patch_description": "Upstream verified",
+            "last_verified": "2026-10-27",
+            "pinned_sha256": "fb258d9f2e4e933a91e00f7503ecd831b316ad08495866a0db13067aa704b71e"
+        },
+        "wack-lockscreen-clock@rinzler69-wastaken.github.com": {
+            "uuid": "wack-lockscreen-clock@rinzler69-wastaken.github.com",
+            "name": "WACK - Sonoma Lockscreen",
+            "pinned_version": 46,
+            "shell_compatibility": [
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "6cb5d5fbd9b095a5739025ce4022eea8af69dea864f34495c07f0035dbc9a6fb",
+            "status": "locked",
+            "source": "extensions.gnome.org",
+            "macw1y_components": [
+                "sonoma_lockscreen_clock"
+            ],
+            "has_custom_patches": true,
+            "patch_description": "Curtain slide & fullscreen dimming elimination (Task 575); GDM lockscreen date and prompt positioning (Task 669); static-first GDM wallpaper and deferred video startup (Phase 7); corrected GDM module paths, isolated optional UI failures, restored native actors/state on teardown, and hardened video/player lifecycle (Phase 8)",
+            "last_verified": "2026-11-13",
+            "pinned_sha256": "ee13130c404ff94837da7f55dd13146fffd4f5d34f4d04c206598cbafd59f84c"
+        },
+        "wifi-hotspot-quick-settings@aryan10.github.io": {
+            "uuid": "wifi-hotspot-quick-settings@aryan10.github.io",
+            "name": "Wi-Fi Hotspot Quick Settings",
+            "pinned_version": 4,
+            "shell_compatibility": [
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "9337157a41e12e76690b3fa937448159babff42deb5aeecfe2861c49a8c4726d",
+            "status": "locked",
+            "source": "extensions.gnome.org",
+            "macw1y_components": [
+                "wifi_hotspot_toggle"
+            ],
+            "has_custom_patches": false,
+            "patch_description": "Upstream verified",
+            "last_verified": "2026-10-27",
+            "pinned_sha256": "ee3a2ff8e928cc79508fbd336fab1d694a9bd961c2d6ac1295c83c19d9ae8987"
+        },
+        "ding@rastersoft.com": {
+            "uuid": "ding@rastersoft.com",
+            "name": "Desktop Icons NG (DING)",
+            "pinned_version": "macw1y-ding-2026-11-20",
+            "shell_compatibility": [
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "a17e1e97686d5b6b4a6c3278e077122c01d0d74905ec473eb21347b9a592cef5",
+            "status": "locked",
+            "source": "bundled_snapshot",
+            "macw1y_components": [
+                "desktop_icons",
+                "finder_desktop"
+            ],
+            "has_custom_patches": true,
+            "patch_description": "Bundled DING with macW1Y app patches and local schema; installed per user without overwriting distro files.",
+            "last_verified": "2026-11-14",
+            "pinned_sha256": "9227d6b42b31e2e3af402eb6cd251628ab6ade784e16e7934c61e25db0004b86"
+        },
+        "desktop-widgets@r3nhick": {
+            "uuid": "desktop-widgets@r3nhick",
+            "name": "Desktop Widgets",
+            "pinned_version": 16,
+            "shell_compatibility": [
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "7fb45f5b84a650e295518a58d3cf66f6c976fb49b82cb14bcdef0e1fd2736435",
+            "status": "locked",
+            "source": "github",
+            "macw1y_components": [
+                "desktop_widgets",
+                "settings_tab",
+                "clock_battery_weather_system"
+            ],
+            "has_custom_patches": true,
+            "patch_description": "Liquid Glass GLSL shader scalar uniform binding fix, frosted card styling, and safe snippet support for GNOME 50",
+            "last_verified": "2026-11-17",
+            "pinned_sha256": "0e1b87b97356ba0a10540af8920a3886f4154b91be1b1c1ac564b1f119c55553"
+        },
+        "ubuntu-appindicators@ubuntu.com": {
+            "uuid": "ubuntu-appindicators@ubuntu.com",
+            "name": "Ubuntu AppIndicators",
+            "pinned_version": "custom",
+            "shell_compatibility": [
+                "45",
+                "46",
+                "47",
+                "48",
+                "49",
+                "50",
+                "51"
+            ],
+            "sha256": "049e2f0a13af6d4d969978a235ce0fcac3a9788eac662e68b8178b270cfbd1ea",
+            "status": "locked",
+            "source": "apt_system",
+            "macw1y_components": [
+                "menubar_appindicators"
+            ],
+            "has_custom_patches": false,
+            "patch_description": "System tray indicators",
+            "last_verified": "2026-11-08",
+            "pinned_sha256": "cb5a70bc9bdad6c8eee8be4eec63e03df9b80069cbac9ffea4d7b326d83faffd"
+        }
     }
-  }
 }

@@ -2,9 +2,9 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
-import { LiquidEffect } from './liquidEffect.js?v=fix1';
-import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip } from './utils.js?v=fix3';
-import { glassRefreshDue, glassRefreshDone, glassForceRefresh, isBackdropDirtyOrChanged, addGlassWakeListener, removeGlassWakeListener, isActorNearGlass, hookWindowDamage } from './glassGate.js?v=fix3';
+import { LiquidEffect } from './liquidEffect.js?v=fix3';
+import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip } from './utils.js?v=fix4';
+import { glassRefreshDue, glassRefreshDone, glassForceRefresh, isBackdropDirtyOrChanged, addGlassWakeListener, removeGlassWakeListener, isActorNearGlass, hookWindowDamage } from './glassGate.js?v=fix4';
 
 const SHADER_PADDING = 20;
 
@@ -477,36 +477,27 @@ export class DashManager {
             return GLib.SOURCE_REMOVE;
         };
         this.wakeFrameSync = () => {
-            try {
-                if (global.display?.get_monitor_in_fullscreen?.(Main.layoutManager.primaryIndex)) {
-                    return;
-                }
-            } catch (_) {}
+            if (this._torndown || !this.bgActor || !this.targetActor?.mapped) return;
             this._idleCount = 0;
             if (this._idleTimeoutId) {
                 GLib.source_remove(this._idleTimeoutId);
                 this._idleTimeoutId = 0;
             }
-            if (this._frameSyncId === 0 && !this._torndown && this.bgActor && this.targetActor?.mapped) {
+            if (this._frameSyncId === 0) {
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
         };
         this._wakeUnsub = (damagedActor, reason) => {
             if (this._torndown || !this.bgActor || !this.targetActor?.mapped) return;
-            try {
-                if (global.display?.get_monitor_in_fullscreen?.(Main.layoutManager.primaryIndex) &&
-                    !['restacked', 'fullscreen', 'overview', 'layout'].includes(reason)) {
-                    return;
-                }
-            } catch (_) {}
-            if (['restacked', 'fullscreen', 'overview', 'layout'].includes(reason)) {
+            if (['restacked', 'fullscreen', 'overview', 'layout', 'overview-scroll', 'overview-transition', 'window-moved'].includes(reason)) {
                 glassForceRefresh?.(this.bgActor);
                 try { this._windowCloneManager?.rebuildClones?.(); } catch (_) {}
                 try { this._uiSampler?.rebindSelf?.(); } catch (_) {}
                 try { this._uiSampler?.refresh?.(); } catch (_) {}
                 try { this.effect?.markBackdropDirty?.(); } catch (_) {}
             }
-            if (!damagedActor || isActorNearGlass(damagedActor, this.bgActor)) {
+            if (!damagedActor || isActorNearGlass(damagedActor, this.bgActor) || Main.overview?.visible) {
+                this.effect?.markBackdropDirty?.();
                 this.wakeFrameSync();
             }
         };
@@ -515,19 +506,19 @@ export class DashManager {
             if (this._idleTimeoutId || this._torndown)
                 return;
 
-
-
-            this._idleTimeoutId = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 2, () => {
+            const intervalMs = Main.overview?.visible ? 150 : 1500;
+            this._idleTimeoutId = GLib.timeout_add(GLib.PRIORITY_LOW, intervalMs, () => {
                 this._idleTimeoutId = 0;
                 if (this._torndown || !this.bgActor || !this.targetActor?.mapped)
                     return GLib.SOURCE_REMOVE;
                 let drifted = false;
                 try {
-                    drifted = isBackdropDirtyOrChanged(this.bgActor);
+                    drifted = Main.overview?.visible || isBackdropDirtyOrChanged(this.bgActor);
                 } catch (_) {
                     drifted = true;
                 }
                 if (drifted) {
+                    this.effect?.markBackdropDirty?.();
                     this.wakeFrameSync();
                 } else {
                     this._scheduleIdleHeartbeat();

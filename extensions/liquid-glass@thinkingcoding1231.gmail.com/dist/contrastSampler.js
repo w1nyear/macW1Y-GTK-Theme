@@ -1,7 +1,7 @@
 import Shell from 'gi://Shell';
 import Gio from 'gi://Gio';
 import GdkPixbuf from 'gi://GdkPixbuf';
-import { getTransformedRect } from './utils.js?v=fix3';
+import { getTransformedRect } from './utils.js?v=fix4';
 const SWITCH_ADVANTAGE = 1.2;
 const MIN_READABLE_CONTRAST = 4.5;
 export const AdaptiveContrastConfig = {

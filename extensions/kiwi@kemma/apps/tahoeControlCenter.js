@@ -3862,6 +3862,7 @@ function _syncStack(s, monitor) {
     s.uiSampler.sync(monitorX, monitorY, screenW, screenH);
     s.wcm.sync();
     try {
+        s.effect?.markBackdropDirty?.();
         glassRefreshDone(s.bgActor, extraH);
     } catch (_) {}
 }

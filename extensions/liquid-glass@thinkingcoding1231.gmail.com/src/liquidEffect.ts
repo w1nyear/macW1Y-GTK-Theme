@@ -3728,6 +3728,7 @@ export const LiquidEffect = GObject.registerClass({
 
   markBackdropDirty(): void {
     this._backdropDirty = true;
+    try { this.queue_repaint(); } catch (_) {}
   }
 
   queue_repaint(): void {

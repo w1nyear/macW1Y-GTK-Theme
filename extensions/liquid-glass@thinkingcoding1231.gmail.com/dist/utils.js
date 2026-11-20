@@ -4394,4 +4394,4 @@ export {
     glassForceRefresh,
     glassPollStats,
     isBackdropDirtyOrChanged,
-} from './glassGate.js?v=fix3';
+} from './glassGate.js?v=fix4';

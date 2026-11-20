@@ -4,9 +4,9 @@ import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
-import { LiquidEffect } from './liquidEffect.js?v=fix1';
+import { LiquidEffect } from './liquidEffect.js?v=fix3';
 import { StageContrastSampler, AdaptiveContrastConfig } from './contrastSampler.js';
-import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, resolveCrossFade, adaptiveColorTweener } from './utils.js?v=fix3';
+import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, resolveCrossFade, adaptiveColorTweener, addGlassWakeListener, removeGlassWakeListener, isActorNearGlass, glassForceRefresh, glassRefreshDue, glassRefreshDone } from './utils.js?v=fix4';
 
 const SHADER_PADDING = 20;
 export class OsdManager {
@@ -216,41 +216,58 @@ export class OsdManager {
         const frameLaterType = Meta.LaterType.BEFORE_REDRAW;
         const frameTick = () => {
             this._frameSyncId = 0;
-
-
-
-
-
-
-
-
-
-            if (this._torndown)
+            if (this._torndown || !this._isEffectActive)
                 return GLib.SOURCE_REMOVE;
-            if (!this._isEffectActive)
-                return GLib.SOURCE_REMOVE;
-
 
             if (isFrameSyncFrozen()) {
                 this._frameSyncId = this._laterAdd(frameLaterType, frameTick);
                 return GLib.SOURCE_REMOVE;
             }
+            let didRefresh = false;
             for (let state of this._osdStates) {
-
-
-
-
                 ensureGlassAllocated(state.bgActor);
                 try {
-                    this._syncGeometry(state);
+                    if (this._syncGeometry(state))
+                        didRefresh = true;
                 }
                 catch (e) {
                     reportFrameLoopError('OSDManager', e);
                 }
             }
-            this._frameSyncId = this._laterAdd(frameLaterType, frameTick);
+            if (didRefresh) {
+                this._idleCount = 0;
+            } else {
+                this._idleCount = (this._idleCount || 0) + 1;
+            }
+            if (this._idleCount < 8) {
+                this._frameSyncId = this._laterAdd(frameLaterType, frameTick);
+            }
             return GLib.SOURCE_REMOVE;
         };
+        this.wakeFrameSync = () => {
+            this._idleCount = 0;
+            if (this._frameSyncId === 0 && !this._torndown && this._isEffectActive) {
+                this._frameSyncId = this._laterAdd(frameLaterType, frameTick);
+            }
+        };
+        this._wakeUnsub = (damagedActor, reason) => {
+            if (this._torndown || !this._isEffectActive) return;
+            for (let state of this._osdStates) {
+                if (!state.bgActor || !state.targetBox?.mapped) continue;
+                if (['restacked', 'fullscreen', 'overview', 'layout', 'window-moved'].includes(reason)) {
+                    glassForceRefresh?.(state.bgActor);
+                    try { state._windowCloneManager?.rebuildClones?.(); } catch (_) {}
+                    try { state._uiSampler?.rebindSelf?.(); } catch (_) {}
+                    try { state._uiSampler?.refresh?.(); } catch (_) {}
+                    try { state.effect?.markBackdropDirty?.(); } catch (_) {}
+                }
+                if (!damagedActor || isActorNearGlass(damagedActor, state.bgActor)) {
+                    state.effect?.markBackdropDirty?.();
+                    this.wakeFrameSync();
+                }
+            }
+        };
+        addGlassWakeListener(this._wakeUnsub);
         this._frameSyncId = this._laterAdd(frameLaterType, frameTick);
         this._startAdaptiveColorSampling();
 
@@ -504,11 +521,8 @@ export class OsdManager {
         }
 
         state._windowCloneManager?.setOffset(-monitorX, -monitorY);
-        state._uiSampler?.refresh();
-
-
-
-
+        if (!glassRefreshDue?.(state.bgActor))
+            return false;
 
         syncGlassCaptureClip({
             cloneContainer: state._cloneContainer,
@@ -518,14 +532,22 @@ export class OsdManager {
             uiSampler: state._uiSampler,
             windowCloneManager: state._windowCloneManager,
         });
+        state._uiSampler?.refresh();
         state._uiSampler?.sync(monitorX, monitorY, screenW, screenH);
         state._windowCloneManager?.sync();
+        state.effect?.markBackdropDirty?.();
+        glassRefreshDone?.(state.bgActor);
+        return true;
     }
 
     _removeEffect() {
         if (!this._isEffectActive)
             return;
         this._isEffectActive = false;
+        if (this._wakeUnsub) {
+            removeGlassWakeListener(this._wakeUnsub);
+            this._wakeUnsub = null;
+        }
         this._stopAdaptiveColorSampling();
         this._clearAdaptiveStyles();
         if (this._monitorsChangedId !== 0) {

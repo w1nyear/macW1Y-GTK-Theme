@@ -7,9 +7,9 @@ import St from 'gi://St';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Gio from 'gi://Gio';
-import { LiquidEffect } from './liquidEffect.js?v=fix1';
+import { LiquidEffect } from './liquidEffect.js?v=fix3';
 import { StageContrastSampler, AdaptiveContrastConfig } from './contrastSampler.js';
-import { UnpickableActor, UILayerSampler, UnpickableWidget, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, resolveMonitorGeometry, isActorValid, getAllocatedSize, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, resolveCrossFade, adaptiveColorTweener, glassRefreshDue, glassRefreshDone, glassForceRefresh, addGlassWakeListener, removeGlassWakeListener, isActorNearGlass } from './utils.js?v=fix3';
+import { UnpickableActor, UILayerSampler, UnpickableWidget, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, resolveMonitorGeometry, isActorValid, getAllocatedSize, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, resolveCrossFade, adaptiveColorTweener, glassRefreshDue, glassRefreshDone, glassForceRefresh, addGlassWakeListener, removeGlassWakeListener, isActorNearGlass } from './utils.js?v=fix4';
 
 
 
@@ -662,30 +662,21 @@ export class UIManager {
             return GLib.SOURCE_REMOVE;
         };
         this.wakeFrameSync = () => {
-            try {
-                if (global.display?.get_monitor_in_fullscreen?.(Main.layoutManager.primaryIndex)) {
-                    return;
-                }
-            } catch (_) {}
+            if (this._torndown || !this.bgActor || !this.targetActor?.mapped) return;
+            if (this.menu && !this.menu.isOpen) return;
             this._idleCount = 0;
             if (this._idleTimeoutId) {
                 GLib.source_remove(this._idleTimeoutId);
                 this._idleTimeoutId = 0;
             }
-            if (this._frameSyncId === 0 && !this._torndown && this.bgActor && this.targetActor?.mapped) {
+            if (this._frameSyncId === 0) {
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
         };
         this._wakeUnsub = (damagedActor, reason) => {
             if (this._torndown || !this.bgActor || !this.targetActor?.mapped) return;
             if (this.menu && !this.menu.isOpen) return;
-            try {
-                if (global.display?.get_monitor_in_fullscreen?.(Main.layoutManager.primaryIndex) &&
-                    !['restacked', 'fullscreen', 'overview', 'layout'].includes(reason)) {
-                    return;
-                }
-            } catch (_) {}
-            if (['restacked', 'fullscreen', 'overview', 'layout'].includes(reason)) {
+            if (['restacked', 'fullscreen', 'overview', 'layout', 'overview-scroll', 'overview-transition', 'window-moved'].includes(reason)) {
                 glassForceRefresh?.(this.bgActor);
                 try { this._windowCloneManager?.rebuildClones?.(); } catch (_) {}
                 try { this._uiSampler?.rebindSelf?.(); } catch (_) {}
@@ -693,6 +684,7 @@ export class UIManager {
                 try { this.effect?.markBackdropDirty?.(); } catch (_) {}
             }
             if (!damagedActor || isActorNearGlass(damagedActor, this.bgActor)) {
+                this.effect?.markBackdropDirty?.();
                 this.wakeFrameSync?.();
             }
         };

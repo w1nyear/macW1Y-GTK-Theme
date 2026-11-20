@@ -2668,3 +2668,46 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-audit-sync check — 100% PASS (5/5).
      * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
      * python3 bin/test-macw1y-animations.py — 12/12 PASS (Spotlight відкрився за 7.13 мс).
+
+859. 2026-11-21 — Динамічне перемалювання фону Liquid Glass та Blur при русі вікон, в огляді та під час ігор:
+   - Змінені файли та рядки:
+     * extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js (рядки 48-68, 100-113, 195-228, 258-278, 301-356, 429-453, 560-582)
+     * extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js (рядки 480-526)
+     * extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js (рядки 189-204, 316-330, 375-385)
+     * extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/notificationManager.js (рядки 10-25, 45-65, 120-145)
+     * extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/osdManager.js (рядки 8-28, 48-65, 110-140)
+     * extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/uiManager.js (рядки 8-28, 180-210)
+     * extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/quickSettingsManager.js (рядки 8-28, 230-265)
+     * extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js (рядки 2848-2860)
+     * extensions/liquid-glass@thinkingcoding1231.gmail.com/src/liquidEffect.ts (рядки 3253-3265)
+     * extensions/blur-my-shell@aunetx/components/notifications_v4.js (рядки 1420-1423, 1541-1565)
+     * extensions/blur-my-shell@aunetx/components/menubar_v29.js (рядки 4438-4441, 5178-5200)
+     * extensions/kiwi@kemma/apps/tahoeOSD.js (рядки 23-40, 215-220, 639-750, 1006-1015, 1210-1265)
+     * extensions/kiwi@kemma/apps/tahoeOnScreenDisplay.js (рядки 23-40, 215-220, 639-750, 1006-1015, 1210-1265)
+     * extensions/kiwi@kemma/apps/tahoeNotifications.js (рядки 45-56, 194-205, 1290-1335, 1472-1478, 2550-2556, 2640-2648)
+     * extensions/kiwi@kemma/apps/tahoeControlCenter.js (рядки 3860-3866)
+     * extensions/kiwi@kemma/apps/tahoeQuickSettings.js (рядки 2878-2884)
+     * config/extensions.lock.json (секція "extensions")
+   - Опис змін:
+     1) Усунення замороження фону сповіщень та OSD:
+        * У blur-my-shell@aunetx (notifications_v4.js та menubar_v29.js) видалено примусове блокування this._glass._backdropLocked = true, яке після першого кадру повністю вимикало оновлення текстур та клонів фону, залишаючи плашку сповіщення зі застиглим знімком стільниці при переміщенні вікон.
+        * У kiwi@kemma (tahoeOSD.js та tahoeOnScreenDisplay.js) реалізовано динамічний кадр-луп _startOsdTick() та підключено слухач пробудження addGlassWakeListener. У _syncGlass додано виклик s.effect?.markBackdropDirty() та glassRefreshDone(s.bgActor), що забезпечило безперервне динамічне оновлення плашки гучності під час руху вікон та ігор.
+     2) Усунення падіння частоти оновлення в режимі огляду (Overview):
+        * Виправлено хешування сцени у _stageBackdropHash: на GNOME 50 Wayland get_buffer_rect() повертає null, через що зміна координат вікон під час перетягування не виявлялася; реалізовано надійне хешування реальних екранних координат та мета-прямокутників вікон.
+        * Додано пряму підтримку огляду в glassRefreshDue та isBackdropDirtyOrChanged: за наявності Main.overview.visible стан стільниці вважається динамічним (st.dirty = true), запобігаючи переходу в режим сповільненого серцебиття 1.5 с.
+        * У dockManager.js та BackdropGlass реалізовано адаптивний серцевий ритм (150 мс в огляді замість 1500 мс) та активне пробудження на події прокручування робочих столів, перетягування елементів огляду й руху вікон.
+     3) Підтримка ігор та повноекранних вікон:
+        * Вилучено блокування оновлення скла при активному повноекранному вікні (CS2/Steam) у glassGate, dockManager та uiManager.
+        * Удосконалено функцію isActorNearGlass: для повноекранних додатків на моніторі скла гарантується повернення true, що забезпечує оновлення підкладки скла з частотою 60 FPS навіть під час ігрового процесу.
+     4) Інтеграція сповіщень kiwi@kemma:
+        * У tahoeNotifications.js додано маркування s.effect?.markBackdropDirty() для toast-сповіщень та карток центру сповіщень, а також зареєстровано слухач подій пробудження сцени.
+     5) Цілісність системи та синхронізація:
+        * Синхронізовано всі модифіковані файли розширень з ~/.local/share/gnome-shell/extensions/.
+        * Оновлено дерева контрольних сум у config/extensions.lock.json для liquid-glass@thinkingcoding1231.gmail.com, blur-my-shell@aunetx та kiwi@kemma.
+        * mac-extension-guard verify підтверджує 21/21 LOCKED OK.
+   - Результати перевірок валідації на хості:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 38/38 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS (5/5).
+     * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
+     * python3 bin/test-macw1y-animations.py — 12/12 PASS (Spotlight відкрився за 27.29 мс, FPS: 152).

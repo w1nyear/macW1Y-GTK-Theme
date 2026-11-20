@@ -1,7 +1,7 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import GLib from 'gi://GLib';
-import { UIManager } from './uiManager.js?v=fix1';
+import { UIManager } from './uiManager.js?v=fix3';
 
 
 

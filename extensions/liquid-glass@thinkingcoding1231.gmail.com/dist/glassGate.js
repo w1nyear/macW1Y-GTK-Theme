@@ -56,14 +56,6 @@ export function removeGlassWakeListener(fn) {
 }
 
 export function notifyGlassWake(actor, reason = null) {
-    if (actor && reason !== 'fullscreen' && reason !== 'restacked') {
-        try {
-            const mw = actor.get_meta_window?.();
-            if (mw && (mw.is_fullscreen() || global.display?.get_monitor_in_fullscreen?.(mw.get_monitor()))) {
-                return;
-            }
-        } catch (_) {}
-    }
     for (const fn of _wakeListeners) {
         try {
             fn(actor, reason);
@@ -97,17 +89,40 @@ export function installGlassSceneListeners() {
         return;
 
     try {
-        for (const signal of ['restacked', 'in-fullscreen-changed']) {
+        for (const signal of ['restacked', 'in-fullscreen-changed', 'notify::focus-window']) {
             const id = global.display.connect(signal, () => _scheduleSceneInvalidation(
-                signal === 'restacked' ? 'restacked' : 'fullscreen'));
+                signal === 'restacked' ? 'restacked' : (signal === 'in-fullscreen-changed' ? 'fullscreen' : 'focus')));
             _sceneSignalIds.push([global.display, id]);
         }
     } catch (_) {}
 
     try {
-        for (const signal of ['showing', 'hiding']) {
+        for (const signal of ['showing', 'hiding', 'item-drag-begin', 'item-drag-end', 'window-drag-begin', 'window-drag-end']) {
             const id = Main.overview.connect(signal, () => _scheduleSceneInvalidation('overview'));
             _sceneSignalIds.push([Main.overview, id]);
+        }
+        const ctrl = Main.overview?._overview?.controls;
+        if (ctrl?._workspaceAdjustment) {
+            const id = ctrl._workspaceAdjustment.connect('notify::value', () => _invalidateBackdropScene('overview-scroll'));
+            _sceneSignalIds.push([ctrl._workspaceAdjustment, id]);
+        }
+        if (ctrl?._stateAdjustment) {
+            const id = ctrl._stateAdjustment.connect('notify::value', () => _invalidateBackdropScene('overview-transition'));
+            _sceneSignalIds.push([ctrl._stateAdjustment, id]);
+        }
+    } catch (_) {}
+
+    try {
+        for (const signal of ['switch-workspace', 'size-change', 'minimize', 'unminimize', 'destroy']) {
+            const id = global.window_manager.connect(signal, () => _scheduleSceneInvalidation(signal));
+            _sceneSignalIds.push([global.window_manager, id]);
+        }
+    } catch (_) {}
+
+    try {
+        for (const signal of ['active-workspace-changed', 'showing-desktop-changed']) {
+            const id = global.workspace_manager.connect(signal, () => _scheduleSceneInvalidation(signal));
+            _sceneSignalIds.push([global.workspace_manager, id]);
         }
     } catch (_) {}
 
@@ -177,18 +192,42 @@ function _stageBackdropHash(nowUs) {
                     continue;
                 }
                 _hookWindowDamage(a);
-                const r = a.get_buffer_rect?.();
-                if (r) {
-                    h = _hmix(h, r.x); h = _hmix(h, r.y);
-                    h = _hmix(h, r.width); h = _hmix(h, r.height);
+                let wX = a.x + (a.translation_x || 0);
+                let wY = a.y + (a.translation_y || 0);
+                let wW = a.width;
+                let wH = a.height;
+                const mw = a.get_meta_window?.();
+                if (mw) {
+                    try {
+                        const fr = mw.get_frame_rect?.();
+                        if (fr && fr.width > 0 && fr.height > 0) {
+                            wX = fr.x; wY = fr.y; wW = fr.width; wH = fr.height;
+                        }
+                    } catch (_) {}
                 }
+                h = _hmix(h, Math.round(wX));
+                h = _hmix(h, Math.round(wY));
+                h = _hmix(h, Math.round(wW));
+                h = _hmix(h, Math.round(wH));
                 h = _hmix(h, a.visible ? 1 : 0);
                 h = _hmix(h, a.mapped ? 1 : 0);
-                h = _hmix(h, a.get_opacity?.());
+                h = _hmix(h, a.get_opacity?.() ?? 255);
             } catch (_) {
                 h = _hmix(h, i * 1000 + 7);
             }
         }
+
+        if (Main.overview?.visible) {
+            h = _hmix(h, 99991);
+            const ctrl = Main.overview._overview?.controls;
+            if (ctrl) {
+                if (ctrl._workspaceAdjustment)
+                    h = _hmix(h, Math.round((ctrl._workspaceAdjustment.value || 0) * 1000));
+                if (ctrl._stateAdjustment)
+                    h = _hmix(h, Math.round((ctrl._stateAdjustment.value || 0) * 1000));
+            }
+        }
+
         const lm = Main.layoutManager;
         const mons = lm?.monitors ?? [];
         h = _hmix(h, mons.length);
@@ -203,8 +242,6 @@ function _stageBackdropHash(nowUs) {
         const bg = lm?.backgroundGroup;
         h = _hmix(h, bg && _isActorValid(bg) ? bg.get_n_children() : 0);
     } catch (_) {
-
-
         return _hmix(_stageScan.h, ++_backdropFailCounter);
     }
     _stageScan = { at: nowUs, h };
@@ -216,19 +253,34 @@ function _hookWindowDamage(actor) {
         if (!actor || !_isActorValid(actor) || _backdropDamageHooked.has(actor))
             return;
         _backdropDamageHooked.add(actor);
-        actor.connect('damaged', () => {
-            try {
-                const mw = actor.get_meta_window?.();
-                if (mw && (mw.is_fullscreen() || global.display?.get_monitor_in_fullscreen?.(mw.get_monitor()))) {
-                    return;
-                }
-            } catch (_) {}
+
+        const onMotionOrDamage = (reason) => {
             actor._lastDamageUs = GLib.get_monotonic_time();
             noteWindowContentDamaged();
-            notifyGlassWake(actor);
-        });
+            notifyGlassWake(actor, reason);
+        };
+
+        actor.connect('damaged', () => onMotionOrDamage('window-damaged'));
+        actor.connect('notify::position', () => onMotionOrDamage('window-moved'));
+        actor.connect('notify::size', () => onMotionOrDamage('window-moved'));
+        actor.connect('notify::translation-x', () => onMotionOrDamage('window-moved'));
+        actor.connect('notify::translation-y', () => onMotionOrDamage('window-moved'));
+
+        let mwSigs = [];
+        const mw = actor.get_meta_window?.();
+        if (mw) {
+            try {
+                mwSigs.push(mw.connect('position-changed', () => onMotionOrDamage('window-moved')));
+                mwSigs.push(mw.connect('size-changed', () => onMotionOrDamage('window-moved')));
+                mwSigs.push(mw.connect('workspace-changed', () => onMotionOrDamage('window-moved')));
+            } catch (_) {}
+        }
+
         actor.connect('destroy', () => {
             _backdropDamageHooked.delete(actor);
+            for (let id of mwSigs) {
+                try { mw?.disconnect(id); } catch (_) {}
+            }
         });
     } catch (_) {}
 }
@@ -244,23 +296,23 @@ export function isActorNearGlass(windowActor, glassActor) {
             return false;
         if (!glassActor || !_isActorValid(glassActor))
             return false;
-        try {
-            const mw = windowActor.get_meta_window?.();
-            if (mw && mw.is_fullscreen()) {
-                return false;
-            }
-        } catch (_) {}
 
-        const wRect = windowActor.get_buffer_rect?.();
-        let wX = wRect?.x;
-        let wY = wRect?.y;
-        let wW = wRect?.width;
-        let wH = wRect?.height;
+        const mw = windowActor.get_meta_window?.();
+        if (mw?.is_fullscreen?.()) {
+            const winMon = mw.get_monitor();
+            const glassMon = Main.layoutManager.findIndexForActor(glassActor);
+            return winMon === glassMon || winMon < 0 || glassMon < 0;
+        }
 
-        if (!Number.isFinite(wX) || !Number.isFinite(wY) || !wW || !wH || wW <= 0 || wH <= 0) {
-            const [wx, wy] = windowActor.get_transformed_position?.() ?? [windowActor.x, windowActor.y];
-            const [ww, wh] = windowActor.get_transformed_size?.() ?? [windowActor.width, windowActor.height];
-            wX = wx; wY = wy; wW = ww; wH = wh;
+        let [wX, wY] = windowActor.get_transformed_position?.() ?? [windowActor.x, windowActor.y];
+        let [wW, wH] = windowActor.get_transformed_size?.() ?? [windowActor.width, windowActor.height];
+        if (mw) {
+            try {
+                const fr = mw.get_frame_rect?.();
+                if (fr && fr.width > 0 && fr.height > 0) {
+                    wX = fr.x; wY = fr.y; wW = fr.width; wH = fr.height;
+                }
+            } catch (_) {}
         }
 
         if (!Number.isFinite(wX) || !Number.isFinite(wY) || !wW || !wH || wW <= 0 || wH <= 0)
@@ -380,7 +432,7 @@ export function glassRefreshDue(glassActor, extraHash) {
                 const actors = global.get_window_actors?.() ?? [];
                 for (let i = 0; i < actors.length; i++) {
                     const a = actors[i];
-                    if (a && a.visible && a.mapped && (a._lastDamageUs && a._lastDamageUs >= st.lastFull)) {
+                    if (a && a.visible && a.mapped) {
                         if (isActorNearGlass(a, glassActor)) {
                             isNearDamaged = true;
                             break;
@@ -392,7 +444,7 @@ export function glassRefreshDue(glassActor, extraHash) {
             }
         }
 
-        if (scanChanged || ownChanged || isNearDamaged || isSettling || sceneChanged) {
+        if (scanChanged || ownChanged || isNearDamaged || isSettling || sceneChanged || Main.overview?.visible) {
             st.lastScanH = scanH;
             st.lastDamage = dmg;
             st.lastOwnH = ownH;
@@ -508,6 +560,7 @@ export function glassPollStats(enable) {
 export function isBackdropDirtyOrChanged(glassActor) {
     try {
         if (!glassActor) return false;
+        if (Main.overview?.visible) return true;
         let st = _backdropPolls.get(glassActor);
         if (!st) return true;
         const nowUs = GLib.get_monotonic_time();
@@ -520,7 +573,7 @@ export function isBackdropDirtyOrChanged(glassActor) {
             const actors = global.get_window_actors?.() ?? [];
             for (let i = 0; i < actors.length; i++) {
                 const a = actors[i];
-                if (a && a.visible && a.mapped && (a._lastDamageUs && a._lastDamageUs >= st.lastFull)) {
+                if (a && a.visible && a.mapped) {
                     if (isActorNearGlass(a, glassActor)) {
                         return true;
                     }

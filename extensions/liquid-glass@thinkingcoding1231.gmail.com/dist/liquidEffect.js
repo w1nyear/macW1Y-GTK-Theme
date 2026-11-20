@@ -120,7 +120,7 @@ import Cogl from 'gi://Cogl';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import { setBmsMode, BMS_MODE, computeCaptureLayout, setFrameSyncFrozen, isFrameSyncFrozen, setDiffWritesEnabled, isDiffWritesEnabled, setCaptureClipEnabled, isCaptureClipEnabled, setCloneCullEnabled, isCloneCullEnabled, setCullSiteEnabled, isCullSiteEnabled, setAdaptiveColorMode, getAdaptiveColorMode, setNestedGlassFix, getNestedGlassFix, setFocusDebugEnabled, isFocusDebugEnabled, setBackgroundMirrorEnabled, isBackgroundMirrorEnabled, setCullOptOutEnabled, isCullOptOutEnabled, setWindowActorRescueMode, getWindowActorRescueMode } from './utils.js?v=fix3';
+import { setBmsMode, BMS_MODE, computeCaptureLayout, setFrameSyncFrozen, isFrameSyncFrozen, setDiffWritesEnabled, isDiffWritesEnabled, setCaptureClipEnabled, isCaptureClipEnabled, setCloneCullEnabled, isCloneCullEnabled, setCullSiteEnabled, isCullSiteEnabled, setAdaptiveColorMode, getAdaptiveColorMode, setNestedGlassFix, getNestedGlassFix, setFocusDebugEnabled, isFocusDebugEnabled, setBackgroundMirrorEnabled, isBackgroundMirrorEnabled, setCullOptOutEnabled, isCullOptOutEnabled, setWindowActorRescueMode, getWindowActorRescueMode } from './utils.js?v=fix4';
 
 
 
@@ -3282,6 +3282,7 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
 
     markBackdropDirty() {
         this._backdropDirty = true;
+        try { this.queue_repaint(); } catch (_) {}
     }
     queue_repaint() {
         if (LiquidEffect.DRAG_PERF_MODE_ENABLED && this._batchDepth) {

@@ -4,9 +4,9 @@ import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
-import { LiquidEffect } from './liquidEffect.js?v=fix1';
+import { LiquidEffect } from './liquidEffect.js?v=fix3';
 import { StageContrastSampler, AdaptiveContrastConfig } from './contrastSampler.js';
-import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isActorValid, resolveMonitorGeometry, LayoutOpaqueActor, UnpickableStyledWidget, getAllocatedSize, getTransformedRect, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, resolveCrossFade, adaptiveColorTweener } from './utils.js?v=fix3';
+import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isActorValid, resolveMonitorGeometry, LayoutOpaqueActor, UnpickableStyledWidget, getAllocatedSize, getTransformedRect, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip, resolveCrossFade, adaptiveColorTweener, addGlassWakeListener, removeGlassWakeListener, isActorNearGlass, glassForceRefresh } from './utils.js?v=fix4';
 
 
 
@@ -581,6 +581,21 @@ export class QuickSettingsManager {
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
         };
+        this._wakeUnsub = (damagedActor, reason) => {
+            if (this._torndown || !this.bgActor || !this.targetActor?.mapped || !this.menu.isOpen) return;
+            if (['restacked', 'fullscreen', 'overview', 'layout', 'window-moved'].includes(reason)) {
+                glassForceRefresh?.(this.bgActor);
+                try { this._windowCloneManager?.rebuildClones?.(); } catch (_) {}
+                try { this._uiSampler?.rebindSelf?.(); } catch (_) {}
+                try { this._uiSampler?.refresh?.(); } catch (_) {}
+                try { this.effect?.markBackdropDirty?.(); } catch (_) {}
+            }
+            if (!damagedActor || isActorNearGlass(damagedActor, this.bgActor)) {
+                this.effect?.markBackdropDirty?.();
+                this.wakeFrameSync?.();
+            }
+        };
+        addGlassWakeListener(this._wakeUnsub);
         this._scheduleIdleHeartbeat = () => {
 
         };
@@ -892,6 +907,21 @@ export class QuickSettingsManager {
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
         };
+        this._wakeUnsub = (damagedActor, reason) => {
+            if (this._torndown || !this.bgActor || !this.targetActor?.mapped || !this.menu.isOpen) return;
+            if (['restacked', 'fullscreen', 'overview', 'layout', 'window-moved'].includes(reason)) {
+                glassForceRefresh?.(this.bgActor);
+                try { this._windowCloneManager?.rebuildClones?.(); } catch (_) {}
+                try { this._uiSampler?.rebindSelf?.(); } catch (_) {}
+                try { this._uiSampler?.refresh?.(); } catch (_) {}
+                try { this.effect?.markBackdropDirty?.(); } catch (_) {}
+            }
+            if (!damagedActor || isActorNearGlass(damagedActor, this.bgActor)) {
+                this.effect?.markBackdropDirty?.();
+                this.wakeFrameSync?.();
+            }
+        };
+        addGlassWakeListener(this._wakeUnsub);
         this._scheduleIdleHeartbeat = () => {
 
         };
@@ -2852,6 +2882,10 @@ export class QuickSettingsManager {
         if (!this._isEffectActive)
             return;
         this._isEffectActive = false;
+        if (this._wakeUnsub) {
+            removeGlassWakeListener(this._wakeUnsub);
+            this._wakeUnsub = null;
+        }
         this._stopAdaptiveColorSampling();
         this._clearAdaptiveStyles();
         this._clearButtonStyles();

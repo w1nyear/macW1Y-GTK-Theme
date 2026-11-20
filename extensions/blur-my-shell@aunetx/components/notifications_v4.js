@@ -1417,7 +1417,7 @@ export const NotificationsController = class NotificationsController {
                 this._glass.show();
                 this._glass.opacity = 255;
             }
-            if (refreshSources && !this._glass._backdropLocked) {
+            if (refreshSources) {
                 this._glass.syncSources();
             }
         } else {
@@ -1544,7 +1544,6 @@ export const NotificationsController = class NotificationsController {
                 this._glass.forceRefresh(1);
             }
             this._syncGlass();
-            this._glass._backdropLocked = true;
         } else {
             this._syncGlass();
         }
@@ -1559,7 +1558,7 @@ export const NotificationsController = class NotificationsController {
             onComplete: () => {
                 this._syncGlass();
                 if (this._glass) {
-                    this._glass._backdropLocked = true;
+                    this._glass.wakeFrameSync?.();
                 }
             },
         });

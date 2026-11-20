@@ -8,7 +8,7 @@ import Gio from 'gi://Gio';
 import Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import { LiquidEffect } from '../liquidEffect.js?v=fix1';
+import { LiquidEffect } from '../liquidEffect.js?v=fix3';
 import {
     UnpickableActor,
     WindowCloneManager,
@@ -23,7 +23,7 @@ import {
     addGlassWakeListener,
     removeGlassWakeListener,
     isActorNearGlass
-} from '../utils.js?v=fix3';
+} from '../utils.js?v=fix4';
 
 function lgDir() {
     try {
@@ -188,14 +188,16 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
 
         this._wakeUnsub = (damagedActor, reason) => {
             if (this._cleanedUp || !this.visible) return;
-            if (['restacked', 'fullscreen', 'overview', 'layout'].includes(reason)) {
+            if (['restacked', 'fullscreen', 'overview', 'layout', 'overview-scroll', 'overview-transition', 'window-moved'].includes(reason)) {
                 glassForceRefresh?.(this);
                 try { this._windowClones?.rebuildClones?.(); } catch (_) {}
                 try { this._uiSampler?.rebindSelf?.(); } catch (_) {}
                 try { this._uiSampler?.refresh?.(); } catch (_) {}
                 try { this._effect?.markBackdropDirty?.(); } catch (_) {}
             }
-            if (!damagedActor || isActorNearGlass(damagedActor, this)) {
+            if (!damagedActor || isActorNearGlass(damagedActor, this) || Main.overview?.visible) {
+                glassForceRefresh?.(this);
+                this._effect?.markBackdropDirty?.();
                 this.wakeFrameSync?.();
             }
         };
@@ -313,7 +315,27 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
     }
 
     _scheduleIdleHeartbeat() {
-
+        if (this._idleTimeoutId || this._cleanedUp || !this.visible)
+            return;
+        const intervalMs = Main.overview?.visible ? 150 : 1500;
+        this._idleTimeoutId = GLib.timeout_add(GLib.PRIORITY_LOW, intervalMs, () => {
+            this._idleTimeoutId = 0;
+            if (this._cleanedUp || !this.visible)
+                return GLib.SOURCE_REMOVE;
+            let drifted = false;
+            try {
+                drifted = Main.overview?.visible || isBackdropDirtyOrChanged?.(this);
+            } catch (_) {
+                drifted = true;
+            }
+            if (drifted) {
+                this._effect?.markBackdropDirty?.();
+                this.wakeFrameSync();
+            } else {
+                this._scheduleIdleHeartbeat();
+            }
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     _startTick() {
@@ -379,6 +401,7 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
                     .add(Meta.LaterType.BEFORE_REDRAW, tick);
             } else {
                 this._frameSyncId = 0;
+                this._scheduleIdleHeartbeat();
             }
             return GLib.SOURCE_REMOVE;
         };
