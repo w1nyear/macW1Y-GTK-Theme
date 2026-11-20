@@ -1255,14 +1255,17 @@ def install_deb(filepath):
                         "macW1Y Installer", "DEB packages are only supported on Debian/Ubuntu systems."])
         return
     res = subprocess.run(["pkexec", "apt-get", "install", "-y", filepath])
-    try:
-        os.remove(filepath)
-    except Exception:
-        pass
     if res.returncode == 0:
+        try:
+            os.remove(filepath)
+        except Exception:
+            pass
         sync()
         subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON, sync_tr("installed_title"),
                         sync_tr("pkg_installed_msg", name=clean_name)])
+    else:
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON,
+                        "macW1Y Installer", f"Failed to install {clean_name}"])
 
 
 def install_rpm(filepath):
@@ -1275,14 +1278,17 @@ def install_rpm(filepath):
                         "macW1Y Installer", "RPM packages are only supported on Fedora/RHEL systems."])
         return
     res = subprocess.run(["pkexec", "dnf", "install", "-y", filepath])
-    try:
-        os.remove(filepath)
-    except Exception:
-        pass
     if res.returncode == 0:
+        try:
+            os.remove(filepath)
+        except Exception:
+            pass
         sync()
         subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON, sync_tr("installed_title"),
                         sync_tr("pkg_installed_msg", name=clean_name)])
+    else:
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON,
+                        "macW1Y Installer", f"Failed to install {clean_name}"])
 
 
 def install_arch_pkg(filepath):
@@ -1295,14 +1301,17 @@ def install_arch_pkg(filepath):
                         "macW1Y Installer", "Arch packages are only supported on Arch Linux/CachyOS systems."])
         return
     res = subprocess.run(["pkexec", "pacman", "-U", "--noconfirm", filepath])
-    try:
-        os.remove(filepath)
-    except Exception:
-        pass
     if res.returncode == 0:
+        try:
+            os.remove(filepath)
+        except Exception:
+            pass
         sync()
         subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON, sync_tr("installed_title"),
                         sync_tr("pkg_installed_msg", name=clean_name)])
+    else:
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON,
+                        "macW1Y Installer", f"Failed to install {clean_name}"])
 
 
 def extract_exe_icon(exe_path, app_id):

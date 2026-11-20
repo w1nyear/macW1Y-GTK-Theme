@@ -10,8 +10,13 @@ def main():
         return
     real_path = os.path.realpath(path)
     
-    app_info = Gio.DesktopAppInfo.new_from_filename(real_path)
-    app_name = app_info.get_name() if app_info else os.path.basename(path).replace(".desktop", "")
+    app_name = os.path.basename(path).replace(".desktop", "")
+    try:
+        app_info = Gio.DesktopAppInfo.new_from_filename(real_path)
+        if app_info and app_info.get_name():
+            app_name = app_info.get_name()
+    except Exception:
+        pass
     
     pkg_type = "unknown"
     pkg_name = ""
@@ -176,15 +181,18 @@ def main():
         except Exception:
             pass
             
-    if os.path.exists(path) and os.path.islink(path):
-        try:
-            os.remove(path)
-        except Exception:
-            pass
-            
     if success:
+        if os.path.exists(path) and os.path.islink(path):
+            try:
+                os.remove(path)
+            except Exception:
+                pass
         subprocess.run(["zenity", "--info", f"--title={info_title}", f"--text={info_text}", "--timeout=3"])
         subprocess.run(["/usr/local/bin/mac-sync-applications"])
+    else:
+        err_title = "Помилка видалення" if loc == "uk" else "Uninstall Failed"
+        err_text = f"Не вдалося видалити {app_name} або операцію було скасовано." if loc == "uk" else f"Failed to uninstall {app_name} or operation was cancelled."
+        subprocess.run(["zenity", "--warning", f"--title={err_title}", f"--text={err_text}", "--timeout=4"])
 
 if __name__ == "__main__":
     main()

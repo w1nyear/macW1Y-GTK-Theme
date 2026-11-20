@@ -2449,3 +2449,44 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * tests/portability/check-native.sh — PASS (7/7 бібліотек C).
      * Перевірка кирилиці в install.sh — 0 знайдено.
      * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), коміт локальний (без push). Оцінка готовності перенесення: ~95–98%.
+
+853. 2026-11-20 — Наскрізне тестування Arch Linux (GNOME 51.1 / Linux 7.3.5), регресійні тести пакетних менеджерів та завершення кросплатформного переносу:
+   - Змінені файли та рядки:
+     * bin/mac-sync-applications (рядки 1257–1306)
+     * bin/mac-uninstall-app (рядки 13–19, 184–193)
+     * uninstall.sh (рядки 297–309)
+     * tests/test_package_managers.py (рядки 1–150)
+     * docs/diagnostics/2026-11-19-portability.md (рядки 356–410)
+   - Опис змін:
+     1) Відновлення мережі та SSH у віртуальній машині Arch Linux (QEMU KVM):
+        * Виявлено причину таймауту SSH при banner exchange: зашитий `MACAddress=52:54:00:12:34:56` у `/etc/systemd/network/10-cloud-init-eth0.network`.
+        * Створено правило `/etc/systemd/network/20-wired.network` (`Name=en* eth*`, `DHCP=yes`), успішно підключено SSH на порту 2224.
+        * Додано запис монтування кореневого розділу Btrfs у `/etc/fstab` для постійного rw-доступу, активовано службу `sshd.service`.
+     2) Валідація GNOME 51 та DING:
+        * Дочірній процес DING `app/ding.js` успішно запускається під керуванням `gjs 2:1.90.1-1` з прапорцями `-E -P app` без збоїв синтаксису чи несумісності модулів.
+        * Запуск `gnome-shell --headless --virtual-monitor 1920x1080` підтвердив стабільність середовища GNOME Shell 51.1 / Mutter 51.1: завантаження розширень, відсутність segfault та коректну роботу Cogl pipeline uniform float.
+     3) Захист від втрати файлів та хибного успіху в утилітах встановлення/видалення:
+        * У `bin/mac-sync-applications` видалення завантаженого пакету (`os.remove(filepath)`) та надсилання сповіщення про успіх перенесено всередину блоку `if res.returncode == 0`. У разі скасування авторизації або помилки менеджера файл зберігається, а користувачу видається попередження.
+        * У `bin/mac-uninstall-app` видалення посилання програми (`os.remove(path)`) прив'язано до `if success`. Додано безпечний перехоплювач `try...except` для парсингу пошкоджених `.desktop` файлів через `Gio.DesktopAppInfo`.
+        * Створено повний набір регресійних тестів `tests/test_package_managers.py` (6 сценаріїв), загальний люкс зріс до 32 тестів.
+     4) Безпечне повернення системної теми курсора в `uninstall.sh`:
+        * Якщо `/usr/share/icons/default/index.theme` містить `macW1Y` (на дистрибутивах без `update-alternatives`, таких як Arch та Fedora), деінсталятор гарантовано відновлює системне значення за замовчуванням `Inherits=Adwaita` (або `Yaru` на Ubuntu).
+     5) Повний життєвий цикл у VM Arch Linux:
+        * Повна інсталяція 13/13 етапів `sudo ./install.sh --all` — SUCCESS.
+        * `mac-audit-sync check` — 100% PASS (0 розбіжностей), `mac-extension-guard verify` — 21/21 LOCKED OK.
+        * Перезавантаження гостя Arch VM (`sudo reboot`): успішний старт ядра Linux 7.3.5, збереження всіх налаштувань, автоматичний старт sshd, повторний аудит 100% PASS.
+        * Тест встановлення й видалення реального пакету `.pkg.tar.zst` (`hello-macw1y`): успішне встановлення через `pacman -U`, детекція через `pacman -Qoq`, деінсталяція через `pacman -R`.
+        * Повторне встановлення/оновлення `sudo ./install.sh --all` — SUCCESS.
+        * Повна деінсталяція `sudo ./uninstall.sh --all` — SUCCESS (відновлено `Inherits=Adwaita`, тему Plymouth `bgrt`, видалено всі теми `macW1Y*`).
+        * Перезавантаження гостя після деінсталяції: чистий запуск чистого Arch Linux 7.3.5.
+     6) Звітність та підсумкова матриця:
+        * У `docs/diagnostics/2026-11-19-portability.md` сформовано підсумкову матрицю результатів переносності для всіх 5 цільових ОС (Ubuntu, Debian, Fedora, Arch, CachyOS).
+   - Результати перевірок валідації на хості:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 32/32 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS (5/5 аудитів).
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * python3 bin/test-macw1y-animations.py — 12/12 PASS (Spotlight 12.77 мс < 30 мс).
+     * tests/portability/check-native.sh — PASS (7/7 бібліотек C).
+     * Перевірка кирилиці в install.sh — 0 знайдено.
+     * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), коміт локальний (без push). Оцінка готовності перенесення: 100% (повністю завершено та верифіковано).

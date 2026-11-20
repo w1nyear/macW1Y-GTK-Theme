@@ -298,12 +298,13 @@ restore_system() {
         sudo rm -f /usr/share/icons/default/index.theme 2>/dev/null || true
     fi
 
-    if [ ! -e /usr/share/icons/default/index.theme ]; then
+    default_cursor="Adwaita"
+    if [ "$IS_UBUNTU" = "true" ]; then
+        default_cursor="Yaru"
+    fi
+
+    if [ ! -e /usr/share/icons/default/index.theme ] || grep -q "macW1Y" /usr/share/icons/default/index.theme 2>/dev/null; then
         if [ -d /usr/share/icons/default ]; then
-            default_cursor="Adwaita"
-            if [ "$IS_UBUNTU" = "true" ]; then
-                default_cursor="Yaru"
-            fi
             printf "[Icon Theme]\nInherits=%s\n" "$default_cursor" | sudo tee /usr/share/icons/default/index.theme >/dev/null 2>&1 || true
         fi
     fi
