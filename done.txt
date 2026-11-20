@@ -2407,3 +2407,27 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/test-macw1y-animations.py — 12/12 PASS (Spotlight 10.12 мс < 30 мс).
      * Перевірка кирилиці в install.sh — 0 знайдено.
      * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), коміт локальний (без push).
+
+851. 2026-11-20 — Наскрізне тестування повного життєвого циклу у VM Debian 13 та Fedora 41, усунення збоїв деінсталятора:
+   - uninstall.sh (рядки 290–307): виправлено падіння під час деінсталяції через розірваний симлінк x-cursor-theme в /usr/share/icons/default/index.theme після видалення користувацьких тем ('tee: /usr/share/icons/default/index.theme: No such file or directory'). Додано update-alternatives --remove x-cursor-theme, видалення битого симлінка та безпечний запис системної теми курсора за замовчуванням (Adwaita / Yaru).
+   - tests/portability/check-native.sh: додано біти виконання (chmod +x) для прямого запуску скрипта верифікації нативних бібліотек.
+   - Debian 13 VM (Trixie, GNOME 47):
+     * Проведено повне наскрізне тестування життєвого циклу: встановлення (install.sh --all) -> перезавантаження гостя (sudo reboot) -> перевірка служб, Plymouth macw1y-boot та GDM -> деінсталяція (uninstall.sh --all) -> перезавантаження гостя.
+     * Усі етапи завершилися з кодом 0, система повернулася до чистих налаштувань Debian 13 (тема Plymouth bgrt, оригінальний gnome-shell, dpkg-divert знято).
+   - Fedora 41 VM (GNOME 47.10, Linux 6.11):
+     * Синхронізовано останній зріз репозиторію. Збірка 7 бібліотек C: PASS. Unit-тести: 26/26 PASS.
+     * Повна інсталяція sudo ./install.sh --all успішно завершена (13/13 етапів, dracut успішно згенерував образ initramfs).
+     * mac-extension-guard verify: 21/21 LOCKED OK; mac-audit-sync check: 100% PASS.
+     * Перезавантаження гостя (sudo reboot): старт успішний, тема Plymouth macw1y-boot активна.
+     * Повна деінсталяція sudo ./uninstall.sh --all: успішно виконано повернення тем, конфігурації GRUB2, dracut initramfs без помилок.
+     * Перезавантаження гостя після деінсталяції: чистий запуск Fedora 41 зі стандартною темою bgrt, мак-теми повністю вилучено.
+   - Оновлено діагностичний звіт docs/diagnostics/2026-11-19-portability.md.
+   - Результати перевірок валідації на хості:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 26/26 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS.
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * python3 bin/test-macw1y-animations.py — 12/12 PASS (Spotlight 9.80 мс < 30 мс).
+     * tests/portability/check-native.sh — PASS (7/7 бібліотек C).
+     * Перевірка кирилиці в install.sh — 0 знайдено.
+     * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), коміт локальний (без push). Оцінка готовності перенесення: ~90–95%.

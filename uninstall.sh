@@ -289,22 +289,22 @@ restore_system() {
 
     # Відновлення системної теми курсора
     log_info "Відновлення системної теми курсора..."
-    if [ "$IS_UBUNTU" = "true" ]; then
+    if command -v update-alternatives >/dev/null 2>&1; then
+        sudo update-alternatives --remove x-cursor-theme "$TARGET_HOME/.local/share/icons/macW1Y/cursor.theme" 2>/dev/null || true
+        sudo update-alternatives --auto x-cursor-theme 2>/dev/null || true
+    fi
+
+    if [ -L /usr/share/icons/default/index.theme ] && [ ! -e /usr/share/icons/default/index.theme ]; then
+        sudo rm -f /usr/share/icons/default/index.theme 2>/dev/null || true
+    fi
+
+    if [ ! -e /usr/share/icons/default/index.theme ]; then
         if [ -d /usr/share/icons/default ]; then
-            sudo tee /usr/share/icons/default/index.theme >/dev/null << 'EOF'
-[Icon Theme]
-Inherits=Yaru
-EOF
-        fi
-        if command -v update-alternatives >/dev/null 2>&1; then
-            sudo update-alternatives --auto x-cursor-theme 2>/dev/null || true
-        fi
-    else
-        if [ -d /usr/share/icons/default ]; then
-            sudo tee /usr/share/icons/default/index.theme >/dev/null << 'EOF'
-[Icon Theme]
-Inherits=Adwaita
-EOF
+            default_cursor="Adwaita"
+            if [ "$IS_UBUNTU" = "true" ]; then
+                default_cursor="Yaru"
+            fi
+            printf "[Icon Theme]\nInherits=%s\n" "$default_cursor" | sudo tee /usr/share/icons/default/index.theme >/dev/null 2>&1 || true
         fi
     fi
 

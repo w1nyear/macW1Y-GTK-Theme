@@ -269,3 +269,50 @@ Headless GNOME не завжди завершує звичайну startup-по�
 - Тест 7 нативних бібліотек C `tests/portability/check-native.sh`: **PASS** (збірка та символи).
 - Анімаційний тест `test-macw1y-animations.py`: **12/12 PASS** (Spotlight 22.14 мс).
 - Оцінка готовності перенесення підвищена до **~80%**.
+
+## 20 листопада: Повне наскрізне тестування життєвого циклу у віртуальних машинах Debian 13 та Fedora 41, усунення дефектів деінсталятора та аудиту
+
+1. **Динамічний пошук репозиторію в mac-audit-sync**:
+   - `bin/mac-audit-sync`: усунено зашитий абсолютний шлях `/home/vitaliy/MACTHEMEFILES`. Впроваджено функцію `find_repo_dir()`, яка послідовно шукає корінь проєкту за каталогом скрипту, поточним `Path.cwd()`, змінною `$MACW1Y_REPO`, `~/macW1Y`, `~/MACTHEMEFILES` та системним каталогом `/usr/share/mactheme`.
+   - `install.sh`: додано етап розгортання dconf-шаблонів (`dconf/*.dconf`) до `/usr/share/mactheme/dconf/` із правами `644`, що дозволяє `mac-audit-sync` виконувати аудит цілісності системи з-під будь-якого користувача (наприклад, `tester`) навіть за відсутності копії репозиторію у домашньому каталозі.
+
+2. **Виправлення та надійність деінсталятора (uninstall.sh)**:
+   - Виявлено збій `tee: /usr/share/icons/default/index.theme: No such file or directory` під час деінсталяції: видалення користувацьких іконок залишало розірваний симлінк в `/etc/alternatives/x-cursor-theme` на несуміжний файл теми курсора macW1Y. Запис через `tee` у розірваний симлінк під `set -e` переривав роботу деінсталятора з помилкою.
+   - `uninstall.sh`: додано коректне зняття альтернативи через `update-alternatives --remove x-cursor-theme` та переведення в `--auto`. Додано перевірку на наявність розірваного симлінка `[ -L ... ] && [ ! -e ... ]` з його безпечним видаленням `rm -f` перед генерацією дефолтного файлу теми. Виклик `tee` захищено аварійним відновленням `|| true`.
+
+3. **Повний цикл тестування у Debian 13 VM (Trixie, QEMU KVM)**:
+   - Встановлення `sudo ./install.sh --all`: **✔ SUCCESS** (`INSTALL FINISHED OK`).
+   - `mac-extension-guard verify`: **21/21 LOCKED OK**.
+   - `mac-audit-sync check`: **100% PASS**.
+   - Перевірка 7 нативних бібліотек C (`tests/portability/check-native.sh`): **PASS**.
+   - Перезавантаження віртуальної машини гостя (`sudo reboot`): успішний старт Plymouth `macw1y-boot`, коректна ініціалізація служб, відсутність аварійних зупинок.
+   - Деінсталяція `sudo ./uninstall.sh --all`: **✔ SUCCESS**, коректне повернення теми курсора, зняття dpkg-divert для `/usr/bin/gnome-shell`, відновлення початкового Plymouth `bgrt` та оновлення `initramfs-tools` / `update-grub`.
+   - Повторне перезавантаження гостя після деінсталяції: система чисто завантажується у стандартний GNOME Debian 13 без залишків macW1Y.
+
+4. **Повний цикл тестування у Fedora 41 VM (GNOME 47.10, QEMU KVM)**:
+   - Синхронізація оновленого репозиторію macW1Y.
+   - Збірка 7 нативних бібліотек C: **PASS: збірка та символи семи бібліотек**.
+   - Модульні тести `python3 -m unittest discover -s tests -p 'test_*.py'`: **26/26 PASS**.
+   - Встановлення `sudo ./install.sh --all`: **✔ SUCCESS** (13/13 етапів завершено успішно, dracut згенерував initramfs без помилок).
+   - `mac-extension-guard verify`: **21/21 LOCKED OK**.
+   - `mac-audit-sync check`: **100% PASS**.
+   - Перезавантаження віртуальної машини гостя (`sudo reboot`): система стабільно завантажується, тема Plymouth `macw1y-boot` активна, 21/21 розширень валідні.
+   - Деінсталяція `sudo ./uninstall.sh --all`: **✔ SUCCESS**, стандартні компоненти відновлено, dracut успішно регенерував стандартний образ, відновлено конфігурацію GRUB2.
+   - Повторне перезавантаження гостя: чистий запуск Fedora 41 з рідною темою `bgrt`, каталог `/usr/share/themes/macW1Y*` повністю очищено.
+
+5. **Готовність Arch Linux та CachyOS**:
+   - Пакети залежностей `dependencies/pacman-packages.txt` та логіка встановлення без часткових оновлень (Full System Upgrade `pacman -Syu`).
+   - Генерація образу ядра через `mkinitcpio -P` та сумісність із завантажувачем `systemd-boot` / GRUB.
+   - Уніфікована матриця сумісності метаданих розширень GNOME 46–51.
+   - 7 нативних спільних бібліотек компілюються та верифікуються без невизначених символів.
+
+6. **Стан хоста та валідація**:
+   - `python3 -m unittest discover -s tests -p 'test_*.py'`: **26/26 PASS**.
+   - `python3 bin/mac-extension-guard verify`: **21/21 LOCKED OK**.
+   - `python3 bin/mac-audit-sync check`: **100% PASS**.
+   - `python3 bin/mac-i18n-verify`: **100% PASS**.
+   - `perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh`: **0 знайдено**.
+   - `python3 bin/test-macw1y-animations.py`: **12/12 PASS** (Spotlight 9.8 мс < 30 мс).
+   - `tests/portability/check-native.sh`: **PASS** (збірка та символи 7 бібліотек).
+   - Сеанс користувача хоста повністю збережено (без виходу/блокування/перезавантаження), локальні коміти (без git push).
+- Оцінка поточної готовності перенесення: **~90–95%**.
