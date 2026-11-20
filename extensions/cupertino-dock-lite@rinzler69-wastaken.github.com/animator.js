@@ -493,6 +493,15 @@ export class Animator {
             icon._appwell._indicator._notificationBadgeBin.translation_x = 0;
             icon._appwell._indicator._notificationBadgeBin.translation_y = 0;
           }
+          const labelActor = icon._label ?? icon._appwell?.get_parent?.()?.label ?? icon._appwell?.label;
+          if (labelActor) {
+            labelActor.translation_x = 0;
+            labelActor.translation_y = 0;
+            if (labelActor._arrowTailActor) {
+              labelActor._arrowTailActor.translation_x = 0;
+              labelActor._arrowTailActor.translation_y = 0;
+            }
+          }
           this._setD2dBadgeOpacity(icon._appwell, 255);
           icon.opacity = 0;
           icon._wasActive = false;
@@ -556,6 +565,16 @@ export class Animator {
       } else if (icon._appwell?._indicator) {
         icon._appwell._indicator._notificationBadgeBin = null;
       }
+
+      const labelActor = icon._label ?? icon._appwell?.get_parent?.()?.label ?? icon._appwell?.label;
+      if (labelActor) {
+        labelActor.translation_x = jX;
+        labelActor.translation_y = jY;
+        if (labelActor._arrowTailActor) {
+          labelActor._arrowTailActor.translation_x = jX;
+          labelActor._arrowTailActor.translation_y = jY;
+        }
+      }
     });
 
     this._initialized = true;
@@ -603,6 +622,15 @@ export class Animator {
         indBadge.translation_y = 0;
       } else if (icon._appwell?._indicator) {
         icon._appwell._indicator._notificationBadgeBin = null;
+      }
+      const labelActor = icon._label ?? icon._appwell?.get_parent?.()?.label ?? icon._appwell?.label;
+      if (labelActor) {
+        labelActor.translation_x = 0;
+        labelActor.translation_y = 0;
+        if (labelActor._arrowTailActor) {
+          labelActor._arrowTailActor.translation_x = 0;
+          labelActor._arrowTailActor.translation_y = 0;
+        }
       }
       this._setD2dBadgeOpacity(icon._appwell, 255);
       if (icon._badge) icon._badge.visible = false;

@@ -1006,6 +1006,11 @@ export const DockAbstractAppIcon = GObject.registerClass({
         }
 
         this.remove_transition(prop.replace(/_/g, '-'));
+        const label = this.label ?? this.get_parent?.()?.label;
+        const tail = label?._arrowTailActor;
+        if (label) label.remove_transition(prop.replace(/_/g, '-'));
+        if (tail) tail.remove_transition(prop.replace(/_/g, '-'));
+
         this.ease({
             [prop]: dir * travel,
             duration: 200,
@@ -1018,6 +1023,34 @@ export const DockAbstractAppIcon = GObject.registerClass({
                 });
             },
         });
+        if (label) {
+            label.ease({
+                [prop]: dir * travel,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                onComplete: () => {
+                    label.ease({
+                        [prop]: 0,
+                        duration: 600,
+                        mode: Clutter.AnimationMode.EASE_OUT_BOUNCE,
+                    });
+                },
+            });
+        }
+        if (tail) {
+            tail.ease({
+                [prop]: dir * travel,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                onComplete: () => {
+                    tail.ease({
+                        [prop]: 0,
+                        duration: 600,
+                        mode: Clutter.AnimationMode.EASE_OUT_BOUNCE,
+                    });
+                },
+            });
+        }
     }
 
     _activateFromBackground() {
@@ -1924,27 +1957,32 @@ function _updateTailPosition(label, position) {
         return;
     label._arrowPos = position;
 
-    const box = label.get_allocation_box();
-    const pillLeft = (box.x2 > box.x1) ? box.x1 : label.x;
-    const pillRight = (box.x2 > box.x1) ? box.x2 : (label.x + label.width);
-    const pillTop = (box.y2 > box.y1) ? box.y1 : label.y;
-    const pillBottom = (box.y2 > box.y1) ? box.y2 : (label.y + 25);
-    const pillWidth = pillRight - pillLeft;
+    const node = label.get_theme_node();
+    const marginL = node ? (node.get_margin(St.Side.LEFT) || 0) : 0;
+    const marginR = node ? (node.get_margin(St.Side.RIGHT) || 0) : 0;
+    const marginT = node ? (node.get_margin(St.Side.TOP) || 0) : 0;
+    const marginB = node ? (node.get_margin(St.Side.BOTTOM) || 0) : 0;
+
+    const [minW, natW] = label.get_preferred_width(-1);
+    const pillWidth = Math.ceil(natW > 0 ? (natW - marginL - marginR) : (label.width > 0 ? label.width : 50));
     if (pillWidth <= 0)
         return;
+
+    const [minH, natH] = label.get_preferred_height(pillWidth);
+    const pillHeight = Math.ceil(natH > 0 ? (natH - marginT - marginB) : (label.height > 0 ? label.height : 25));
 
     const tailW = pillWidth;
     const tailH = 10;
     tail.set_size(tailW, tailH);
 
-    const posX = Math.round(pillLeft);
+    const posX = Math.round(label.x + marginL);
+    const pillTop = label.y + marginT;
     let posY;
 
     if (position === St.Side.TOP) {
         posY = Math.round(pillTop - tailH + 1.0);
     } else {
-
-        posY = Math.round(pillBottom - 1.0);
+        posY = Math.round(pillTop + pillHeight - 1.0);
     }
 
     tail.set_position(posX, posY);
@@ -2074,8 +2112,6 @@ function _ensureLabelTail(label, position) {
 
 
 export function positionItemLabel(item) {
-
-
     const visual = item.child?.icon?._iconBin ?? item.child?.icon ?? item.child ?? item;
     const extents = visual.get_transformed_extents();
     const stageX = extents.get_x();
@@ -2084,56 +2120,59 @@ export function positionItemLabel(item) {
     const itemHeight = extents.get_height();
 
     const node = item.label.get_theme_node();
-    const labelWidth = item.label.get_width();
-    const labelHeight = item.label.get_height();
+    const marginL = node ? (node.get_margin(St.Side.LEFT) || 0) : 0;
+    const marginR = node ? (node.get_margin(St.Side.RIGHT) || 0) : 0;
+    const marginT = node ? (node.get_margin(St.Side.TOP) || 0) : 0;
+    const marginB = node ? (node.get_margin(St.Side.BOTTOM) || 0) : 0;
+
+    const [minW, natW] = item.label.get_preferred_width(-1);
+    const labelWidth = Math.ceil(natW > 0 ? (natW - marginL - marginR) : (item.label.get_width() || 0));
+    const [minH, natH] = item.label.get_preferred_height(labelWidth);
+    const labelHeight = Math.ceil(natH > 0 ? (natH - marginT - marginB) : (item.label.get_height() || 25));
 
     let x, y, xOffset, yOffset;
 
     const position = Utils.getPosition();
     const labelOffset = node.get_length('-x-offset') || 0;
 
+    const iconCenterX = stageX + itemWidth / 2;
+    const iconCenterY = stageY + itemHeight / 2;
+
     switch (position) {
     case St.Side.LEFT:
-        yOffset = Math.floor((itemHeight - labelHeight) / 2);
-        y = stageY + yOffset;
+        y = Math.round(iconCenterY - labelHeight / 2);
         xOffset = labelOffset;
         x = stageX + itemWidth - (node.get_margin(St.Side.RIGHT) || 0) + xOffset + 20;
         break;
     case St.Side.RIGHT:
-        yOffset = Math.floor((itemHeight - labelHeight) / 2);
-        y = stageY + yOffset;
+        y = Math.round(iconCenterY - labelHeight / 2);
         xOffset = labelOffset;
         x = Math.round(stageX) - labelWidth + (node.get_margin(St.Side.LEFT) || 0) - xOffset - 20;
         break;
     case St.Side.TOP:
         y = stageY + itemHeight - (node.get_margin(St.Side.TOP) || 0) + labelOffset + 20;
-        xOffset = Math.floor((itemWidth - labelWidth) / 2);
-        x = stageX + xOffset;
+        x = Math.round(iconCenterX - (labelWidth / 2) - marginL);
         break;
     case St.Side.BOTTOM:
     default:
-
-
-
-
         y = stageY - labelHeight + (node.get_margin(St.Side.BOTTOM) || 0) - labelOffset - 20;
-        xOffset = Math.floor((itemWidth - labelWidth) / 2);
-        x = stageX + xOffset;
+        x = Math.round(iconCenterX - (labelWidth / 2) - marginL);
         break;
     }
 
-
-
-
-
     const gap = 5;
     const monitor = Main.layoutManager.findMonitorForActor(item);
-    if (x - monitor.x < gap)
-        x += monitor.x - x + labelOffset;
-    else if (x + labelWidth > monitor.x + monitor.width - gap)
-        x -= x + labelWidth - (monitor.x + monitor.width) + gap;
+    if (monitor) {
+        if (x - monitor.x < gap)
+            x += monitor.x - x + labelOffset;
+        else if (x + labelWidth > monitor.x + monitor.width - gap)
+            x -= x + labelWidth - (monitor.x + monitor.width) + gap;
+    }
 
+    x = Math.round(x);
+    y = Math.round(y);
     item.label.set_position(x, y);
+    _updateTailPosition(item.label, position);
 }
 
 export function itemShowLabel() {
@@ -2192,7 +2231,8 @@ export function itemShowLabel() {
             `box-shadow: 0 ${shadowOffset}px ${shadowBlur}px rgba(0, 0, 0, ${shadowAlpha}) !important; ` +
             `border: 1px solid rgba(255, 255, 255, 0.22) !important; ` +
             `border-radius: 9999px !important; ` +
-            `color: #ffffff !important;`
+            `color: #ffffff !important; ` +
+            `margin: 0px !important;`
         );
         const eff = this.label.get_effect?.('tahoe-label-blur');
         if (eff) {
@@ -2200,6 +2240,8 @@ export function itemShowLabel() {
             eff.radius = blur;
             eff.brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
         }
+    } else {
+        this.label.set_style('margin: 0px !important;');
     }
 
     if (this.label.set_offscreen_redirect)
@@ -2236,9 +2278,13 @@ export function itemHideLabel(immediate = false) {
     if (immediate) {
         this.label.opacity = 0;
         this.label.hide();
+        this.label.translation_x = 0;
+        this.label.translation_y = 0;
         if (this.label._arrowTailActor) {
             this.label._arrowTailActor.opacity = 0;
             this.label._arrowTailActor.hide();
+            this.label._arrowTailActor.translation_x = 0;
+            this.label._arrowTailActor.translation_y = 0;
         }
         return;
     }
@@ -2249,8 +2295,13 @@ export function itemHideLabel(immediate = false) {
         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
         onComplete: () => {
             this.label.hide();
-            if (this.label._arrowTailActor)
+            this.label.translation_x = 0;
+            this.label.translation_y = 0;
+            if (this.label._arrowTailActor) {
                 this.label._arrowTailActor.hide();
+                this.label._arrowTailActor.translation_x = 0;
+                this.label._arrowTailActor.translation_y = 0;
+            }
         },
     });
     /* eslint-enable no-invalid-this */

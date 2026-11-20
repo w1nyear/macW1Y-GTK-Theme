@@ -2601,3 +2601,35 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-audit-sync check — 100% PASS (5/5).
      * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
      * python3 bin/test-macw1y-animations.py — 12/12 PASS (Spotlight: 28.07 мс).
+
+
+857. 2026-11-20: Центрування біртагів (підказок) Dock за центром іконки та синхронізація підстрибування при відкритті
+   - Змінені файли:
+     * extensions/dash2dock-motion@unmade.space/appIcons.js (рядки 1008-1045, 1960-1995, 2125-2170, 2225-2245)
+     * extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/animator.js (рядки 493-505, 568-578, 625-635)
+     * config/extensions.lock.json (рядки 100, 149, 178)
+   - Опис змін:
+     1) Точне горизонтальне центрування біртагів (підказок назв додатків) та стрілок покажчиків:
+        * Усунено дрейф ширини підказки в appIcons.js: раніше використовувався метод item.label.get_width(), який повертав застарілий розмір від попередньо виділеної іконки до проходження алокації Clutter.
+        * Додано розрахунок чистої візуальної ширини плашки get_preferred_width(-1) з корекцією на CSS margin-left та margin-right: pillWidth = natW - marginL - marginR.
+        * Координату X підказки вирівняно строго за центром іконки: x = Math.round(iconCenterX - (labelWidth / 2) - marginL), що забезпечує 0 пікселів відхилення між центром візуальної плашки та центром іконки.
+        * У _updateTailPosition прив'язано позицію візуальної стрілки tail.set_position(label.x + marginL, posY) з шириною tailW = pillWidth, що центрує вістря покажчика строго на 740 px (відхилення 0 px).
+        * В itemShowLabel додано margin: 0px !important, що усуває небажані бічні зсуви теми GNOME Shell.
+     2) Синхронізація підстрибування біртага під час запуску додатка (bounce animation):
+        * В extensions/cupertino-dock-lite/animator.js у циклі _animate() реалізовано зв'язок із біртагом: labelActor = icon._label ?? icon._appwell?.get_parent?.()?.label ?? icon._appwell?.label.
+        * Додано синхронну передачу зміщення jY та jX як для самого біртага (labelActor.translation_y = jY), так і для стрілки покажчика (labelActor._arrowTailActor.translation_y = jY).
+        * При завершенні стрибка або відновленні стану (_restoreCloneHandoffs та при !cloneActive) значення translation_x та translation_y коректно скидаються в 0.
+        * У Dash2Dock Motion (appIcons.js: animateLaunch) додано одночасний плавний перехід ease() для підказки та її покажчика на випадок автономного запуску.
+     3) Оновлення та верифікація цілісності lock-файлу:
+        * У config/extensions.lock.json оновлено хеші для dash2dock-motion@unmade.space (dir_hash: c5332c542f15f8fc5555120a43a24c2eddca3382d3b77dcf78448661102617d9, appIcons.js: 2639ed928505d84b9e4e3fc766bf10521861cd22db487d483f8d62e8ca702274) та cupertino-dock-lite (dir_hash: 596d67c134c1594c239df5dfec15437c8a750a6278ddcc552eb936489fa5e80e).
+        * mac-extension-guard verify підтверджує 21/21 LOCKED OK.
+     4) Гаряче оновлення середовища без перезапуску оболонки:
+        * У поточному сеансі GNOME Shell через EvalHelper динамічно оновлено екземпляр Animator та патчено прототип DockDashItemContainer.
+        * Інструментальний аудит геометрії підтвердив: iconCenterX = 740, pillCenterX = 740, tailCenterX = 740 (похибка 0 px).
+        * Інструментальний аудит підстрибування підтвердив: realIcon_y = -17.51, label_y = -17.51, tail_y = -17.51 (повний збіг).
+   - Результати перевірок валідації на хості:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 38/38 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS (5/5).
+     * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
+     * python3 bin/test-macw1y-animations.py — 12/12 PASS.
