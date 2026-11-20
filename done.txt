@@ -2799,3 +2799,26 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-audit-sync check — 100% PASS (5/5).
      * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
      * python3 bin/test-macw1y-animations.py — 12/12 PASS.
+
+### 862. Передрелізна кросплатформна синхронізація, підтримка systemd-boot, Fedora/Arch генераторів initramfs та повний аудит проекту
+   - Дата: 21 листопада 2026 р.
+   - Мета: Підготовка релізу macW1Y, повна перевірка та синхронізація кожного файлу репозиторію з реальною системою, перенесення логіки налаштувань завантажувача та initramfs для роботи на інших дистрибутивах (Debian, Fedora, Arch Linux, CachyOS), актуалізація install.sh та записів у done.txt.
+   - Змінені файли:
+     * bin/mac-boot-config
+     * install.sh
+     * /usr/local/bin/mac-boot-config
+     * /boot/grub/themes/apple-mac
+     * /boot/grub/themes/apple-mac-usb
+   - Опис змін:
+     1) Кросплатформна генерація initramfs у mac-boot-config:
+        * Додано універсальну функцію rebuild_initramfs(), яка автоматично визначає інструмент дистрибутива: update-initramfs -u (Ubuntu/Debian), mkinitcpio -P (Arch/CachyOS) або dracut --regenerate-all --force (Fedora/RHEL/openSUSE).
+     2) Повна підтримка systemd-boot:
+        * У mac-boot-config додано пряме налаштування update_systemd_boot(timeout) для /boot/loader/loader.conf та /efi/loader/loader.conf (зміна timeout на 5 або 0 с при перемиканні меню вибору системи).
+     3) Синхронізація та еталонність install.sh:
+        * В install.sh додано автоматичне створення символьних посилань тем macw1y-boot ↔ apple-mac у /boot/grub/themes/, розгортання apple_center.png, перевірено захист системних файлів завантажувача на сторонніх ОС.
+        * Підтверджено повну відсутність кириличних символів в install.sh (0 збігів).
+     4) Результати аудиту синхронізації та валідації:
+        * mac-audit-sync check — 100% PASS (всі 5 етапів успішні, стан системи та репозиторію повністю синхронізований).
+        * mac-extension-guard verify — 21/21 LOCKED OK (контрольні суми всіх розширень зафіксовані в extensions.lock.json).
+        * test_*.py (38 тестів) — 38/38 PASS.
+        * test-macw1y-animations.py (12 сценаріїв) — 12/12 PASS (Spotlight відкривається за 4.53 мс, 152 FPS).

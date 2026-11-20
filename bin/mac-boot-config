@@ -2,11 +2,42 @@
 import sys
 import os
 import re
+import glob
 import shutil
 import subprocess
 
 if os.geteuid() != 0:
     os.execvp("sudo", ["sudo", sys.executable] + sys.argv)
+
+def rebuild_initramfs():
+    try:
+        if shutil.which("update-initramfs") and os.path.isdir("/etc/initramfs-tools"):
+            subprocess.run(["update-initramfs", "-u"], check=False)
+        elif shutil.which("mkinitcpio") and glob.glob("/etc/mkinitcpio.d/*.preset"):
+            subprocess.run(["mkinitcpio", "-P"], check=False)
+        elif shutil.which("dracut"):
+            subprocess.run(["dracut", "--regenerate-all", "--force"], check=False)
+    except Exception:
+        pass
+
+def update_systemd_boot(timeout=None):
+    for p in ["/boot/loader/loader.conf", "/efi/loader/loader.conf"]:
+        if os.path.exists(p):
+            try:
+                with open(p, "r") as f:
+                    content = f.read()
+                if timeout is not None:
+                    if re.search(r"^#?timeout\s+.*", content, re.M):
+                        content = re.sub(r"^#?timeout\s+.*", f"timeout {timeout}", content, flags=re.M)
+                    else:
+                        content += f"\ntimeout {timeout}\n"
+                with open(p, "w") as f:
+                    f.write(content)
+                notify_user("Параметри завантаження", "Конфігурацію systemd-boot збережено!")
+                return True
+            except Exception as e:
+                print("Error updating loader.conf:", e)
+    return False
 
 def get_target_user():
     user = os.environ.get("SUDO_USER")
@@ -110,6 +141,10 @@ def write_grub_default(content):
         f.write(content)
 
 def set_grub(enable):
+    if is_systemd_boot():
+        update_systemd_boot(timeout=5 if enable else 0)
+        return True
+
     c = read_grub_default()
     if enable:
         # 1. Timeout Style
@@ -257,10 +292,7 @@ def set_verbose(enable):
 
     write_grub_default(c)
     update_grub()
-    try:
-        subprocess.run(["update-initramfs", "-u"], check=False)
-    except Exception:
-        pass
+    rebuild_initramfs()
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:

@@ -1781,6 +1781,8 @@ install_grub() {
         sudo mkdir -p "$GRUB_USB_TARGET"
         sudo cp -r "$SCRIPT_DIR/grub/macw1y-boot-usb/"* "$GRUB_USB_TARGET/"
     fi
+    sudo ln -sfn macw1y-boot /boot/grub/themes/apple-mac 2>/dev/null || true
+    sudo ln -sfn macw1y-boot-usb /boot/grub/themes/apple-mac-usb 2>/dev/null || true
     
     if [ "$DISTRO_ID" = "ubuntu" ]; then
         [ -f /etc/default/grub ] && [ ! -f /etc/default/grub.bak_mactheme ] && sudo cp /etc/default/grub /etc/default/grub.bak_mactheme
