@@ -2,51 +2,88 @@
 import sys
 import os
 import re
+import shutil
 import subprocess
 
 if os.geteuid() != 0:
     os.execvp("sudo", ["sudo", sys.executable] + sys.argv)
 
+def get_target_user():
+    user = os.environ.get("SUDO_USER")
+    if user and user != "root":
+        return user
+    # Check users with uid >= 1000 who have a session
+    try:
+        out = subprocess.check_output(["loginctl", "list-users", "--no-legend"], text=True)
+        for line in out.strip().splitlines():
+            parts = line.split()
+            if len(parts) >= 2 and int(parts[0]) >= 1000:
+                return parts[1]
+    except Exception:
+        pass
+    return os.environ.get("USER") or "vitaliy"
+
 def notify_user(title, msg):
     try:
-        user = os.environ.get("SUDO_USER") or "vitaliy"
+        user = get_target_user()
         uid = subprocess.check_output(["id", "-u", user], text=True).strip()
         bus = f"unix:path=/run/user/{uid}/bus"
-        cmd = [
-            "sudo", "-u", user,
-            f"DBUS_SESSION_BUS_ADDRESS={bus}",
-            "gdbus", "call", "--session",
-            "--dest", "org.freedesktop.Notifications",
-            "--object-path", "/org/freedesktop/Notifications",
-            "--method", "org.freedesktop.Notifications.Notify",
-            "Параметри", "0", "", title, msg, "[]", "{}", "5000"
-        ]
         env = {**os.environ, "DBUS_SESSION_BUS_ADDRESS": bus, "XDG_RUNTIME_DIR": f"/run/user/{uid}"}
         subprocess.run(["sudo", "-u", user, "env", f"DBUS_SESSION_BUS_ADDRESS={bus}", "gdbus", "call", "--session", "--dest", "org.freedesktop.Notifications", "--object-path", "/org/freedesktop/Notifications", "--method", "org.freedesktop.Notifications.Notify", "Параметри", "0", "", title, msg, "[]", "{}", "5000"], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception:
         pass
 
+def is_systemd_boot():
+    if os.path.exists("/boot/loader/loader.conf"):
+        try:
+            res = subprocess.run(["bootctl", "is-installed"], capture_output=True, text=True)
+            if res.returncode == 0:
+                return True
+        except Exception:
+            pass
+    return False
+
+def get_grub_tools():
+    mkconfig = "grub2-mkconfig" if shutil.which("grub2-mkconfig") else "grub-mkconfig"
+    cfg_path = "/boot/grub/grub.cfg"
+    if os.path.exists("/boot/grub2/grub.cfg") and not os.path.islink("/boot/grub2"):
+        cfg_path = "/boot/grub2/grub.cfg"
+    elif not os.path.exists("/boot/grub/grub.cfg") and os.path.exists("/boot/grub2"):
+        cfg_path = "/boot/grub2/grub.cfg"
+    return mkconfig, cfg_path
+
 def update_grub():
+    if is_systemd_boot():
+        notify_user("Параметри завантаження", "Виявлено systemd-boot. Оновлення GRUB пропущено.")
+        return True
+
+    mkconfig, cfg_path = get_grub_tools()
+    if not shutil.which(mkconfig):
+        print(f"Neither grub-mkconfig nor grub2-mkconfig found; skipping.")
+        return False
+
     # 1. Back up current working grub.cfg
-    if os.path.exists("/boot/grub/grub.cfg") and os.path.getsize("/boot/grub/grub.cfg") > 1000:
-        subprocess.run(["cp", "-a", "/boot/grub/grub.cfg", "/boot/grub/grub.cfg.bak"], check=False)
+    if os.path.exists(cfg_path) and os.path.getsize(cfg_path) > 1000:
+        subprocess.run(["cp", "-a", cfg_path, f"{cfg_path}.bak"], check=False)
 
     # 2. Generate new config to a safe temporary file
-    temp_cfg = "/boot/grub/grub.cfg.tmp"
-    res = subprocess.run(["grub-mkconfig", "-o", temp_cfg], capture_output=True, text=True)
+    temp_cfg = f"{cfg_path}.tmp"
+    res = subprocess.run([mkconfig, "-o", temp_cfg], capture_output=True, text=True)
     if res.returncode != 0:
-        print("grub-mkconfig failed:", res.stderr)
+        print(f"{mkconfig} failed:", res.stderr)
         if os.path.exists(temp_cfg):
             os.remove(temp_cfg)
         return False
 
-    # 3. Validate syntax with grub-script-check
-    check = subprocess.run(["grub-script-check", temp_cfg], capture_output=True, text=True)
-    if check.returncode != 0:
-        print("grub-script-check failed:", check.stderr)
-        if os.path.exists(temp_cfg):
-            os.remove(temp_cfg)
-        return False
+    # 3. Validate syntax with grub-script-check if available
+    check_bin = "grub2-script-check" if shutil.which("grub2-script-check") else "grub-script-check"
+    if shutil.which(check_bin):
+        check = subprocess.run([check_bin, temp_cfg], capture_output=True, text=True)
+        if check.returncode != 0:
+            print(f"{check_bin} failed:", check.stderr)
+            if os.path.exists(temp_cfg):
+                os.remove(temp_cfg)
+            return False
 
     # 4. Verify that menuentry exists in the generated config
     with open(temp_cfg, "r") as f:
@@ -57,9 +94,9 @@ def update_grub():
             os.remove(temp_cfg)
         return False
 
-    # 5. Atomic replace on ext4: guaranteed never corrupt or half-written
-    os.replace(temp_cfg, "/boot/grub/grub.cfg")
-    os.chmod("/boot/grub/grub.cfg", 0o600)
+    # 5. Atomic replace on filesystem
+    os.replace(temp_cfg, cfg_path)
+    os.chmod(cfg_path, 0o600)
     subprocess.run(["sync"], check=False)
     notify_user("Параметри завантаження", "Конфігурацію GRUB успішно збережено!")
     return True

@@ -15,7 +15,21 @@ import fcntl
 import shutil
 import subprocess
 
-REPO_DIR = "/home/vitaliy/MACTHEMEFILES"
+def find_repo_dir():
+    candidates = [
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..")),
+        os.getcwd(),
+        os.environ.get("MACW1Y_REPO", ""),
+        os.path.expanduser("~/macW1Y"),
+        os.path.expanduser("~/MACTHEMEFILES"),
+        "/usr/share/mactheme",
+    ]
+    for c in candidates:
+        if c and os.path.exists(os.path.join(c, "config/macw1y-manifest.json")):
+            return c
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+REPO_DIR = find_repo_dir()
 MANIFEST_PATH = os.path.join(REPO_DIR, "config/macw1y-manifest.json")
 HOME = os.path.expanduser("~")
 RUNTIME_DIR = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
@@ -291,7 +305,9 @@ def main():
                 subprocess.run(["sudo", "chmod", "644", overlay_dst], check=False)
                 changes_count += 1
 
-            if os.path.exists(wrapper_src):
+            # Shell watchdog overlay is disabled on RPM/Pacman systems (preserve packaged binary)
+            is_debian = os.path.exists("/etc/debian_version") and shutil.which("dpkg-divert") is not None
+            if is_debian and os.path.exists(wrapper_src):
                 if not os.path.exists("/usr/bin/gnome-shell.real"):
                     subprocess.run(["sudo", "dpkg-divert", "--add", "--rename", "--divert", "/usr/bin/gnome-shell.real", "/usr/bin/gnome-shell"], check=False)
                 if not os.path.exists(wrapper_dst) or get_file_md5(wrapper_src) != get_file_md5(wrapper_dst):

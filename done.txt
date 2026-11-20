@@ -2431,3 +2431,21 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * tests/portability/check-native.sh — PASS (7/7 бібліотек C).
      * Перевірка кирилиці в install.sh — 0 знайдено.
      * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), коміт локальний (без push). Оцінка готовності перенесення: ~90–95%.
+
+852. 2026-11-20 — Кросплатформна міграція допоміжних утиліт bin/ під Debian, Fedora, Arch Linux та CachyOS:
+   - bin/mac-apply-theme (рядки 18–32, 308–315): додано функцію find_repo_dir() для динамічного пошуку репозиторію; усунено жорсткий шлях /home/vitaliy/MACTHEMEFILES. У розділі 9 синхронізації оверлея Shell додано перевірку дистрибутиву (dpkg-divert та /etc/debian_version): на системах RPM/Pacman збережено оригінальний виконуваний файл gnome-shell пакета без підміни обгорткою.
+   - bin/mac-uninstall-app (рядки 1–3, 29–52, 160–168): додано мультидистрибутивне видалення системних програм: виявлення пакунків через rpm -qf (Fedora) та pacman -Qoq (Arch/CachyOS) на додаток до dpkg -S; видалення через pkexec dnf remove -y та pkexec pacman -R --noconfirm.
+   - bin/mac-sync-applications (рядки 1248–1292, 2227–2231): реалізовано автоматичне встановлення перетягнутих файлів пакетів: install_rpm через pkexec dnf install -y (Fedora), install_arch_pkg через pkexec pacman -U --noconfirm (Arch/CachyOS), а також захист install_deb від запуску на не-Debian системах із виведенням сповіщення.
+   - bin/mac-boot-config (рядки 1–75): додано розпізнавання systemd-boot через bootctl is-installed із безпечним пропуском, вибір grub2-mkconfig vs grub-mkconfig, визначення цільового файлу конфігурації (/boot/grub2/grub.cfg на Fedora), динамічне визначення користувача через get_target_user().
+   - bin/mac-gdm-bypass (рядки 87–98, 225–255): додано динамічне визначення шляху конфігурації GDM (/etc/gdm/custom.conf vs /etc/gdm3/custom.conf) та поточного користувача через TARGET_USER замість зашитого імені vitaliy.
+   - bin/mac-snap-cursor-sync (рядки 3–8): динамічне визначення домашнього каталогу користувача USER_HOME із фолбеком на системні іконки /usr/share/icons/macW1Y/cursors.
+   - Усі оновлені утиліти синхронізовано до /usr/local/bin/.
+   - Результати перевірок валідації на хості:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 26/26 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS (5/5 аудитів).
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * python3 bin/test-macw1y-animations.py — 12/12 PASS (Spotlight 23.38 мс < 30 мс).
+     * tests/portability/check-native.sh — PASS (7/7 бібліотек C).
+     * Перевірка кирилиці в install.sh — 0 знайдено.
+     * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), коміт локальний (без push). Оцінка готовності перенесення: ~95–98%.

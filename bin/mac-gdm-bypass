@@ -87,17 +87,27 @@ fi
 
 echo -e " ${C_GRAY}Repository:${C_RESET} ${C_CYAN}$REPO_DIR${C_RESET}"
 
+# Determine target user dynamically
+TARGET_USER="$SUDO_USER"
+if [ -z "$TARGET_USER" ] || [ "$TARGET_USER" = "root" ]; then
+    TARGET_USER=$(loginctl list-users --no-legend 2>/dev/null | awk '$1 >= 1000 {print $2; exit}' || true)
+fi
+[ -n "$TARGET_USER" ] || TARGET_USER="vitaliy"
+
+# Determine GDM custom.conf dynamically
+GDM_CONF="/etc/gdm/custom.conf"
+[ ! -f /etc/gdm3/custom.conf ] || GDM_CONF="/etc/gdm3/custom.conf"
+
 # Check / Dry-Run Mode
 if [ "$DO_CHECK" -eq 1 ]; then
     echo -e "\n${C_BOLD}${C_BLUE}▶ Auditing GDM Bypass Status:${C_RESET}"
     
     # 1. Custom.conf check
-    GDM_CONF="/etc/gdm3/custom.conf"
     if [ -f "$GDM_CONF" ]; then
         AUTOLOGIN_EN=$(grep -E '^[[:space:]]*AutomaticLoginEnable[[:space:]]*=[[:space:]]*true' "$GDM_CONF" || true)
-        AUTOLOGIN_USER=$(grep -E '^[[:space:]]*AutomaticLogin[[:space:]]*=[[:space:]]*vitaliy' "$GDM_CONF" || true)
+        AUTOLOGIN_USER=$(grep -E "^[[:space:]]*AutomaticLogin[[:space:]]*=[[:space:]]*$TARGET_USER" "$GDM_CONF" || true)
         if [ -n "$AUTOLOGIN_EN" ] && [ -n "$AUTOLOGIN_USER" ]; then
-            echo -e "   [${C_GREEN}✓${C_RESET}] AutomaticLogin is ENABLED for 'vitaliy' in $GDM_CONF"
+            echo -e "   [${C_GREEN}✓${C_RESET}] AutomaticLogin is ENABLED for '$TARGET_USER' in $GDM_CONF"
         else
             echo -e "   [${C_YELLOW}!${C_RESET}] AutomaticLogin is NOT enabled in $GDM_CONF"
         fi
@@ -206,8 +216,7 @@ if [ -f "$GRUB_DEFAULT" ]; then
     echo -e "   ${C_GREEN}✓${C_RESET} Checked GRUB silent boot flags"
 fi
 
-echo -e "\n${C_BOLD}${C_BLUE}▶ [5/6] Enabling AutomaticLogin (Direct Vitaliy Desktop Entry)...${C_RESET}"
-GDM_CONF="/etc/gdm3/custom.conf"
+echo -e "\n${C_BOLD}${C_BLUE}▶ [5/6] Enabling AutomaticLogin (Direct $TARGET_USER Desktop Entry)...${C_RESET}"
 if [ -f "$GDM_CONF" ]; then
     # Ensure [daemon] exists
     if ! grep -q '\[daemon\]' "$GDM_CONF"; then
@@ -219,8 +228,8 @@ if [ -f "$GDM_CONF" ]; then
     sed -i '/^[[:space:]]*AutomaticLogin/d' "$GDM_CONF"
 
     # Insert clean AutomaticLogin settings under [daemon]
-    sed -i '/\[daemon\]/a AutomaticLoginEnable=true\nAutomaticLogin=vitaliy' "$GDM_CONF"
-    echo -e "   ${C_GREEN}✓${C_RESET} Configured AutomaticLoginEnable=true, AutomaticLogin=vitaliy in $GDM_CONF"
+    sed -i "/\\[daemon\\]/a AutomaticLoginEnable=true\\nAutomaticLogin=$TARGET_USER" "$GDM_CONF"
+    echo -e "   ${C_GREEN}✓${C_RESET} Configured AutomaticLoginEnable=true, AutomaticLogin=$TARGET_USER in $GDM_CONF"
 fi
 
 systemctl daemon-reload
@@ -236,13 +245,13 @@ if [[ "$CURRENT_TTY" =~ ^/dev/tty[0-9]+ ]]; then
 fi
 
 IN_GUI=0
-if [ "$IS_VIRTUAL_TTY" -eq 0 ] && { [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ] || pgrep -u vitaliy gnome-shell >/dev/null 2>&1; }; then
+if [ "$IS_VIRTUAL_TTY" -eq 0 ] && { [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ] || pgrep -u "$TARGET_USER" gnome-shell >/dev/null 2>&1; }; then
     IN_GUI=1
 fi
 
 if [ "$NO_RESTART" -eq 1 ]; then
     echo -e "   ${C_YELLOW}ℹ${C_RESET} --no-restart specified. Bypass configuration applied successfully."
-    echo -e "   ${C_YELLOW}ℹ${C_RESET} On next boot, GDM will bypass login and load Vitaliy's desktop directly."
+    echo -e "   ${C_YELLOW}ℹ${C_RESET} On next boot, GDM will bypass login and load $TARGET_USER's desktop directly."
 elif [ "$IN_GUI" -eq 1 ] && [ "$FORCE_RESTART" -eq 0 ]; then
     echo -e "   ${C_YELLOW}ℹ${C_RESET} Active graphical session detected (running inside desktop terminal)."
     echo -e "   ${C_GREEN}✓${C_RESET} All GDM bypass configurations have been applied without killing your open apps."

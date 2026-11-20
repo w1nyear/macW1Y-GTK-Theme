@@ -316,3 +316,41 @@ Headless GNOME не завжди завершує звичайну startup-по�
    - `tests/portability/check-native.sh`: **PASS** (збірка та символи 7 бібліотек).
    - Сеанс користувача хоста повністю збережено (без виходу/блокування/перезавантаження), локальні коміти (без git push).
 - Оцінка поточної готовності перенесення: **~90–95%**.
+
+## 20 листопада: Кросплатформна адаптація утиліт bin/ (mac-apply-theme, mac-uninstall-app, mac-sync-applications, mac-boot-config, mac-gdm-bypass, mac-snap-cursor-sync)
+
+1. **Захист системного бінарника Shell у `bin/mac-apply-theme`**:
+   - Усунено прямий виклик `dpkg-divert` на системах RPM/Pacman. Додано перевірку наявності `/etc/debian_version` та виконуваного файлу `dpkg-divert`. На Fedora, Arch та CachyOS оригінальний пакетний бінарник `/usr/bin/gnome-shell` не модифікується.
+   - Додано `find_repo_dir()` для динамічного знаходження кореня репозиторію; усунено жорстко зашитий шлях `/home/vitaliy/MACTHEMEFILES`.
+
+2. **Мультидистрибутивне видалення програм у `bin/mac-uninstall-app`**:
+   - Додано підтримку пакунків Fedora (`rpm -qf` -> `pkexec dnf remove -y`).
+   - Додано підтримку пакунків Arch Linux / CachyOS (`pacman -Qoq` -> `pkexec pacman -R --noconfirm`).
+   - Збережено підтримку Debian/Ubuntu (`dpkg -S` -> `pkexec apt-get remove -y`), Flatpak та Snap.
+
+3. **Автоматичне встановлення перетягнутих пакетів у `bin/mac-sync-applications`**:
+   - Додано функцію `install_rpm()` через `pkexec dnf install -y` для пакунків `.rpm`.
+   - Додано функцію `install_arch_pkg()` через `pkexec pacman -U --noconfirm` для пакунків `.pkg.tar.zst` та `.pkg.tar.xz`.
+   - У диспетчері подій каталогу `Applications` додано обробку розширень `.rpm`, `.pkg.tar.zst`, `.pkg.tar.xz` з перевіркою наявності відповідних пакетних менеджерів.
+
+4. **Кросплатформність конфігурації завантажувача у `bin/mac-boot-config`**:
+   - Додано розпізнавання `systemd-boot` через `bootctl is-installed` із безпечним повідомленням без збою.
+   - Реалізовано динамічний вибір між `grub2-mkconfig` (Fedora) та `grub-mkconfig` (Debian/Ubuntu/Arch).
+   - Автоматичне визначення шляху конфігураційного файлу (`/boot/grub2/grub.cfg` vs `/boot/grub/grub.cfg`).
+   - Замінено жорстко зашитий `vitaliy` на динамічне визначення активного користувача через `get_target_user()`.
+
+5. **Універсалізація `bin/mac-gdm-bypass`**:
+   - Автоматичне визначення розташування файлу конфігурації GDM: `/etc/gdm/custom.conf` (Fedora/Arch) або `/etc/gdm3/custom.conf` (Debian/Ubuntu).
+   - Замінено жорстко зашите ім'я `vitaliy` на `$TARGET_USER` (`$SUDO_USER` або виявлення сесії через `loginctl`).
+
+6. **Динамічний шлях курсорів у `bin/mac-snap-cursor-sync`**:
+   - Визначення `USER_HOME` з безпечним фолбеком на `/usr/share/icons/macW1Y/cursors`.
+
+7. **Результати верифікації**:
+   - 26/26 unit-тестів: **PASS**.
+   - 21/21 розширень: **LOCKED OK**.
+   - mac-audit-sync check: **100% PASS** (0 розбіжностей).
+   - mac-i18n-verify: **100% PASS**.
+   - Анімації (test-macw1y-animations.py): **12/12 PASS** (Spotlight 23.38 мс < 30 мс).
+   - Збірка 7 бібліотек C: **PASS**.
+- Оцінка поточної готовності перенесення: **~95–98%**.

@@ -1,6 +1,11 @@
 #!/bin/bash
 # Ensures macW1Y / macW1Y cursors override snap fallback directories
-SRC="/home/vitaliy/.local/share/icons/macW1Y/cursors"
+USER_HOME="${TARGET_HOME:-$HOME}"
+if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
+    USER_HOME=$(getent passwd "$SUDO_USER" 2>/dev/null | cut -d: -f6)
+fi
+SRC="$USER_HOME/.local/share/icons/macW1Y/cursors"
+[ -d "$SRC" ] || SRC="/usr/share/icons/macW1Y/cursors"
 [ -d "$SRC" ] || exit 0
 
 # gtk-common-themes

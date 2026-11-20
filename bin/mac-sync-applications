@@ -1250,7 +1250,51 @@ def install_deb(filepath):
         return
     print(f"[Installer] Installing DEB: {filepath}")
     clean_name = extract_app_name(filepath)
+    if not shutil.which("apt-get"):
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON,
+                        "macW1Y Installer", "DEB packages are only supported on Debian/Ubuntu systems."])
+        return
     res = subprocess.run(["pkexec", "apt-get", "install", "-y", filepath])
+    try:
+        os.remove(filepath)
+    except Exception:
+        pass
+    if res.returncode == 0:
+        sync()
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON, sync_tr("installed_title"),
+                        sync_tr("pkg_installed_msg", name=clean_name)])
+
+
+def install_rpm(filepath):
+    if not wait_for_file_ready(filepath):
+        return
+    print(f"[Installer] Installing RPM: {filepath}")
+    clean_name = extract_app_name(filepath)
+    if not shutil.which("dnf"):
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON,
+                        "macW1Y Installer", "RPM packages are only supported on Fedora/RHEL systems."])
+        return
+    res = subprocess.run(["pkexec", "dnf", "install", "-y", filepath])
+    try:
+        os.remove(filepath)
+    except Exception:
+        pass
+    if res.returncode == 0:
+        sync()
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON, sync_tr("installed_title"),
+                        sync_tr("pkg_installed_msg", name=clean_name)])
+
+
+def install_arch_pkg(filepath):
+    if not wait_for_file_ready(filepath):
+        return
+    print(f"[Installer] Installing Arch Package: {filepath}")
+    clean_name = extract_app_name(filepath)
+    if not shutil.which("pacman"):
+        subprocess.run(["notify-send", "-a", "macW1Y", "-i", APP_STORE_ICON,
+                        "macW1Y Installer", "Arch packages are only supported on Arch Linux/CachyOS systems."])
+        return
+    res = subprocess.run(["pkexec", "pacman", "-U", "--noconfirm", filepath])
     try:
         os.remove(filepath)
     except Exception:
@@ -2138,6 +2182,10 @@ class MacAppDaemon:
             threading.Thread(target=install_archive, args=(path,), daemon=True).start()
         elif base.endswith(".deb"):
             threading.Thread(target=install_deb, args=(path,), daemon=True).start()
+        elif base.endswith(".rpm"):
+            threading.Thread(target=install_rpm, args=(path,), daemon=True).start()
+        elif base.endswith(".pkg.tar.zst") or base.endswith(".pkg.tar.xz"):
+            threading.Thread(target=install_arch_pkg, args=(path,), daemon=True).start()
         elif base.endswith(".exe") or base.endswith(".msi"):
             threading.Thread(target=install_wine_installer, args=(path,), daemon=True).start()
         elif base.endswith(".sh") or base.endswith(".bash"):
