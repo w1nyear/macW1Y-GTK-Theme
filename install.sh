@@ -928,13 +928,8 @@ install_extensions() {
         sudo glib-compile-schemas /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/schemas 2>/dev/null || true
     fi
     
-    # Patch for DING
-    if [ -d "$SCRIPT_DIR/extensions/ding-patches" ] && [ -d "/usr/share/gnome-shell/extensions/ding@rastersoft.com/app" ]; then
-        require_root
-        log_info "Applying desktop icon patches for DING..."
-        sudo cp "$SCRIPT_DIR/extensions/ding-patches/"* /usr/share/gnome-shell/extensions/ding@rastersoft.com/app/ 2>/dev/null || true
-    fi
-    
+    # DING is bundled and installed in EXT_USER_DIR with its macW1Y patches.
+
     # Importing Dconf
     if [ -f "$SCRIPT_DIR/dconf/gnome-all.dconf" ]; then
         log_info "Importing Dconf configurations..."

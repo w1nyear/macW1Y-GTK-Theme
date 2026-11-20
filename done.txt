@@ -2363,3 +2363,13 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
    - Fedora VM під tester: після --strict компіляції схем 20/21 розширень ENABLED, 25 с без падіння. Єдина відсутня керована залежність — DING; потрібного DNF-пакета у репозиторіях Fedora 41 не знайдено. Повне перенесення не завершене.
    - Анімації хоста: 11/12, Spotlight 45.219 мс замість <30 мс; поріг не змінено. Сесію хоста не перезапускали.
    - Оновлено docs/diagnostics/2026-11-19-portability.md; done.txt синхронізовано з Desktop. Готовність 70–75%, без push.
+
+848. 2026-11-20 — DING у складі проєкту для незалежного від дистрибутива встановлення:
+   - extensions/ding@rastersoft.com/ (новий snapshot): код розширення і GTK3-процесу, локальна схема, COPYING, COPYRIGHT.packaging, ORIGIN.txt; включено наявні патчі macW1Y. Метадані 46–50 збережено, GNOME 51 потребує адаптації й наразі блокується перед встановленням.
+   - extensions/ding-patches/desktopManager.js та bundle app/desktopManager.js (рядок 1433): оброблено відсутній XDG_CURRENT_DESKTOP, який спричиняв падіння процесу у VM.
+   - dependencies/*-packages.txt та install-deps.sh: замість пакунка DING додано GJS, GTK3, GnomeDesktop3 для APT/DNF/Pacman.
+   - install.sh (біля 931): припинено перезапис DING із системного пакунка; bundle копіюється штатним циклом у користувацький каталог. uninstall.sh: додано видалення користувацького DING.
+   - tests/test_ding_bundle.py та test_portability.py: перевірки патчів, компіляції схеми, ліцензійних файлів, відсутності системного перезапису та обмеження GNOME 51. Разом 26/26 PASS.
+   - config/extensions.lock.json: джерело bundled_snapshot та новий хеш. Копію DING і lock синхронізовано на хості без перезапуску Shell. Guard 21/21, audit-sync 100% PASS, анімаційний прогін 12/12, bash -n PASS.
+   - Fedora 41: DING ввімкнувся, запущено окремий gjs-процес, усунено знайдений JS-збій. Візуальні тести та GTK3-попередження теми залишаються відкритими. Headless-перевірка не замінює графічного сеансу.
+   - Докладний звіт: docs/diagnostics/2026-11-19-portability.md. Готовність приблизно 75%. done.txt скопійовано на Desktop, коміт локальний, без push.

@@ -1,0 +1,7 @@
+macW1Y bundled DING snapshot, 2026-11-20.
+Source: installed gnome-shell-ubuntu-extensions 50.26.04.8ubuntu.
+Upstream: https://gitlab.com/rastersoft/desktop-icons-ng
+Packaging: https://github.com/ubuntu/gnome-shell-ubuntu-extensions
+Includes existing macW1Y app patches from extensions/ding-patches.
+License: see COPYING, COPYRIGHT.packaging and per-file headers.
+Original shell-version declaration 46-50 retained; GNOME 51 not certified.

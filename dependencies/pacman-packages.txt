@@ -35,3 +35,6 @@ python-cairo
 nautilus
 mutter
 libdbusmenu-glib
+gjs
+gtk3
+gnome-desktop

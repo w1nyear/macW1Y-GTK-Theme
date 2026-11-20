@@ -1430,7 +1430,7 @@ var DesktopManager = class {
         this._menu.add(new Gtk.SeparatorMenuItem());
 
         this._settingsMenuItem = new Gtk.MenuItem({label: _('Desktop Icons Settings')});
-        if (GLib.getenv('XDG_CURRENT_DESKTOP').split(':').includes('ubuntu')) {
+        if ((GLib.getenv('XDG_CURRENT_DESKTOP') ?? '').split(':').includes('ubuntu')) {
             this._settingsMenuItem.connect("activate", () => {
                 const desktopFile = GioUnix.DesktopAppInfo.new('gnome-ubuntu-panel.desktop');
                 const context = Gdk.Display.get_default().get_app_launch_context();

@@ -18,8 +18,9 @@ class PortabilityTests(unittest.TestCase):
                 check.incompatible_extensions(pathlib.Path(folder), "50")
 
     def test_version_matrix(self):
-        for version in ('46', '47', '48', '49', '50', '51'):
+        for version in ('46', '47', '48', '49', '50'):
             self.assertFalse(check.incompatible_extensions(ROOT, version), f'Version {version} should be compatible')
+        self.assertIn('ding@rastersoft.com', check.incompatible_extensions(ROOT, '51'))
         for version in ('43', '44'):
             self.assertTrue(check.incompatible_extensions(ROOT, version), f'Version {version} should be incompatible')
 

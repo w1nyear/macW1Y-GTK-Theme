@@ -584,7 +584,7 @@
     "ding@rastersoft.com": {
       "uuid": "ding@rastersoft.com",
       "name": "Desktop Icons NG (DING)",
-      "pinned_version": "custom",
+      "pinned_version": "macw1y-ding-2026-11-20",
       "shell_compatibility": [
         "46",
         "47",
@@ -592,15 +592,15 @@
         "49",
         "50"
       ],
-      "sha256": "0c03c3727d29807036a2f2e62eabcf70c66ad4f553d213e261bf3785d3510fa0",
+      "sha256": "6580b4a3c855a3624a0216a225d9099fca8a69833d372dc36e95e78b46771e5c",
       "status": "locked",
-      "source": "apt_system_patched",
+      "source": "bundled_snapshot",
       "macw1y_components": [
         "desktop_icons",
         "finder_desktop"
       ],
       "has_custom_patches": true,
-      "patch_description": "macW1Y Finder style stepped label selection pill, semi-transparent hover state, askRenamePopup, and desktopManager patches",
+      "patch_description": "Bundled DING with macW1Y app patches and local schema; installed per user without overwriting distro files.",
       "last_verified": "2026-11-14",
       "pinned_sha256": "9227d6b42b31e2e3af402eb6cd251628ab6ade784e16e7934c61e25db0004b86"
     },

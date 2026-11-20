@@ -112,6 +112,7 @@ restore_ui() {
         "dash-to-dock@micxgx.gmail.com"
         "dash2dock-motion@unmade.space"
         "desktop-widgets@r3nhick"
+        "ding@rastersoft.com"
         "display-brightness-ddcutil@themightydeity.github.com"
         "eval-helper@mactheme"
         "kiwi@kemma"

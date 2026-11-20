@@ -1,0 +1,175 @@
+.file-label, label.file-label:backdrop {
+    text-shadow: 0px 0px 3px black;
+    color: white;
+}
+
+.file-label-dark, label.file-label-dark:backdrop {
+    text-shadow: 0px 0px 3px white;
+    color: black;
+}
+
+.file-item {
+    padding: 2px;
+    border-radius: 10px;
+    border-style: solid;
+    border-width: 3px;
+    border-color: transparent;
+}
+
+/* macW1Y style selection & hover: transparent item container, rounded accent or hover pill on file label */
+.file-item,
+.file-item:hover,
+.file-item.file-item-hover,
+.file-item.desktop-icons-selected,
+.file-item.desktop-icons-selected:backdrop,
+.file-item.desktop-icons-keyboard-selected,
+.file-item.desktop-icons-keyboard-selected:backdrop {
+    background-color: transparent;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+label.file-label,
+label.file-label-dark {
+    padding: 4px 8px;
+    border-radius: 7.5px;
+}
+
+.file-item.desktop-icons-selected label.file-label,
+.file-item.desktop-icons-selected label.file-label-dark,
+.file-item.desktop-icons-selected:backdrop label.file-label,
+.file-item.desktop-icons-selected:backdrop label.file-label-dark,
+.file-item.desktop-icons-keyboard-selected label.file-label,
+.file-item.desktop-icons-keyboard-selected label.file-label-dark,
+.file-item.desktop-icons-keyboard-selected:backdrop label.file-label,
+.file-item.desktop-icons-keyboard-selected:backdrop label.file-label-dark,
+.file-item.file-item-hover label.file-label,
+.file-item.file-item-hover label.file-label-dark,
+.file-item-hover label.file-label,
+.file-item-hover label.file-label-dark {
+    background-color: transparent;
+    background: transparent;
+    color: #ffffff;
+    text-shadow: none;
+    padding: 4px 8px;
+    border-radius: 7.5px;
+}
+
+.not-found {
+    color: rgb(255, 0, 0);
+}
+
+window.desktopwindow {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+window.testwindow {
+    background-color: rgba(0, 0, 0, 100);
+}
+
+window.rename-popup {
+    background-color: transparent;
+}
+
+.rename-box {
+    background-color: @theme_bg_color;
+    border: 1px solid alpha(@borders, 0.5);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    padding: 10px 14px;
+}
+
+/* Desktop Context Menu styling (macW1Y Tahoe Glass) */
+window.desktopmenu,
+window.desktopmenu.background,
+window.desktopmenu.popup,
+window.desktopmenu decoration,
+window.desktopmenu > decoration,
+menu.desktopmenu,
+.desktopmenu menu,
+.desktopmenu,
+menu {
+    border-radius: 20px;
+    background-color: transparent;
+    background: transparent;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+    margin: 0;
+    padding: 6px 4px;
+}
+
+.desktopmenu menuitem,
+window.desktopmenu menuitem,
+menu.desktopmenu menuitem,
+.desktopmenu menu menuitem,
+menu menuitem {
+    border-radius: 9999px;
+    margin: 2px 6px;
+    padding: 4px 12px;
+    min-height: 24px;
+    color: #ffffff;
+    background-color: transparent;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.desktopmenu menuitem label,
+window.desktopmenu menuitem label,
+menu.desktopmenu menuitem label,
+menu menuitem label {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.desktopmenu menuitem:disabled,
+.desktopmenu menuitem:disabled label,
+menu menuitem:disabled,
+menu menuitem:disabled label {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.desktopmenu menuitem:hover,
+.desktopmenu menuitem:focus,
+.desktopmenu menuitem:selected,
+window.desktopmenu menuitem:hover,
+window.desktopmenu menuitem:focus,
+window.desktopmenu menuitem:selected,
+menu.desktopmenu menuitem:hover,
+menu.desktopmenu menuitem:focus,
+menu.desktopmenu menuitem:selected,
+menu menuitem:hover,
+menu menuitem:focus,
+menu menuitem:selected {
+    background-color: @accent_bg_color;
+    color: #ffffff;
+    border-radius: 9999px;
+    box-shadow: 0 2px 8px alpha(@accent_bg_color, 0.40);
+}
+
+.desktopmenu menuitem:hover label,
+.desktopmenu menuitem:focus label,
+.desktopmenu menuitem:selected label,
+menu menuitem:hover label,
+menu menuitem:focus label,
+menu menuitem:selected label {
+    color: #ffffff;
+}
+
+.desktopmenu menuitem:active,
+window.desktopmenu menuitem:active,
+menu menuitem:active {
+    background-color: #0062cc;
+    color: #ffffff;
+    border-radius: 9999px;
+}
+
+.desktopmenu separator,
+window.desktopmenu separator,
+menu separator {
+    min-height: 1px;
+    background-color: rgba(255, 255, 255, 0.12);
+    margin: 4px 6px;
+    border: none;
+}

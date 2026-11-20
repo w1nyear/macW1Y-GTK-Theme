@@ -15,11 +15,6 @@ mapfile -t packages < <(sed -e 's/#.*//' -e '/^[[:space:]]*$/d' "$script_dir/$li
 case "$manager" in
     apt)
         sudo apt-get update
-        if [ "${ID:-}" = "ubuntu" ]; then
-            packages+=("gnome-shell-ubuntu-extensions")
-        else
-            packages+=("gnome-shell-extension-desktop-icons-ng")
-        fi
         sudo apt-get install -y "${packages[@]}"
         ;;
     dnf) sudo dnf install -y "${packages[@]}" ;;

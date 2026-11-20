@@ -42,4 +42,6 @@ python3-cairo
 nautilus-devel
 mutter-devel
 libdbusmenu
-gnome-shell-extension-desktop-icons-ng
+gjs
+gtk3
+gnome-desktop3
