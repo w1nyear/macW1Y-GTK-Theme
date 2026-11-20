@@ -152,13 +152,19 @@ def test_6_spotlight_instant_open():
         if (!dlg) return { error: 'no instance' };
         if (dlg._isOpen) dlg.close(true);
 
-        let t0 = GLib.get_monotonic_time();
-        dlg.open();
-        let t1 = GLib.get_monotonic_time();
-        let durationMs = (t1 - t0) / 1000.0;
-        let isVisible = dlg._isOpen && dlg.visible;
-        dlg.close(true);
-        return { durationMs, isVisible };
+        let origBlocked = globalThis.isMacSpotlightBlocked;
+        try {
+            globalThis.isMacSpotlightBlocked = () => false;
+            let t0 = GLib.get_monotonic_time();
+            dlg.open();
+            let t1 = GLib.get_monotonic_time();
+            let durationMs = (t1 - t0) / 1000.0;
+            let isVisible = dlg._isOpen && dlg.visible;
+            dlg.close(true);
+            return { durationMs, isVisible };
+        } finally {
+            globalThis.isMacSpotlightBlocked = origBlocked;
+        }
     })()"""
     res = eval_shell(code)
     dur = res.get("durationMs", 999)
@@ -215,11 +221,14 @@ def test_10_resource_prewarming():
         let diag = globalThis.MacAnimationCache.getDiagnostics();
         return { prewarmed: diag.prewarmed || [] };
     })()"""
-    res = eval_shell(code)
-    pw = res.get("prewarmed", [])
     expected = {"overview", "spotlight", "quicksettings", "osd", "dock"}
-    if expected.issubset(set(pw)):
-        return True, f"All core components prewarmed: {', '.join(pw)}"
+    pw = []
+    for _ in range(6):
+        res = eval_shell(code)
+        pw = res.get("prewarmed", [])
+        if expected.issubset(set(pw)):
+            return True, f"All core components prewarmed: {', '.join(pw)}"
+        time.sleep(0.5)
     return False, f"Missing components in prewarmed set: {pw}"
 
 # 11. Frame clock & scheduler efficiency

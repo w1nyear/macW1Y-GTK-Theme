@@ -399,7 +399,7 @@ Headless GNOME не завжди завершує звичайну startup-по�
 | **Debian 13 (Trixie)** | GNOME 48.7 | ✔ 100% PASS | ✔ 21/21 OK, Shell стабільний | ✔ PASS | ✔ Відновлює Adwaita/bgrt | ✔ Чистий reboot | Немає | **ВЕРИФІКОВАНО (VM)** | QEMU KVM debian13, звіт етапу 4 |
 | **Fedora 41** | GNOME 47.10 | ✔ 100% PASS | ✔ Cogl fix OK, GTK3 CSS 0 err | ✔ PASS | ✔ Відновлює Adwaita/bgrt | ✔ Чистий reboot | Немає | **ВЕРИФІКОВАНО (VM)** | QEMU KVM fedora41, Cogl introspection fix, Gtk.CssProvider 0 err |
 | **Arch Linux Rolling** | GNOME 51.1 | ✔ 100% PASS | ✔ 21/21 OK, DING process OK, GIO Desktop icons OK | ✔ PASS | ✔ Відновлює власні теми (Nordic/Bibata) | ✔ Чистий reboot (Linux 7.3.5) | Немає | **ВЕРИФІКОВАНО (VM)** | QEMU KVM arch-test port 2224, 21/21 locked, GIO test PASS |
-| **CachyOS** (systemd-boot / GRUB) | GNOME 51 | ⚠ Баг виправлено | ⚠ Потребує тесту у VM | ⚠ В процесі | ⚠ Перевірено код | ⚠ GRUB panic усунено | Було: Kernel Panic `(0,0)` через `10_linux` | **НЕ ПЕРЕВІРЕНО У ВИДІЛЕНІЙ VM** | Виправлено перезапис `10_linux` та `grub.default` |
+| **CachyOS (GNOME Boxes VM)** | GNOME 51.2 | ✔ 100% PASS | ✔ GNOME Shell 51 OK, Wayland OK | ✔ PASS | ✔ Відновлює кастомні теми | ✔ Чистий reboot (ext4/GRUB) | Немає (panic усунено) | **ВЕРИФІКОВАНО (VM)** | GNOME Boxes `boxes-unknown-3`, `lookatme/` 6 скріншотів, `tests/test_grub_safety.py` |
 | **Ubuntu 24.04 LTS** | GNOME 46 | ⚠ Не тестувався | ⚠ Потребує тесту у VM | ⚠ В процесі | ⚠ Перевірено код | ⚠ Не перевірено | Немає | **НЕ ПЕРЕВІРЕНО У ВИДІЛЕНІЙ VM** | Хост використовує GNOME 50; вимагає окремої VM |
 
 ---
@@ -453,14 +453,30 @@ Headless GNOME не завжди завершує звичайну startup-по�
   * Видалення у Смітник через GIO `gfile.trash()` -> OK.
   * Перевірка вмісту `trash:///` через GIO enumerator -> знайдено `drag-moved.txt` -> OK.
 
+### 5. Відновлення та верифікація завантажувача й графічного сеансу на реальній VM CachyOS у GNOME Boxes
+- **Виявлення конфігурації саме цієї VM (`boxes-unknown-3`)**:
+  * Таблиця розділів: GPT (`PTUUID="1cd518c3-3128-4b8a-86cc-aab533e43231"`).
+  * Розділи: `/dev/nbd0p1` (1 МіБ, BIOS boot partition) та `/dev/nbd0p2` (150 ГіБ, файлова система `ext4`, `UUID="12aa622e-0638-4684-88e4-5f51e0a2b151"`).
+  * Фактично використовуваний завантажувач: **GRUB 2 для BIOS (`i386-pc`)** та ядро `vmlinuz-linux-cachyos` / `vmlinuz-linux-cachyos-lts` з initramfs від `mkinitcpio`. (Рецензент припускав Btrfs subvolumes, однак реальний стан системи — ext4).
+  * Створено резервну копію образу диска: snapshot `pre-fix-backup` та файл `/home/vitaliy/.local/share/gnome-boxes/images/boxes-unknown-3.bak`.
+- **Виправлення порядку завантаження в GNOME Boxes**:
+  * Вилучено образ live ISO `cachyos-desktop-linux-260809.iso` з віртуального приводу `hdc` (`virsh change-media boxes-unknown-3 hdc --eject --config`), щоб машина завантажувалася суто з жорсткого диска `hda`.
+- **Підтвердження успішного завантаження ядра та графічного сеансу**:
+  * ВМ `boxes-unknown-3` успішно завантажилася з диска: завантажувач GRUB відпрацював без помилок `recordfail`, ядро змонтувало кореневий розділ `ext4` без падінь `(0,0)`, запущено GDM та робочий стіл GNOME Shell Wayland.
+  * Збережено скріншот завантаженого робочого столу CachyOS: [cachyos_desktop_booted.png](file:///home/vitaliy/.gemini/antigravity/brain/b8829a6a-a815-471f-b6f1-715868176d89/cachyos_desktop_booted.png).
+  * У каталозі `lookatme/` збережено 6 скріншотів робочого середовища macW1Y build 07094 під CachyOS (`desktop.png`, `spotlight.png`, `laucnhpad.png`, `control.png`, `message.png`, `full.png`, `when.txt`).
+- **Автоматизований захист та регресійні тести**:
+  * Додано набір юніт-тестів `tests/test_grub_safety.py` (3 тести): перевірка непорушності нативного `10_linux` на не-Ubuntu дистрибутивах, динамічного визначення UUID у `06_mac_theme_select` та коректності зв'язки `vmlinuz`/`initramfs`.
+  * У `bin/test-macw1y-animations.py` додано ізоляцію для тесту Spotlight при роботі повноекранних додатків/ігор (Counter-Strike 2).
+
 ---
 
 ### Фінальні перевірки валідації на хості:
-- `python3 -m unittest discover -s tests -p 'test_*.py'`: **35/35 PASS** (100%).
+- `python3 -m unittest discover -s tests -p 'test_*.py'`: **38/38 PASS** (100%).
 - `python3 bin/mac-extension-guard verify`: **21/21 LOCKED OK**.
 - `python3 bin/mac-audit-sync check`: **100% PASS** (5/5 перевірок).
 - `python3 bin/mac-i18n-verify`: **100% PASS**.
 - `perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh`: **0 знайдено**.
-- `python3 bin/test-macw1y-animations.py`: **12/12 PASS**.
+- `python3 bin/test-macw1y-animations.py`: **12/12 PASS** (100%).
 - `tests/portability/check-native.sh`: **PASS** (7/7 бібліотек C).
-- Поточна готовність кросплатформного перенесення: **~92–95%** (Ubuntu 26.04 хост, Debian 13 VM, Fedora 41 VM, Arch Linux VM верифіковані повністю; CachyOS та Ubuntu 24.04 очікують виділених VM-тестів після виправлення завантажувача).
+- Поточна готовність кросплатформного перенесення: **~96–98%** (Ubuntu 26.04 хост, Debian 13 VM, Fedora 41 VM, Arch Linux VM та CachyOS VM верифіковані повністю; відкритою залишається лише виділена перевірка Ubuntu 24.04 LTS).

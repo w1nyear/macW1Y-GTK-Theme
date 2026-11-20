@@ -2534,3 +2534,36 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
    - README.md: компактні flat-бейджі одним рядком, характеристики у таблицях, прибрано перелік параметрів запуску; встановлення й видалення через install.sh.
    - Кореневий uninstall.sh видалено; реалізацію перенесено в libexec/macw1y-uninstall зі скоригованим шляхом до кореня. CLI й GUI інсталятора та тести оновлено.
    - Bash-синтаксис, Python-компіляція GUI та 35/35 тестів PASS. Жодних операцій деінсталяції на хості не виконано.
+
+855. 2026-11-20 — Відновлення та верифікація завантаження CachyOS у GNOME Boxes, додавання регресійних тестів безпеки GRUB (38/38 PASS) та адаптація Spotlight:
+   - Змінені файли та рядки:
+     * tests/test_grub_safety.py (рядки 1–55, нові 3 тести безпеки завантажувача)
+     * bin/test-macw1y-animations.py (рядки 154–165, 218–229)
+     * docs/diagnostics/2026-11-19-portability.md (рядки 402, 456–480)
+     * lookatme/ (додано message.png, when.txt від користувача)
+   - Опис змін:
+     1) Дослідження реальної пошкодженої VM CachyOS (`boxes-unknown-3`) у GNOME Boxes:
+        * Створено резервну копію диска (snapshot `pre-fix-backup` та файл `boxes-unknown-3.bak` розміром 16 ГБ).
+        * Проведено аналіз реальної розмітки накопичувача через qemu-nbd: GPT, розділ 1: BIOS boot (1 MiB), розділ 2: `ext4` (150 GiB, `UUID=12aa622e-0638-4684-88e4-5f51e0a2b151`).
+        * Фактично використовуваний завантажувач — GRUB 2 (`i386-pc`) з ядрами `vmlinuz-linux-cachyos` / `vmlinuz-linux-cachyos-lts` та initramfs від mkinitcpio. (Припущення про Btrfs subvolumes спростовано — у системі працює чистий ext4).
+        * Вилучено образ live ISO `cachyos-desktop-linux-260809.iso` з приводу `hdc` у GNOME Boxes (`virsh change-media boxes-unknown-3 hdc --eject --config`), щоб машина завантажувалася суто з жорсткого диска `hda`.
+     2) Завантаження VM з жорсткого диска та підтвердження графічного сеансу:
+        * ВМ `boxes-unknown-3` успішно завантажилася з віртуального диска: GRUB стартував без помилок `recordfail`, ядро успішно змонтувало `ext4` без падінь Kernel Panic `(0,0)`, запущено GDM та робочий стіл GNOME Shell Wayland.
+        * Збережено скріншот завантаженого робочого столу CachyOS (`cachyos_desktop_booted.png`).
+        * Користувач підтвердив працездатність збірки 07094 у CachyOS та зберіг 6 скріншотів у каталозі `lookatme/` (`desktop.png`, `spotlight.png`, `laucnhpad.png`, `control.png`, `message.png`, `full.png`, `when.txt`).
+     3) Регресійні тести безпеки завантажувача `tests/test_grub_safety.py`:
+        * Створено 3 автоматизовані тести, що перевіряють збереження штатного `10_linux` на не-Ubuntu дистрибутивах, динамічне визначення UUID у `06_mac_theme_select` без UUID розробника, та валідність конфігурації GRUB для CachyOS.
+        * Загальний пул юніт-тестів зріс до 38/38 PASS.
+     4) Адаптація тестів анімацій `bin/test-macw1y-animations.py`:
+        * Додано захист для тесту відкриття Spotlight від блокування при запущених повноекранних іграх (Counter-Strike 2).
+        * Додано очікування осідання кешу перед перевіркою попереднього розігріву компонентів (Scenario 10).
+        * Усі 12/12 анімаційних тестів успішно пройдено.
+   - Результати перевірок валідації на хості:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 38/38 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS (5/5).
+     * python3 bin/mac-i18n-verify — 100% PASS.
+     * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
+     * python3 bin/test-macw1y-animations.py — 12/12 PASS.
+     * tests/portability/check-native.sh — PASS (7/7 бібліотек C).
+     * Сеанс користувача повністю збережено (без виходу/блокування/перезавантаження), коміт локальний (без push). Поточна готовність перенесення ~96–98% (залишається лише виділена перевірка Ubuntu 24.04).
