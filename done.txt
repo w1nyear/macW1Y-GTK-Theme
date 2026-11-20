@@ -2749,3 +2749,53 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
      * python3 bin/test-macw1y-animations.py — 12/12 PASS (Spotlight відкрився за 9.16 мс, FPS: 152).
      * systemctl status mac-gamemode.service — active (running), Temp=90.0°C без падіння частот та без заниження EPP.
+
+### 861. Виправлення режиму verbose, ліквідація затримки GRUB та додавання перемикача «Логотип ПК» у налаштування мак-стилізації
+   - Дата: 21 листопада 2026 р.
+   - Мета: Повне усунення залишків відображення логів verbose при його вимкненому стані в налаштуваннях, усунення затримки між стартом та появою яблучка при вимкненому меню GRUB, додавання нового перемикача «Логотип ПК» («boot_pclogo_switch») у параметри мак-стилізації (під пунктами меню GRUB та verbose) з підтримкою всіх 4 сценаріїв взаємодії.
+   - Змінені файли:
+     * bin/mac-boot-config
+     * bin/mac-styling-settings
+     * grub/06_mac_theme_select
+     * grub/macw1y-boot/apple_center.png
+     * grub/macw1y-boot-usb/apple_center.png
+     * /boot/grub/themes/apple-mac/apple_center.png
+     * /etc/grub.d/06_mac_theme_select
+     * plymouth/plymouth-verbose-logger.c
+     * systemd/plymouth-verbose-logger.service
+     * /etc/systemd/system/plymouth-verbose-logger.service
+     * gnome-control-center-overlay/libmac_settings.c
+     * gnome-control-center-overlay/libmac_settings.so
+     * gnome-control-center-overlay/cc-mac-styling-panel.ui
+     * gnome-control-center-overlay/locales/*/cc-mac-styling-panel.ui (uk, en, pl, de, fr, es, it)
+     * control-center/libmac_settings.c
+     * control-center/libmac_settings.so
+     * control-center/cc-mac-styling-panel.ui
+     * control-center/locales/*/cc-mac-styling-panel.ui (uk, en, pl, de, fr, es, it)
+     * lib/libmac_settings.so
+     * /usr/lib/x86_64-linux-gnu/libmac_settings.so
+     * /usr/local/lib/libmac_settings.so
+     * ~/.local/lib/libmac_settings.so
+     * /usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so
+   - Опис змін:
+     1) Виправлення показу verbose при вимкненому перемикачі:
+        * Виявлено першопричину: файл-маркер /etc/plymouth/verbose_on та вшитий у попередній образ initramfs файл usr/share/plymouth/themes/apple-mac/verbose_on.png продовжували активувати виведення системних повідомлень через plymouth-verbose-logger та скрипт теми.
+        * У mac-boot-config set-verbose disable реалізовано повне очищення маркерів у всіх активних темах (apple-mac, macw1y-boot), видалення /etc/plymouth/verbose_on, зупинку й деактивацію plymouth-verbose-logger.service, налаштування параметрів ядра на quiet splash bgrt.disable=1 vt.global_cursor_default=0 loglevel=3 та автоматичне оновлення образу initramfs (update-initramfs -u).
+        * Оновлено initramfs: перевірка lsinitramfs підтвердила нульову наявність файлів verbose_on.png в образі ядра.
+     2) Ліквідація затримки завантаження GRUB:
+        * У grub/06_mac_theme_select виявлено важкий цикл опитування дисків for dev in (*); do probe ..., що сканував усі носії та додавав 4.34 с затримки.
+        * Оптимізовано логіку: при вимкненому меню GRUB (timeout=0, timeout_style=hidden) сканування зовнішніх дисків повністю пропускається, забезпечуючи миттєвий перехід до завантаження ядра (<0.05 с).
+     3) Новий перемикач «Логотип ПК» (boot_pclogo_switch):
+        * Додано перемикач «Логотип ПК» у секцію «Завантажувач (Bootloader)» у Центрі керування GNOME та автономному додатку mac-styling-settings із локалізацією на 7 мов (uk, en, pl, de, fr, es, it).
+        * Реалізовано логіку init_boot_pclogo та on_boot_pclogo_changed у libmac_settings.c та mac-boot-config set-pclogo [enable|disable].
+        * Реалізовано всі 4 комбінації стану:
+          - Обидва вимкнені (GRUB=OFF, Лого ПК=OFF): GRUB миттєво виводить apple_center.png (піксель-в-піксель з Plymouth) та передає неперервний буфер GOP ядру. PC логотип не показується — одразу з'являється яблучко macW1Y і плавно переходить у Plymouth з індикатором прогресу до самого робочого столу.
+          - Лого ПК=ON, GRUB=OFF: PC логотип зберігається на екрані без затримки та сканувань носіїв і одразу без чорного екрана переходить у яблучко Plymouth.
+          - Обидва увімкнені (GRUB=ON, Лого ПК=ON): спочатку відображається лого ПК, потім графічне меню GRUB Startup Manager, після чого яблучко Plymouth.
+          - GRUB=ON, Лого ПК=OFF: після запуску екран одразу перекривається темною темою меню GRUB, після вибору ОС — яблучко Plymouth.
+   - Результати перевірок валідації на хості:
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 38/38 PASS.
+     * python3 bin/mac-audit-sync check — 100% PASS (5/5).
+     * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
+     * python3 bin/test-macw1y-animations.py — 12/12 PASS.

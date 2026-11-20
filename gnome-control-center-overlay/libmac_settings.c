@@ -5287,7 +5287,9 @@ void init_boot_verbose(void *widget, gpointer data) {
         }
         fclose(f);
     }
-    if (!is_verbose && g_file_test("/usr/share/plymouth/themes/macw1y-boot/verbose_on.png", G_FILE_TEST_EXISTS)) {
+    if (!is_verbose && (g_file_test("/usr/share/plymouth/themes/macw1y-boot/verbose_on.png", G_FILE_TEST_EXISTS) ||
+                        g_file_test("/usr/share/plymouth/themes/apple-mac/verbose_on.png", G_FILE_TEST_EXISTS) ||
+                        g_file_test("/etc/plymouth/verbose_on", G_FILE_TEST_EXISTS))) {
         is_verbose = 1;
     }
     adw_switch_row_set_active(widget, is_verbose);
@@ -5328,6 +5330,35 @@ void on_boot_grub_changed(void *widget, void *pspec, gpointer data) {
     int active = adw_switch_row_get_active(widget);
     const char *cmd = active ? "sudo /usr/local/bin/mac-boot-config set-grub enable"
                              : "sudo /usr/local/bin/mac-boot-config set-grub disable";
+    g_spawn_command_line_async(cmd, NULL);
+}
+
+void init_boot_pclogo(void *widget, gpointer data) {
+    in_init = 1;
+    int is_pclogo_enabled = 0;
+    FILE *f = fopen("/etc/default/grub", "r");
+    if (f) {
+        char line[512];
+        while (fgets(line, sizeof(line), f)) {
+            char *p = line;
+            while (*p == ' ' || *p == '\t') p++;
+            if (strncmp(p, "GRUB_MAC_PCLOGO=1", 17) == 0 || strncmp(p, "GRUB_MAC_PCLOGO=\"1\"", 19) == 0 ||
+                strncmp(p, "GRUB_MAC_PCLOGO=true", 20) == 0) {
+                is_pclogo_enabled = 1;
+                break;
+            }
+        }
+        fclose(f);
+    }
+    adw_switch_row_set_active(widget, is_pclogo_enabled);
+    in_init = 0;
+}
+
+void on_boot_pclogo_changed(void *widget, void *pspec, gpointer data) {
+    if (in_init) return;
+    int active = adw_switch_row_get_active(widget);
+    const char *cmd = active ? "sudo /usr/local/bin/mac-boot-config set-pclogo enable"
+                             : "sudo /usr/local/bin/mac-boot-config set-pclogo disable";
     g_spawn_command_line_async(cmd, NULL);
 }
 

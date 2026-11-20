@@ -47,6 +47,7 @@ static int send_message(int sock, const char *msg) {
 
 int main(void) {
     if (access("/usr/share/plymouth/themes/macw1y-boot/verbose_on.png", F_OK) != 0 &&
+        access("/usr/share/plymouth/themes/apple-mac/verbose_on.png", F_OK) != 0 &&
         access("/etc/plymouth/verbose_on", F_OK) != 0) {
         return 0;
     }

@@ -333,6 +333,13 @@ class MacStylingWindow(Adw.ApplicationWindow):
         self.grub_switch.connect("notify::active", self.on_grub_toggled)
         boot_group.add(self.grub_switch)
 
+        self.pclogo_switch = Adw.SwitchRow()
+        self.pclogo_switch.set_title(t("pclogo_title", "Логотип ПК"))
+        self.pclogo_switch.set_subtitle(t("pclogo_desc", "Відображати початковий логотип виробника комп'ютера (UEFI) перед стартом"))
+        self.pclogo_switch.set_active(self.pclogo_mode)
+        self.pclogo_switch.connect("notify::active", self.on_pclogo_toggled)
+        boot_group.add(self.pclogo_switch)
+
         # 8. Diagnostics & Integrity Group (Цілісність та діагностика)
         diag_group = Adw.PreferencesGroup()
         diag_group.set_title(t("diagnostics_title", "Цілісність та діагностика"))
@@ -598,7 +605,7 @@ class MacStylingWindow(Adw.ApplicationWindow):
         try:
             with open("/etc/default/grub", "r") as f:
                 c = f.read()
-                if "systemd.show_status=1" in c or os.path.exists("/usr/share/plymouth/themes/macw1y-boot/verbose_on.png"):
+                if "systemd.show_status=1" in c or os.path.exists("/usr/share/plymouth/themes/macw1y-boot/verbose_on.png") or os.path.exists("/usr/share/plymouth/themes/apple-mac/verbose_on.png") or os.path.exists("/etc/plymouth/verbose_on"):
                     self.verbose_mode = True
         except Exception:
             pass
@@ -610,6 +617,16 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 c = f.read()
                 if re.search(r"^GRUB_TIMEOUT_STYLE=menu", c, re.M) or re.search(r"^GRUB_TIMEOUT=[1-9]", c, re.M):
                     self.grub_mode = True
+        except Exception:
+            pass
+
+        # PC logo mode
+        self.pclogo_mode = False
+        try:
+            with open("/etc/default/grub", "r") as f:
+                c = f.read()
+                if re.search(r"^GRUB_MAC_PCLOGO=(1|\"1\"|true)", c, re.M):
+                    self.pclogo_mode = True
         except Exception:
             pass
 
@@ -638,6 +655,20 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 subprocess.run(cmd, shell=True)
             except Exception as e:
                 print("Error toggling grub mode:", e)
+        import threading
+        threading.Thread(target=_run, daemon=True).start()
+
+    def on_pclogo_toggled(self, *args):
+        if self._initializing:
+            return
+        is_active = self.pclogo_switch.get_active()
+        self.revealer.set_reveal_child(True)
+        def _run():
+            try:
+                cmd = "sudo /usr/local/bin/mac-boot-config set-pclogo enable" if is_active else "sudo /usr/local/bin/mac-boot-config set-pclogo disable"
+                subprocess.run(cmd, shell=True)
+            except Exception as e:
+                print("Error toggling pclogo mode:", e)
         import threading
         threading.Thread(target=_run, daemon=True).start()
 

@@ -1286,6 +1286,14 @@
                         <signal name="notify::active" handler="on_boot_grub_changed" />
                       </object>
                     </child>
+                    <child>
+                      <object class="AdwSwitchRow" id="boot_pclogo_switch">
+                        <property name="title">Logo du PC</property>
+                        <property name="subtitle">Afficher le logo constructeur du PC (UEFI) avant le démarrage</property>
+                        <signal name="realize" handler="init_boot_pclogo" />
+                        <signal name="notify::active" handler="on_boot_pclogo_changed" />
+                      </object>
+                    </child>
                   </object>
                 </child>
 

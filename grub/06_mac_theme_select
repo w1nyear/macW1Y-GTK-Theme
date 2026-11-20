@@ -8,6 +8,19 @@ esp_uuid_lower="$(echo "$esp_uuid" | tr '[:upper:]' '[:lower:]')"
 root_uuid="$(findmnt -no UUID / 2>/dev/null || true)"
 root_uuid_lower="$(echo "$root_uuid" | tr '[:upper:]' '[:lower:]')"
 
+if [ -f /etc/default/grub ]; then
+    . /etc/default/grub
+fi
+
+pclogo_val="${GRUB_MAC_PCLOGO:-0}"
+timeout_style_val="${GRUB_TIMEOUT_STYLE:-hidden}"
+timeout_val="${GRUB_TIMEOUT:-0}"
+
+is_menu_enabled=0
+if [ "$timeout_style_val" = "menu" ] || [ "${timeout_val}" != "0" ]; then
+    is_menu_enabled=1
+fi
+
 cat << EOF
 # Ensure all partition and filesystem drivers are loaded for USB, Thunderbolt, NVMe and external SATA
 insmod part_gpt
@@ -20,6 +33,13 @@ insmod iso9660
 insmod udf
 insmod chain
 insmod probe
+insmod png
+insmod gfxterm_background
+EOF
+
+if [ "$is_menu_enabled" = "1" ]; then
+    # GRUB menu enabled: Scan external USB & Thunderbolt devices and configure theme
+    cat << EOF
 
 # macW1Y Startup Manager: Dynamic Device Scan (USB & Thunderbolt)
 set mac_has_usb=0
@@ -44,7 +64,7 @@ for dev in (*); do
         if [ "\$dev_uuid" = "\$root_uuid" ]; then set is_own_dev=1; fi
         if [ "\$is_own_dev" = "0" ]; then
             set dev_boot_path=""
-            for p in /EFI/BOOT/BOOTX64.EFI /efi/boot/bootx64.efi /EFI/BOOT/bootx64.efi /EFI/BOOT/BOOTX64.efi /EFI/BOOT/grubx64.efi /efi/boot/grubx64.efi /EFI/Microsoft/Boot/bootmgfw.efi /efi/microsoft/boot/bootmgfw.efi /EFI/ubuntu/grubx64.efi /efi/ubuntu/grubx64.efi /EFI/fedora/grubx64.efi /efi/arch/grubx64.efi /EFI/systemd/systemd-bootx64.efi /bootmgr.efi /ventoy/ventoy.disk; do
+            for p in /EFI/BOOT/BOOTX64.EFI /efi/boot/bootx64.efi /EFI/BOOT/bootx64.efi /EFI/BOOT/BOOTX64.efi /EFI/BOOT/grubx64.efi /efi/boot/grubx64.efi /EFI/Microsoft/Boot/bootmgfw.efi /efi/microsoft/boot/bootmgfw.efi /EFI/ubuntu/grubx64.efi /efi/ubuntu/grubx64.efi /EFI/fedora/grubx64.efi /EFI/arch/grubx64.efi /EFI/systemd/systemd-bootx64.efi /bootmgr.efi /ventoy/ventoy.disk; do
                 if [ -f "\$dev\$p" ]; then
                     set dev_boot_path="\$p"
                     break
@@ -93,20 +113,45 @@ for dev in (*); do
 done
 
 if [ "\$mac_ext_count" = "2" ]; then
-    set theme=(\$root)/boot/grub/themes/macw1y-boot-usb2/theme.txt
-elif [ "\$mac_ext_count" = "1" ]; then
-    if [ "\$mac_play_anim" = "1" ]; then
-        set mac_play_anim=0
-        insmod gfxterm_background
-        background_image -m stretch (\$root)/boot/grub/themes/macw1y-boot/anim/frame1.png
-        background_image -m stretch (\$root)/boot/grub/themes/macw1y-boot/anim/frame2.png
-        background_image -m stretch (\$root)/boot/grub/themes/macw1y-boot/anim/frame3.png
-        background_image -m stretch (\$root)/boot/grub/themes/macw1y-boot/anim/frame4.png
-        background_image -m stretch (\$root)/boot/grub/themes/macw1y-boot/anim/frame5.png
+    if [ -f (\$root)/boot/grub/themes/macw1y-boot-usb2/theme.txt ]; then
+        set theme=(\$root)/boot/grub/themes/macw1y-boot-usb2/theme.txt
+    else
+        set theme=(\$root)/boot/grub/themes/apple-mac-usb2/theme.txt
     fi
-    set theme=(\$root)/boot/grub/themes/macw1y-boot-usb/theme.txt
+elif [ "\$mac_ext_count" = "1" ]; then
+    if [ -f (\$root)/boot/grub/themes/macw1y-boot-usb/theme.txt ]; then
+        set theme=(\$root)/boot/grub/themes/macw1y-boot-usb/theme.txt
+    else
+        set theme=(\$root)/boot/grub/themes/apple-mac-usb/theme.txt
+    fi
 else
-    set theme=(\$root)/boot/grub/themes/macw1y-boot/theme.txt
+    if [ -f (\$root)/boot/grub/themes/macw1y-boot/theme.txt ]; then
+        set theme=(\$root)/boot/grub/themes/macw1y-boot/theme.txt
+    else
+        set theme=(\$root)/boot/grub/themes/apple-mac/theme.txt
+    fi
 fi
 export theme
 EOF
+else
+    # GRUB menu disabled (fast direct boot without delay)
+    if [ "$pclogo_val" = "0" ]; then
+        # PC logo disabled: replace OEM PC logo immediately with centered Apple logo on black
+        cat << EOF
+
+# Replace OEM PC logo immediately with macW1Y Apple logo
+terminal_output gfxterm
+if [ -f (\$root)/boot/grub/themes/apple-mac/apple_center.png ]; then
+    background_image -m stretch (\$root)/boot/grub/themes/apple-mac/apple_center.png
+elif [ -f (\$root)/boot/grub/themes/macw1y-boot/apple_center.png ]; then
+    background_image -m stretch (\$root)/boot/grub/themes/macw1y-boot/apple_center.png
+fi
+EOF
+    else
+        # PC logo enabled: preserve OEM PC logo until Plymouth starts, skip any disk scans for instant boot
+        cat << EOF
+
+# PC logo enabled: keep UEFI GOP screen intact for immediate transition to Apple logo in Plymouth
+EOF
+    fi
+fi

@@ -162,11 +162,68 @@ def set_grub(enable):
     write_grub_default(c)
     update_grub()
 
+def ensure_apple_center_image():
+    targets = [
+        "/boot/grub/themes/apple-mac/apple_center.png",
+        "/boot/grub/themes/apple-mac-usb/apple_center.png",
+        "/boot/grub/themes/macw1y-boot/apple_center.png"
+    ]
+    missing = [t for t in targets if not os.path.exists(t)]
+    if missing:
+        try:
+            from PIL import Image
+            logo_src = "/usr/share/plymouth/themes/apple-mac/logo.png"
+            if not os.path.exists(logo_src):
+                logo_src = "/usr/share/plymouth/themes/macw1y-boot/logo.png"
+            if os.path.exists(logo_src):
+                screen_w, screen_h = 1920, 1080
+                logo = Image.open(logo_src).convert("RGBA")
+                logo_h = int(screen_h * 0.092)
+                logo_w = int(logo_h * (416 / 512))
+                logo_resized = logo.resize((logo_w, logo_h), Image.Resampling.LANCZOS)
+                bg = Image.new("RGB", (screen_w, screen_h), (0, 0, 0))
+                pos_x = (screen_w - logo_w) // 2
+                pos_y = (screen_h - logo_h) // 2
+                bg.paste(logo_resized, (pos_x, pos_y), logo_resized)
+                for t in targets:
+                    os.makedirs(os.path.dirname(t), exist_ok=True)
+                    bg.save(t, format="PNG")
+                    os.chmod(t, 0o644)
+        except Exception as e:
+            print("Warning: failed to generate apple_center.png:", e)
+
+def set_pclogo(enable):
+    c = read_grub_default()
+    if enable:
+        if re.search(r"^#?GRUB_MAC_PCLOGO=.*", c, re.M):
+            c = re.sub(r"^#?GRUB_MAC_PCLOGO=.*", "GRUB_MAC_PCLOGO=1", c, flags=re.M)
+        else:
+            c += "\nGRUB_MAC_PCLOGO=1\n"
+    else:
+        ensure_apple_center_image()
+        if re.search(r"^#?GRUB_MAC_PCLOGO=.*", c, re.M):
+            c = re.sub(r"^#?GRUB_MAC_PCLOGO=.*", "GRUB_MAC_PCLOGO=0", c, flags=re.M)
+        else:
+            c += "\nGRUB_MAC_PCLOGO=0\n"
+
+    write_grub_default(c)
+    update_grub()
+    if enable:
+        notify_user("Параметри завантаження", "Відображення логотипу ПК увімкнено.")
+    else:
+        notify_user("Параметри завантаження", "Логотип ПК вимкнено (замінено на яблучко macW1Y).")
+
 def set_verbose(enable):
     c = read_grub_default()
     if enable:
         try:
-            subprocess.run(["cp", "-f", "/usr/share/plymouth/themes/macw1y-boot/1x1.png", "/usr/share/plymouth/themes/macw1y-boot/verbose_on.png"], check=False)
+            for theme in ["apple-mac", "macw1y-boot"]:
+                p = f"/usr/share/plymouth/themes/{theme}"
+                if os.path.isdir(p):
+                    subprocess.run(["cp", "-f", f"{p}/1x1.png", f"{p}/verbose_on.png"], check=False)
+            os.makedirs("/etc/plymouth", exist_ok=True)
+            with open("/etc/plymouth/verbose_on", "w") as f:
+                f.write("1\n")
             subprocess.run(["systemctl", "daemon-reload"], check=False)
             subprocess.run(["systemctl", "enable", "plymouth-verbose-logger.service"], check=False)
         except Exception:
@@ -177,9 +234,20 @@ def set_verbose(enable):
             c += '\nGRUB_CMDLINE_LINUX_DEFAULT="splash systemd.show_status=1 loglevel=4 bgrt.disable=1 vt.global_cursor_default=0"\n'
     else:
         try:
-            if os.path.exists("/usr/share/plymouth/themes/macw1y-boot/verbose_on.png"):
-                os.remove("/usr/share/plymouth/themes/macw1y-boot/verbose_on.png")
-            subprocess.run(["systemctl", "disable", "plymouth-verbose-logger.service"], check=False)
+            for theme in ["apple-mac", "macw1y-boot"]:
+                for fn in ["verbose_on.png", "verbose_on.png.disabled"]:
+                    fp = f"/usr/share/plymouth/themes/{theme}/{fn}"
+                    if os.path.exists(fp):
+                        try:
+                            os.remove(fp)
+                        except Exception:
+                            pass
+            if os.path.exists("/etc/plymouth/verbose_on"):
+                try:
+                    os.remove("/etc/plymouth/verbose_on")
+                except Exception:
+                    pass
+            subprocess.run(["systemctl", "disable", "--now", "plymouth-verbose-logger.service"], check=False)
         except Exception:
             pass
         if re.search(r"^GRUB_CMDLINE_LINUX_DEFAULT=.*", c, re.M):
@@ -189,10 +257,14 @@ def set_verbose(enable):
 
     write_grub_default(c)
     update_grub()
+    try:
+        subprocess.run(["update-initramfs", "-u"], check=False)
+    except Exception:
+        pass
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: mac-boot-config [set-grub|set-verbose] [enable|disable]")
+        print("Usage: mac-boot-config [set-grub|set-verbose|set-pclogo] [enable|disable]")
         sys.exit(1)
     action = sys.argv[1]
     val = sys.argv[2].lower() in ["enable", "true", "1", "yes"]
@@ -200,6 +272,8 @@ if __name__ == "__main__":
         set_grub(val)
     elif action == "set-verbose":
         set_verbose(val)
+    elif action == "set-pclogo":
+        set_pclogo(val)
     else:
         print(f"Unknown action: {action}")
         sys.exit(1)
