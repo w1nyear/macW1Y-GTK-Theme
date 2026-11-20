@@ -2846,20 +2846,25 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
         if (!settings)
             return;
         mappings.forEach(map => {
+            const isCustomShadowOwner = (
+                this._owner === 'desktop-widget-glass' ||
+                this._owner === 'spotlight' ||
+                this._owner === 'applications' ||
+                this._owner === 'clipboard'
+            );
+            if (isCustomShadowOwner && (map.uniform === 'shadow_intensity' || map.uniform === 'shadow_radius' || map.uniform === 'shadow_max_radius')) {
+                return;
+            }
 
             let val = settings.get_double(map.key);
-            if (this._owner === 'desktop-widget-glass' && (map.uniform === 'shadow_intensity' || map.uniform === 'shadow_radius')) {
-                val = 0.0;
-            } else if (map.uniform === 'shadow_intensity' && this._shadowIntensityMultiplier !== undefined) {
+            if (map.uniform === 'shadow_intensity' && this._shadowIntensityMultiplier !== undefined) {
                 val *= this._shadowIntensityMultiplier;
             }
             this._setFloat(map.uniform, val);
 
             const id = settings.connect(`changed::${map.key}`, () => {
                 let v = settings.get_double(map.key);
-                if (this._owner === 'desktop-widget-glass' && (map.uniform === 'shadow_intensity' || map.uniform === 'shadow_radius')) {
-                    v = 0.0;
-                } else if (map.uniform === 'shadow_intensity' && this._shadowIntensityMultiplier !== undefined) {
+                if (map.uniform === 'shadow_intensity' && this._shadowIntensityMultiplier !== undefined) {
                     v *= this._shadowIntensityMultiplier;
                 }
                 this._setFloat(map.uniform, v);

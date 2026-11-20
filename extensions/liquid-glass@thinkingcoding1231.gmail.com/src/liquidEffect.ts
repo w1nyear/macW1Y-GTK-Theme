@@ -3251,6 +3251,15 @@ export const LiquidEffect = GObject.registerClass({
     if (!settings) return;
 
     mappings.forEach(map => {
+      const isCustomShadowOwner = (
+        this._owner === 'desktop-widget-glass' ||
+        this._owner === 'spotlight' ||
+        this._owner === 'applications' ||
+        this._owner === 'clipboard'
+      );
+      if (isCustomShadowOwner && (map.uniform === 'shadow_intensity' || map.uniform === 'shadow_radius' || map.uniform === 'shadow_max_radius')) {
+        return;
+      }
 
       let val = settings.get_double(map.key);
       if (map.uniform === 'shadow_intensity' && this._shadowIntensityMultiplier !== undefined) {

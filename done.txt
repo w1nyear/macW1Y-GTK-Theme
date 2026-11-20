@@ -2633,3 +2633,38 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-audit-sync check — 100% PASS (5/5).
      * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
      * python3 bin/test-macw1y-animations.py — 12/12 PASS.
+
+
+858. 2026-11-21: Прив'язка тіні Spotlight, Launchpad та меню до повзунка "Тінь" у пункті "Спотлайт меню" мак-стилізації
+   - Змінені файли:
+     * extensions/appmenu@ChathurangaBW.github.io/searchDialog.js (рядки 506, 1937-1948, 2005-2022, 2108, 2288-2295, 2822, 4555-4568)
+     * extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js (рядки 777-840)
+     * extensions/appmenu@ChathurangaBW.github.io/applications_menu.js (рядки 718-780)
+     * extensions/appmenu@ChathurangaBW.github.io/clipboardDialog.js (рядки 786-850)
+     * extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js (рядки 2848-2870)
+     * extensions/liquid-glass@thinkingcoding1231.gmail.com/src/liquidEffect.ts (рядки 3253-3275)
+     * config/extensions.lock.json (рядки 65, 305)
+   - Опис змін:
+     1) Виправлено пріоритет параметрів тіні у діалогах Spotlight та Launchpad:
+        * Раніше у функції _applyGlassUniforms() ініціалізація spotShadow та spotTint перевіряла typeof styling.liquid_shadow та liquid_tint першими, через що тінь Spotlight та Launchpad постійно перезаписувалася глобальним налаштуванням тіні Dock (liquid_shadow = 49), ігноруючи окремий повзунок spotlight_shadow (10) у пункті "Спотлайт меню".
+        * Змінено пріоритет: тепер першочергово зчитується styling.spotlight_shadow та styling.spotlight_tint.
+        * Радіус тіні spotShadowRadius тепер розраховується пропорційно значенню повзунка: Math.max(0.0, spotShadow * 50.0). При значенні повзунка 0% тінь повністю вимикається (інтенсивність 0.0, радіус 0.0).
+     2) Динамічний стиль резервного рендерингу (fallback mode):
+        * Реалізовано метод _getFallbackStyle(), що динамічно генерує CSS box-shadow на основі фактичного значення spotlight_shadow, усуваючи фіксовану чорну тінь rgba(0, 0, 0, 0.55).
+     3) Захист від перезапису тіні слухачем GSettings у розширенні liquid-glass:
+        * У dist/liquidEffect.js та src/liquidEffect.ts для власників 'spotlight', 'applications', 'clipboard' та 'desktop-widget-glass' заблоковано перезапис уніформ тіні (shadow_intensity, shadow_radius, shadow_max_radius) подіями changed::shadow-intensity з GSettings панелі Dock.
+     4) Інтеграція читання styling.json та уніфікація для супутніх меню:
+        * Додано читання конфігурації styling.json та підтримку spotlight_shadow у applications_menu_v5b.js, applications_menu.js та clipboardDialog.js.
+        * У globalThis._macSyncSpotlightStyling додано обов'язкове скидання _spotlightDialog._cachedStyling = undefined для негайного реагування на рух повзунка в налаштуваннях.
+     5) Верифікація у живому середовищі:
+        * Інструментальний аудит через EvalHelper: при spotlight_shadow: 10 значення shadow_intensity становить 0.10, shadow_radius: 5.0 (раніше було 0.49 та 24.5).
+        * Тестовий динамічний перехід до 40: shadow_intensity стає 0.40, shadow_radius: 20.0; при поверненні до 10 значення миттєво повертається до 0.10.
+     6) Оновлення цілісності lock-файлу:
+        * Оновлено sha256 хеші у config/extensions.lock.json для appmenu@ChathurangaBW.github.io (c4b2f6f4...) та liquid-glass@thinkingcoding1231.gmail.com (9c43f3d2...).
+        * mac-extension-guard verify підтверджує 21/21 LOCKED OK.
+   - Результати перевірок валідації на хості:
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 38/38 PASS.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 bin/mac-audit-sync check — 100% PASS (5/5).
+     * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
+     * python3 bin/test-macw1y-animations.py — 12/12 PASS (Spotlight відкрився за 7.13 мс).

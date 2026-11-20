@@ -783,21 +783,60 @@ export const MacClipboardDialog = GObject.registerClass({
         return { isDark, tintR, tintG, tintB, tintVal, tintStrength };
     }
 
+    _readStyling() {
+        if (this._cachedStyling !== undefined)
+            return this._cachedStyling;
+
+        try {
+            const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+            const confFile = Gio.File.new_for_path(confPath);
+            if (!confFile.query_exists(null)) {
+                this._cachedStyling = null;
+                return this._cachedStyling;
+            }
+            const [ok, bytes] = confFile.load_contents(null);
+            if (!ok) {
+                this._cachedStyling = null;
+                return this._cachedStyling;
+            }
+            let text = new TextDecoder('utf-8').decode(bytes);
+            this._cachedStyling = JSON.parse(text);
+            return this._cachedStyling;
+        } catch (_) {
+            this._cachedStyling = null;
+            return this._cachedStyling;
+        }
+    }
+
     _applyGlassUniforms() {
         if (!_isGlassAlive(this._glass)) return;
         const effect = this._glass._effect;
         if (!effect) return;
 
         const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
+        const styling = this._readStyling() || {};
+
+        let spotBlur = 8.0;
+        if (typeof styling.spotlight_blur === 'number') {
+            spotBlur = (styling.spotlight_blur === 1) ? 25.0 : styling.spotlight_blur;
+        }
+        const spotTint = (typeof styling.spotlight_tint === 'number')
+            ? (styling.spotlight_tint / 100.0)
+            : tintStrength;
+        const spotShadow = (typeof styling.spotlight_shadow === 'number')
+            ? (styling.spotlight_shadow / 100.0)
+            : ((typeof styling.liquid_shadow === 'number') ? (styling.liquid_shadow / 100.0) : (isDark ? 0.35 : 0.22));
+        const spotShadowRadius = Math.max(0.0, spotShadow * 50.0);
+
         this._glass.setIsDock(false);
         this._glass.setCornerSmoothingEnabled(0.0);
         this._glass.setCornerRadius(CORNER_RADIUS);
         this._glass.setTintColor(tintR, tintG, tintB);
-        this._glass.setTintStrength(tintStrength);
+        this._glass.setTintStrength(spotTint);
         this._glass.setBrightness(1.0);
         this._glass.setContrast(1.0);
         this._glass.setSaturation(1.0);
-        this._glass.setBlurRadius(8.0);
+        this._glass.setBlurRadius(spotBlur);
         this._glass.setPadding(0);
 
         try {
@@ -818,8 +857,8 @@ export const MacClipboardDialog = GObject.registerClass({
             effect._setFloat('sheen_intensity', 0.10);
             effect._setFloat('chroma_strength', 0.008);
 
-            effect._setFloat('shadow_intensity', isDark ? 0.35 : 0.22);
-            effect._setFloat('shadow_radius', 18.0);
+            effect._setFloat('shadow_intensity', spotShadow);
+            effect._setFloat('shadow_radius', spotShadowRadius);
             effect._setFloat('shadow_max_radius', 60.0);
             effect._setFloat('ao_intensity', 0.08);
             effect._setFloat('ao_radius', 2.5);

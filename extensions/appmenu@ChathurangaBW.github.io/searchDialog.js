@@ -503,7 +503,7 @@ export const MacSpotlightDialog = GObject.registerClass({
             track_hover: true,
             clip_to_allocation: false,
         });
-        this._box.set_style(SPOTLIGHT_FALLBACK_STYLE);
+        this._box.set_style(this._getFallbackStyle());
         this._box._isUsingFallback = true;
         this._box.set_offscreen_redirect(Clutter.OffscreenRedirect.AUTOMATIC_FOR_OPACITY);
         this.add_child(this._box);
@@ -1938,13 +1938,13 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         if (typeof styling.spotlight_blur === 'number') {
             spotBlur = (styling.spotlight_blur === 1) ? 25.0 : styling.spotlight_blur;
         }
-        const spotTint = (typeof styling.liquid_tint === 'number')
-            ? (styling.liquid_tint / 100.0)
-            : ((typeof styling.spotlight_tint === 'number') ? (styling.spotlight_tint / 100.0) : tintStrength);
-        const spotShadow = (typeof styling.liquid_shadow === 'number')
-            ? (styling.liquid_shadow / 100.0)
-            : ((typeof styling.spotlight_shadow === 'number') ? (styling.spotlight_shadow / 100.0) : (isDark ? 0.35 : 0.22));
-        const spotShadowRadius = Math.max(10.0, spotShadow * 50.0);
+        const spotTint = (typeof styling.spotlight_tint === 'number')
+            ? (styling.spotlight_tint / 100.0)
+            : ((typeof styling.liquid_tint === 'number') ? (styling.liquid_tint / 100.0) : tintStrength);
+        const spotShadow = (typeof styling.spotlight_shadow === 'number')
+            ? (styling.spotlight_shadow / 100.0)
+            : ((typeof styling.liquid_shadow === 'number') ? (styling.liquid_shadow / 100.0) : (isDark ? 0.35 : 0.22));
+        const spotShadowRadius = Math.max(0.0, spotShadow * 50.0);
 
         // Global Liquid Glass parameters
         const refraction = (typeof styling.liquid_refraction === 'number') ? (styling.liquid_refraction / 100.0) : 0.60;
@@ -2000,6 +2000,23 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
 
             effect.queue_repaint();
         } catch (_) {}
+    }
+
+    _getFallbackStyle() {
+        const styling = this._readStyling() || {};
+        const spotShadow = (typeof styling.spotlight_shadow === 'number')
+            ? (styling.spotlight_shadow / 100.0)
+            : ((typeof styling.liquid_shadow === 'number') ? (styling.liquid_shadow / 100.0) : 0.35);
+        const shadowAlpha = (spotShadow * 0.85).toFixed(2);
+        const shadowBlur = Math.round(spotShadow * 48);
+        const shadowY = Math.round(spotShadow * 20);
+        const shadowCss = spotShadow > 0
+            ? `box-shadow: 0 ${shadowY}px ${shadowBlur}px rgba(0, 0, 0, ${shadowAlpha}) !important;`
+            : 'box-shadow: none !important;';
+        return `background-color: rgba(30, 32, 40, 0.92) !important; ` +
+            `border-radius: ${CORNER_RADIUS}px !important; ` +
+            'border: 1px solid rgba(255, 255, 255, 0.15) !important; ' +
+            shadowCss;
     }
 
     async _initGlass() {
@@ -2088,7 +2105,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             this._box.set_style(SPOTLIGHT_GLASS_STYLE);
             this._box._isUsingFallback = false;
         } else {
-            this._box.set_style(SPOTLIGHT_FALLBACK_STYLE);
+            this._box.set_style(this._getFallbackStyle());
             this._box._isUsingFallback = true;
         }
 
@@ -2287,9 +2304,9 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
 
             const { isDark, tintR, tintG, tintB, tintStrength } = this._getThemeParams();
             const styling = this._readStyling() || {};
-            const spotTint = (typeof styling.liquid_tint === 'number')
-                ? (styling.liquid_tint / 100.0)
-                : ((typeof styling.spotlight_tint === 'number') ? (styling.spotlight_tint / 100.0) : tintStrength);
+            const spotTint = (typeof styling.spotlight_tint === 'number')
+                ? (styling.spotlight_tint / 100.0)
+                : ((typeof styling.liquid_tint === 'number') ? (styling.liquid_tint / 100.0) : tintStrength);
 
             if (!isExpanded && this._searchPill && this._btnApps && this._btnFiles && this._btnClipboard) {
                 const pillPos = this._searchPill.get_transformed_position();
@@ -2802,7 +2819,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         const hideGlass = () => {
             try {
                 if (this._box && !this._box._isUsingFallback) {
-                    this._box.set_style(SPOTLIGHT_FALLBACK_STYLE);
+                    this._box.set_style(this._getFallbackStyle());
                     this._box._isUsingFallback = true;
                 }
                 if (_isGlassAlive(this._glass)) {
@@ -4537,6 +4554,7 @@ globalThis.closeMacSpotlight = closeSearchDialog;
 globalThis._macSpotlightClose = closeSearchDialog;
 globalThis._macSyncSpotlightStyling = () => {
     if (_spotlightDialog) {
+        _spotlightDialog._cachedStyling = undefined;
         _spotlightDialog._lastGeometryKey = null;
         if (typeof _spotlightDialog._applyGlassUniforms === 'function') {
             _spotlightDialog._applyGlassUniforms();
