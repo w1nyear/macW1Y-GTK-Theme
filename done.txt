@@ -2711,3 +2711,41 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
      * python3 bin/mac-audit-sync check — 100% PASS (5/5).
      * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
      * python3 bin/test-macw1y-animations.py — 12/12 PASS (Spotlight відкрився за 27.29 мс, FPS: 152).
+
+### 860. Повна оптимізація швидкодії системи, Windows-подібна пріоритизація активного вікна, ізоляція зависань cgroups v2/sysctl та максимальна потужність в іграх і від акумулятора
+   - Дата: 21 листопада 2026 р.
+   - Мета: Реалізація максимальної швидкодії системи за планом живлення «Продуктивність» та в іграх без програмного тротлінгу при 85–90°C (апаратні ліміти кремнію Intel TjMax 100°C та NVIDIA забезпечують захист), збереження миттєвої швидкодії від батареї (ліквідація уповільнення через примусовий power EPP), Windows-подібна динамічна пріоритизація активного вікна у фокусі (MMCSS foreground boosting) та ізоляція зависань окремих процесів через cgroups v2 slice QoS та sysctl (захист GNOME Shell, PipeWire аудіо та курсору від зависань фонових/вимогливих програм).
+   - Змінені файли:
+     * bin/mac-gamemode
+     * extensions/eval-helper@mactheme/extension.js
+     * etc/sysctl.d/99-macw1y-performance.conf
+     * /etc/sysctl.d/99-macw1y-performance.conf
+     * ~/.config/systemd/user/session.slice.d/50-priority.conf
+     * /etc/systemd/system/system.slice.d/50-macw1y-priority.conf
+     * /usr/local/bin/mac-gamemode
+     * config/extensions.lock.json
+     * install.sh
+   - Опис змін:
+     1) Максимальна продуктивність в іграх та профілі «Продуктивність»:
+        * Усунуто передчасне програмне зниження частот та EPP при 85–90°C у bin/mac-gamemode (GAME_HARD_LIMIT піднято до 100.0°C під апаратний TjMax процесора Raptor Lake; в діапазоні до 99°C EPP зберігається на рівні performance/balance_performance без втрати 100 FPS).
+        * Профіль живлення GNOME «Продуктивність» або запуск будь-якої гри автоматично вмикає максимальний розгін CPU (до 4.60 GHz), Turbo Boost та максимальні частоти NVIDIA RTX 3050 без штучних обмежень.
+     2) Швидкодія від акумулятора (Battery Responsiveness Parity):
+        * Виправлено логіку EPP при роботі від батареї: замість примусового «power» (192), що викликало задумливість і лаги UI, у збалансованому режимі встановлюється «balance_performance» як на живленні від мережі, так і від АКБ. Ноутбук реагує блискавично в будь-якому стані живлення.
+     3) Windows-подібна пріоритизація активного вікна (Foreground Boosting):
+        * В eval-helper@mactheme додано слухач події notify::focus-window, який записує PID активного вікна у /dev/shm/mac_focused_pid.
+        * Демон mac-gamemode миттєво підхоплює PID активного вікна та підвищує його квант часу до nice -7 та клас I/O 2 рівень 1 (аналог Windows MMCSS Foreground Priority Boost). При втраті фокусу вікно безпечно повертається до звичайного пріоритету nice 0.
+     4) Ізоляція зависань програм та багатозадачність (cgroups v2 & sysctl):
+        * Налаштовано ~/.config/systemd/user/session.slice.d/50-priority.conf (CPUWeight=250, MemoryLow=512M) для гарантування абсолютного пріоритету графічного сеансу GNOME Shell, композитора Mutter та звукового сервера PipeWire над прикладними програмами в app.slice.
+        * Налаштовано /etc/systemd/system/system.slice.d/50-macw1y-priority.conf (CPUWeight=200, MemoryLow=256M).
+        * Оновлено параметри ядра 99-macw1y-performance.conf: vm.watermark_scale_factor = 125 (раннє вивільнення сторінок для усунення direct reclaim затримок при навантаженні пам'яті), vm.page_lock_unfairness = 1 (запобігання монополізації пам'яті завислим процесом), kernel.sched_autogroup_enabled = 1 (групування завдань за сесіями), vm.compaction_proactiveness = 0 (усунення мікрофризів дефрагментації), vm.swappiness = 100 (пріоритет компресії анонімних сторінок у zram перед скиданням файлового кешу).
+     5) Підтримка інсталятора та цілісність:
+        * В install.sh додано автоматичне встановлення 99-macw1y-performance.conf та дроп-інів cgroups v2 slices, а також їх коректне видалення при деінсталяції.
+        * Перевірено відсутність кирилиці в install.sh (0 символів).
+        * Оновлено хеш eval-helper@mactheme в config/extensions.lock.json.
+   - Результати перевірок валідації на хості:
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 38/38 PASS.
+     * python3 bin/mac-audit-sync check — 100% PASS (5/5).
+     * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
+     * python3 bin/test-macw1y-animations.py — 12/12 PASS (Spotlight відкрився за 9.16 мс, FPS: 152).
+     * systemctl status mac-gamemode.service — active (running), Temp=90.0°C без падіння частот та без заниження EPP.

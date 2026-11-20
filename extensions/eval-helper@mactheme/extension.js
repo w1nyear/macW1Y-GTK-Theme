@@ -611,6 +611,20 @@ export default class EvalHelper extends Extension {
             console.error(`[EvalHelper] DBus export error: ${e}`);
         }
 
+        try {
+            const updateFocusPid = () => {
+                const w = global.display?.focus_window;
+                const pid = w?.get_pid?.() ?? 0;
+                try {
+                    GLib.file_set_contents('/dev/shm/mac_focused_pid', String(pid));
+                } catch (_) {}
+            };
+            this._focusSignalId = global.display?.connect('notify::focus-window', updateFocusPid);
+            updateFocusPid();
+        } catch (e) {
+            console.error(`[EvalHelper] Focus tracking error: ${e}`);
+        }
+
         // Global helpers for setup wizard
         globalThis.startMacSetupWizard = (force = false) => MacSetupWizard.startSetupWizard(force);
         globalThis.stopMacSetupWizard = () => MacSetupWizard.stopSetupWizard();
@@ -4339,6 +4353,11 @@ export default class EvalHelper extends Extension {
         if (this._dbusImpl) {
             try { this._dbusImpl.unexport(); } catch (_) {}
             this._dbusImpl = null;
+        }
+
+        if (this._focusSignalId && global.display) {
+            try { global.display.disconnect(this._focusSignalId); } catch (_) {}
+            this._focusSignalId = 0;
         }
 
         const fdo = Main.notificationDaemon?._fdoNotificationDaemon;

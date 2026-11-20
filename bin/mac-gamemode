@@ -20,9 +20,9 @@ ALL_CORES = set(range(12))
 
 # Thermal limits:
 # Intel Raptor Lake TjMax is 100.0°C.
-# 95°C protects hardware during heavy gaming while allowing full Turbo Boost headroom.
-GAME_HARD_LIMIT = 95.0
-GAME_RECOVERY_TEMP = 88.0
+# Silicon hardware thermal throttling safeguards processor without software premature downclocking.
+GAME_HARD_LIMIT = 100.0
+GAME_RECOVERY_TEMP = 92.0
 
 LOADING_HARD_LIMIT = 88.0
 LOADING_RECOVERY_TEMP = 80.0
@@ -304,12 +304,31 @@ def get_current_temperatures():
         pass
     return cpu_temp, gpu_temp
 
+_last_boosted_pid = None
+
+def get_focused_pid():
+    try:
+        if os.path.exists('/dev/shm/mac_focused_pid'):
+            with open('/dev/shm/mac_focused_pid', 'r') as f:
+                content = f.read().strip()
+                if content.isdigit():
+                    return int(content)
+    except Exception:
+        pass
+    return None
+
 def optimize_processes():
     """
     Optimizes CPU scheduling and priority:
-    - Game processes and all their threads are strictly pinned to P-CORES (0-7: 4.60 GHz, 12MB L3 Cache)
-    - Background indexing/heavy jobs are pinned to E-CORES (8-11) with idle priority
+    - Game processes and all their threads are strictly pinned to P-CORES (0-7: 4.60 GHz, 12MB L3 Cache) with nice -15, ionice class 2 level 0.
+    - Windows-style Foreground Boosting: the active focused desktop window gets nice -7 and ionice class 2 level 1.
+    - Previous boosted desktop apps are safely restored to nice 0 when they lose focus.
+    - Background indexing/heavy jobs are pinned to E-CORES (8-11) with idle priority (nice 19, ionice class 3).
     """
+    global _last_boosted_pid
+    focused_pid = get_focused_pid()
+    game_pids = set()
+
     for pid_dir in glob.glob('/proc/[0-9]*'):
         try:
             pid = int(os.path.basename(pid_dir))
@@ -323,6 +342,7 @@ def optimize_processes():
                 cmdline = f.read().replace('\x00', ' ').strip()
             
             if is_game_process(comm, cmdline, pid):
+                game_pids.add(pid)
                 try:
                     os.setpriority(os.PRIO_PROCESS, pid, -15)
                 except Exception:
@@ -357,6 +377,24 @@ def optimize_processes():
                     pass
         except Exception:
             continue
+
+    # Windows-style Foreground Boosting for the active focused desktop window
+    if focused_pid and focused_pid not in game_pids and os.path.exists(f'/proc/{focused_pid}'):
+        try:
+            os.setpriority(os.PRIO_PROCESS, focused_pid, -7)
+            subprocess.run(['ionice', '-c', '2', '-n', '1', '-p', str(focused_pid)], capture_output=True)
+        except Exception:
+            pass
+
+    # Revert previously boosted window back to normal nice 0 if it lost focus
+    if _last_boosted_pid and _last_boosted_pid != focused_pid and _last_boosted_pid not in game_pids:
+        if os.path.exists(f'/proc/{_last_boosted_pid}'):
+            try:
+                os.setpriority(os.PRIO_PROCESS, _last_boosted_pid, 0)
+                subprocess.run(['ionice', '-c', '2', '-n', '4', '-p', str(_last_boosted_pid)], capture_output=True)
+            except Exception:
+                pass
+    _last_boosted_pid = focused_pid
 
 def get_system_power_profile():
     try:
@@ -444,9 +482,9 @@ def any_game_running():
 
 def apply_game_boost_mode(throttled=False):
     """
-    Mode: Active 3D gaming.
-    User Rule: Full maximum performance in games.
-    If sustained temp > 95°C, smoothly balance EPP to maintain safe operation without crippled FPS.
+    Mode: Active 3D gaming / Maximum Performance.
+    User Rule: Full maximum performance in games and performance power plan.
+    Maintains full Turbo and performance EPP up to silicon hardware TjMax (100°C).
     """
     if throttled:
         set_cpu_freq('powersave', 'balance_performance', TARGET_MIN_FREQ, HARDWARE_MAX_FREQ, turbo=True)
@@ -457,9 +495,11 @@ def apply_game_boost_mode(throttled=False):
 
     apply_sysctl({
         'vm.max_map_count': '2147483642',
-        'vm.swappiness': '10',
+        'vm.swappiness': '100',
         'vm.vfs_cache_pressure': '50',
         'vm.compaction_proactiveness': '0',
+        'vm.watermark_scale_factor': '125',
+        'vm.page_lock_unfairness': '1',
         'net.ipv4.tcp_slow_start_after_idle': '0',
         'net.ipv4.tcp_notsent_lowat': '16384'
     })
@@ -474,22 +514,26 @@ def apply_app_loading_burst(throttled=False):
     set_cpu_freq('powersave', 'balance_performance', TARGET_MIN_FREQ, HARDWARE_MAX_FREQ, turbo=True)
     set_gpu_performance(False)
     set_wifi_powersave(False)
+    optimize_processes()
 
 def apply_desktop_cool_mode():
     """
     Mode: Balanced (Default Desktop).
-    Allows full dynamic scaling (0.8 - 4.60 GHz with Turbo enabled) and quiet idle.
+    Allows full dynamic scaling (0.8 - 4.60 GHz with Turbo enabled).
+    Provides equal snappy responsiveness on AC and Battery.
     """
-    epp = 'power' if is_on_battery() else 'balance_performance'
-    set_cpu_freq('powersave', epp, TARGET_MIN_FREQ, HARDWARE_MAX_FREQ, turbo=True)
+    set_cpu_freq('powersave', 'balance_performance', TARGET_MIN_FREQ, HARDWARE_MAX_FREQ, turbo=True)
     apply_sysctl({
-        'vm.swappiness': '60',
+        'vm.swappiness': '100',
         'vm.vfs_cache_pressure': '100',
-        'vm.compaction_proactiveness': '20',
+        'vm.compaction_proactiveness': '0',
+        'vm.watermark_scale_factor': '125',
+        'vm.page_lock_unfairness': '1',
         'net.ipv4.tcp_slow_start_after_idle': '1'
     })
     set_gpu_performance(False)
-    set_wifi_powersave(True)
+    set_wifi_powersave(False if not is_on_battery() else True)
+    optimize_processes()
 
 def apply_quiet_mode():
     """
@@ -504,11 +548,14 @@ def apply_quiet_mode():
         'vm.swappiness': '60',
         'vm.vfs_cache_pressure': '100',
         'vm.compaction_proactiveness': '20',
+        'vm.watermark_scale_factor': '125',
+        'vm.page_lock_unfairness': '1',
         'net.ipv4.tcp_slow_start_after_idle': '1'
     })
     set_gpu_performance(False)
     set_platform_profile('quiet')
     set_wifi_powersave(True)
+    optimize_processes()
 
 def daemon_loop():
     print(f'mac-gamemode: daemon started (Dynamic Boost: Turbo up to {HARDWARE_MAX_FREQ//1000000} GHz, Game Limit <= {GAME_HARD_LIMIT}°C)', flush=True)
@@ -546,8 +593,10 @@ def daemon_loop():
             elif manual_ovr == 'gaming':
                 game_active = True
 
-            if manual_ovr == 'gaming' or (manual_ovr is None and game_active):
-                # --- GAME MODE ---
+            is_performance = (manual_ovr == 'gaming') or (manual_ovr is None and (game_active or sys_profile == 'performance'))
+
+            if is_performance:
+                # --- GAME / PERFORMANCE MODE ---
                 if peak_temp >= GAME_HARD_LIMIT:
                     game_overtemp_count += 1
                     if game_overtemp_count >= 3 and not is_game_throttling:
@@ -567,16 +616,20 @@ def daemon_loop():
                     apply_game_boost_mode(throttled=is_game_throttling)
                     current_mode = target_mode
                     last_optimize_time = now
-                elif now - last_optimize_time >= 5.0:
+                elif now - last_optimize_time >= 3.0:
                     optimize_processes()
                     last_optimize_time = now
 
-            elif manual_ovr == 'quiet':
-                # --- QUIET MODE ---
+            elif manual_ovr == 'quiet' or (manual_ovr is None and sys_profile == 'power-saver'):
+                # --- QUIET / POWER SAVER MODE ---
                 if current_mode != 'QUIET':
                     apply_quiet_mode()
                     current_mode = 'QUIET'
-                    print(f'mac-gamemode: Mode -> QUIET (Silent fan profile, Temp={peak_temp:.1f}°C)', flush=True)
+                    print(f'mac-gamemode: Mode -> QUIET (Silent/Power-Saver profile, Temp={peak_temp:.1f}°C)', flush=True)
+                    last_optimize_time = now
+                elif now - last_optimize_time >= 3.0:
+                    optimize_processes()
+                    last_optimize_time = now
 
             else:
                 # --- BALANCED (DESKTOP) MODE ---
@@ -594,6 +647,10 @@ def daemon_loop():
                         apply_desktop_cool_mode()
                         print(f'mac-gamemode: Mode -> DESKTOP_NORMAL (Dynamic 0.8-4.60 GHz, Temp={peak_temp:.1f}°C)', flush=True)
                     current_mode = target_mode
+                    last_optimize_time = now
+                elif now - last_optimize_time >= 3.0:
+                    optimize_processes()
+                    last_optimize_time = now
 
         except Exception:
             pass

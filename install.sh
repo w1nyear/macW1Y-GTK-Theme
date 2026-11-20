@@ -1424,6 +1424,36 @@ install_gamemode() {
         sudo systemctl start mac-snap-cursor-override.service 2>/dev/null || true
     fi
 
+    # 3. Multitasking responsiveness, sysctl low-latency tuning & Cgroups v2 QoS
+    if [ -f "$SCRIPT_DIR/etc/sysctl.d/99-macw1y-performance.conf" ]; then
+        sudo cp "$SCRIPT_DIR/etc/sysctl.d/99-macw1y-performance.conf" /etc/sysctl.d/99-macw1y-performance.conf
+        sudo chmod 644 /etc/sysctl.d/99-macw1y-performance.conf
+        sudo sysctl -p /etc/sysctl.d/99-macw1y-performance.conf 2>/dev/null || true
+    fi
+
+    sudo mkdir -p /etc/systemd/system/system.slice.d
+    cat << 'EOF_SYS_SLICE' | sudo tee /etc/systemd/system/system.slice.d/50-macw1y-priority.conf >/dev/null
+[Slice]
+CPUWeight=200
+MemoryLow=256M
+EOF_SYS_SLICE
+    sudo chmod 644 /etc/systemd/system/system.slice.d/50-macw1y-priority.conf
+    sudo systemctl daemon-reload 2>/dev/null || true
+
+    local target_user="${SUDO_USER:-$USER}"
+    local target_home
+    target_home="$(getent passwd "$target_user" | cut -d: -f6)"
+    [ -z "$target_home" ] && target_home="$HOME"
+    if [ -n "$target_home" ] && [ -d "$target_home" ]; then
+        mkdir -p "$target_home/.config/systemd/user/session.slice.d"
+        cat << 'EOF_USR_SLICE' > "$target_home/.config/systemd/user/session.slice.d/50-priority.conf"
+[Slice]
+CPUWeight=250
+MemoryLow=512M
+EOF_USR_SLICE
+        chown -R "$target_user:$target_user" "$target_home/.config/systemd/user/session.slice.d" 2>/dev/null || true
+    fi
+
     log_info "Existing GPU drivers, firmware and power limits are preserved."
 }
 
@@ -2584,6 +2614,8 @@ run_clean_update() {
     sudo systemctl stop mac-gamemode.service 2>/dev/null || true
     sudo systemctl disable mac-gamemode.service 2>/dev/null || true
     sudo rm -f /etc/systemd/system/mac-gamemode.service /usr/local/bin/mac-gamemode /usr/local/bin/gamemoderun /usr/local/bin/nvidia-game-run /usr/local/bin/prime-run /usr/local/bin/mac-clipboard /etc/mac-gamemode.state
+    sudo rm -f /etc/sysctl.d/99-macw1y-performance.conf /etc/systemd/system/system.slice.d/50-macw1y-priority.conf /dev/shm/mac_focused_pid
+    rm -f "$TARGET_HOME/.config/systemd/user/session.slice.d/50-priority.conf"
     rm -rf "$TARGET_HOME/.cache/mac-clipboard"
     
     sudo rm -rf /etc/gnome-shell/ui/layout.js /etc/gnome-shell/ui 2>/dev/null || true
