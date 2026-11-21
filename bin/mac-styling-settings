@@ -180,11 +180,11 @@ class MacStylingWindow(Adw.ApplicationWindow):
         pref_page.add(labels_group)
 
         self.label_blur_scale = self._create_slider_row(
-            labels_group, t("label_blur", "Розмиття"), t("label_blur_desc", "Розмиття фонового скла бірки"),
+            labels_group, t("label_blur", "Розмиття"), t("label_blur_desc", "Розмиття фону бірки (Blur)"),
             0, 50, int(self.label_blur)
         )
         self.label_tint_scale = self._create_slider_row(
-            labels_group, t("label_tint", "Затемнення"), t("label_tint_desc", "Затемнення фону бірки"),
+            labels_group, t("label_tint", "Тінт (затемнення)"), t("label_tint_desc", "Тінт (затемнення) фону бірки"),
             0, 100, int(self.label_tint)
         )
         self.label_shadow_scale = self._create_slider_row(

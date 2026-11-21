@@ -1965,21 +1965,38 @@ function _updateTailPosition(label, position) {
     const [minH, natH] = label.get_preferred_height(pillWidth);
     const pillHeight = Math.ceil(natH > 0 ? natH : (label.height > 0 ? label.height : 25));
 
-    const tailW = pillWidth;
-    const tailH = 10;
-    tail.set_size(tailW, tailH);
+    const rise = 7.0;
+    const padX = 6.0;
+    const padY = 6.0;
 
-    const posX = Math.round(label.x);
-    const pillTop = label.y;
-    let posY;
+    let tailW, tailH, posX, posY;
+    const lx = Math.round(label.x);
+    const ly = Math.round(label.y);
 
     if (position === St.Side.TOP) {
-        posY = Math.round(pillTop - tailH + 1.0);
+        tailW = pillWidth + 2 * padX;
+        tailH = pillHeight + rise + 2 * padY;
+        posX = lx - padX;
+        posY = ly - rise - padY;
+    } else if (position === St.Side.LEFT) {
+        tailW = pillWidth + rise + 2 * padX;
+        tailH = pillHeight + 2 * padY;
+        posX = lx - rise - padX;
+        posY = ly - padY;
+    } else if (position === St.Side.RIGHT) {
+        tailW = pillWidth + rise + 2 * padX;
+        tailH = pillHeight + 2 * padY;
+        posX = lx - padX;
+        posY = ly - padY;
     } else {
-        posY = Math.round(pillTop + pillHeight - 1.0);
+        tailW = pillWidth + 2 * padX;
+        tailH = pillHeight + rise + 2 * padY;
+        posX = lx - padX;
+        posY = ly - padY;
     }
 
-    tail.set_position(posX, posY);
+    tail.set_size(Math.round(tailW), Math.round(tailH));
+    tail.set_position(Math.round(posX), Math.round(posY));
     try {
         const tBox = new Clutter.ActorBox();
         tBox.x1 = posX;
@@ -1994,7 +2011,6 @@ function _updateTailPosition(label, position) {
 function _ensureLabelTail(label, position) {
     if (!label)
         return;
-
 
     if (label._arrowTail && label.contains(label._arrowTail)) {
         label.remove_child(label._arrowTail);
@@ -2012,72 +2028,129 @@ function _ensureLabelTail(label, position) {
             cr.setLineCap(cairo.LineCap.ROUND);
             cr.setLineJoin(cairo.LineJoin.ROUND);
 
-            const [w, h] = area.get_surface_size();
-            const cx = Math.round(w / 2);
-            const themeNode = label.get_theme_node();
-            const bg = themeNode ? themeNode.get_background_color() : null;
-            const border = themeNode ? themeNode.get_border_color(St.Side.TOP) : null;
+            const cfg = globalThis._macLabelStylingConfig || { blur: 30, tint: 28, shadow: 25 };
+            const tintAlpha = (cfg.tint / 100.0);
+            const shadowAlpha = (cfg.shadow / 100.0);
 
-            const r = bg ? bg.red / 255 : 0.16;
-            const g = bg ? bg.green / 255 : 0.16;
-            const b = bg ? bg.blue / 255 : 0.18;
-            const a = bg ? bg.alpha / 255 : 0.80;
+            const isLight = (Main.sessionMode && Main.sessionMode.currentMode === 'light') ||
+                            (typeof globalThis._macIsLightMode === 'function' ? globalThis._macIsLightMode() : false);
 
-            const br = border ? border.red / 255 : 1.0;
-            const bg_c = border ? border.green / 255 : 1.0;
-            const bb = border ? border.blue / 255 : 1.0;
-            const ba = border ? border.alpha / 255 : 0.22;
-
-            const halfBase = 6.5;
-            const fillet = 2.5;
-            const tipR = 1.2;
-            const rise = 7.0;
-
-            if (label._arrowPos === St.Side.TOP) {
-
-
-                cr.moveTo(cx - halfBase - fillet, rise);
-                cr.lineTo(cx + halfBase + fillet, rise);
-                cr.curveTo(cx + halfBase, rise - 0.5, cx + tipR, tipR * 0.5, cx, 0);
-                cr.curveTo(cx - tipR, tipR * 0.5, cx - halfBase, rise - 0.5, cx - halfBase - fillet, rise);
-                cr.closePath();
-                cr.setSourceRGBA(r, g, b, a);
-                cr.fill();
-
-
-                cr.newPath();
-                cr.moveTo(cx - halfBase - fillet, rise - 0.5);
-                cr.curveTo(cx - halfBase + fillet * 0.5, rise - 0.5, cx - tipR, tipR * 0.5, cx, 0);
-                cr.curveTo(cx + tipR, tipR * 0.5, cx + halfBase - fillet * 0.5, rise - 0.5, cx + halfBase + fillet, rise - 0.5);
-                cr.setSourceRGBA(br, bg_c, bb, ba);
-                cr.setLineWidth(1.0);
-                cr.stroke();
+            let r, g, b, a, br, bg_c, bb, ba;
+            if (isLight) {
+                r = 0.94; g = 0.94; b = 0.96; a = Math.max(0.35, Math.min(0.95, tintAlpha * 0.85));
+                br = 0.0; bg_c = 0.0; bb = 0.0; ba = 0.14;
             } else {
-
-
-                cr.moveTo(cx - halfBase - fillet, 0);
-                cr.lineTo(cx + halfBase + fillet, 0);
-                cr.curveTo(cx + halfBase, 0.5, cx + tipR, rise - tipR * 0.5, cx, rise);
-                cr.curveTo(cx - tipR, rise - tipR * 0.5, cx - halfBase, 0.5, cx - halfBase - fillet, 0);
-                cr.closePath();
-                cr.setSourceRGBA(r, g, b, a);
-                cr.fill();
-
-
-                cr.newPath();
-                cr.moveTo(cx - halfBase - fillet, 0.5);
-                cr.curveTo(cx - halfBase + fillet * 0.5, 0.5, cx - tipR, rise - tipR * 0.5, cx, rise);
-                cr.curveTo(cx + tipR, rise - tipR * 0.5, cx + halfBase - fillet * 0.5, 0.5, cx + halfBase + fillet, 0.5);
-                cr.setSourceRGBA(br, bg_c, bb, ba);
-                cr.setLineWidth(1.0);
-                cr.stroke();
+                r = 0.12; g = 0.12; b = 0.15; a = Math.max(0.18, Math.min(0.95, tintAlpha));
+                br = 1.0; bg_c = 1.0; bb = 1.0; ba = 0.22;
             }
+
+            const padX = 6.0;
+            const padY = 6.0;
+            const [minW, natW] = label.get_preferred_width(-1);
+            const pw = Math.ceil(natW > 0 ? natW : (label.width > 0 ? label.width : 50));
+            const [minH, natH] = label.get_preferred_height(pw);
+            const ph = Math.ceil(natH > 0 ? natH : (label.height > 0 ? label.height : 25));
+            const rad = ph / 2.0;
+
+            const rise = 7.0;
+            const halfBase = 5.5;
+            const fillet = 8.0;
+            const tipR = 2.0;
+
+            const pos = label._arrowPos ?? position ?? St.Side.BOTTOM;
+
+            function makeUnifiedPath() {
+                cr.newPath();
+                if (pos === St.Side.TOP) {
+                    const ox = padX;
+                    const oy = padY + rise;
+                    const cx = ox + pw / 2.0;
+                    cr.moveTo(ox + rad, oy);
+                    cr.lineTo(cx - halfBase - fillet, oy);
+                    cr.curveTo(cx - halfBase, oy, cx - tipR, oy - rise + tipR * 0.4, cx, oy - rise);
+                    cr.curveTo(cx + tipR, oy - rise + tipR * 0.4, cx + halfBase, oy, cx + halfBase + fillet, oy);
+                    cr.lineTo(ox + pw - rad, oy);
+                    cr.arc(ox + pw - rad, oy + rad, rad, 1.5 * Math.PI, 2.0 * Math.PI);
+                    cr.arc(ox + pw - rad, oy + ph - rad, rad, 0, 0.5 * Math.PI);
+                    cr.lineTo(ox + rad, oy + ph);
+                    cr.arc(ox + rad, oy + ph - rad, rad, 0.5 * Math.PI, Math.PI);
+                    cr.arc(ox + rad, oy + rad, rad, Math.PI, 1.5 * Math.PI);
+                    cr.closePath();
+                } else if (pos === St.Side.LEFT) {
+                    const ox = padX + rise;
+                    const oy = padY;
+                    const cy = oy + ph / 2.0;
+                    cr.moveTo(ox + rad, oy);
+                    cr.lineTo(ox + pw - rad, oy);
+                    cr.arc(ox + pw - rad, oy + rad, rad, 1.5 * Math.PI, 2.0 * Math.PI);
+                    cr.arc(ox + pw - rad, oy + ph - rad, rad, 0, 0.5 * Math.PI);
+                    cr.lineTo(ox + rad, oy + ph);
+                    cr.arc(ox + rad, oy + ph - rad, rad, 0.5 * Math.PI, Math.PI);
+                    cr.lineTo(ox, cy + halfBase + fillet);
+                    cr.curveTo(ox, cy + halfBase, ox - rise + tipR * 0.4, cy + tipR, ox - rise, cy);
+                    cr.curveTo(ox - rise + tipR * 0.4, cy - tipR, ox, cy - halfBase, ox, cy - halfBase - fillet);
+                    cr.lineTo(ox, oy + rad);
+                    cr.arc(ox + rad, oy + rad, rad, Math.PI, 1.5 * Math.PI);
+                    cr.closePath();
+                } else if (pos === St.Side.RIGHT) {
+                    const ox = padX;
+                    const oy = padY;
+                    const cy = oy + ph / 2.0;
+                    cr.moveTo(ox + rad, oy);
+                    cr.lineTo(ox + pw - rad, oy);
+                    cr.arc(ox + pw - rad, oy + rad, rad, 1.5 * Math.PI, 2.0 * Math.PI);
+                    cr.lineTo(ox + pw, cy - halfBase - fillet);
+                    cr.curveTo(ox + pw, cy - halfBase, ox + pw + rise - tipR * 0.4, cy - tipR, ox + pw + rise, cy);
+                    cr.curveTo(ox + pw + rise - tipR * 0.4, cy + tipR, ox + pw, cy + halfBase, ox + pw, cy + halfBase + fillet);
+                    cr.lineTo(ox + pw, oy + ph - rad);
+                    cr.arc(ox + pw - rad, oy + ph - rad, rad, 0, 0.5 * Math.PI);
+                    cr.lineTo(ox + rad, oy + ph);
+                    cr.arc(ox + rad, oy + ph - rad, rad, 0.5 * Math.PI, Math.PI);
+                    cr.arc(ox + rad, oy + rad, rad, Math.PI, 1.5 * Math.PI);
+                    cr.closePath();
+                } else {
+                    const ox = padX;
+                    const oy = padY;
+                    const cx = ox + pw / 2.0;
+                    cr.arc(ox + rad, oy + rad, rad, Math.PI, 1.5 * Math.PI);
+                    cr.lineTo(ox + pw - rad, oy);
+                    cr.arc(ox + pw - rad, oy + rad, rad, 1.5 * Math.PI, 2.0 * Math.PI);
+                    cr.arc(ox + pw - rad, oy + ph - rad, rad, 0, 0.5 * Math.PI);
+                    cr.lineTo(cx + halfBase + fillet, oy + ph);
+                    cr.curveTo(cx + halfBase, oy + ph, cx + tipR, oy + ph + rise - tipR * 0.4, cx, oy + ph + rise);
+                    cr.curveTo(cx - tipR, oy + ph + rise - tipR * 0.4, cx - halfBase, oy + ph, cx - halfBase - fillet, oy + ph);
+                    cr.lineTo(ox + rad, oy + ph);
+                    cr.arc(ox + rad, oy + ph - rad, rad, 0.5 * Math.PI, Math.PI);
+                    cr.closePath();
+                }
+            }
+
+            if (shadowAlpha > 0.02) {
+                const shadowOffset = Math.max(1, Math.round(shadowAlpha * 5));
+                for (let s = 3; s >= 1; s--) {
+                    cr.save();
+                    cr.translate(0, s * (shadowOffset / 2.0));
+                    makeUnifiedPath();
+                    cr.setSourceRGBA(0, 0, 0, (shadowAlpha * 0.22) / s);
+                    cr.setLineWidth(s * 2.5);
+                    cr.stroke();
+                    cr.restore();
+                }
+            }
+
+            makeUnifiedPath();
+            cr.setSourceRGBA(r, g, b, a);
+            cr.fillPreserve();
+
+            cr.setSourceRGBA(br, bg_c, bb, ba);
+            cr.setLineWidth(1.0);
+            cr.stroke();
 
             cr.$dispose();
         });
 
         Main.uiGroup.add_child(tail);
-        Main.uiGroup.set_child_above_sibling(tail, label);
+        Main.uiGroup.set_child_below_sibling(tail, label);
 
         label.bind_property('visible', tail, 'visible', GObject.BindingFlags.SYNC_CREATE);
         label.bind_property('opacity', tail, 'opacity', GObject.BindingFlags.SYNC_CREATE);
@@ -2210,28 +2283,30 @@ export function itemShowLabel() {
         this.label._arrowTailActor.show();
     }
 
+    const transparentStyle =
+        'background-color: transparent !important; ' +
+        'box-shadow: none !important; ' +
+        'border: none !important; ' +
+        'color: #ffffff !important; ' +
+        'margin: 0px !important; ' +
+        'padding: 4px 12px !important; ' +
+        'font-weight: 500 !important; ' +
+        'font-size: 13px !important;';
+
+    this.label.set_style(transparentStyle);
+
     if (globalThis._macLabelStylingConfig) {
-        const { blur, tint, shadow } = globalThis._macLabelStylingConfig;
-        const tintAlpha = (tint / 100.0).toFixed(2);
-        const shadowAlpha = (shadow / 100.0).toFixed(2);
-        const shadowBlur = Math.round((shadow / 100.0) * 20);
-        const shadowOffset = Math.max(1, Math.round((shadow / 100.0) * 5));
-        this.label.set_style(
-            `background-color: rgba(30, 30, 35, ${tintAlpha}) !important; ` +
-            `box-shadow: 0 ${shadowOffset}px ${shadowBlur}px rgba(0, 0, 0, ${shadowAlpha}) !important; ` +
-            `border: 1px solid rgba(255, 255, 255, 0.22) !important; ` +
-            `border-radius: 9999px !important; ` +
-            `color: #ffffff !important; ` +
-            `margin: 0px !important;`
-        );
+        const { blur, tint } = globalThis._macLabelStylingConfig;
         const eff = this.label.get_effect?.('tahoe-label-blur');
         if (eff) {
             eff.enabled = (blur > 0);
             eff.radius = blur;
             eff.brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
+            const [minH, natH] = this.label.get_preferred_height(-1);
+            const effH = Math.ceil(natH > 0 ? natH : (this.label.height > 0 ? this.label.height : 26));
+            if ('corner_radius' in eff)
+                eff.corner_radius = Math.round(effH / 2);
         }
-    } else {
-        this.label.set_style('margin: 0px !important;');
     }
 
     if (this.label.set_offscreen_redirect)
@@ -2239,6 +2314,8 @@ export function itemShowLabel() {
 
     positionItemLabel(this);
     _ensureLabelTail(this.label, Utils.getPosition());
+    if (this.label._arrowTailActor)
+        this.label._arrowTailActor.queue_repaint();
 
 
     const blurEff = this.label.get_effect?.('tahoe-label-blur');

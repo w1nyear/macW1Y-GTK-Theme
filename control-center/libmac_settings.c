@@ -2989,6 +2989,21 @@ static void redraw_labels_preview(void) {
     }
 }
 
+static void draw_unified_label_path(cairo_t *cr, double ox, double oy, double pw, double ph, double r,
+                                   double cx, double rise, double halfBase, double fillet, double tipR) {
+    cairo_new_path(cr);
+    cairo_arc(cr, ox + r, oy + r, r, M_PI, 1.5 * M_PI);
+    cairo_line_to(cr, ox + pw - r, oy);
+    cairo_arc(cr, ox + pw - r, oy + r, r, 1.5 * M_PI, 2.0 * M_PI);
+    cairo_arc(cr, ox + pw - r, oy + ph - r, r, 0.0, 0.5 * M_PI);
+    cairo_line_to(cr, cx + halfBase + fillet, oy + ph);
+    cairo_curve_to(cr, cx + halfBase, oy + ph, cx + tipR, oy + ph + rise - tipR * 0.4, cx, oy + ph + rise);
+    cairo_curve_to(cr, cx - tipR, oy + ph + rise - tipR * 0.4, cx - halfBase, oy + ph, cx - halfBase - fillet, oy + ph);
+    cairo_line_to(cr, ox + r, oy + ph);
+    cairo_arc(cr, ox + r, oy + ph - r, r, 0.5 * M_PI, M_PI);
+    cairo_close_path(cr);
+}
+
 static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer user_data) {
     (void)area; (void)user_data;
     if (width <= 0 || height <= 0) return;
@@ -3069,7 +3084,7 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_fill(cr);
 
 
-    double lw = 80.0, lh = 26.0, lr = 13.0;
+    double lw = 84.0, lh = 26.0, lr = 13.0;
     double lx = icon2_x + (icon_sz - lw) / 2.0;
     double ly = icon_y - lh - 11.0;
 
@@ -3079,39 +3094,46 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     double tint_a = CLAMP((double)state.label_tint / 100.0, 0.05, 0.95);
     double shadow_a = CLAMP((double)state.label_shadow / 100.0, 0.0, 1.0);
 
+    double ox = lx, oy = ly, pw = lw, ph = lh, r = lr;
+    double cx = ox + pw / 2.0;
+    double rise = 6.0, halfBase = 5.0, fillet = 7.0, tipR = 1.8;
 
-    draw_frosted_glass_card(cr, lbl_blur_bg, lx, ly, lw, lh, lr, tint_a, shadow_a, 0.12);
-
-
-    double tcx = lx + lw / 2.0;
-    double ty = ly + lh;
-    double halfBase = 6.0, rise = 6.0;
-
-
-    if (shadow_a > 0.05) {
-        cairo_save(cr);
-        cairo_move_to(cr, tcx - halfBase, ty - 0.5);
-        cairo_line_to(cr, tcx + halfBase, ty - 0.5);
-        cairo_line_to(cr, tcx, ty + rise);
-        cairo_close_path(cr);
-        cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, shadow_a * 0.35);
-        cairo_fill(cr);
-        cairo_restore(cr);
+    /* 1. Soft multi-pass drop shadow around unified perimeter */
+    if (shadow_a > 0.02) {
+        for (int s = 3; s >= 1; s--) {
+            cairo_save(cr);
+            cairo_translate(cr, 0.0, (double)s * 1.5);
+            draw_unified_label_path(cr, ox, oy, pw, ph, r, cx, rise, halfBase, fillet, tipR);
+            cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, shadow_a * 0.12 / (double)s);
+            cairo_set_line_width(cr, (double)s * 3.0);
+            cairo_stroke(cr);
+            cairo_restore(cr);
+        }
     }
 
+    /* 2. Blurred background clipped to unified popover shape with frosted tint fill */
+    cairo_save(cr);
+    draw_unified_label_path(cr, ox, oy, pw, ph, r, cx, rise, halfBase, fillet, tipR);
+    cairo_clip(cr);
+    if (lbl_blur_bg) {
+        cairo_set_source_surface(cr, lbl_blur_bg, 0, 0);
+        cairo_paint(cr);
+    }
+    if (mac_is_light_mode()) {
+        cairo_set_source_rgba(cr, 0.94, 0.94, 0.96, CLAMP(tint_a * 0.85, 0.25, 0.95));
+    } else {
+        cairo_set_source_rgba(cr, 0.12, 0.12, 0.15, CLAMP(tint_a, 0.18, 0.95));
+    }
+    cairo_paint(cr);
+    cairo_restore(cr);
 
-    cairo_move_to(cr, tcx - halfBase, ty - 0.5);
-    cairo_line_to(cr, tcx + halfBase, ty - 0.5);
-    cairo_line_to(cr, tcx, ty + rise);
-    cairo_close_path(cr);
-    cairo_set_source_rgba(cr, 0.12, 0.12, 0.14, tint_a);
-    cairo_fill(cr);
-
-
-    cairo_move_to(cr, tcx - halfBase, ty - 0.5);
-    cairo_line_to(cr, tcx, ty + rise);
-    cairo_line_to(cr, tcx + halfBase, ty - 0.5);
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.22);
+    /* 3. Continuous 1px border stroke around unified perimeter */
+    draw_unified_label_path(cr, ox, oy, pw, ph, r, cx, rise, halfBase, fillet, tipR);
+    if (mac_is_light_mode()) {
+        cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.14);
+    } else {
+        cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.22);
+    }
     cairo_set_line_width(cr, 1.0);
     cairo_stroke(cr);
 
@@ -3122,11 +3144,11 @@ static void labels_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_text_extents(cr, "Telegram", &te);
 
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.55);
-    cairo_move_to(cr, tcx - te.width / 2.0 - te.x_bearing, ly + (lh - te.height) / 2.0 - te.y_bearing + 1.0);
+    cairo_move_to(cr, cx - te.width / 2.0 - te.x_bearing, ly + (lh - te.height) / 2.0 - te.y_bearing + 1.0);
     cairo_show_text(cr, "Telegram");
 
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
-    cairo_move_to(cr, tcx - te.width / 2.0 - te.x_bearing, ly + (lh - te.height) / 2.0 - te.y_bearing);
+    cairo_move_to(cr, cx - te.width / 2.0 - te.x_bearing, ly + (lh - te.height) / 2.0 - te.y_bearing);
     cairo_show_text(cr, "Telegram");
 
 

@@ -2897,3 +2897,46 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
         * python3 bin/test-macw1y-animations.py — 12/12 PASS.
         * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
         * Наживо перевірено через notify-send: під час появи сповіщення кліп становить [1507, 0, 413, 205], вікна, док і панель залишаються повністю видимими без жодного миготіння.
+
+
+865. fix(dock): оновлення бір-тагів (назв програм при наведенні на док) — заміна фону на чистий Blur з тінтом і тінню, плавний перехід між пілюлею та стрілкою
+   - Список змінених файлів:
+     * [extensions/dash2dock-motion@unmade.space/appIcons.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/appIcons.js)
+     * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+     * [extensions/eval-helper@mactheme/mac_i18n.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/mac_i18n.js)
+     * [extensions/appmenu@ChathurangaBW.github.io/mac_i18n.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/mac_i18n.js)
+     * [extensions/blur-my-shell@aunetx/components/mac_i18n.js](file:///home/vitaliy/MACTHEMEFILES/extensions/blur-my-shell@aunetx/components/mac_i18n.js)
+     * [extensions/kiwi@kemma/apps/mac_i18n.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/mac_i18n.js)
+     * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+     * [control-center/libmac_settings.so](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.so)
+     * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+     * [gnome-control-center-overlay/libmac_settings.so](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.so)
+     * [lib/libmac_settings.so](file:///home/vitaliy/MACTHEMEFILES/lib/libmac_settings.so)
+     * [bin/mac-styling-settings](file:///home/vitaliy/MACTHEMEFILES/bin/mac-styling-settings)
+     * [bin/mac_i18n.py](file:///home/vitaliy/MACTHEMEFILES/bin/mac_i18n.py)
+     * [config/i18n/translations.json](file:///home/vitaliy/MACTHEMEFILES/config/i18n/translations.json)
+     * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+     * [/usr/share/mactheme/config/extensions.lock.json](file:///usr/share/mactheme/config/extensions.lock.json)
+   - Опис змін:
+     1) Повна заміна фону бірок з Liquid Glass на чистий апаратний Blur (`BlurEffect`), тінт і тінь:
+        * Усунуто будь-які згадки скла ("скло", "фонове скло") у налаштуваннях та локалізаціях (uk, en тощо): тепер відображаються точні пункти "Розмиття", "Тінт (затемнення)", "Тінь" у секції "Бірки (Labels)".
+        * У `appIcons.js` (`itemShowLabel`) прибрано жорстку рамку `border: 1px solid` та фон з самого текстового актора `St.Label` (`dash-label`). Текст тепер відмальовується кришталево чітко поверх єдиного фону без горизонтальних швів.
+     2) Безшовний плавний перехід ($C^1$ гладкість) між пілюлею та стрілкою (референс Pixelmator Pro):
+        * Замість окремого трикутника `St.DrawingArea` висотою 10px, що стирчав з-під рамки пілюлі, фоновий актор `tail` розширено на повний об'єм бірки і розміщено безпосередньо під текстом (`Main.uiGroup.set_child_below_sibling(tail, label)`).
+        * У векторному контурі Cairo реалізовано плавні увігнуті філети (concave fillets з радіусом 8px) від горизонтального краю пілюлі до стрілки, плавно заокруглений кінчик стрілки ($R = 2\text{px}$) та зворотний філет назад у бірку.
+        * Суцільна безперервна окантовка 1px білого кольору (`rgba(255, 255, 255, 0.22)` у темній темі, `rgba(0, 0, 0, 0.14)` у світлій темі) огинає весь поповер без жодної внутрішньої перетинки.
+        * Реалізовано багатопрохідну м'яку тінь за формою об'єднаного контуру та плавне заповнення тінтом (`tintAlpha`).
+        * Реалізовано повну симетрію та коректне розташування для всіх 4 орієнтацій дока (Bottom, Top, Left, Right).
+     3) Оновлення попереднього перегляду у Параметрах (libmac_settings.c/so):
+        * У `labels_preview_draw_func` додано функцію `draw_unified_label_path` та переведено відмальовку прев'ю на єдиний поповерний контур з філетами та м'якою тінню.
+        * Перекомпільовано `libmac_settings.so` та синхронізовано в `gnome-control-center-overlay/`, `lib/`, `/usr/lib/x86_64-linux-gnu/`, `/usr/local/lib/`, `~/.local/lib/`, `/usr/share/mactheme/...`.
+     4) Тестування, цілісність та валідація:
+        * Оновлено хеші 5 змінених розширень у `config/extensions.lock.json` та `/usr/share/mactheme/config/extensions.lock.json`.
+        * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+        * python3 bin/mac-integrity-check — успішно, система "green".
+        * python3 bin/mac-audit-sync check — 100% PASS (5/5).
+        * python3 -m unittest discover -s tests -p 'test_*.py' — 38/38 PASS.
+        * python3 bin/test-macw1y-animations.py — 12/12 PASS.
+        * python3 bin/test-macw1y-performance-guards.py — 13/13 PASS.
+        * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено (100% чисто від кирилиці).
+        * Перевірено наживо у сеансі GNOME Shell зі створенням знімків екрана `live_dock_hover_final3.png` та `live_dock_hover_crop.png`: бірка біля іконки плавно переходить у стрілку без жодного шва, розмиття чисте та приємне.

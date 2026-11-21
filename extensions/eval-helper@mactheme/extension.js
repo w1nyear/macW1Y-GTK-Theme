@@ -2682,16 +2682,14 @@ export default class EvalHelper extends Extension {
 
                 globalThis._macLabelStylingConfig = { blur, tint, shadow };
 
-                const tintAlpha = (tint / 100.0).toFixed(2);
-                const shadowAlpha = (shadow / 100.0).toFixed(2);
-                const shadowBlur = Math.round((shadow / 100.0) * 20);
-                const shadowOffset = Math.max(1, Math.round((shadow / 100.0) * 5));
-
-                const styleStr = `background-color: rgba(30, 30, 35, ${tintAlpha}) !important; ` +
-                                 `box-shadow: 0 ${shadowOffset}px ${shadowBlur}px rgba(0, 0, 0, ${shadowAlpha}) !important; ` +
-                                 `border: 1px solid rgba(255, 255, 255, 0.22) !important; ` +
-                                 `border-radius: 9999px !important; ` +
-                                 `color: #ffffff !important;`;
+                const styleStr = 'background-color: transparent !important; ' +
+                                 'box-shadow: none !important; ' +
+                                 'border: none !important; ' +
+                                 'color: #ffffff !important; ' +
+                                 'margin: 0px !important; ' +
+                                 'padding: 4px 12px !important; ' +
+                                 'font-weight: 500 !important; ' +
+                                 'font-size: 13px !important;';
 
                 const labels = Main.uiGroup.get_children().filter(a => a.has_style_class_name && a.has_style_class_name('dash-label'));
                 for (const l of labels) {
@@ -2701,7 +2699,8 @@ export default class EvalHelper extends Extension {
                         eff.enabled = (blur > 0);
                         eff.radius = blur;
                         eff.brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
-                        const effH = (l.height > 0) ? l.height : 26;
+                        const [minH, natH] = l.get_preferred_height ? l.get_preferred_height(-1) : [0, 0];
+                        const effH = Math.ceil(natH > 0 ? natH : (l.height > 0 ? l.height : 26));
                         if ('corner_radius' in eff) {
                             eff.corner_radius = Math.round(effH / 2);
                         }
