@@ -390,12 +390,12 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
             }
 
 
-            if (doHeavy) {
+            if (doHeavy || Main.overview?.visible) {
                 this._idleCount = 0;
             } else {
                 this._idleCount = (this._idleCount || 0) + 1;
             }
-            if (this._idleCount < 8) {
+            if (this._idleCount < 8 || Main.overview?.visible) {
                 this._frameSyncId = global.compositor
                     .get_laters()
                     .add(Meta.LaterType.BEFORE_REDRAW, tick);

@@ -338,12 +338,22 @@ export const MacApplicationsDialog = GObject.registerClass({
         });
         const { isDark: initDark } = this._getThemeParams();
         const initBg = initDark ? 'rgba(28, 28, 32, 0.82)' : 'rgba(244, 244, 248, 0.88)';
+        const styling = this._readStyling() || {};
+        const spotShadow = (typeof styling.spotlight_shadow === 'number')
+            ? (styling.spotlight_shadow / 100.0)
+            : ((typeof styling.liquid_shadow === 'number') ? (styling.liquid_shadow / 100.0) : 0.35);
+        const shadowAlpha = (spotShadow * 0.85).toFixed(2);
+        const shadowBlur = Math.round(spotShadow * 48);
+        const shadowY = Math.round(spotShadow * 20);
+        const shadowCss = spotShadow > 0
+            ? `box-shadow: 0 ${shadowY}px ${shadowBlur}px rgba(0, 0, 0, ${shadowAlpha}) !important;`
+            : 'box-shadow: none !important;';
         this._box.set_style(
             `background-color: ${initBg} !important; ` +
             `border-radius: ${CORNER_RADIUS}px !important; ` +
             'border: 1px solid rgba(255, 255, 255, 0.22) !important; ' +
             'padding: 16px 2px 0px 2px; ' +
-            'box-shadow: 0 16px 40px rgba(0, 0, 0, 0.50) !important;'
+            shadowCss
         );
         this._box.set_offscreen_redirect(Clutter.OffscreenRedirect.ALWAYS);
         this.add_child(this._box);
@@ -387,6 +397,7 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         this._initializingGlass = false;
         this._initGlassPromise = this._initGlass().catch(() => {});
+        this._setupStylingMonitor();
 
         try {
             this._systemModalSignalId = Main.layoutManager.connect('system-modal-opened', () => {
@@ -851,11 +862,37 @@ export const MacApplicationsDialog = GObject.registerClass({
             effect._setFloat('shadow_intensity', spotShadow);
             effect._setFloat('shadow_radius', spotShadowRadius);
             effect._setFloat('shadow_max_radius', 60.0);
+            effect._setFloat('light_angle_deg', 90.0);
             effect._setFloat('ao_intensity', 0.08);
             effect._setFloat('ao_radius', 2.5);
 
             effect.queue_repaint();
         } catch (_) {}
+    }
+
+    _setupStylingMonitor() {
+        try {
+            const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+            const confFile = Gio.File.new_for_path(confPath);
+            this._stylingMonitor = confFile.monitor_file(Gio.FileMonitorFlags.NONE, null);
+            this._stylingMonitor.connect('changed', (_mon, _file, _otherFile, eventType) => {
+                if (eventType === Gio.FileMonitorEvent.CHANGES_DONE_HINT ||
+                    eventType === Gio.FileMonitorEvent.CHANGED ||
+                    eventType === Gio.FileMonitorEvent.CREATED ||
+                    eventType === Gio.FileMonitorEvent.DELETED ||
+                    eventType === Gio.FileMonitorEvent.MOVED_OUT) {
+                    this._cachedStyling = undefined;
+                    this._lastGeometryKey = null;
+                    if (this._glass) {
+                        this._applyGlassUniforms();
+                        this._syncGlass();
+                        try { this._glass.forceRefresh?.(1); } catch (_) {}
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('[ApplicationsMenu] Error setting up styling monitor:', e);
+        }
     }
 
     async _initGlass() {

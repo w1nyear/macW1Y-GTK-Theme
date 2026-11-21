@@ -2822,3 +2822,49 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
         * mac-extension-guard verify — 21/21 LOCKED OK (контрольні суми всіх розширень зафіксовані в extensions.lock.json).
         * test_*.py (38 тестів) — 38/38 PASS.
         * test-macw1y-animations.py (12 сценаріїв) — 12/12 PASS (Spotlight відкривається за 4.53 мс, 152 FPS).
+
+
+### 863. Відцентрування та анімація стрибка біртагів дока, динамічні тіні Spotlight/OSD/сповіщень за повзунком, та неперервне 60 FPS перемалювання Liquid Glass
+   - Дата: 21 листопада 2026 р.
+   - Мета: Відцентрування підказок програм на док точно по центру іконки, реалізація їх підстрибування разом з іконкою при відкритті; усунення темних плям/артефактів тіней під Spotlight меню, OSD гучності та банерами сповіщень із синхронізацією з повзунками налаштувань mac-styling; забезпечення неперервного живого перемалювання Liquid Glass під час руху вікон, в огляді (Overview) та під час ігор без зависань.
+   - Змінені файли:
+     * [extensions/dash2dock-motion@unmade.space/appIcons.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/appIcons.js)
+     * [extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/animator.js](file:///home/vitaliy/MACTHEMEFILES/extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/animator.js)
+     * [extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/extension.js)
+     * [extensions/kiwi@kemma/stylesheet.css](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/stylesheet.css)
+     * [extensions/kiwi@kemma/apps/tahoeOSD.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeOSD.js)
+     * [extensions/kiwi@kemma/apps/tahoeOnScreenDisplay.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeOnScreenDisplay.js)
+     * [extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotifications.js)
+     * [extensions/blur-my-shell@aunetx/components/notifications_v4.js](file:///home/vitaliy/MACTHEMEFILES/extensions/blur-my-shell@aunetx/components/notifications_v4.js)
+     * [extensions/appmenu@ChathurangaBW.github.io/applications_menu.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/applications_menu.js)
+     * [extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js)
+     * [extensions/appmenu@ChathurangaBW.github.io/searchDialog.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/searchDialog.js)
+     * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js)
+     * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js)
+     * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js)
+     * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/uiManager.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/uiManager.js)
+     * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js)
+     * [extensions/liquid-glass@thinkingcoding1231.gmail.com/src/liquidEffect.ts](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/src/liquidEffect.ts)
+     * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+   - Опис змін:
+     1) Відцентрування та анімація стрибка біртагів (підказок) дока:
+        * У positionItemLabel (dash2dock-motion) прибрано віднімання marginL, що зміщувало плашку на 4px вліво, тепер розрахунок ведеться строго x = Math.round(iconCenterX - labelWidth / 2).
+        * У _updateTailPosition (dash2dock-motion) скориговано розміщення стрілочки (хвостика) tailW = pillWidth та posX = label.x, що гарантує направлення вістря стрілки точно в iconCenterX.
+        * У animator.js та extension.js (cupertino-dock-lite) реалізовано динамічну трансляцію плашки підказки labelActor та її стрілочки _arrowTailActor по (jX, jY) під час стрибка іконки запуску із коректним скиданням у 0 після завершення анімації.
+     2) Динамічні тіні Spotlight, OSD та сповіщень:
+        * У kiwi@kemma/stylesheet.css вилучено статичні жорсткі box-shadow (.tahoe-osd-shadow та .mac-notification-banner), які накладалися поверх скла і створювали чорну пляму.
+        * У tahoeOSD.js, tahoeOnScreenDisplay.js та tahoeNotifications.js додано динамічне читання osd_shadow / notification_shadow / spotlight_shadow із ~/.config/mac-styling/styling.json, вимкнення тіні (box-shadow: none !important;) при значенні <=2% та плавне пропорційне масштабування.
+        * У blur-my-shell@aunetx/components/notifications_v4.js реалізовано динамічний розрахунок тіні карток сповіщень на основі notification_shadow / spotlight_shadow та скидання shadow_intensity у нуль у шейдері скла, що повністю прибрало темний ореол-пляму.
+        * У appmenu@ChathurangaBW.github.io/applications_menu.js, applications_menu_v5b.js та searchDialog.js встановлено кут освітлення light_angle_deg = 90.0 (падіння тіні строго вниз замість скошування ліворуч у пляму), замінено фіксовану box-shadow на динамічну та додано Gio.FileMonitor для оновлення тіні у реальному часі.
+        * У liquid-glass розширено перелік isCustomShadowOwner для виключення перезапису тіней OSD та сповіщень глобальними параметрами.
+     3) Живе динамічне перемалювання фону Liquid Glass:
+        * У glassGate.js підключено слухач global.stage.connect('after-paint'), який інформує менеджер скла про будь-які зміни кадрів на сцені (рух вікон, відеопотік, кадри ігор), викликаючи негайне оновлення буфера скла без затримок.
+        * У dockManager.js, backdropGlass.js, uiManager.js та glassGate.js додано умову перевірки Main.overview?.visible, що унеможливлює перехід циклу кадрів у сплячий режим під час перебування в огляді та забезпечує стабільні 60 FPS перемалювання фону скла.
+     4) Оновлення контрольних сум та валідація цілісності:
+        * Актуалізовано SHA256-хеші 6 змінених розширень та їхніх компонентів у config/extensions.lock.json та синхронізовано до /usr/share/mactheme/config/extensions.lock.json.
+        * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK (100% успішно).
+        * python3 bin/mac-integrity-check — успішно, система "green".
+        * python3 bin/mac-audit-sync check — 100% PASS (5/5).
+        * python3 -m unittest discover -s tests -p 'test_*.py' — 38/38 PASS.
+        * python3 bin/test-macw1y-animations.py — 12/12 PASS.
+        * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.

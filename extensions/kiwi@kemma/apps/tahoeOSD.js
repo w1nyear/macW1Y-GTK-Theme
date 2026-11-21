@@ -636,6 +636,38 @@ function _osdBlur() {
     return blur;
 }
 
+function _osdShadowValue() {
+    let shadow = 25;
+    try {
+        const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+        if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+            const [ok, bytes] = GLib.file_get_contents(confPath);
+            if (ok && bytes) {
+                const data = JSON.parse(new TextDecoder().decode(bytes));
+                if (typeof data.osd_shadow === 'number')
+                    shadow = Math.max(0, Math.min(100, data.osd_shadow));
+                else if (typeof data.spotlight_shadow === 'number')
+                    shadow = Math.max(0, Math.min(100, data.spotlight_shadow));
+            }
+        }
+    } catch (_) {}
+    return shadow;
+}
+
+function _applyOsdShadowStyle() {
+    if (!_osdShadow)
+        return;
+    const shadowVal = _osdShadowValue() / 100.0;
+    if (shadowVal <= 0.02) {
+        _osdShadow.set_style('box-shadow: none !important; border: none !important; background-color: transparent !important;');
+        return;
+    }
+    const sAlpha = (shadowVal * 0.35).toFixed(2);
+    const sBlur = Math.round(shadowVal * 28);
+    const sY = Math.round(shadowVal * 8);
+    _osdShadow.set_style(`border-radius: 9999px !important; background-color: transparent !important; border: none !important; box-shadow: 0 ${sY}px ${sBlur}px rgba(0, 0, 0, ${sAlpha}) !important;`);
+}
+
 function _startOsdTick() {
     if (_osdTickId || !_box || !_box.visible)
         return;
@@ -1170,6 +1202,7 @@ function _show(kind, title, iconL, iconR, value) {
                 _osdShadow.set_position(boxX, boxY);
                 _osdShadow.set_width(OSD_W);
                 _osdShadow.set_height(OSD_H);
+                _applyOsdShadowStyle();
             }
         }
 
@@ -1180,6 +1213,7 @@ function _show(kind, title, iconL, iconR, value) {
         } catch (_) {}
 
         if (firstShow) {
+            _applyOsdShadowStyle();
             _box.opacity = 0;
             _box.show();
             if (_osdShadow) {

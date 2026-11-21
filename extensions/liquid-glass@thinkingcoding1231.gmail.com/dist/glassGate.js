@@ -132,6 +132,14 @@ export function installGlassSceneListeners() {
             _sceneSignalIds.push([Main.layoutManager, id]);
         }
     } catch (_) {}
+
+    try {
+        const stagePaintId = global.stage.connect('after-paint', () => {
+            _backdropDamageVersion++;
+            notifyGlassWake(null, 'stage-paint');
+        });
+        _sceneSignalIds.push([global.stage, stagePaintId]);
+    } catch (_) {}
 }
 
 export function removeGlassSceneListeners() {
@@ -454,10 +462,7 @@ export function glassRefreshDue(glassActor, extraHash) {
 
         const sinceFull = nowUs - st.lastFull;
 
-        if (st.dirty) {
-
-
-
+        if (st.dirty || Main.overview?.visible) {
             const dueInterval = ownChanged ? GLASS_REFRESH_ACTIVE_INTERVAL_US : GLASS_REFRESH_60FPS_INTERVAL_US;
             return sinceFull >= dueInterval;
         }

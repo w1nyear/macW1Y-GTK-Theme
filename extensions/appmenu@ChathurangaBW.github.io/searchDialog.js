@@ -1995,6 +1995,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             effect._setFloat('shadow_intensity', spotShadow);
             effect._setFloat('shadow_radius', spotShadowRadius);
             effect._setFloat('shadow_max_radius', 60.0);
+            effect._setFloat('light_angle_deg', 90.0);
             effect._setFloat('ao_intensity', 0.08);
             effect._setFloat('ao_radius', 2.5);
 

@@ -1957,26 +1957,20 @@ function _updateTailPosition(label, position) {
         return;
     label._arrowPos = position;
 
-    const node = label.get_theme_node();
-    const marginL = node ? (node.get_margin(St.Side.LEFT) || 0) : 0;
-    const marginR = node ? (node.get_margin(St.Side.RIGHT) || 0) : 0;
-    const marginT = node ? (node.get_margin(St.Side.TOP) || 0) : 0;
-    const marginB = node ? (node.get_margin(St.Side.BOTTOM) || 0) : 0;
-
     const [minW, natW] = label.get_preferred_width(-1);
-    const pillWidth = Math.ceil(natW > 0 ? (natW - marginL - marginR) : (label.width > 0 ? label.width : 50));
+    const pillWidth = Math.ceil(natW > 0 ? natW : (label.width > 0 ? label.width : 50));
     if (pillWidth <= 0)
         return;
 
     const [minH, natH] = label.get_preferred_height(pillWidth);
-    const pillHeight = Math.ceil(natH > 0 ? (natH - marginT - marginB) : (label.height > 0 ? label.height : 25));
+    const pillHeight = Math.ceil(natH > 0 ? natH : (label.height > 0 ? label.height : 25));
 
     const tailW = pillWidth;
     const tailH = 10;
     tail.set_size(tailW, tailH);
 
-    const posX = Math.round(label.x + marginL);
-    const pillTop = label.y + marginT;
+    const posX = Math.round(label.x);
+    const pillTop = label.y;
     let posY;
 
     if (position === St.Side.TOP) {
@@ -2120,20 +2114,16 @@ export function positionItemLabel(item) {
     const itemHeight = extents.get_height();
 
     const node = item.label.get_theme_node();
-    const marginL = node ? (node.get_margin(St.Side.LEFT) || 0) : 0;
-    const marginR = node ? (node.get_margin(St.Side.RIGHT) || 0) : 0;
-    const marginT = node ? (node.get_margin(St.Side.TOP) || 0) : 0;
-    const marginB = node ? (node.get_margin(St.Side.BOTTOM) || 0) : 0;
 
     const [minW, natW] = item.label.get_preferred_width(-1);
-    const labelWidth = Math.ceil(natW > 0 ? (natW - marginL - marginR) : (item.label.get_width() || 0));
+    const labelWidth = Math.ceil(natW > 0 ? natW : (item.label.get_width() || 0));
     const [minH, natH] = item.label.get_preferred_height(labelWidth);
-    const labelHeight = Math.ceil(natH > 0 ? (natH - marginT - marginB) : (item.label.get_height() || 25));
+    const labelHeight = Math.ceil(natH > 0 ? natH : (item.label.get_height() || 25));
 
     let x, y, xOffset, yOffset;
 
     const position = Utils.getPosition();
-    const labelOffset = node.get_length('-x-offset') || 0;
+    const labelOffset = node ? (node.get_length('-x-offset') || 0) : 0;
 
     const iconCenterX = stageX + itemWidth / 2;
     const iconCenterY = stageY + itemHeight / 2;
@@ -2142,21 +2132,21 @@ export function positionItemLabel(item) {
     case St.Side.LEFT:
         y = Math.round(iconCenterY - labelHeight / 2);
         xOffset = labelOffset;
-        x = stageX + itemWidth - (node.get_margin(St.Side.RIGHT) || 0) + xOffset + 20;
+        x = stageX + itemWidth + xOffset + 20;
         break;
     case St.Side.RIGHT:
         y = Math.round(iconCenterY - labelHeight / 2);
         xOffset = labelOffset;
-        x = Math.round(stageX) - labelWidth + (node.get_margin(St.Side.LEFT) || 0) - xOffset - 20;
+        x = Math.round(stageX) - labelWidth - xOffset - 20;
         break;
     case St.Side.TOP:
-        y = stageY + itemHeight - (node.get_margin(St.Side.TOP) || 0) + labelOffset + 20;
-        x = Math.round(iconCenterX - (labelWidth / 2) - marginL);
+        y = stageY + itemHeight + labelOffset + 20;
+        x = Math.round(iconCenterX - (labelWidth / 2));
         break;
     case St.Side.BOTTOM:
     default:
-        y = stageY - labelHeight + (node.get_margin(St.Side.BOTTOM) || 0) - labelOffset - 20;
-        x = Math.round(iconCenterX - (labelWidth / 2) - marginL);
+        y = stageY - labelHeight - labelOffset - 20;
+        x = Math.round(iconCenterX - (labelWidth / 2));
         break;
     }
 

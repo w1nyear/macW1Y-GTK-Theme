@@ -245,7 +245,8 @@ export class Animator {
       }
       if (!found) {
         let uiIcon = new St.Widget({ name: 'icon', width: iconSize, height: iconSize, visible: true, opacity: 0 });
-        uiIcon.pivot_point = pivot; uiIcon._bin = bin; uiIcon._appwell = c._appwell; uiIcon._label = c._label;
+        uiIcon.pivot_point = pivot; uiIcon._bin = bin; uiIcon._appwell = c._appwell;
+        uiIcon._label = c._label ?? c.label ?? c._delegate?.label ?? c._appwell?.get_parent?.()?.label ?? c._appwell?.label;
         uiIcon._wasActive = false;
         uiIcon._introJump = 0;
         const cAppId = c._appwell?.app?.get_id?.();
@@ -493,13 +494,14 @@ export class Animator {
             icon._appwell._indicator._notificationBadgeBin.translation_x = 0;
             icon._appwell._indicator._notificationBadgeBin.translation_y = 0;
           }
-          const labelActor = icon._label ?? icon._appwell?.get_parent?.()?.label ?? icon._appwell?.label;
+          const labelActor = icon._label ?? icon._appwell?.get_parent?.()?.label ?? icon._appwell?.label ?? icon._appwell?.child?._delegate?.label ?? icon._appwell?._delegate?.label;
           if (labelActor) {
             labelActor.translation_x = 0;
             labelActor.translation_y = 0;
-            if (labelActor._arrowTailActor) {
-              labelActor._arrowTailActor.translation_x = 0;
-              labelActor._arrowTailActor.translation_y = 0;
+            const tail = labelActor._arrowTailActor;
+            if (tail) {
+              tail.translation_x = 0;
+              tail.translation_y = 0;
             }
           }
           this._setD2dBadgeOpacity(icon._appwell, 255);
@@ -566,13 +568,14 @@ export class Animator {
         icon._appwell._indicator._notificationBadgeBin = null;
       }
 
-      const labelActor = icon._label ?? icon._appwell?.get_parent?.()?.label ?? icon._appwell?.label;
+      const labelActor = icon._label ?? icon._appwell?.get_parent?.()?.label ?? icon._appwell?.label ?? icon._appwell?.child?._delegate?.label ?? icon._appwell?._delegate?.label;
       if (labelActor) {
         labelActor.translation_x = jX;
         labelActor.translation_y = jY;
-        if (labelActor._arrowTailActor) {
-          labelActor._arrowTailActor.translation_x = jX;
-          labelActor._arrowTailActor.translation_y = jY;
+        const tail = labelActor._arrowTailActor;
+        if (tail) {
+          tail.translation_x = jX;
+          tail.translation_y = jY;
         }
       }
     });
@@ -623,13 +626,14 @@ export class Animator {
       } else if (icon._appwell?._indicator) {
         icon._appwell._indicator._notificationBadgeBin = null;
       }
-      const labelActor = icon._label ?? icon._appwell?.get_parent?.()?.label ?? icon._appwell?.label;
+      const labelActor = icon._label ?? icon._appwell?.get_parent?.()?.label ?? icon._appwell?.label ?? icon._appwell?.child?._delegate?.label ?? icon._appwell?._delegate?.label;
       if (labelActor) {
         labelActor.translation_x = 0;
         labelActor.translation_y = 0;
-        if (labelActor._arrowTailActor) {
-          labelActor._arrowTailActor.translation_x = 0;
-          labelActor._arrowTailActor.translation_y = 0;
+        const tail = labelActor._arrowTailActor;
+        if (tail) {
+          tail.translation_x = 0;
+          tail.translation_y = 0;
         }
       }
       this._setD2dBadgeOpacity(icon._appwell, 255);

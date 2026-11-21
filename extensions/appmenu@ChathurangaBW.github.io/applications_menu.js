@@ -384,6 +384,7 @@ export const MacApplicationsDialog = GObject.registerClass({
 
         this._initializingGlass = false;
         this._initGlassPromise = this._initGlass().catch(() => {});
+        this._setupStylingMonitor();
 
         try {
             this._systemModalSignalId = Main.layoutManager.connect('system-modal-opened', () => {
@@ -792,11 +793,37 @@ export const MacApplicationsDialog = GObject.registerClass({
             effect._setFloat('shadow_intensity', spotShadow);
             effect._setFloat('shadow_radius', spotShadowRadius);
             effect._setFloat('shadow_max_radius', 60.0);
+            effect._setFloat('light_angle_deg', 90.0);
             effect._setFloat('ao_intensity', 0.08);
             effect._setFloat('ao_radius', 2.5);
 
             effect.queue_repaint();
         } catch (_) {}
+    }
+
+    _setupStylingMonitor() {
+        try {
+            const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+            const confFile = Gio.File.new_for_path(confPath);
+            this._stylingMonitor = confFile.monitor_file(Gio.FileMonitorFlags.NONE, null);
+            this._stylingMonitor.connect('changed', (_mon, _file, _otherFile, eventType) => {
+                if (eventType === Gio.FileMonitorEvent.CHANGES_DONE_HINT ||
+                    eventType === Gio.FileMonitorEvent.CHANGED ||
+                    eventType === Gio.FileMonitorEvent.CREATED ||
+                    eventType === Gio.FileMonitorEvent.DELETED ||
+                    eventType === Gio.FileMonitorEvent.MOVED_OUT) {
+                    this._cachedStyling = undefined;
+                    this._lastGeometryKey = null;
+                    if (this._glass) {
+                        this._applyGlassUniforms();
+                        this._syncGlass();
+                        try { this._glass.forceRefresh?.(1); } catch (_) {}
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('[ApplicationsMenu] Error setting up styling monitor:', e);
+        }
     }
 
     async _initGlass() {

@@ -360,6 +360,7 @@ export default class DashAnimatorExtension extends Extension {
 
     icons.forEach((c) => {
       const appwell = c.first_child;
+      c._label = c.label || c._delegate?.label || appwell?.get_parent?.()?.label || appwell?.label;
       if (c._appwell === appwell) {
         if (c._bin?.get_parent()?.clip_to_view) {
           c._bin.get_parent().clip_to_view = false;

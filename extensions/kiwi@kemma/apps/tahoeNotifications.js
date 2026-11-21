@@ -85,6 +85,8 @@ function _loadNotifStyling() {
                 _notifStyling.shadow = Math.max(0, Math.min(100, Number(data.notification_shadow)));
             else if (data.alert_shadow !== undefined)
                 _notifStyling.shadow = Number(data.alert_shadow);
+            else if (data.spotlight_shadow !== undefined)
+                _notifStyling.shadow = Number(data.spotlight_shadow);
 
             if (data.notif_radius !== undefined)
                 _notifStyling.radius = Math.max(0, Math.min(48, Number(data.notif_radius)));

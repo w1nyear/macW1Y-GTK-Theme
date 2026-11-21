@@ -649,12 +649,12 @@ export class UIManager {
             catch (e) {
                 reportFrameLoopError('UIManager', e);
             }
-            if (didRefresh || (this._tickId && this._tickId !== 0)) {
+            if (didRefresh || (this._tickId && this._tickId !== 0) || Main.overview?.visible) {
                 this._idleCount = 0;
             } else {
                 this._idleCount = (this._idleCount || 0) + 1;
             }
-            if (this._idleCount < 8) {
+            if (this._idleCount < 8 || Main.overview?.visible) {
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             } else {
                 this._frameSyncId = 0;

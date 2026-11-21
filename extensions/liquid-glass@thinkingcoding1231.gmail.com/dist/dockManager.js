@@ -463,12 +463,12 @@ export class DashManager {
             catch (e) {
                 reportFrameLoopError('DockManager', e);
             }
-            if (didRefresh) {
+            if (didRefresh || Main.overview?.visible) {
                 this._idleCount = 0;
             } else {
                 this._idleCount = (this._idleCount || 0) + 1;
             }
-            if (this._idleCount < 8) {
+            if (this._idleCount < 8 || Main.overview?.visible) {
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             } else {
                 this._frameSyncId = 0;

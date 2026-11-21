@@ -2850,7 +2850,12 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
                 this._owner === 'desktop-widget-glass' ||
                 this._owner === 'spotlight' ||
                 this._owner === 'applications' ||
-                this._owner === 'clipboard'
+                this._owner === 'clipboard' ||
+                this._owner === 'notification' ||
+                this._owner === 'notification-banner' ||
+                this._owner === 'osd' ||
+                (this._owner && this._owner.includes('osd')) ||
+                (this._owner && this._owner.includes('notif'))
             );
             if (isCustomShadowOwner && (map.uniform === 'shadow_intensity' || map.uniform === 'shadow_radius' || map.uniform === 'shadow_max_radius')) {
                 return;

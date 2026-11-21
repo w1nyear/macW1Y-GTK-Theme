@@ -197,12 +197,40 @@ export function buildNotificationCard(source, notification, options = {}) {
         isDark = true;
     }
 
+    let shadowVal = 0.25;
+    try {
+        const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+        if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+            const [ok, bytes] = GLib.file_get_contents(confPath);
+            if (ok && bytes) {
+                const data = JSON.parse(new TextDecoder().decode(bytes));
+                if (typeof data.notification_shadow === 'number')
+                    shadowVal = Math.max(0, Math.min(100, data.notification_shadow)) / 100.0;
+                else if (typeof data.spotlight_shadow === 'number')
+                    shadowVal = Math.max(0, Math.min(100, data.spotlight_shadow)) / 100.0;
+            }
+        }
+    } catch (_) {}
+
+    let shadowCss = 'box-shadow: none !important;';
+    let shadowHoverCss = 'box-shadow: none !important;';
+    if (shadowVal > 0.02) {
+        const sAlpha = (shadowVal * (isDark ? 0.35 : 0.18)).toFixed(2);
+        const sBlur = Math.round(shadowVal * 24);
+        const sY = Math.round(shadowVal * 6);
+        shadowCss = `box-shadow: 0 ${sY}px ${sBlur}px rgba(0, 0, 0, ${sAlpha}) !important;`;
+        const hAlpha = (shadowVal * (isDark ? 0.42 : 0.22)).toFixed(2);
+        const hBlur = Math.round(shadowVal * 28);
+        const hY = Math.round(shadowVal * 8);
+        shadowHoverCss = `box-shadow: 0 ${hY}px ${hBlur}px rgba(0, 0, 0, ${hAlpha}) !important;`;
+    }
+
     const CARD_BASE_STYLE = isDark
-        ? 'background-color: rgba(30, 30, 32, 0.40) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 16px !important; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28) !important;'
-        : 'background-color: rgba(255, 255, 255, 0.40) !important; border: 1px solid rgba(255, 255, 255, 0.35) !important; border-radius: 16px !important; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12) !important;';
+        ? `background-color: rgba(30, 30, 32, 0.40) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 16px !important; ${shadowCss}`
+        : `background-color: rgba(255, 255, 255, 0.40) !important; border: 1px solid rgba(255, 255, 255, 0.35) !important; border-radius: 16px !important; ${shadowCss}`;
     const CARD_HOVER_STYLE = isDark
-        ? 'background-color: rgba(45, 45, 48, 0.50) !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; border-radius: 16px !important; box-shadow: 0 6px 22px rgba(0, 0, 0, 0.35) !important;'
-        : 'background-color: rgba(255, 255, 255, 0.52) !important; border: 1px solid rgba(255, 255, 255, 0.45) !important; border-radius: 16px !important; box-shadow: 0 6px 22px rgba(0, 0, 0, 0.16) !important;';
+        ? `background-color: rgba(45, 45, 48, 0.50) !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; border-radius: 16px !important; ${shadowHoverCss}`
+        : `background-color: rgba(255, 255, 255, 0.52) !important; border: 1px solid rgba(255, 255, 255, 0.45) !important; border-radius: 16px !important; ${shadowHoverCss}`;
 
     const CARD_PILL_STYLE = CARD_BASE_STYLE.replace('border-radius: 16px !important;', 'border-radius: 9999px !important;');
     const CARD_MID_STYLE = CARD_BASE_STYLE.replace('border-radius: 16px !important;', 'border-radius: 22px !important;');
@@ -1347,9 +1375,12 @@ export const NotificationsController = class NotificationsController {
             this._glass.setContrast(1.0);
             this._glass.setPadding(0);
             try {
-                this._glass._renderer.uniforms.set('shadow_intensity', 0.0);
-                this._glass._renderer.uniforms.set('shadow_radius', 0.0);
-                this._glass._renderer.uniforms.set('shadow_max_radius', 0.0);
+                const eff = this._glass.effect || this._glass._effect;
+                if (eff) {
+                    eff._setFloat('shadow_intensity', 0.0);
+                    eff._setFloat('shadow_radius', 0.0);
+                    eff._setFloat('shadow_max_radius', 0.0);
+                }
             } catch (_) {}
             this._glass.hide();
 
