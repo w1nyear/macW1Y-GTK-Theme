@@ -3526,3 +3526,36 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [extensions/stage-manager@gnome-stage-manager/stylesheet.css](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/stylesheet.css)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+### Завдання №882: Stage Manager — автентична 3D-перспектива прев'ю вікон (зліва велике, справа зменшується), рівне відображення іконки без викривлень та плавна анімація перемикання вікон (Window Exchange)
+- Дата: 2026-11-21
+- Мета:
+  1) Відокремити 3D-перспективу передогляду вікна від бейджа іконки програми: іконка повинна стояти ідеально рівно та плоско (без нахилу й спотворень за віссю Y) у лівому нижньому куті.
+  2) Налаштувати автентичну 3D-перспективу прев'ю вікна вздовж осі Y: ліва сторона велика за висотою, права сторона плавно віддаляється в глибину та помітно зменшується (taper ~23%), без розтягування по горизонталі.
+  3) Реалізувати фірмову анімацію перемикання вікон Stage Manager: при натисканні на програму в Stage Manager поточне активне вікно плавно згортається у бічну панель Stage Manager (з нахилом у 3D-стек), а вибрана програма розгортається на робочий стіл на своє попереднє місце, вирівнюючи вісь Y у площину (rotation_angle_y = 0).
+- Реалізовані зміни:
+  1) Відокремлення передогляду від іконки (extensions/stage-manager@gnome-stage-manager/extension.js):
+     * У _makeStackedThumb створено окремий суб-контейнер _previewBox для шарів вікон.
+     * Бейдж іконки програми (.stage-app-icon-badge) додається на рівень батьківського контейнера над _previewBox з нульовим 3D-обертанням.
+     * Картка card сама не має нахилу по осі Y (card.rotation_angle_y = 0), завдяки чому іконка завжди залишається строго вертикальною, чіткою та пласкою.
+  2) Справжня 3D-перспектива для прев'ю вікон (_applyPerspective):
+     * Впроваджено функцію _applyPerspective(card, factor), яка застосовує перспективну матрицю проекції (Graphene.Matrix) до _previewBox.
+     * Забезпечено виражений перспективний спад висоти: лівий край залишається високим (167 px), правий край зменшується у глибину (128 px, коефіцієнт ~0.77), усуваючи горизонтальне розтягування через центральну камеру Clutter.
+     * При наведенні курсору (hover) картка збільшується через card.scale (1.12), а перспектива м'яко пом'якшується.
+  3) Анімація заміни вікон (_switchWindows):
+     * Створено систему збереження координат вікон _savedLayouts (Map), що фіксує точні позиції вікон на стільниці.
+     * При активації програми з Stage Manager:
+       - Активні вікна на робочому столі клонуються у Main.uiGroup, анімуються у напрямку бічної панелі Stage Manager (зменшуються, нахиляються у 3D та плавно ховаються) і мінімізуються.
+       - Вікна цільової програми одночасно розгортаються зі Stage Manager на робочий стіл у свої збережені прямокутники, вирівнюючи rotation_angle_y з 25° до 0° (стають на рівний Y у своїй попередній локації).
+       - Після завершення анімації цільове вікно активується та отримує фокус.
+     * Підключено _switchWindows до _activateApp, _swapToGroup та _activateWindow.
+  4) Верифікація та синхронізація:
+     * Синхронізовано до ~/.local/share/gnome-shell/extensions/stage-manager@gnome-stage-manager/.
+     * Перевірено роботу через EvalHelper та знято тестові скріншоти (stage_manager_fixed_final_crop.png).
+     * Усі 5 наборів перевірок пройшли на 100%: mac-extension-guard (21/21), mac-audit-sync (5/5), test-macw1y-animations (12/12), unittests (39/39), mac-i18n-verify.
+     * 0 кириличних символів в install.sh.
+
+- Зачеплені файли:
+  * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
