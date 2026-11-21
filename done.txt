@@ -3041,3 +3041,40 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
       * [gnome-control-center-overlay/locales/pl/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/locales/pl/cc-mac-styling-panel.ui)
       * [/usr/share/mactheme/gnome-control-center-overlay/](file:///usr/share/mactheme/gnome-control-center-overlay/)
       * [~/.local/share/gnome-control-center-overlay/](file:///home/vitaliy/.local/share/gnome-control-center-overlay/)
+
+868. fix(launchpad): динамічне оновлення списку рекомендацій за принципом останньої відкритої програми (MRU) та нормалізація іконок (Squircle) для усунення виходу за межі рамки фокусу
+    - Суть виправлення:
+      1) Динамічний порядок рекомендацій у Launchpad (MRU):
+         * Реалізовано збереження історії запусків програм у файлі конфігурації `~/.config/mac-styling/launchpad_recents.json`.
+         * Функція `recordLaunchpadApp(app)` записує запущену програму на позицію 0 (MRU), переміщуючи раніше запущені програми вправо.
+         * Оновлено метод `_getRecentApps(allApps)` у діалогах Launchpad: перший рядок (7 програм, відокремлених горизонтальним розділювачем) тепер завжди формується на основі останніх відкритих у Launchpad програм (з доповненням часто використовуваними та обраними при нестачі).
+         * Скасовано блокуюче кешування `this._appsDefaultLoaded` при відкритті Launchpad (`open('apps')`, `_setMode('apps')`, `close()`), тому кожне відкриття Launchpad миттєво відображає свіжий список рекомендацій з останньою відкритою програмою на першому місці.
+         * Обробники кліку по іконці, натискання клавіші Enter та активації з пошуку підключено до `recordLaunchpadApp(app)`.
+      2) Нормалізація нестандартних та виступаючих іконок (Squircle):
+         * Виправлено геометрію векторної іконки `org.gnome.Loupe.svg`: внутрішній графічний елемент (ручка лупи та фотокартка) масштабовано до 0.82, відцентровано та захищено через `<clipPath id="squircle-clip">`, завдяки чому жоден піксель більше не виступає за межі плитки чи помаранчевої рамки фокусу при наведенні.
+         * Також перевірено та обмежено закругленим контуром піктограми `preferences-system-network.svg` та `system-software-update.svg`.
+         * Оновлено утиліту `bin/mac-icon-normalizer`: розширено пошук на директорії snap-пакетів (`/var/lib/snapd/desktop/applications/`) та flatpak; додано автоматичне зіставлення snap-програм з нативними сквиркл-іконками теми (`firefox`, `steam`, `spotify`, `discord`, `telegram-desktop`, `libreoffice-*`, `deepseek-linux`, `antigravity`, `snap-store`, `zoom-client`) зі створенням локальних перевизначень у `~/.local/share/applications/` для повного усунення сирих нестандартних PNG зі snap.
+         * Синхронізовано іконки в `~/.local/share/icons/macW1Y/`, `~/.local/share/icons/MacTahoe/`, `~/.local/share/icons/macW1Y-dark/`, `/usr/share/icons/MacTahoe/` та оновлено системні кеші піктограм.
+         * Оновлено системну копію `/usr/local/bin/mac-icon-normalizer`.
+      3) Верифікація та живе тестування:
+         * Перевірено роботу оновлення рекомендацій на живому сеансі через EvalHelper: відкриття Калькулятора (`org.gnome.Calculator.desktop`) та Аналізатора дисків (`org.gnome.baobab.desktop`) миттєво розмістило їх на позиціях #1 та #2 першого рядка.
+         * Знято контрольні знімки екрана [live_launchpad_verified.png](file:///home/vitaliy/.gemini/antigravity/brain/b8829a6a-a815-471f-b6f1-715868176d89/live_launchpad_verified.png) та [live_loupe_hover_verified.png](file:///home/vitaliy/.gemini/antigravity/brain/b8829a6a-a815-471f-b6f1-715868176d89/live_loupe_hover_verified.png): ручка лупи на 100% знаходиться всередині плитки та помаранчевого контуру ховеру без найменшого виходу за межі.
+      4) Комплексний аудит та тести:
+         * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+         * python3 bin/mac-audit-sync check — 100% PASS (5/5).
+         * python3 -m unittest discover -s tests -p 'test_*.py' — 38/38 PASS.
+         * python3 bin/test-macw1y-animations.py — 12/12 PASS.
+         * python3 bin/test-macw1y-performance-guards.py — 13/13 PASS.
+         * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено (100% чисто від кирилиці).
+    - Зачеплені файли:
+      * [extensions/appmenu@ChathurangaBW.github.io/searchDialog.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/searchDialog.js)
+      * [extensions/appmenu@ChathurangaBW.github.io/applications_menu.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/applications_menu.js)
+      * [extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js)
+      * [extensions/appmenu@ChathurangaBW.github.io/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/extension.js)
+      * [bin/mac-icon-normalizer](file:///home/vitaliy/MACTHEMEFILES/bin/mac-icon-normalizer)
+      * [/usr/local/bin/mac-icon-normalizer](file:///usr/local/bin/mac-icon-normalizer)
+      * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+      * [/usr/share/mactheme/config/extensions.lock.json](file:///usr/share/mactheme/config/extensions.lock.json)
+      * [icons/macW1Y/apps/scalable/org.gnome.Loupe.svg](file:///home/vitaliy/MACTHEMEFILES/icons/macW1Y/apps/scalable/org.gnome.Loupe.svg)
+      * [icons/macW1Y/apps/scalable/network-workgroup.svg](file:///home/vitaliy/MACTHEMEFILES/icons/macW1Y/apps/scalable/network-workgroup.svg)
+      * [icons/macW1Y/apps/scalable/system-software-update.svg](file:///home/vitaliy/MACTHEMEFILES/icons/macW1Y/apps/scalable/system-software-update.svg)

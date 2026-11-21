@@ -30,6 +30,9 @@ SYS_MACTAHOE_DARK_DIR = os.path.join(SYS_ICONS_DIR, "macW1Y-dark")
 
 LOCAL_APPS_DIR = os.path.join(HOME, ".local/share/applications")
 SYS_APPS_DIR = "/usr/share/applications"
+SNAP_APPS_DIR = "/var/lib/snapd/desktop/applications"
+FLATPAK_SYS_APPS_DIR = "/var/lib/flatpak/exports/share/applications"
+FLATPAK_USER_APPS_DIR = os.path.join(HOME, ".local/share/flatpak/exports/share/applications")
 
 # Reference drop shadow base64 from macW1Y template
 SHADOW_B64 = (
@@ -186,16 +189,31 @@ def is_native_macw1y_icon(icon_name):
         return False
     if icon_name in EXCLUDED_ICONS:
         return True
-    svg_path = os.path.join(MACTAHOE_DIR, "apps/scalable", f"{icon_name}.svg")
-    if os.path.exists(svg_path):
-        try:
-            with open(svg_path, "r", errors="ignore") as f:
-                content = f.read(500)
-                if NORMALIZED_MARKER in content:
-                    return False
-            return True
-        except Exception:
-            return True
+    check_dirs = [
+        MACTAHOE_DIR,
+        MACTAHOE_DARK_DIR,
+        os.path.join(USER_ICONS_DIR, "MacTahoe"),
+        SYS_MACTAHOE_DIR,
+        SYS_MACTAHOE_DARK_DIR,
+        "/usr/share/icons/MacTahoe",
+    ]
+    for b in check_dirs:
+        for ext in [".svg", ".png"]:
+            p = os.path.join(b, "apps/scalable", f"{icon_name}{ext}")
+            if os.path.exists(p):
+                try:
+                    if ext == ".svg":
+                        with open(p, "r", errors="ignore") as f:
+                            content = f.read(500)
+                            if NORMALIZED_MARKER in content:
+                                return False
+                    return True
+                except Exception:
+                    return True
+            for sz in ["256", "128", "64", "48"]:
+                p_sz = os.path.join(b, f"apps/{sz}", f"{icon_name}{ext}")
+                if os.path.exists(p_sz):
+                    return True
     return False
 
 def render_image_to_pil(src_path, target_size=512):
@@ -515,15 +533,61 @@ def process_desktop_file(df_path):
         return None
 
     base_name = os.path.splitext(os.path.basename(df_path))[0]
-
     is_abs_path = os.path.isabs(icon_val)
+
+    # Candidate theme icon names
+    candidates = [
+        base_name.lower().replace(" ", "-"),
+    ]
+    if "_" in base_name:
+        parts = base_name.split("_", 1)
+        p0, p1 = parts[0].lower(), parts[1].lower()
+        if p0 == p1:
+            candidates.insert(0, p0)
+        else:
+            candidates.append(p0)
+            candidates.append(p1)
+            candidates.append(f"{p0}-{p1}")
+            candidates.append(f"{p0}_{p1}")
+    if not is_abs_path:
+        candidates.insert(0, icon_val)
+
+    found_native = None
+    for cand in candidates:
+        if is_native_macw1y_icon(cand):
+            found_native = cand
+            break
+
+    if found_native:
+        # App has an authentic native macW1Y squircle icon!
+        # If the desktop file had an absolute path or non-matching icon, ensure local override
+        if is_abs_path or icon_val != found_native or df_path.startswith(SNAP_APPS_DIR):
+            local_df = os.path.join(LOCAL_APPS_DIR, os.path.basename(df_path))
+            try:
+                os.makedirs(LOCAL_APPS_DIR, exist_ok=True)
+                if not os.path.exists(local_df):
+                    shutil.copy2(df_path, local_df)
+                with open(local_df, "r", errors="ignore") as f:
+                    lines = f.readlines()
+                new_lines = []
+                for l in lines:
+                    if l.startswith("Icon="):
+                        new_lines.append(f"Icon={found_native}\n")
+                    else:
+                        new_lines.append(l)
+                with open(local_df, "w", encoding="utf-8") as f:
+                    f.writelines(new_lines)
+                return found_native
+            except Exception:
+                pass
+        return None
+
+    # No native squircle icon exists. Check if current icon is already squircle.
     if is_abs_path and os.path.exists(icon_val):
-        target_icon_name = base_name.lower().replace(" ", "-")
+        target_icon_name = candidates[0]
         src_path = icon_val
     else:
         target_icon_name = icon_val
-        if is_native_macw1y_icon(target_icon_name):
-            return None
         src_path = resolve_icon_path(target_icon_name)
 
     if target_icon_name in EXCLUDED_ICONS:
@@ -541,7 +605,7 @@ def process_desktop_file(df_path):
 
     install_normalized_icon(target_icon_name, pil_im)
 
-    if is_abs_path:
+    if is_abs_path or df_path.startswith(SNAP_APPS_DIR):
         local_df = os.path.join(LOCAL_APPS_DIR, os.path.basename(df_path))
         try:
             os.makedirs(LOCAL_APPS_DIR, exist_ok=True)
@@ -567,8 +631,17 @@ def normalize_all_icons(verbose=False):
     processed = []
     seen_icons = set()
 
-    all_dfs = set(glob.glob(os.path.join(LOCAL_APPS_DIR, "*.desktop")) +
-                  glob.glob(os.path.join(SYS_APPS_DIR, "*.desktop")))
+    scan_dirs = [
+        LOCAL_APPS_DIR,
+        SYS_APPS_DIR,
+        SNAP_APPS_DIR,
+        FLATPAK_SYS_APPS_DIR,
+        FLATPAK_USER_APPS_DIR,
+    ]
+    all_dfs = set()
+    for d in scan_dirs:
+        if os.path.exists(d):
+            all_dfs.update(glob.glob(os.path.join(d, "*.desktop")))
 
     for df in sorted(all_dfs):
         res = process_desktop_file(df)

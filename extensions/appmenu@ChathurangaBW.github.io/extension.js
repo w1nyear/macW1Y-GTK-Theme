@@ -103,7 +103,7 @@ export default class AppMenuExtension extends Extension {
         this._addClipboardKeybinding();
         const baseUri = this.dir.get_uri();
         try {
-            const m = await import(`${baseUri}/searchDialog.js`);
+            const m = await import(`${baseUri}/searchDialog.js?v=${Date.now()}`);
             globalThis._macSpotlightToggle = (mode = 'search') => m.toggleSearchDialog(typeof mode === 'string' ? mode : 'search');
             globalThis.toggleMacSpotlight = (mode = 'search') => m.toggleSearchDialog(typeof mode === 'string' ? mode : 'search');
             globalThis.toggleMacApplications = () => m.toggleSearchDialog('apps');

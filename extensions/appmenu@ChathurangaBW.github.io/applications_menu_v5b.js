@@ -12,6 +12,35 @@ import { Dash } from 'resource:///org/gnome/shell/ui/dash.js';
 import { applyGradientBlurFade } from './gradientBlurFade.js';
 import { t, tf } from './mac_i18n.js';
 
+const LAUNCHPAD_RECENTS_FILE = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'launchpad_recents.json']);
+
+function loadLaunchpadRecents() {
+    if (!GLib.file_test(LAUNCHPAD_RECENTS_FILE, GLib.FileTest.EXISTS)) return [];
+    try {
+        const [ok, bytes] = GLib.file_get_contents(LAUNCHPAD_RECENTS_FILE);
+        if (!ok || !bytes) return [];
+        const parsed = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+        return [];
+    }
+}
+
+function recordLaunchpadApp(app) {
+    if (!app) return;
+    const id = (typeof app.get_id === 'function') ? app.get_id() : (typeof app === 'string' ? app : null);
+    if (!id || id === 'launchpad.desktop') return;
+    try {
+        let list = loadLaunchpadRecents();
+        list = list.filter(x => x !== id);
+        list.unshift(id);
+        if (list.length > 50) list = list.slice(0, 50);
+        const dir = GLib.path_get_dirname(LAUNCHPAD_RECENTS_FILE);
+        GLib.mkdir_with_parents(dir, 0o755);
+        GLib.file_set_contents(LAUNCHPAD_RECENTS_FILE, JSON.stringify(list, null, 2));
+    } catch (_) {}
+}
+
 const _gobjectToString = GObject.Object.prototype.toString;
 
 function _isActorValid(actor) {
@@ -1093,15 +1122,23 @@ export const MacApplicationsDialog = GObject.registerClass({
     }
 
     _getRecentApps(allApps) {
-        const usage = Shell.AppUsage.get_default();
-        const mostUsed = usage.get_most_used() || [];
         const recent = [];
         const seen = new Set();
+        const appMap = new Map();
+        for (const a of allApps) {
+            const id = a?.get_id?.();
+            if (id) appMap.set(id, a);
+        }
 
-        for (const app of mostUsed) {
-            const id = app?.get_id?.();
-            if (id && id !== 'launchpad.desktop' && allApps.some(a => a.get_id() === id)) {
-                if (!seen.has(id)) {
+        // 1. Prioritize Launchpad MRU recents
+        const lpRecents = loadLaunchpadRecents();
+        for (const id of lpRecents) {
+            if (id && id !== 'launchpad.desktop' && !seen.has(id)) {
+                let app = appMap.get(id);
+                if (!app && this._appSystem) {
+                    try { app = this._appSystem.lookup_app(id); } catch (_) {}
+                }
+                if (app && app.get_name?.()) {
                     seen.add(id);
                     recent.push(app);
                     if (recent.length >= COLUMNS) break;
@@ -1109,12 +1146,14 @@ export const MacApplicationsDialog = GObject.registerClass({
             }
         }
 
-
+        // 2. Fill remaining with Shell.AppUsage most_used
         if (recent.length < COLUMNS) {
-            const favs = getAppFavorites().getFavorites();
-            for (const app of favs) {
+            let usage = null;
+            try { usage = Shell.AppUsage.get_default(); } catch (_) {}
+            const mostUsed = usage?.get_most_used?.() || [];
+            for (const app of mostUsed) {
                 const id = app?.get_id?.();
-                if (id && id !== 'launchpad.desktop' && !seen.has(id) && allApps.some(a => a.get_id() === id)) {
+                if (id && id !== 'launchpad.desktop' && !seen.has(id) && appMap.has(id)) {
                     seen.add(id);
                     recent.push(app);
                     if (recent.length >= COLUMNS) break;
@@ -1122,11 +1161,26 @@ export const MacApplicationsDialog = GObject.registerClass({
             }
         }
 
+        // 3. Fill remaining with Favorites
+        if (recent.length < COLUMNS) {
+            try {
+                const favs = getAppFavorites().getFavorites();
+                for (const app of favs) {
+                    const id = app?.get_id?.();
+                    if (id && id !== 'launchpad.desktop' && !seen.has(id) && appMap.has(id)) {
+                        seen.add(id);
+                        recent.push(app);
+                        if (recent.length >= COLUMNS) break;
+                    }
+                }
+            } catch (_) {}
+        }
 
+        // 4. Fill remaining with allApps
         if (recent.length < COLUMNS) {
             for (const app of allApps) {
-                const id = app.get_id();
-                if (!seen.has(id)) {
+                const id = app?.get_id?.();
+                if (id && !seen.has(id)) {
                     seen.add(id);
                     recent.push(app);
                     if (recent.length >= COLUMNS) break;
@@ -1444,6 +1498,7 @@ export const MacApplicationsDialog = GObject.registerClass({
 
     _launchApp(app) {
         if (!app) return;
+        recordLaunchpadApp(app);
         this.close();
         try {
             app.open_new_window(-1);

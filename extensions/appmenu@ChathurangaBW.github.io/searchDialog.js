@@ -15,6 +15,34 @@ import { applyGradientBlurFade } from './gradientBlurFade.js';
 
 const RECENT_ITEMS_FILE = GLib.build_filenamev([GLib.get_user_data_dir(), 'recently-used.xbel']);
 const CLIPBOARD_CACHE_FILE = GLib.build_filenamev([GLib.get_home_dir(), '.cache', 'mac-clipboard', 'history.json']);
+const LAUNCHPAD_RECENTS_FILE = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'launchpad_recents.json']);
+
+function loadLaunchpadRecents() {
+    if (!GLib.file_test(LAUNCHPAD_RECENTS_FILE, GLib.FileTest.EXISTS)) return [];
+    try {
+        const [ok, bytes] = GLib.file_get_contents(LAUNCHPAD_RECENTS_FILE);
+        if (!ok || !bytes) return [];
+        const parsed = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+        return [];
+    }
+}
+
+function recordLaunchpadApp(app) {
+    if (!app) return;
+    const id = (typeof app.get_id === 'function') ? app.get_id() : (typeof app === 'string' ? app : null);
+    if (!id || id === 'launchpad.desktop') return;
+    try {
+        let list = loadLaunchpadRecents();
+        list = list.filter(x => x !== id);
+        list.unshift(id);
+        if (list.length > 50) list = list.slice(0, 50);
+        const dir = GLib.path_get_dirname(LAUNCHPAD_RECENTS_FILE);
+        GLib.mkdir_with_parents(dir, 0o755);
+        GLib.file_set_contents(LAUNCHPAD_RECENTS_FILE, JSON.stringify(list, null, 2));
+    } catch (_) {}
+}
 const ICONS_DIR = (() => {
     if (GLib.file_test('/usr/share/mactheme/icons', GLib.FileTest.IS_DIR)) {
         return '/usr/share/mactheme/icons';
@@ -697,6 +725,8 @@ export const MacSpotlightDialog = GObject.registerClass({
         });
         this._firstAppMiniBtn.connect('clicked', () => {
             if (this._firstRecommendedApp) {
+                recordLaunchpadApp(this._firstRecommendedApp);
+                this._appsDefaultLoaded = false;
                 this.close();
                 this._firstRecommendedApp.activate();
             }
@@ -728,6 +758,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                 this._appsDefaultLoaded = false;
                 this._selectedAppsCategory = null;
                 this._buildAppsCategoryButtons();
+                this._appsDefaultLoaded = false;
                 this._loadAppsView();
             } else if (this._mode === 'clipboard') {
                 if (globalThis.macClipboardStore) {
@@ -1341,9 +1372,13 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                         const idx = this._selectedAppIndex >= 0 ? this._selectedAppIndex : 0;
                         const btn = this._appsGridButtons[idx];
                         if (btn?._app) {
+                            recordLaunchpadApp(btn._app);
+                            this._appsDefaultLoaded = false;
                             this.close();
                             btn._app.activate();
                         } else if (this._firstRecommendedApp) {
+                            recordLaunchpadApp(this._firstRecommendedApp);
+                            this._appsDefaultLoaded = false;
                             this.close();
                             this._firstRecommendedApp.activate();
                         }
@@ -1356,6 +1391,8 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                     }
                 } else if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter) {
                     if (this._firstRecommendedApp) {
+                        recordLaunchpadApp(this._firstRecommendedApp);
+                        this._appsDefaultLoaded = false;
                         this.close();
                         this._firstRecommendedApp.activate();
                         return Clutter.EVENT_STOP;
@@ -1622,16 +1659,23 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
     }
 
     _getRecentApps(allApps) {
-        let usage = null;
-        try { usage = Shell.AppUsage.get_default(); } catch (_) {}
-        const mostUsed = usage?.get_most_used?.() || [];
         const recent = [];
         const seen = new Set();
+        const appMap = new Map();
+        for (const a of allApps) {
+            const id = a?.get_id?.();
+            if (id) appMap.set(id, a);
+        }
 
-        for (const app of mostUsed) {
-            const id = app?.get_id?.();
-            if (id && id !== 'launchpad.desktop' && allApps.some(a => a.get_id() === id)) {
-                if (!seen.has(id)) {
+        // 1. Prioritize Launchpad MRU recents (most recently opened via Launchpad first)
+        const lpRecents = loadLaunchpadRecents();
+        for (const id of lpRecents) {
+            if (id && id !== 'launchpad.desktop' && !seen.has(id)) {
+                let app = appMap.get(id);
+                if (!app && this._appSystem) {
+                    try { app = this._appSystem.lookup_app(id); } catch (_) {}
+                }
+                if (app && app.get_name?.()) {
                     seen.add(id);
                     recent.push(app);
                     if (recent.length >= APPS_COLUMNS) break;
@@ -1639,12 +1683,28 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             }
         }
 
+        // 2. Fill remaining slots with Shell.AppUsage most_used
+        if (recent.length < APPS_COLUMNS) {
+            let usage = null;
+            try { usage = Shell.AppUsage.get_default(); } catch (_) {}
+            const mostUsed = usage?.get_most_used?.() || [];
+            for (const app of mostUsed) {
+                const id = app?.get_id?.();
+                if (id && id !== 'launchpad.desktop' && !seen.has(id) && appMap.has(id)) {
+                    seen.add(id);
+                    recent.push(app);
+                    if (recent.length >= APPS_COLUMNS) break;
+                }
+            }
+        }
+
+        // 3. Fill remaining slots with Favorites
         if (recent.length < APPS_COLUMNS) {
             try {
                 const favs = getAppFavorites().getFavorites();
                 for (const app of favs) {
                     const id = app?.get_id?.();
-                    if (id && id !== 'launchpad.desktop' && !seen.has(id) && allApps.some(a => a.get_id() === id)) {
+                    if (id && id !== 'launchpad.desktop' && !seen.has(id) && appMap.has(id)) {
                         seen.add(id);
                         recent.push(app);
                         if (recent.length >= APPS_COLUMNS) break;
@@ -1653,10 +1713,11 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             } catch (_) {}
         }
 
+        // 4. Fill remaining slots with allApps
         if (recent.length < APPS_COLUMNS) {
             for (const app of allApps) {
-                const id = app.get_id();
-                if (!seen.has(id)) {
+                const id = app?.get_id?.();
+                if (id && !seen.has(id)) {
                     seen.add(id);
                     recent.push(app);
                     if (recent.length >= APPS_COLUMNS) break;
@@ -2447,6 +2508,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 this._optionsBtn.visible = true;
                 this._selectedAppsCategory = null;
                 this._buildAppsCategoryButtons();
+                this._appsDefaultLoaded = false;
                 this._loadAppsView();
                 try {
                     const vAdj = this._appsScrollView?.get_vadjustment?.() || this._appsScrollView?.vadjustment;
@@ -2602,6 +2664,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 this._entry.hint_text = t('applications', 'Програми');
                 this._selectedAppsCategory = null;
                 this._buildAppsCategoryButtons();
+                this._appsDefaultLoaded = false;
                 this._loadAppsView();
                 try {
                     const vAdj = this._appsScrollView?.get_vadjustment?.() || this._appsScrollView?.vadjustment;
@@ -2803,6 +2866,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
 
     close(immediate = false) {
         if (!this._isOpen && !this._isClosing) return;
+        this._appsDefaultLoaded = false;
         try { globalThis.MacAnimationCache?.beginUiCapture?.('spotlight-close'); } catch (_) {}
         this._isOpen = false;
 
@@ -3432,14 +3496,22 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                             }
                         }
                         if (typeof shellApp?.activate === 'function') {
+                            recordLaunchpadApp(shellApp);
+                            this._appsDefaultLoaded = false;
                             shellApp.activate();
                         } else if (typeof shellApp?.open_new_window === 'function') {
+                            recordLaunchpadApp(shellApp);
+                            this._appsDefaultLoaded = false;
                             shellApp.open_new_window(-1);
-                        } else if (typeof item.app.launch === 'function') {
+                        } else if (typeof item.app?.launch === 'function') {
+                            recordLaunchpadApp(item.app);
+                            this._appsDefaultLoaded = false;
                             item.app.launch([], null);
                         } else {
-                            const appInfo = item.app.get_app_info?.() || item.app;
+                            const appInfo = item.app?.get_app_info?.() || item.app;
                             if (typeof appInfo?.launch === 'function') {
+                                recordLaunchpadApp(item.app);
+                                this._appsDefaultLoaded = false;
                                 appInfo.launch([], null);
                             }
                         }
@@ -4004,6 +4076,8 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         });
 
         item.connect('clicked', () => {
+            recordLaunchpadApp(app);
+            this._appsDefaultLoaded = false;
             this.close();
             app.activate();
         });
