@@ -252,10 +252,21 @@ export function buildNotificationCard(source, notification, options = {}) {
 
     try {
         if (BlurOrShell?.BlurEffect) {
+            let blurRad = 15;
+            try {
+                const f = Gio.File.new_for_path(GLib.get_home_dir() + '/.config/mac-styling/styling.json');
+                if (f.query_exists(null)) {
+                    const [ok, b] = f.load_contents(null);
+                    if (ok) {
+                        const d = JSON.parse(new TextDecoder().decode(b));
+                        if (d.notification_blur !== undefined) blurRad = Number(d.notification_blur);
+                    }
+                }
+            } catch (_) {}
             const blurParams = {
                 name: 'notif-card-blur',
                 mode: BlurOrShell.BlurMode?.BACKGROUND ?? 1,
-                radius: 24,
+                radius: blurRad,
             };
             const supportsCorner = Boolean(
                 BlurOrShell.BlurEffect.list_properties?.()

@@ -93,6 +93,7 @@ function _loadNotifStyling() {
             else if (data.notification_radius !== undefined)
                 _notifStyling.radius = Math.max(0, Math.min(48, Number(data.notification_radius)));
         }
+        globalThis._macNotifBlurRadius = _notifStyling.blur;
     } catch (_) {}
 }
 
@@ -102,10 +103,7 @@ function _getCardBaseStyle() {
     const shadowVal = _notifStyling.shadow / 100.0;
     const radius = _notifStyling.radius || 18;
 
-
-
-    const bgAlpha = Math.min(0.85, Math.max(0.35, 0.28 + tintVal * 0.40)).toFixed(2);
-    let bg = `rgba(28, 30, 36, ${bgAlpha})`;
+    let bg = (tintVal <= 0.01) ? 'transparent' : ('rgba(25, 28, 35, ' + (tintVal * 0.40).toFixed(2) + ')');
 
     let shadow = 'none';
     if (shadowVal > 0.02) {
@@ -115,7 +113,13 @@ function _getCardBaseStyle() {
         shadow = `0 ${sY}px ${sBlur}px rgba(0, 0, 0, ${sAlpha})`;
     }
 
-    return `background-color: ${bg} !important; border: none !important; border-top: none !important; border-bottom: none !important; border-left: none !important; border-right: none !important; border-radius: ${radius}px !important; box-shadow: ${shadow} !important; padding: 0 !important;`;
+    return `background-color: ${bg} !important; ` +
+           `border: 1px solid rgba(255, 255, 255, 0.16) !important; ` +
+           `border-top: 1px solid rgba(255, 255, 255, 0.22) !important; ` +
+           `border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important; ` +
+           `border-radius: ${radius}px !important; ` +
+           `box-shadow: ${shadow} !important; ` +
+           `padding: 0 !important;`;
 }
 
 function _getToastContentStyle(noglass = false) {
@@ -135,7 +139,7 @@ function _getToastContentStyle(noglass = false) {
         shadow = `0 ${sY}px ${sBlur}px rgba(0, 0, 0, ${sAlpha})`;
     }
 
-    return `background-color: ${bg} !important; padding: 13px 10px 15px 14px !important; border-radius: ${radius}px !important; border: none !important; border-top: none !important; border-bottom: none !important; border-left: none !important; border-right: none !important; box-shadow: ${shadow} !important;`;
+    return `background-color: ${bg} !important; padding: 13px 10px 15px 14px !important; border-radius: ${radius}px !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-top: 1px solid rgba(255, 255, 255, 0.22) !important; border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important; box-shadow: ${shadow} !important;`;
 }
 
 function _getSlabStyle(i, radius = 18) {
@@ -143,7 +147,7 @@ function _getSlabStyle(i, radius = 18) {
     const tintVal = _notifStyling.tint / 100.0;
     const shadowVal = _notifStyling.shadow / 100.0;
     const rad = radius || _notifStyling.radius || 18;
-    const bgAlpha = Math.min(0.88, Math.max(0.40, 0.32 + tintVal * 0.45)).toFixed(2);
+    const bgAlpha = (0.04 + tintVal * 0.30).toFixed(2);
     let shadow = 'none';
     if (shadowVal > 0.02) {
         const sAlpha = (shadowVal * 0.35).toFixed(2);
@@ -151,12 +155,10 @@ function _getSlabStyle(i, radius = 18) {
         const sY = Math.round(2 + shadowVal * 6);
         shadow = `0 ${sY}px ${sBlur}px rgba(0, 0, 0, ${sAlpha})`;
     }
-    return `background-color: rgba(30, 32, 40, ${bgAlpha}) !important; ` +
-           `border: none !important; ` +
-           `border-top: none !important; ` +
-           `border-bottom: none !important; ` +
-           `border-left: none !important; ` +
-           `border-right: none !important; ` +
+    return `background-color: rgba(25, 28, 35, ${bgAlpha}) !important; ` +
+           `border: 1px solid rgba(255, 255, 255, 0.12) !important; ` +
+           `border-top: 1px solid rgba(255, 255, 255, 0.16) !important; ` +
+           `border-bottom: 1px solid rgba(255, 255, 255, 0.10) !important; ` +
            `border-top-left-radius: 0px !important; ` +
            `border-top-right-radius: 0px !important; ` +
            `border-bottom-left-radius: ${rad}px !important; ` +
@@ -2626,7 +2628,7 @@ function _syncGlass(p, monitor, s) {
         s.effect.setGlassRegions([{
             x: rx, y: ry,
             w: rw, h: rh,
-            tintR: 0, tintG: 0, tintB: 0, baseStrength: 0,
+            tintR: 0, tintG: 0, tintB: 0, baseStrength: (_notifStyling.tint / 100.0),
         }]);
         s.effect.setResolution(monitor.width, monitor.height);
 
@@ -2850,6 +2852,7 @@ function _buildPanel(merges = null) {
     try {
         const bd = _makeGlassStack(monitor, NC_RADIUS, 'nc-backdrop', true, 0);
         bd.kind = 'backdrop';
+        try { _applyWidgetGlassParams(bd.effect); } catch (_) {}
         overlay.insert_child_at_index(bd.bgActor, 1);
         try {
             overlay.set_child_above_sibling(panelBg, bd.bgActor);
@@ -3246,6 +3249,7 @@ function _syncNotificationStyling() {
             }
         }
         if (_nc.list) {
+            const blurRad = _notifStyling.blur || 15;
             for (const item of _nc.list.get_children()) {
                 if (item._macPeekGroup) {
                     const g = item._macPeekGroup;
@@ -3256,9 +3260,19 @@ function _syncNotificationStyling() {
                     }
                     if (g.cards?.[0]) {
                         try { g.cards[0].set_style(style); } catch (_) {}
+                        for (const eff of g.cards[0].get_effects?.() ?? []) {
+                            if (eff instanceof Shell.BlurEffect || eff.name === 'mac-notif-card-blur') {
+                                try { eff.radius = blurRad; } catch (_) {}
+                            }
+                        }
                     }
                 } else if (item.has_style_class_name?.('mac-notification-banner') || item.has_style_class_name?.('tahoe-nc-card')) {
                     try { item.set_style(style); } catch (_) {}
+                    for (const eff of item.get_effects?.() ?? []) {
+                        if (eff instanceof Shell.BlurEffect || eff.name === 'mac-notif-card-blur') {
+                            try { eff.radius = blurRad; } catch (_) {}
+                        }
+                    }
                 }
             }
         }

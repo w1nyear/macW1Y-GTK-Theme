@@ -1331,13 +1331,13 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-qs-dark .tahoe-nc-sub { color: rgba(235, 235, 245, 0.7); }
 
 /* Authentic macW1Y Notification Center Cards — новий вигляд (MacShell): іконка 44×44,
-   час дружнім відліком, кругла ✕ при наведенні; розміри задає інлайн у білдері */
+   час дружнім відліком, кругла ✕ при наведенні; розміри та динамічний тінт/розмиття задає інлайн у білдері */
 .mac-notification-banner {
   min-height: 74px !important;
   padding: 0 !important;
-  border-radius: 16px !important;
-  background-color: rgba(45, 45, 47, 0.76) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.22) !important;
   box-shadow: none;
   color: white !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.40) !important;
@@ -1347,18 +1347,22 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-nc-list .mac-notification-banner,
 .tahoe-nc-panel .mac-notification-banner {
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.22) !important;
   box-shadow: none !important;
 }
 
 .tahoe-nc-list .mac-notification-banner:hover,
 .tahoe-nc-panel .mac-notification-banner:hover {
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.30) !important;
   box-shadow: none !important;
 }
 
 .mac-notification-banner:hover {
-  background-color: rgba(56, 56, 58, 0.84) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.30) !important;
   box-shadow: none;
 }
 

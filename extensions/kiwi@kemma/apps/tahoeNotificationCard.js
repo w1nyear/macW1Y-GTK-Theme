@@ -239,6 +239,18 @@ export function buildNotificationCard(source, notification, options = {}) {
         try { banner.set_width(width); } catch (_) {}
     }
 
+    try {
+        const blurRadius = (typeof globalThis._macNotifBlurRadius === 'number')
+            ? globalThis._macNotifBlurRadius
+            : 15;
+        const blurEffect = new Shell.BlurEffect({
+            mode: Shell.BlurMode.BACKGROUND,
+            radius: blurRadius,
+        });
+        blurEffect.name = 'mac-notif-card-blur';
+        banner.add_effect(blurEffect);
+    } catch (_) {}
+
 
     const mainBox = new St.BoxLayout({
         orientation: Clutter.Orientation.HORIZONTAL,

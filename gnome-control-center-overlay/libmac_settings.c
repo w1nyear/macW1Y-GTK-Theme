@@ -915,6 +915,7 @@ static void schedule_alert_apply(void) {
 static guint notif_timer_id = 0;
 
 static void apply_notification_settings(void) {
+    save_styling_json();
     GSettingsSchemaSource *src = g_settings_schema_source_get_default();
     if (src) {
         const char *lg_schema = "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com";

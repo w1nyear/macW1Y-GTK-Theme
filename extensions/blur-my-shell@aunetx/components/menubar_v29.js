@@ -2742,9 +2742,14 @@ export const MenuBarController = class MenuBarController {
         }
     }
 
-    _updateNotifRealtime(tint = 0.0, radius = 16) {
+    _updateNotifRealtime(tint = 0.20, radius = 18) {
         try {
-            const style = `background-color: rgba(45, 45, 47, 0.76) !important; border: 1px solid rgba(255, 255, 255, 0.12) !important; border-radius: 16px !important; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;`;
+            if (typeof globalThis._macSyncNotificationStyling === 'function') {
+                globalThis._macSyncNotificationStyling();
+            }
+            const style = (typeof globalThis._macGetNotifCardStyle === 'function')
+                ? globalThis._macGetNotifCardStyle()
+                : `background-color: rgba(25, 28, 35, ${(tint * 0.40).toFixed(2)}) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-top: 1px solid rgba(255, 255, 255, 0.22) !important; border-radius: ${radius}px !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important; padding: 0 !important;`;
             const found = [];
             const walk = (actor) => {
                 if (!actor) return;
@@ -2764,12 +2769,13 @@ export const MenuBarController = class MenuBarController {
                 banner.set_style(style);
             }
             if (this._notifGlass && !this._notifGlass.is_finalized?.()) {
-                const { tintVal, tintStrength } = this._getNotifThemeParams();
+                const { tintVal, tintStrength, blurRadius } = this._getNotifThemeParams();
                 this._notifGlass.setTintStrength(tintStrength);
                 this._notifGlass.setTintColor(tintVal, tintVal, tintVal);
                 this._notifGlass.setBrightness(1.0);
                 this._notifGlass.setIsDock(true);
                 this._notifGlass.setCornerRadius(radius);
+                if (blurRadius) this._notifGlass.setBlurRadius(blurRadius);
             }
         } catch (e) {
             console.error('[MenuBarController] Error updating notif realtime:', e);
@@ -4309,10 +4315,23 @@ export const MenuBarController = class MenuBarController {
             isDark = true;
         }
 
-        const tintVal = isDark ? 0.0 : 1.0;
-        const baseStrength = 0.02;
-        const tintStrength = 0.02;
-        return { isDark, tintVal, baseStrength, tintStrength };
+        let tintVal = isDark ? 0.0 : 1.0;
+        let baseStrength = 0.02;
+        let tintStrength = 0.20;
+        let blurRadius = 15.0;
+        try {
+            const f = Gio.File.new_for_path(GLib.get_home_dir() + '/.config/mac-styling/styling.json');
+            if (f.query_exists(null)) {
+                const [ok, b] = f.load_contents(null);
+                if (ok) {
+                    const d = JSON.parse(new TextDecoder().decode(b));
+                    if (d.notification_tint !== undefined) tintStrength = Number(d.notification_tint) / 100.0;
+                    if (d.notification_blur !== undefined) blurRadius = Number(d.notification_blur);
+                }
+            }
+        } catch (_) {}
+        baseStrength = tintStrength;
+        return { isDark, tintVal, baseStrength, tintStrength, blurRadius };
     }
 
     async _initNotifGlass() {
