@@ -3886,28 +3886,11 @@ export default class EvalHelper extends Extension {
                     } catch (_) {}
 
 
-                    if (animate === 0 || animate === false) {
-                        this.scale_x = 1.0;
-                        this.scale_y = 1.0;
-                        this._muteInput = false;
-                        if (onComplete) onComplete();
-                        return;
-                    }
-
-
-                    this.scale_x = 0.98;
-                    this.scale_y = 0.98;
-
-                    this.ease({
-                        scale_x: 1.0,
-                        scale_y: 1.0,
-                        duration: 75,
-                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                        onComplete: () => {
-                            this._muteInput = false;
-                            if (onComplete) onComplete();
-                        }
-                    });
+                    this.scale_x = 1.0;
+                    this.scale_y = 1.0;
+                    this._muteInput = false;
+                    if (onComplete) onComplete();
+                    return;
                 };
 
                 BoxPointer.BoxPointer.prototype.close = function(animate, onComplete) {
@@ -4035,8 +4018,6 @@ export default class EvalHelper extends Extension {
 
                     this.ease({
                         opacity: 0,
-                        scale_x: 0.98,
-                        scale_y: 0.98,
                         duration: 70,
                         mode: Clutter.AnimationMode.EASE_IN_QUAD,
                         onComplete: finalizeClose

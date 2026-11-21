@@ -3262,3 +3262,40 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
       * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
       * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
       * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+
+================================================================================
+Завдання 876: Повне видалення ефекту пружності (jelly stretch / spring bounce) у контекстних меню
+================================================================================
+- Вихідні вимоги:
+  * Повністю усунути ефект пружності (еластичну деформацію, желеподібне розтягування та коливання пружиною) у контекстних меню системи при натисканні, переміщенні курсора чи відкритті.
+  * Забезпечити стабільне, миттєве, чітке та статичне відкриття та взаємодію з контекстними меню за еталоном macOS без паразитичних деформацій форми.
+  * Зберегти версію 0.8 проекту та 0 символів кирилиці в install.sh.
+  * Пройти всі верифікаційні тести (mac-extension-guard, mac-audit-sync, test-macw1y-animations, unit tests, mac-i18n-verify).
+
+- Реалізовані зміни:
+  1) Модуль рідкого скла Liquid Glass (extensions/liquid-glass@thinkingcoding1231.gmail.com):
+     * У dist/uiManager.js та src/uiManager.ts видалено виклик this._setupJellyTouchAndDrag() у _setupMenu().
+     * Знешкоджено обробники button-press-event, motion-event, button-release-event та leave-event, які при затисканні або русі миші розтягували геометрію меню (curSx, curSy, curTx, curTy з коефіцієнтом resistance 0.32) та запускали пружину повернення (springBack з жорсткістю stiffness = 240.0 та демпфуванням damping = 16.0).
+     * Контекстні меню тепер залишаються повністю стабільними, надійними та недеформівними.
+  2) Модуль BoxPointer у eval-helper (extensions/eval-helper@mactheme/extension.js):
+     * Оновлено BoxPointer.prototype.open: усунено мікро-пружинне розширення (scale 0.98 -> 1.0), контекстні та спливаючі меню відкриваються зі статичним природним масштабом scale 1.0.
+     * Оновлено BoxPointer.prototype.close: закриття меню відбувається через чистий плавний спад прозорості (opacity ease) без паразитичного стиснення розміру.
+  3) Синхронізація системи та цілісність:
+     * Оновлені файли uiManager.js та extension.js синхронізовано до робочої директорії користувача ~/.local/share/gnome-shell/extensions/.
+     * Оновлено контрольні sha256 хеші для liquid-glass@thinkingcoding1231.gmail.com та eval-helper@mactheme у config/extensions.lock.json.
+     * Зміни успішно інжектовано в активний процес GNOME Shell наживо без перезавантаження сесії.
+  4) Верифікація:
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK (100%).
+     * python3 bin/mac-audit-sync check — 100% PASS (5/5 аудитів).
+     * python3 bin/test-macw1y-animations.py — 12/12 PASS (100%).
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 39/39 PASS.
+     * python3 bin/mac-i18n-verify — 100% SUCCESS, 0 кириличних символів в install.sh.
+
+- Зачеплені файли:
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/uiManager.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/uiManager.js)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/src/uiManager.ts](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/src/uiManager.ts)
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
