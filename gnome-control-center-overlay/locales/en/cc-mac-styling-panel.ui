@@ -82,8 +82,6 @@
                         </child>
                       </object>
                     </child>
-                      </object>
-                    </child>
                     <child>
                       <object class="AdwActionRow" id="liquid_tint_row">
                         <property name="title">Tint</property>
@@ -157,8 +155,6 @@
                             <signal name="value-changed" handler="on_liquid_rim_changed" />
                           </object>
                         </child>
-                      </object>
-                    </child>
                       </object>
                     </child>
                     <child>
@@ -1300,7 +1296,7 @@
                 
                 <child>
                   <object class="AdwPreferencesGroup">
-                    <property name="title">Integrity &amp; Diagnostics</property>
+                    <property name="title">Integrity and Diagnostics</property>
                     <property name="description">SSOT standard enforcement, GNOME extensions guard, and auto-repair</property>
                     <child>
                       <object class="AdwActionRow" id="diag_status_row">

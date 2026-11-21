@@ -2998,3 +2998,46 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
          * python3 bin/test-macw1y-animations.py — 12/12 PASS.
          * python3 bin/test-macw1y-performance-guards.py — 13/13 PASS.
          * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено (чисто).
+
+867. Виправлення відкриття панелі «Мас стилізація» у Параметрах (Fix GNOME Control Center Mac Styling Panel Not Opening):
+    - Причина проблеми:
+      * У файлі інтерфейсу `cc-mac-styling-panel.ui` (та його локалізованих копіях у `locales/`) під час попередньої оптимізації шейдера Liquid Glass (коміт 0487d55e) було видалено блоки `liquid_blur_row` та `liquid_specular_row`, проте помилково залишилися зайві закриваючі теги `</object></child>` після рядків `liquid_refraction_row` та `liquid_rim_row`.
+      * Через передчасне закриття групи `liquid_glass_group` бібліотека GTK/libadwaita видавала критичну помилку: `Trying to add AdwActionRow as a child to an AdwPreferencesPage, but only AdwPreferencesGroup is allowed` та синтаксичну помилку парсера XML (невідповідність тегів), внаслідок чого `GtkBuilder` відхиляв побудову сторінки `mac_styling_page`, і перехід на пункт «Мас стилізація» в бічній панелі не спрацьовував.
+    - Виправлення та оновлення:
+      1) Повне усунення синтаксичних помилок у XML-розмітці:
+         * Видалено зайві пари тегів `</object></child>` після `liquid_refraction_row` та `liquid_rim_row` у всіх 16 файлах `cc-mac-styling-panel.ui` (основні шаблони та локалізації `uk`, `en`, `de`, `es`, `fr`, `it`, `pl` у каталогах `control-center/` та `gnome-control-center-overlay/`).
+         * Замінено некоректні амперсанди `&amp;` на читабельні сполучники в заголовках групи діагностики для німецької та англійської локалей (`Integrität und Diagnose`, `Integrity and Diagnostics`), ліквідувавши попередження Pango markup.
+         * Усі UI-файли успішно пройшли сувору валідацію `xmllint --noout` (100% PASS, 0 помилок).
+      2) Синхронізація із системними каталогами:
+         * Оновлені файли інтерфейсу повністю синхронізовано до системних шляхів `/usr/share/mactheme/gnome-control-center-overlay/` та `~/.local/share/gnome-control-center-overlay/`.
+      3) Верифікація та живе тестування:
+         * Запущено `gnome-control-center mac-styling` на живому сеансі: панель «Мас стилізація» завантажується миттєво і бездоганно, всі перемикачі, повзунки та віджети попереднього перегляду (Liquid Glass, Меню-бар, Док, Завантаження тощо) повністю функціональні.
+         * Знято контрольний знімок екрана [live_mac_styling_panel.png](file:///home/vitaliy/.gemini/antigravity/brain/b8829a6a-a815-471f-b6f1-715868176d89/live_mac_styling_panel.png).
+      4) Комплексний аудит та тести:
+         * find . -name "*.ui" -exec xmllint --noout {} + — 100% PASS.
+         * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+         * python3 bin/mac-integrity-check — 100% green.
+         * python3 bin/mac-audit-sync check — 100% PASS.
+         * python3 -m unittest discover -s tests -p 'test_*.py' — 38/38 PASS.
+         * python3 bin/test-macw1y-animations.py — 12/12 PASS.
+         * python3 bin/test-macw1y-performance-guards.py — 13/13 PASS.
+         * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено (чисто).
+    - Зачеплені файли:
+      * [control-center/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/control-center/cc-mac-styling-panel.ui)
+      * [control-center/locales/uk/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/control-center/locales/uk/cc-mac-styling-panel.ui)
+      * [control-center/locales/en/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/control-center/locales/en/cc-mac-styling-panel.ui)
+      * [control-center/locales/de/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/control-center/locales/de/cc-mac-styling-panel.ui)
+      * [control-center/locales/es/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/control-center/locales/es/cc-mac-styling-panel.ui)
+      * [control-center/locales/fr/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/control-center/locales/fr/cc-mac-styling-panel.ui)
+      * [control-center/locales/it/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/control-center/locales/it/cc-mac-styling-panel.ui)
+      * [control-center/locales/pl/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/control-center/locales/pl/cc-mac-styling-panel.ui)
+      * [gnome-control-center-overlay/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/cc-mac-styling-panel.ui)
+      * [gnome-control-center-overlay/locales/uk/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/locales/uk/cc-mac-styling-panel.ui)
+      * [gnome-control-center-overlay/locales/en/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/locales/en/cc-mac-styling-panel.ui)
+      * [gnome-control-center-overlay/locales/de/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/locales/de/cc-mac-styling-panel.ui)
+      * [gnome-control-center-overlay/locales/es/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/locales/es/cc-mac-styling-panel.ui)
+      * [gnome-control-center-overlay/locales/fr/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/locales/fr/cc-mac-styling-panel.ui)
+      * [gnome-control-center-overlay/locales/it/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/locales/it/cc-mac-styling-panel.ui)
+      * [gnome-control-center-overlay/locales/pl/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/locales/pl/cc-mac-styling-panel.ui)
+      * [/usr/share/mactheme/gnome-control-center-overlay/](file:///usr/share/mactheme/gnome-control-center-overlay/)
+      * [~/.local/share/gnome-control-center-overlay/](file:///home/vitaliy/.local/share/gnome-control-center-overlay/)

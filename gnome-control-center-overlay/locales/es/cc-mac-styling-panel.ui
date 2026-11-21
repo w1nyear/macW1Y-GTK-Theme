@@ -82,8 +82,6 @@
                         </child>
                       </object>
                     </child>
-                      </object>
-                    </child>
                     <child>
                       <object class="AdwActionRow" id="liquid_tint_row">
                         <property name="title">Tinte</property>
@@ -157,8 +155,6 @@
                             <signal name="value-changed" handler="on_liquid_rim_changed" />
                           </object>
                         </child>
-                      </object>
-                    </child>
                       </object>
                     </child>
                     <child>
