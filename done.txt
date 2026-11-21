@@ -3559,3 +3559,29 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+### Завдання №883: Stage Manager — видалення прозорого чорного фонового елемента під мініатюрою та збільшення іконки програми
+- Дата: 2026-11-21
+- Мета:
+  1) Видалити прозорий чорний підкладковий елемент під/навколо передогляду вікон Stage Manager (шари .stage-thumb-layer мали фонову заливку rgba(30, 30, 34, 0.6) та штучну тінь, яка випирала прямокутником з-під вікон із відмінним співвідношенням сторін).
+  2) Збільшити розмір іконки програми у Stage Manager (з 26px до 44px) та прив'язати її координати безпосередньо до нижнього лівого кута фактичного прямокутника вікна мініатюри.
+- Реалізовані зміни:
+  1) Повне видалення чорного підкладкового фону (extensions/stage-manager@gnome-stage-manager/stylesheet.css):
+     * Для .stage-thumb-layer, .stage-thumb-layer-back та .stage-thumb-layer-front-hover встановлено background-color: transparent !important та box-shadow: none !important (як для темної, так і для світлої теми).
+     * Тепер вікна мають лише власні природні заокруглення та тіні Mutter, без штучної напівпрозорої темної підкладки.
+  2) Збільшення та точне позиціонування іконки (extensions/stage-manager@gnome-stage-manager/extension.js):
+     * badgeSize збільшено з 26px до 44px (на екрані після базового масштабування 0.7 іконка виглядає як чіткі ~31px, відповідаючи оригінальному macOS Stage Manager).
+     * badgeOffset збільшено до 20px для гармонійного зміщення декількох іконок.
+     * Позиціонування іконки тепер розраховується від фактичних координат і висоти переднього клону вікна (frontX, frontY + frontH), а не від усього контейнера. Іконка завжди ідеально сідає в лівий нижній кут вікна будь-якої орієнтації (портретної чи альбомної).
+  3) Верифікація та синхронізація:
+     * Зміни синхронізовано до ~/.local/share/gnome-shell/extensions/stage-manager@gnome-stage-manager/.
+     * Виконано гаряче перевантаження розширення в GNOME Shell без перезапуску оболонки.
+     * Знято скріншот stage_manager_nobg_final_crop.png та перевірено відсутність темних пікселів підкладки (0 сторонніх пікселів).
+     * Усі 5 наборів перевірок пройшли на 100%: mac-extension-guard (21/21), mac-audit-sync (5/5), test-macw1y-animations (12/12), unittests (39/39), mac-i18n-verify.
+     * 0 кириличних символів в install.sh.
+
+- Зачеплені файли:
+  * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
+  * [extensions/stage-manager@gnome-stage-manager/stylesheet.css](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/stylesheet.css)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

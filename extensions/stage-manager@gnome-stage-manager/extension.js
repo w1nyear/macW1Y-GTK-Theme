@@ -2102,16 +2102,21 @@ class StageSidebar {
         }
 
         if (this._settings.get_boolean('show-app-icons') && apps && apps.length > 0) {
-            const badgeSize = Math.round(26 * sf);
-            const badgeOffset = Math.round(14 * sf);
+            const badgeSize = Math.round(44 * sf);
+            const badgeOffset = Math.round(20 * sf);
             const pad = Math.round(4 * sf);
-            const badgeY = Math.round(th - badgeSize - pad);
+            const frontClone = container._frontLayer?.get_children()?.[0];
+            const frontX = frontClone ? frontClone.x : 0;
+            const frontY = frontClone ? frontClone.y : 0;
+            const frontH = frontClone ? frontClone.height : th;
+            const badgeY = Math.round(frontY + frontH - badgeSize + 6 * sf);
+
             for (let idx = 0; idx < apps.length; idx++) {
                 const app = apps[idx];
                 const icon = app.create_icon_texture(badgeSize);
                 if (icon) {
                     icon.add_style_class_name('stage-app-icon-badge');
-                    icon.set_position(pad + idx * badgeOffset, badgeY);
+                    icon.set_position(frontX + pad + idx * badgeOffset, badgeY);
                     container.add_child(icon);
                 }
             }

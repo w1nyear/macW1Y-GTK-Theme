@@ -38,24 +38,24 @@ StScrollBar StButton#vhandle:hover {
 
 .stage-thumb-layer {
     border-radius: 10px;
-    background-color: rgba(30, 30, 34, 0.6);
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.30);
+    background-color: transparent !important;
+    box-shadow: none !important;
 }
 
 .stage-thumb-layer-back {
     border-radius: 8px;
-    background-color: rgba(30, 30, 34, 0.45);
-    box-shadow: 0 1px 7px rgba(0, 0, 0, 0.20);
+    background-color: transparent !important;
+    box-shadow: none !important;
 }
 
 .stage-thumb-layer-front-hover {
     border-radius: 10px;
-    background-color: rgba(50, 50, 58, 0.75);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.37);
+    background-color: transparent !important;
+    box-shadow: none !important;
 }
 
 .stage-app-icon-badge {
-    border-radius: 6px;
+    border-radius: 8px;
 }
 
 /* ─── Preview popup ─────────────────────────────────────────────── */
@@ -138,16 +138,18 @@ StScrollBar StButton#vhandle:hover {
 }
 
 .stage-thumb-layer.light {
-    background-color: rgba(245, 245, 250, 0.7);
+    background-color: transparent !important;
+    box-shadow: none !important;
 }
 
 .stage-thumb-layer-back.light {
-    background-color: rgba(245, 245, 250, 0.5);
+    background-color: transparent !important;
+    box-shadow: none !important;
 }
 
 .stage-thumb-layer-front-hover.light {
-    background-color: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 3px 13px rgba(80, 100, 200, 0.15);
+    background-color: transparent !important;
+    box-shadow: none !important;
 }
 
 .stage-preview.light {
