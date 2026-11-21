@@ -3136,3 +3136,12 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
       * [/home/vitaliy/Desktop/macW1Y-v0.7.tar.gz](file:///home/vitaliy/Desktop/macW1Y-v0.7.tar.gz)
       * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
       * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+871. Оновлення системних вимог до відеокарти в документації README.md:
+    - Замінено завищені характеристики GPU (Intel Iris Xe, AMD RX 6600, NVIDIA RTX 3050) на доступні та реалістичні відповідно до оптимізації модпака:
+      * Minimum: Intel HD Graphics 520+, AMD Radeon R5/R7, NVIDIA GT 710+
+      * Recommended: Intel UHD Graphics (620/630/770/Raptor Lake), AMD Radeon Graphics, NVIDIA GTX 1050
+    - Зачеплені файли:
+      * [README.md](file:///home/vitaliy/MACTHEMEFILES/README.md)
+      * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+      * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
