@@ -272,6 +272,8 @@ class StageSidebar {
         this._swapTimer = null;
         this._edgeTimer = null;
         this._visible = false;
+        this._flyoutMode = false;
+        this._overlapTimer = null;
         this._hovered = false;
         this._hoveredIdx = -1;
         this._keybindingAdded = false;
@@ -348,6 +350,68 @@ class StageSidebar {
 
     get _ROT_SIGN() { return this._POS === 'right' ? -1 : 1; }
 
+    get _isFlatMode() {
+        return this._flyoutMode || !this._isAreaClear();
+    }
+
+    _isAreaClear() {
+        const ws = global.workspace_manager.get_active_workspace();
+        if (!ws) return true;
+        const mon = _getMon();
+        const topH = Main.panel ? Main.panel.height : 0;
+        const [panelW, panelH] = this._panelSize(mon, topH);
+        const [vx, vy] = this._panelVisiblePos(mon, topH);
+        const px1 = vx, py1 = vy, px2 = vx + panelW, py2 = vy + panelH;
+
+        const windows = ws.list_windows().filter(w => _isNormal(w) && !w.minimized);
+        for (const win of windows) {
+            const r = win.get_frame_rect();
+            if (r.x < px2 && r.x + r.width > px1 && r.y < py2 && r.y + r.height > py1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    _checkOverlap() {
+        if (!this._panel) return;
+        const clear = this._isAreaClear();
+        if (clear) {
+            if (this._flyoutMode) {
+                this._flyoutMode = false;
+                this._resetAllCardScales();
+            }
+            if (!this._visible && !this._settings.get_boolean('sidebar-auto-hide')) {
+                this._show();
+            }
+        } else {
+            if (!this._hovered && !this._flyoutMode) {
+                if (this._visible) {
+                    this._hide();
+                }
+            }
+        }
+    }
+
+    _armOverlapTimer() {
+        this._killOverlapTimer();
+        this._overlapTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 400, () => {
+            if (!this._hovered) {
+                this._checkOverlap();
+            }
+            return GLib.SOURCE_CONTINUE;
+        });
+        this._timers.push(this._overlapTimer);
+    }
+
+    _killOverlapTimer() {
+        if (this._overlapTimer) {
+            GLib.source_remove(this._overlapTimer);
+            this._untrackTimer(this._overlapTimer);
+            this._overlapTimer = null;
+        }
+    }
+
 
 
     _panelSize(mon, topH) {
@@ -392,7 +456,8 @@ class StageSidebar {
         this._wire();
         this._initGroups();
         this._addKeybinding();
-        if (!this._settings.get_boolean('sidebar-auto-hide'))
+        this._armOverlapTimer();
+        if (this._isAreaClear() && !this._settings.get_boolean('sidebar-auto-hide'))
             this._show();
         else if (this._shouldForceShow())
             this._show();
@@ -407,6 +472,7 @@ class StageSidebar {
         this._killHoverTimer();
         this._killSwapTimer();
         this._killEdgeTimer();
+        this._killOverlapTimer();
 
         this._timers.splice(0).forEach(id => GLib.source_remove(id));
 
@@ -450,7 +516,12 @@ class StageSidebar {
         }
     }
 
-
+    _onEdgeTriggered() {
+        if (!this._isAreaClear()) {
+            this._flyoutMode = true;
+        }
+        this._show();
+    }
 
     _build() {
         const mon = _getMon();
@@ -472,7 +543,7 @@ class StageSidebar {
             if (this._fullscreen()) return;
             const delay = this._EDGE_DELAY_MS;
             if (delay <= 0) {
-                this._show();
+                this._onEdgeTriggered();
                 return;
             }
             this._killEdgeTimer();
@@ -480,7 +551,7 @@ class StageSidebar {
                 this._untrackTimer(this._edgeTimer); this._edgeTimer = null;
 
 
-                if (!this._fullscreen()) this._show();
+                if (!this._fullscreen()) this._onEdgeTriggered();
                 return GLib.SOURCE_REMOVE;
             });
             this._timers.push(this._edgeTimer);
@@ -551,7 +622,7 @@ class StageSidebar {
             this._killHoverTimer();
             this._resetAllCardScales();
             this._destroyPreview();
-            if (this._settings.get_boolean('sidebar-auto-hide') && !this._shouldForceShow())
+            if (this._flyoutMode || !this._isAreaClear() || (this._settings.get_boolean('sidebar-auto-hide') && !this._shouldForceShow()))
                 this._scheduleHide();
             return Clutter.EVENT_PROPAGATE;
         });
@@ -760,26 +831,37 @@ class StageSidebar {
         this._sig(global.window_manager, 'map', (_wm, actor) => {
             const win = actor?.meta_window;
             if (win) this._onWindowMap(win);
+            this._checkOverlap();
         });
         this._sig(global.window_manager, 'destroy', (_wm, actor) => {
             const win = actor?.meta_window;
             if (win) this._onWindowDestroy(win);
+            this._checkOverlap();
         });
         this._sig(global.window_manager, 'minimize', (_wm, actor) => {
             const win = actor?.meta_window;
             if (win) this._onWindowMinimize(win);
+            this._checkOverlap();
         });
         this._sig(global.window_manager, 'unminimize', (_wm, actor) => {
             const win = actor?.meta_window;
             if (win) this._onWindowUnminimize(win);
+            this._checkOverlap();
         });
         this._sig(global.window_manager, 'size-change', (_wm, actor, change) => {
             const win = actor?.meta_window;
             if (win) this._onWindowSizeChange(win, change);
+            this._checkOverlap();
         });
 
-        this._sig(global.display, 'notify::focus-window', () => this._scheduleRefresh());
-        this._sig(global.workspace_manager, 'active-workspace-changed', () => this._initGroups());
+        this._sig(global.display, 'notify::focus-window', () => {
+            this._scheduleRefresh();
+            this._checkOverlap();
+        });
+        this._sig(global.workspace_manager, 'active-workspace-changed', () => {
+            this._initGroups();
+            this._checkOverlap();
+        });
         this._sig(global.workspace_manager, 'workspace-added', () => this._scheduleRefresh());
         this._sig(global.workspace_manager, 'workspace-removed', () => {
 
@@ -1298,6 +1380,7 @@ class StageSidebar {
         if (!this._visible || !this._panel) return;
 
         this._visible = false;
+        this._flyoutMode = false;
         this._destroyPreview();
         this._syncEdge();
 
@@ -1317,12 +1400,15 @@ class StageSidebar {
     }
 
     _scheduleHide() {
-
+        if (this._isAreaClear() && !this._settings.get_boolean('sidebar-auto-hide')) return;
         if (this._shouldForceShow()) return;
         this._killHideTimer();
         this._hideTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, this._HIDE_DELAY_MS, () => {
             this._untrackTimer(this._hideTimer); this._hideTimer = null;
-            if (!this._hovered && !this._shouldForceShow()) this._hide();
+            if (!this._hovered && !this._shouldForceShow()) {
+                if (this._flyoutMode || !this._isAreaClear() || this._settings.get_boolean('sidebar-auto-hide'))
+                    this._hide();
+            }
             return GLib.SOURCE_REMOVE;
         });
         this._timers.push(this._hideTimer);
@@ -1498,21 +1584,10 @@ class StageSidebar {
     _makeWindowCard(win) {
         const windows = [win];
         const card = this._wrapCard();
-        const thumb = this._makeStackedThumb(windows);
+        const app = Shell.WindowTracker.get_default().get_window_app(win);
+        const thumb = this._makeStackedThumb(windows, app ? [app] : []);
         card.add_child(thumb);
         card._thumb = thumb;
-
-        if (this._settings.get_boolean('show-app-icons')) {
-            const app = Shell.WindowTracker.get_default().get_window_app(win);
-            if (app) {
-                const iconBox = new St.BoxLayout({
-                    x_align: Clutter.ActorAlign.CENTER,
-                    style: 'margin-top: 5px;',
-                });
-                iconBox.add_child(app.create_icon_texture(ICON_SIZE));
-                card.add_child(iconBox);
-            }
-        }
 
         card.set_pivot_point(0.5, 0.5);
         const idx = this._cards.length;
@@ -1572,7 +1647,7 @@ class StageSidebar {
 
     _animateCardsEntrance() {
         const base = this._BASE_SCALE;
-        const angle = this._PERSP_ANGLE * this._ROT_SIGN;
+        const angle = this._isFlatMode ? 0 : (this._PERSP_ANGLE * this._ROT_SIGN);
 
         for (let i = 0; i < this._cards.length; i++) {
             const card = this._cards[i];
@@ -1628,27 +1703,19 @@ class StageSidebar {
         if (windows.length === 0) return null;
 
         const card = this._wrapCard();
-        const thumb = this._makeStackedThumb(windows);
+        const tracker = Shell.WindowTracker.get_default();
+        const seenApps = new Set();
+        const apps = [];
+        for (const win of windows) {
+            const app = tracker.get_window_app(win);
+            if (app && !seenApps.has(app.get_id())) {
+                seenApps.add(app.get_id());
+                apps.push(app);
+            }
+        }
+        const thumb = this._makeStackedThumb(windows, apps);
         card.add_child(thumb);
         card._thumb = thumb;
-
-        if (this._settings.get_boolean('show-app-icons')) {
-            const tracker = Shell.WindowTracker.get_default();
-            const seenApps = new Set();
-            const iconBox = new St.BoxLayout({
-                x_align: Clutter.ActorAlign.CENTER,
-                style: 'margin-top: 5px; spacing: 4px;',
-            });
-            for (const win of windows) {
-                const app = tracker.get_window_app(win);
-                if (app && !seenApps.has(app.get_id())) {
-                    seenApps.add(app.get_id());
-                    iconBox.add_child(app.create_icon_texture(ICON_SIZE));
-                }
-            }
-            if (seenApps.size > 0) card.add_child(iconBox);
-        }
-
 
         card.set_pivot_point(0.5, 0.5);
 
@@ -1668,26 +1735,10 @@ class StageSidebar {
         const { windows } = group;
         const card = this._wrapCard();
 
-
         card._group = group;
-        const thumb = this._makeStackedThumb(windows);
+        const thumb = this._makeStackedThumb(windows, group.apps);
         card.add_child(thumb);
         card._thumb = thumb;
-
-        if (this._settings.get_boolean('show-app-icons') && group.apps.length > 0) {
-            const seenApps = new Set();
-            const iconBox = new St.BoxLayout({
-                x_align: Clutter.ActorAlign.CENTER,
-                style: 'margin-top: 5px; spacing: 4px;',
-            });
-            for (const a of group.apps) {
-                if (!seenApps.has(a.get_id())) {
-                    seenApps.add(a.get_id());
-                    iconBox.add_child(a.create_icon_texture(ICON_SIZE));
-                }
-            }
-            card.add_child(iconBox);
-        }
 
         card.set_pivot_point(0.5, 0.5);
         const idx = this._cards.length;
@@ -1831,7 +1882,7 @@ class StageSidebar {
         return [thumbW * (STACK_H / THUMB_W), thumbW * (STACK_V / THUMB_W)];
     }
 
-    _makeStackedThumb(windows) {
+    _makeStackedThumb(windows, apps = []) {
         const sf = this._scaleFactor;
 
 
@@ -1886,8 +1937,24 @@ class StageSidebar {
                 style_class: this._cls('stage-badge'),
                 reactive: false,
             });
-            badge.set_position(4 * sf, th - 20 * sf);
+            badge.set_position(Math.round(tw - 22 * sf), Math.round(4 * sf));
             container.add_child(badge);
+        }
+
+        if (this._settings.get_boolean('show-app-icons') && apps && apps.length > 0) {
+            const badgeSize = Math.round(26 * sf);
+            const badgeOffset = Math.round(14 * sf);
+            const pad = Math.round(4 * sf);
+            const badgeY = Math.round(th - badgeSize - pad);
+            for (let idx = 0; idx < apps.length; idx++) {
+                const app = apps[idx];
+                const icon = app.create_icon_texture(badgeSize);
+                if (icon) {
+                    icon.add_style_class_name('stage-app-icon-badge');
+                    icon.set_position(pad + idx * badgeOffset, badgeY);
+                    container.add_child(icon);
+                }
+            }
         }
 
         return container;
@@ -1907,7 +1974,9 @@ class StageSidebar {
 
     _makeWorkspaceCard(ws, wins, wsIndex, isCurrent) {
         const card = this._wrapCard();
-        const thumb = this._makeStackedThumb(wins);
+        const tracker = Shell.WindowTracker.get_default();
+        const apps = [...new Set(wins.map(w => tracker.get_window_app(w)).filter(Boolean))];
+        const thumb = this._makeStackedThumb(wins, apps);
         card.add_child(thumb);
         card._thumb = thumb;
 
@@ -1949,7 +2018,7 @@ class StageSidebar {
 
     _resetAllCardScales() {
         const base = this._BASE_SCALE;
-        const angle = this._PERSP_ANGLE * this._ROT_SIGN;
+        const angle = this._isFlatMode ? 0 : (this._PERSP_ANGLE * this._ROT_SIGN);
         for (const card of this._cards) {
             card.ease({
                 scale_x: base, scale_y: base,
@@ -1965,16 +2034,18 @@ class StageSidebar {
 
     _applyBellCurve(hoveredIdx) {
         const base = this._BASE_SCALE;
-        const angle = this._PERSP_ANGLE * this._ROT_SIGN;
+        const maxScale = base * 1.12;
+        const isFlat = this._isFlatMode;
+        const angle = isFlat ? 0 : (this._PERSP_ANGLE * this._ROT_SIGN);
 
         for (let i = 0; i < this._cards.length; i++) {
             const dist = Math.abs(i - hoveredIdx);
             const factor = _bellCurve(dist, BELL_SIGMA);
-            const s = base + (1.0 - base) * factor;
+            const s = base + (maxScale - base) * factor;
             const op = Math.round(
                 CARD_REST_OPACITY + (CARD_HOVER_OPACITY - CARD_REST_OPACITY) * factor);
 
-            const rot = angle * (1.0 - factor);
+            const rot = isFlat ? 0 : (angle * (1.0 - factor * 0.85));
 
             this._cards[i].ease({
                 scale_x: s, scale_y: s,

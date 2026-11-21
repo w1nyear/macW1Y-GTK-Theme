@@ -3405,3 +3405,45 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [gnome-shell-theme/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/gnome-shell-theme/gnome-shell.css)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+================================================================================
+Завдання 879: Реалізація автентичного Stage Manager та перепризначення перемикача у Центрі керування
+================================================================================
+- Вихідні вимоги:
+  * У центрі керування кнопку Stage Manager (з гліфом | []) перепризначити для вмикання та вимикання розширення Stage Manager.
+  * Якщо ніяке вікно не перекриває ліву частину екрана, зліва має з'являтись обернене за віссю Y прев'ю програми, а в лівому нижньому кутку — сквиркл-іконка застосунку.
+  * При наведенні курсора (hover) вікно має трохи збільшуватись («чуть збільшуватись»).
+  * Якщо вікно перекриває ліву смугу, панель Stage Manager автоматично ховається.
+  * Якщо щось перекриває, то при переміщенні курсора миші до лівого краю має виїжджати Stage Manager, але прямий (не обернений, rotation_angle_y = 0), як на референсах.
+  * Зберегти 100% проходження всіх 5 тестових наборів та 0 кириличних символів в install.sh.
+
+- Реалізовані зміни:
+  1) Центр керування (extensions/kiwi@kemma/apps/tahoeControlCenter.js):
+     * Перепризначено кнопку logout (гліф tahoe-logout.png) на stagemanager.
+     * Реалізовано перемикання розширення stage-manager@gnome-stage-manager через Main.extensionManager.enableExtension / disableExtension.
+     * Підключено підсвічування кнопки білим колом (stageSurf) з темною піктограмою tahoe-logout-light.png при активному стані.
+     * Синхронізовано до ~/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeControlCenter.js.
+  2) Стилі Stage Manager (extensions/stage-manager@gnome-stage-manager/stylesheet.css):
+     * Повністю усунено сіру підкладку карток (.stage-card { background-color: transparent !important; padding: 0px !important; border: none; box-shadow: none; }).
+     * Додано стиль .stage-app-icon-badge для сквиркл-піктограми у лівому нижньому кутку.
+     * Синхронізовано до ~/.local/share/gnome-shell/extensions/stage-manager@gnome-stage-manager/stylesheet.css.
+  3) Логіка Stage Manager (extensions/stage-manager@gnome-stage-manager/extension.js):
+     * Реалізовано метод _isAreaClear() для перевірки перетину активних незгорнутих вікон із лівою панеллю (0..panelW).
+     * Додано _checkOverlap() та таймер відстеження перекриття (_armOverlapTimer).
+     * У десктопному стані картки відображаються з перспективним нахилом за віссю Y (22°).
+     * При перекритті панель автоматично ховається. При вході курсора на лівий крайовий тригер (_edge) вмикається _flyoutMode: панель виїжджає поверх вікна з плоскими/прямими картками (rotation_angle_y = 0).
+     * При наведенні курсора на картку вона збільшується на 12% (_BASE_SCALE * 1.12) та плавно розвертається вперед.
+     * У _makeStackedThumb додано створення та позиціонування піктограми застосунку в лівому нижньому кутку переднього вікна, видалено старі підкладки знизу.
+     * Синхронізовано до ~/.local/share/gnome-shell/extensions/stage-manager@gnome-stage-manager/extension.js.
+  4) Верифікація та цілісність:
+     * Оновлено sha256 у config/extensions.lock.json (d5ca9c85).
+     * Усі 5 перевірок пройшли на 100%: mac-extension-guard (21/21), mac-audit-sync (5/5), test-macw1y-animations (12/12), unittests (39/39), mac-i18n-verify.
+     * 0 кириличних символів в install.sh.
+
+- Зачеплені файли:
+  * [extensions/kiwi@kemma/apps/tahoeControlCenter.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeControlCenter.js)
+  * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
+  * [extensions/stage-manager@gnome-stage-manager/stylesheet.css](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/stylesheet.css)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

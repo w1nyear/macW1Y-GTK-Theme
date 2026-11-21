@@ -205,6 +205,9 @@ function _gicons() {
             shot: _fileGicon(`tahoe-shot4${suf}.png`),
 
             logout: _fileGicon(`tahoe-logout${suf}.png`),
+            logoutActive: _fileGicon('tahoe-logout-light.png'),
+            stagemanager: _fileGicon(`tahoe-logout${suf}.png`),
+            stagemanagerActive: _fileGicon('tahoe-logout-light.png'),
 
 
             theme: _fileGicon(`tahoe-theme${suf}.png`),
@@ -1881,18 +1884,53 @@ function _buildPanel() {
 
     const rowd = new St.BoxLayout({style_class: 'tahoe-qs-rowd'});
     box.add_child(rowd);
-    const logout = _makeCircle('system-log-out-symbolic');
-    logout.btn.add_style_class_name('tahoe-qs-circle-logout');
-    logout.btn.connect('clicked', () => {
-        _closePanel();
-        _systemAction('logout');
+
+    const STAGE_MANAGER_UUID = 'stage-manager@gnome-stage-manager';
+    const _isStageManagerActive = () => {
+        try {
+            const ext = Main.extensionManager.lookup(STAGE_MANAGER_UUID);
+            return ext && ext.state === 1;
+        } catch (_) {
+            return false;
+        }
+    };
+    const _refreshStageManager = (sm) => {
+        try {
+            const active = _isStageManagerActive();
+            _setActive(sm.btn, active);
+            const g = _gicons();
+            if (active && g.stagemanagerActive)
+                sm.icon.gicon = g.stagemanagerActive;
+            else if (g.stagemanager)
+                sm.icon.gicon = g.stagemanager;
+        } catch (_) {}
+    };
+
+    const stagemanager = _makeCircle('system-log-out-symbolic');
+    stagemanager.btn.add_style_class_name('tahoe-qs-circle-logout');
+    stagemanager.btn.add_style_class_name('tahoe-qs-circle-stagemanager');
+    _refreshStageManager(stagemanager);
+
+    stagemanager.btn.connect('clicked', () => {
+        try {
+            const active = _isStageManagerActive();
+            if (active) {
+                Main.extensionManager.disableExtension(STAGE_MANAGER_UUID);
+            } else {
+                Main.extensionManager.enableExtension(STAGE_MANAGER_UUID);
+            }
+            _refreshStageManager(stagemanager);
+            try { _panel?.glass?.queue_repaint?.(); } catch (_) {}
+        } catch (e) {
+            console.error(`[tahoe-qs] toggle Stage Manager failed: ${e}`);
+        }
     });
     try {
-        if (_gicons().logout)
-            logout.icon.gicon = _gicons().logout;
+        _refreshStageManager(stagemanager);
     } catch (_) {
 
     }
+    const logout = stagemanager;
     const shot = _makeCircle('camera-photo-symbolic');
     try {
         if (_gicons().shot)
@@ -1904,7 +1942,7 @@ function _buildPanel() {
         _closePanel();
         _systemAction('screenshot');
     });
-    const leftRow = _makeSpacerRow(logout.btn, shot.btn);
+    const leftRow = _makeSpacerRow(stagemanager.btn, shot.btn);
     leftRow.x_expand = false;
     leftRow.set_width(COL_W);
     rowd.add_child(leftRow);
@@ -2292,7 +2330,7 @@ function _buildPanel() {
         box.set_size(W, initialH);
     } catch (_) {}
 
-    _panel = {overlay, box, panelBg, state, wifi, bt: btPill, air: modePill, mode: modePill, focus, dark, lock, shot, logout, disp, snd,
+    _panel = {overlay, box, panelBg, state, wifi, bt: btPill, air: modePill, mode: modePill, focus, dark, lock, shot, logout, stagemanager, disp, snd,
         music, mTitle, mArtist, mPlayIcon: play.icon, mPrevIcon: prev.icon,
         mNextIcon: next.icon, artBin: art, artIcon, artUrl: '',
         priv: privPill, glass: null};
@@ -2316,6 +2354,13 @@ function _buildPanel() {
         }
         return _surf();
     };
+    const stageSurf = () => {
+        try {
+            if (_isStageManagerActive())
+                return {c: [1, 1, 1], a: 1};
+        } catch (_) {}
+        return _surf();
+    };
     state.regions = [
         {g: 'pill', actor: wifi.btn, colorFn: _surf},
         {g: 'pill', actor: btPill.btn, colorFn: _surf},
@@ -2326,7 +2371,7 @@ function _buildPanel() {
         {g: 'edit', actor: edit, colorFn: _surf},
         {g: 'disc', actor: dark.btn, colorFn: () => darkSurf()},
         {g: 'disc', actor: lock.btn, colorFn: () => circleSurf(lock.btn)},
-        {g: 'disc', actor: logout.btn, colorFn: () => circleSurf(logout.btn)},
+        {g: 'disc', actor: stagemanager.btn, colorFn: () => stageSurf()},
         {g: 'disc', actor: shot.btn, colorFn: () => circleSurf(shot.btn)},
         {g: 'music', actor: music, colorFn: _surf},
         {g: 'card', actor: disp.box, colorFn: _surf},
@@ -2556,8 +2601,17 @@ function _applyPanelInk() {
             p.lock.icon.gicon = g.lock;
         if (p.shot?.icon && g.shot)
             p.shot.icon.gicon = g.shot;
-        if (p.logout?.icon && g.logout)
-            p.logout.icon.gicon = g.logout;
+        try {
+            const sm = p.stagemanager || p.logout;
+            if (sm) {
+                const active = _isStageManagerActive();
+                _setActive(sm.btn, active);
+                if (active && g.stagemanagerActive)
+                    sm.icon.gicon = g.stagemanagerActive;
+                else if (g.stagemanager)
+                    sm.icon.gicon = g.stagemanager;
+            }
+        } catch (_) {}
     } catch (_) {
 
     }
@@ -4134,7 +4188,7 @@ function _editCatalog() {
         {id: 'sound', title: t('sound', 'Звук'), icon: 'audio-volume-high-symbolic', category: 'sounds'},
         {id: 'music', title: t('now_playing', 'Зараз відтворюється'), icon: 'multimedia-player-symbolic', category: 'nowplaying'},
         {id: 'lock', title: t('lock_screen', 'Замкнути екран'), gicon: g.lock, icon: 'system-lock-screen-symbolic', category: 'lockscreen'},
-        {id: 'logout', title: t('log_out', 'Вийти…'), gicon: g.logout, icon: 'system-log-out-symbolic', category: 'shortcuts'},
+        {id: 'stagemanager', title: t('stage_manager', 'Stage Manager'), gicon: g.logout, icon: 'view-grid-symbolic', category: 'shortcuts'},
         {id: 'shot', title: t('screenshot', 'Знімок екрана'), gicon: g.shot, icon: 'camera-photo-symbolic', category: 'screenshot'},
         {id: 'settings', title: t('settings', 'Параметри'), icon: 'preferences-system-symbolic', category: 'desktop'},
     ];
