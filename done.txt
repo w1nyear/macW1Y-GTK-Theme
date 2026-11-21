@@ -3234,3 +3234,31 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
       * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
       * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
       * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+875. Автентичний вигляд діалогового вікна «Спорожнити смітник» (macOS Alert UI) та усунення затемнення/почорніння меню бару:
+    - Виправлено критичну проблему з почорнінням верхньої панелі (меню бару) під час відкриття діалогу спорожнення смітника: повністю усунено створення `panelScrim` та штучне зменшення непрозорості `Main.panel.ease({ opacity: 130 })`. Панель тепер залишається 100% активною, світлою та прозорою з розмиттям («він має залишатись таким як він був»).
+    - Повністю оновлено інтерфейс модального вікна Empty Trash під новий канонічний вигляд попереджень macW1Y (1:1 з macOS Tahoe / Golden Gate та панеллю «Мас стилізація» в Центрі керування):
+      1) Додано фірмовий золотистий попереджувальний бейдж/іконку `dialog-warning-symbolic` (#fac01f, 36px) угорі по центру.
+      2) Чітка macOS типографіка: виразний заголовок «Спорожнити смітник?» (15px bold white) та відцентрований підзаголовок (12.5px rgba(255, 255, 255, 0.72)).
+      3) Апаратне розмиття фону через `Shell.BlurEffect` (`Shell.BlurMode.BACKGROUND`) безпосередньо на картці діалогу, що динамічно зчитує `alert_blur` із `styling.json`.
+      4) Напівпрозоре матове скло картки з динамічним тінтом від `alert_tint` та м'якою тінню від `alert_shadow`, витончений скляний контур `border: 1px solid rgba(255, 255, 255, 0.20)` та верхній підсвічений край `border-top: 1px solid rgba(255, 255, 255, 0.28)`, плавне заокруглення кутів `border-radius: 26px`.
+      5) Горизонтальне розташування кнопок (Side-by-side pill buttons) за стандартом Mac Alerts: ліва кнопка «Скасувати» у вигляді скляної капсули (`rgba(255, 255, 255, 0.14)`), права деструктивна кнопка «Спорожнити» фірмового червоного кольору (#eb5545, при наведенні #ff453a).
+    - Оновлено `syncDialogGlass` для ізоляції та запобігання затиранню стилів `mac-empty-trash-dialog`.
+    - Оновлено CSS-правила модального діалогу смітника в усіх 5 темах gnome-shell.css (`border-radius: 26px`, `width: 280px`, `spacing: 10px`).
+    - Оновлено `config/extensions.lock.json` з новим контрольним хешем `eval-helper@mactheme`.
+    - Результати тестів:
+      * python3 -m unittest discover -s tests -p 'test_*.py' — 39/39 PASS (100%).
+      * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK (100%).
+      * python3 bin/mac-audit-sync check — 100% PASS (5/5).
+      * python3 bin/test-macw1y-animations.py — 12/12 PASS (100%).
+      * install.sh — 0 символів кирилиці.
+    - Зачеплені файли:
+      * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+      * [macW1Y-Dark/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark/gnome-shell/gnome-shell.css)
+      * [macW1Y-Dark-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark-solid/gnome-shell/gnome-shell.css)
+      * [macW1Y-Light/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light/gnome-shell/gnome-shell.css)
+      * [macW1Y-Light-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light-solid/gnome-shell/gnome-shell.css)
+      * [gnome-shell-theme/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/gnome-shell-theme/gnome-shell.css)
+      * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+      * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+      * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

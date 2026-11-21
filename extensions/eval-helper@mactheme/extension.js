@@ -2199,10 +2199,19 @@ export default class EvalHelper extends Extension {
                             glass._effect?._setFloat?.('ao_radius', shadowIntensity * 15.0);
                         } catch (_) {}
 
+                        if (isTrash) {
+                            if (glass.visible) glass.hide();
+                            const cardBg = `rgba(32, 34, 42, ${(0.62 + tintStrength * 0.22).toFixed(2)})`;
+                            dialogBox.set_style(`background-color: ${cardBg} !important; border-radius: 26px !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; border-top: 1px solid rgba(255, 255, 255, 0.28) !important; box-shadow: 0 20px 50px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important; width: 280px !important; min-width: 280px !important; max-width: 280px !important; padding: 22px 20px 20px 20px !important;`);
+                            const blurEff = dialogBox.get_effects?.().find(e => e.name === 'mac-alert-blur-effect' || e instanceof Shell.BlurEffect);
+                            if (blurEff && blurEff.set_radius) {
+                                blurEff.set_radius(Math.round(blurRadius));
+                            }
+                            return;
+                        }
+
                         try {
-                            const extra = isTrash
-                                ? ' width: 270px !important; min-width: 270px !important; max-width: 270px !important; padding: 22px 18px 18px 18px !important;'
-                                : ' width: 360px !important; min-width: 360px !important; max-width: 360px !important; padding: 18px 20px !important;';
+                            const extra = ' width: 360px !important; min-width: 360px !important; max-width: 360px !important; padding: 18px 20px !important;';
                             dialogBox.set_style(`background-color: transparent !important; border-radius: ${Math.round(radius)}px !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; box-shadow: 0 16px 45px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important;${extra}`);
                             for (const button of dialogBox.get_children().flatMap(child => child.get_children?.() || []).flatMap(child => child.get_children?.() || []).filter(child => child.has_style_class_name?.('modal-dialog-button') || child.has_style_class_name?.('modal-dialog-linked-button'))) {
                                 button.set_style('min-height: 26px !important; height: 26px !important; border-radius: 999px !important;');
@@ -2457,6 +2466,16 @@ export default class EvalHelper extends Extension {
                     globalThis._macRestoreTrashPanel = null;
                 }
 
+                try {
+                    const ui = Main.layoutManager.uiGroup;
+                    for (const c of ui.get_children()) {
+                        if (c.name === 'macPanelDimScrim') {
+                            try { c.destroy(); } catch (_) {}
+                        }
+                    }
+                    if (Main.panel) Main.panel.opacity = 255;
+                } catch (_) {}
+
                 const ModalDialogMod = await import('resource:///org/gnome/shell/ui/modalDialog.js');
                 const ModalDialog = ModalDialogMod.ModalDialog;
                 if (!ModalDialog) return;
@@ -2466,107 +2485,58 @@ export default class EvalHelper extends Extension {
                     destroyOnClose: true,
                 });
 
-
-                let panelScrim = null;
-                try {
-                    const stageW = global.stage.width;
-                    const panelH = Main.panel.height || 34;
-                    panelScrim = new St.Widget({
-                        name: 'macPanelDimScrim',
-                        x: 0,
-                        y: 0,
-                        width: stageW,
-                        height: panelH,
-                        reactive: false,
-                        opacity: 0,
-                        style: 'background-color: rgba(0, 0, 0, 0.45);'
-                    });
-                    Main.layoutManager.uiGroup.add_child(panelScrim);
-                    if (Main.layoutManager.panelBox) {
-                        Main.layoutManager.uiGroup.set_child_above_sibling(panelScrim, Main.layoutManager.panelBox);
-                    }
-                    panelScrim.ease({
-                        opacity: 255,
-                        duration: 150,
-                        mode: Clutter.AnimationMode.EASE_OUT_QUAD
-                    });
-                } catch (_) {}
-
-                try {
-                    Main.panel.ease({
-                        opacity: 130,
-                        duration: 150,
-                        mode: Clutter.AnimationMode.EASE_OUT_QUAD
-                    });
-                } catch (_) {}
-
-                let panelRestored = false;
-                const restorePanel = () => {
-                    if (panelRestored) return;
-                    panelRestored = true;
-                    globalThis._macRestoreTrashPanel = null;
-                    try {
-                        Main.panel.ease({
-                            opacity: 255,
-                            duration: 150,
-                            mode: Clutter.AnimationMode.EASE_OUT_QUAD
-                        });
-                    } catch (_) {
-                        if (Main.panel) Main.panel.opacity = 255;
-                    }
-                    if (panelScrim) {
-                        try {
-                            panelScrim.ease({
-                                opacity: 0,
-                                duration: 150,
-                                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                                onComplete: () => {
-                                    try { panelScrim.destroy(); } catch (_) {}
-                                }
-                            });
-                        } catch (_) {
-                            try { panelScrim.destroy(); } catch (_) {}
-                        }
-                        panelScrim = null;
-                    }
-                };
-                globalThis._macRestoreTrashPanel = restorePanel;
-
-                dlg.connect('closed', restorePanel);
-                dlg.connect('destroy', restorePanel);
+                const styling = loadAlertStyling();
+                const tintStrength = Math.max(0.0, Math.min(1.0, styling.alertTint / 100.0));
+                const blurRadius = Math.max(8, Math.min(45, styling.alertBlur || 18));
+                const shadowIntensity = Math.max(0.0, Math.min(1.0, styling.alertShadow / 100.0));
+                const cardBg = `rgba(32, 34, 42, ${(0.62 + tintStrength * 0.22).toFixed(2)})`;
+                const shadowVal = (shadowIntensity * 0.85).toFixed(2);
 
                 const d = dlg.dialogLayout?._dialog;
                 if (d) {
-                    const origSetStyle = d.set_style.bind(d);
-                    d.set_style = function(s) {
-                        let news = s;
-                        if (!news.includes('padding:')) {
-                            news = news.replace(/border-radius:\s*\d+px/g, 'border-radius: 24px') +
-                                ' width: 270px !important; min-width: 270px !important; max-width: 270px !important; padding: 22px 18px 18px 18px !important;';
-                        }
-                        origSetStyle(news);
-                    };
-                    d.set_style('width: 270px; min-width: 270px; max-width: 270px; padding: 22px 18px 18px 18px !important; border-radius: 24px !important;');
+                    d.add_style_class_name('mac-empty-trash-dialog');
+                    try {
+                        const blur = new Shell.BlurEffect({
+                            mode: Shell.BlurMode.BACKGROUND,
+                            radius: Math.round(blurRadius),
+                        });
+                        blur.name = 'mac-alert-blur-effect';
+                        d.add_effect(blur);
+                    } catch (_) {}
+                    d.set_style(`background-color: ${cardBg} !important; border-radius: 26px !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; border-top: 1px solid rgba(255, 255, 255, 0.28) !important; box-shadow: 0 20px 50px rgba(0, 0, 0, ${shadowVal}) !important; width: 280px !important; min-width: 280px !important; max-width: 280px !important; padding: 22px 20px 20px 20px !important;`);
                 }
 
                 const content = new St.BoxLayout({
                     vertical: true,
                     x_align: Clutter.ActorAlign.CENTER,
                     y_align: Clutter.ActorAlign.CENTER,
-                    style: 'spacing: 0px; width: 234px;',
+                    style: 'spacing: 0px; width: 240px;',
                 });
+
+                const iconBox = new St.BoxLayout({
+                    x_align: Clutter.ActorAlign.CENTER,
+                    y_align: Clutter.ActorAlign.CENTER,
+                    style: 'margin-bottom: 12px;',
+                });
+                const warnIcon = new St.Icon({
+                    icon_name: 'dialog-warning-symbolic',
+                    icon_size: 36,
+                    style: 'color: #fac01f; -st-icon-style: symbolic;',
+                });
+                iconBox.add_child(warnIcon);
+                content.add_child(iconBox);
 
                 const title = new St.Label({
                     text: t('empty_trash_prompt', 'Спорожнити смітник?'),
-                    style: 'font-size: 17px; font-weight: 700; color: #ffffff; text-align: center; margin-bottom: 6px;',
+                    style: 'font-size: 15px; font-weight: 700; color: #ffffff; text-align: center; margin-bottom: 6px;',
                 });
                 title.clutter_text.set_line_wrap(true);
                 title.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
                 content.add_child(title);
 
                 const body = new St.Label({
-                    text: t('empty_trash_desc', 'Усі об’єкти у смітнику буде\nвилучено остаточно'),
-                    style: 'font-size: 13px; color: rgba(255, 255, 255, 0.75); text-align: center; margin-bottom: 18px; line-height: 1.35;',
+                    text: t('empty_trash_desc', 'Усі об’єкти у смітнику буде\nвилучено остаточно.'),
+                    style: 'font-size: 12.5px; color: rgba(255, 255, 255, 0.72); text-align: center; margin-bottom: 20px; line-height: 1.35;',
                 });
                 body.clutter_text.set_line_wrap(true);
                 body.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
@@ -2575,24 +2545,9 @@ export default class EvalHelper extends Extension {
                 dlg.contentLayout.add_child(content);
 
                 const bl = dlg.dialogLayout.buttonLayout;
-                bl.layout_manager.orientation = Clutter.Orientation.VERTICAL;
-                bl.layout_manager.spacing = 8;
-                bl.set_style('padding: 0 !important; margin: 0 !important; width: 234px !important;');
-
-                const confirmBtn = dlg.addButton({
-                    label: t('empty_trash_action', 'Спорожнити смітник'),
-                    action: () => {
-                        dlg.close();
-                        emptyTrashInternal();
-                    },
-                    default: true,
-                });
-                const updateConfirmStyle = () => {
-                    const bg = confirmBtn.hover ? '#ff453a' : '#eb5545';
-                    confirmBtn.set_style(`background-color: ${bg} !important; background-gradient-direction: none !important; color: white !important; font-weight: 600; font-size: 14px; border-radius: 11px !important; min-height: 36px; height: 36px; width: 234px !important; margin: 0; padding: 0;`);
-                };
-                confirmBtn.connect('notify::hover', updateConfirmStyle);
-                updateConfirmStyle();
+                bl.layout_manager.orientation = Clutter.Orientation.HORIZONTAL;
+                bl.layout_manager.spacing = 10;
+                bl.set_style('padding: 0 !important; margin: 0 !important; width: 240px !important;');
 
                 const cancelBtn = dlg.addButton({
                     label: t('cancel', 'Скасувати'),
@@ -2601,10 +2556,39 @@ export default class EvalHelper extends Extension {
                 });
                 const updateCancelStyle = () => {
                     const bg = cancelBtn.hover ? 'rgba(255, 255, 255, 0.22)' : 'rgba(255, 255, 255, 0.14)';
-                    cancelBtn.set_style(`background-color: ${bg} !important; background-gradient-direction: none !important; color: white !important; font-weight: 500; font-size: 14px; border-radius: 11px !important; min-height: 36px; height: 36px; width: 234px !important; margin: 0; padding: 0;`);
+                    cancelBtn.set_style(`background-color: ${bg} !important; background-gradient-direction: none !important; color: white !important; font-weight: 500; font-size: 13px; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 9999px !important; min-height: 32px; height: 32px; min-width: 115px; width: 115px !important; margin: 0; padding: 0 10px;`);
                 };
                 cancelBtn.connect('notify::hover', updateCancelStyle);
                 updateCancelStyle();
+
+                const getConfirmText = () => {
+                    const full = t('empty_trash_action', 'Спорожнити');
+                    if (full === 'Спорожнити смітник') return 'Спорожнити';
+                    if (full === 'Очистить корзину') return 'Очистить';
+                    if (full === 'Vaciar la papelera') return 'Vaciar';
+                    if (full === 'Papierkorb leeren') return 'Leeren';
+                    return full;
+                };
+
+                const confirmBtn = dlg.addButton({
+                    label: getConfirmText(),
+                    action: () => {
+                        dlg.close();
+                        emptyTrashInternal();
+                    },
+                    default: true,
+                });
+                const updateConfirmStyle = () => {
+                    const bg = confirmBtn.hover ? '#ff453a' : '#eb5545';
+                    confirmBtn.set_style(`background-color: ${bg} !important; background-gradient-direction: none !important; color: white !important; font-weight: 600; font-size: 13px; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 9999px !important; min-height: 32px; height: 32px; min-width: 115px; width: 115px !important; margin: 0; padding: 0 10px;`);
+                };
+                confirmBtn.connect('notify::hover', updateConfirmStyle);
+                updateConfirmStyle();
+
+                dlg.connect('destroy', () => {
+                    if (globalThis._macActiveEmptyTrashDialog === dlg)
+                        globalThis._macActiveEmptyTrashDialog = null;
+                });
 
                 dlg.open();
                 globalThis._macActiveEmptyTrashDialog = dlg;
