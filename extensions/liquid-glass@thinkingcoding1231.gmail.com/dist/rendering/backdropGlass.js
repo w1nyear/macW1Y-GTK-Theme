@@ -66,6 +66,7 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
             name: 'liquid-glass-bg-actor',
             visible: false,
         });
+        this.set_clip(0, 0, 0, 0);
 
         this._owner = owner;
         this._settings = settings || lgSettings();
@@ -258,7 +259,31 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
     }
 
     setGlassRegions(regions) {
-        try { this._effect?.setGlassRegions(regions); } catch (_) {}
+        try {
+            this._effect?.setGlassRegions(regions);
+            if (Array.isArray(regions) && regions.length > 0) {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                for (const r of regions) {
+                    if (!r) continue;
+                    minX = Math.min(minX, r.x ?? 0);
+                    minY = Math.min(minY, r.y ?? 0);
+                    maxX = Math.max(maxX, (r.x ?? 0) + (r.w ?? 0));
+                    maxY = Math.max(maxY, (r.y ?? 0) + (r.h ?? 0));
+                }
+                if (Number.isFinite(minX) && maxX > minX) {
+                    const P = 32;
+                    const cX = Math.max(0, Math.floor(minX - P));
+                    const cY = Math.max(0, Math.floor(minY - P));
+                    const cW = Math.max(1, Math.ceil(maxX - minX + 2 * P));
+                    const cH = Math.max(1, Math.ceil(maxY - minY + 2 * P));
+                    this.set_clip(cX, cY, cW, cH);
+                    this._windowClones?.applyBgCloneClip?.([cX, cY, cW, cH]);
+                }
+            } else if (Array.isArray(regions) && regions.length === 0) {
+                this.set_clip(0, 0, 0, 0);
+                this._windowClones?.applyBgCloneClip?.(null);
+            }
+        } catch (_) {}
     }
 
     setResolution(w, h) {
@@ -273,6 +298,15 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
     setGlassGeometry(x, y, w, h) {
         try {
             this._effect?.setGlassGeometry(x, y, w, h);
+            if (Number.isFinite(x) && Number.isFinite(y) && w > 0 && h > 0) {
+                const P = 32;
+                const cX = Math.max(0, Math.floor(x - P));
+                const cY = Math.max(0, Math.floor(y - P));
+                const cW = Math.max(1, Math.ceil(w + 2 * P));
+                const cH = Math.max(1, Math.ceil(h + 2 * P));
+                this.set_clip(cX, cY, cW, cH);
+                this._windowClones?.applyBgCloneClip?.([cX, cY, cW, cH]);
+            }
             this.wakeFrameSync();
         } catch (_) {}
     }

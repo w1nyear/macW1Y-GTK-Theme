@@ -1382,6 +1382,7 @@ export const NotificationsController = class NotificationsController {
                     eff._setFloat('shadow_max_radius', 0.0);
                 }
             } catch (_) {}
+            try { this._glass.set_clip(0, 0, 0, 0); } catch (_) {}
             this._glass.hide();
 
             if (this._stackBox) {
@@ -1439,6 +1440,22 @@ export const NotificationsController = class NotificationsController {
         }
 
         if (regions.length > 0) {
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (const r of regions) {
+                minX = Math.min(minX, r.x);
+                minY = Math.min(minY, r.y);
+                maxX = Math.max(maxX, r.x + r.w);
+                maxY = Math.max(maxY, r.y + r.h);
+            }
+            const P = 32;
+            const clipX = Math.max(0, Math.floor(minX - P));
+            const clipY = Math.max(0, Math.floor(minY - P));
+            const clipW = Math.min(monitor.width - clipX, Math.ceil(maxX - clipX + 2 * P));
+            const clipH = Math.min(monitor.height - clipY, Math.ceil(maxY - clipY + 2 * P));
+
+            try { this._glass.set_clip(clipX, clipY, clipW, clipH); } catch (_) {}
+            try { this._glass._windowClones?.applyBgCloneClip?.([clipX, clipY, clipW, clipH]); } catch (_) {}
+
             this._glass.setTintColor(tintVal, tintVal, tintVal);
             this._glass.setTintStrength(tintStrength);
             this._glass.setBrightness(1.0);
@@ -1452,6 +1469,8 @@ export const NotificationsController = class NotificationsController {
                 this._glass.syncSources();
             }
         } else {
+            try { this._glass.set_clip(0, 0, 0, 0); } catch (_) {}
+            try { this._glass._windowClones?.applyBgCloneClip?.(null); } catch (_) {}
             this._glass.hide();
         }
     }
@@ -1752,7 +1771,8 @@ export const NotificationsController = class NotificationsController {
 
         if (this._glass) {
             try {
-                this._glass.hide();
+                try { this._glass.set_clip(0, 0, 0, 0); } catch (_) {}
+            this._glass.hide();
                 this._glass.destroy();
             } catch (_) {}
             this._glass = null;

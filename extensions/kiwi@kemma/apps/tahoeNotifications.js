@@ -1403,13 +1403,35 @@ function _syncToastGlass(monitor, s) {
         if (!regions.length) {
             if (s.bgActor.visible)
                 s.bgActor.hide();
+            setClipIfChanged(s.bgActor, 0, 0, 0, 0);
+            try { s.wcm?.applyBgCloneClip?.(null); } catch (_) {}
             return;
         }
-        const alpha = _toastBox ? _toastBox.opacity : 255;
-        if (alpha > 0 && !s.bgActor.visible)
-            s.bgActor.show();
-        else if (alpha === 0 && s.bgActor.visible)
-            s.bgActor.hide();
+
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const r of regions) {
+            minX = Math.min(minX, r.x);
+            minY = Math.min(minY, r.y);
+            maxX = Math.max(maxX, r.x + r.w);
+            maxY = Math.max(maxY, r.y + r.h);
+        }
+
+        const P = SHADER_PADDING + 8;
+        const clipX = Math.max(0, Math.floor(minX - P));
+        const clipY = Math.max(0, Math.floor(minY - P));
+        const clipW = Math.min(monitor.width - clipX, Math.ceil(maxX - clipX + 2 * P));
+        const clipH = Math.min(monitor.height - clipY, Math.ceil(maxY - clipY + 2 * P));
+
+        setClipIfChanged(s.bgActor, clipX, clipY, clipW, clipH);
+        try { s.wcm?.applyBgCloneClip?.([clipX, clipY, clipW, clipH]); } catch (_) {}
+
+        let maxSlotAlpha = 0;
+        for (const slot of _toastBox.get_children()) {
+            if (slot.visible && !slot._leaving && slot.opacity > maxSlotAlpha)
+                maxSlotAlpha = slot.opacity;
+        }
+        const boxAlpha = _toastBox ? _toastBox.opacity : 255;
+        const alpha = Math.min(boxAlpha, maxSlotAlpha > 0 ? maxSlotAlpha : 255);
         s.bgActor.opacity = alpha;
         s.bgActor.translation_x = _toastBox ? _toastBox.translation_x : 0;
         s.bgActor.translation_y = _toastBox ? _toastBox.translation_y : 0;
@@ -1422,10 +1444,6 @@ function _syncToastGlass(monitor, s) {
             r.tintB = fill.c[2];
             r.baseStrength = fill.a;
         }
-
-
-
-
 
         const riding = _mergingSlots().length > 0;
         let extraH = regions.length ^ (Main.overview?.visible ? 1337 : 42);
@@ -1445,7 +1463,10 @@ function _syncToastGlass(monitor, s) {
         s.effect.setResolution(monitor.width, monitor.height);
         s.liquidBox.set_position(0, 0);
         s.liquidBox.set_size(monitor.width, monitor.height);
-        setClipIfChanged(s.bgActor, 0, 0, monitor.width, monitor.height);
+        if (alpha > 0 && !s.bgActor.visible)
+            s.bgActor.show();
+        else if (alpha === 0 && s.bgActor.visible)
+            s.bgActor.hide();
         ensureGlassAllocated(s.bgActor);
 
 
@@ -1508,6 +1529,8 @@ function _toastTick() {
 
         if (_toastBox.get_children().length === 0) {
             try { _toastStack?.effect?.setGlassRegions?.([]); } catch (_) {}
+            try { setClipIfChanged(_toastStack?.bgActor, 0, 0, 0, 0); } catch (_) {}
+            try { _toastStack?.wcm?.applyBgCloneClip?.(null); } catch (_) {}
             try { _toastStack?.bgActor?.hide?.(); } catch (_) {}
             return GLib.SOURCE_REMOVE;
         }

@@ -2868,3 +2868,32 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
         * python3 -m unittest discover -s tests -p 'test_*.py' — 38/38 PASS.
         * python3 bin/test-macw1y-animations.py — 12/12 PASS.
         * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
+
+864. fix(notifications): усунення зникнення/миготіння вікон, меню-бару, дока та віджетів при появі сповіщень
+   - Список змінених файлів:
+     * [extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotifications.js)
+     * [extensions/blur-my-shell@aunetx/components/notifications_v4.js](file:///home/vitaliy/MACTHEMEFILES/extensions/blur-my-shell@aunetx/components/notifications_v4.js)
+     * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js)
+     * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+     * [/usr/share/mactheme/config/extensions.lock.json](file:///usr/share/mactheme/config/extensions.lock.json)
+   - Опис змін:
+     1) Усунення причини короткочасного зникнення/миготіння робочого простору:
+        * Актори скла сповіщень (liquid-glass-bg-actor-mac-toast-glass та BackdropGlass) розташовані у верхніх шарах uiGroup (індекси 110 та 90), вище за Meta_WindowGroup (індекс 0), dashtodockContainer (індекс 7) та panelBox (індекс 78).
+        * При появі сповіщення раніше встановлювався кліп на весь монітор setClipIfChanged(s.bgActor, 0, 0, monitor.width, monitor.height) та s.bgActor.show() до завершення вирівнювання регіонів, через що на частку мілісекунди фоновий клон шпалер bgClone (1920x1080) перекривав усі відкриті вікна, док, панель меню та віджети.
+     2) Точне динамічне обрізання (clip) за габаритами плашки:
+        * У _syncToastGlass (tahoeNotifications.js) реалізовано динамічний підрахунок прямокутника bounding box виключно для активних карток сповіщень із запасом на блур/заломлення. Кліп актора скла s.bgActor тепер жорстко обмежений координатами плашки (наприклад, [1507, 0, 413, 205] у верхньому правому кутку).
+        * Застосовано s.wcm.applyBgCloneClip([clipX, clipY, clipW, clipH]) безпосередньо до клону шпалер у WindowCloneManager.
+        * Відображення s.bgActor.show() та його прозорість синхронізовано з актуальною анімацією картки сповіщення (maxSlotAlpha), виключаючи відображення фону заздалегідь.
+        * При зникненні сповіщень кліп миттєво скидається в (0, 0, 0, 0) і скло ховається, запобігаючи будь-яким артефактам.
+     3) Захист від повноекранного перекриття у blur-my-shell та liquid-glass:
+        * У notifications_v4.js додано розрахунок bounding box для groupRegions та жорсткий set_clip для this._glass і його bgClone.
+        * У BackdropGlass (backdropGlass.js) додано ініціалізацію з нульовим кліпом set_clip(0, 0, 0, 0) та автоматичне обрізання за координатами у методах setGlassRegions і setGlassGeometry.
+     4) Оновлення контрольних сум та валідація цілісності:
+        * Актуалізовано SHA256-хеші 3 змінених розширень у config/extensions.lock.json та синхронізовано до /usr/share/mactheme/config/extensions.lock.json.
+        * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK (100% успішно).
+        * python3 bin/mac-integrity-check — успішно, система "green".
+        * python3 bin/mac-audit-sync check — 100% PASS (5/5).
+        * python3 -m unittest discover -s tests -p 'test_*.py' — 38/38 PASS.
+        * python3 bin/test-macw1y-animations.py — 12/12 PASS.
+        * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено.
+        * Наживо перевірено через notify-send: під час появи сповіщення кліп становить [1507, 0, 413, 205], вікна, док і панель залишаються повністю видимими без жодного миготіння.
