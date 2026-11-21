@@ -49,7 +49,7 @@
 |---|---|---|
 | RAM | 4 GB | 8–16 GB |
 | CPU | 4 cores, 64-bit | Intel Core 12th Gen, AMD Ryzen 5000 |
-| GPU | Intel UHD 630, AMD RX 550, NVIDIA GTX 750 Ti | Intel Iris Xe, AMD RX 6600, NVIDIA RTX 3050 |
+| GPU | Intel HD Graphics 520+, AMD Radeon R5/R7, NVIDIA GT 710+ | Intel UHD Graphics (620/630/770/Raptor Lake), AMD Radeon Graphics, NVIDIA GTX 1050|
 | Storage | 10 GB | 20 GB SSD |
 | Display | 1366 × 768 | 1920 × 1080 |
 
