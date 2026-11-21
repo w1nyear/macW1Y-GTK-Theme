@@ -3114,3 +3114,25 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
       * [MULTIPLATFORM_MIGRATION_STATUS.md](file:///home/vitaliy/MACTHEMEFILES/MULTIPLATFORM_MIGRATION_STATUS.md)
       * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
       * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+870. Заархівування релізу версії 0.7 у tar.gz з максимальним стисненням та публікація на GitHub:
+    - Створено релізний архів дистрибутива macW1Y-v0.7.tar.gz з максимальним ступенем стиснення (gzip -9):
+      * Шлях: /home/vitaliy/macW1Y-v0.7.tar.gz та дублікат на стільниці /home/vitaliy/Desktop/macW1Y-v0.7.tar.gz.
+      * Налаштовано символічні посилання: macW1Y-0.7.tar.gz.
+      * Повний розмір архіву: ~309 МБ (стиснуто з понад 515 МБ), збережено біти виконання (-rwxrwxr-x для install.sh та бінарників), повністю виключено службові каталоги (.git, __pycache__, *.pyc, .cache).
+    - Вивантаження кодової бази до GitHub репозиторію:
+      * Усі 119 накопичених комітів та Git LFS відеофайли вивантажено в основну гілку main репозиторію https://github.com/w1nyear/macW1Y-GTK-Theme.git за допомогою наданого токена автентифікації.
+      * Гілка origin/main та локальна гілка main синхронізовані на 100%.
+    - Створення офіційного релізу та тегів:
+      * Створено та вивантажено теги 0.7 та v0.7 до віддаленого репозиторію.
+      * Створено офіційний GitHub Release v0.7 через GitHub API та завантажено бінарний релізний архів macW1Y-v0.7.tar.gz як релізний асет.
+    - Підтвердження та верифікація:
+      * mac-audit-sync check: 100% PASS.
+      * mac-extension-guard verify: 21/21 LOCKED OK.
+      * Набір модульних тестів (tests/test_*.py): 38/38 PASS.
+      * Чистота install.sh від кирилиці: 0 символів.
+    - Зачеплені файли:
+      * [/home/vitaliy/macW1Y-v0.7.tar.gz](file:///home/vitaliy/macW1Y-v0.7.tar.gz)
+      * [/home/vitaliy/Desktop/macW1Y-v0.7.tar.gz](file:///home/vitaliy/Desktop/macW1Y-v0.7.tar.gz)
+      * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+      * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
