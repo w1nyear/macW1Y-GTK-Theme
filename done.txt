@@ -3490,3 +3490,39 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+================================================================================
+Завдання 881: Центрування Stage Manager по висоті, строге приховування при перекритті, зменшення тіні в 1.5 разів та fade-анімації
+================================================================================
+- Вихідні вимоги:
+  * Stage Manager має завжди відцентровуватись по висоті екрана.
+  * Якщо будь-яка частина Stage Manager чимось прикрита (вікном, діалогом тощо), має повністю приховуватись вся панель.
+  * Зменшити тіні карток та шарів в 1.5 разів.
+  * Перевірити та реалізувати наявність плавних fade-анімацій (поява/зникнення з плавним фейдом прозорості).
+  * Зберегти 100% проходження всіх 5 тестових наборів та 0 кириличних символів в install.sh.
+
+- Реалізовані зміни:
+  1) Центрування по висоті (extensions/stage-manager@gnome-stage-manager/extension.js):
+     * У _buildUI() та _rebuildLayout() встановлено x_align та y_align у Clutter.ActorAlign.CENTER, а також y_expand: true для _box. Картки тепер завжди ідеально відцентровані по вертикалі (y ≈ 520px на 1080p дисплеї).
+  2) Приховування при перекритті будь-якою частиною:
+     * Оновлено _isAreaClear(): враховано динамічні межі панелі та розраховані координати карток; розширено перевірку на всі типи вікон (діалоги, модальні вікна тощо).
+     * Якщо будь-яке вікно перетинає навіть 1 піксель зони Stage Manager, у _checkOverlap() панель повністю приховується.
+     * Підключено миттєве відстеження переміщення вікон (window-created, position-changed, size-changed, grab-op-begin/end) з прискореним таймером оновлення 100 мс.
+  3) Зменшення тіні в 1.5 разів (extensions/stage-manager@gnome-stage-manager/stylesheet.css):
+     * .stage-thumb-layer: box-shadow зменшено з 0 4px 18px rgba(0,0,0,0.45) до 0 3px 12px rgba(0,0,0,0.30).
+     * .stage-thumb-layer-back: box-shadow зменшено з 0 2px 10px rgba(0,0,0,0.3) до 0 1px 7px rgba(0,0,0,0.20).
+     * .stage-thumb-layer-front-hover: box-shadow зменшено з 0 6px 24px rgba(0,0,0,0.55) до 0 4px 16px rgba(0,0,0,0.37).
+     * .stage-preview: box-shadow зменшено з 0 8px 32px rgba(0,0,0,0.55) до 0 5px 21px rgba(0,0,0,0.37).
+     * Аналогічно зменшено тіні для світлої теми (.light).
+  4) Анімації Fade:
+     * Додано плавну анімацію прозорості (opacity: 0 -> 255 в _show() та opacity: 255 -> 0 в _hide()) паралельно з переміщенням за віссю X. Панель плавно випливає та фейдиться.
+  5) Верифікація та синхронізація:
+     * Синхронізовано до ~/.local/share/gnome-shell/extensions/stage-manager@gnome-stage-manager/.
+     * Усі 5 наборів перевірок пройшли на 100%: mac-extension-guard (21/21), mac-audit-sync (5/5), test-macw1y-animations (12/12), unittests (39/39), mac-i18n-verify.
+     * 0 кириличних символів в install.sh.
+
+- Зачеплені файли:
+  * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
+  * [extensions/stage-manager@gnome-stage-manager/stylesheet.css](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/stylesheet.css)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

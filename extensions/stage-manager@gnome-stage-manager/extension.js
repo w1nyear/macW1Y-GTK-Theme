@@ -361,9 +361,35 @@ class StageSidebar {
         const topH = Main.panel ? Main.panel.height : 0;
         const [panelW, panelH] = this._panelSize(mon, topH);
         const [vx, vy] = this._panelVisiblePos(mon, topH);
-        const px1 = vx, py1 = vy, px2 = vx + panelW, py2 = vy + panelH;
 
-        const windows = ws.list_windows().filter(w => _isNormal(w) && !w.minimized);
+        let px1 = vx;
+        let py1 = vy;
+        let px2 = vx + panelW;
+        let py2 = vy + panelH;
+
+        if (this._box && this._cards && this._cards.length > 0) {
+            try {
+                for (const c of this._cards) {
+                    const cpos = c.get_transformed_position();
+                    const csize = c.get_transformed_size();
+                    if (cpos && csize && cpos[0] !== null && cpos[1] !== null) {
+                        px1 = Math.min(px1, cpos[0]);
+                        px2 = Math.max(px2, cpos[0] + csize[0]);
+                        py1 = Math.min(py1, cpos[1]);
+                        py2 = Math.max(py2, cpos[1] + csize[1]);
+                    }
+                }
+            } catch (_) {}
+        }
+
+        const windows = ws.list_windows().filter(w => {
+            if (!w || w.is_override_redirect()) return false;
+            if (w.minimized) return false;
+            const t = w.get_window_type();
+            if (t === Meta.WindowType.DESKTOP || t === Meta.WindowType.DOCK) return false;
+            return true;
+        });
+
         for (const win of windows) {
             const r = win.get_frame_rect();
             if (r.x < px2 && r.x + r.width > px1 && r.y < py2 && r.y + r.height > py1) {
@@ -385,7 +411,7 @@ class StageSidebar {
                 this._show();
             }
         } else {
-            if (!this._hovered && !this._flyoutMode) {
+            if (!this._flyoutMode) {
                 if (this._visible) {
                     this._hide();
                 }
@@ -395,8 +421,8 @@ class StageSidebar {
 
     _armOverlapTimer() {
         this._killOverlapTimer();
-        this._overlapTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 400, () => {
-            if (!this._hovered) {
+        this._overlapTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+            if (!this._flyoutMode) {
                 this._checkOverlap();
             }
             return GLib.SOURCE_CONTINUE;
@@ -564,6 +590,7 @@ class StageSidebar {
 
         this._panel = new St.Widget({
             reactive: false,
+            opacity: 0,
             style: 'background-color: transparent;',
         });
         this._panel.set_size(panelW, panelH);
@@ -590,8 +617,10 @@ class StageSidebar {
 
         this._box = new St.BoxLayout({
             reactive: true,
-            x_align: vertical ? Clutter.ActorAlign.CENTER : Clutter.ActorAlign.START,
-            y_align: vertical ? Clutter.ActorAlign.START : Clutter.ActorAlign.CENTER,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+            x_expand: true,
+            y_expand: true,
             style: vertical
                 ? `padding: ${Math.round(24 * sf)}px 0px; spacing: ${Math.round(10 * sf)}px;`
                 : `padding: 0px ${Math.round(24 * sf)}px; spacing: ${Math.round(10 * sf)}px;`,
@@ -794,8 +823,10 @@ class StageSidebar {
 
         const sf = this._scaleFactor;
         this._setOrientation(this._box, vertical);
-        this._box.x_align = vertical ? Clutter.ActorAlign.CENTER : Clutter.ActorAlign.START;
-        this._box.y_align = vertical ? Clutter.ActorAlign.START : Clutter.ActorAlign.CENTER;
+        this._box.x_align = Clutter.ActorAlign.CENTER;
+        this._box.y_align = Clutter.ActorAlign.CENTER;
+        this._box.x_expand = true;
+        this._box.y_expand = true;
         this._box.set_style(vertical
             ? `padding: ${Math.round(24 * sf)}px 0px; spacing: ${Math.round(10 * sf)}px;`
             : `padding: 0px ${Math.round(24 * sf)}px; spacing: ${Math.round(10 * sf)}px;`);
@@ -830,9 +861,22 @@ class StageSidebar {
     _wire() {
         this._sig(global.window_manager, 'map', (_wm, actor) => {
             const win = actor?.meta_window;
-            if (win) this._onWindowMap(win);
+            if (win) {
+                this._sig(win, 'position-changed', () => this._checkOverlap());
+                this._sig(win, 'size-changed', () => this._checkOverlap());
+                this._onWindowMap(win);
+            }
             this._checkOverlap();
         });
+        this._sig(global.display, 'window-created', (_d, win) => {
+            if (win) {
+                this._sig(win, 'position-changed', () => this._checkOverlap());
+                this._sig(win, 'size-changed', () => this._checkOverlap());
+            }
+            this._checkOverlap();
+        });
+        this._sig(global.display, 'grab-op-begin', () => this._checkOverlap());
+        this._sig(global.display, 'grab-op-end', () => this._checkOverlap());
         this._sig(global.window_manager, 'destroy', (_wm, actor) => {
             const win = actor?.meta_window;
             if (win) this._onWindowDestroy(win);
@@ -1369,10 +1413,13 @@ class StageSidebar {
         this._panel.remove_all_transitions();
         this._panel.ease({
             x: vx, y: vy,
+            opacity: 255,
             duration: this._SLIDE_MS,
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-
-            onComplete: () => this._applyChrome(),
+            onComplete: () => {
+                this._panel.opacity = 255;
+                this._applyChrome();
+            },
         });
     }
 
@@ -1394,8 +1441,12 @@ class StageSidebar {
         this._panel.remove_all_transitions();
         this._panel.ease({
             x: hx, y: hy,
+            opacity: 0,
             duration: this._SLIDE_MS,
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            onComplete: () => {
+                this._panel.opacity = 0;
+            },
         });
     }
 
