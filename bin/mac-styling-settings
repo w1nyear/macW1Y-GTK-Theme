@@ -9,7 +9,7 @@ import gi
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
-from gi.repository import Gtk, Adw, Gio, GLib
+from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 
 sys.path.insert(0, '/usr/local/bin')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -294,24 +294,105 @@ class MacStylingWindow(Adw.ApplicationWindow):
         # 6.8. Alt+Tab / App Switcher Group
         alttab_group = Adw.PreferencesGroup()
         alttab_group.set_title(t("alttab_group_title", "Перемикач програм (Alt+Tab / Cmd+Tab)"))
-        alttab_group.set_description(t("alttab_group_desc", "Розмір іконок, відступи, заокруглення та висота панелі перемикання"))
+        alttab_group.set_description(t("alttab_group_desc", "Розмір іконок, відступи, заокруглення, розмиття, тінт і тінь перемикача"))
         pref_page.add(alttab_group)
 
+        # Alt+Tab Live Preview Widget
+        self.alttab_preview_row = Adw.ActionRow()
+        self.alttab_preview_row.set_title(t("alttab_preview_title", "Передогляд перемикача"))
+        self.alttab_preview_row.set_subtitle(t("alttab_preview_desc", "Інтерактивний вигляд компактної плашки у стилі macOS"))
+
+        preview_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        preview_card.set_hexpand(True)
+        preview_card.set_margin_top(8)
+        preview_card.set_margin_bottom(12)
+        preview_card.set_margin_start(8)
+        preview_card.set_margin_end(8)
+        preview_card.set_halign(Gtk.Align.CENTER)
+        preview_card.set_valign(Gtk.Align.CENTER)
+
+        self.alttab_preview_pill = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.alttab_preview_pill.set_halign(Gtk.Align.CENTER)
+        self.alttab_preview_pill.set_valign(Gtk.Align.CENTER)
+        self.alttab_preview_pill.set_name("alttab-preview-pill")
+
+        # Demo items in preview:
+        self.alttab_demo_img1 = Gtk.Image.new_from_icon_name("system-file-manager")
+        self.alttab_demo_box1 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.alttab_demo_box1.set_halign(Gtk.Align.CENTER)
+        self.alttab_demo_box1.set_valign(Gtk.Align.CENTER)
+        self.alttab_demo_box1.append(self.alttab_demo_img1)
+
+        self.alttab_demo_img2 = Gtk.Image.new_from_icon_name("web-browser")
+        self.alttab_demo_box2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.alttab_demo_box2.set_halign(Gtk.Align.CENTER)
+        self.alttab_demo_box2.set_valign(Gtk.Align.CENTER)
+        self.alttab_demo_box2.append(self.alttab_demo_img2)
+
+        # Settings (Selected squircle with zero padding outline and active label beneath)
+        self.alttab_demo_img3 = Gtk.Image.new_from_icon_name("preferences-system")
+        self.alttab_demo_sel_wrapper = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.alttab_demo_sel_wrapper.set_name("alttab-demo-sel-wrapper")
+        self.alttab_demo_sel_wrapper.set_halign(Gtk.Align.CENTER)
+        self.alttab_demo_sel_wrapper.set_valign(Gtk.Align.CENTER)
+        self.alttab_demo_sel_wrapper.append(self.alttab_demo_img3)
+
+        self.alttab_demo_label = Gtk.Label(label=t("settings_title", "Параметри"))
+        self.alttab_demo_label.set_name("alttab-demo-label")
+        self.alttab_demo_label.set_halign(Gtk.Align.CENTER)
+
+        self.alttab_demo_box3 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.alttab_demo_box3.set_halign(Gtk.Align.CENTER)
+        self.alttab_demo_box3.set_valign(Gtk.Align.CENTER)
+        self.alttab_demo_box3.append(self.alttab_demo_sel_wrapper)
+        self.alttab_demo_box3.append(self.alttab_demo_label)
+
+        self.alttab_demo_img4 = Gtk.Image.new_from_icon_name("utilities-terminal")
+        self.alttab_demo_box4 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.alttab_demo_box4.set_halign(Gtk.Align.CENTER)
+        self.alttab_demo_box4.set_valign(Gtk.Align.CENTER)
+        self.alttab_demo_box4.append(self.alttab_demo_img4)
+
+        self.alttab_preview_pill.append(self.alttab_demo_box1)
+        self.alttab_preview_pill.append(self.alttab_demo_box2)
+        self.alttab_preview_pill.append(self.alttab_demo_box3)
+        self.alttab_preview_pill.append(self.alttab_demo_box4)
+
+        preview_card.append(self.alttab_preview_pill)
+        preview_group_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        preview_group_box.set_margin_top(4)
+        preview_group_box.set_margin_bottom(4)
+        preview_group_box.append(preview_card)
+        self.alttab_preview_row.add_suffix(preview_group_box)
+        alttab_group.add(self.alttab_preview_row)
+
+        self.alttab_blur_scale = self._create_slider_row(
+            alttab_group, t("alttab_blur", "Розмиття"), t("alttab_blur_desc", "Розмиття фонового скла перемикача (px)"),
+            0, 50, int(getattr(self, "alttab_blur", 1))
+        )
+        self.alttab_tint_scale = self._create_slider_row(
+            alttab_group, t("alttab_tint", "Тінт / затемнення"), t("alttab_tint_desc", "Рівень затемнення скляної панелі (%)"),
+            0, 100, int(getattr(self, "alttab_tint", 5))
+        )
+        self.alttab_shadow_scale = self._create_slider_row(
+            alttab_group, t("alttab_shadow", "Тінь"), t("alttab_shadow_desc", "Інтенсивність та радіус тіні панелі (%)"),
+            0, 100, int(getattr(self, "alttab_shadow", 25))
+        )
+        self.alttab_radius_scale = self._create_slider_row(
+            alttab_group, t("alttab_radius", "Радіус заокруглення"), t("alttab_radius_desc", "Радіус заокруглення кутів плашки перемикача (px)"),
+            12, 72, int(getattr(self, "alttab_radius", 42))
+        )
         self.alttab_icon_size_scale = self._create_slider_row(
             alttab_group, t("alttab_icon_size", "Розмір іконок"), t("alttab_icon_size_desc", "Розмір значків програм у перемикачі (px)"),
             32, 96, int(getattr(self, "alttab_icon_size", 64))
         )
         self.alttab_padding_scale = self._create_slider_row(
             alttab_group, t("alttab_padding", "Розмір меню / відступ"), t("alttab_padding_desc", "Вертикальний відступ та висота скляної плашки (px)"),
-            8, 40, int(getattr(self, "alttab_padding", 18))
+            8, 40, int(getattr(self, "alttab_padding", 14))
         )
         self.alttab_spacing_scale = self._create_slider_row(
             alttab_group, t("alttab_spacing", "Відстань між іконками"), t("alttab_spacing_desc", "Відстань між сусідніми значками у списку (px)"),
             0, 36, int(getattr(self, "alttab_spacing", 12))
-        )
-        self.alttab_radius_scale = self._create_slider_row(
-            alttab_group, t("alttab_radius", "Радіус заокруглення"), t("alttab_radius_desc", "Радіус заокруглення кутів плашки перемикача (px)"),
-            12, 48, int(getattr(self, "alttab_radius", 28))
         )
 
         # 7. Boot Group (Завантажувач)
@@ -400,6 +481,7 @@ class MacStylingWindow(Adw.ApplicationWindow):
         toolbar_view.set_content(overlay)
         self.set_content(toolbar_view)
         self._initializing = False
+        self.update_alttab_preview()
 
     def _create_profile_combo(self, group):
         row = Adw.ComboRow()
@@ -543,10 +625,13 @@ class MacStylingWindow(Adw.ApplicationWindow):
         self.label_tint = 28
         self.label_shadow = 25
 
+        self.alttab_blur = 1
+        self.alttab_tint = 5
+        self.alttab_shadow = 25
+        self.alttab_radius = 42
         self.alttab_icon_size = 64
-        self.alttab_padding = 18
+        self.alttab_padding = 14
         self.alttab_spacing = 12
-        self.alttab_radius = 28
 
         self.dock_size = 12
         self.dock_icon_size = 54
@@ -594,6 +679,9 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 self.label_tint = sdata.get("label_tint", self.label_tint)
                 self.label_shadow = sdata.get("label_shadow", self.label_shadow)
 
+                self.alttab_blur = sdata.get("alttab_blur", self.alttab_blur)
+                self.alttab_tint = sdata.get("alttab_tint", self.alttab_tint)
+                self.alttab_shadow = sdata.get("alttab_shadow", self.alttab_shadow)
                 self.alttab_icon_size = sdata.get("alttab_icon_size", self.alttab_icon_size)
                 self.alttab_padding = sdata.get("alttab_padding", self.alttab_padding)
                 self.alttab_spacing = sdata.get("alttab_spacing", self.alttab_spacing)
@@ -679,11 +767,69 @@ class MacStylingWindow(Adw.ApplicationWindow):
         # Show floating toast warning
         self.revealer.set_reveal_child(True)
 
+        self.update_alttab_preview()
         self.apply_realtime()
 
         if self.save_timer:
             GLib.source_remove(self.save_timer)
         self.save_timer = GLib.timeout_add(400, self.save_css)
+
+    def update_alttab_preview(self):
+        try:
+            blur = int(self.alttab_blur_scale.get_value()) if hasattr(self, 'alttab_blur_scale') else 1
+            tint = int(self.alttab_tint_scale.get_value()) if hasattr(self, 'alttab_tint_scale') else 5
+            shadow = int(self.alttab_shadow_scale.get_value()) if hasattr(self, 'alttab_shadow_scale') else 25
+            radius = int(self.alttab_radius_scale.get_value()) if hasattr(self, 'alttab_radius_scale') else 42
+            icon_size = int(self.alttab_icon_size_scale.get_value()) if hasattr(self, 'alttab_icon_size_scale') else 64
+            padding = int(self.alttab_padding_scale.get_value()) if hasattr(self, 'alttab_padding_scale') else 14
+            spacing = int(self.alttab_spacing_scale.get_value()) if hasattr(self, 'alttab_spacing_scale') else 12
+
+            display_icon_size = max(24, min(48, int(icon_size * 0.65)))
+            display_radius = max(8, int(radius * 0.65))
+            display_padding = max(6, int(padding * 0.65))
+            display_h_padding = max(display_padding + 6, int(display_radius * 0.85))
+            display_spacing = max(4, int(spacing * 0.65))
+            squircle_radius = max(6, int(display_icon_size * 0.22))
+
+            for img in [self.alttab_demo_img1, self.alttab_demo_img2, self.alttab_demo_img3, self.alttab_demo_img4]:
+                img.set_pixel_size(display_icon_size)
+
+            self.alttab_preview_pill.set_spacing(display_spacing)
+
+            tint_alpha = min(0.9, max(0.04, tint / 100.0))
+            shadow_alpha = min(0.9, max(0.05, shadow / 100.0))
+            css_preview = f"""
+            #alttab-preview-pill {{
+                background-color: rgba(22, 22, 22, {tint_alpha:.2f});
+                border-radius: {display_radius}px;
+                border: 1px solid rgba(255, 255, 255, 0.22);
+                box-shadow: 0 10px 24px rgba(0, 0, 0, {shadow_alpha:.2f});
+                padding: {display_padding}px {display_h_padding}px;
+            }}
+            #alttab-demo-sel-wrapper {{
+                padding: 0px;
+                margin: 0px;
+                border-radius: {squircle_radius}px;
+                border: 2px solid rgba(255, 255, 255, 0.50);
+                background-color: rgba(255, 255, 255, 0.14);
+                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+            }}
+            #alttab-demo-label {{
+                font-size: 10px;
+                font-weight: 500;
+                color: #ffffff;
+                text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+                margin-top: 2px;
+            }}
+            """
+            if not hasattr(self, '_alttab_css_provider'):
+                self._alttab_css_provider = Gtk.CssProvider()
+                display = Gdk.Display.get_default()
+                if display:
+                    Gtk.StyleContext.add_provider_for_display(display, self._alttab_css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+            self._alttab_css_provider.load_from_data(css_preview.encode('utf-8'))
+        except Exception as e:
+            print("update_alttab_preview error:", e)
 
     def _mode_from_idx(self, idx):
         if idx == 1:
@@ -817,6 +963,9 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 "label_blur": int(self.label_blur_scale.get_value()),
                 "label_tint": int(self.label_tint_scale.get_value()),
                 "label_shadow": int(self.label_shadow_scale.get_value()),
+                "alttab_blur": int(self.alttab_blur_scale.get_value()),
+                "alttab_tint": int(self.alttab_tint_scale.get_value()),
+                "alttab_shadow": int(self.alttab_shadow_scale.get_value()),
                 "alttab_icon_size": int(self.alttab_icon_size_scale.get_value()),
                 "alttab_padding": int(self.alttab_padding_scale.get_value()),
                 "alttab_spacing": int(self.alttab_spacing_scale.get_value()),

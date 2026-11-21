@@ -1078,6 +1078,7 @@ install_extensions() {
     run_as_user gsettings set org.gnome.software download-updates false 2>/dev/null || true
     run_as_user gsettings set org.gnome.software download-updates-notify false 2>/dev/null || true
 
+    run_as_user gsettings set org.gnome.shell.window-switcher app-icon-mode 'app-icon-only' 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-corner-radius 26.0 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-toggle-corner-radius 40.0 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com osd-corner-radius 18.0 2>/dev/null || true

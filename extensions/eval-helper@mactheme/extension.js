@@ -1340,7 +1340,7 @@ export default class EvalHelper extends Extension {
                 if (!SwitcherPopup || !SwitcherList) return;
 
                 const _macGetAltTabConfig = () => {
-                    let iconSize = 64, padding = 18, spacing = 12, radius = 28;
+                    let iconSize = 64, padding = 14, spacing = 12, radius = 42, blur = 1, tint = 5, shadow = 25;
                     try {
                         const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
                         if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
@@ -1351,10 +1351,13 @@ export default class EvalHelper extends Extension {
                                 if (typeof conf.alttab_padding === 'number') padding = conf.alttab_padding;
                                 if (typeof conf.alttab_spacing === 'number') spacing = conf.alttab_spacing;
                                 if (typeof conf.alttab_radius === 'number') radius = conf.alttab_radius;
+                                if (typeof conf.alttab_blur === 'number') blur = conf.alttab_blur;
+                                if (typeof conf.alttab_tint === 'number') tint = conf.alttab_tint;
+                                if (typeof conf.alttab_shadow === 'number') shadow = conf.alttab_shadow;
                             }
                         }
                     } catch (_) {}
-                    globalThis._macAltTabConfig = { iconSize, padding, spacing, radius };
+                    globalThis._macAltTabConfig = { iconSize, padding, spacing, radius, blur, tint, shadow };
                     return globalThis._macAltTabConfig;
                 };
 
@@ -1370,21 +1373,20 @@ export default class EvalHelper extends Extension {
                     const isHovered = item.hover && !isSelected;
 
                     const cfg = _macGetAltTabConfig();
-                    const tilePad = Math.max(6, Math.round(cfg.iconSize * 0.12));
-                    const tileW = this._itemTileSize || (cfg.iconSize + tilePad * 2);
-                    const tileRad = Math.max(10, Math.round(tileW * 0.26));
+                    const tileW = this._itemTileSize || cfg.iconSize;
+                    const tileRad = Math.max(8, Math.round(tileW * 0.22));
 
                     if (iconActor) {
                         if (isSelected) {
-                            iconActor.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid rgba(255, 255, 255, 0.40) !important; background-color: rgba(255, 255, 255, 0.16) !important; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.30) !important; transition-duration: 150ms !important;`;
+                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 2px solid rgba(255, 255, 255, 0.45) !important; background-color: rgba(255, 255, 255, 0.14) !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important; transition-duration: 150ms !important;`;
                             if (typeof iconActor.add_style_pseudo_class === 'function') iconActor.add_style_pseudo_class('selected');
                             if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('selected');
                         } else if (isHovered) {
-                            iconActor.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid rgba(255, 255, 255, 0.25) !important; background-color: rgba(255, 255, 255, 0.08) !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important; transition-duration: 150ms !important;`;
+                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 1.5px solid rgba(255, 255, 255, 0.25) !important; background-color: rgba(255, 255, 255, 0.08) !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20) !important; transition-duration: 150ms !important;`;
                             if (typeof iconActor.remove_style_pseudo_class === 'function') iconActor.remove_style_pseudo_class('selected');
                             if (typeof iconActor.remove_style_class_name === 'function') iconActor.remove_style_class_name('selected');
                         } else {
-                            iconActor.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
+                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                             if (typeof iconActor.remove_style_pseudo_class === 'function') iconActor.remove_style_pseudo_class('selected');
                             if (typeof iconActor.remove_style_class_name === 'function') iconActor.remove_style_class_name('selected');
                         }
@@ -1405,10 +1407,9 @@ export default class EvalHelper extends Extension {
                         if (!this._iconSize && typeof this._setIconSize === 'function') {
                             this._setIconSize();
                         }
-                        const tilePad = Math.max(6, Math.round(cfg.iconSize * 0.12));
-                        const tileH = this._itemTileSize || (cfg.iconSize + tilePad * 2);
-                        const labelH = 16;
-                        const labelGap = 6;
+                        const tileH = cfg.iconSize;
+                        const labelH = 14;
+                        const labelGap = 2;
                         const vPad = cfg.padding;
 
                         const totalH = tileH + labelGap + labelH + vPad * 2;
@@ -1426,10 +1427,9 @@ export default class EvalHelper extends Extension {
                         const W = box.x2 - box.x1;
                         const H = box.y2 - box.y1;
 
-                        const tilePad = Math.max(6, Math.round(cfg.iconSize * 0.12));
-                        const tileH = this._itemTileSize || (cfg.iconSize + tilePad * 2);
-                        const labelH = 16;
-                        const labelGap = 6;
+                        const tileH = cfg.iconSize;
+                        const labelH = 14;
+                        const labelGap = 2;
 
 
 
@@ -1494,7 +1494,7 @@ export default class EvalHelper extends Extension {
                             this._activeAppLabel = new St.Label({
                                 style_class: 'alt-tab-app-label',
                             });
-                            this._activeAppLabel.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", "Helvetica Neue", Cantarell, sans-serif !important; font-size: 12px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9) !important; text-align: center !important;';
+                            this._activeAppLabel.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", "Helvetica Neue", Cantarell, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 2px !important;';
                             if (this._activeAppLabel.clutter_text) {
                                 this._activeAppLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this._activeAppLabel.clutter_text.line_wrap = false;
@@ -1506,7 +1506,7 @@ export default class EvalHelper extends Extension {
                         if (index >= 0 && index < this._items.length) {
                             const item = this._items[index];
                             const child = item?.get_child ? item.get_child() : null;
-                            const name = child?.label?.text || item?.label_actor?.text || '';
+                            const name = child?.label?.text || item?.label_actor?.text || (this.icons && this.icons[index]?.label?.text) || '';
                             this._activeAppLabel.text = name;
                             this._activeAppLabel.opacity = 255;
                             this._activeAppLabel.show();
@@ -1535,9 +1535,8 @@ export default class EvalHelper extends Extension {
                     SwitcherList.prototype.addItem = function(item, label) {
                         const bbox = origAddItem.call(this, item, label);
                         const cfg = _macGetAltTabConfig();
-                        const tilePad = Math.max(6, Math.round(cfg.iconSize * 0.12));
-                        const tileW = this._itemTileSize || (cfg.iconSize + tilePad * 2);
-                        const tileRad = Math.max(10, Math.round(tileW * 0.26));
+                        const tileW = this._itemTileSize || cfg.iconSize;
+                        const tileRad = Math.max(8, Math.round(tileW * 0.22));
 
                         bbox._square = false;
                         bbox.x_align = Clutter.ActorAlign.CENTER;
@@ -1559,7 +1558,7 @@ export default class EvalHelper extends Extension {
                             iconActor.x_align = Clutter.ActorAlign.CENTER;
                             iconActor.y_align = Clutter.ActorAlign.CENTER;
                             if (typeof iconActor.set_size === 'function') iconActor.set_size(tileW, tileW);
-                            iconActor.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
+                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                         }
                         if (this._leftArrow) this._leftArrow.opacity = 0;
                         if (this._rightArrow) this._rightArrow.opacity = 0;
@@ -1571,7 +1570,7 @@ export default class EvalHelper extends Extension {
                             }
                             if (bbox.hover && this._activeAppLabel && idx >= 0) {
                                 const ch = bbox?.get_child ? bbox.get_child() : null;
-                                const nm = ch?.label?.text || bbox?.label_actor?.text || '';
+                                const nm = ch?.label?.text || bbox?.label_actor?.text || (this.icons && this.icons[idx]?.label?.text) || '';
                                 if (nm) {
                                     this._activeAppLabel.text = nm;
                                     this._activeAppLabel.opacity = 255;
@@ -1593,22 +1592,21 @@ export default class EvalHelper extends Extension {
                     AltTabMod.AppIcon.prototype._init = function(app) {
                         origAppIconInit.call(this, app);
                         const cfg = _macGetAltTabConfig();
-                        const tilePad = Math.max(6, Math.round(cfg.iconSize * 0.12));
-                        const tileW = cfg.iconSize + tilePad * 2;
-                        const tileRad = Math.max(10, Math.round(tileW * 0.26));
+                        const tileW = cfg.iconSize;
+                        const tileRad = Math.max(8, Math.round(tileW * 0.22));
                         if (this._iconBin) {
                             this._iconBin.add_style_class_name('alt-tab-icon-bin');
                             this._iconBin.x_align = Clutter.ActorAlign.CENTER;
                             this._iconBin.y_align = Clutter.ActorAlign.CENTER;
                             if (typeof this._iconBin.set_size === 'function') this._iconBin.set_size(tileW, tileW);
-                            this._iconBin.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
+                            this._iconBin.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                         }
                         if (this.label) {
                             this.label.add_style_class_name('alt-tab-app-label');
                             this.label.opacity = 0;
                             if (typeof this.label.set_height === 'function') this.label.set_height(0);
                             this.label.x_align = Clutter.ActorAlign.CENTER;
-                            this.label.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", default, system-ui, sans-serif, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 4px !important;';
+                            this.label.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", default, system-ui, sans-serif, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 2px !important;';
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this.label.clutter_text.line_wrap = false;
@@ -1619,27 +1617,38 @@ export default class EvalHelper extends Extension {
                 }
 
 
+                if (AltTabMod.AppSwitcherPopup && !AltTabMod.AppSwitcherPopup.prototype._macThumbPatchedV12) {
+                    AltTabMod.AppSwitcherPopup.prototype._macThumbPatchedV12 = true;
+                    AltTabMod.AppSwitcherPopup.prototype._createThumbnails = function() {};
+                    AltTabMod.AppSwitcherPopup.prototype._timeoutPopupThumbnails = function() {};
+                }
+
                 if (AltTabMod.WindowIcon && !AltTabMod.WindowIcon.prototype._macPatchedV12) {
                     AltTabMod.WindowIcon.prototype._macPatchedV12 = true;
                     const origWindowIconInit = AltTabMod.WindowIcon.prototype._macOrigInit || AltTabMod.WindowIcon.prototype._init;
                     AltTabMod.WindowIcon.prototype._macOrigInit = origWindowIconInit;
                     AltTabMod.WindowIcon.prototype._init = function(window, mode) {
-                        origWindowIconInit.call(this, window, mode);
+                        origWindowIconInit.call(this, window, 2);
                         const cfg = _macGetAltTabConfig();
-                        const tilePad = Math.max(6, Math.round(cfg.iconSize * 0.12));
-                        const tileW = cfg.iconSize + tilePad * 2;
-                        const tileRad = Math.max(10, Math.round(tileW * 0.26));
-                        if (typeof this.set_size === 'function') {
-                            try { this.set_size(cfg.iconSize); } catch (_) {}
+                        const baseIconSize = cfg.iconSize;
+                        const tileRad = Math.max(8, Math.round(baseIconSize * 0.22));
+
+                        if (this._icon) {
+                            this._icon.destroy_all_children();
+                            const tracker = Shell.WindowTracker.get_default();
+                            const app = tracker.get_window_app(window);
+                            this.app = app;
+                            const appIcon = app
+                                ? app.create_icon_texture(baseIconSize)
+                                : new St.Icon({ icon_name: 'application-x-executable', icon_size: baseIconSize });
+                            appIcon.x_align = Clutter.ActorAlign.CENTER;
+                            appIcon.y_align = Clutter.ActorAlign.CENTER;
+                            this._icon.add_child(appIcon);
+                            this._icon.set_size(baseIconSize, baseIconSize);
+                            this._icon.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
+                            if (typeof this._icon.add_style_class_name === 'function') this._icon.add_style_class_name('alt-tab-icon-bin');
                         }
-                        const iconActor = this._iconBin || this._icon || (this.get_children ? this.get_children()[0] : null);
-                        if (iconActor) {
-                            if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('alt-tab-icon-bin');
-                            iconActor.x_align = Clutter.ActorAlign.CENTER;
-                            iconActor.y_align = Clutter.ActorAlign.CENTER;
-                            if (typeof iconActor.set_size === 'function') iconActor.set_size(tileW, tileW);
-                            iconActor.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
-                        }
+
                         if (this.label) {
                             try {
                                 const tracker = Shell.WindowTracker.get_default();
@@ -1651,7 +1660,7 @@ export default class EvalHelper extends Extension {
                             this.label.x_align = Clutter.ActorAlign.CENTER;
                             this.label.opacity = 0;
                             if (typeof this.label.set_height === 'function') this.label.set_height(0);
-                            this.label.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", default, system-ui, sans-serif, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 4px !important;';
+                            this.label.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", default, system-ui, sans-serif, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 2px !important;';
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this.label.clutter_text.line_wrap = false;
@@ -1680,8 +1689,7 @@ export default class EvalHelper extends Extension {
                                 if (lastItem) {
                                     lastItem._square = false;
                                     const cfg = _macGetAltTabConfig();
-                                    const tilePad = Math.max(6, Math.round(cfg.iconSize * 0.12));
-                                    const tileW = this._itemTileSize || (cfg.iconSize + tilePad * 2);
+                                    const tileW = this._itemTileSize || cfg.iconSize;
                                     if (typeof lastItem.set_width === 'function') lastItem.set_width(tileW);
                                     lastItem.style = 'padding: 0px !important; margin: 0px !important; background-color: transparent !important; border: none !important; box-shadow: none !important;';
                                 }
@@ -1707,24 +1715,20 @@ export default class EvalHelper extends Extension {
 
                             let baseIconSize = cfg.iconSize;
                             let spacing = cfg.spacing;
-                            let tilePad = Math.max(6, Math.round(baseIconSize * 0.12));
-                            let tileW = baseIconSize + tilePad * 2;
-                            let itemW = tileW;
+                            let itemW = baseIconSize;
 
                             const totalNeeded = this._items.length * (itemW + spacing) + 80;
                             if (totalNeeded > availWidth && this._items.length > 0) {
                                 const scale = Math.max(0.4, (availWidth - 80) / (this._items.length * (itemW + spacing)));
                                 baseIconSize = Math.max(24, Math.round(baseIconSize * scale));
                                 spacing = Math.max(2, Math.round(spacing * scale));
-                                tilePad = Math.max(4, Math.round(baseIconSize * 0.12));
-                                tileW = baseIconSize + tilePad * 2;
-                                itemW = tileW;
+                                itemW = baseIconSize;
                             }
 
-                            const tileRad = Math.max(10, Math.round(tileW * 0.26));
+                            const tileRad = Math.max(8, Math.round(baseIconSize * 0.22));
                             this._iconSize = baseIconSize;
                             this._squareItems = false;
-                            this._itemTileSize = tileW;
+                            this._itemTileSize = itemW;
                             this._itemSpacing = spacing;
 
                             if (this._list) {
@@ -1752,15 +1756,15 @@ export default class EvalHelper extends Extension {
                                         if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('alt-tab-icon-bin');
                                         iconActor.x_align = Clutter.ActorAlign.CENTER;
                                         iconActor.y_align = Clutter.ActorAlign.CENTER;
-                                        if (typeof iconActor.set_size === 'function') iconActor.set_size(tileW, tileW);
+                                        if (typeof iconActor.set_size === 'function') iconActor.set_size(itemW, itemW);
                                         const isSelected = (i === this._highlighted);
                                         const isHovered = this._items[i]?.hover && !isSelected;
                                         if (isSelected) {
-                                            iconActor.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid rgba(255, 255, 255, 0.40) !important; background-color: rgba(255, 255, 255, 0.16) !important; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.30) !important; transition-duration: 150ms !important;`;
+                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 2px solid rgba(255, 255, 255, 0.45) !important; background-color: rgba(255, 255, 255, 0.14) !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important; transition-duration: 150ms !important;`;
                                         } else if (isHovered) {
-                                            iconActor.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid rgba(255, 255, 255, 0.25) !important; background-color: rgba(255, 255, 255, 0.08) !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important; transition-duration: 150ms !important;`;
+                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 1.5px solid rgba(255, 255, 255, 0.25) !important; background-color: rgba(255, 255, 255, 0.08) !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20) !important; transition-duration: 150ms !important;`;
                                         } else {
-                                            iconActor.style = `padding: ${tilePad}px !important; border-radius: ${tileRad}px !important; border: 1.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
+                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                                         }
                                     }
                                     if (this.icons[i].label) {
@@ -1780,12 +1784,87 @@ export default class EvalHelper extends Extension {
                 try {
                     const dummyWinPopup = new AltTabMod.WindowSwitcherPopup();
                     const WinSwitcherProto = dummyWinPopup._switcherList ? Object.getPrototypeOf(dummyWinPopup._switcherList) : null;
-                    if (WinSwitcherProto && !WinSwitcherProto._macPatchedV10) {
-                        WinSwitcherProto._macPatchedV10 = true;
+                    if (WinSwitcherProto && !WinSwitcherProto._macPatchedV12) {
+                        WinSwitcherProto._macPatchedV12 = true;
                         const origWinSwitcherInit = WinSwitcherProto._macOrigInit || WinSwitcherProto._init;
                         WinSwitcherProto._macOrigInit = origWinSwitcherInit;
                         WinSwitcherProto._init = function(windows, mode) {
-                            origWinSwitcherInit.call(this, windows, mode);
+                            origWinSwitcherInit.call(this, windows, 2);
+                            this._squareItems = false;
+                            if (this._label) {
+                                this._label.hide();
+                                this._label.opacity = 0;
+                            }
+                            this._setIconSize();
+                        };
+                        WinSwitcherProto._setIconSize = function() {
+                            const cfg = _macGetAltTabConfig();
+                            const primary = Main.layoutManager.primaryMonitor;
+                            const availWidth = primary ? primary.width - 160 : 1600;
+
+                            let baseIconSize = cfg.iconSize;
+                            let spacing = cfg.spacing;
+                            let itemW = baseIconSize;
+
+                            const totalNeeded = this._items.length * (itemW + spacing) + 80;
+                            if (totalNeeded > availWidth && this._items.length > 0) {
+                                const scale = Math.max(0.4, (availWidth - 80) / (this._items.length * (itemW + spacing)));
+                                baseIconSize = Math.max(24, Math.round(baseIconSize * scale));
+                                spacing = Math.max(2, Math.round(spacing * scale));
+                                itemW = baseIconSize;
+                            }
+
+                            const tileRad = Math.max(8, Math.round(baseIconSize * 0.22));
+                            this._iconSize = baseIconSize;
+                            this._squareItems = false;
+                            this._itemTileSize = itemW;
+                            this._itemSpacing = spacing;
+
+                            if (this._list) {
+                                this._list.spacing = spacing;
+                                this._list.style = `spacing: ${spacing}px !important;`;
+                                this._list.y_align = Clutter.ActorAlign.CENTER;
+                                this._list.x_align = Clutter.ActorAlign.CENTER;
+                            }
+
+                            for (let i = 0; i < this._items.length; i++) {
+                                const item = this._items[i];
+                                if (item) {
+                                    item._square = false;
+                                    item.x_align = Clutter.ActorAlign.CENTER;
+                                    item.y_align = Clutter.ActorAlign.CENTER;
+                                    if (typeof item.set_width === 'function') item.set_width(itemW);
+                                    item.style = 'padding: 0px !important; margin: 0px !important; background-color: transparent !important; border: none !important; box-shadow: none !important;';
+                                }
+                                const iconObj = this.icons && this.icons[i];
+                                if (iconObj) {
+                                    iconObj.x_align = Clutter.ActorAlign.CENTER;
+                                    iconObj.y_align = Clutter.ActorAlign.CENTER;
+                                    iconObj.style = 'padding: 0px !important; margin: 0px !important; spacing: 0px !important;';
+                                    const iconActor = iconObj._icon || iconObj._iconBin || (iconObj.get_children ? iconObj.get_children()[0] : null);
+                                    if (iconActor) {
+                                        if (typeof iconActor.set_size === 'function') iconActor.set_size(itemW, itemW);
+                                        const isSelected = (i === this._highlighted);
+                                        const isHovered = item?.hover && !isSelected;
+                                        if (isSelected) {
+                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 2px solid rgba(255, 255, 255, 0.45) !important; background-color: rgba(255, 255, 255, 0.14) !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important; transition-duration: 150ms !important;`;
+                                        } else if (isHovered) {
+                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 1.5px solid rgba(255, 255, 255, 0.25) !important; background-color: rgba(255, 255, 255, 0.08) !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20) !important; transition-duration: 150ms !important;`;
+                                        } else {
+                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
+                                        }
+                                    }
+                                }
+                            }
+                        };
+                        WinSwitcherProto.vfunc_get_preferred_height = function(forWidth) {
+                            return SwitcherList.prototype.vfunc_get_preferred_height.call(this, forWidth);
+                        };
+                        WinSwitcherProto.vfunc_allocate = function(box) {
+                            SwitcherList.prototype.vfunc_allocate.call(this, box);
+                        };
+                        WinSwitcherProto.highlight = function(index, justOutline) {
+                            SwitcherList.prototype.highlight.call(this, index, justOutline);
                             if (this._label) {
                                 this._label.hide();
                                 this._label.opacity = 0;
@@ -1814,22 +1893,22 @@ export default class EvalHelper extends Extension {
                         const cfg = _macGetAltTabConfig();
                         glass.setCornerRadius(cfg.radius);
                         glass.setTintColor(0.0, 0.0, 0.0);
-                        glass.setTintStrength(0.06);
-                        glass.setBlurRadius(20.0);
+                        glass.setTintStrength(cfg.tint / 100.0);
+                        glass.setBlurRadius(cfg.blur);
                         glass.setPadding(0);
                         try {
                             glass._effect?.setSurfaceLightEnabled?.(true);
-                            glass._effect?._setFloat?.('displacement_scale', 40.0);
-                            glass._effect?._setFloat?.('ior', 1.50);
-                            glass._effect?._setFloat?.('rim_intensity', 0.20);
-                            glass._effect?._setFloat?.('rim_width', 4.5);
-                            glass._effect?._setFloat?.('rim_power', 5.0);
-                            glass._effect?._setFloat?.('rim_directional_power', 2.7);
-                            glass._effect?._setFloat?.('rim_light_color_intensity', 1.5);
+                            glass._effect?._setFloat?.('displacement_scale', 20.0);
+                            glass._effect?._setFloat?.('ior', 1.40);
+                            glass._effect?._setFloat?.('rim_intensity', 0.25);
+                            glass._effect?._setFloat?.('rim_width', 3.5);
+                            glass._effect?._setFloat?.('rim_power', 4.0);
+                            glass._effect?._setFloat?.('rim_directional_power', 2.5);
+                            glass._effect?._setFloat?.('rim_light_color_intensity', 1.2);
                             glass._effect?._setFloat?.('specular_intensity', 0.12);
                             glass._effect?._setFloat?.('sheen_intensity', 0.10);
                             glass._effect?._setFloat?.('chroma_strength', 0.005);
-                            glass._effect?._setFloat?.('shadow_intensity', 0.0);
+                            glass._effect?._setFloat?.('shadow_intensity', cfg.shadow / 100.0);
                             glass._effect?._setFloat?.('ao_intensity', 0.0);
                         } catch (_) {}
                         glass.hide();
@@ -1851,10 +1930,12 @@ export default class EvalHelper extends Extension {
                         const radius = cfg.radius;
                         const vPad = cfg.padding;
                         const hPad = Math.max(vPad + 12, Math.round(radius * 0.85));
+                        const tintA = (cfg.tint / 100.0).toFixed(2);
+                        const shadowA = (cfg.shadow / 100.0).toFixed(2);
 
                         if (this._switcherList) {
                             this._switcherList._squareItems = false;
-                            this._switcherList.style = `background-color: rgba(22, 22, 22, 0.40) !important; border-radius: ${radius}px !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important; padding: ${vPad}px ${hPad}px !important;`;
+                            this._switcherList.style = `background-color: rgba(22, 22, 22, ${tintA}) !important; border-radius: ${radius}px !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; box-shadow: 0 16px 40px rgba(0, 0, 0, ${shadowA}) !important; padding: ${vPad}px ${hPad}px !important;`;
                             if (this._switcherList._list) {
                                 this._switcherList._list.style = `spacing: ${cfg.spacing}px !important;`;
                                 this._switcherList._list.spacing = cfg.spacing;
@@ -1910,29 +1991,10 @@ export default class EvalHelper extends Extension {
                                     const bgH = Math.round(slH);
 
 
-                                    let blurRad = 20.0;
-                                    let tintStr = 0.06;
-                                    let tR = 0.0, tG = 0.0, tB = 0.0;
-                                    try {
-                                        const ext = Main.extensionManager.lookup('liquid-glass@thinkingcoding1231.gmail.com');
-                                        const s = ext?.stateObj?._settings;
-                                        if (s) {
-                                            const rawBlur = s.get_int('dock-blur-radius');
-                                            if (typeof rawBlur === 'number' && rawBlur > 0) {
-                                                blurRad = Math.max(6.0, rawBlur * 1.5);
-                                            }
-                                            const rawTint = s.get_double('dock-tint-strength');
-                                            if (typeof rawTint === 'number' && rawTint >= 0) {
-                                                tintStr = Math.min(0.35, Math.max(0.02, rawTint));
-                                            }
-                                            const col = s.get_string('dock-tint-color') || '#000000';
-                                            if (col.startsWith('#') && col.length === 7) {
-                                                tR = parseInt(col.substring(1, 3), 16) / 255.0;
-                                                tG = parseInt(col.substring(3, 5), 16) / 255.0;
-                                                tB = parseInt(col.substring(5, 7), 16) / 255.0;
-                                            }
-                                        }
-                                    } catch (_) {}
+                                    const cfg = _macGetAltTabConfig();
+                                    const blurRad = Math.max(0.0, Number(cfg.blur));
+                                    const tintStr = Math.max(0.0, Math.min(1.0, cfg.tint / 100.0));
+                                    const shadowStr = Math.max(0.0, Math.min(1.0, cfg.shadow / 100.0));
 
                                     switcherGlass.opacity = this.opacity;
                                     if (this.opacity > 0) {
@@ -1944,10 +2006,13 @@ export default class EvalHelper extends Extension {
                                     switcherGlass.set_position(primary.x, primary.y);
                                     switcherGlass.set_size(primary.width, primary.height);
                                     switcherGlass.setResolution(primary.width, primary.height);
-                                    switcherGlass.setCornerRadius(28.0);
+                                    switcherGlass.setCornerRadius(cfg.radius);
                                     switcherGlass.setBlurRadius(blurRad);
                                     switcherGlass.setTintStrength(tintStr);
-                                    switcherGlass.setTintColor(tR, tG, tB);
+                                    switcherGlass.setTintColor(0.0, 0.0, 0.0);
+                                    try {
+                                        switcherGlass._effect?._setFloat?.('shadow_intensity', shadowStr);
+                                    } catch (_) {}
                                     switcherGlass.setGlassGeometry(localX, localY, bgW, bgH);
 
                                     const CLIP_PAD = 160;
@@ -2636,13 +2701,30 @@ export default class EvalHelper extends Extension {
                     if (ok) conf = JSON.parse(new TextDecoder().decode(bytes));
                 }
                 const iconSize = (typeof conf.alttab_icon_size === 'number') ? conf.alttab_icon_size : 64;
-                const padding = (typeof conf.alttab_padding === 'number') ? conf.alttab_padding : 18;
+                const padding = (typeof conf.alttab_padding === 'number') ? conf.alttab_padding : 14;
                 const spacing = (typeof conf.alttab_spacing === 'number') ? conf.alttab_spacing : 12;
-                const radius = (typeof conf.alttab_radius === 'number') ? conf.alttab_radius : 28;
+                const radius = (typeof conf.alttab_radius === 'number') ? conf.alttab_radius : 42;
+                const blur = (typeof conf.alttab_blur === 'number') ? conf.alttab_blur : 1;
+                const tint = (typeof conf.alttab_tint === 'number') ? conf.alttab_tint : 5;
+                const shadow = (typeof conf.alttab_shadow === 'number') ? conf.alttab_shadow : 25;
 
-                globalThis._macAltTabConfig = { iconSize, padding, spacing, radius };
-                if (globalThis._macSwitcherGlass && typeof globalThis._macSwitcherGlass.setCornerRadius === 'function') {
-                    globalThis._macSwitcherGlass.setCornerRadius(radius);
+                globalThis._macAltTabConfig = { iconSize, padding, spacing, radius, blur, tint, shadow };
+                if (globalThis._macSwitcherGlass) {
+                    if (typeof globalThis._macSwitcherGlass.setCornerRadius === 'function') {
+                        globalThis._macSwitcherGlass.setCornerRadius(radius);
+                    }
+                    if (typeof globalThis._macSwitcherGlass.setBlurRadius === 'function') {
+                        globalThis._macSwitcherGlass.setBlurRadius(blur);
+                    }
+                    if (typeof globalThis._macSwitcherGlass.setTintStrength === 'function') {
+                        globalThis._macSwitcherGlass.setTintStrength(tint / 100.0);
+                    }
+                    try {
+                        globalThis._macSwitcherGlass._effect?._setFloat?.('shadow_intensity', shadow / 100.0);
+                    } catch (_) {}
+                    if (typeof globalThis._macSwitcherGlass.forceRefresh === 'function') {
+                        globalThis._macSwitcherGlass.forceRefresh(1);
+                    }
                 }
             } catch (e) {
                 console.error('[EvalHelper] syncAltTabStyling error: ' + e);

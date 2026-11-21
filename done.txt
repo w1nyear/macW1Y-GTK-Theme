@@ -3299,3 +3299,64 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+
+================================================================================
+Завдання 877: Оновлення меню Alt+Tab перемикача програм за еталоном macOS (Photo 1), компактна висота, нульовий відступ іконки, живий передогляд та налаштування
+================================================================================
+- Вихідні вимоги:
+  * Оновити меню Alt+Tab / перемикача програм (Photo 2) строго за еталонним референсом macOS (Photo 1).
+  * Повністю видалити мініатюри / передогляд вікон (Window clones / thumbnails), замінивши їх виключно чистими іконками програм по центру.
+  * Зменшити вертикальну висоту меню до компактного акуратного формату (108px замість 160-200px+).
+  * Збільшити заокруглення меню в 1.5 рази: радіус з 28px до 42px.
+  * Встановити значення за замовчуванням: розмиття (blur) на 1px, тінт (tint) на 5% (5px), тінь (shadow) на 25%.
+  * Піднести текстову мітку назви активної програми ближче до іконки (labelGap = 2px замість 6px, margin-top: 2px).
+  * Забезпечити вписування іконки під обводок навколо іконки з нульовим відступом (padding: 0px !important, margin: 0px !important).
+  * Додати параметри розмиття, тінту, тіні, радіусу, розміру іконок, відступів та дистанції до «Mac стилізації» (bin/mac-styling-settings) з інтерактивним живим передоглядом перемикача безпосередньо у меню налаштувань.
+  * Зберегти версію 0.8 проекту та 0 символів кирилиці в install.sh.
+  * Пройти всі верифікаційні тести (mac-extension-guard, mac-audit-sync, test-macw1y-animations, unit tests, mac-i18n-verify).
+
+- Реалізовані зміни:
+  1) eval-helper (extensions/eval-helper@mactheme/extension.js):
+     * У WindowIcon.prototype._init примусово встановлено режим APP_ICON_ONLY та додано повне очищення дочірніх клонів (destroy_all_children); розміщено чисту текстуру іконки програми по центру без клонів вікон.
+     * У WindowSwitcherPopup та WindowSwitcher прототипи vfunc_get_preferred_height, vfunc_allocate, highlight та _setIconSize уніфіковано з компактним горизонтальним списком іконок без передоглядів вікон, із приховуванням старого лейбла та відображенням відцентрованого activeAppLabel.
+     * У SwitcherList.prototype._macUpdateItemVisual та addItem встановлено zero padding/margin навколо іконки (padding: 0px !important; margin: 0px !important;) з витонченим скругленим контуром сквиркла 2px solid rgba(255, 255, 255, 0.45) та радіусом 22% від розміру іконки, що ідеально облягає край значка без внутрішнього зазору.
+     * Компактна висота перемикача: зменшено vPad до 14px, labelGap до 2px, що дає сумарну вертикальну висоту 108px.
+     * Заокруглення плашки збільшено в 1.5 рази (border-radius: 42px).
+     * BackdropGlass у getSwitcherGlass та syncGlass динамічно застосовує blur (1px), tint (5%), shadow (25%) та радіус 42px, оновлюючись наживо через D-Bus метод SyncAltTabStyling.
+  2) Утиліта «Mac стилізація» (bin/mac-styling-settings, /usr/local/bin/mac-styling-settings):
+     * Додано інтерактивний блок живого передогляду плашки перемикача (alttab_preview_row / alttab_preview_pill) з демонстраційними програмами (Файли, Браузер, Параметри у сквирклі з нульовим відступом і підписом, Термінал), який наживо реагує на зміну будь-якого повзунка.
+     * Додано повзунки налаштування:
+       - Розмиття (alttab_blur, 0-50 px, за замовчуванням 1)
+       - Тінт / затемнення (alttab_tint, 0-100%, за замовчуванням 5)
+       - Тінь (alttab_shadow, 0-100%, за замовчуванням 25)
+       - Радіус заокруглення (alttab_radius, 12-72 px, за замовчуванням 42)
+       - Розмір іконок (alttab_icon_size, 32-96 px, за замовчуванням 64)
+       - Розмір меню / вертикальний відступ (alttab_padding, 8-40 px, за замовчуванням 14)
+       - Відстань між іконками (alttab_spacing, 0-36 px, за замовчуванням 12)
+     * Значення зберігаються до ~/.config/mac-styling/styling.json та в реальному часі синхронізуються із оболонкою через SyncAltTabStyling.
+  3) Теми GNOME Shell (gnome-shell.css):
+     * Оновлено .switcher-list: border-radius: 42px !important; padding: 14px 36px !important; box-shadow: 0 16px 40px rgba(0,0,0,0.25).
+     * Оновлено .alt-tab-icon-bin: padding: 0px !important; margin: 0px !important; border-radius: 14px !important.
+     * Оновлено .alt-tab-app-label: margin-top: 2px !important.
+     * Приховано .thumbnail-box та .thumbnail (display: none !important; width: 0px; height: 0px).
+     * Зміни внесено до 5 тем: macW1Y-Dark, macW1Y-Dark-solid, macW1Y-Light, macW1Y-Light-solid, gnome-shell-theme, а також синхронізовано до ~/.themes/.
+  4) Цілісність системи та верифікація:
+     * Оновлено config/extensions.lock.json з актуальним sha256-tree-v2 хешем для eval-helper@mactheme.
+     * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK (100%).
+     * python3 bin/mac-audit-sync check — 100% PASS (5/5 аудитів).
+     * python3 bin/test-macw1y-animations.py — 12/12 PASS (100%).
+     * python3 -m unittest discover -s tests -p 'test_*.py' — 39/39 PASS.
+     * python3 bin/mac-i18n-verify — 100% SUCCESS, 0 кириличних символів в install.sh.
+
+- Зачеплені файли:
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [bin/mac-styling-settings](file:///home/vitaliy/MACTHEMEFILES/bin/mac-styling-settings)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [macW1Y-Dark/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark/gnome-shell/gnome-shell.css)
+  * [macW1Y-Dark-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark-solid/gnome-shell/gnome-shell.css)
+  * [macW1Y-Light/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light/gnome-shell/gnome-shell.css)
+  * [macW1Y-Light-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light-solid/gnome-shell/gnome-shell.css)
+  * [gnome-shell-theme/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/gnome-shell-theme/gnome-shell.css)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
