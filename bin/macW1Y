@@ -3,7 +3,7 @@
 #   macW1Y — macW1Y Transformation, Developer & Debug CLI System
 # ==============================================================================
 
-VERSION="0.7"
+VERSION="0.8"
 
 # ANSI Colors
 C_RESET="\033[0m"

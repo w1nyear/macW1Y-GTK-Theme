@@ -3145,3 +3145,42 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
       * [README.md](file:///home/vitaliy/MACTHEMEFILES/README.md)
       * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
       * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+872. Оновлення та перехід на версію розробки macW1Y v0.8:
+    - Актуалізовано файл version на значення 0.8.
+    - Оновлено версію інсталятора install.sh: константа NEW_VERSION="0.8", заголовок "Version 0.8", резервний вивід "0.8".
+    - Оновлено всі CLI-диспетчери та утиліти:
+      * bin/macW1Y (VERSION="0.8")
+      * bin/mac-installer-gui (версія 0.8 за замовчуванням)
+      * bin/mac-setup-wizard (версія 0.8)
+      * bin/mac-audit-sync (macW1Y 0.8 System Audit Tool)
+      * bin/mac-build-theme (macW1Y 0.8 Master Theme Compiler)
+      * bin/mac-theme-sync (токени GTK3 для v0.8)
+      * bin/mac-i18n-verify (валидатор v0.8)
+      * bin/mac_i18n.py (модуль v0.8)
+      * bin/mac-lowspec-optimizer (v0.8)
+      * bin/mac-graphics-profile (v0.8)
+    - Перекомпільовано майстер-теми GTK3/GTK4 (mac-build-theme) з актуальними метаданими v0.8.
+    - Синхронізовано системні копії утиліт у /usr/local/bin.
+    - Оновлено MULTIPLATFORM_MIGRATION_STATUS.md на версію 0.8.
+    - Проведено комплексну верифікацію:
+      * mac-audit-sync check: 100% PASS.
+      * mac-extension-guard verify: 21/21 LOCKED OK.
+      * Набір модульних тестів (tests/test_*.py): 38/38 PASS.
+      * Чистота install.sh від кирилиці: 0 символів.
+    - Зачеплені файли:
+      * [version](file:///home/vitaliy/MACTHEMEFILES/version)
+      * [install.sh](file:///home/vitaliy/MACTHEMEFILES/install.sh)
+      * [bin/macW1Y](file:///home/vitaliy/MACTHEMEFILES/bin/macW1Y)
+      * [bin/mac-installer-gui](file:///home/vitaliy/MACTHEMEFILES/bin/mac-installer-gui)
+      * [bin/mac-setup-wizard](file:///home/vitaliy/MACTHEMEFILES/bin/mac-setup-wizard)
+      * [bin/mac-audit-sync](file:///home/vitaliy/MACTHEMEFILES/bin/mac-audit-sync)
+      * [bin/mac-build-theme](file:///home/vitaliy/MACTHEMEFILES/bin/mac-build-theme)
+      * [bin/mac-theme-sync](file:///home/vitaliy/MACTHEMEFILES/bin/mac-theme-sync)
+      * [bin/mac-i18n-verify](file:///home/vitaliy/MACTHEMEFILES/bin/mac-i18n-verify)
+      * [bin/mac_i18n.py](file:///home/vitaliy/MACTHEMEFILES/bin/mac_i18n.py)
+      * [bin/mac-lowspec-optimizer](file:///home/vitaliy/MACTHEMEFILES/bin/mac-lowspec-optimizer)
+      * [bin/mac-graphics-profile](file:///home/vitaliy/MACTHEMEFILES/bin/mac-graphics-profile)
+      * [MULTIPLATFORM_MIGRATION_STATUS.md](file:///home/vitaliy/MACTHEMEFILES/MULTIPLATFORM_MIGRATION_STATUS.md)
+      * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+      * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
