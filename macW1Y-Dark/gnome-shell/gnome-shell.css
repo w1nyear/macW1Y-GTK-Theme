@@ -3071,10 +3071,10 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .switcher-list {
   background-color: rgba(22, 22, 22, 0.05) !important;
   background: rgba(22, 22, 22, 0.05) !important;
-  border-radius: 42px !important;
+  border-radius: 50px !important;
   border: 1px solid rgba(255, 255, 255, 0.22) !important;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25) !important;
-  padding: 14px 36px 14px 36px !important;
+  padding: 10px 14px 10px 14px !important;
 }
 
 .switcher-list .item-box,
@@ -3088,7 +3088,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
   border-radius: 0px !important;
   border: none !important;
   background-color: transparent !important;
-  background: none !important;
+  background: transparent !important;
   box-shadow: none !important;
   outline: none !important;
   color: #ffffff !important;
@@ -3100,27 +3100,29 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .alt-tab-icon-bin {
   padding: 0px !important;
   margin: 0px !important;
-  border-radius: 14px !important;
-  border: 2px solid transparent !important;
+  border-radius: 16px !important;
+  border: 3px solid transparent !important;
   background-color: transparent !important;
-  background: none !important;
+  background: transparent !important;
   box-shadow: none !important;
   transition-duration: 150ms !important;
 }
 
 .alt-tab-icon-bin:hover,
 .switcher-list .item-box:hover .alt-tab-icon-bin {
-  background-color: rgba(255, 255, 255, 0.08) !important;
-  border: 2px solid rgba(255, 255, 255, 0.25) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20) !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  border: 3px solid transparent !important;
+  box-shadow: none !important;
 }
 
 .alt-tab-icon-bin:selected,
 .alt-tab-icon-bin.selected,
 .switcher-list .item-box:selected .alt-tab-icon-bin,
 .switcher-list .item-box.selected .alt-tab-icon-bin {
-  background-color: rgba(255, 255, 255, 0.14) !important;
-  border: 2px solid rgba(255, 255, 255, 0.45) !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  border: 3px solid rgba(255, 255, 255, 0.55) !important;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
 }
 
@@ -3136,8 +3138,11 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
   color: #ffffff !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
   text-align: center !important;
-  margin-top: 2px !important;
+  margin-top: 4px !important;
   padding: 0 1px !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
 }
 
 .switcher-list .thumbnail-box {

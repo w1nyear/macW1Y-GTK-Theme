@@ -3360,3 +3360,48 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [gnome-shell-theme/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/gnome-shell-theme/gnome-shell.css)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+================================================================================
+Завдання 878: Вдосконалення Alt+Tab перемикача: збільшення заокруглення фонового скла до форми капсули (50px), усунення обрізання та перекриття іконки текстом, компактні відступи, видалення старого ховеру та жирна біло-прозора обводка
+================================================================================
+- Вихідні вимоги:
+  * Збільшити заокруглення розмиття/скла до форми капсули (50px), усунути невідповідність між геометрією шейдера скла та CSS-рамкою перемикача.
+  * Виправити баг, коли текст підпису перекривав фоном іконку або обрізав нижню дугу обводки.
+  * Зменшити відступи від іконки до країв (padding 10px 14px), зробивши плашку компактнішою завширшки та заввишки.
+  * Повністю видалити старий ховер (жодних рамок чи білих підкладок при наведенні миші).
+  * Зробити обводку навколо виділеної іконки жирною біло-напівпрозорою (3px solid rgba(255, 255, 255, 0.55)), а внутрішній фон — 100% прозорим.
+  * Синхронізувати оновлені параметри за замовчуванням та вигляд віджета у «Mac стилізації» (bin/mac-styling-settings).
+  * Зберегти 100% проходження всіх 5 тестових наборів та 0 кириличних символів в install.sh.
+
+- Реалізовані зміни:
+  1) eval-helper (extensions/eval-helper@mactheme/extension.js):
+     * Усунено обрізання нижньої частини сквиркла контейнером _scrollView: для item, child та iconActor встановлено синхронний розмір baseIconSize (64x64) з нульовими відступами.
+     * Відцентровано підпис застосунку впритул під іконкою (labelGap = 4px, висота списку 102px), фон лейбла 100% прозорий.
+     * Встановлено жирну обводку виділення: 3px solid rgba(255, 255, 255, 0.55), фон повністю прозорий (background: transparent !important).
+     * Повністю вимкнено hover-ефекти на елементах перемикача (border: 3px solid transparent, background: transparent, box-shadow: none).
+     * Liquid Glass: у patchSwitcherPopupLQVisual передано corner_radius: 50px, padding: 0px та оновлено шейдер скла для синхронізації геометрії зі скругленням CSS-капсули.
+  2) Утиліта «Mac стилізація» (bin/mac-styling-settings, /usr/local/bin/mac-styling-settings):
+     * Оновлено стандартні значення: alttab_radius = 50, alttab_padding = 10.
+     * Оновлено прев'ю-віджет: жирна обводка 3px solid rgba(255, 255, 255, 0.55), прозорий фон, компактні бічні поля (display_h_padding).
+  3) Стилі тем GNOME Shell (gnome-shell.css):
+     * Оновлено .switcher-list: border-radius: 50px !important, padding: 10px 14px !important.
+     * Оновлено .alt-tab-icon-bin: border-radius: 16px, border: 3px solid transparent, background: transparent !important.
+     * Оновлено .alt-tab-icon-bin:selected: border: 3px solid rgba(255, 255, 255, 0.55) !important (для світлих тем 3px solid rgba(0, 0, 0, 0.35)), background: transparent !important.
+     * Видалено старий ховер у всіх темах: macW1Y-Dark, macW1Y-Dark-solid, macW1Y-Light, macW1Y-Light-solid, gnome-shell-theme.
+     * Синхронізовано стилі до ~/.themes/.
+  4) Верифікація та цілісність:
+     * Оновлено sha256 у config/extensions.lock.json (4bd732de).
+     * Усі 5 перевірок пройшли на 100%: mac-extension-guard (21/21), mac-audit-sync (5/5), test-macw1y-animations (12/12), unittests (39/39), mac-i18n-verify.
+     * 0 кириличних символів в install.sh.
+
+- Зачеплені файли:
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [bin/mac-styling-settings](file:///home/vitaliy/MACTHEMEFILES/bin/mac-styling-settings)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [macW1Y-Dark/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark/gnome-shell/gnome-shell.css)
+  * [macW1Y-Dark-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark-solid/gnome-shell/gnome-shell.css)
+  * [macW1Y-Light/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light/gnome-shell/gnome-shell.css)
+  * [macW1Y-Light-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light-solid/gnome-shell/gnome-shell.css)
+  * [gnome-shell-theme/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/gnome-shell-theme/gnome-shell.css)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

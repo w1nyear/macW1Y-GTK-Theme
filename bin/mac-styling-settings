@@ -380,7 +380,7 @@ class MacStylingWindow(Adw.ApplicationWindow):
         )
         self.alttab_radius_scale = self._create_slider_row(
             alttab_group, t("alttab_radius", "Радіус заокруглення"), t("alttab_radius_desc", "Радіус заокруглення кутів плашки перемикача (px)"),
-            12, 72, int(getattr(self, "alttab_radius", 42))
+            12, 72, int(getattr(self, "alttab_radius", 50))
         )
         self.alttab_icon_size_scale = self._create_slider_row(
             alttab_group, t("alttab_icon_size", "Розмір іконок"), t("alttab_icon_size_desc", "Розмір значків програм у перемикачі (px)"),
@@ -388,7 +388,7 @@ class MacStylingWindow(Adw.ApplicationWindow):
         )
         self.alttab_padding_scale = self._create_slider_row(
             alttab_group, t("alttab_padding", "Розмір меню / відступ"), t("alttab_padding_desc", "Вертикальний відступ та висота скляної плашки (px)"),
-            8, 40, int(getattr(self, "alttab_padding", 14))
+            8, 40, int(getattr(self, "alttab_padding", 10))
         )
         self.alttab_spacing_scale = self._create_slider_row(
             alttab_group, t("alttab_spacing", "Відстань між іконками"), t("alttab_spacing_desc", "Відстань між сусідніми значками у списку (px)"),
@@ -628,9 +628,9 @@ class MacStylingWindow(Adw.ApplicationWindow):
         self.alttab_blur = 1
         self.alttab_tint = 5
         self.alttab_shadow = 25
-        self.alttab_radius = 42
+        self.alttab_radius = 50
         self.alttab_icon_size = 64
-        self.alttab_padding = 14
+        self.alttab_padding = 10
         self.alttab_spacing = 12
 
         self.dock_size = 12
@@ -779,17 +779,17 @@ class MacStylingWindow(Adw.ApplicationWindow):
             blur = int(self.alttab_blur_scale.get_value()) if hasattr(self, 'alttab_blur_scale') else 1
             tint = int(self.alttab_tint_scale.get_value()) if hasattr(self, 'alttab_tint_scale') else 5
             shadow = int(self.alttab_shadow_scale.get_value()) if hasattr(self, 'alttab_shadow_scale') else 25
-            radius = int(self.alttab_radius_scale.get_value()) if hasattr(self, 'alttab_radius_scale') else 42
+            radius = int(self.alttab_radius_scale.get_value()) if hasattr(self, 'alttab_radius_scale') else 50
             icon_size = int(self.alttab_icon_size_scale.get_value()) if hasattr(self, 'alttab_icon_size_scale') else 64
-            padding = int(self.alttab_padding_scale.get_value()) if hasattr(self, 'alttab_padding_scale') else 14
+            padding = int(self.alttab_padding_scale.get_value()) if hasattr(self, 'alttab_padding_scale') else 10
             spacing = int(self.alttab_spacing_scale.get_value()) if hasattr(self, 'alttab_spacing_scale') else 12
 
             display_icon_size = max(24, min(48, int(icon_size * 0.65)))
             display_radius = max(8, int(radius * 0.65))
             display_padding = max(6, int(padding * 0.65))
-            display_h_padding = max(display_padding + 6, int(display_radius * 0.85))
+            display_h_padding = max(display_padding + 2, int(padding * 0.9))
             display_spacing = max(4, int(spacing * 0.65))
-            squircle_radius = max(6, int(display_icon_size * 0.22))
+            squircle_radius = max(6, int(display_icon_size * 0.25))
 
             for img in [self.alttab_demo_img1, self.alttab_demo_img2, self.alttab_demo_img3, self.alttab_demo_img4]:
                 img.set_pixel_size(display_icon_size)
@@ -810,16 +810,16 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 padding: 0px;
                 margin: 0px;
                 border-radius: {squircle_radius}px;
-                border: 2px solid rgba(255, 255, 255, 0.50);
-                background-color: rgba(255, 255, 255, 0.14);
-                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+                border: 3px solid rgba(255, 255, 255, 0.55);
+                background-color: transparent;
+                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
             }}
             #alttab-demo-label {{
                 font-size: 10px;
                 font-weight: 500;
                 color: #ffffff;
                 text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
-                margin-top: 2px;
+                margin-top: 4px;
             }}
             """
             if not hasattr(self, '_alttab_css_provider'):
