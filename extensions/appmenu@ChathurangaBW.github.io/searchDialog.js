@@ -1002,7 +1002,11 @@ if (!AppmenuHorizontalFadeEffect) {
     class AppmenuHorizontalFadeEffect extends Clutter.ShaderEffect {
         constructor(leftOffset = 26.0, rightOffset = 26.0) {
             super();
-            this.set_shader_source(HORIZONTAL_GRADIENT_FADE_SHADER);
+            if (typeof this.set_shader_source === 'function') {
+                try {
+                    this.set_shader_source(HORIZONTAL_GRADIENT_FADE_SHADER);
+                } catch (_) {}
+            }
             this._leftOffset = leftOffset;
             this._rightOffset = rightOffset;
             this._fadeLeft = false;

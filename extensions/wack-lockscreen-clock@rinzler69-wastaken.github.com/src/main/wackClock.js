@@ -20,9 +20,9 @@ export const WackClock = GObject.registerClass(
         _init() {
             super._init({
                 style_class: 'unlock-dialog-clock',
-                vertical: true,
                 y_align: Clutter.ActorAlign.CENTER,
             });
+            this.vertical = true;
 
 
             this._dateOutput = new St.Label({

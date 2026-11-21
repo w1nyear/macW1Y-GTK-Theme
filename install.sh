@@ -192,7 +192,11 @@ run_as_user() {
     if [ "$TARGET_USER" != "$USER" ]; then
         sudo -u "$TARGET_USER" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${TARGET_UID}/bus" "$@"
     else
-        "$@"
+        if [ -z "$DBUS_SESSION_BUS_ADDRESS" ] && [ -S "/run/user/${TARGET_UID}/bus" ]; then
+            DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${TARGET_UID}/bus" "$@"
+        else
+            "$@"
+        fi
     fi
 }
 
@@ -1187,6 +1191,15 @@ install_settings_overlay() {
     [ -f "$SCRIPT_DIR/bin/gnome-control-center" ] && cp "$SCRIPT_DIR/bin/gnome-control-center" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/gnome-control-center"
     [ -f "$SCRIPT_DIR/bin/mac-widgets-settings" ] && cp "$SCRIPT_DIR/bin/mac-widgets-settings" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/mac-widgets-settings"
     [ -f "$SCRIPT_DIR/bin/mac-styling-settings" ] && cp "$SCRIPT_DIR/bin/mac-styling-settings" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/mac-styling-settings"
+    [ -f "$SCRIPT_DIR/bin/mac_i18n.py" ] && cp "$SCRIPT_DIR/bin/mac_i18n.py" "$LOCAL_BIN/" && chmod 644 "$LOCAL_BIN/mac_i18n.py"
+    if [ -f "$SCRIPT_DIR/bin/mac_i18n.py" ]; then
+        sudo install -Dm644 "$SCRIPT_DIR/bin/mac_i18n.py" /usr/local/bin/mac_i18n.py
+        local purelib
+        purelib=$(python3 -c "import sysconfig; print(sysconfig.get_path('purelib'))" 2>/dev/null || true)
+        if [ -n "$purelib" ] && [ -d "$purelib" ]; then
+            sudo install -Dm644 "$SCRIPT_DIR/bin/mac_i18n.py" "$purelib/mac_i18n.py" 2>/dev/null || true
+        fi
+    fi
     [ -f "$SCRIPT_DIR/bin/gnome-theme-switcher" ] && cp "$SCRIPT_DIR/bin/gnome-theme-switcher" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/gnome-theme-switcher"
     [ -f "$SCRIPT_DIR/bin/toggle-launchpad.sh" ] && cp "$SCRIPT_DIR/bin/toggle-launchpad.sh" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/toggle-launchpad.sh"
     [ -f "$SCRIPT_DIR/bin/extension-manager" ] && cp "$SCRIPT_DIR/bin/extension-manager" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/extension-manager"
@@ -1863,11 +1876,11 @@ install_grub() {
     emit_progress 98 "stage13" "Regenerating GRUB bootloader configuration"
     log_info "Updating GRUB configuration..."
     if command -v update-grub >/dev/null 2>&1; then
-        sudo update-grub
+        sudo update-grub 2>/dev/null || true
     elif command -v grub2-mkconfig >/dev/null 2>&1; then
-        sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+        sudo grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null || true 2>/dev/null || true
     elif command -v grub-mkconfig >/dev/null 2>&1; then
-        sudo grub-mkconfig -o /boot/grub/grub.cfg
+        sudo grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || true
     fi
     log_success "macW1Y boot manager menu installed successfully!"
 }
@@ -1958,6 +1971,8 @@ run_full_install() {
     install_dependencies
     python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || return 1
     bash "$SCRIPT_DIR/dependencies/build-native.sh" "$SCRIPT_DIR/lib"
+    [ -d "$SCRIPT_DIR/control-center" ] && cp -f "$SCRIPT_DIR/lib/libmac_settings.so" "$SCRIPT_DIR/control-center/libmac_settings.so" 2>/dev/null || true
+    [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ] && cp -f "$SCRIPT_DIR/lib/libmac_settings.so" "$SCRIPT_DIR/gnome-control-center-overlay/libmac_settings.so" 2>/dev/null || true
     sudo install -Dm644 "$SCRIPT_DIR/config/extensions.lock.json" /usr/share/mactheme/config/extensions.lock.json
     install_fonts
     install_themes
@@ -1985,6 +2000,8 @@ run_incremental_update() {
     require_root
     
     bash "$SCRIPT_DIR/dependencies/build-native.sh" "$SCRIPT_DIR/lib"
+    [ -d "$SCRIPT_DIR/control-center" ] && cp -f "$SCRIPT_DIR/lib/libmac_settings.so" "$SCRIPT_DIR/control-center/libmac_settings.so" 2>/dev/null || true
+    [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ] && cp -f "$SCRIPT_DIR/lib/libmac_settings.so" "$SCRIPT_DIR/gnome-control-center-overlay/libmac_settings.so" 2>/dev/null || true
     sudo install -Dm644 "$SCRIPT_DIR/config/extensions.lock.json" /usr/share/mactheme/config/extensions.lock.json
     MODIFIED_COUNT=0
     UNCHANGED_COUNT=0
@@ -2164,7 +2181,27 @@ EOF_CUR_THEME_UP
             run_as_user gnome-extensions disable "$ext_id" 2>/dev/null || true
         done
 
+        local motion_check
+        motion_check="$(run_as_user dconf dump /org/gnome/shell/extensions/dash2dock-motion/ 2>/dev/null || true)"
+        if [ -z "$motion_check" ] && [ -f "$SCRIPT_DIR/dconf/gnome-all.dconf" ]; then
+            if command -v awk >/dev/null 2>&1; then
+                awk '
+                    BEGIN { skip=0 }
+                    /^\[org\/gnome\/desktop\/input-sources\]/ { skip=1; next }
+                    /^\[org\/gnome\/login-screen\]/ { skip=1; next }
+                    /^\[/ { skip=0 }
+                    !skip { print }
+                ' "$SCRIPT_DIR/dconf/gnome-all.dconf" | run_as_user dconf load / 2>/dev/null || true
+            else
+                run_as_user dconf load / < "$SCRIPT_DIR/dconf/gnome-all.dconf" 2>/dev/null || true
+            fi
+        fi
+
         # System gschema overrides
+        if [ -f "$SCRIPT_DIR/extensions/desktop-widgets@r3nhick/schemas/org.gnome.shell.extensions.desktop-widgets-r3nhick.gschema.xml" ]; then
+            sudo cp "$SCRIPT_DIR/extensions/desktop-widgets@r3nhick/schemas/org.gnome.shell.extensions.desktop-widgets-r3nhick.gschema.xml" /usr/share/glib-2.0/schemas/
+            sudo chmod 644 /usr/share/glib-2.0/schemas/org.gnome.shell.extensions.desktop-widgets-r3nhick.gschema.xml
+        fi
         if [ -f "$SCRIPT_DIR/macw1y-gdm/99_mactheme.gschema.override" ]; then
             sudo cp "$SCRIPT_DIR/macw1y-gdm/99_mactheme.gschema.override" /usr/share/glib-2.0/schemas/
             sudo chmod 644 /usr/share/glib-2.0/schemas/99_mactheme.gschema.override
@@ -2211,7 +2248,7 @@ EOF_CUR_THEME_UP
     if [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so" false
     fi
-    for b in gnome-control-center mac-widgets-settings mac-styling-settings mac-apply-theme mac-theme-sync mac-extension-guard mac-integrity-check mac-diagnostics toggle-launchpad.sh extension-manager mac-setup-wizard mac-apply-locale mac-gdm-bypass macW1Y; do
+    for b in gnome-control-center mac-widgets-settings mac-styling-settings mac-apply-theme mac-theme-sync mac-extension-guard mac-integrity-check mac-diagnostics toggle-launchpad.sh extension-manager mac-setup-wizard mac-apply-locale mac-gdm-bypass macW1Y mac_i18n.py; do
         if [ -f "$SCRIPT_DIR/bin/$b" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$b" "$LOCAL_BIN/$b" false
             chmod +x "$LOCAL_BIN/$b" 2>/dev/null || true
@@ -2219,6 +2256,11 @@ EOF_CUR_THEME_UP
             sudo chmod 755 "/usr/local/bin/$b" 2>/dev/null || true
         fi
     done
+    local purelib
+    purelib=$(python3 -c "import sysconfig; print(sysconfig.get_path('purelib'))" 2>/dev/null || true)
+    if [ -n "$purelib" ] && [ -d "$purelib" ] && [ -f "$SCRIPT_DIR/bin/mac_i18n.py" ]; then
+        sudo install -Dm644 "$SCRIPT_DIR/bin/mac_i18n.py" "$purelib/mac_i18n.py" 2>/dev/null || true
+    fi
     if [ -f "$SCRIPT_DIR/bin/macW1Y" ]; then
         sudo ln -sf /usr/local/bin/macW1Y /usr/local/bin/macw1y 2>/dev/null || true
         sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macW1Y 2>/dev/null || true
@@ -2343,7 +2385,7 @@ EOF_CUR_THEME_UP
     [ -f "$SCRIPT_DIR/etc/udev/rules.d/99-uinput.rules" ] && sync_or_update_file "$SCRIPT_DIR/etc/udev/rules.d/99-uinput.rules" "/etc/udev/rules.d/99-uinput.rules" true
     [ -f "$SCRIPT_DIR/systemd/mac-touchpad-daemon.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-touchpad-daemon.service" "/etc/systemd/system/mac-touchpad-daemon.service" true
 
-    for gb in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-wine-runner mac-gpu-env-selector mac-sanitize-favorites.sh; do
+    for gb in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-wine-runner mac-gpu-env-selector mac-sanitize-favorites.sh mac-apply-theme mac-diagnostics mac-extension-guard mac-build-theme mac-audit-sync mac-setup-wizard mac-apply-locale mac-icon-normalizer mac-sync-applications mac-theme-sync mac-integrity-check mac-widget-picker; do
         if [ -f "$SCRIPT_DIR/bin/$gb" ] || [ -L "$SCRIPT_DIR/bin/$gb" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$gb" "/usr/local/bin/$gb" true
             sudo chmod +x "/usr/local/bin/$gb" 2>/dev/null || true
@@ -2475,7 +2517,7 @@ EOF
     if command -v update-grub >/dev/null 2>&1; then
         sudo update-grub 2>/dev/null || true
     elif command -v grub2-mkconfig >/dev/null 2>&1; then
-        sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+        sudo grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null || true
     elif command -v grub-mkconfig >/dev/null 2>&1; then
         sudo grub-mkconfig -o /boot/grub/grub.cfg 2>/dev/null || true
     fi

@@ -12,11 +12,11 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
         _init(user, extension) {
             super._init({
                 style_class: 'login-dialog-prompt-layout',
-                vertical: true,
                 x_expand: true,
                 x_align: Clutter.ActorAlign.CENTER,
                 reactive: false,
             });
+            this.vertical = true;
 
             this._extension = extension;
             this._avatarButton = null;

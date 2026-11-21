@@ -13,6 +13,10 @@ import re
 import hashlib
 from pathlib import Path
 
+# Ensure DBus session bus address is set for headless / SSH sessions
+if "DBUS_SESSION_BUS_ADDRESS" not in os.environ and os.path.exists(f"/run/user/{os.getuid()}/bus"):
+    os.environ["DBUS_SESSION_BUS_ADDRESS"] = f"unix:path=/run/user/{os.getuid()}/bus"
+
 def find_repo_dir():
     candidates = [
         Path(__file__).resolve().parent.parent,

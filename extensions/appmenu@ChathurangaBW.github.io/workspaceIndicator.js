@@ -83,12 +83,12 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
     _init() {
         super._init({
             name: 'mac-spaces-bar',
-            vertical: true,
             reactive: true,
             track_hover: true,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.START,
         });
+        this.vertical = true;
 
         this._isExpanded = false;
         this._isHiding = false;

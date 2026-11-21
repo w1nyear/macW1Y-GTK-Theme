@@ -14,6 +14,9 @@ macw1y_rebuild_initramfs() {
 }
 
 macw1y_has_grub() {
+    if [ -d /run/initramfs/live ] || grep -q -E 'boot=live|liveimg|root=live:' /proc/cmdline 2>/dev/null; then
+        return 1
+    fi
     if command -v bootctl >/dev/null 2>&1 && bootctl is-installed >/dev/null 2>&1; then
         return 1
     fi

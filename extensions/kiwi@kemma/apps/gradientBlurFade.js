@@ -98,7 +98,11 @@ if (!EffectClass) {
     class AppmenuGradientBlurFadeEffect extends Clutter.ShaderEffect {
         constructor(topOffset = 48.0, bottomOffset = 76.0) {
             super();
-            this.set_shader_source(GRADIENT_BLUR_FADE_SHADER);
+            if (typeof this.set_shader_source === 'function') {
+                try {
+                    this.set_shader_source(GRADIENT_BLUR_FADE_SHADER);
+                } catch (_) {}
+            }
             this._topOffset = topOffset;
             this._bottomOffset = bottomOffset;
             this._fadeTop = false;

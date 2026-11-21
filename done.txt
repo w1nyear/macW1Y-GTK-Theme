@@ -3078,3 +3078,39 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
       * [icons/macW1Y/apps/scalable/org.gnome.Loupe.svg](file:///home/vitaliy/MACTHEMEFILES/icons/macW1Y/apps/scalable/org.gnome.Loupe.svg)
       * [icons/macW1Y/apps/scalable/network-workgroup.svg](file:///home/vitaliy/MACTHEMEFILES/icons/macW1Y/apps/scalable/network-workgroup.svg)
       * [icons/macW1Y/apps/scalable/system-software-update.svg](file:///home/vitaliy/MACTHEMEFILES/icons/macW1Y/apps/scalable/system-software-update.svg)
+
+869. Повне тестування та валідація на Fedora 44 (GNOME 50, DNF5, GCC 16) та CachyOS (Arch Linux, GNOME 51), виправлення сумісності Live ISO та GJS 1.84:
+    - Діагностика та запуск образу Fedora 44 Live Workstation:
+      * Виявлено пошкодження початкового ISO образу (/home/vitaliy/Завантажене/Fedora-Workstation-Live-44-1.7.x86_64.iso було обірвано на 2.2 ГБ через незавершене завантаження, що спричиняло збій монтування squashfs.img).
+      * Дозавантажено повний офіційний образ через curl -C - (розмір 2 851 612 672 байт, перевірка 7z t підтвердила 0 помилок).
+      * Створено та налаштовано віртуальну машину fedora-44 в libvirt/GNOME Boxes (qemu:///session) з прокиданням порту 2226 для SSH, виділено 40 ГБ постійного сховища на /dev/sda, відформатовано в ext4 та змонтовано на /home/liveuser/macW1Y.
+      * Збільшено tmpfs overlay live-образу (mount -o remount,size=8G /run і /tmp), забезпечивши 7.6 ГБ вільного простору.
+    - Адаптація та компіляція під Fedora 44 (GNOME 50 / DNF5 / GCC 16):
+      * Встановлено всі 39 груп пакетів з dependencies/dnf-packages.txt через DNF5 без жодних конфліктів залежностей.
+      * Успішно скомпільовано нативним GCC 16 усі 7 нативних бібліотек C (libmacpopover.so, libmac_terminal.so, libmac_memtrim.so, libmac_nautilus.so, libmac_nautilus_menu.so, libmac_settings.so, libmac_extension_manager.so).
+    - Виправлення інсталятора та сумісності з Live ISO:
+      * Усунено збій grub2-probe в live-середовищах: оновлено dependencies/boot-tools.sh та install.sh з перевіркою /run/initramfs/live для безпечного пропуску перезапису завантажувача в LiveOS rootfs.
+      * Виправлено імпорт конфігурації dconf: виявлено, що ключ [org/gnome/login-screen] є root-only та блокував завантаження dconf на не-Ubuntu дистрибутивах з помилкою модифікації non-writable ключів; налаштовано універсальну фільтрацію login-screen та input-sources для всіх дистрибутивів.
+      * Додано надійний експорт DBUS_SESSION_BUS_ADDRESS у функцію run_as_user та утиліту bin/mac-audit-sync для коректної роботи в SSH-сесіях та скриптах.
+    - Виправлення конфлікту наслідування класів у GJS 1.84 (GNOME 50):
+      * Виявлено першопричину винятку "TypeError: this._spacesBar._collapse is not a function": застарілий глобальний Proxy на St.BoxLayout у розширеннях eval-helper та appmenu перехоплював виклик new Target() і замість екземпляра підкласу повертав базовий St_BoxLayout, руйнуючи ланцюжок прототипів та скидаючи методи _collapse.
+      * Повністю ліквідовано непотрібний проксі, оновлено extension.js в eval-helper та appmenu, перераховано криптографічні хеші в config/extensions.lock.json.
+    - Результати верифікації та тестів на Fedora 44:
+      * python3 bin/mac-audit-sync check — 100% PASS (5/5).
+      * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK (100%).
+      * python3 -m unittest discover -s tests -p 'test_*.py' — 38/38 PASS (100%).
+      * python3 bin/test-macw1y-animations.py — 12/12 PASS (100%).
+      * Знято підтверджувальні знімки робочого столу: плаваючий скляний Dock, рядок меню з логотипом Apple та Global Menu, робочі віджети (CPU, RAM, годинник, календар), робочий Launchpad з рекомендаціями та вікно параметрів «Мас стилізація».
+      * Перевірено відсутність символів кирилиці в install.sh (100% clean).
+      * Оновлено матрицю MULTIPLATFORM_MIGRATION_STATUS.md (Tier 1 Validated для Fedora 44 та CachyOS).
+    - Зачеплені файли:
+      * [install.sh](file:///home/vitaliy/MACTHEMEFILES/install.sh)
+      * [dependencies/boot-tools.sh](file:///home/vitaliy/MACTHEMEFILES/dependencies/boot-tools.sh)
+      * [bin/mac-audit-sync](file:///home/vitaliy/MACTHEMEFILES/bin/mac-audit-sync)
+      * [/usr/local/bin/mac-audit-sync](file:///usr/local/bin/mac-audit-sync)
+      * [extensions/appmenu@ChathurangaBW.github.io/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/extension.js)
+      * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+      * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+      * [MULTIPLATFORM_MIGRATION_STATUS.md](file:///home/vitaliy/MACTHEMEFILES/MULTIPLATFORM_MIGRATION_STATUS.md)
+      * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+      * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

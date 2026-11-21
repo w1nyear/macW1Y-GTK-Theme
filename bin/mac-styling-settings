@@ -11,6 +11,7 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, Gio, GLib
 
+sys.path.insert(0, '/usr/local/bin')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from mac_i18n import t, tf, get_locale
 
