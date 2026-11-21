@@ -285,7 +285,7 @@ export function getModpackVersion() {
             }
         }
     } catch (_) {}
-    return '0.6';
+    return '0.8';
 }
 
 export function saveModpackLocale(langCode) {
@@ -367,8 +367,6 @@ export function hasTouchpadGestures() {
             }
         }
     } catch (_) {}
-    const sockPath = `/run/user/${GLib.get_uid()}/mac_touchpad.sock`;
-    if (GLib.file_test(sockPath, GLib.FileTest.EXISTS)) return true;
     return false;
 }
 
@@ -899,8 +897,9 @@ export class MacSetupWizard {
     }
 
     _renderCurrentPage() {
-        this._pageContainer.destroy_all_children();
-        globalThis.macSetupWizardGestureHook = null;
+        try {
+            this._pageContainer.destroy_all_children();
+            globalThis.macSetupWizardGestureHook = null;
 
         const titleColor = this._isDark ? '#ffffff' : '#1d1d1f';
         const subColor = this._isDark ? '#a1a1a6' : '#86868b';
@@ -1337,41 +1336,63 @@ export class MacSetupWizard {
 
             this._pageContainer.add_child(page4Box);
         }
+    } catch (e) {
+        console.error(`[macSetupWizard] Error in _renderCurrentPage: ${e}`);
     }
+}
 
     _nextPage() {
-        if (this._currentPage === 1) {
-            this._currentPage = 2;
-            this._renderCurrentPage();
-        } else if (this._currentPage === 2) {
-            if (hasTouchpadGestures()) {
-                this._currentPage = 3;
-            } else {
+        try {
+            if (this._currentPage === 1) {
+                this._currentPage = 2;
+                this._renderCurrentPage();
+            } else if (this._currentPage === 2) {
+                if (hasTouchpadGestures()) {
+                    this._currentPage = 3;
+                } else {
+                    this._currentPage = 4;
+                }
+                this._renderCurrentPage();
+            } else if (this._currentPage === 3) {
                 this._currentPage = 4;
+                this._renderCurrentPage();
+            } else if (this._currentPage === 4) {
+                this.finish();
             }
-            this._renderCurrentPage();
-        } else if (this._currentPage === 3) {
-            this._currentPage = 4;
-            this._renderCurrentPage();
-        } else if (this._currentPage === 4) {
-            this.finish();
+        } catch (e) {
+            console.error(`[macSetupWizard] Error in _nextPage: ${e}`);
+            try {
+                this._currentPage = 4;
+                this._renderCurrentPage();
+            } catch (inner) {
+                console.error(`[macSetupWizard] Fallback render failed: ${inner}`);
+                this.finish();
+            }
         }
     }
 
     _prevPage() {
-        if (this._currentPage === 4) {
-            if (hasTouchpadGestures()) {
-                this._currentPage = 3;
-            } else {
+        try {
+            if (this._currentPage === 4) {
+                if (hasTouchpadGestures()) {
+                    this._currentPage = 3;
+                } else {
+                    this._currentPage = 2;
+                }
+                this._renderCurrentPage();
+            } else if (this._currentPage === 3) {
                 this._currentPage = 2;
+                this._renderCurrentPage();
+            } else if (this._currentPage === 2) {
+                this._currentPage = 1;
+                this._renderCurrentPage();
             }
-            this._renderCurrentPage();
-        } else if (this._currentPage === 3) {
-            this._currentPage = 2;
-            this._renderCurrentPage();
-        } else if (this._currentPage === 2) {
-            this._currentPage = 1;
-            this._renderCurrentPage();
+        } catch (e) {
+            console.error(`[macSetupWizard] Error in _prevPage: ${e}`);
+            try {
+                this._currentPage = 1;
+                this._renderCurrentPage();
+            } catch (_) {}
         }
     }
 

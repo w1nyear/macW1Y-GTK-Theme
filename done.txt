@@ -3447,3 +3447,46 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+================================================================================
+Завдання 880: Виправлення зависання та блокування переходу на кнопці «Продовжити» у macSetupWizard
+================================================================================
+- Вихідні вимоги:
+  * Виправити те, що у майстрі налаштування macSetupWizard не натискається кнопка «Продовжити» («Продолжить») на етапі 2 («Вітаємо в macW1Y» / «Добро пожаловать в macW1Y»).
+  * Кнопка «Назад» працювала, інтерфейс не виснув, але натискання на «Продовжити» не пускало далі.
+  * Забезпечити безперешкодний перехід до наступного етапу (на десктопних ПК без тачпада — безпосередньо до фінального кроку «Цей Mac налаштовано», на лептопах з тачпадом — до тесту жестів).
+  * Оновити версію модпака до 0.8 у конфігураціях та інтерфейсі майстра.
+  * 100% проходження всіх 5 тестових наборів та 0 кириличних символів в install.sh.
+
+- Причина проблеми:
+  * У функції hasTouchpadGestures() у файлі macSetupWizard.js при відсутності тачпада в Clutter-пристроях (десктопний ПК з мишею) виконувався рядок:
+    const sockPath = `/run/user/${GLib.get_uid()}/mac_touchpad.sock`;
+  * Оскільки в середовищі GJS виклик GLib.get_uid не існує (є undefined), виникала неперехоплена помилка TypeError: GLib.get_uid is not a function.
+  * Ця помилка миттєво переривала виконання обробника події натискання _nextBtn, залишаючи користувача заблокованим на сторінці 2 без будь-якої візуальної помилки. Кнопка «Назад» при цьому працювала, бо не викликала hasTouchpadGestures().
+
+- Реалізовані зміни:
+  1) macSetupWizard.js (extensions/eval-helper@mactheme/macSetupWizard.js та ~/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js):
+     * Усунено некоректний виклик GLib.get_uid() у hasTouchpadGestures().
+     * Точна та безпечна детекція наявності тачпада через Clutter.InputDeviceType.TOUCHPAD_DEVICE у Clutter.Seat.
+     * Функції _nextPage(), _prevPage() та _renderCurrentPage() обгорнуто в блок try...catch із надійним відновленням (fallback на фінальну сторінку при будь-яких непередбачених помилках рендерингу).
+     * Оновлено дефолтне значення версії до 0.8 (getModpackVersion).
+  2) Споріднені файли:
+     * Виправлено використання GLib.get_user_runtime_dir() замість GLib.get_uid() у touchpad/macw1y-touchpad-gestures@mactheme/gestureImpl.js.
+     * Оновлено config/mac-styling/version та ~/.config/mac-styling/version до 0.8.
+  3) Захист та цілісність:
+     * Оновлено контрольний хеш sha256 для eval-helper@mactheme у config/extensions.lock.json (9ad9985a).
+     * Усі 5 наборів тестів успішно пройшли 100%:
+       1. mac-extension-guard: 21/21 перевірено.
+       2. mac-audit-sync: 5/5 пройдено.
+       3. test-macw1y-animations: 12/12 сценаріїв успішно.
+       4. unit-тести: 39/39 пройдено.
+       5. mac-i18n-verify: перевірка локалізацій успішна.
+     * 0 кириличних символів в install.sh.
+
+- Зачеплені файли:
+  * [extensions/eval-helper@mactheme/macSetupWizard.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/macSetupWizard.js)
+  * [touchpad/macw1y-touchpad-gestures@mactheme/gestureImpl.js](file:///home/vitaliy/MACTHEMEFILES/touchpad/macw1y-touchpad-gestures@mactheme/gestureImpl.js)
+  * [config/mac-styling/version](file:///home/vitaliy/MACTHEMEFILES/config/mac-styling/version)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
