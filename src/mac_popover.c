@@ -13,6 +13,7 @@
 
 static void (*orig_popover_hide)(GtkWidget *widget) = NULL;
 static void (*orig_popover_map)(GtkWidget *widget) = NULL;
+static void (*orig_popover_unmap)(GtkWidget *widget) = NULL;
 static void (*orig_popover_snapshot)(GtkWidget *widget, GtkSnapshot *snapshot) = NULL;
 
 typedef struct {
@@ -105,7 +106,7 @@ static gboolean mac_popover_close_tick(GtkWidget *widget, GdkFrameClock *clock, 
         d->is_closing = FALSE;
         d->in_final_hide = TRUE;
         d->current_scale = 1.0;
-        gtk_widget_set_opacity(widget, 1.0f);
+        gtk_widget_set_opacity(widget, 0.0f);
         if (orig_popover_hide) {
             orig_popover_hide(widget);
         }
@@ -201,6 +202,18 @@ static void mac_popover_hide(GtkWidget *w) {
     d->tick_id = gtk_widget_add_tick_callback(w, mac_popover_close_tick, d, NULL);
 }
 
+static void mac_popover_unmap(GtkWidget *w) {
+    MacPopoverAnimData *d = get_popover_anim_data(w);
+    if (d->tick_id) {
+        gtk_widget_remove_tick_callback(w, d->tick_id);
+        d->tick_id = 0;
+    }
+    d->is_closing = FALSE;
+    d->is_opening = FALSE;
+    gtk_widget_set_opacity(w, 0.0f);
+    if (orig_popover_unmap) orig_popover_unmap(w);
+}
+
 static void install_mac_popover_hooks(void) {
     static gboolean installed = FALSE;
     if (installed) return;
@@ -210,6 +223,8 @@ static void install_mac_popover_hooks(void) {
     if (klass) {
         orig_popover_map = klass->map;
         klass->map = mac_popover_map;
+        orig_popover_unmap = klass->unmap;
+        klass->unmap = mac_popover_unmap;
         orig_popover_hide = klass->hide;
         klass->hide = mac_popover_hide;
         orig_popover_snapshot = klass->snapshot;

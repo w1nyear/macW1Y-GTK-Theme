@@ -12,8 +12,8 @@ preferenceswindow,
 preferenceswindow.background,
 preferencespage,
 .preferences-page {
-  background-color: var(--mac-window-bg, #ebebf0);
-  color: var(--mac-window-fg, rgba(0, 0, 0, 0.88));
+  background-color: var(--mac-window-bg, #202022);
+  color: var(--mac-window-fg, #ffffff);
   background-image: none;
 }
 
@@ -41,7 +41,7 @@ window.desktopwindow decoration {
 
 navigation-split-view,
 overlay-split-view {
-  background-color: var(--mac-window-bg, #ebebf0);
+  background-color: var(--mac-window-bg, #202022);
   background-image: none;
 }
 
@@ -53,7 +53,7 @@ overlay-split-view > widget.sidebar-pane,
 overlay-split-view .sidebar-pane,
 .sidebar-pane,
 .navigation-sidebar-pane {
-  background-color: var(--mac-sidebar-bg, #ffffff);
+  background-color: var(--mac-sidebar-bg, #18181a);
   background-image: none;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -243,7 +243,7 @@ window.nautilus-window .sidebar-pane placessidebar row {
   margin: 1.5px 15px 1.5px 10px;
   border-radius: 7px;
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.88);
+  color: rgba(255, 255, 255, 0.90);
   transition: background-color 150ms ease-out, color 150ms ease-out;
 }
 
@@ -258,7 +258,7 @@ navigation-split-view list.navigation-sidebar row:hover,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:hover,
 window.nautilus-window .sidebar-pane placessidebar row:hover {
   border-radius: 7px;
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: rgba(255, 255, 255, 0.04);
 }
 
 navigation-split-view list row:selected,
@@ -292,7 +292,7 @@ navigation-split-view list.navigation-sidebar row:selected:backdrop,
 window.nautilus-window .sidebar-pane placessidebar row:selected,
 window.nautilus-window .sidebar-pane placessidebar row:selected:backdrop {
   border-radius: 7px;
-  background-color: rgba(0, 0, 0, 0.08);
+  background-color: rgba(255, 255, 255, 0.10);
   color: @accent_bg_color;
   outline: none;
 }
@@ -307,7 +307,7 @@ placessidebar .navigation-sidebar row:selected:hover,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:hover,
 window.nautilus-window .sidebar-pane placessidebar row:selected:hover {
   border-radius: 7px;
-  background-color: rgba(0, 0, 0, 0.11);
+  background-color: rgba(255, 255, 255, 0.14);
   color: @accent_bg_color;
   outline: none;
 }
@@ -437,7 +437,7 @@ image.sidebar-neutral-icon {
   -gtk-icon-size: 18px;
   margin-right: 8px;
   margin-left: 3px;
-  color: rgba(0, 0, 0, 0.78);
+  color: rgba(255, 255, 255, 0.90);
 }
 
 placessidebar .navigation-sidebar > row button.sidebar-button,
@@ -529,11 +529,11 @@ preferencespage list.boxed-list:not(.nested),
 .content-pane list.boxed-list:not(.nested),
 .mac-settings-content list.boxed-list:not(.nested),
 .card {
-  background-color: var(--mac-card-bg, #ffffff);
+  background-color: var(--mac-card-bg, #1e1e1e);
   background-image: none;
-  border: 1px solid var(--mac-card-border, rgba(0, 0, 0, 0.08));
+  border: 1px solid var(--mac-card-border, rgba(255, 255, 255, 0.07));
   border-radius: 14px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.20);
   margin-left: 15px;
   margin-right: 15px;
   margin-bottom: 12px;
@@ -594,11 +594,11 @@ row.expander list.nested > row {
 }
 
 row.expander list.nested > row:hover {
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: rgba(255, 255, 255, 0.04);
 }
 
 row.expander list.nested > row:active {
-  background-color: rgba(0, 0, 0, 0.08);
+  background-color: rgba(255, 255, 255, 0.10);
 }
 
 list.boxed-list > row:last-child.expander:checked list.nested > row:last-child,
@@ -668,7 +668,7 @@ preferencesgroup label.title,
 label.subtitle,
 .subtitle {
   font-size: 11px;
-  color: rgba(0, 0, 0, 0.55);
+  color: rgba(255, 255, 255, 0.55);
 }
 
 list.boxed-list > row:hover,
@@ -677,7 +677,7 @@ list.boxed-list row.expander row.header:hover,
 preferencespage list.boxed-list row:not(.expander):hover,
 .content-pane list.boxed-list row:not(.expander):hover,
 .mac-settings-content list.boxed-list row:not(.expander):hover {
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: rgba(255, 255, 255, 0.04);
 }
 
 list.boxed-list > row + row,
@@ -687,7 +687,7 @@ preferencespage list.boxed-list > row + row,
 row.expander:checked list.nested,
 row.expander list.nested > row {
   border-top: 1px solid transparent;
-  border-image: linear-gradient(to right, transparent 0%, transparent 2%, rgba(0, 0, 0, 0.06) 2%, rgba(0, 0, 0, 0.06) 98%, transparent 98%, transparent 100%) 1 0 0 0/1px 0 0 0 stretch;
+  border-image: linear-gradient(to right, transparent 0%, transparent 2%, rgba(255, 255, 255, 0.07) 2%, rgba(255, 255, 255, 0.07) 98%, transparent 98%, transparent 100%) 1 0 0 0/1px 0 0 0 stretch;
 }
 
 list.boxed-list > row:hover + row,
@@ -695,7 +695,7 @@ preferencespage list.boxed-list > row:hover + row,
 .content-pane list.boxed-list > row:hover + row,
 .mac-settings-content list.boxed-list > row:hover + row {
   border-top: 1px solid transparent;
-  border-image: linear-gradient(to right, transparent 0%, transparent 2%, rgba(0, 0, 0, 0.06) 2%, rgba(0, 0, 0, 0.06) 98%, transparent 98%, transparent 100%) 1 0 0 0/1px 0 0 0 stretch;
+  border-image: linear-gradient(to right, transparent 0%, transparent 2%, rgba(255, 255, 255, 0.07) 2%, rgba(255, 255, 255, 0.07) 98%, transparent 98%, transparent 100%) 1 0 0 0/1px 0 0 0 stretch;
 }
 
 preferencesgroup > box > box.header,
@@ -1044,7 +1044,7 @@ window.dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):n
 .content-pane button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action) {
   min-height: 24px;
   padding: 3px 12px;
-  border-radius: 6px;
+  border-radius: 9999px;
   background-color: alpha(currentColor, 0.08);
   border: none;
   border-style: none;
@@ -1740,9 +1740,9 @@ box.linked:not(.vertical),
 .linked:not(.vertical),
 .linked:not(vertical) {
   border-radius: 9999px;
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: rgba(255, 255, 255, 0.08);
   background-image: none;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 2px;
 }
 
@@ -1764,7 +1764,7 @@ box.linked:not(.vertical) > togglebutton,
   background-image: none;
   border-radius: 9999px;
   box-shadow: none;
-  color: rgba(0, 0, 0, 0.88);
+  color: rgba(255, 255, 255, 0.90);
   font-size: 13px;
   font-weight: 500;
   transition: background-color 150ms ease-out, color 150ms ease-out;
@@ -1856,9 +1856,9 @@ shortcut:disabled label {
 spinbutton.horizontal,
 spinbutton.horizontal:focus-within {
   border-radius: 9999px;
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: rgba(255, 255, 255, 0.08);
   background-image: none;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 1px 4px;
   min-height: 26px;
 }
@@ -1903,16 +1903,16 @@ entry {
   min-height: 28px;
   padding: 2px 10px;
   border-radius: 8px;
-  background-color: var(--mac-input-bg, rgba(0, 0, 0, 0.04));
-  border: 1px solid var(--mac-input-border, rgba(0, 0, 0, 0.12));
+  background-color: var(--mac-input-bg, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--mac-input-border, rgba(255, 255, 255, 0.08));
   color: var(--mac-text-primary, @window_fg_color);
   font-size: 13px;
   transition: background-color 150ms ease-out, border-color 150ms ease-out;
 }
 
 entry:focus-within {
-  background-color: var(--mac-input-focus-bg, #ffffff);
-  border-color: var(--mac-input-focus-border, rgba(255, 106, 0, 0.50));
+  background-color: var(--mac-input-focus-bg, rgba(255, 255, 255, 0.12));
+  border-color: var(--mac-input-focus-border, rgba(255, 255, 255, 0.20));
   box-shadow: none;
 }
 
@@ -1948,7 +1948,7 @@ combobox > box > button {
   border-style: none;
   box-shadow: none;
   outline: none;
-  color: rgba(0, 0, 0, 0.88);
+  color: rgba(255, 255, 255, 0.90);
   font-size: 13px;
   font-weight: normal;
   transition: background-color 150ms ease-out;
@@ -2168,23 +2168,12 @@ popover.menu > contents,
 popover.context-menu > contents,
 .context-menu > contents,
 menu {
-  background-color: var(--mac-card-bg, #ffffff);
-  border: 1px solid var(--mac-popover-border, rgba(0, 0, 0, 0.12));
+  background-color: var(--mac-card-bg, #1e1e1e);
+  border: 1px solid var(--mac-popover-border, rgba(255, 255, 255, 0.10));
   border-radius: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
   padding: 4px;
   min-width: 140px;
-  max-width: 480px;
-  width: auto;
-}
-
-/* Conditional popover indent: only indent plain items when menu has checkmarks/radios */
-popover.menu:has(check) modelbutton:not(:has(check)):not(:has(radio)):not(:has(image)) label,
-popover.menu:has(radio) modelbutton:not(:has(check)):not(:has(radio)):not(:has(image)) label {
-  margin-left: 24px;
-}
-popover.menu:not(:has(check)):not(:has(radio)) modelbutton label {
-  margin-left: 0;
 }
 
 popover modelbutton,
@@ -2194,7 +2183,7 @@ menu menuitem {
   min-height: 28px;
   padding: 4px 10px;
   border-radius: 6px;
-  color: rgba(0, 0, 0, 0.88);
+  color: rgba(255, 255, 255, 0.90);
 }
 
 popover modelbutton:hover,
@@ -2479,9 +2468,9 @@ navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane scrolledwindow undershoot.top {
   min-height: 38px;
   background: linear-gradient(to bottom,
-    var(--mac-window-bg, #ebebf0) 0%,
-    alpha(var(--mac-window-bg, #ebebf0), 0.90) 12px,
-    alpha(var(--mac-window-bg, #ebebf0), 0.40) 24px,
+    var(--mac-window-bg, #202022) 0%,
+    alpha(var(--mac-window-bg, #202022), 0.90) 12px,
+    alpha(var(--mac-window-bg, #202022), 0.40) 24px,
     transparent 38px);
   border: none;
   box-shadow: none;
@@ -2542,9 +2531,9 @@ window.mac-settings-window > dialog-host,
 window.mac-settings-window navigation-split-view,
 window.mac-settings-window .content-pane,
 window.mac-settings-window .mac-settings-content {
-  background: #ebebf0;
-  background-color: #ebebf0;
-  color: rgba(0, 0, 0, 0.88);
+  background: #202022;
+  background-color: #202022;
+  color: #ffffff;
 }
 
 window.mac-settings-window .mac-settings-sidebar,
@@ -2557,8 +2546,8 @@ window.mac-settings-window navigation-split-view > widget:first-child,
 window.mac-settings-window navigation-split-view > widget:first-child toolbarview,
 window.mac-settings-window navigation-split-view > widget:first-child toolbarview > .top-bar,
 window.mac-settings-window navigation-split-view > widget:first-child headerbar {
-  background: #ffffff;
-  background-color: #ffffff;
+  background: #18181a;
+  background-color: #18181a;
   border: none;
   border-bottom: none;
   box-shadow: none;
@@ -2582,13 +2571,13 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row {
 window.mac-settings-window list.mac-settings-sidebar-list row:hover,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:hover {
   border-radius: 7px;
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: rgba(255, 255, 255, 0.06);
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:selected,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected {
   border-radius: 7px;
-  background-color: rgba(0, 0, 0, 0.08);
+  background-color: rgba(255, 255, 255, 0.10);
   color: @accent_bg_color;
 }
 
@@ -2607,7 +2596,7 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not
   min-width: 18px;
   min-height: 18px;
   -gtk-icon-size: 18px;
-  color: rgba(0, 0, 0, 0.78);
+  color: rgba(255, 255, 255, 0.88);
   -gtk-icon-palette: default;
   background-color: transparent;
   background: transparent;
@@ -2650,16 +2639,16 @@ window.mac-settings-window .mac-settings-sidebar searchbar {
 window.mac-settings-window .mac-settings-sidebar searchbar entry {
   min-height: 28px;
   border-radius: 9999px;
-  background-color: rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  color: rgba(0, 0, 0, 0.85);
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.90);
   font-size: 13px;
   padding: 2px 12px;
 }
 
 window.mac-settings-window .mac-settings-sidebar searchbar entry:focus-within {
-  background-color: rgba(0, 0, 0, 0.09);
-  border-color: rgba(0, 0, 0, 0.18);
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.20);
 }
 
 toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
@@ -2673,9 +2662,9 @@ navigation-view-page toolbarview.undershoot-bottom scrolledwindow > undershoot.b
 .content-pane scrolledwindow undershoot.bottom {
   min-height: 28px;
   background: linear-gradient(to top,
-    var(--mac-window-bg, #ebebf0) 0%,
-    alpha(var(--mac-window-bg, #ebebf0), 0.90) 10px,
-    alpha(var(--mac-window-bg, #ebebf0), 0.40) 18px,
+    var(--mac-window-bg, #202022) 0%,
+    alpha(var(--mac-window-bg, #202022), 0.90) 10px,
+    alpha(var(--mac-window-bg, #202022), 0.40) 18px,
     transparent 28px);
   border: none;
   box-shadow: none;
@@ -2696,10 +2685,10 @@ navigation-split-view > .sidebar-pane scrolledwindow.undershoot-top > undershoot
 navigation-split-view > .sidebar-pane toolbarview.undershoot-top scrolledwindow > undershoot.top {
   min-height: 34px;
   background: linear-gradient(to bottom,
-    var(--mac-window-bg, #ebebf0) 0%,
-    alpha(var(--mac-window-bg, #ebebf0), 0.85) 8px,
-    alpha(var(--mac-window-bg, #ebebf0), 0.50) 18px,
-    alpha(var(--mac-window-bg, #ebebf0), 0.15) 28px,
+    var(--mac-window-bg, #202022) 0%,
+    alpha(var(--mac-window-bg, #202022), 0.85) 8px,
+    alpha(var(--mac-window-bg, #202022), 0.50) 18px,
+    alpha(var(--mac-window-bg, #202022), 0.15) 28px,
     transparent 34px);
   border: none;
   box-shadow: none;
@@ -2721,10 +2710,10 @@ navigation-split-view > .sidebar-pane scrolledwindow.undershoot-bottom > undersh
 navigation-split-view > .sidebar-pane toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom {
   min-height: 24px;
   background: linear-gradient(to top,
-    var(--mac-window-bg, #ebebf0) 0%,
-    alpha(var(--mac-window-bg, #ebebf0), 0.85) 6px,
-    alpha(var(--mac-window-bg, #ebebf0), 0.50) 14px,
-    alpha(var(--mac-window-bg, #ebebf0), 0.15) 20px,
+    var(--mac-window-bg, #202022) 0%,
+    alpha(var(--mac-window-bg, #202022), 0.85) 6px,
+    alpha(var(--mac-window-bg, #202022), 0.50) 14px,
+    alpha(var(--mac-window-bg, #202022), 0.15) 20px,
     transparent 24px);
   border: none;
   box-shadow: none;
@@ -2881,7 +2870,7 @@ window.nautilus-window gridview > child:hover .icon-ui-labels-box #label,
 gridview > child:hover .icon-ui-labels-box #label {
   background-color: transparent;
   background: transparent;
-  color: #000000;
+  color: #ffffff;
   border-radius: 0px;
   border: none;
   box-shadow: none;
@@ -2898,5 +2887,210 @@ gridview > child:selected .icon-ui-labels-box #label {
 .nautilus-grid-view gridview > child:selected label.caption,
 window.nautilus-window gridview > child:selected label.caption,
 gridview > child:selected label.caption {
-  color: rgba(0, 0, 0, 0.65);
+  color: rgba(255, 255, 255, 0.70);
+}
+
+/* =========================================================================
+ * macW1Y Global Button Rounding (Pill Capsule Shape - Task #866)
+ * All buttons across the system (such as "Відкрити") have maximum rounding.
+ * ========================================================================= */
+button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.tab-close-button),
+button.text-button,
+button.suggested-action,
+button.destructive-action,
+button.opaque,
+button.flat:not(.tab-close-button),
+headerbar button,
+headerbar menubutton > button,
+headerbar splitbutton > button,
+menubutton > button,
+splitbutton > button,
+actionbar button,
+.toolbar button,
+dialog button,
+messagedialog button,
+window.dialog button,
+list.boxed-list row button,
+adwactionrow button,
+preferencespage button,
+preferencesgroup button {
+  border-radius: 9999px;
+}
+
+/* Global splitbuttons */
+splitbutton,
+headerbar splitbutton {
+  border-radius: 9999px;
+}
+
+splitbutton > button:first-child,
+headerbar splitbutton > button:first-child {
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+splitbutton > menubutton > button,
+splitbutton > button:last-child,
+headerbar splitbutton > menubutton > button,
+headerbar splitbutton > button:last-child {
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+box.linked:not(.vertical) > button:first-child {
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+box.linked:not(.vertical) > button:last-child {
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+box.linked:not(.vertical) > button:only-child {
+  border-radius: 9999px;
+}
+
+/* =========================================================================
+ * macW1Y Compact Pill Tab Bar & Dark Element Removal (Task #866)
+ * Tabs are half-height (20-22px) and maximum rounded (pill capsule).
+ * Dark background containers under tabs and dark separators are removed.
+ * ========================================================================= */
+panelframetabbar,
+panelframetabbar.frameheader.header,
+tabbar,
+tabbar.inline,
+tabbar > revealer,
+tabbar.inline > revealer,
+tabbar .box,
+tabbar.inline .box,
+tabbar tabbox {
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-style: none;
+  border-bottom: none;
+  border-bottom-style: none;
+  box-shadow: none;
+}
+
+tabbar,
+tabbar > revealer,
+tabbar .box {
+  min-height: 20px;
+  margin: 0;
+  padding: 0;
+}
+
+/* Compact individual tabs: half height and maximum rounded */
+tabbar tabbox > tab,
+tabbar tabbox > tabboxchild > tab {
+  min-height: 18px;
+  padding: 1px 12px;
+  margin: 1px 4px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.08);
+  background-image: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.70);
+  font-size: 11px;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+tabbar tabbox > tab:hover,
+tabbar tabbox > tabboxchild > tab:hover {
+  background-color: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.90);
+}
+
+tabbar tabbox > tab:checked,
+tabbar tabbox > tab:selected,
+tabbar tabbox > tabboxchild > tab:checked,
+tabbar tabbox > tabboxchild > tab:selected {
+  background-color: rgba(255, 255, 255, 0.20);
+  background-image: none;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* Close button inside tab */
+tabbar tabbox > tab button.tab-close-button,
+tabbar tabbox > tabboxchild > tab button.tab-close-button {
+  min-height: 14px;
+  min-width: 14px;
+  padding: 0;
+  margin: 0 2px;
+  border-radius: 9999px;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+tabbar tabbox > tab button.tab-close-button:hover,
+tabbar tabbox > tabboxchild > tab button.tab-close-button:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Start / End action buttons (+ button, dropdowns) */
+tabbar .start-action,
+tabbar .end-action {
+  padding: 0 2px;
+  background: transparent;
+  background-color: transparent;
+}
+
+tabbar .start-action button,
+tabbar .end-action button {
+  min-height: 20px;
+  min-width: 20px;
+  padding: 1px;
+  border-radius: 9999px;
+}
+
+/* Remove dark elements, shadows, and separators under tab bar and above text/notes */
+toolbarview > .top-bar.raised,
+toolbarview > .top-bar.raised.border,
+toolbarview > .top-bar,
+fullscreenbox,
+fullscreenbox > *,
+fullscreenbox > .top-bar,
+fullscreenbox > .top-bar.raised,
+window.org-gnome-TextEditor toolbarview > .top-bar,
+window.org-gnome-TextEditor toolbarview > .top-bar.raised,
+window.org-gnome-TextEditor toolbarview > .top-bar.raised.border,
+window.org-gnome-TextEditor fullscreenbox > .top-bar,
+window.org-gnome-TextEditor tabbar,
+window.org-gnome-TextEditor tabbar ~ separator,
+window.org-gnome-TextEditor tabbar + separator,
+window.org-gnome-TextEditor separator,
+window.org-gnome-TextEditor scrolledwindow,
+window.org-gnome-TextEditor textview,
+tabbar ~ separator,
+tabbar + separator,
+tabbar separator,
+.top-bar separator,
+toolbarview > .top-bar separator {
+  border-top: none;
+  border-bottom: none;
+  border-top-style: none;
+  border-bottom-style: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+window.org-gnome-TextEditor scrolledwindow > undershoot.top,
+window.org-gnome-TextEditor toolbarview.undershoot-top scrolledwindow > undershoot.top {
+  background: none;
+  box-shadow: none;
 }

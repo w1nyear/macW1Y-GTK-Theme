@@ -9716,7 +9716,6 @@ popover > contents,
 .context-menu > contents {
   border-radius: 20px;
   padding: 14px 6px 12px 6px;
-  min-width: 140px;
 }
 
 popover.menu modelbutton:first-child,
@@ -10083,7 +10082,7 @@ window.mac-settings-window .mac-settings-sidebar-headerbar {
 
 window.mac-settings-window navigation-split-view headerbar windowcontrols.start:dir(ltr),
 window.mac-settings-window .mac-settings-sidebar-headerbar windowcontrols.start:dir(ltr) {
-    margin-top: -3px;
+    margin-top: 6px;
     margin-left: 5px;
 }
 
@@ -10504,17 +10503,21 @@ window.mac-settings-window .sidebar-pane undershoot.top,
 window.mac-settings-window .sidebar-pane scrolledwindow undershoot.top,
 window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.top,
 window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow undershoot.top,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow > undershoot.top,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .mac-settings-sidebar toolbarview.undershoot-top scrolledwindow > undershoot.top,
+window.mac-settings-window .mac-settings-sidebar-list undershoot.top,
 window.nautilus-window .sidebar-pane undershoot.top,
 window.nautilus-window .sidebar-pane scrolledwindow undershoot.top,
 window.nautilus-window .sidebar-pane scrolledwindow > undershoot.top {
-    min-height: 38px;
+    min-height: 42px;
     background: linear-gradient(to bottom,
-        alpha(@window_bg_color, 0.88) 0%,
-        alpha(@window_bg_color, 0.70) 25%,
+        alpha(@window_bg_color, 0.90) 0%,
+        alpha(@window_bg_color, 0.75) 25%,
         alpha(@window_bg_color, 0.45) 50%,
-        alpha(@window_bg_color, 0.20) 75%,
+        alpha(@window_bg_color, 0.15) 75%,
         transparent 100%);
-    backdrop-filter: blur(10px);
     border: none;
     box-shadow: none;
 }
@@ -10532,6 +10535,11 @@ window.mac-settings-window .sidebar-pane undershoot.bottom,
 window.mac-settings-window .sidebar-pane scrolledwindow undershoot.bottom,
 window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.bottom,
 window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow > undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar-list undershoot.bottom,
 window.nautilus-window .sidebar-pane undershoot.bottom,
 window.nautilus-window .sidebar-pane scrolledwindow undershoot.bottom,
 window.nautilus-window .sidebar-pane scrolledwindow > undershoot.bottom {
@@ -10595,7 +10603,7 @@ tabbar.inline {
 
 tabbar > revealer,
 tabbar.inline > revealer {
-    background-color: var(--mac-sidebar-bg, #242424);
+    background-color: transparent;
     background-image: none;
     border: none;
     box-shadow: none;
@@ -10604,12 +10612,12 @@ tabbar.inline > revealer {
 /* Compact tab bar inner box container */
 tabbar .box,
 tabbar.inline .box {
-    background-color: var(--mac-window-bg, #1c1c1e);
+    background-color: transparent;
     background-image: none;
-    min-height: 24px;
-    margin: 1px 4px;
-    padding: 1px 2px;
-    border-radius: 6px;
+    min-height: 20px;
+    margin: 0;
+    padding: 0;
+    border-radius: 9999px;
     border: none;
     box-shadow: none;
 }
@@ -10623,7 +10631,7 @@ tabbar:backdrop .box > .end-action {
 
 /* Compact tab strip layout */
 tabbar tabbox {
-    min-height: 22px;
+    min-height: 20px;
     margin: 0;
     padding: 0;
     background-color: transparent;
@@ -10634,21 +10642,22 @@ tabbar tabbox {
 /* Compact individual tabs */
 tabbar tabbox > tab,
 tabbar tabbox > tabboxchild > tab {
-    min-height: 22px;
-    padding: 1px 8px;
-    margin: 0 1px;
-    border-radius: 5px;
-    background-color: #2c2c2e;
+    min-height: 18px;
+    padding: 1px 12px;
+    margin: 1px 4px;
+    border-radius: 9999px;
+    background-color: rgba(255, 255, 255, 0.08);
     background-image: none;
     color: rgba(255, 255, 255, 0.7);
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: none;
+    font-size: 11px;
     transition: background-color 100ms ease, color 100ms ease;
 }
 
 tabbar tabbox > tab:hover,
 tabbar tabbox > tabboxchild > tab:hover {
-    background-color: #343438;
+    background-color: rgba(255, 255, 255, 0.14);
     color: rgba(255, 255, 255, 0.9);
 }
 
@@ -10657,7 +10666,8 @@ tabbar tabbox > tab:checked,
 tabbar tabbox > tab:selected,
 tabbar tabbox > tabboxchild > tab:checked,
 tabbar tabbox > tabboxchild > tab:selected {
-    background-color: #3a3a3c;
+    background-color: rgba(255, 255, 255, 0.20);
+    border: 1px solid rgba(255, 255, 255, 0.16);
     color: #ffffff;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
@@ -10665,8 +10675,8 @@ tabbar tabbox > tabboxchild > tab:selected {
 /* Close button inside tab */
 tabbar tabbox > tab button.tab-close-button,
 tabbar tabbox > tabboxchild > tab button.tab-close-button {
-    min-height: 16px;
-    min-width: 16px;
+    min-height: 14px;
+    min-width: 14px;
     padding: 0;
     margin: 0 2px;
     border-radius: 9999px;
@@ -10681,16 +10691,16 @@ tabbar tabbox > tabboxchild > tab button.tab-close-button:hover {
 /* Start / End action buttons (+ button, dropdowns) */
 tabbar .start-action,
 tabbar .end-action {
-    padding: 1px 2px;
+    padding: 0 2px;
     background-color: transparent;
 }
 
 tabbar .start-action button,
 tabbar .end-action button {
-    min-height: 22px;
-    min-width: 22px;
+    min-height: 20px;
+    min-width: 20px;
     padding: 1px;
-    border-radius: 4px;
+    border-radius: 9999px;
 }
 
 
@@ -11920,8 +11930,27 @@ window.mac-settings-window button.suggested-action.circular:active {
 
 
 
-/* macW1Y Global Component Master Overrides (SSOT) */
-@import url("macw1y-components.css");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /* Popover menu item indentation */
@@ -11929,3 +11958,6 @@ popover.menu modelbutton check + label,
 popover.menu modelbutton radio + label {
   margin-left: 6px;
 }
+
+/* macW1Y Global Component Master Overrides (SSOT) */
+@import url("macw1y-components.css");

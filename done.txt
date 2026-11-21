@@ -2940,3 +2940,61 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
         * python3 bin/test-macw1y-performance-guards.py — 13/13 PASS.
         * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено (100% чисто від кирилиці).
         * Перевірено наживо у сеансі GNOME Shell зі створенням знімків екрана `live_dock_hover_final3.png` та `live_dock_hover_crop.png`: бірка біля іконки плавно переходить у стрілку без жодного шва, розмиття чисте та приємне.
+
+866. Оновлення оформлення вкладок, кнопок та усунення миготіння контекстного меню у Текстовому редакторі і системі (Compact Pill Tabs, Seamless Editor, Global Pill Buttons & Popover Animation Flicker Fix):
+    - Список модифікованих файлів:
+      * [src/mac_popover.c](file:///home/vitaliy/MACTHEMEFILES/src/mac_popover.c)
+      * [lib/libmacpopover.so](file:///home/vitaliy/MACTHEMEFILES/lib/libmacpopover.so)
+      * [gtk-4.0/macw1y-components.css](file:///home/vitaliy/MACTHEMEFILES/gtk-4.0/macw1y-components.css)
+      * [gtk-4.0/gtk.css](file:///home/vitaliy/MACTHEMEFILES/gtk-4.0/gtk.css)
+      * [gtk-4.0/gtk-Dark.css](file:///home/vitaliy/MACTHEMEFILES/gtk-4.0/gtk-Dark.css)
+      * [gtk-4.0/gtk-Light.css](file:///home/vitaliy/MACTHEMEFILES/gtk-4.0/gtk-Light.css)
+      * [config/gtk-4.0/macw1y-components.css](file:///home/vitaliy/MACTHEMEFILES/config/gtk-4.0/macw1y-components.css)
+      * [config/gtk-4.0/gtk.css](file:///home/vitaliy/MACTHEMEFILES/config/gtk-4.0/gtk.css)
+      * [config/gtk-4.0/gtk-Dark.css](file:///home/vitaliy/MACTHEMEFILES/config/gtk-4.0/gtk-Dark.css)
+      * [config/gtk-4.0/gtk-Light.css](file:///home/vitaliy/MACTHEMEFILES/config/gtk-4.0/gtk-Light.css)
+      * [macW1Y-Dark/gtk-4.0/macw1y-components.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark/gtk-4.0/macw1y-components.css)
+      * [macW1Y-Dark/gtk-4.0/gtk.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark/gtk-4.0/gtk.css)
+      * [macW1Y-Dark/gtk-4.0/gtk-Dark.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark/gtk-4.0/gtk-Dark.css)
+      * [macW1Y-Dark-solid/gtk-4.0/macw1y-components.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark-solid/gtk-4.0/macw1y-components.css)
+      * [macW1Y-Dark-solid/gtk-4.0/gtk.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark-solid/gtk-4.0/gtk.css)
+      * [macW1Y-Light/gtk-4.0/macw1y-components.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light/gtk-4.0/macw1y-components.css)
+      * [macW1Y-Light/gtk-4.0/gtk.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light/gtk-4.0/gtk.css)
+      * [macW1Y-Light/gtk-4.0/gtk-dark.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light/gtk-4.0/gtk-dark.css)
+      * [macW1Y-Light-solid/gtk-4.0/macw1y-components.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light-solid/gtk-4.0/macw1y-components.css)
+      * [macW1Y-Light-solid/gtk-4.0/gtk.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light-solid/gtk-4.0/gtk.css)
+      * [~/.config/gtk-4.0/macw1y-components.css](file:///home/vitaliy/.config/gtk-4.0/macw1y-components.css)
+      * [~/.config/gtk-4.0/gtk.css](file:///home/vitaliy/.config/gtk-4.0/gtk.css)
+      * [~/.config/gtk-4.0/gtk-Dark.css](file:///home/vitaliy/.config/gtk-4.0/gtk-Dark.css)
+      * [/usr/share/themes/macW1Y-Dark/gtk-4.0/macw1y-components.css](file:///usr/share/themes/macW1Y-Dark/gtk-4.0/macw1y-components.css)
+      * [/usr/share/themes/macW1Y-Dark/gtk-4.0/gtk.css](file:///usr/share/themes/macW1Y-Dark/gtk-4.0/gtk.css)
+      * [/usr/share/themes/macW1Y-Dark/gtk-4.0/gtk-Dark.css](file:///usr/share/themes/macW1Y-Dark/gtk-4.0/gtk-Dark.css)
+      * [/usr/lib/x86_64-linux-gnu/libmacpopover.so](file:///usr/lib/x86_64-linux-gnu/libmacpopover.so)
+      * [/usr/local/lib/libmacpopover.so](file:///usr/local/lib/libmacpopover.so)
+    - Опис змін:
+      1) Компактні пілюльні вкладки вдвічі меншої висоти з максимальним заокругленням:
+         * У `gtk-4.0/macw1y-components.css`, `gtk-4.0/gtk.css`, `gtk-4.0/gtk-Dark.css` та `gtk-4.0/gtk-Light.css` висоту вкладок `tabbar tabbox > tab` зменшено вдвічі — з 44px до 20-22px (базовий `min-height: 18px`, `padding: 1px 12px`, `font-size: 11px`).
+         * Встановлено максимальне капсульне заокруглення `border-radius: 9999px`, акуратний напівпрозорий фон та витончену окантовку, активна вкладка підсвічується підвищеною яскравістю та м'якою тінню.
+      2) Повне видалення темнішого контейнера під вкладками:
+         * Повністю усунуто темну підкладку `#1c1c1e` та `#242424` під кнопками сторінок (`tabbar, tabbar.inline, tabbar > revealer, tabbar .box, tabbar.inline .box, tabbar tabbox`): встановлено повністю прозорий фон `background-color: transparent`, прибрано внутрішні відступи та рамки. Тепер вкладки вільно та органічно розташовані безпосередньо на фоні вікна.
+      3) Видалення чорного/темного елемента та розділювача під вкладками і над полем тексту/нотаток:
+         * Усунуто тіні `box-shadow` та темні межі `border-bottom` від `toolbarview > .top-bar.raised`, `fullscreenbox > .top-bar`, `tabbar ~ separator`, `window.org-gnome-TextEditor scrolledwindow` та `undershoot.top`.
+         * Область під вкладками тепер плавно та безшовно переходить у робочу зону редактора без жодної чорної смуги чи розриву.
+      4) Максимальне заокруглення всіх кнопок у системі (як кнопка "Відкрити"):
+         * Кнопкам у системі (`button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.tab-close-button)`, `headerbar button`, `menubutton > button`, `splitbutton > button`, `dialog button`, `actionbar button` тощо) встановлено повне капсульне заокруглення `border-radius: 9999px`.
+         * Для здвоєних кнопок (`splitbutton`, `box.linked`) реалізовано округлені краї пілюлі ззовні (`border-top-left-radius: 9999px`, `border-bottom-left-radius: 9999px` зліва та `border-top-right-radius: 9999px`, `border-bottom-right-radius: 9999px` справа).
+      5) Виправлення миготіння прозорістю під час закриття контекстного меню ("Відкрити"):
+         * У вихідному файлі `src/mac_popover.c` у функції `mac_popover_close_tick` виявлено критичну причину 1-кадрового спалаху: при завершенні таймера закриття (`p >= 1.0`) код встановлював `gtk_widget_set_opacity(widget, 1.0f);` безпосередньо перед викликом `orig_popover_hide(widget)`. Це змушувало композитор відмалювати один кадр при 100% непрозорості одразу після плавного згасання до 0%.
+         * Замінено скидання на `gtk_widget_set_opacity(widget, 0.0f);`, додано хук `mac_popover_unmap` для гарантованого збереження нульової непрозорості при скасуванні або приховуванні віджета.
+         * Бібліотеку перекомпільовано в `lib/libmacpopover.so` та синхронізовано до `/usr/lib/x86_64-linux-gnu/libmacpopover.so`, `/usr/lib/libmacpopover.so`, `/usr/local/lib/libmacpopover.so`.
+      6) Верифікація та тестування:
+         * Перевірено наживо у реальному процесі `gnome-text-editor` з кількома вкладками (`live_gnome_text_editor_tabs.png`): вкладки пілюльні, вдвічі менші за висотою, темної підкладки та розділювача немає, кнопка "Відкрити" має максимальне заокруглення.
+         * Перевірено анімацію закриття контекстного меню "Відкрити" наживо (`live_editor_popover_open.png`, `popover_close_fade.png`, `popover_close_done.png`): меню закривається абсолютно плавно, без жодного спалаху або миготіння прозорістю.
+         * Усунено всі залишкові попередження парсера GTK CSS (`max-width`, `:has()`).
+         * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK.
+         * python3 bin/mac-integrity-check — 100% green.
+         * python3 bin/mac-audit-sync check — 100% PASS.
+         * python3 -m unittest discover -s tests -p 'test_*.py' — 38/38 PASS.
+         * python3 bin/test-macw1y-animations.py — 12/12 PASS.
+         * python3 bin/test-macw1y-performance-guards.py — 13/13 PASS.
+         * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh — 0 знайдено (чисто).

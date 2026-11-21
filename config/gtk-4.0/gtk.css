@@ -9752,7 +9752,6 @@ popover > contents,
 .context-menu > contents {
   border-radius: 20px;
   padding: 14px 6px 12px 6px;
-  min-width: 140px;
 }
 
 popover.menu modelbutton:first-child,
@@ -9927,6 +9926,12 @@ navigation-split-view .sidebar-pane {
     box-shadow: none;
 }
 
+window.mac-settings-window .sidebar-pane toolbarview,
+window.mac-settings-window .sidebar-pane headerbar,
+window.mac-settings-window .sidebar-pane scrolledwindow,
+window.mac-settings-window .sidebar-pane viewport,
+window.mac-settings-window .sidebar-pane list.navigation-sidebar,
+window.mac-settings-window .sidebar-pane listbox,
 navigation-split-view .sidebar-pane toolbarview,
 navigation-split-view .sidebar-pane headerbar,
 navigation-split-view .sidebar-pane scrolledwindow,
@@ -10000,6 +10005,10 @@ window .top-bar headerbar,
 window toolbarview > .top-bar headerbar,
 window .sidebar-pane headerbar,
 window .content-pane headerbar,
+window.mac-settings-window headerbar,
+window.mac-settings-window .mac-settings-content-headerbar,
+window.mac-settings-window .mac-settings-sidebar-headerbar,
+window.mac-settings-window navigation-split-view headerbar,
 navigation-split-view headerbar,
 overlay-split-view headerbar,
 overlay-split-view toolbarview > .top-bar headerbar,
@@ -10021,6 +10030,9 @@ window toolbarview > revealer.top-bar,
 window toolbarview > .top-bar.raised,
 window toolbarview > .top-bar.raised.border,
 window .top-bar,
+window.mac-settings-window toolbarview > .top-bar,
+window.mac-settings-window toolbarview > .top-bar.flat,
+window.mac-settings-window toolbarview > revealer.top-bar,
 navigation-split-view toolbarview > .top-bar,
 overlay-split-view toolbarview > .top-bar,
 window.nautilus-window .content-pane toolbarview > .top-bar,
@@ -10046,6 +10058,7 @@ window toolbarview > .top-bar headerbar,
 window toolbarview > revealer.top-bar headerbar,
 navigation-split-view toolbarview > .top-bar headerbar,
 overlay-split-view toolbarview > .top-bar headerbar,
+window.mac-settings-window toolbarview > .top-bar headerbar,
 window.nautilus-window toolbarview > .top-bar headerbar {
     background: transparent;
     background-color: transparent;
@@ -10060,6 +10073,7 @@ window .sidebar-pane toolbarview > .top-bar.raised,
 window navigation-split-view .sidebar-pane toolbarview > .top-bar,
 window overlay-split-view > widget:first-child toolbarview > .top-bar,
 window overlay-split-view > .sidebar-pane toolbarview > .top-bar,
+window.mac-settings-window .sidebar-pane toolbarview > .top-bar,
 window.nautilus-window .sidebar-pane toolbarview > .top-bar {
     background: none;
     background-color: transparent;
@@ -10203,67 +10217,18 @@ navigation-split-view list.navigation-sidebar row:selected:backdrop,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:backdrop,
 window.nautilus-window .sidebar-pane placessidebar row:selected,
-window.nautilus-window .sidebar-pane placessidebar row:selected:backdrop,
-window.nautilus-window .sidebar-pane row:selected,
-window.nautilus-window .navigation-sidebar row:selected,
-window.nautilus-window placessidebar row:selected,
-window.nautilus-window row.sidebar-row:selected {
-    border-radius: 7px;
-    background-color: rgba(255, 255, 255, 0.10);
-    color: @accent_bg_color;
+window.nautilus-window .sidebar-pane placessidebar row:selected:backdrop {
+    border-radius: 8px;
+    background-color: @accent_bg_color;
+    color: #ffffff;
     outline: none;
 }
 
 .navigation-sidebar row:selected label,
 list.navigation-sidebar row:selected label,
 placessidebar row:selected label,
-.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected label,
-window.nautilus-window .sidebar-pane row:selected label,
-window.nautilus-window .navigation-sidebar row:selected label,
-window.nautilus-window placessidebar row:selected label,
-window.nautilus-window row.sidebar-row:selected label,
-row:selected label,
-row:selected label:selected,
-row:selected label selection,
-row:selected selection {
-    color: @accent_bg_color;
-    font-weight: 500;
-    background: transparent;
-    background-color: transparent;
-    background-image: none;
-    box-shadow: none;
-    border: none;
-}
-
-.navigation-sidebar row:selected image,
-list.navigation-sidebar row:selected image,
-placessidebar row:selected image,
-window.nautilus-window .sidebar-pane row:selected image,
-window.nautilus-window .navigation-sidebar row:selected image,
-window.nautilus-window placessidebar row:selected image,
-window.nautilus-window row.sidebar-row:selected image,
-row:selected image,
-row:selected image:selected {
-    color: @accent_bg_color;
-    background: transparent;
-    background-color: transparent;
-    background-image: none;
-    box-shadow: none;
-    border: none;
-}
-
-.navigation-sidebar row:selected *,
-list.navigation-sidebar row:selected *,
-placessidebar row:selected *,
-window.nautilus-window .sidebar-pane row:selected *,
-window.nautilus-window .navigation-sidebar row:selected *,
-window.nautilus-window placessidebar row:selected *,
-window.nautilus-window row.sidebar-row:selected * {
-    background: transparent;
-    background-color: transparent;
-    background-image: none;
-    box-shadow: none;
-    border: none;
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected label {
+    color: #ffffff;
 }
 
 .navigation-sidebar row:selected:hover,
@@ -10272,14 +10237,10 @@ list.navigation-sidebar > row:selected:hover,
 placessidebar row:selected:hover,
 navigation-split-view list.navigation-sidebar row:selected:hover,
 .nautilus-window .sidebar-pane placessidebar row:selected:hover,
-.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:hover,
-window.nautilus-window .sidebar-pane row:selected:hover,
-window.nautilus-window .navigation-sidebar row:selected:hover,
-window.nautilus-window placessidebar row:selected:hover,
-window.nautilus-window row.sidebar-row:selected:hover {
-    border-radius: 7px;
-    background-color: rgba(255, 255, 255, 0.14);
-    color: @accent_bg_color;
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:hover {
+    border-radius: 8px;
+    background-color: color-mix(in srgb, @accent_bg_color 88%, white);
+    color: #ffffff;
     outline: none;
 }
 
@@ -10583,17 +10544,21 @@ window.mac-settings-window .sidebar-pane undershoot.top,
 window.mac-settings-window .sidebar-pane scrolledwindow undershoot.top,
 window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.top,
 window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow undershoot.top,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow > undershoot.top,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow.undershoot-top > undershoot.top,
+window.mac-settings-window .mac-settings-sidebar toolbarview.undershoot-top scrolledwindow > undershoot.top,
+window.mac-settings-window .mac-settings-sidebar-list undershoot.top,
 window.nautilus-window .sidebar-pane undershoot.top,
 window.nautilus-window .sidebar-pane scrolledwindow undershoot.top,
 window.nautilus-window .sidebar-pane scrolledwindow > undershoot.top {
-    min-height: 38px;
+    min-height: 42px;
     background: linear-gradient(to bottom,
-        alpha(@window_bg_color, 0.88) 0%,
-        alpha(@window_bg_color, 0.70) 25%,
+        alpha(@window_bg_color, 0.90) 0%,
+        alpha(@window_bg_color, 0.75) 25%,
         alpha(@window_bg_color, 0.45) 50%,
-        alpha(@window_bg_color, 0.20) 75%,
+        alpha(@window_bg_color, 0.15) 75%,
         transparent 100%);
-    backdrop-filter: blur(10px);
     border: none;
     box-shadow: none;
 }
@@ -10611,6 +10576,11 @@ window.mac-settings-window .sidebar-pane undershoot.bottom,
 window.mac-settings-window .sidebar-pane scrolledwindow undershoot.bottom,
 window.mac-settings-window .sidebar-pane scrolledwindow > undershoot.bottom,
 window.mac-settings-window .sidebar-pane scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow > undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar scrolledwindow.undershoot-bottom > undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar toolbarview.undershoot-bottom scrolledwindow > undershoot.bottom,
+window.mac-settings-window .mac-settings-sidebar-list undershoot.bottom,
 window.nautilus-window .sidebar-pane undershoot.bottom,
 window.nautilus-window .sidebar-pane scrolledwindow undershoot.bottom,
 window.nautilus-window .sidebar-pane scrolledwindow > undershoot.bottom {
@@ -10674,7 +10644,7 @@ tabbar.inline {
 
 tabbar > revealer,
 tabbar.inline > revealer {
-    background-color: #242424;
+    background-color: transparent;
     background-image: none;
     border: none;
     box-shadow: none;
@@ -10683,12 +10653,12 @@ tabbar.inline > revealer {
 /* Compact tab bar inner box container */
 tabbar .box,
 tabbar.inline .box {
-    background-color: #1c1c1e;
+    background-color: transparent;
     background-image: none;
-    min-height: 24px;
-    margin: 1px 4px;
-    padding: 1px 2px;
-    border-radius: 6px;
+    min-height: 20px;
+    margin: 0;
+    padding: 0;
+    border-radius: 9999px;
     border: none;
     box-shadow: none;
 }
@@ -10702,7 +10672,7 @@ tabbar:backdrop .box > .end-action {
 
 /* Compact tab strip layout */
 tabbar tabbox {
-    min-height: 22px;
+    min-height: 20px;
     margin: 0;
     padding: 0;
     background-color: transparent;
@@ -10713,21 +10683,22 @@ tabbar tabbox {
 /* Compact individual tabs */
 tabbar tabbox > tab,
 tabbar tabbox > tabboxchild > tab {
-    min-height: 22px;
-    padding: 1px 8px;
-    margin: 0 1px;
-    border-radius: 5px;
-    background-color: #2c2c2e;
+    min-height: 18px;
+    padding: 1px 12px;
+    margin: 1px 4px;
+    border-radius: 9999px;
+    background-color: rgba(255, 255, 255, 0.08);
     background-image: none;
     color: rgba(255, 255, 255, 0.7);
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: none;
+    font-size: 11px;
     transition: background-color 100ms ease, color 100ms ease;
 }
 
 tabbar tabbox > tab:hover,
 tabbar tabbox > tabboxchild > tab:hover {
-    background-color: #343438;
+    background-color: rgba(255, 255, 255, 0.14);
     color: rgba(255, 255, 255, 0.9);
 }
 
@@ -10736,7 +10707,8 @@ tabbar tabbox > tab:checked,
 tabbar tabbox > tab:selected,
 tabbar tabbox > tabboxchild > tab:checked,
 tabbar tabbox > tabboxchild > tab:selected {
-    background-color: #3a3a3c;
+    background-color: rgba(255, 255, 255, 0.20);
+    border: 1px solid rgba(255, 255, 255, 0.16);
     color: #ffffff;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
@@ -10744,8 +10716,8 @@ tabbar tabbox > tabboxchild > tab:selected {
 /* Close button inside tab */
 tabbar tabbox > tab button.tab-close-button,
 tabbar tabbox > tabboxchild > tab button.tab-close-button {
-    min-height: 16px;
-    min-width: 16px;
+    min-height: 14px;
+    min-width: 14px;
     padding: 0;
     margin: 0 2px;
     border-radius: 9999px;
@@ -10760,16 +10732,16 @@ tabbar tabbox > tabboxchild > tab button.tab-close-button:hover {
 /* Start / End action buttons (+ button, dropdowns) */
 tabbar .start-action,
 tabbar .end-action {
-    padding: 1px 2px;
+    padding: 0 2px;
     background-color: transparent;
 }
 
 tabbar .start-action button,
 tabbar .end-action button {
-    min-height: 22px;
-    min-width: 22px;
+    min-height: 20px;
+    min-width: 20px;
     padding: 1px;
-    border-radius: 4px;
+    border-radius: 9999px;
 }
 
 
@@ -10848,39 +10820,25 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar {
 
 window.mac-settings-window list.mac-settings-sidebar-list row,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row {
-    min-height: 28px;
-    padding: 2px 8px;
-    margin: 1.5px 26px 1.5px 10px;
-    border-radius: 7px;
+    min-height: 32px;
+    padding: 3px 6px;
+    margin: 1.5px 18px 1.5px 8px;
+    border-radius: 8px;
     font-size: 13px;
     color: rgba(255, 255, 255, 0.90);
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:hover,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:hover {
-    border-radius: 7px;
-    background-color: rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.08);
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:selected,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected {
-    border-radius: 7px;
-    background-color: rgba(255, 255, 255, 0.10);
-    color: @accent_bg_color;
-}
-
-window.mac-settings-window list.mac-settings-sidebar-list row:selected *,
-window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected * {
-    background-color: transparent;
-    background: transparent;
-    border: none;
-    box-shadow: none;
-}
-
-window.mac-settings-window list.mac-settings-sidebar-list row:selected:hover,
-window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:hover {
-    background-color: rgba(255, 255, 255, 0.14);
-    color: @accent_bg_color;
+    border-radius: 8px;
+    background-color: #fa6e0a;
+    color: #ffffff;
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:not(.mac-settings-account-row) image,
@@ -10899,7 +10857,7 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not
 
 window.mac-settings-window list.mac-settings-sidebar-list row:selected:not(.mac-settings-account-row) image,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:not(.mac-settings-account-row) image {
-    color: @accent_bg_color;
+    color: #ffffff;
     background-color: transparent;
     background: transparent;
     border: none;
@@ -10909,7 +10867,7 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:sel
 window.mac-settings-window list.mac-settings-sidebar-list row label,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row label {
     font-size: 13px;
-    margin-top: 0px;
+    margin-top: 1px;
     margin-bottom: 0px;
     padding-top: 0px;
     padding-bottom: 0px;
@@ -10917,14 +10875,14 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row lab
 
 window.mac-settings-window list.mac-settings-sidebar-list row:selected label,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected label {
-    color: @accent_bg_color;
+    color: #ffffff;
     font-weight: 500;
 }
 
 window.mac-settings-window .mac-settings-account-row {
     min-height: 48px;
     padding: 6px 10px;
-    margin: 6px 26px 18px 10px;
+    margin: 6px 18px 18px 8px;
     border-radius: 8px;
     background-color: transparent;
     border-width: 0;
@@ -11229,14 +11187,10 @@ window.mac-settings-window cclistrow image:dir(ltr):last-child {
 }
 
 window.mac-settings-window list.boxed-list row > box.header > box.suffixes,
-window.mac-settings-window adwactionrow > box.header > box.suffixes,
-window.mac-settings-window ccwificonnectionrow > box.header > box.suffixes,
 window.mac-settings-window list.boxed-list row > box.header > button:last-child,
 window.mac-settings-window list.boxed-list row > box.header > switch:last-child,
 window.mac-settings-window list.boxed-list row > box.header > image:last-child {
     margin-right: 0px;
-    margin-top: 0px;
-    margin-bottom: 0px;
 }
 
 window.mac-settings-window list.boxed-list row button,
@@ -12038,70 +11992,6 @@ window.mac-settings-window button.suggested-action.circular:active {
 
 
 
-/* === SOLID MACW1Y SETTINGS (GNOME CONTROL CENTER) === */
-window.mac-settings-window,
-window.mac-settings-window.background,
-window.mac-settings-window > dialog-host,
-window.mac-settings-window navigation-split-view,
-window.mac-settings-window .content-pane,
-window.mac-settings-window .mac-settings-content {
-    background-color: var(--mac-window-bg, #202022);
-    background: #202022;
-    background-image: none;
-    color: var(--mac-text-primary, #ffffff);
-}
-
-window.mac-settings-window navigation-split-view > widget.sidebar-pane,
-window.mac-settings-window navigation-split-view .sidebar-pane,
-window.mac-settings-window .sidebar-pane,
-window.mac-settings-window .sidebar-pane:dir(ltr),
-window.mac-settings-window .sidebar-pane:dir(rtl),
-window.mac-settings-window navigation-split-view > widget:first-child,
-window.mac-settings-window .mac-settings-sidebar,
-window.mac-settings-window navigation-view-page.mac-settings-sidebar {
-    margin: 6px 0px 6px 6px;
-    border: none;
-    border-radius: 14px;
-    background-color: var(--mac-sidebar-bg, #18181a);
-    background: #18181a;
-    background-clip: padding-box;
-    box-shadow: none;
-}
-
-window.mac-settings-window .mac-settings-sidebar-headerbar,
-window.mac-settings-window .sidebar-pane headerbar,
-window.mac-settings-window navigation-split-view > widget:first-child headerbar,
-window.mac-settings-window .sidebar-pane toolbarview > .top-bar,
-window.mac-settings-window .sidebar-pane toolbarview > .top-bar headerbar {
-    min-height: 48px;
-    background-color: var(--mac-sidebar-bg, #18181a);
-    background: #18181a;
-    background-image: none;
-    border: none;
-    border-bottom: none;
-    box-shadow: none;
-}
-
-window.mac-settings-window toolbarview > .top-bar.raised,
-window.mac-settings-window toolbarview > .top-bar.raised.border,
-window.mac-settings-window toolbarview > revealer.top-bar,
-window.mac-settings-window toolbarview > .top-bar,
-window.mac-settings-window toolbarview > .top-bar.flat,
-window.mac-settings-window headerbar:not(.mac-settings-sidebar-headerbar),
-window.mac-settings-window headerbar.flat,
-window.mac-settings-window headerbar.default-decoration,
-window.mac-settings-window .mac-settings-content-headerbar,
-window.mac-settings-window .mac-settings-content-headerbar.has-view-switcher,
-window.mac-settings-window .mac-settings-switcher-headerbar,
-window.mac-settings-window .panel-has-switcher .mac-settings-content-headerbar {
-    min-height: 48px;
-    background-color: var(--mac-window-bg, #202022);
-    background: #202022;
-    background-image: none;
-    border: none;
-    border-bottom: 1px solid var(--mac-card-sep, rgba(255, 255, 255, 0.08));
-    box-shadow: none;
-}
 
 
 

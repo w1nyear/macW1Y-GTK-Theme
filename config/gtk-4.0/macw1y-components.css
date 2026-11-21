@@ -1044,7 +1044,7 @@ window.dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):n
 .content-pane button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action) {
   min-height: 24px;
   padding: 3px 12px;
-  border-radius: 6px;
+  border-radius: 9999px;
   background-color: alpha(currentColor, 0.08);
   border: none;
   border-style: none;
@@ -2174,17 +2174,6 @@ menu {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
   padding: 4px;
   min-width: 140px;
-  max-width: 480px;
-  width: auto;
-}
-
-/* Conditional popover indent: only indent plain items when menu has checkmarks/radios */
-popover.menu:has(check) modelbutton:not(:has(check)):not(:has(radio)):not(:has(image)) label,
-popover.menu:has(radio) modelbutton:not(:has(check)):not(:has(radio)):not(:has(image)) label {
-  margin-left: 24px;
-}
-popover.menu:not(:has(check)):not(:has(radio)) modelbutton label {
-  margin-left: 0;
 }
 
 popover modelbutton,
@@ -2899,4 +2888,209 @@ gridview > child:selected .icon-ui-labels-box #label {
 window.nautilus-window gridview > child:selected label.caption,
 gridview > child:selected label.caption {
   color: rgba(255, 255, 255, 0.70);
+}
+
+/* =========================================================================
+ * macW1Y Global Button Rounding (Pill Capsule Shape - Task #866)
+ * All buttons across the system (such as "Відкрити") have maximum rounding.
+ * ========================================================================= */
+button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.tab-close-button),
+button.text-button,
+button.suggested-action,
+button.destructive-action,
+button.opaque,
+button.flat:not(.tab-close-button),
+headerbar button,
+headerbar menubutton > button,
+headerbar splitbutton > button,
+menubutton > button,
+splitbutton > button,
+actionbar button,
+.toolbar button,
+dialog button,
+messagedialog button,
+window.dialog button,
+list.boxed-list row button,
+adwactionrow button,
+preferencespage button,
+preferencesgroup button {
+  border-radius: 9999px;
+}
+
+/* Global splitbuttons */
+splitbutton,
+headerbar splitbutton {
+  border-radius: 9999px;
+}
+
+splitbutton > button:first-child,
+headerbar splitbutton > button:first-child {
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+splitbutton > menubutton > button,
+splitbutton > button:last-child,
+headerbar splitbutton > menubutton > button,
+headerbar splitbutton > button:last-child {
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+box.linked:not(.vertical) > button:first-child {
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+box.linked:not(.vertical) > button:last-child {
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+box.linked:not(.vertical) > button:only-child {
+  border-radius: 9999px;
+}
+
+/* =========================================================================
+ * macW1Y Compact Pill Tab Bar & Dark Element Removal (Task #866)
+ * Tabs are half-height (20-22px) and maximum rounded (pill capsule).
+ * Dark background containers under tabs and dark separators are removed.
+ * ========================================================================= */
+panelframetabbar,
+panelframetabbar.frameheader.header,
+tabbar,
+tabbar.inline,
+tabbar > revealer,
+tabbar.inline > revealer,
+tabbar .box,
+tabbar.inline .box,
+tabbar tabbox {
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-style: none;
+  border-bottom: none;
+  border-bottom-style: none;
+  box-shadow: none;
+}
+
+tabbar,
+tabbar > revealer,
+tabbar .box {
+  min-height: 20px;
+  margin: 0;
+  padding: 0;
+}
+
+/* Compact individual tabs: half height and maximum rounded */
+tabbar tabbox > tab,
+tabbar tabbox > tabboxchild > tab {
+  min-height: 18px;
+  padding: 1px 12px;
+  margin: 1px 4px;
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.08);
+  background-image: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.70);
+  font-size: 11px;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+tabbar tabbox > tab:hover,
+tabbar tabbox > tabboxchild > tab:hover {
+  background-color: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.90);
+}
+
+tabbar tabbox > tab:checked,
+tabbar tabbox > tab:selected,
+tabbar tabbox > tabboxchild > tab:checked,
+tabbar tabbox > tabboxchild > tab:selected {
+  background-color: rgba(255, 255, 255, 0.20);
+  background-image: none;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* Close button inside tab */
+tabbar tabbox > tab button.tab-close-button,
+tabbar tabbox > tabboxchild > tab button.tab-close-button {
+  min-height: 14px;
+  min-width: 14px;
+  padding: 0;
+  margin: 0 2px;
+  border-radius: 9999px;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+tabbar tabbox > tab button.tab-close-button:hover,
+tabbar tabbox > tabboxchild > tab button.tab-close-button:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Start / End action buttons (+ button, dropdowns) */
+tabbar .start-action,
+tabbar .end-action {
+  padding: 0 2px;
+  background: transparent;
+  background-color: transparent;
+}
+
+tabbar .start-action button,
+tabbar .end-action button {
+  min-height: 20px;
+  min-width: 20px;
+  padding: 1px;
+  border-radius: 9999px;
+}
+
+/* Remove dark elements, shadows, and separators under tab bar and above text/notes */
+toolbarview > .top-bar.raised,
+toolbarview > .top-bar.raised.border,
+toolbarview > .top-bar,
+fullscreenbox,
+fullscreenbox > *,
+fullscreenbox > .top-bar,
+fullscreenbox > .top-bar.raised,
+window.org-gnome-TextEditor toolbarview > .top-bar,
+window.org-gnome-TextEditor toolbarview > .top-bar.raised,
+window.org-gnome-TextEditor toolbarview > .top-bar.raised.border,
+window.org-gnome-TextEditor fullscreenbox > .top-bar,
+window.org-gnome-TextEditor tabbar,
+window.org-gnome-TextEditor tabbar ~ separator,
+window.org-gnome-TextEditor tabbar + separator,
+window.org-gnome-TextEditor separator,
+window.org-gnome-TextEditor scrolledwindow,
+window.org-gnome-TextEditor textview,
+tabbar ~ separator,
+tabbar + separator,
+tabbar separator,
+.top-bar separator,
+toolbarview > .top-bar separator {
+  border-top: none;
+  border-bottom: none;
+  border-top-style: none;
+  border-bottom-style: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+window.org-gnome-TextEditor scrolledwindow > undershoot.top,
+window.org-gnome-TextEditor toolbarview.undershoot-top scrolledwindow > undershoot.top {
+  background: none;
+  box-shadow: none;
 }

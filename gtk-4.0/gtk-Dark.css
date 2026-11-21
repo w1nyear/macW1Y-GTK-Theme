@@ -10603,7 +10603,7 @@ tabbar.inline {
 
 tabbar > revealer,
 tabbar.inline > revealer {
-    background-color: var(--mac-sidebar-bg, #242424);
+    background-color: transparent;
     background-image: none;
     border: none;
     box-shadow: none;
@@ -10612,12 +10612,12 @@ tabbar.inline > revealer {
 /* Compact tab bar inner box container */
 tabbar .box,
 tabbar.inline .box {
-    background-color: var(--mac-window-bg, #1c1c1e);
+    background-color: transparent;
     background-image: none;
-    min-height: 24px;
-    margin: 1px 4px;
-    padding: 1px 2px;
-    border-radius: 6px;
+    min-height: 20px;
+    margin: 0;
+    padding: 0;
+    border-radius: 9999px;
     border: none;
     box-shadow: none;
 }
@@ -10631,7 +10631,7 @@ tabbar:backdrop .box > .end-action {
 
 /* Compact tab strip layout */
 tabbar tabbox {
-    min-height: 22px;
+    min-height: 20px;
     margin: 0;
     padding: 0;
     background-color: transparent;
@@ -10642,21 +10642,22 @@ tabbar tabbox {
 /* Compact individual tabs */
 tabbar tabbox > tab,
 tabbar tabbox > tabboxchild > tab {
-    min-height: 22px;
-    padding: 1px 8px;
-    margin: 0 1px;
-    border-radius: 5px;
-    background-color: #2c2c2e;
+    min-height: 18px;
+    padding: 1px 12px;
+    margin: 1px 4px;
+    border-radius: 9999px;
+    background-color: rgba(255, 255, 255, 0.08);
     background-image: none;
     color: rgba(255, 255, 255, 0.7);
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: none;
+    font-size: 11px;
     transition: background-color 100ms ease, color 100ms ease;
 }
 
 tabbar tabbox > tab:hover,
 tabbar tabbox > tabboxchild > tab:hover {
-    background-color: #343438;
+    background-color: rgba(255, 255, 255, 0.14);
     color: rgba(255, 255, 255, 0.9);
 }
 
@@ -10665,7 +10666,8 @@ tabbar tabbox > tab:checked,
 tabbar tabbox > tab:selected,
 tabbar tabbox > tabboxchild > tab:checked,
 tabbar tabbox > tabboxchild > tab:selected {
-    background-color: #3a3a3c;
+    background-color: rgba(255, 255, 255, 0.20);
+    border: 1px solid rgba(255, 255, 255, 0.16);
     color: #ffffff;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
@@ -10673,8 +10675,8 @@ tabbar tabbox > tabboxchild > tab:selected {
 /* Close button inside tab */
 tabbar tabbox > tab button.tab-close-button,
 tabbar tabbox > tabboxchild > tab button.tab-close-button {
-    min-height: 16px;
-    min-width: 16px;
+    min-height: 14px;
+    min-width: 14px;
     padding: 0;
     margin: 0 2px;
     border-radius: 9999px;
@@ -10689,16 +10691,16 @@ tabbar tabbox > tabboxchild > tab button.tab-close-button:hover {
 /* Start / End action buttons (+ button, dropdowns) */
 tabbar .start-action,
 tabbar .end-action {
-    padding: 1px 2px;
+    padding: 0 2px;
     background-color: transparent;
 }
 
 tabbar .start-action button,
 tabbar .end-action button {
-    min-height: 22px;
-    min-width: 22px;
+    min-height: 20px;
+    min-width: 20px;
     padding: 1px;
-    border-radius: 4px;
+    border-radius: 9999px;
 }
 
 
