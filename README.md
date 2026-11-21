@@ -36,8 +36,8 @@
 
 | Component | Specification |
 |---|---|
-| Distributions | Ubuntu, Debian, Fedora, Arch Linux, CachyOS |
-| Desktop | GNOME Shell |
+| Distributions | Ubuntu (24.04–26.10), Debian, Fedora, Arch Linux, CachyOS |
+| Desktop | GNOME Shell 46–51 |
 | Display server | Wayland, X11 |
 | Bootloader | GRUB 2, systemd-boot |
 | Package manager | APT, DNF, Pacman |

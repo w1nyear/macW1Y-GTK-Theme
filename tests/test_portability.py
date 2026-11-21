@@ -23,6 +23,10 @@ class PortabilityTests(unittest.TestCase):
         for version in ('43', '44'):
             self.assertTrue(check.incompatible_extensions(ROOT, version), f'Version {version} should be incompatible')
 
+    def test_ubuntu_26_10_gnome_51_compatibility(self):
+        incompatible = check.incompatible_extensions(ROOT, "51")
+        self.assertEqual(incompatible, [], f'GNOME 51 incompatible extensions: {incompatible}')
+
     def test_native_failure_preserves_existing_outputs(self):
         with tempfile.TemporaryDirectory() as folder:
             temp = pathlib.Path(folder)

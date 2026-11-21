@@ -11,8 +11,10 @@
 
 | Дистрибутив | Версія GNOME | Графічний сервер | Рівень підтримки | Поточний статус |
 |---|---|---|---|---|
-| **Ubuntu 24.04 LTS (Noble)** | GNOME 46 | Wayland / X11 | **Tier 1 (Первинна платформа)** | Повна підтримка, 100% пройдених тестів |
+| **Ubuntu 24.04 LTS (Noble)** | GNOME 46 | Wayland / X11 | **Tier 1** | Повна підтримка, 100% пройдених тестів |
 | **Ubuntu 24.10 (Oracular)** | GNOME 47 | Wayland | **Tier 1** | Повна підтримка, сумісність з Mutter 47 / GJS 1.80 |
+| **Ubuntu 26.04 LTS (Resolute)** | GNOME 50 | Wayland | **Tier 1 (Хост розробки)** | 100% валідовано, щоденне тестування |
+| **Ubuntu 26.10** | GNOME 51 | Wayland | **Tier 1** | Повна підтримка GNOME 51, GJS 1.84+, Mutter 51, 100% сумісність розширень |
 | **Arch Linux / CachyOS** | GNOME 47–51 | Wayland | **Tier 1 (Повністю валідовано у VM)** | 100% тестів (38/38 unit, 21/21 guard, 12/12 animations, audit 100%) |
 | **Fedora 40–44** | GNOME 46–51 | Wayland | **Tier 1 (Повністю валідовано у VM)** | 100% тестів (38/38 unit, 21/21 guard, 12/12 animations, audit 100%, DNF5, GCC 16, Linux 6.19) |
 | **Debian 13 (Trixie)** | GNOME 46/47 | Wayland | Tier 2 | Базовий набір пакетів валідовано |

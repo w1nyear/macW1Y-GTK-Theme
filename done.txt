@@ -3184,3 +3184,25 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
       * [MULTIPLATFORM_MIGRATION_STATUS.md](file:///home/vitaliy/MACTHEMEFILES/MULTIPLATFORM_MIGRATION_STATUS.md)
       * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
       * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+873. Додавання повної підтримки Ubuntu 26.10 з GNOME 51:
+    - Верифіковано та забезпечено 100% сумісність з GNOME Shell 51 та Mutter 51 для всіх розширень модпака (включаючи macw1y-touchpad-gestures та wack-lockscreen-clock).
+    - Оновлено утиліту перевірки платформи dependencies/check-platform.py: додано явний діапазон Ubuntu 24.04–26.10+ та GNOME 46–51+.
+    - Синхронізовано метадані допоміжних каталогів touchpad/ та wack-system/ для декларації GNOME 51.
+    - Оновлено специфікації та матрицю сумісності в README.md (Ubuntu 24.04–26.10, GNOME 46–51) та MULTIPLATFORM_MIGRATION_STATUS.md (додано статус Tier 1 для Ubuntu 26.04 LTS та Ubuntu 26.10 з GNOME 51).
+    - Розширено набір модульних тестів (tests/test_portability.py): додано test_ubuntu_26_10_gnome_51_compatibility.
+    - Результати тестів:
+      * python3 -m unittest discover -s tests -p 'test_*.py' — 39/39 PASS (100%).
+      * python3 bin/mac-extension-guard verify — 21/21 LOCKED OK (100%).
+      * python3 bin/mac-audit-sync check — 100% PASS (5/5).
+      * python3 bin/test-macw1y-animations.py — 12/12 PASS (100%).
+      * install.sh — 0 символів кирилиці.
+    - Зачеплені файли:
+      * [dependencies/check-platform.py](file:///home/vitaliy/MACTHEMEFILES/dependencies/check-platform.py)
+      * [touchpad/macw1y-touchpad-gestures@mactheme/metadata.json](file:///home/vitaliy/MACTHEMEFILES/touchpad/macw1y-touchpad-gestures@mactheme/metadata.json)
+      * [wack-system/metadata.json](file:///home/vitaliy/MACTHEMEFILES/wack-system/metadata.json)
+      * [README.md](file:///home/vitaliy/MACTHEMEFILES/README.md)
+      * [MULTIPLATFORM_MIGRATION_STATUS.md](file:///home/vitaliy/MACTHEMEFILES/MULTIPLATFORM_MIGRATION_STATUS.md)
+      * [tests/test_portability.py](file:///home/vitaliy/MACTHEMEFILES/tests/test_portability.py)
+      * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+      * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
