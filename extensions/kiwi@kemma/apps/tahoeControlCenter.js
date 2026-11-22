@@ -1889,7 +1889,10 @@ function _buildPanel() {
     const _isStageManagerActive = () => {
         try {
             const ext = Main.extensionManager.lookup(STAGE_MANAGER_UUID);
-            return ext && ext.state === 1;
+            if (ext && ext.state === 1) return true;
+            if (globalThis._stageManagerEnabled) return true;
+            const shellSettings = new Gio.Settings({ schema_id: 'org.gnome.shell' });
+            return shellSettings.get_strv('enabled-extensions').includes(STAGE_MANAGER_UUID);
         } catch (_) {
             return false;
         }
@@ -1914,9 +1917,29 @@ function _buildPanel() {
     stagemanager.btn.connect('clicked', () => {
         try {
             const active = _isStageManagerActive();
+            const shellSettings = new Gio.Settings({ schema_id: 'org.gnome.shell' });
+            let enabled = shellSettings.get_strv('enabled-extensions');
+            let disabled = shellSettings.get_strv('disabled-extensions');
+
             if (active) {
+                if (enabled.includes(STAGE_MANAGER_UUID)) {
+                    enabled = enabled.filter(id => id !== STAGE_MANAGER_UUID);
+                    shellSettings.set_strv('enabled-extensions', enabled);
+                }
+                if (!disabled.includes(STAGE_MANAGER_UUID)) {
+                    disabled.push(STAGE_MANAGER_UUID);
+                    shellSettings.set_strv('disabled-extensions', disabled);
+                }
                 Main.extensionManager.disableExtension(STAGE_MANAGER_UUID);
             } else {
+                if (disabled.includes(STAGE_MANAGER_UUID)) {
+                    disabled = disabled.filter(id => id !== STAGE_MANAGER_UUID);
+                    shellSettings.set_strv('disabled-extensions', disabled);
+                }
+                if (!enabled.includes(STAGE_MANAGER_UUID)) {
+                    enabled.push(STAGE_MANAGER_UUID);
+                    shellSettings.set_strv('enabled-extensions', enabled);
+                }
                 Main.extensionManager.enableExtension(STAGE_MANAGER_UUID);
             }
             _refreshStageManager(stagemanager);

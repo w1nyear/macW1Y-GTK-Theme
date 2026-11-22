@@ -71,7 +71,7 @@ export default class CompizMagicLampEffectExtension extends Extension {
         const win = actor.meta_window;
         const stageActive = !!globalThis._stageManagerEnabled;
 
-        if (win?._stageSwitching || (stageActive && minimizing)) {
+        if (win?._stageSwitching || stageActive) {
             if (minimizing) {
                 Main.wm._minimizeWindowDone(wm, actor);
             } else {

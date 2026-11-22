@@ -101,7 +101,7 @@ elif [ -z "$MAC_INSTALLER_CLI" ]; then
                 python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || exit 1
             fi
             # Pre-activate macW1Y environment and disable legacy extensions
-            for ext in "ubuntu-dock@ubuntu.com" "tiling-assistant@ubuntu.com" "ding@rastersoft.com" "dash-to-dock@micxgx.gmail.com" "stage-manager@gnome-stage-manager" "snapd-prompting@canonical.com" "web-search-provider@ubuntu.com"; do
+            for ext in "ubuntu-dock@ubuntu.com" "tiling-assistant@ubuntu.com" "ding@rastersoft.com" "dash-to-dock@micxgx.gmail.com" "snapd-prompting@canonical.com" "web-search-provider@ubuntu.com"; do
                 gnome-extensions disable "$ext" 2>/dev/null || true
             done
             for ext in "user-theme@gnome-shell-extensions.gcampax.github.com" "eval-helper@mactheme" "blur-my-shell@aunetx" "dash2dock-motion@unmade.space" "appmenu@ChathurangaBW.github.io" "kiwi@kemma" "desktop-widgets@r3nhick" "macw1y-touchpad-gestures@mactheme" "compiz-alike-magic-lamp-effect@hermes83.github.com" "cupertino-dock-lite@rinzler69-wastaken.github.com" "custom-command-toggle@storageb.github.com" "liquid-glass@thinkingcoding1231.gmail.com" "quick-settings-scroll@diskmth.fr" "Rounded_Corners@lennart-k" "volume-percentage-quick-settings@imdarktom" "wack-lockscreen-clock@rinzler69-wastaken.github.com" "wifi-hotspot-quick-settings@aryan10.github.io"; do
@@ -1049,9 +1049,8 @@ install_extensions() {
         run_as_user gnome-extensions enable "$ext_id" 2>/dev/null || true
     done
 
-    # Disabling Stage Manager and Ubuntu overlay extensions
+    # Disabling legacy overlay extensions
     local UBUNTU_BLOAT_EXTS=(
-        "stage-manager@gnome-stage-manager"
         "dash-to-dock@micxgx.gmail.com"
         "snapd-prompting@canonical.com"
         "snapd-search-provider@canonical.com"
@@ -2170,7 +2169,6 @@ EOF_CUR_THEME_UP
             run_as_user gnome-extensions enable "$ext_id" 2>/dev/null || true
         done
         local UBUNTU_BLOAT_EXTS=(
-            "stage-manager@gnome-stage-manager"
             "dash-to-dock@micxgx.gmail.com"
             "snapd-prompting@canonical.com"
             "snapd-search-provider@canonical.com"

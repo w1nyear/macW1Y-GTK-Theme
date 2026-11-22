@@ -3768,3 +3768,40 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+---
+
+890. Усунення дублювання вікон при розгортанні зі Stage Manager, виправлення стрибка розміру після анімації, інтеграція розгортання через Dock та запам'ятовування стану Stage Manager:
+- Опис проблеми:
+  1) При натисканні на картку у Stage Manager для розгортання програми стара картка залишалася у бічній панелі, а з неї паралельно летів клон — створюючи візуальне відчуття наявності двох вікон одночасно.
+  2) Після завершення анімації розгортання вікно різко збільшувалося без анімації (jump/snap).
+  3) Якщо програма перебувала у Stage Manager, але користувач натискав на її іконку в Dock (Dash-to-Dock), відтворювалася анімація magic lamp (джин) з Dock замість плавного розгортання вікна зі Stage Manager та згортання активного вікна у Stage Manager.
+  4) Стан увімкнення/вимкнення режиму Stage Manager не зберігався між перезапусками системи чи оболонки GNOME Shell.
+- Причини:
+  1) Під час розгортання картка у бічній панелі не приховувалася до моменту спрацювання відкладеного таймера _refresh() (через 310 мс), через що користувач бачив і статичну картку в панелі, і анімований клон.
+  2) Клон анімувався до координат та розмірів get_frame_rect() (внутрішній клієнтський розмір вікна без тіней, наприклад 1345x800), тоді як реальний композитний актор Mutter включає тіні вікна (get_buffer_rect(), наприклад 1377x842). Після знищення клону та показу реального актора виникав помітний стрибок розміру та позиції.
+  3) У Compiz Magic Lamp перевірка обходу ефекту перевіряла лише стан згортання (stageActive && minimizing), тому при unminimize з Dock запускався ефект лампи Compiz. Водночас _onWindowUnminimize у Stage Manager не викликав процедуру перемикання _switchWindows([win]).
+  4) Перемикач Stage Manager у Tahoe Control Center (tahoeControlCenter.js) викликав лише Main.extensionManager.enableExtension / disableExtension у пам'яті, не оновлюючи конфігурацію GSettings org.gnome.shell enabled-extensions та disabled-extensions.
+- Реалізовані зміни:
+  1) Негайне приховування картки при розгортанні (card.opacity = 0):
+     * У extensions/stage-manager@gnome-stage-manager/extension.js у функції _switchWindows() картка, з якої розгортається вікно, одразу отримує opacity = 0 після зчитування її точних координат. Завдяки цьому візуально картка «виймається» з панелі без появи другого дублюючого вікна.
+  2) Точне масштабування до get_buffer_rect() без стрибків розміру:
+     * Кінцеві координати та розміри клону в _switchWindows() тепер визначаються на основі розмірів актора Mutter та get_buffer_rect(), включно з тінями.
+     * Застосовано Clutter.ContentGravity.RESIZE_FILL. Позиція та розмір клону в останній мілісекунді анімації на 100% піксельно збігаються з реальним MetaWindowActor, ліквідуючи будь-який стрибок чи зміну розміру після анімації.
+  3) Інтеграція розгортання через Dock зі Stage Manager:
+     * У compiz-alike-magic-lamp-effect/extension.js оновлено умову: при активному Stage Manager (stageActive) Compiz повністю пропускає і згортання, і розгортання з Dock (Main.wm._unminimizeWindowDone, actor.set_opacity(0)).
+     * У stage-manager/extension.js метод _onWindowUnminimize() перехоплює розгортання з Dock, знаходить відповідну картку програми в Stage Manager і викликає _switchWindows([win], targetCard), розгортаючи вікно зі стейдж-бару та плавно згортаючи активне робоче вікно у стейдж-бар.
+  4) Персистентне збереження стану Stage Manager у GSettings:
+     * У kiwi@kemma/apps/tahoeControlCenter.js кнопку Stage Manager зв'язано з Gio.Settings('org.gnome.shell'), що синхронно записує зміну списків enabled-extensions та disabled-extensions.
+     * Вилучено блокуючі записи stage-manager з dconf/gnome-shell.dconf, dconf/gnome-all.dconf, macw1y-gdm/99_mactheme.gschema.override та install.sh. Стан Stage Manager тепер повністю зберігається після перезавантаження комп'ютера.
+- Зачеплені файли:
+  * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
+  * [extensions/compiz-alike-magic-lamp-effect@hermes83.github.com/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/compiz-alike-magic-lamp-effect@hermes83.github.com/extension.js)
+  * [extensions/kiwi@kemma/apps/tahoeControlCenter.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeControlCenter.js)
+  * [dconf/gnome-shell.dconf](file:///home/vitaliy/MACTHEMEFILES/dconf/gnome-shell.dconf)
+  * [dconf/gnome-all.dconf](file:///home/vitaliy/MACTHEMEFILES/dconf/gnome-all.dconf)
+  * [macw1y-gdm/99_mactheme.gschema.override](file:///home/vitaliy/MACTHEMEFILES/macw1y-gdm/99_mactheme.gschema.override)
+  * [install.sh](file:///home/vitaliy/MACTHEMEFILES/install.sh)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
