@@ -2038,11 +2038,11 @@ function _updateTailPosition(label, position) {
     } catch (_) {}
 
     if (label._blurActor) {
-        label._blurActor.set_size(Math.round(tailW), Math.round(tailH));
-        label._blurActor.set_position(Math.round(posX), Math.round(posY));
-        if (label._blurActor._blurEff && 'corner_radius' in label._blurActor._blurEff) {
-            label._blurActor._blurEff.corner_radius = Math.round(pillHeight / 2);
-        }
+        try {
+            Main.uiGroup.remove_child(label._blurActor);
+            label._blurActor.destroy();
+        } catch (_) {}
+        label._blurActor = null;
     }
 
     tail.queue_repaint();
@@ -2064,39 +2064,12 @@ function _ensureLabelTail(label, position) {
         labelBlurEff.enabled = false;
     }
 
-    if (!label._blurActor) {
-        const blurActor = new St.Widget({
-            style_class: 'dash-label-blur-unified',
-            reactive: false,
-        });
-        label._blurActor = blurActor;
-
-        const cfg = globalThis._macLabelStylingConfig || { blur: 30, tint: 28, shadow: 25 };
-        const radius = cfg.blur ?? 30;
-        const brightness = Math.max(0.3, 1.0 - ((cfg.tint ?? 28) / 100.0) * 0.4);
-
-        if (Blur?.BlurEffect) {
-            blurActor._blurEff = new Blur.BlurEffect({
-                name: 'dash-label-unified-blur',
-                mode: 1,
-                radius: radius,
-                corner_radius: 14,
-                brightness: brightness,
-            });
-            blurActor.add_effect(blurActor._blurEff);
-        } else if (Shell?.BlurEffect) {
-            blurActor._blurEff = new Shell.BlurEffect({
-                name: 'dash-label-unified-blur',
-                mode: Shell.BlurMode.BACKGROUND,
-                radius: radius,
-            });
-            blurActor.add_effect(blurActor._blurEff);
-        }
-
-        Main.uiGroup.add_child(blurActor);
-
-        label.bind_property('visible', blurActor, 'visible', GObject.BindingFlags.SYNC_CREATE);
-        label.bind_property('opacity', blurActor, 'opacity', GObject.BindingFlags.SYNC_CREATE);
+    if (label._blurActor) {
+        try {
+            Main.uiGroup.remove_child(label._blurActor);
+            label._blurActor.destroy();
+        } catch (_) {}
+        label._blurActor = null;
     }
 
     if (!label._arrowTailActor) {
@@ -2118,10 +2091,10 @@ function _ensureLabelTail(label, position) {
 
             let r, g, b, a, br, bg_c, bb, ba;
             if (isLight) {
-                r = 0.94; g = 0.94; b = 0.96; a = Math.max(0.35, Math.min(0.95, tintAlpha * 0.85));
+                r = 0.94; g = 0.94; b = 0.96; a = Math.max(0.82, Math.min(0.96, tintAlpha * 0.85 + 0.55));
                 br = 0.0; bg_c = 0.0; bb = 0.0; ba = 0.14;
             } else {
-                r = 0.12; g = 0.12; b = 0.15; a = Math.max(0.18, Math.min(0.95, tintAlpha));
+                r = 0.12; g = 0.12; b = 0.15; a = Math.max(0.82, Math.min(0.96, tintAlpha + 0.55));
                 br = 1.0; bg_c = 1.0; bb = 1.0; ba = 0.22;
             }
 
@@ -2267,9 +2240,7 @@ function _ensureLabelTail(label, position) {
         });
     }
 
-    // Ensure stacking order: blur actor below tail, and tail below label
-    if (label._blurActor && label._arrowTailActor)
-        Main.uiGroup.set_child_below_sibling(label._blurActor, label._arrowTailActor);
+    // Ensure stacking order: tail below label
     if (label._arrowTailActor)
         Main.uiGroup.set_child_below_sibling(label._arrowTailActor, label);
 
@@ -2367,13 +2338,18 @@ export function itemShowLabel() {
         }
         const allBlurWidgets = Main.uiGroup.get_children().filter(
             a => a && a.has_style_class_name &&
-                 a.has_style_class_name('dash-label-blur-unified') &&
-                 a !== this.label._blurActor
+                 (a.has_style_class_name('dash-label-blur-unified') ||
+                  a.has_style_class_name('dash-label-blur-pill') ||
+                  a.has_style_class_name('dash-label-blur-arrow'))
         );
         for (const bw of allBlurWidgets) {
-            bw.remove_all_transitions();
-            bw.opacity = 0;
-            bw.hide();
+            try {
+                bw.remove_all_transitions();
+                bw.opacity = 0;
+                bw.hide();
+                Main.uiGroup.remove_child(bw);
+                bw.destroy();
+            } catch (_) {}
         }
     } catch (_) {}
 
@@ -2381,18 +2357,12 @@ export function itemShowLabel() {
     this.label.remove_all_transitions();
     if (this.label._arrowTailActor)
         this.label._arrowTailActor.remove_all_transitions();
-    if (this.label._blurActor)
-        this.label._blurActor.remove_all_transitions();
 
     this.label.opacity = 0;
     this.label.show();
     if (this.label._arrowTailActor) {
         this.label._arrowTailActor.opacity = 0;
         this.label._arrowTailActor.show();
-    }
-    if (this.label._blurActor) {
-        this.label._blurActor.opacity = 0;
-        this.label._blurActor.show();
     }
 
     const transparentStyle =
@@ -2413,18 +2383,6 @@ export function itemShowLabel() {
     _ensureLabelTail(this.label, Utils.getPosition());
     positionItemLabel(this);
 
-    if (globalThis._macLabelStylingConfig) {
-        const { blur, tint } = globalThis._macLabelStylingConfig;
-        const brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
-        const eff = this.label._blurActor?._blurEff;
-        if (eff) {
-            eff.enabled = (blur > 0);
-            eff.radius = blur;
-            eff.brightness = brightness;
-            eff.queue_repaint?.();
-        }
-    }
-
     if (this.label._arrowTailActor)
         this.label._arrowTailActor.queue_repaint();
 
@@ -2433,7 +2391,6 @@ export function itemShowLabel() {
         duration: DASH_ITEM_LABEL_SHOW_TIME,
         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
         onComplete: () => {
-            this.label._blurActor?._blurEff?.queue_repaint?.();
             this.label.set_offscreen_redirect?.(0);
         },
     });
@@ -2446,23 +2403,19 @@ export function itemHideLabel(immediate = false) {
         return;
 
     this.label.remove_all_transitions();
-    const subs = [this.label._arrowTailActor, this.label._blurActor];
-    for (const sub of subs) {
-        if (sub) sub.remove_all_transitions();
-    }
+    if (this.label._arrowTailActor)
+        this.label._arrowTailActor.remove_all_transitions();
 
     if (immediate) {
         this.label.opacity = 0;
         this.label.hide();
         this.label.translation_x = 0;
         this.label.translation_y = 0;
-        for (const sub of subs) {
-            if (sub) {
-                sub.opacity = 0;
-                sub.hide();
-                sub.translation_x = 0;
-                sub.translation_y = 0;
-            }
+        if (this.label._arrowTailActor) {
+            this.label._arrowTailActor.opacity = 0;
+            this.label._arrowTailActor.hide();
+            this.label._arrowTailActor.translation_x = 0;
+            this.label._arrowTailActor.translation_y = 0;
         }
         return;
     }
@@ -2475,12 +2428,10 @@ export function itemHideLabel(immediate = false) {
             this.label.hide();
             this.label.translation_x = 0;
             this.label.translation_y = 0;
-            for (const sub of subs) {
-                if (sub) {
-                    sub.hide();
-                    sub.translation_x = 0;
-                    sub.translation_y = 0;
-                }
+            if (this.label._arrowTailActor) {
+                this.label._arrowTailActor.hide();
+                this.label._arrowTailActor.translation_x = 0;
+                this.label._arrowTailActor.translation_y = 0;
             }
         },
     });

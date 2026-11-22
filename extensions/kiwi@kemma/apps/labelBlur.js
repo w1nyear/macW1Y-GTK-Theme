@@ -112,7 +112,7 @@ export function applyLabelBlur(actor) {
     if (!actor || !actor.add_effect)
         return;
 
-    if (actor._blurPillActor) {
+    if (actor._blurPillActor || actor._blurActor || actor._arrowTailActor) {
         const effects = actor.get_effects ? actor.get_effects() : [];
         const existing = effects.find(e => e.name === EFFECT_NAME);
         if (existing) existing.enabled = false;

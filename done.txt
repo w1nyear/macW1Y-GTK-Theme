@@ -3878,3 +3878,17 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [macW1Y-Light/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light/gnome-shell/gnome-shell.css)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+893. Повне видалення стороннього фону/прямокутної підкладки під біртагами (підказками) у Dock та Overview:
+  - Видалено окремий прямокутний віджет розмиття _blurActor (dash-label-blur-unified), який виходив за контури пілюлі та стрілки й утворював помітний темний прямокутний фон із заокругленими кутами під біртагом.
+  - Повністю оптимізовано єдиний шар малювання Cairo (dash-label-tail): тепер сама цільна форма (пілюля разом зі стрілкою та плавними переходами-філетами) малюється з підвищеною щільністю напівпрозорого фону (a = 0.82-0.96) та тонким бордером, не потребуючи додаткових прямокутних підкладок.
+  - Додано очищення будь-яких залишкових віджетів розмиття (dash-label-blur-unified, dash-label-blur-pill, dash-label-blur-arrow) з Main.uiGroup під час показу та приховування підказки.
+  - У extensions/kiwi@kemma/apps/labelBlur.js вимкнено накладання стандартного ефекту розмиття tahoe-label-blur на елементи з кастомним хвостом/пілюлею.
+  - Оновлено та верифіковано хеші цілісності в config/extensions.lock.json та системному каталозі /usr/share/mactheme/config/extensions.lock.json. Всі 21/21 розширень успішно пройшли перевірку mac-extension-guard, а всі 12/12 сценаріїв анімацій test-macw1y-animations.py пройдено на 100%.
+- Зачеплені файли:
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [extensions/dash2dock-motion@unmade.space/appIcons.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/appIcons.js)
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [extensions/kiwi@kemma/apps/labelBlur.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/labelBlur.js)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

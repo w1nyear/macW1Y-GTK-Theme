@@ -2768,46 +2768,28 @@ export default class EvalHelper extends Extension {
                 for (const l of labels) {
                     l.set_style(styleStr);
                     if (l._blurActor) {
-                        const eff = l._blurActor._blurEff;
-                        if (eff) {
-                            eff.enabled = (blur > 0);
-                            eff.radius = blur;
-                            eff.brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
-                            eff.queue_repaint?.();
-                        }
-                        const effL = l.get_effects?.()?.find(e => e.name === 'tahoe-label-blur');
-                        if (effL) effL.enabled = false;
-                    } else if (l._blurPillActor) {
-                        const effP = l._blurPillActor._blurEff;
-                        if (effP) {
-                            effP.enabled = (blur > 0);
-                            effP.radius = blur;
-                            effP.brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
-                            effP.queue_repaint?.();
-                        }
-                        const effA = l._blurArrowActor?._blurEff;
-                        if (effA) {
-                            effA.enabled = (blur > 0);
-                            effA.radius = blur;
-                            effA.brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
-                            effA.queue_repaint?.();
-                        }
-                        const effL = l.get_effects?.()?.find(e => e.name === 'tahoe-label-blur');
-                        if (effL) effL.enabled = false;
-                    } else {
-                        let eff = l.get_effects ? l.get_effects().find(e => e.name === 'tahoe-label-blur') : null;
-                        if (eff) {
-                            eff.enabled = (blur > 0);
-                            eff.radius = blur;
-                            eff.brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
-                            const [minH, natH] = l.get_preferred_height ? l.get_preferred_height(-1) : [0, 0];
-                            const effH = Math.ceil(natH > 0 ? natH : (l.height > 0 ? l.height : 26));
-                            if ('corner_radius' in eff) {
-                                eff.corner_radius = Math.round(effH / 2);
-                            }
-                            eff.queue_repaint?.();
-                        }
+                        try {
+                            Main.uiGroup.remove_child(l._blurActor);
+                            l._blurActor.destroy();
+                        } catch (_) {}
+                        l._blurActor = null;
                     }
+                    if (l._blurPillActor) {
+                        try {
+                            Main.uiGroup.remove_child(l._blurPillActor);
+                            l._blurPillActor.destroy();
+                        } catch (_) {}
+                        l._blurPillActor = null;
+                    }
+                    if (l._blurArrowActor) {
+                        try {
+                            Main.uiGroup.remove_child(l._blurArrowActor);
+                            l._blurArrowActor.destroy();
+                        } catch (_) {}
+                        l._blurArrowActor = null;
+                    }
+                    const effL = l.get_effects?.()?.find(e => e.name === 'tahoe-label-blur');
+                    if (effL && l._arrowTailActor) effL.enabled = false;
                     if (l._arrowTailActor) {
                         l._arrowTailActor.queue_repaint();
                     }
@@ -2902,11 +2884,11 @@ export default class EvalHelper extends Extension {
                     } catch (_) {}
 
                     if (label._blurActor) {
-                        label._blurActor.set_size(Math.round(tailW), Math.round(tailH));
-                        label._blurActor.set_position(Math.round(posX), Math.round(posY));
-                        if (label._blurActor._blurEff && 'corner_radius' in label._blurActor._blurEff) {
-                            label._blurActor._blurEff.corner_radius = Math.round(pillHeight / 2);
-                        }
+                        try {
+                            Main.uiGroup.remove_child(label._blurActor);
+                            label._blurActor.destroy();
+                        } catch (_) {}
+                        label._blurActor = null;
                     }
 
                     tail.queue_repaint();
@@ -2927,39 +2909,12 @@ export default class EvalHelper extends Extension {
                         labelBlurEff.enabled = false;
                     }
 
-                    if (!label._blurActor) {
-                        const blurActor = new St.Widget({
-                            style_class: 'dash-label-blur-unified',
-                            reactive: false,
-                        });
-                        label._blurActor = blurActor;
-
-                        const cfg = globalThis._macLabelStylingConfig || { blur: 30, tint: 28, shadow: 25 };
-                        const radius = cfg.blur ?? 30;
-                        const brightness = Math.max(0.3, 1.0 - ((cfg.tint ?? 28) / 100.0) * 0.4);
-
-                        if (Blur?.BlurEffect) {
-                            blurActor._blurEff = new Blur.BlurEffect({
-                                name: 'dash-label-unified-blur',
-                                mode: 1,
-                                radius: radius,
-                                corner_radius: 14,
-                                brightness: brightness,
-                            });
-                            blurActor.add_effect(blurActor._blurEff);
-                        } else if (Shell?.BlurEffect) {
-                            blurActor._blurEff = new Shell.BlurEffect({
-                                name: 'dash-label-unified-blur',
-                                mode: Shell.BlurMode.BACKGROUND,
-                                radius: radius,
-                            });
-                            blurActor.add_effect(blurActor._blurEff);
-                        }
-
-                        Main.uiGroup.add_child(blurActor);
-
-                        label.bind_property('visible', blurActor, 'visible', GObject.BindingFlags.SYNC_CREATE);
-                        label.bind_property('opacity', blurActor, 'opacity', GObject.BindingFlags.SYNC_CREATE);
+                    if (label._blurActor) {
+                        try {
+                            Main.uiGroup.remove_child(label._blurActor);
+                            label._blurActor.destroy();
+                        } catch (_) {}
+                        label._blurActor = null;
                     }
 
                     if (!label._arrowTailActor) {
@@ -2981,10 +2936,10 @@ export default class EvalHelper extends Extension {
 
                             let r, g, b, a, br, bg_c, bb, ba;
                             if (isLight) {
-                                r = 0.94; g = 0.94; b = 0.96; a = Math.max(0.35, Math.min(0.95, tintAlpha * 0.85));
+                                r = 0.94; g = 0.94; b = 0.96; a = Math.max(0.82, Math.min(0.96, tintAlpha * 0.85 + 0.55));
                                 br = 0.0; bg_c = 0.0; bb = 0.0; ba = 0.14;
                             } else {
-                                r = 0.12; g = 0.12; b = 0.15; a = Math.max(0.18, Math.min(0.95, tintAlpha));
+                                r = 0.12; g = 0.12; b = 0.15; a = Math.max(0.82, Math.min(0.96, tintAlpha + 0.55));
                                 br = 1.0; bg_c = 1.0; bb = 1.0; ba = 0.22;
                             }
 
@@ -3129,8 +3084,7 @@ export default class EvalHelper extends Extension {
                         });
                     }
 
-                    if (label._blurActor && label._arrowTailActor)
-                        Main.uiGroup.set_child_below_sibling(label._blurActor, label._arrowTailActor);
+                    // Ensure stacking order: tail below label
                     if (label._arrowTailActor)
                         Main.uiGroup.set_child_below_sibling(label._arrowTailActor, label);
 
@@ -3170,12 +3124,17 @@ export default class EvalHelper extends Extension {
                             other.remove_all_transitions();
                             other.opacity = 0;
                             other.hide();
-                            for (const sub of [other._blurActor, other._arrowTailActor]) {
-                                if (sub) {
-                                    sub.remove_all_transitions();
-                                    sub.opacity = 0;
-                                    sub.hide();
-                                }
+                            if (other._arrowTailActor) {
+                                other._arrowTailActor.remove_all_transitions();
+                                other._arrowTailActor.opacity = 0;
+                                other._arrowTailActor.hide();
+                            }
+                            if (other._blurActor) {
+                                try {
+                                    Main.uiGroup.remove_child(other._blurActor);
+                                    other._blurActor.destroy();
+                                } catch (_) {}
+                                other._blurActor = null;
                             }
                         }
                     } catch (_) {}
@@ -3184,18 +3143,12 @@ export default class EvalHelper extends Extension {
                     this.label.remove_all_transitions();
                     if (this.label._arrowTailActor)
                         this.label._arrowTailActor.remove_all_transitions();
-                    if (this.label._blurActor)
-                        this.label._blurActor.remove_all_transitions();
 
                     this.label.opacity = 0;
                     this.label.show();
                     if (this.label._arrowTailActor) {
                         this.label._arrowTailActor.opacity = 0;
                         this.label._arrowTailActor.show();
-                    }
-                    if (this.label._blurActor) {
-                        this.label._blurActor.opacity = 0;
-                        this.label._blurActor.show();
                     }
 
                     const transparentStyle =
@@ -3216,18 +3169,6 @@ export default class EvalHelper extends Extension {
                     _ensureTail(this.label, St.Side.BOTTOM);
                     _posLabel(this);
 
-                    if (globalThis._macLabelStylingConfig) {
-                        const { blur, tint } = globalThis._macLabelStylingConfig;
-                        const brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
-                        const eff = this.label._blurActor?._blurEff;
-                        if (eff) {
-                            eff.enabled = (blur > 0);
-                            eff.radius = blur;
-                            eff.brightness = brightness;
-                            eff.queue_repaint?.();
-                        }
-                    }
-
                     if (this.label._arrowTailActor)
                         this.label._arrowTailActor.queue_repaint();
 
@@ -3235,9 +3176,6 @@ export default class EvalHelper extends Extension {
                         opacity: 255,
                         duration: 200,
                         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                        onComplete: () => {
-                            this.label._blurActor?._blurEff?.queue_repaint?.();
-                        },
                     });
                 };
 
@@ -3246,19 +3184,15 @@ export default class EvalHelper extends Extension {
                         return;
 
                     this.label.remove_all_transitions();
-                    const subs = [this.label._arrowTailActor, this.label._blurActor];
-                    for (const sub of subs) {
-                        if (sub) sub.remove_all_transitions();
-                    }
+                    if (this.label._arrowTailActor)
+                        this.label._arrowTailActor.remove_all_transitions();
 
                     if (immediate) {
                         this.label.opacity = 0;
                         this.label.hide();
-                        for (const sub of subs) {
-                            if (sub) {
-                                sub.opacity = 0;
-                                sub.hide();
-                            }
+                        if (this.label._arrowTailActor) {
+                            this.label._arrowTailActor.opacity = 0;
+                            this.label._arrowTailActor.hide();
                         }
                         return;
                     }
@@ -3269,12 +3203,9 @@ export default class EvalHelper extends Extension {
                         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                         onComplete: () => {
                             this.label.hide();
-                            for (const sub of subs) {
-                                if (sub) sub.hide();
-                            }
+                            if (this.label._arrowTailActor)
+                                this.label._arrowTailActor.hide();
                         },
-                    });
-                };
                     });
                 };
 
