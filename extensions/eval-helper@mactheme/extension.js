@@ -10,10 +10,17 @@ import Pango from 'gi://Pango';
 import St from 'gi://St';
 import Mtk from 'gi://Mtk';
 import Graphene from 'gi://Graphene';
+import GObject from 'gi://GObject';
+import cairo from 'cairo';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as MacSetupWizard from './macSetupWizard.js';
 import { t } from './mac_i18n.js';
 import { MacAnimationCache } from './macAnimationCache.js';
+
+let Blur = null;
+try {
+    Blur = (await import('gi://Blur')).default;
+} catch (_) {}
 
 const EvalIface = `
 <node>
@@ -2760,17 +2767,36 @@ export default class EvalHelper extends Extension {
                 const labels = Main.uiGroup.get_children().filter(a => a.has_style_class_name && a.has_style_class_name('dash-label'));
                 for (const l of labels) {
                     l.set_style(styleStr);
-                    let eff = l.get_effects ? l.get_effects().find(e => e.name === 'tahoe-label-blur') : null;
-                    if (eff) {
-                        eff.enabled = (blur > 0);
-                        eff.radius = blur;
-                        eff.brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
-                        const [minH, natH] = l.get_preferred_height ? l.get_preferred_height(-1) : [0, 0];
-                        const effH = Math.ceil(natH > 0 ? natH : (l.height > 0 ? l.height : 26));
-                        if ('corner_radius' in eff) {
-                            eff.corner_radius = Math.round(effH / 2);
+                    if (l._blurPillActor) {
+                        const effP = l._blurPillActor._blurEff;
+                        if (effP) {
+                            effP.enabled = (blur > 0);
+                            effP.radius = blur;
+                            effP.brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
+                            effP.queue_repaint?.();
                         }
-                        eff.queue_repaint?.();
+                        const effA = l._blurArrowActor?._blurEff;
+                        if (effA) {
+                            effA.enabled = (blur > 0);
+                            effA.radius = blur;
+                            effA.brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
+                            effA.queue_repaint?.();
+                        }
+                        const effL = l.get_effects?.()?.find(e => e.name === 'tahoe-label-blur');
+                        if (effL) effL.enabled = false;
+                    } else {
+                        let eff = l.get_effects ? l.get_effects().find(e => e.name === 'tahoe-label-blur') : null;
+                        if (eff) {
+                            eff.enabled = (blur > 0);
+                            eff.radius = blur;
+                            eff.brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
+                            const [minH, natH] = l.get_preferred_height ? l.get_preferred_height(-1) : [0, 0];
+                            const effH = Math.ceil(natH > 0 ? natH : (l.height > 0 ? l.height : 26));
+                            if ('corner_radius' in eff) {
+                                eff.corner_radius = Math.round(effH / 2);
+                            }
+                            eff.queue_repaint?.();
+                        }
                     }
                     if (l._arrowTailActor) {
                         l._arrowTailActor.queue_repaint();
@@ -2782,6 +2808,532 @@ export default class EvalHelper extends Extension {
         };
         globalThis._macSyncLabelStyling = syncAllLabels;
         syncAllLabels();
+
+        const installUnifiedDockLabelHandler = () => {
+            try {
+                const _updateTailPos = (label, position) => {
+                    const tail = label._arrowTailActor;
+                    if (!tail || !label.get_stage())
+                        return;
+                    label._arrowPos = position;
+
+                    const [minW, natW] = label.get_preferred_width(-1);
+                    const pillWidth = Math.ceil(natW > 0 ? natW : (label.width > 0 ? label.width : 50));
+                    if (pillWidth <= 0)
+                        return;
+
+                    const [minH, natH] = label.get_preferred_height(pillWidth);
+                    const pillHeight = Math.ceil(natH > 0 ? natH : (label.height > 0 ? label.height : 25));
+
+                    const rise = 7.0;
+                    const padX = 6.0;
+                    const padY = 6.0;
+
+                    let tailW, tailH, posX, posY;
+                    const lx = Math.round(label.x);
+                    const ly = Math.round(label.y);
+
+                    const arrowW = 18.0;
+                    const arrowH = rise + 3.0;
+
+                    let arrowX = 0, arrowY = 0, arrowBoxW = arrowW, arrowBoxH = arrowH;
+
+                    if (position === St.Side.TOP) {
+                        tailW = pillWidth + 2 * padX;
+                        tailH = pillHeight + rise + 2 * padY;
+                        posX = lx - padX;
+                        posY = ly - rise - padY;
+
+                        arrowX = Math.round(lx + (pillWidth - arrowW) / 2.0);
+                        arrowY = Math.round(ly - rise - 1.0);
+                        arrowBoxW = arrowW;
+                        arrowBoxH = arrowH;
+                    } else if (position === St.Side.LEFT) {
+                        tailW = pillWidth + rise + 2 * padX;
+                        tailH = pillHeight + 2 * padY;
+                        posX = lx - rise - padX;
+                        posY = ly - padY;
+
+                        arrowX = Math.round(lx - rise - 1.0);
+                        arrowY = Math.round(ly + (pillHeight - arrowW) / 2.0);
+                        arrowBoxW = arrowH;
+                        arrowBoxH = arrowW;
+                    } else if (position === St.Side.RIGHT) {
+                        tailW = pillWidth + rise + 2 * padX;
+                        tailH = pillHeight + 2 * padY;
+                        posX = lx - padX;
+                        posY = ly - padY;
+
+                        arrowX = Math.round(lx + pillWidth - 2.0);
+                        arrowY = Math.round(ly + (pillHeight - arrowW) / 2.0);
+                        arrowBoxW = arrowH;
+                        arrowBoxH = arrowW;
+                    } else {
+                        tailW = pillWidth + 2 * padX;
+                        tailH = pillHeight + rise + 2 * padY;
+                        posX = lx - padX;
+                        posY = ly - padY;
+
+                        arrowX = Math.round(lx + (pillWidth - arrowW) / 2.0);
+                        arrowY = Math.round(ly + pillHeight - 2.0);
+                        arrowBoxW = arrowW;
+                        arrowBoxH = arrowH;
+                    }
+
+                    tail.set_size(Math.round(tailW), Math.round(tailH));
+                    tail.set_position(Math.round(posX), Math.round(posY));
+                    try {
+                        const tBox = new Clutter.ActorBox();
+                        tBox.x1 = posX;
+                        tBox.y1 = posY;
+                        tBox.x2 = posX + tailW;
+                        tBox.y2 = posY + tailH;
+                        tail.allocate(tBox);
+                    } catch (_) {}
+
+                    if (label._blurPillActor) {
+                        label._blurPillActor.set_size(pillWidth, pillHeight);
+                        label._blurPillActor.set_position(lx, ly);
+                        if (label._blurPillActor._blurEff && 'corner_radius' in label._blurPillActor._blurEff) {
+                            label._blurPillActor._blurEff.corner_radius = Math.round(pillHeight / 2);
+                        }
+                    }
+
+                    if (label._blurArrowActor) {
+                        label._blurArrowActor.set_size(Math.round(arrowBoxW), Math.round(arrowBoxH));
+                        label._blurArrowActor.set_position(arrowX, arrowY);
+                        if (label._blurArrowActor._blurEff && 'corner_radius' in label._blurArrowActor._blurEff) {
+                            label._blurArrowActor._blurEff.corner_radius = 4;
+                        }
+                    }
+
+                    tail.queue_repaint();
+                };
+
+                const _ensureTail = (label, position) => {
+                    if (!label)
+                        return;
+
+                    if (label._arrowTail && label.contains(label._arrowTail)) {
+                        label.remove_child(label._arrowTail);
+                        label._arrowTail.destroy();
+                        label._arrowTail = null;
+                    }
+
+                    const labelBlurEff = label.get_effects?.()?.find(e => e.name === 'tahoe-label-blur');
+                    if (labelBlurEff) {
+                        labelBlurEff.enabled = false;
+                    }
+
+                    if (!label._blurPillActor) {
+                        const blurPill = new St.Widget({
+                            style_class: 'dash-label-blur-pill',
+                            reactive: false,
+                        });
+                        label._blurPillActor = blurPill;
+
+                        const blurArrow = new St.Widget({
+                            style_class: 'dash-label-blur-arrow',
+                            reactive: false,
+                        });
+                        label._blurArrowActor = blurArrow;
+
+                        const cfg = globalThis._macLabelStylingConfig || { blur: 30, tint: 28, shadow: 25 };
+                        const radius = cfg.blur ?? 30;
+                        const brightness = Math.max(0.3, 1.0 - ((cfg.tint ?? 28) / 100.0) * 0.4);
+
+                        if (Blur?.BlurEffect) {
+                            blurPill._blurEff = new Blur.BlurEffect({
+                                name: 'dash-label-pill-blur',
+                                mode: 1,
+                                radius: radius,
+                                corner_radius: 13,
+                                brightness: brightness,
+                            });
+                            blurPill.add_effect(blurPill._blurEff);
+
+                            blurArrow._blurEff = new Blur.BlurEffect({
+                                name: 'dash-label-arrow-blur',
+                                mode: 1,
+                                radius: radius,
+                                corner_radius: 4,
+                                brightness: brightness,
+                            });
+                            blurArrow.add_effect(blurArrow._blurEff);
+                        } else if (Shell?.BlurEffect) {
+                            blurPill._blurEff = new Shell.BlurEffect({
+                                name: 'dash-label-pill-blur',
+                                mode: Shell.BlurMode.BACKGROUND,
+                                radius: radius,
+                            });
+                            blurPill.add_effect(blurPill._blurEff);
+
+                            blurArrow._blurEff = new Shell.BlurEffect({
+                                name: 'dash-label-arrow-blur',
+                                mode: Shell.BlurMode.BACKGROUND,
+                                radius: radius,
+                            });
+                            blurArrow.add_effect(blurArrow._blurEff);
+                        }
+
+                        Main.uiGroup.add_child(blurPill);
+                        Main.uiGroup.add_child(blurArrow);
+
+                        label.bind_property('visible', blurPill, 'visible', GObject.BindingFlags.SYNC_CREATE);
+                        label.bind_property('opacity', blurPill, 'opacity', GObject.BindingFlags.SYNC_CREATE);
+                        label.bind_property('visible', blurArrow, 'visible', GObject.BindingFlags.SYNC_CREATE);
+                        label.bind_property('opacity', blurArrow, 'opacity', GObject.BindingFlags.SYNC_CREATE);
+                    }
+
+                    if (!label._arrowTailActor) {
+                        const tail = new St.DrawingArea({ style_class: 'dash-label-tail', reactive: false });
+                        label._arrowTailActor = tail;
+
+                        tail.connect('repaint', (area) => {
+                            const cr = area.get_context();
+                            cr.setAntialias(cairo.Antialias.SUBPIXEL);
+                            cr.setLineCap(cairo.LineCap.ROUND);
+                            cr.setLineJoin(cairo.LineJoin.ROUND);
+
+                            const cfg = globalThis._macLabelStylingConfig || { blur: 30, tint: 28, shadow: 25 };
+                            const tintAlpha = (cfg.tint / 100.0);
+                            const shadowAlpha = (cfg.shadow / 100.0);
+
+                            const isLight = (Main.sessionMode && Main.sessionMode.currentMode === 'light') ||
+                                            (typeof globalThis._macIsLightMode === 'function' ? globalThis._macIsLightMode() : false);
+
+                            let r, g, b, a, br, bg_c, bb, ba;
+                            if (isLight) {
+                                r = 0.94; g = 0.94; b = 0.96; a = Math.max(0.35, Math.min(0.95, tintAlpha * 0.85));
+                                br = 0.0; bg_c = 0.0; bb = 0.0; ba = 0.14;
+                            } else {
+                                r = 0.12; g = 0.12; b = 0.15; a = Math.max(0.18, Math.min(0.95, tintAlpha));
+                                br = 1.0; bg_c = 1.0; bb = 1.0; ba = 0.22;
+                            }
+
+                            const padX = 6.0;
+                            const padY = 6.0;
+                            const [minW, natW] = label.get_preferred_width(-1);
+                            const pw = Math.ceil(natW > 0 ? natW : (label.width > 0 ? label.width : 50));
+                            const [minH, natH] = label.get_preferred_height(pw);
+                            const ph = Math.ceil(natH > 0 ? natH : (label.height > 0 ? label.height : 25));
+                            const rad = ph / 2.0;
+
+                            const rise = 7.0;
+                            const halfBase = 5.5;
+                            const fillet = 7.5;
+                            const filletH = 2.2;
+                            const tipR = 1.8;
+
+                            const pos = label._arrowPos ?? position ?? St.Side.BOTTOM;
+
+                            function makeUnifiedPath() {
+                                cr.newPath();
+                                if (pos === St.Side.TOP) {
+                                    const ox = padX;
+                                    const oy = padY + rise;
+                                    const cx = ox + pw / 2.0;
+                                    cr.moveTo(ox + rad, oy);
+                                    cr.lineTo(cx - halfBase - fillet, oy);
+                                    cr.curveTo(cx - halfBase - fillet * 0.45, oy, cx - halfBase - fillet * 0.05, oy - filletH * 0.35, cx - halfBase, oy - filletH);
+                                    cr.curveTo(cx - halfBase * 0.65, oy - filletH - (rise - filletH) * 0.5, cx - tipR * 1.4, oy - rise + 0.2, cx, oy - rise);
+                                    cr.curveTo(cx + tipR * 1.4, oy - rise + 0.2, cx + halfBase * 0.65, oy - filletH - (rise - filletH) * 0.5, cx + halfBase, oy - filletH);
+                                    cr.curveTo(cx + halfBase + fillet * 0.05, oy - filletH * 0.35, cx + halfBase + fillet * 0.45, oy, cx + halfBase + fillet, oy);
+                                    cr.lineTo(ox + pw - rad, oy);
+                                    cr.arc(ox + pw - rad, oy + rad, rad, 1.5 * Math.PI, 2.0 * Math.PI);
+                                    cr.arc(ox + pw - rad, oy + ph - rad, rad, 0, 0.5 * Math.PI);
+                                    cr.lineTo(ox + rad, oy + ph);
+                                    cr.arc(ox + rad, oy + ph - rad, rad, 0.5 * Math.PI, Math.PI);
+                                    cr.arc(ox + rad, oy + rad, rad, Math.PI, 1.5 * Math.PI);
+                                    cr.closePath();
+                                } else if (pos === St.Side.LEFT) {
+                                    const ox = padX + rise;
+                                    const oy = padY;
+                                    const cy = oy + ph / 2.0;
+                                    cr.moveTo(ox + rad, oy);
+                                    cr.lineTo(ox + pw - rad, oy);
+                                    cr.arc(ox + pw - rad, oy + rad, rad, 1.5 * Math.PI, 2.0 * Math.PI);
+                                    cr.arc(ox + pw - rad, oy + ph - rad, rad, 0, 0.5 * Math.PI);
+                                    cr.lineTo(ox + rad, oy + ph);
+                                    cr.arc(ox + rad, oy + ph - rad, rad, 0.5 * Math.PI, Math.PI);
+                                    cr.lineTo(ox, cy + halfBase + fillet);
+                                    cr.curveTo(ox, cy + halfBase + fillet * 0.45, ox - filletH * 0.35, cy + halfBase + fillet * 0.05, ox - filletH, cy + halfBase);
+                                    cr.curveTo(ox - filletH - (rise - filletH) * 0.5, cy + halfBase * 0.65, ox - rise + 0.2, cy + tipR * 1.4, ox - rise, cy);
+                                    cr.curveTo(ox - rise + 0.2, cy - tipR * 1.4, ox - filletH - (rise - filletH) * 0.5, cy - halfBase * 0.65, ox - filletH, cy - halfBase);
+                                    cr.curveTo(ox - filletH * 0.35, cy - halfBase - fillet * 0.05, ox, cy - halfBase - fillet * 0.45, ox, cy - halfBase - fillet);
+                                    cr.lineTo(ox, oy + rad);
+                                    cr.arc(ox + rad, oy + rad, rad, Math.PI, 1.5 * Math.PI);
+                                    cr.closePath();
+                                } else if (pos === St.Side.RIGHT) {
+                                    const ox = padX;
+                                    const oy = padY;
+                                    const cy = oy + ph / 2.0;
+                                    cr.moveTo(ox + rad, oy);
+                                    cr.lineTo(ox + pw - rad, oy);
+                                    cr.arc(ox + pw - rad, oy + rad, rad, 1.5 * Math.PI, 2.0 * Math.PI);
+                                    cr.lineTo(ox + pw, cy - halfBase - fillet);
+                                    cr.curveTo(ox + pw, cy - halfBase - fillet * 0.45, ox + pw + filletH * 0.35, cy - halfBase - fillet * 0.05, ox + pw + filletH, cy - halfBase);
+                                    cr.curveTo(ox + pw + filletH + (rise - filletH) * 0.5, cy - halfBase * 0.65, ox + pw + rise - 0.2, cy - tipR * 1.4, ox + pw + rise, cy);
+                                    cr.curveTo(ox + pw + rise - 0.2, cy + tipR * 1.4, ox + pw + filletH + (rise - filletH) * 0.5, cy + halfBase * 0.65, ox + pw + filletH, cy + halfBase);
+                                    cr.curveTo(ox + pw + filletH * 0.35, cy + halfBase + fillet * 0.05, ox + pw, cy + halfBase + fillet * 0.45, ox + pw, cy + halfBase + fillet);
+                                    cr.lineTo(ox + pw, oy + ph - rad);
+                                    cr.arc(ox + pw - rad, oy + ph - rad, rad, 0, 0.5 * Math.PI);
+                                    cr.lineTo(ox + rad, oy + ph);
+                                    cr.arc(ox + rad, oy + ph - rad, rad, 0.5 * Math.PI, Math.PI);
+                                    cr.arc(ox + rad, oy + rad, rad, Math.PI, 1.5 * Math.PI);
+                                    cr.closePath();
+                                } else {
+                                    const ox = padX;
+                                    const oy = padY;
+                                    const cx = ox + pw / 2.0;
+                                    cr.arc(ox + rad, oy + rad, rad, Math.PI, 1.5 * Math.PI);
+                                    cr.lineTo(ox + pw - rad, oy);
+                                    cr.arc(ox + pw - rad, oy + rad, rad, 1.5 * Math.PI, 2.0 * Math.PI);
+                                    cr.arc(ox + pw - rad, oy + ph - rad, rad, 0, 0.5 * Math.PI);
+                                    cr.lineTo(cx + halfBase + fillet, oy + ph);
+                                    cr.curveTo(cx + halfBase + fillet * 0.45, oy + ph, cx + halfBase + fillet * 0.05, oy + ph + filletH * 0.35, cx + halfBase, oy + ph + filletH);
+                                    cr.curveTo(cx + halfBase * 0.65, oy + ph + filletH + (rise - filletH) * 0.5, cx + tipR * 1.4, oy + ph + rise - 0.2, cx, oy + ph + rise);
+                                    cr.curveTo(cx - tipR * 1.4, oy + ph + rise - 0.2, cx - halfBase * 0.65, oy + ph + filletH + (rise - filletH) * 0.5, cx - halfBase, oy + ph + filletH);
+                                    cr.curveTo(cx - halfBase - fillet * 0.05, oy + ph + filletH * 0.35, cx - halfBase - fillet * 0.45, oy + ph, cx - halfBase - fillet, oy + ph);
+                                    cr.lineTo(ox + rad, oy + ph);
+                                    cr.arc(ox + rad, oy + ph - rad, rad, 0.5 * Math.PI, Math.PI);
+                                    cr.closePath();
+                                }
+                            }
+
+                            if (shadowAlpha > 0.02) {
+                                const shadowOffset = Math.max(1, Math.round(shadowAlpha * 5));
+                                for (let s = 3; s >= 1; s--) {
+                                    cr.save();
+                                    cr.translate(0, s * (shadowOffset / 2.0));
+                                    makeUnifiedPath();
+                                    cr.setSourceRGBA(0, 0, 0, (shadowAlpha * 0.22) / s);
+                                    cr.setLineWidth(s * 2.5);
+                                    cr.stroke();
+                                    cr.restore();
+                                }
+                            }
+
+                            makeUnifiedPath();
+                            cr.setSourceRGBA(r, g, b, a);
+                            cr.fillPreserve();
+
+                            cr.setSourceRGBA(br, bg_c, bb, ba);
+                            cr.setLineWidth(1.0);
+                            cr.stroke();
+
+                            cr.$dispose();
+                        });
+
+                        Main.uiGroup.add_child(tail);
+                        Main.uiGroup.set_child_below_sibling(tail, label);
+
+                        label.bind_property('visible', tail, 'visible', GObject.BindingFlags.SYNC_CREATE);
+                        label.bind_property('opacity', tail, 'opacity', GObject.BindingFlags.SYNC_CREATE);
+
+                        label.connect('destroy', () => {
+                            if (label._blurPillActor) {
+                                Main.uiGroup.remove_child(label._blurPillActor);
+                                label._blurPillActor.destroy();
+                                label._blurPillActor = null;
+                            }
+                            if (label._blurArrowActor) {
+                                Main.uiGroup.remove_child(label._blurArrowActor);
+                                label._blurArrowActor.destroy();
+                                label._blurArrowActor = null;
+                            }
+                            if (label._arrowTailActor) {
+                                Main.uiGroup.remove_child(label._arrowTailActor);
+                                label._arrowTailActor.destroy();
+                                label._arrowTailActor = null;
+                            }
+                        });
+
+                        label.connect('notify::position', () => {
+                            _updateTailPos(label, label._arrowPos ?? St.Side.BOTTOM);
+                        });
+
+                        label.connect('notify::allocation', () => {
+                            _updateTailPos(label, label._arrowPos ?? St.Side.BOTTOM);
+                        });
+                    }
+
+                    if (label._blurPillActor && label._arrowTailActor)
+                        Main.uiGroup.set_child_below_sibling(label._blurPillActor, label._arrowTailActor);
+                    if (label._blurArrowActor && label._arrowTailActor)
+                        Main.uiGroup.set_child_below_sibling(label._blurArrowActor, label._arrowTailActor);
+                    if (label._arrowTailActor)
+                        Main.uiGroup.set_child_below_sibling(label._arrowTailActor, label);
+
+                    _updateTailPos(label, position);
+                };
+
+                const _posLabel = (item) => {
+                    const visual = item.child?.icon?._iconBin ?? item.child?.icon ?? item.child ?? item;
+                    const extents = visual.get_transformed_extents();
+                    const stageX = extents.get_x();
+                    const stageY = extents.get_y();
+                    const itemWidth = extents.get_width();
+
+                    const [minW, natW] = item.label.get_preferred_width(-1);
+                    const labelWidth = Math.ceil(natW > 0 ? natW : (item.label.get_width() || 0));
+                    const [minH, natH] = item.label.get_preferred_height(labelWidth);
+                    const labelHeight = Math.ceil(natH > 0 ? natH : (item.label.get_height() || 25));
+
+                    const position = St.Side.BOTTOM;
+                    const iconCenterX = stageX + itemWidth / 2;
+                    const y = Math.round(stageY - labelHeight - 20);
+                    const x = Math.round(iconCenterX - (labelWidth / 2));
+
+                    item.label.set_position(x, y);
+                    _updateTailPos(item.label, position);
+                };
+
+                const _showLabel = function() {
+                    if (!this._labelText || !this.label.get_stage())
+                        return;
+
+                    try {
+                        const allLabels = Main.uiGroup.get_children().filter(
+                            a => a && a.has_style_class_name && a.has_style_class_name('dash-label') && a !== this.label
+                        );
+                        for (const other of allLabels) {
+                            other.remove_all_transitions();
+                            other.opacity = 0;
+                            other.hide();
+                            for (const sub of [other._blurPillActor, other._blurArrowActor, other._arrowTailActor]) {
+                                if (sub) {
+                                    sub.remove_all_transitions();
+                                    sub.opacity = 0;
+                                    sub.hide();
+                                }
+                            }
+                        }
+                    } catch (_) {}
+
+                    this.label.set_text(this._labelText);
+                    this.label.remove_all_transitions();
+                    if (this.label._arrowTailActor)
+                        this.label._arrowTailActor.remove_all_transitions();
+                    if (this.label._blurPillActor)
+                        this.label._blurPillActor.remove_all_transitions();
+                    if (this.label._blurArrowActor)
+                        this.label._blurArrowActor.remove_all_transitions();
+
+                    this.label.opacity = 0;
+                    this.label.show();
+                    if (this.label._arrowTailActor) {
+                        this.label._arrowTailActor.opacity = 0;
+                        this.label._arrowTailActor.show();
+                    }
+                    if (this.label._blurPillActor) {
+                        this.label._blurPillActor.opacity = 0;
+                        this.label._blurPillActor.show();
+                    }
+                    if (this.label._blurArrowActor) {
+                        this.label._blurArrowActor.opacity = 0;
+                        this.label._blurArrowActor.show();
+                    }
+
+                    const transparentStyle =
+                        'background-color: transparent !important; ' +
+                        'box-shadow: none !important; ' +
+                        'border: none !important; ' +
+                        'color: #ffffff !important; ' +
+                        'margin: 0px !important; ' +
+                        'padding: 4px 12px !important; ' +
+                        'font-weight: 500 !important; ' +
+                        'font-size: 13px !important;';
+
+                    this.label.set_style(transparentStyle);
+
+                    if (this.label.set_offscreen_redirect)
+                        this.label.set_offscreen_redirect(0);
+
+                    _ensureTail(this.label, St.Side.BOTTOM);
+                    _posLabel(this);
+
+                    if (globalThis._macLabelStylingConfig) {
+                        const { blur, tint } = globalThis._macLabelStylingConfig;
+                        const brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
+                        for (const bActor of [this.label._blurPillActor, this.label._blurArrowActor]) {
+                            const eff = bActor?._blurEff;
+                            if (eff) {
+                                eff.enabled = (blur > 0);
+                                eff.radius = blur;
+                                eff.brightness = brightness;
+                                eff.queue_repaint?.();
+                            }
+                        }
+                    }
+
+                    if (this.label._arrowTailActor)
+                        this.label._arrowTailActor.queue_repaint();
+
+                    this.label.ease({
+                        opacity: 255,
+                        duration: 200,
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        onComplete: () => {
+                            this.label._blurPillActor?._blurEff?.queue_repaint?.();
+                            this.label._blurArrowActor?._blurEff?.queue_repaint?.();
+                        },
+                    });
+                };
+
+                const _hideLabel = function(immediate = false) {
+                    if (!this.label || !this.label.get_stage())
+                        return;
+
+                    this.label.remove_all_transitions();
+                    const subs = [this.label._arrowTailActor, this.label._blurPillActor, this.label._blurArrowActor];
+                    for (const sub of subs) {
+                        if (sub) sub.remove_all_transitions();
+                    }
+
+                    if (immediate) {
+                        this.label.opacity = 0;
+                        this.label.hide();
+                        for (const sub of subs) {
+                            if (sub) {
+                                sub.opacity = 0;
+                                sub.hide();
+                            }
+                        }
+                        return;
+                    }
+
+                    this.label.ease({
+                        opacity: 0,
+                        duration: 200,
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        onComplete: () => {
+                            this.label.hide();
+                            for (const sub of subs) {
+                                if (sub) sub.hide();
+                            }
+                        },
+                    });
+                };
+
+                const items = Main.overview?.dash?._box?.get_children?.() || [];
+                const first = items.find(it => it && typeof it.showLabel === 'function');
+                if (first?.constructor?.prototype) {
+                    first.constructor.prototype.showLabel = _showLabel;
+                    first.constructor.prototype.hideLabel = _hideLabel;
+                }
+
+                import('resource:///org/gnome/shell/ui/dash.js').then((Dash) => {
+                    if (Dash?.DashItemContainer?.prototype) {
+                        Dash.DashItemContainer.prototype.showLabel = _showLabel;
+                        Dash.DashItemContainer.prototype.hideLabel = _hideLabel;
+                    }
+                }).catch(() => {});
+            } catch (e) {
+                console.error('[EvalHelper] installUnifiedDockLabelHandler error: ' + e);
+            }
+        };
+        installUnifiedDockLabelHandler();
 
 
         const syncDockStyling = () => {

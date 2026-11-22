@@ -146,7 +146,7 @@
         "50",
         "51"
       ],
-      "sha256": "e1db7356bd2ea579772af5b632dc103288c00d1172008ac90468e4bb15c2158d",
+      "sha256": "e709d3df2346acafb6e3da6ff48c868402b82e4f11eb146d40f934d14f7f168e",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -175,7 +175,7 @@
         "docking.js": "a203501322739037a5c6abae430c543cf8ce17333e0fb6f6b2c4db1b7b1844bf",
         "fileManager1API.js": "56715f6acad206e5928337ff3326b24f1a9b25678776c79914ab7fe526b2c450",
         "prefs.js": "b25183a44d102a2a6a130eb87d3afcbc213485c9e53391299c5f013b91b417cb",
-        "appIcons.js": "d9f56d52ff5dc46ef76b92c01c4078b073e43019db04969dadf1b885dc0d0d36",
+        "appIcons.js": "168a2902703e6ec025779e4b80b475c1fa8bf5efcae15b0bfb09b54514e8b110",
         "appSpread.js": "d9e9e22e4b011ff0a3fe735e982cf01cd5e8cc36d1a6f9a5b90118906d5737c0",
         "magnifier.js": "3ec1adeceb54169b0e65a8d60760dbf3655dc6dfcaa97d693bd5217671fe1b9b",
         "iconTint.js": "b1d507751a0253f6cb0b4a0a35e68a6f17da2d4d42994febc66287b09fbcf8a3",
@@ -247,7 +247,7 @@
         "50",
         "51"
       ],
-      "sha256": "9ad9985a96d4fbf8c757ed9a5b157b8a9c91193c7cc8ed804c9c356f0818df35",
+      "sha256": "4a97c91782eb26126f475e43ba3de6425e52f01781c949b2b3f8b1a171db25ac",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -273,7 +273,7 @@
         "50",
         "51"
       ],
-      "sha256": "d5ca9c8536a7537356b5f179a246195d80b4a18e0508e1520504e24616498d26",
+      "sha256": "9a21b1fd4c98a51503256f66a23d4ecada402380a185b42792d986b0e8e9d341",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [

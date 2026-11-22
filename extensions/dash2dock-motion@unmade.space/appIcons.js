@@ -51,6 +51,11 @@ const {gettext: __, ngettext} = Extension;
 
 const DBusMenu = await DBusMenuUtils.haveDBusMenu();
 
+let Blur = null;
+try {
+    Blur = (await import('gi://Blur')).default;
+} catch (_) {}
+
 const tracker = Shell.WindowTracker.get_default();
 
 const Labels = Object.freeze({
@@ -1973,26 +1978,52 @@ function _updateTailPosition(label, position) {
     const lx = Math.round(label.x);
     const ly = Math.round(label.y);
 
+    const arrowW = 18.0;
+    const arrowH = rise + 3.0;
+
+    let arrowX = 0, arrowY = 0, arrowBoxW = arrowW, arrowBoxH = arrowH;
+
     if (position === St.Side.TOP) {
         tailW = pillWidth + 2 * padX;
         tailH = pillHeight + rise + 2 * padY;
         posX = lx - padX;
         posY = ly - rise - padY;
+
+        arrowX = Math.round(lx + (pillWidth - arrowW) / 2.0);
+        arrowY = Math.round(ly - rise - 1.0);
+        arrowBoxW = arrowW;
+        arrowBoxH = arrowH;
     } else if (position === St.Side.LEFT) {
         tailW = pillWidth + rise + 2 * padX;
         tailH = pillHeight + 2 * padY;
         posX = lx - rise - padX;
         posY = ly - padY;
+
+        arrowX = Math.round(lx - rise - 1.0);
+        arrowY = Math.round(ly + (pillHeight - arrowW) / 2.0);
+        arrowBoxW = arrowH;
+        arrowBoxH = arrowW;
     } else if (position === St.Side.RIGHT) {
         tailW = pillWidth + rise + 2 * padX;
         tailH = pillHeight + 2 * padY;
         posX = lx - padX;
         posY = ly - padY;
+
+        arrowX = Math.round(lx + pillWidth - 2.0);
+        arrowY = Math.round(ly + (pillHeight - arrowW) / 2.0);
+        arrowBoxW = arrowH;
+        arrowBoxH = arrowW;
     } else {
+        // St.Side.BOTTOM
         tailW = pillWidth + 2 * padX;
         tailH = pillHeight + rise + 2 * padY;
         posX = lx - padX;
         posY = ly - padY;
+
+        arrowX = Math.round(lx + (pillWidth - arrowW) / 2.0);
+        arrowY = Math.round(ly + pillHeight - 2.0);
+        arrowBoxW = arrowW;
+        arrowBoxH = arrowH;
     }
 
     tail.set_size(Math.round(tailW), Math.round(tailH));
@@ -2005,6 +2036,23 @@ function _updateTailPosition(label, position) {
         tBox.y2 = posY + tailH;
         tail.allocate(tBox);
     } catch (_) {}
+
+    if (label._blurPillActor) {
+        label._blurPillActor.set_size(pillWidth, pillHeight);
+        label._blurPillActor.set_position(lx, ly);
+        if (label._blurPillActor._blurEff && 'corner_radius' in label._blurPillActor._blurEff) {
+            label._blurPillActor._blurEff.corner_radius = Math.round(pillHeight / 2);
+        }
+    }
+
+    if (label._blurArrowActor) {
+        label._blurArrowActor.set_size(Math.round(arrowBoxW), Math.round(arrowBoxH));
+        label._blurArrowActor.set_position(arrowX, arrowY);
+        if (label._blurArrowActor._blurEff && 'corner_radius' in label._blurArrowActor._blurEff) {
+            label._blurArrowActor._blurEff.corner_radius = 4;
+        }
+    }
+
     tail.queue_repaint();
 }
 
@@ -2018,8 +2066,74 @@ function _ensureLabelTail(label, position) {
         label._arrowTail = null;
     }
 
+    // Disable duplicate blur on label itself if it has a tail
+    const labelBlurEff = label.get_effects?.()?.find(e => e.name === 'tahoe-label-blur');
+    if (labelBlurEff) {
+        labelBlurEff.enabled = false;
+    }
+
+    if (!label._blurPillActor) {
+        const blurPill = new St.Widget({
+            style_class: 'dash-label-blur-pill',
+            reactive: false,
+        });
+        label._blurPillActor = blurPill;
+
+        const blurArrow = new St.Widget({
+            style_class: 'dash-label-blur-arrow',
+            reactive: false,
+        });
+        label._blurArrowActor = blurArrow;
+
+        const cfg = globalThis._macLabelStylingConfig || { blur: 30, tint: 28, shadow: 25 };
+        const radius = cfg.blur ?? 30;
+        const brightness = Math.max(0.3, 1.0 - ((cfg.tint ?? 28) / 100.0) * 0.4);
+
+        if (Blur?.BlurEffect) {
+            blurPill._blurEff = new Blur.BlurEffect({
+                name: 'dash-label-pill-blur',
+                mode: 1,
+                radius: radius,
+                corner_radius: 13,
+                brightness: brightness,
+            });
+            blurPill.add_effect(blurPill._blurEff);
+
+            blurArrow._blurEff = new Blur.BlurEffect({
+                name: 'dash-label-arrow-blur',
+                mode: 1,
+                radius: radius,
+                corner_radius: 4,
+                brightness: brightness,
+            });
+            blurArrow.add_effect(blurArrow._blurEff);
+        } else if (Shell?.BlurEffect) {
+            blurPill._blurEff = new Shell.BlurEffect({
+                name: 'dash-label-pill-blur',
+                mode: Shell.BlurMode.BACKGROUND,
+                radius: radius,
+            });
+            blurPill.add_effect(blurPill._blurEff);
+
+            blurArrow._blurEff = new Shell.BlurEffect({
+                name: 'dash-label-arrow-blur',
+                mode: Shell.BlurMode.BACKGROUND,
+                radius: radius,
+            });
+            blurArrow.add_effect(blurArrow._blurEff);
+        }
+
+        Main.uiGroup.add_child(blurPill);
+        Main.uiGroup.add_child(blurArrow);
+
+        label.bind_property('visible', blurPill, 'visible', GObject.BindingFlags.SYNC_CREATE);
+        label.bind_property('opacity', blurPill, 'opacity', GObject.BindingFlags.SYNC_CREATE);
+        label.bind_property('visible', blurArrow, 'visible', GObject.BindingFlags.SYNC_CREATE);
+        label.bind_property('opacity', blurArrow, 'opacity', GObject.BindingFlags.SYNC_CREATE);
+    }
+
     if (!label._arrowTailActor) {
-        const tail = new St.DrawingArea({ style_class: 'dash-label-tail' });
+        const tail = new St.DrawingArea({ style_class: 'dash-label-tail', reactive: false });
         label._arrowTailActor = tail;
 
         tail.connect('repaint', (area) => {
@@ -2054,8 +2168,9 @@ function _ensureLabelTail(label, position) {
 
             const rise = 7.0;
             const halfBase = 5.5;
-            const fillet = 8.0;
-            const tipR = 2.0;
+            const fillet = 7.5;
+            const filletH = 2.2;
+            const tipR = 1.8;
 
             const pos = label._arrowPos ?? position ?? St.Side.BOTTOM;
 
@@ -2067,8 +2182,10 @@ function _ensureLabelTail(label, position) {
                     const cx = ox + pw / 2.0;
                     cr.moveTo(ox + rad, oy);
                     cr.lineTo(cx - halfBase - fillet, oy);
-                    cr.curveTo(cx - halfBase, oy, cx - tipR, oy - rise + tipR * 0.4, cx, oy - rise);
-                    cr.curveTo(cx + tipR, oy - rise + tipR * 0.4, cx + halfBase, oy, cx + halfBase + fillet, oy);
+                    cr.curveTo(cx - halfBase - fillet * 0.45, oy, cx - halfBase - fillet * 0.05, oy - filletH * 0.35, cx - halfBase, oy - filletH);
+                    cr.curveTo(cx - halfBase * 0.65, oy - filletH - (rise - filletH) * 0.5, cx - tipR * 1.4, oy - rise + 0.2, cx, oy - rise);
+                    cr.curveTo(cx + tipR * 1.4, oy - rise + 0.2, cx + halfBase * 0.65, oy - filletH - (rise - filletH) * 0.5, cx + halfBase, oy - filletH);
+                    cr.curveTo(cx + halfBase + fillet * 0.05, oy - filletH * 0.35, cx + halfBase + fillet * 0.45, oy, cx + halfBase + fillet, oy);
                     cr.lineTo(ox + pw - rad, oy);
                     cr.arc(ox + pw - rad, oy + rad, rad, 1.5 * Math.PI, 2.0 * Math.PI);
                     cr.arc(ox + pw - rad, oy + ph - rad, rad, 0, 0.5 * Math.PI);
@@ -2087,8 +2204,10 @@ function _ensureLabelTail(label, position) {
                     cr.lineTo(ox + rad, oy + ph);
                     cr.arc(ox + rad, oy + ph - rad, rad, 0.5 * Math.PI, Math.PI);
                     cr.lineTo(ox, cy + halfBase + fillet);
-                    cr.curveTo(ox, cy + halfBase, ox - rise + tipR * 0.4, cy + tipR, ox - rise, cy);
-                    cr.curveTo(ox - rise + tipR * 0.4, cy - tipR, ox, cy - halfBase, ox, cy - halfBase - fillet);
+                    cr.curveTo(ox, cy + halfBase + fillet * 0.45, ox - filletH * 0.35, cy + halfBase + fillet * 0.05, ox - filletH, cy + halfBase);
+                    cr.curveTo(ox - filletH - (rise - filletH) * 0.5, cy + halfBase * 0.65, ox - rise + 0.2, cy + tipR * 1.4, ox - rise, cy);
+                    cr.curveTo(ox - rise + 0.2, cy - tipR * 1.4, ox - filletH - (rise - filletH) * 0.5, cy - halfBase * 0.65, ox - filletH, cy - halfBase);
+                    cr.curveTo(ox - filletH * 0.35, cy - halfBase - fillet * 0.05, ox, cy - halfBase - fillet * 0.45, ox, cy - halfBase - fillet);
                     cr.lineTo(ox, oy + rad);
                     cr.arc(ox + rad, oy + rad, rad, Math.PI, 1.5 * Math.PI);
                     cr.closePath();
@@ -2100,8 +2219,10 @@ function _ensureLabelTail(label, position) {
                     cr.lineTo(ox + pw - rad, oy);
                     cr.arc(ox + pw - rad, oy + rad, rad, 1.5 * Math.PI, 2.0 * Math.PI);
                     cr.lineTo(ox + pw, cy - halfBase - fillet);
-                    cr.curveTo(ox + pw, cy - halfBase, ox + pw + rise - tipR * 0.4, cy - tipR, ox + pw + rise, cy);
-                    cr.curveTo(ox + pw + rise - tipR * 0.4, cy + tipR, ox + pw, cy + halfBase, ox + pw, cy + halfBase + fillet);
+                    cr.curveTo(ox + pw, cy - halfBase - fillet * 0.45, ox + pw + filletH * 0.35, cy - halfBase - fillet * 0.05, ox + pw + filletH, cy - halfBase);
+                    cr.curveTo(ox + pw + filletH + (rise - filletH) * 0.5, cy - halfBase * 0.65, ox + pw + rise - 0.2, cy - tipR * 1.4, ox + pw + rise, cy);
+                    cr.curveTo(ox + pw + rise - 0.2, cy + tipR * 1.4, ox + pw + filletH + (rise - filletH) * 0.5, cy + halfBase * 0.65, ox + pw + filletH, cy + halfBase);
+                    cr.curveTo(ox + pw + filletH * 0.35, cy + halfBase + fillet * 0.05, ox + pw, cy + halfBase + fillet * 0.45, ox + pw, cy + halfBase + fillet);
                     cr.lineTo(ox + pw, oy + ph - rad);
                     cr.arc(ox + pw - rad, oy + ph - rad, rad, 0, 0.5 * Math.PI);
                     cr.lineTo(ox + rad, oy + ph);
@@ -2109,6 +2230,7 @@ function _ensureLabelTail(label, position) {
                     cr.arc(ox + rad, oy + rad, rad, Math.PI, 1.5 * Math.PI);
                     cr.closePath();
                 } else {
+                    // St.Side.BOTTOM
                     const ox = padX;
                     const oy = padY;
                     const cx = ox + pw / 2.0;
@@ -2117,8 +2239,10 @@ function _ensureLabelTail(label, position) {
                     cr.arc(ox + pw - rad, oy + rad, rad, 1.5 * Math.PI, 2.0 * Math.PI);
                     cr.arc(ox + pw - rad, oy + ph - rad, rad, 0, 0.5 * Math.PI);
                     cr.lineTo(cx + halfBase + fillet, oy + ph);
-                    cr.curveTo(cx + halfBase, oy + ph, cx + tipR, oy + ph + rise - tipR * 0.4, cx, oy + ph + rise);
-                    cr.curveTo(cx - tipR, oy + ph + rise - tipR * 0.4, cx - halfBase, oy + ph, cx - halfBase - fillet, oy + ph);
+                    cr.curveTo(cx + halfBase + fillet * 0.45, oy + ph, cx + halfBase + fillet * 0.05, oy + ph + filletH * 0.35, cx + halfBase, oy + ph + filletH);
+                    cr.curveTo(cx + halfBase * 0.65, oy + ph + filletH + (rise - filletH) * 0.5, cx + tipR * 1.4, oy + ph + rise - 0.2, cx, oy + ph + rise);
+                    cr.curveTo(cx - tipR * 1.4, oy + ph + rise - 0.2, cx - halfBase * 0.65, oy + ph + filletH + (rise - filletH) * 0.5, cx - halfBase, oy + ph + filletH);
+                    cr.curveTo(cx - halfBase - fillet * 0.05, oy + ph + filletH * 0.35, cx - halfBase - fillet * 0.45, oy + ph, cx - halfBase - fillet, oy + ph);
                     cr.lineTo(ox + rad, oy + ph);
                     cr.arc(ox + rad, oy + ph - rad, rad, 0.5 * Math.PI, Math.PI);
                     cr.closePath();
@@ -2156,6 +2280,16 @@ function _ensureLabelTail(label, position) {
         label.bind_property('opacity', tail, 'opacity', GObject.BindingFlags.SYNC_CREATE);
 
         label.connect('destroy', () => {
+            if (label._blurPillActor) {
+                Main.uiGroup.remove_child(label._blurPillActor);
+                label._blurPillActor.destroy();
+                label._blurPillActor = null;
+            }
+            if (label._blurArrowActor) {
+                Main.uiGroup.remove_child(label._blurArrowActor);
+                label._blurArrowActor.destroy();
+                label._blurArrowActor = null;
+            }
             if (label._arrowTailActor) {
                 Main.uiGroup.remove_child(label._arrowTailActor);
                 label._arrowTailActor.destroy();
@@ -2172,11 +2306,16 @@ function _ensureLabelTail(label, position) {
         });
     }
 
+    // Ensure stacking order: blur actors below tail, and tail below label
+    if (label._blurPillActor && label._arrowTailActor)
+        Main.uiGroup.set_child_below_sibling(label._blurPillActor, label._arrowTailActor);
+    if (label._blurArrowActor && label._arrowTailActor)
+        Main.uiGroup.set_child_below_sibling(label._blurArrowActor, label._arrowTailActor);
+    if (label._arrowTailActor)
+        Main.uiGroup.set_child_below_sibling(label._arrowTailActor, label);
+
     _updateTailPosition(label, position);
 }
-
-
-
 
 export function positionItemLabel(item) {
     const visual = item.child?.icon?._iconBin ?? item.child?.icon ?? item.child ?? item;
@@ -2240,12 +2379,8 @@ export function positionItemLabel(item) {
 
 export function itemShowLabel() {
     /* eslint-disable no-invalid-this */
-
-
     if (!this._labelText || !this.label.get_stage())
         return;
-
-
 
     try {
         const allLabels = Main.uiGroup.get_children().filter(
@@ -2255,10 +2390,12 @@ export function itemShowLabel() {
             other.remove_all_transitions();
             other.opacity = 0;
             other.hide();
-            if (other._arrowTailActor) {
-                other._arrowTailActor.remove_all_transitions();
-                other._arrowTailActor.opacity = 0;
-                other._arrowTailActor.hide();
+            for (const sub of [other._blurPillActor, other._blurArrowActor, other._arrowTailActor]) {
+                if (sub) {
+                    sub.remove_all_transitions();
+                    sub.opacity = 0;
+                    sub.hide();
+                }
             }
         }
         const allTails = Main.uiGroup.get_children().filter(
@@ -2269,18 +2406,40 @@ export function itemShowLabel() {
             tail.opacity = 0;
             tail.hide();
         }
+        const allBlurWidgets = Main.uiGroup.get_children().filter(
+            a => a && a.has_style_class_name &&
+                 (a.has_style_class_name('dash-label-blur-pill') || a.has_style_class_name('dash-label-blur-arrow')) &&
+                 a !== this.label._blurPillActor && a !== this.label._blurArrowActor
+        );
+        for (const bw of allBlurWidgets) {
+            bw.remove_all_transitions();
+            bw.opacity = 0;
+            bw.hide();
+        }
     } catch (_) {}
 
     this.label.set_text(this._labelText);
     this.label.remove_all_transitions();
     if (this.label._arrowTailActor)
         this.label._arrowTailActor.remove_all_transitions();
+    if (this.label._blurPillActor)
+        this.label._blurPillActor.remove_all_transitions();
+    if (this.label._blurArrowActor)
+        this.label._blurArrowActor.remove_all_transitions();
 
     this.label.opacity = 0;
     this.label.show();
     if (this.label._arrowTailActor) {
         this.label._arrowTailActor.opacity = 0;
         this.label._arrowTailActor.show();
+    }
+    if (this.label._blurPillActor) {
+        this.label._blurPillActor.opacity = 0;
+        this.label._blurPillActor.show();
+    }
+    if (this.label._blurArrowActor) {
+        this.label._blurArrowActor.opacity = 0;
+        this.label._blurArrowActor.show();
     }
 
     const transparentStyle =
@@ -2295,38 +2454,36 @@ export function itemShowLabel() {
 
     this.label.set_style(transparentStyle);
 
-    if (globalThis._macLabelStylingConfig) {
-        const { blur, tint } = globalThis._macLabelStylingConfig;
-        const eff = this.label.get_effect?.('tahoe-label-blur');
-        if (eff) {
-            eff.enabled = (blur > 0);
-            eff.radius = blur;
-            eff.brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
-            const [minH, natH] = this.label.get_preferred_height(-1);
-            const effH = Math.ceil(natH > 0 ? natH : (this.label.height > 0 ? this.label.height : 26));
-            if ('corner_radius' in eff)
-                eff.corner_radius = Math.round(effH / 2);
-        }
-    }
-
     if (this.label.set_offscreen_redirect)
         this.label.set_offscreen_redirect(0);
 
-    positionItemLabel(this);
     _ensureLabelTail(this.label, Utils.getPosition());
+    positionItemLabel(this);
+
+    if (globalThis._macLabelStylingConfig) {
+        const { blur, tint } = globalThis._macLabelStylingConfig;
+        const brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
+        for (const bActor of [this.label._blurPillActor, this.label._blurArrowActor]) {
+            const eff = bActor?._blurEff;
+            if (eff) {
+                eff.enabled = (blur > 0);
+                eff.radius = blur;
+                eff.brightness = brightness;
+                eff.queue_repaint?.();
+            }
+        }
+    }
+
     if (this.label._arrowTailActor)
         this.label._arrowTailActor.queue_repaint();
-
-
-    const blurEff = this.label.get_effect?.('tahoe-label-blur');
-    blurEff?.queue_repaint?.();
 
     this.label.ease({
         opacity: 255,
         duration: DASH_ITEM_LABEL_SHOW_TIME,
         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
         onComplete: () => {
-            blurEff?.queue_repaint?.();
+            this.label._blurPillActor?._blurEff?.queue_repaint?.();
+            this.label._blurArrowActor?._blurEff?.queue_repaint?.();
             this.label.set_offscreen_redirect?.(0);
         },
     });
@@ -2339,19 +2496,23 @@ export function itemHideLabel(immediate = false) {
         return;
 
     this.label.remove_all_transitions();
-    if (this.label._arrowTailActor)
-        this.label._arrowTailActor.remove_all_transitions();
+    const subs = [this.label._arrowTailActor, this.label._blurPillActor, this.label._blurArrowActor];
+    for (const sub of subs) {
+        if (sub) sub.remove_all_transitions();
+    }
 
     if (immediate) {
         this.label.opacity = 0;
         this.label.hide();
         this.label.translation_x = 0;
         this.label.translation_y = 0;
-        if (this.label._arrowTailActor) {
-            this.label._arrowTailActor.opacity = 0;
-            this.label._arrowTailActor.hide();
-            this.label._arrowTailActor.translation_x = 0;
-            this.label._arrowTailActor.translation_y = 0;
+        for (const sub of subs) {
+            if (sub) {
+                sub.opacity = 0;
+                sub.hide();
+                sub.translation_x = 0;
+                sub.translation_y = 0;
+            }
         }
         return;
     }
@@ -2364,12 +2525,23 @@ export function itemHideLabel(immediate = false) {
             this.label.hide();
             this.label.translation_x = 0;
             this.label.translation_y = 0;
-            if (this.label._arrowTailActor) {
-                this.label._arrowTailActor.hide();
-                this.label._arrowTailActor.translation_x = 0;
-                this.label._arrowTailActor.translation_y = 0;
+            for (const sub of subs) {
+                if (sub) {
+                    sub.hide();
+                    sub.translation_x = 0;
+                    sub.translation_y = 0;
+                }
             }
         },
     });
     /* eslint-enable no-invalid-this */
+}
+
+if (Dash?.DashItemContainer?.prototype) {
+    Dash.DashItemContainer.prototype.showLabel = function(...args) {
+        return itemShowLabel.call(this, ...args);
+    };
+    Dash.DashItemContainer.prototype.hideLabel = function(...args) {
+        return itemHideLabel.call(this, ...args);
+    };
 }

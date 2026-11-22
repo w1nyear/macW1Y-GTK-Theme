@@ -3647,3 +3647,34 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+
+### Завдання №886: Об'єднане розмиття (Unified Blur) пілюлі та стрілки бір-тегів підказок у Dock та Overview, плавні переходи (fillets)
+- Дата: 2026-11-22
+- Мета:
+  Виправити відображення бір-тегів (labels/tooltips) програм у Dock та Overview: стрілка-покажчик над/під іконкою повинна мати ідентичне спільне розмиття разом з пілюлею без швів чи розривів; перехід між основою стрілки та тілом пілюлі має бути згладженим круглим плавним радіусом (конкавними кривими Безьє fillet), а не прямими кутами 90°.
+- Реалізовані зміни:
+  1) Архітектура багатошарового рендерингу підказок у extensions/dash2dock-motion@unmade.space/appIcons.js:
+     * Створено два синхронізованих актори розмиття: _blurPillActor (dash-label-blur-pill, corner_radius: ph / 2) та _blurArrowActor (dash-label-blur-arrow, corner_radius: 4) з Blur.BlurEffect (mode: 1), перекриттям у 2px та ідентичним радіусом і яскравістю.
+     * Відключено старе фрагментарне розмиття на самому label (tahoe-label-blur.enabled = false), усунувши темний шов від заокруглених кутів капсули над стрілкою.
+     * Перероблено Cairo-геометрію makeUnifiedPath() для всіх 4 сторін (BOTTOM, TOP, LEFT, RIGHT) з плавними конкавними дугами cr.curveTo (плавні галтелі від основи стрілки до пілюлі з дотичним входом) та заокругленим кінчиком стрілки (tipR = 1.8).
+     * Синхронізовано анімації появи та зникнення (showLabel / hideLabel) для акторів розмиття та контуру стрілки.
+     * Перехоплено Dash.DashItemContainer.prototype.showLabel та hideLabel для уніфікованого вигляду як у Dock, так і в огляді (Overview Dash).
+  2) Адаптація динамічного налаштування скла у extensions/kiwi@kemma/apps/labelBlur.js:
+     * Додано перевірку на наявність _blurPillActor, щоб уникнути конфліктуючих розмить на label.
+     * Забезпечено оновлення параметрів radius та brightness для _blurPillActor та _blurArrowActor при зміні налаштувань тінтування та розмиття.
+  3) Гаряче оновлення прототипів у сесії через extensions/eval-helper@mactheme/extension.js:
+     * Додано функцію installUnifiedDockLabelHandler(), що миттєво підключає оновлений обробник showLabel / hideLabel до запущеної сесії GNOME Shell.
+  4) Синхронізація та верифікація:
+     * Зміни синхронізовано в ~/.local/share/gnome-shell/extensions/ та оновлено хеші в config/extensions.lock.json.
+     * Живий стан підказок у GNOME Shell перевірено через DBus: hasBlurPill: true, pillBlurEff: true, hasBlurArrow: true, arrowBlurEff: true, hasTail: true, labelBlurDisabled: true.
+     * Усі 5 наборів тестів пройшли на 100%: mac-extension-guard (21/21), mac-audit-sync (5/5), test-macw1y-animations (12/12), unittests (39/39), mac-i18n-verify.
+     * 0 кириличних символів в install.sh.
+
+- Зачеплені файли:
+  * [extensions/dash2dock-motion@unmade.space/appIcons.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/appIcons.js)
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [extensions/kiwi@kemma/apps/labelBlur.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/labelBlur.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

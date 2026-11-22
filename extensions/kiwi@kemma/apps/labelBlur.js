@@ -112,6 +112,13 @@ export function applyLabelBlur(actor) {
     if (!actor || !actor.add_effect)
         return;
 
+    if (actor._blurPillActor) {
+        const effects = actor.get_effects ? actor.get_effects() : [];
+        const existing = effects.find(e => e.name === EFFECT_NAME);
+        if (existing) existing.enabled = false;
+        return;
+    }
+
     try {
         const radius = _getCurrentRadius();
         const brightness = _getCurrentBrightness();
@@ -268,6 +275,28 @@ function _updateAllLabels() {
     const active = _isBlurActive() && radius > 0;
 
     _dashLabels().forEach(actor => {
+        if (actor._blurPillActor) {
+            const effP = actor._blurPillActor._blurEff;
+            if (effP) {
+                effP.enabled = active;
+                effP.radius = active ? radius : 0;
+                effP.brightness = brightness;
+                effP.queue_repaint?.();
+            }
+            const effA = actor._blurArrowActor?._blurEff;
+            if (effA) {
+                effA.enabled = active;
+                effA.radius = active ? radius : 0;
+                effA.brightness = brightness;
+                effA.queue_repaint?.();
+            }
+            if (actor._arrowTailActor?.queue_repaint)
+                actor._arrowTailActor.queue_repaint();
+            const existing = actor.get_effects?.()?.find(e => e.name === EFFECT_NAME);
+            if (existing) existing.enabled = false;
+            return;
+        }
+
         const effects = actor.get_effects ? actor.get_effects() : [];
         const existing = effects.find(e => e.name === EFFECT_NAME);
         if (existing) {
