@@ -2741,65 +2741,7 @@ export default class EvalHelper extends Extension {
         syncAltTabStyling();
 
 
-        const syncAllLabels = () => {
-            try {
-                const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
-                let conf = {};
-                if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
-                    const [ok, bytes] = GLib.file_get_contents(confPath);
-                    if (ok) conf = JSON.parse(new TextDecoder().decode(bytes));
-                }
-                const blur = (typeof conf.label_blur === 'number') ? conf.label_blur : 30;
-                const tint = (typeof conf.label_tint === 'number') ? conf.label_tint : 28;
-                const shadow = (typeof conf.label_shadow === 'number') ? conf.label_shadow : 25;
-
-                globalThis._macLabelStylingConfig = { blur, tint, shadow };
-
-                const styleStr = 'background-color: transparent !important; ' +
-                                 'box-shadow: none !important; ' +
-                                 'border: none !important; ' +
-                                 'color: #ffffff !important; ' +
-                                 'margin: 0px !important; ' +
-                                 'padding: 4px 12px !important; ' +
-                                 'font-weight: 500 !important; ' +
-                                 'font-size: 13px !important;';
-
-                const labels = Main.uiGroup.get_children().filter(a => a.has_style_class_name && a.has_style_class_name('dash-label'));
-                for (const l of labels) {
-                    l.set_style(styleStr);
-                    if (l._blurActor) {
-                        try {
-                            Main.uiGroup.remove_child(l._blurActor);
-                            l._blurActor.destroy();
-                        } catch (_) {}
-                        l._blurActor = null;
-                    }
-                    if (l._blurPillActor) {
-                        try {
-                            Main.uiGroup.remove_child(l._blurPillActor);
-                            l._blurPillActor.destroy();
-                        } catch (_) {}
-                        l._blurPillActor = null;
-                    }
-                    if (l._blurArrowActor) {
-                        try {
-                            Main.uiGroup.remove_child(l._blurArrowActor);
-                            l._blurArrowActor.destroy();
-                        } catch (_) {}
-                        l._blurArrowActor = null;
-                    }
-                    const effL = l.get_effects?.()?.find(e => e.name === 'tahoe-label-blur');
-                    if (effL && l._arrowTailActor) effL.enabled = false;
-                    if (l._arrowTailActor) {
-                        l._arrowTailActor.queue_repaint();
-                    }
-                }
-            } catch (e) {
-                console.error('[EvalHelper] syncAllLabels error: ' + e);
-            }
-        };
-        globalThis._macSyncLabelStyling = syncAllLabels;
-        syncAllLabels();
+        let _sharedEnsureTail = null;
 
         const installUnifiedDockLabelHandler = () => {
             try {
@@ -2884,11 +2826,11 @@ export default class EvalHelper extends Extension {
                     } catch (_) {}
 
                     if (label._blurActor) {
-                        try {
-                            Main.uiGroup.remove_child(label._blurActor);
-                            label._blurActor.destroy();
-                        } catch (_) {}
-                        label._blurActor = null;
+                        label._blurActor.set_size(pillWidth, pillHeight);
+                        label._blurActor.set_position(lx, ly);
+                        if (label._blurActor._blurEff && 'corner_radius' in label._blurActor._blurEff) {
+                            label._blurActor._blurEff.corner_radius = Math.round(pillHeight / 2);
+                        }
                     }
 
                     tail.queue_repaint();
@@ -2909,12 +2851,41 @@ export default class EvalHelper extends Extension {
                         labelBlurEff.enabled = false;
                     }
 
-                    if (label._blurActor) {
-                        try {
-                            Main.uiGroup.remove_child(label._blurActor);
-                            label._blurActor.destroy();
-                        } catch (_) {}
-                        label._blurActor = null;
+                    if (!label._blurActor) {
+                        const blurActor = new St.Widget({
+                            style_class: 'dash-label-blur-pill',
+                            reactive: false,
+                        });
+                        blurActor.set_style('background-color: transparent !important; background: transparent !important; border: none !important; box-shadow: none !important;');
+                        label._blurActor = blurActor;
+
+                        const cfg = globalThis._macLabelStylingConfig || { blur: 20, tint: 20, shadow: 25 };
+                        const radius = (typeof cfg.blur === 'number') ? cfg.blur : 20;
+
+                        if (Blur?.BlurEffect) {
+                            blurActor._blurEff = new Blur.BlurEffect({
+                                name: 'dash-label-pill-blur',
+                                mode: 1,
+                                radius: radius,
+                                corner_radius: 13,
+                                brightness: 1.0,
+                            });
+                            blurActor.add_effect(blurActor._blurEff);
+                            blurActor._blurEff.enabled = (radius > 0);
+                        } else if (Shell?.BlurEffect) {
+                            blurActor._blurEff = new Shell.BlurEffect({
+                                name: 'dash-label-pill-blur',
+                                mode: Shell.BlurMode.BACKGROUND,
+                                radius: radius,
+                            });
+                            blurActor.add_effect(blurActor._blurEff);
+                            blurActor._blurEff.enabled = (radius > 0);
+                        }
+
+                        Main.uiGroup.add_child(blurActor);
+
+                        label.bind_property('visible', blurActor, 'visible', GObject.BindingFlags.SYNC_CREATE);
+                        label.bind_property('opacity', blurActor, 'opacity', GObject.BindingFlags.SYNC_CREATE);
                     }
 
                     if (!label._arrowTailActor) {
@@ -2927,19 +2898,21 @@ export default class EvalHelper extends Extension {
                             cr.setLineCap(cairo.LineCap.ROUND);
                             cr.setLineJoin(cairo.LineJoin.ROUND);
 
-                            const cfg = globalThis._macLabelStylingConfig || { blur: 30, tint: 28, shadow: 25 };
-                            const tintAlpha = (cfg.tint / 100.0);
-                            const shadowAlpha = (cfg.shadow / 100.0);
+                            const cfg = globalThis._macLabelStylingConfig || { blur: 20, tint: 20, shadow: 25 };
+                            const tintVal = (typeof cfg.tint === 'number') ? cfg.tint : 20;
+                            const tintAlpha = Math.max(0.05, Math.min(0.95, tintVal / 100.0));
+                            const shadowVal = (typeof cfg.shadow === 'number') ? cfg.shadow : 25;
+                            const shadowAlpha = Math.max(0.0, Math.min(1.0, shadowVal / 100.0));
 
                             const isLight = (Main.sessionMode && Main.sessionMode.currentMode === 'light') ||
                                             (typeof globalThis._macIsLightMode === 'function' ? globalThis._macIsLightMode() : false);
 
                             let r, g, b, a, br, bg_c, bb, ba;
                             if (isLight) {
-                                r = 0.94; g = 0.94; b = 0.96; a = Math.max(0.82, Math.min(0.96, tintAlpha * 0.85 + 0.55));
+                                r = 0.94; g = 0.94; b = 0.96; a = Math.max(0.18, Math.min(0.95, tintAlpha * 0.85));
                                 br = 0.0; bg_c = 0.0; bb = 0.0; ba = 0.14;
                             } else {
-                                r = 0.12; g = 0.12; b = 0.15; a = Math.max(0.82, Math.min(0.96, tintAlpha + 0.55));
+                                r = 0.12; g = 0.12; b = 0.15; a = Math.max(0.18, Math.min(0.95, tintAlpha));
                                 br = 1.0; bg_c = 1.0; bb = 1.0; ba = 0.22;
                             }
 
@@ -3033,13 +3006,12 @@ export default class EvalHelper extends Extension {
                             }
 
                             if (shadowAlpha > 0.02) {
-                                const shadowOffset = Math.max(1, Math.round(shadowAlpha * 5));
                                 for (let s = 3; s >= 1; s--) {
                                     cr.save();
-                                    cr.translate(0, s * (shadowOffset / 2.0));
+                                    cr.translate(0, s * 1.5);
                                     makeUnifiedPath();
-                                    cr.setSourceRGBA(0, 0, 0, (shadowAlpha * 0.22) / s);
-                                    cr.setLineWidth(s * 2.5);
+                                    cr.setSourceRGBA(0, 0, 0, (shadowAlpha * 0.14) / s);
+                                    cr.setLineWidth(s * 2.8);
                                     cr.stroke();
                                     cr.restore();
                                 }
@@ -3064,13 +3036,17 @@ export default class EvalHelper extends Extension {
 
                         label.connect('destroy', () => {
                             if (label._blurActor) {
-                                Main.uiGroup.remove_child(label._blurActor);
-                                label._blurActor.destroy();
+                                try {
+                                    Main.uiGroup.remove_child(label._blurActor);
+                                    label._blurActor.destroy();
+                                } catch (_) {}
                                 label._blurActor = null;
                             }
                             if (label._arrowTailActor) {
-                                Main.uiGroup.remove_child(label._arrowTailActor);
-                                label._arrowTailActor.destroy();
+                                try {
+                                    Main.uiGroup.remove_child(label._arrowTailActor);
+                                    label._arrowTailActor.destroy();
+                                } catch (_) {}
                                 label._arrowTailActor = null;
                             }
                         });
@@ -3084,12 +3060,17 @@ export default class EvalHelper extends Extension {
                         });
                     }
 
-                    // Ensure stacking order: tail below label
+                    // Ensure stacking order: blur actor below tail, and tail below label
+                    if (label._blurActor && label._arrowTailActor)
+                        Main.uiGroup.set_child_below_sibling(label._blurActor, label._arrowTailActor);
                     if (label._arrowTailActor)
                         Main.uiGroup.set_child_below_sibling(label._arrowTailActor, label);
 
                     _updateTailPos(label, position);
                 };
+
+                _sharedEnsureTail = _ensureTail;
+                globalThis._macEnsureDockLabelTail = _ensureTail;
 
                 const _posLabel = (item) => {
                     const visual = item.child?.icon?._iconBin ?? item.child?.icon ?? item.child ?? item;
@@ -3130,11 +3111,9 @@ export default class EvalHelper extends Extension {
                                 other._arrowTailActor.hide();
                             }
                             if (other._blurActor) {
-                                try {
-                                    Main.uiGroup.remove_child(other._blurActor);
-                                    other._blurActor.destroy();
-                                } catch (_) {}
-                                other._blurActor = null;
+                                other._blurActor.remove_all_transitions();
+                                other._blurActor.opacity = 0;
+                                other._blurActor.hide();
                             }
                         }
                     } catch (_) {}
@@ -3143,6 +3122,8 @@ export default class EvalHelper extends Extension {
                     this.label.remove_all_transitions();
                     if (this.label._arrowTailActor)
                         this.label._arrowTailActor.remove_all_transitions();
+                    if (this.label._blurActor)
+                        this.label._blurActor.remove_all_transitions();
 
                     this.label.opacity = 0;
                     this.label.show();
@@ -3150,12 +3131,17 @@ export default class EvalHelper extends Extension {
                         this.label._arrowTailActor.opacity = 0;
                         this.label._arrowTailActor.show();
                     }
+                    if (this.label._blurActor) {
+                        this.label._blurActor.opacity = 0;
+                        this.label._blurActor.show();
+                    }
 
                     const transparentStyle =
                         'background-color: transparent !important; ' +
                         'box-shadow: none !important; ' +
                         'border: none !important; ' +
                         'color: #ffffff !important; ' +
+                        'text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.6) !important; ' +
                         'margin: 0px !important; ' +
                         'padding: 4px 12px !important; ' +
                         'font-weight: 500 !important; ' +
@@ -3169,6 +3155,16 @@ export default class EvalHelper extends Extension {
                     _ensureTail(this.label, St.Side.BOTTOM);
                     _posLabel(this);
 
+                    if (globalThis._macLabelStylingConfig) {
+                        const { blur } = globalThis._macLabelStylingConfig;
+                        const eff = this.label._blurActor?._blurEff;
+                        if (eff) {
+                            eff.enabled = (blur > 0);
+                            eff.radius = blur;
+                            eff.queue_repaint?.();
+                        }
+                    }
+
                     if (this.label._arrowTailActor)
                         this.label._arrowTailActor.queue_repaint();
 
@@ -3176,6 +3172,9 @@ export default class EvalHelper extends Extension {
                         opacity: 255,
                         duration: 200,
                         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        onComplete: () => {
+                            this.label._blurActor?._blurEff?.queue_repaint?.();
+                        },
                     });
                 };
 
@@ -3184,15 +3183,19 @@ export default class EvalHelper extends Extension {
                         return;
 
                     this.label.remove_all_transitions();
-                    if (this.label._arrowTailActor)
-                        this.label._arrowTailActor.remove_all_transitions();
+                    const subs = [this.label._arrowTailActor, this.label._blurActor];
+                    for (const sub of subs) {
+                        if (sub) sub.remove_all_transitions();
+                    }
 
                     if (immediate) {
                         this.label.opacity = 0;
                         this.label.hide();
-                        if (this.label._arrowTailActor) {
-                            this.label._arrowTailActor.opacity = 0;
-                            this.label._arrowTailActor.hide();
+                        for (const sub of subs) {
+                            if (sub) {
+                                sub.opacity = 0;
+                                sub.hide();
+                            }
                         }
                         return;
                     }
@@ -3203,8 +3206,9 @@ export default class EvalHelper extends Extension {
                         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                         onComplete: () => {
                             this.label.hide();
-                            if (this.label._arrowTailActor)
-                                this.label._arrowTailActor.hide();
+                            for (const sub of subs) {
+                                if (sub) sub.hide();
+                            }
                         },
                     });
                 };
@@ -3227,6 +3231,58 @@ export default class EvalHelper extends Extension {
             }
         };
         installUnifiedDockLabelHandler();
+
+        const syncAllLabels = () => {
+            try {
+                const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+                let conf = {};
+                if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+                    const [ok, bytes] = GLib.file_get_contents(confPath);
+                    if (ok) conf = JSON.parse(new TextDecoder().decode(bytes));
+                }
+                const blur = (typeof conf.label_blur === 'number') ? conf.label_blur : 20;
+                const tint = (typeof conf.label_tint === 'number') ? conf.label_tint : 20;
+                const shadow = (typeof conf.label_shadow === 'number') ? conf.label_shadow : 25;
+
+                globalThis._macLabelStylingConfig = { blur, tint, shadow };
+
+                const styleStr = 'background-color: transparent !important; ' +
+                                 'box-shadow: none !important; ' +
+                                 'border: none !important; ' +
+                                 'color: #ffffff !important; ' +
+                                 'text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.6) !important; ' +
+                                 'margin: 0px !important; ' +
+                                 'padding: 4px 12px !important; ' +
+                                 'font-weight: 500 !important; ' +
+                                 'font-size: 13px !important;';
+
+                const labels = Main.uiGroup.get_children().filter(a => a && a.has_style_class_name && a.has_style_class_name('dash-label'));
+                for (const l of labels) {
+                    l.set_style(styleStr);
+                    if (l._arrowTailActor && !l._blurActor) {
+                        if (_sharedEnsureTail) {
+                            _sharedEnsureTail(l, l._arrowPos ?? St.Side.BOTTOM);
+                        } else if (typeof globalThis._macEnsureDockLabelTail === 'function') {
+                            globalThis._macEnsureDockLabelTail(l, l._arrowPos ?? St.Side.BOTTOM);
+                        }
+                    }
+                    if (l._blurActor && l._blurActor._blurEff) {
+                        l._blurActor._blurEff.enabled = (blur > 0);
+                        l._blurActor._blurEff.radius = blur;
+                        l._blurActor._blurEff.queue_repaint?.();
+                    }
+                    const effL = l.get_effects?.()?.find(e => e.name === 'tahoe-label-blur');
+                    if (effL && l._arrowTailActor) effL.enabled = false;
+                    if (l._arrowTailActor) {
+                        l._arrowTailActor.queue_repaint();
+                    }
+                }
+            } catch (e) {
+                console.error('[EvalHelper] syncAllLabels error: ' + e);
+            }
+        };
+        globalThis._macSyncLabelStyling = syncAllLabels;
+        syncAllLabels();
 
 
         const syncDockStyling = () => {
