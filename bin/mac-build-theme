@@ -21,6 +21,21 @@ if not os.path.exists(os.path.join(REPO_DIR, "config/macw1y-tokens.json")):
 TOKENS_PATH = os.path.join(REPO_DIR, "config/macw1y-tokens.json")
 HOME = os.path.expanduser("~")
 
+def get_version():
+    candidates = [
+        os.path.join(REPO_DIR, "info.json"),
+        "/usr/share/mactheme/info.json",
+        os.path.expanduser("~/.local/share/macW1Y/info.json"),
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            try:
+                with open(c, "r", encoding="utf-8") as f:
+                    return json.load(f).get("version", "0.7.1")
+            except Exception:
+                pass
+    return "0.7.1"
+
 def load_tokens():
     if not os.path.exists(TOKENS_PATH):
         print(f"Error: Tokens file not found at {TOKENS_PATH}")
@@ -34,7 +49,7 @@ def generate_gtk4_tokens_css(tokens, is_dark=False):
     d = tokens["dimensions"]
     t = tokens["typography"]
     
-    css = f"""/* macW1Y 0.7.1 — Generated Master Design Tokens for GTK 4 / Libadwaita */
+    css = f"""/* macW1Y {get_version()} — Generated Master Design Tokens for GTK 4 / Libadwaita */
 /* DO NOT EDIT DIRECTLY: Generated from config/macw1y-tokens.json */
 
 @define-color accent_bg_color {c["accent_bg"]};
@@ -112,7 +127,7 @@ def generate_gtk4_components_css(tokens, is_dark=False):
     slider_glass_url = "file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass.svg"
     slider_glass_v_url = "file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass-vertical.svg"
 
-    css = f"""/* macW1Y 0.7.1 — Master Unified Component Stylesheet for GTK 4 / Libadwaita */
+    css = f"""/* macW1Y {get_version()} — Master Unified Component Stylesheet for GTK 4 / Libadwaita */
 /* DO NOT EDIT DIRECTLY: Generated from config/macw1y-tokens.json */
 
 /* =========================================================================

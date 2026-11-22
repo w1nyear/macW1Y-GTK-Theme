@@ -6,8 +6,22 @@
 
 set -e
 
-# Version Constants
-NEW_VERSION="0.7.1"
+# Version Constants (loaded dynamically from info.json)
+get_project_version() {
+    local base_dir="${1:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+    local v=""
+    for candidate in "$base_dir/info.json" "$TARGET_HOME/macW1Y/info.json" "$TARGET_HOME/MACTHEMEFILES/info.json" "/usr/share/mactheme/info.json"; do
+        if [ -f "$candidate" ]; then
+            v=$(grep -Po '"version":\s*"\K[^"]+' "$candidate" 2>/dev/null || sed -n 's/.*"version"[^"]*"\([^"]*\)".*/\1/p' "$candidate" 2>/dev/null)
+            if [ -n "$v" ]; then
+                echo "$v"
+                return 0
+            fi
+        fi
+    done
+    echo "0.7.1"
+}
+NEW_VERSION="$(get_project_version)"
 
 # ANSI Color Codes
 C_RESET="\033[0m"
@@ -43,6 +57,7 @@ if [ ! -d "$SCRIPT_DIR/extensions" ]; then
         SCRIPT_DIR="$TARGET_HOME/MACTHEMEFILES"
     fi
 fi
+NEW_VERSION="$(get_project_version "$SCRIPT_DIR")"
 
 source "$SCRIPT_DIR/dependencies/boot-tools.sh"
 
@@ -245,12 +260,20 @@ save_version() {
     echo "$ver" > "$TARGET_HOME/.config/mac-styling/version"
     echo "1" > "$TARGET_HOME/.local/share/macW1Y/macSetupWizard"
     echo "1" > "$TARGET_HOME/.config/mac-styling/macSetupWizard"
+    if [ -f "$SCRIPT_DIR/info.json" ]; then
+        cp -f "$SCRIPT_DIR/info.json" "$TARGET_HOME/.local/share/macW1Y/info.json" 2>/dev/null || true
+        cp -f "$SCRIPT_DIR/info.json" "$TARGET_HOME/.config/mac-styling/info.json" 2>/dev/null || true
+    fi
     chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.local/share/macW1Y" "$TARGET_HOME/.config/mac-styling" 2>/dev/null || true
     
     if [ -w "/etc" ] || [ "$EUID" -eq 0 ] || sudo -n true 2>/dev/null; then
-        sudo mkdir -p /etc/macW1Y
+        sudo mkdir -p /etc/macW1Y /usr/share/mactheme
         echo "$ver" | sudo tee /etc/macW1Y/version >/dev/null
         echo "1" | sudo tee /etc/macW1Y/macSetupWizard >/dev/null
+        if [ -f "$SCRIPT_DIR/info.json" ]; then
+            sudo install -Dm644 "$SCRIPT_DIR/info.json" /usr/share/mactheme/info.json 2>/dev/null || true
+            sudo install -Dm644 "$SCRIPT_DIR/info.json" /etc/macW1Y/info.json 2>/dev/null || true
+        fi
     fi
 }
 

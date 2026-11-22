@@ -3,7 +3,18 @@
 #   macW1Y — macW1Y Transformation, Developer & Debug CLI System
 # ==============================================================================
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(dirname "$SCRIPT_DIR")"
 VERSION="0.7.1"
+for _info_path in "$REPO_DIR/info.json" "$SCRIPT_DIR/info.json" "/usr/share/mactheme/info.json" "$HOME/.local/share/macW1Y/info.json"; do
+    if [ -f "$_info_path" ]; then
+        _v=$(grep -Po '"version":\s*"\K[^"]+' "$_info_path" 2>/dev/null || sed -n 's/.*"version"[^"]*"\([^"]*\)".*/\1/p' "$_info_path" 2>/dev/null)
+        if [ -n "$_v" ]; then
+            VERSION="$_v"
+            break
+        fi
+    fi
+done
 
 # ANSI Colors
 C_RESET="\033[0m"
@@ -16,8 +27,6 @@ C_RED="\033[1;31m"
 C_MAGENTA="\033[1;35m"
 C_GRAY="\033[0;90m"
 
-# Locate script directory and bin search paths
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SEARCH_DIRS=(
     "/usr/local/bin"
     "/usr/bin"

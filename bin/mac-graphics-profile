@@ -197,13 +197,28 @@ def resolve_effective_profile():
         return req, "Manual profile selection"
     return "balanced", "Fallback default"
 
+def get_version():
+    candidates = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "info.json"),
+        "/usr/share/mactheme/info.json",
+        os.path.expanduser("~/.local/share/macW1Y/info.json"),
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            try:
+                with open(c, "r", encoding="utf-8") as f:
+                    return json.load(f).get("version", "0.7.1")
+            except Exception:
+                pass
+    return "0.7.1"
+
 def print_status():
     cfg = load_config()
     eff, reason = resolve_effective_profile()
     bat = get_battery_info()
     
     print("==================================================")
-    print("  macW1Y 0.7.1 Adaptive Graphics & Performance System")
+    print(f"  macW1Y {get_version()} Adaptive Graphics & Performance System")
     print("==================================================")
     print(f"Configured Profile : {cfg.get('profile', 'balanced')}")
     print(f"Effective Profile  : {eff.upper()} ({reason})")

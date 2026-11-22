@@ -15,12 +15,29 @@ SYSTEM_FILE = "/etc/macW1Y/macSetupWizard"
 VERSION_FILE = os.path.expanduser("~/.config/mac-styling/version")
 
 def get_version():
-    if os.path.exists(VERSION_FILE):
-        try:
-            with open(VERSION_FILE, "r", encoding="utf-8") as f:
-                return f.read().strip()
-        except Exception:
-            pass
+    candidates = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "info.json"),
+        "/usr/share/mactheme/info.json",
+        os.path.expanduser("~/.local/share/macW1Y/info.json"),
+        os.path.expanduser("~/.config/mac-styling/info.json"),
+        VERSION_FILE,
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            try:
+                if c.endswith(".json"):
+                    import json
+                    with open(c, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        if "version" in data:
+                            return data["version"]
+                else:
+                    with open(c, "r", encoding="utf-8") as f:
+                        v = f.read().strip()
+                        if v:
+                            return v
+            except Exception:
+                pass
     return "0.7.1"
 
 def get_flag():

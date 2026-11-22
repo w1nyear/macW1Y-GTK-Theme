@@ -213,10 +213,28 @@ def export_clean_dconf():
     out_file.write_text(clean_dump, encoding="utf-8")
     print(f"  ✓ Written clean dconf dump to {out_file} (stripped hardware connectors & monitor IDs)")
 
+def get_version():
+    candidates = [
+        REPO_DIR / "info.json",
+        Path("/usr/share/mactheme/info.json"),
+        Path.home() / ".local/share/macW1Y/info.json",
+    ]
+    for c in candidates:
+        if c.is_file():
+            try:
+                import json
+                with open(c, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if "version" in data:
+                        return data["version"]
+            except Exception:
+                pass
+    return "0.7.1"
+
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in ["check", "audit", "verify"]:
         print("===================================================================")
-        print("          macW1Y 0.7.1 — System & Project Audit Tool              ")
+        print(f"          macW1Y {get_version()} — System & Project Audit Tool              ")
         print("===================================================================")
         all_issues = []
         all_issues += audit_dock()

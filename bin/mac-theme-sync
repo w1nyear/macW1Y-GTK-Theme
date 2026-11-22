@@ -16,6 +16,22 @@ REPO_DIR = "/home/vitaliy/MACTHEMEFILES"
 MANIFEST_PATH = os.path.join(REPO_DIR, "config/macw1y-manifest.json")
 HOME = os.path.expanduser("~")
 
+def get_version():
+    candidates = [
+        os.path.join(REPO_DIR, "info.json"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "info.json"),
+        "/usr/share/mactheme/info.json",
+        os.path.expanduser("~/.local/share/macW1Y/info.json"),
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            try:
+                with open(c, "r", encoding="utf-8") as f:
+                    return json.load(f).get("version", "0.7.1")
+            except Exception:
+                pass
+    return "0.7.1"
+
 def gsettings_get(schema, key):
     try:
         res = subprocess.check_output(["gsettings", "get", schema, key], text=True, stderr=subprocess.DEVNULL).strip()
@@ -160,7 +176,7 @@ def apply_theme_mode(is_light):
 
     if is_light:
         gtk3_tok_str = (
-            "/* macW1Y 0.7.1 — Master Design Tokens for GTK 3 (Light) */\n"
+            f"/* macW1Y {get_version()} — Master Design Tokens for GTK 3 (Light) */\n"
             f"@define-color accent_bg_color {accent_col};\n"
             "@define-color accent_fg_color #ffffff;\n"
             "@define-color theme_base_color #ebebf0;\n"
@@ -172,7 +188,7 @@ def apply_theme_mode(is_light):
         )
     else:
         gtk3_tok_str = (
-            "/* macW1Y 0.7.1 — Master Design Tokens for GTK 3 (Dark) */\n"
+            f"/* macW1Y {get_version()} — Master Design Tokens for GTK 3 (Dark) */\n"
             f"@define-color accent_bg_color {accent_col};\n"
             "@define-color accent_fg_color #ffffff;\n"
             "@define-color theme_base_color #202022;\n"

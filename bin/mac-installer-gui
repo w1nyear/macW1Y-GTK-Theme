@@ -242,16 +242,25 @@ def get_battery_info():
 
 def get_package_version():
     candidates = [
+        os.path.join(SCRIPT_DIR, "info.json"),
         os.path.join(SCRIPT_DIR, "version"),
         os.path.join(SCRIPT_DIR, "config", "mac-styling", "version"),
+        "/usr/share/mactheme/info.json",
     ]
     for c in candidates:
         if os.path.exists(c):
             try:
-                with open(c, "r", encoding="utf-8") as f:
-                    v = f.read().strip()
-                    if v:
-                        return v
+                if c.endswith(".json"):
+                    import json
+                    with open(c, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        if "version" in data:
+                            return data["version"]
+                else:
+                    with open(c, "r", encoding="utf-8") as f:
+                        v = f.read().strip()
+                        if v:
+                            return v
             except Exception:
                 pass
     return "0.7.1"

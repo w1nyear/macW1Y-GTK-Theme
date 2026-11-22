@@ -280,6 +280,21 @@ def restore_all():
     print("✔ Стандартні параметри системи відновлено.")
     return True
 
+def get_version():
+    candidates = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "info.json"),
+        "/usr/share/mactheme/info.json",
+        os.path.expanduser("~/.local/share/macW1Y/info.json"),
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            try:
+                with open(c, "r", encoding="utf-8") as f:
+                    return json.load(f).get("version", "0.7.1")
+            except Exception:
+                pass
+    return "0.7.1"
+
 def get_status():
     st = load_state()
     enabled = st.get("enabled", False)
@@ -289,7 +304,7 @@ def get_status():
     vfs = run_cmd("sysctl -n vm.vfs_cache_pressure 2>/dev/null") or "100"
     
     print("==================================================")
-    print("  macW1Y 0.7.1 Low-Spec & Hardware Optimizer Status")
+    print(f"  macW1Y {get_version()} Low-Spec & Hardware Optimizer Status")
     print("==================================================")
     print(f"Статус режиму Eco      : {'УВІМКНЕНО (Active)' if enabled else 'ВИМКНЕНО (Default)'}")
     print(f"Стиснення ZRAM         : {'АКТИВНО (В памʼяті)' if zram_active else 'НЕ АКТИВНО'}")

@@ -35,8 +35,26 @@ def check(title, condition, detail=""):
             print(f"    {C_YELLOW}↳ {detail}{C_RESET}")
         return False
 
+def get_version():
+    candidates = [
+        os.path.join(REPO_ROOT, "info.json"),
+        "/usr/share/mactheme/info.json",
+        os.path.expanduser("~/.local/share/macW1Y/info.json"),
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            try:
+                import json
+                with open(c, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if "version" in data:
+                        return data["version"]
+            except Exception:
+                pass
+    return "0.7.1"
+
 def main():
-    print(f"\n{C_CYAN}{C_BOLD}=== macW1Y 0.7.1 i18n / l10n VALIDATION SUITE ==={C_RESET}\n")
+    print(f"\n{C_CYAN}{C_BOLD}=== macW1Y {get_version()} i18n / l10n VALIDATION SUITE ==={C_RESET}\n")
     all_ok = True
 
     # 1. Catalog Verification
