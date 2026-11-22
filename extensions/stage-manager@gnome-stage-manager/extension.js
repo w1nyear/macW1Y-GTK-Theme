@@ -100,6 +100,7 @@ function _groupByApp(workspace, focusedWindow, mergeMap = new Map()) {
     }
 
     for (const win of sorted) {
+        if (!win.minimized) continue;
         const app = tracker.get_window_app(win);
         if (!app) continue;
         const id = app.get_id();
@@ -356,48 +357,67 @@ class StageSidebar {
     }
 
     _isAreaClear() {
-        const ws = global.workspace_manager.get_active_workspace();
-        if (!ws) return true;
-        const mon = _getMon();
-        const topH = Main.panel ? Main.panel.height : 0;
-        const [panelW, panelH] = this._panelSize(mon, topH);
-        const [vx, vy] = this._panelVisiblePos(mon, topH);
+        try {
+            const ws = global.workspace_manager.get_active_workspace();
+            if (!ws) return true;
+            const mon = _getMon();
+            if (!mon) return true;
+            const topH = Main.panel ? Main.panel.height : 0;
+            const [panelW, panelH] = this._panelSize(mon, topH);
+            const [vx, vy] = this._panelVisiblePos(mon, topH);
 
-        let px1 = vx;
-        let py1 = vy;
-        let px2 = vx + panelW;
-        let py2 = vy + panelH;
+            const sf = this._scaleFactor || 1;
+            let px1 = vx;
+            let py1 = vy;
+            let px2 = vx + (this._VERTICAL ? Math.min(panelW, 110 * sf) : panelW);
+            let py2 = vy + (this._VERTICAL ? panelH : Math.min(panelH, 110 * sf));
 
-        if (this._box && this._cards && this._cards.length > 0) {
-            try {
-                for (const c of this._cards) {
-                    const cpos = c.get_transformed_position();
-                    const csize = c.get_transformed_size();
-                    if (cpos && csize && cpos[0] !== null && cpos[1] !== null) {
-                        px1 = Math.min(px1, cpos[0]);
-                        px2 = Math.max(px2, cpos[0] + csize[0]);
-                        py1 = Math.min(py1, cpos[1]);
-                        py2 = Math.max(py2, cpos[1] + csize[1]);
+            if (this._box && this._cards && this._cards.length > 0) {
+                try {
+                    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                    for (const c of this._cards) {
+                        if (!c || !c.get_stage?.()) continue;
+                        const cpos = c.get_transformed_position?.();
+                        const csize = c.get_transformed_size?.();
+                        if (cpos && csize && cpos[0] !== null && cpos[1] !== null) {
+                            minX = Math.min(minX, cpos[0]);
+                            maxX = Math.max(maxX, cpos[0] + csize[0]);
+                            minY = Math.min(minY, cpos[1]);
+                            maxY = Math.max(maxY, cpos[1] + csize[1]);
+                        }
                     }
-                }
-            } catch (_) {}
-        }
-
-        const windows = ws.list_windows().filter(w => {
-            if (!w || w.is_override_redirect()) return false;
-            if (w.minimized) return false;
-            const t = w.get_window_type();
-            if (t === Meta.WindowType.DESKTOP || t === Meta.WindowType.DOCK) return false;
-            return true;
-        });
-
-        for (const win of windows) {
-            const r = win.get_frame_rect();
-            if (r.x < px2 && r.x + r.width > px1 && r.y < py2 && r.y + r.height > py1) {
-                return false;
+                    if (maxX > minX && maxY > minY) {
+                        if (this._POS === 'right') {
+                            px1 = Math.max(vx, minX - 8 * sf);
+                            px2 = vx + panelW;
+                        } else {
+                            px1 = vx;
+                            px2 = Math.min(vx + panelW, maxX + 8 * sf);
+                        }
+                        py1 = Math.max(vy, minY);
+                        py2 = Math.min(vy + panelH, maxY);
+                    }
+                } catch (_) {}
             }
+
+            const windows = ws.list_windows().filter(w => {
+                if (!w || w.is_override_redirect()) return false;
+                if (w.minimized) return false;
+                const t = w.get_window_type();
+                if (t === Meta.WindowType.DESKTOP || t === Meta.WindowType.DOCK) return false;
+                return true;
+            });
+
+            for (const win of windows) {
+                const r = win.get_frame_rect();
+                if (r && r.x < px2 && r.x + r.width > px1 && r.y < py2 && r.y + r.height > py1) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (_) {
+            return true;
         }
-        return true;
     }
 
     _checkOverlap() {
@@ -484,6 +504,34 @@ class StageSidebar {
         this._initGroups();
         this._addKeybinding();
         this._armOverlapTimer();
+
+        this._origActivateWindow = Main.activateWindow;
+        Main.activateWindow = (window, time, workspaceNum) => {
+            if (window && !window._stageSwitching) {
+                const ws = window.get_workspace() || global.workspace_manager.get_active_workspace();
+                const tracker = Shell.WindowTracker.get_default();
+                const targetApp = tracker.get_window_app(window);
+                const targetAppId = targetApp ? targetApp.get_id() : null;
+
+                const openWins = ws ? ws.list_windows().filter(w =>
+                    _isNormal(w) && !w.minimized && w !== window
+                ) : [];
+
+                for (const other of openWins) {
+                    const otherApp = tracker.get_window_app(other);
+                    const otherAppId = otherApp ? otherApp.get_id() : null;
+                    if (otherAppId !== targetAppId) {
+                        other._stageManaged = false;
+                        other._stageCardRect = null;
+                        other.minimize();
+                    }
+                }
+                window._stageManaged = false;
+                window._stageCardRect = null;
+            }
+            return this._origActivateWindow.call(Main, window, time, workspaceNum);
+        };
+
         if (this._isAreaClear() && !this._settings.get_boolean('sidebar-auto-hide'))
             this._show();
         else if (this._shouldForceShow())
@@ -492,6 +540,10 @@ class StageSidebar {
     }
 
     disable() {
+        if (this._origActivateWindow) {
+            Main.activateWindow = this._origActivateWindow;
+            this._origActivateWindow = null;
+        }
 
 
         this._killRefreshTimer();
@@ -844,12 +896,14 @@ class StageSidebar {
 
         const sf = this._scaleFactor;
         this._setOrientation(this._box, vertical);
-        this._box.x_align = Clutter.ActorAlign.CENTER;
+        this._box.x_align = this._POS === 'right' ? Clutter.ActorAlign.END : Clutter.ActorAlign.START;
         this._box.y_align = Clutter.ActorAlign.CENTER;
         this._box.x_expand = true;
         this._box.y_expand = true;
         this._box.set_style(vertical
-            ? `padding: ${Math.round(24 * sf)}px 0px; spacing: ${Math.round(10 * sf)}px;`
+            ? (this._POS === 'right'
+                ? `padding: ${Math.round(24 * sf)}px ${Math.round(4 * sf)}px ${Math.round(24 * sf)}px 0px; spacing: ${Math.round(10 * sf)}px;`
+                : `padding: ${Math.round(24 * sf)}px 0px ${Math.round(24 * sf)}px ${Math.round(4 * sf)}px; spacing: ${Math.round(10 * sf)}px;`)
             : `padding: 0px ${Math.round(24 * sf)}px; spacing: ${Math.round(10 * sf)}px;`);
         this._scroll.hscrollbar_policy = vertical ? St.PolicyType.NEVER : St.PolicyType.EXTERNAL;
         this._scroll.vscrollbar_policy = vertical ? St.PolicyType.EXTERNAL : St.PolicyType.NEVER;
@@ -1096,7 +1150,7 @@ class StageSidebar {
 
     _groupWindows(group) {
         return [...group.windows]
-            .filter(w => w.get_workspace() === group.ws)
+            .filter(w => w.get_workspace() === group.ws && w.minimized)
             .sort((a, b) => (b.get_user_time() || 0) - (a.get_user_time() || 0));
     }
 
@@ -1226,9 +1280,25 @@ class StageSidebar {
 
     _onWindowMap(win) {
         if (!_isNormal(win)) return;
+        if (!win._stageSwitching) {
+            const ws = win.get_workspace() || global.workspace_manager.get_active_workspace();
+            const tracker = Shell.WindowTracker.get_default();
+            const newApp = tracker.get_window_app(win);
+            const newAppId = newApp ? newApp.get_id() : null;
+            const openWins = ws ? ws.list_windows().filter(w =>
+                _isNormal(w) && !w.minimized && w !== win
+            ) : [];
+            for (const other of openWins) {
+                const otherApp = tracker.get_window_app(other);
+                const otherAppId = otherApp ? otherApp.get_id() : null;
+                if (otherAppId !== newAppId) {
+                    other._stageManaged = false;
+                    other._stageCardRect = null;
+                    other.minimize();
+                }
+            }
+        }
         if (this._settings.get_string('sidebar-mode') === 'groups') {
-
-
             const ws = win.get_workspace();
             if (ws) this._ensureActiveGroup(ws).windows.add(win);
         }
@@ -1341,6 +1411,10 @@ class StageSidebar {
                 this._expectMinimize.add(win);
 
                 const actor = win.get_compositor_private();
+                win._stageSwitching = true;
+                win._stageManaged = true;
+                win._stageCardRect = { x: cardX, y: cardY, width: cardW, height: cardH };
+
                 if (actor && rect && rect.width > 0 && rect.height > 0) {
                     const clone = new Clutter.Clone({ source: actor });
                     clone.set_position(rect.x, rect.y);
@@ -1362,12 +1436,17 @@ class StageSidebar {
                         opacity: 0,
                         duration: 300,
                         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                        onComplete: () => clone.destroy(),
+                        onComplete: () => {
+                            clone.destroy();
+                            win._stageSwitching = false;
+                        },
                     });
                 } else {
                     win.minimize();
+                    win._stageSwitching = false;
                 }
             } catch (_) {
+                win._stageSwitching = false;
                 win.minimize();
             }
         }
@@ -1379,6 +1458,10 @@ class StageSidebar {
                 const targetRect = this._savedLayouts.get(win) ?? win.get_frame_rect();
 
                 this._expectUnminimize.add(win);
+                win._stageSwitching = true;
+                win._stageManaged = true;
+                win._stageCardRect = { x: cardX, y: cardY, width: cardW, height: cardH };
+
                 if (win.minimized) win.unminimize();
                 if (targetRect && targetRect.width > 0 && targetRect.height > 0)
                     win.move_resize_frame?.(true, targetRect.x, targetRect.y, targetRect.width, targetRect.height);
@@ -1411,13 +1494,16 @@ class StageSidebar {
                         onComplete: () => {
                             clone.destroy();
                             actor.opacity = 255;
+                            win._stageSwitching = false;
                             if (i === 0) win.activate(global.get_current_time());
                         },
                     });
                 } else {
+                    win._stageSwitching = false;
                     if (i === 0) win.activate(global.get_current_time());
                 }
             } catch (_) {
+                win._stageSwitching = false;
                 if (win.minimized) win.unminimize();
                 if (i === 0) win.activate(global.get_current_time());
             }
@@ -1669,7 +1755,7 @@ class StageSidebar {
             for (let i = 0; i < wsm.get_n_workspaces(); i++) {
                 const ws = wsm.get_workspace_by_index(i);
                 if (!ws) continue;
-                const wins = ws.list_windows().filter(w => _isNormal(w) && w !== focused);
+                const wins = ws.list_windows().filter(w => _isNormal(w) && w !== focused && w.minimized);
                 parts.push(`${i}:${wins.map(winSig).join('.')}`);
             }
         } else {
@@ -1713,7 +1799,7 @@ class StageSidebar {
 
 
             const wins = ws.list_windows()
-                .filter(w => _isNormal(w) && w !== focused)
+                .filter(w => _isNormal(w) && w !== focused && w.minimized)
                 .sort((a, b) => (b.get_user_time() || 0) - (a.get_user_time() || 0));
             total += wins.length;
             if (wins.length === 0) continue;
@@ -1840,7 +1926,7 @@ class StageSidebar {
     _wrapCard() {
         const card = new St.BoxLayout({
             reactive: true,
-            x_align: Clutter.ActorAlign.CENTER,
+            x_align: this._POS === 'right' ? Clutter.ActorAlign.END : Clutter.ActorAlign.START,
             style_class: this._cls('stage-card'),
         });
 
@@ -2183,49 +2269,20 @@ class StageSidebar {
     _resetAllCardScales() {
         const base = this._BASE_SCALE;
         for (const card of this._cards) {
-            card.rotation_angle_y = 0;
-            card.rotation_angle_x = 0;
             card.ease({
                 scale_x: base, scale_y: base,
                 opacity: CARD_REST_OPACITY,
-                duration: 200,
+                duration: 150,
                 mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             });
-            this._applyPerspective(card, 1.0);
         }
     }
 
-
-
-    _applyBellCurve(hoveredIdx) {
-        const base = this._BASE_SCALE;
-        const maxScale = base * 1.12;
-
-        for (let i = 0; i < this._cards.length; i++) {
-            const card = this._cards[i];
-            const dist = Math.abs(i - hoveredIdx);
-            const factor = _bellCurve(dist, BELL_SIGMA);
-            const s = base + (maxScale - base) * factor;
-            const op = Math.round(
-                CARD_REST_OPACITY + (CARD_HOVER_OPACITY - CARD_REST_OPACITY) * factor);
-
-            card.rotation_angle_y = 0;
-            card.rotation_angle_x = 0;
-            card.ease({
-                scale_x: s, scale_y: s,
-                opacity: op,
-                duration: 180,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            });
-            this._applyPerspective(card, 1.0 - factor * 0.7);
-        }
+    _applyBellCurve(_hoveredIdx) {
+        // Bell-curve across cards disabled; individual card scaling used instead
     }
-
-
 
     _wireCardEvents(card, thumb, windows, cardIdx) {
-
-
         this._cardSig(card, 'scroll-event', (_actor, event) => this._onScrollEvent(event));
 
         this._cardSig(card, 'enter-event', () => {
@@ -2233,29 +2290,31 @@ class StageSidebar {
             this._killHideTimer();
             this._hoveredIdx = cardIdx;
 
-            this._applyBellCurve(cardIdx);
-
-
+            const base = this._BASE_SCALE;
+            card.ease({
+                scale_x: base * 1.05,
+                scale_y: base * 1.05,
+                opacity: CARD_HOVER_OPACITY,
+                duration: 150,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
 
             const front = thumb._frontLayer;
             if (front)
                 front.set_style_class_name(this._cls('stage-thumb-layer-front-hover'));
             card.set_style_class_name(this._cls('stage-card', 'stage-card-hover'));
-
-
-            this._killHoverTimer();
-            this._hoverTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 220, () => {
-                this._untrackTimer(this._hoverTimer); this._hoverTimer = null;
-                this._showPreview(card, windows);
-                return GLib.SOURCE_REMOVE;
-            });
-            this._timers.push(this._hoverTimer);
         });
 
         this._cardSig(card, 'leave-event', (_actor, event) => {
             this._hoveredIdx = -1;
-            this._resetAllCardScales();
-
+            const base = this._BASE_SCALE;
+            card.ease({
+                scale_x: base,
+                scale_y: base,
+                opacity: CARD_REST_OPACITY,
+                duration: 150,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
 
             const front = thumb._frontLayer;
             if (front)
@@ -2264,8 +2323,6 @@ class StageSidebar {
 
             this._killHoverTimer();
             this._destroyPreview();
-
-
 
             if (!this._insidePanel(this._crossingRelated(event))) {
                 this._hovered = false;
@@ -2279,128 +2336,12 @@ class StageSidebar {
 
 
 
-    _showPreview(card, windows) {
+    _showPreview(_card, _windows) {
         this._destroyPreview();
-
-        const mon = _getMon();
-        const topH = Main.panel ? Main.panel.height : 0;
-        const [cardX, cardY] = card.get_transformed_position();
-
-
-        const cloneable = windows.filter(w => !!w.get_compositor_private());
-
-        if (cloneable.length === 0) {
-            this._showIconPreview(windows, cardX, cardY);
-            return;
-        }
-
-
-
-        const sf = this._scaleFactor;
-        const maxPreviewW = Math.min(mon.width * 0.32, 500 * sf);
-        const padding = 8 * sf;
-        const gap = 6 * sf;
-        const shown = Math.min(cloneable.length, 4);
-        const maxWinH = (mon.height * 0.45 - padding * 2 - gap * (shown - 1)) / shown;
-        const clones = [];
-        let maxCloneW = 0;
-        let totalH = padding * 2;
-
-        for (const w of cloneable.slice(0, 4)) {
-
-
-            const holder = this._makeWindowClone(w, maxPreviewW - padding * 2, maxWinH, 1.0);
-            if (!holder) continue;
-            clones.push(holder);
-            totalH += holder.height + gap;
-            maxCloneW = Math.max(maxCloneW, holder.width);
-        }
-
-        if (clones.length === 0) {
-            this._showIconPreview(windows, cardX, cardY);
-            return;
-        }
-
-        totalH -= gap;
-        const previewW = maxCloneW + padding * 2;
-        const previewH = totalH;
-
-        this._preview = new St.Widget({
-            style_class: this._cls('stage-preview'),
-            reactive: false,
-        });
-        this._preview.set_size(previewW, previewH);
-        this._preview.set_position(
-            ...this._previewPos(mon, topH, previewW, previewH, 8 * sf, cardX, cardY));
-
-        let yOff = padding;
-        for (const holder of clones) {
-            holder.set_position(padding + (maxCloneW - holder.width) / 2, yOff);
-            this._preview.add_child(holder);
-            yOff += holder.height + gap;
-        }
-
-        Main.layoutManager.addChrome(this._preview, { trackFullscreen: false });
-        this._preview.set_opacity(0);
-        this._preview.ease({ opacity: 255, duration: 150, mode: Clutter.AnimationMode.EASE_OUT_QUAD });
     }
 
-
-    _showIconPreview(windows, cardX, cardY) {
-        const tracker = Shell.WindowTracker.get_default();
-        const mon = _getMon();
-        const topH = Main.panel ? Main.panel.height : 0;
-        const sf = this._scaleFactor;
-
-        const previewW = 220 * sf;
-        const previewH = 160 * sf;
-
-        this._preview = new St.Widget({
-            style_class: this._cls('stage-preview'),
-            reactive: false,
-        });
-        this._preview.set_size(previewW, previewH);
-        this._preview.set_position(
-            ...this._previewPos(mon, topH, previewW, previewH, 8, cardX, cardY));
-
-        const seenApps = new Map();
-        for (const w of windows) {
-            const app = tracker.get_window_app(w);
-            if (app && !seenApps.has(app.get_id())) seenApps.set(app.get_id(), app);
-        }
-
-        let yOff = 14 * sf;
-        const names = [...seenApps.values()].map(a => a.get_name()).join(', ');
-        const title = new St.Label({
-            text: names || _('Application'),
-            style_class: this._cls('stage-preview-title'),
-        });
-        title.set_position(14 * sf, yOff);
-        title.set_width(previewW - 28 * sf);
-        this._preview.add_child(title);
-        yOff += 28 * sf;
-
-        let xOff = 14 * sf;
-        const iconStep = 56 * sf;
-        const iconPx = 48 * sf;
-        for (const [, app] of seenApps) {
-            const icon = app.create_icon_texture(48);
-            icon.set_position(xOff, yOff);
-            this._preview.add_child(icon);
-            xOff += iconStep;
-            if (xOff + iconPx > previewW) { xOff = 14 * sf; yOff += iconStep; }
-        }
-
-        this._preview.add_child(new St.Label({
-            text: ngettext('%d window (minimized)', '%d windows (minimized)', windows.length)
-                .replace('%d', `${windows.length}`),
-            style_class: this._cls('stage-preview-meta'),
-            x: 14 * sf, y: previewH - 24 * sf,
-        }));
-
-        Main.layoutManager.addChrome(this._preview, { trackFullscreen: false });
-        this._preview.set_opacity(0);
-        this._preview.ease({ opacity: 255, duration: 150, mode: Clutter.AnimationMode.EASE_OUT_QUAD });
+    _showIconPreview(_windows, _cardX, _cardY) {
+        this._destroyPreview();
     }
 
     _destroyPreview() {

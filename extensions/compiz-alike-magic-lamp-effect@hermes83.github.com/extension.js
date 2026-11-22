@@ -34,6 +34,12 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { SettingsData } from './settings_data.js';
 
 function dockIconRect(win) {
+    if (win?._stageManaged) {
+        if (win._stageCardRect) return win._stageCardRect;
+        const mon = Main.layoutManager.monitors[win.get_monitor()] ?? Main.layoutManager.primaryMonitor;
+        return {x: mon.x + 8, y: mon.y + mon.height / 2 - 40, width: 120, height: 80};
+    }
+
     const [ok, rect] = win.get_icon_geometry();
     if (ok && rect.width > 0 && rect.height > 0)
         return rect;
@@ -69,6 +75,18 @@ export default class CompizMagicLampEffectExtension extends Extension {
             return;
 
         const win = actor.meta_window;
+        if (win?._stageSwitching) {
+            if (minimizing) {
+                Main.wm._minimizeWindowDone(wm, actor);
+            } else {
+                Main.wm._unminimizeWindowDone(wm, actor);
+                const rect = win.get_buffer_rect();
+                if (rect.width > 0 && rect.height > 0)
+                    actor.set_position(rect.x, rect.y);
+            }
+            return;
+        }
+
         const rect = win.get_buffer_rect();
         const icon = dockIconRect(win);
         if (rect.width <= 0 || rect.height <= 0) return;

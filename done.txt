@@ -3585,3 +3585,41 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [extensions/stage-manager@gnome-stage-manager/stylesheet.css](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/stylesheet.css)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+
+### Завдання №884: Stage Manager — оптимізація відображення (тільки згорнуті вікна), усунення дублювання анімацій з Compiz Magic Lamp, логіка згортання в Stage/Dock, очищення hover та наближення панелі
+- Дата: 2026-11-22
+- Мета:
+  1) Відображати у Stage Manager лише згорнуті програми (якщо вікно відкрите на робочому столі, воно не повинно продублюватися у стейджі).
+  2) Усунути 4-кратне дублювання анімацій (одночасне спрацьовування Compiz Magic Lamp до доку та клонування Stage Manager).
+  3) Забезпечити логіку згортання: програма, відкрита через Stage Manager, при натисканні жовтої кнопки згортається у Stage Manager (а не в док); програма, відкрита через док — згортається в док. При відкритті з доку попереднє вікно синхронно згортається в док.
+  4) Очистити поведінку Hover: видалити великий виринаючий передогляд праворуч, видалити обертання вікна, залишити легке збільшення (на 5%) лише однієї картки, на якій стоїть курсор, без руху сусідніх карток.
+  5) Змістити мініатюри Stage Manager ближче до лівого краю екрана.
+  6) Зменшити відступ/зону виявлення перекриття вікном (щоб стейдж згортався лише тоді, коли вікно пересунуто ближче до панелі).
+- Реалізовані зміни:
+  1) Фільтрація тільки згорнутих вікон (extensions/stage-manager@gnome-stage-manager/extension.js):
+     * У _groupByApp додано перевірку if (!win.minimized) continue;, у _groupWindows та _refreshAllWindows — фільтр w.minimized. Відкриті на екрані вікна більше не з'являються у списку стейджів.
+  2) Усунення дублювання анімацій та інтеграція з Compiz (extensions/compiz-alike-magic-lamp-effect@hermes83.github.com/extension.js & stage-manager):
+     * Додано прапорець win._stageSwitching = true під час switch у Stage Manager; Compiz Magic Lamp перевіряє цей прапорець і миттєво завершує WM-запит без запуску лампової анімації до доку.
+     * У Compiz функція dockIconRect(win) тепер перевіряє win._stageManaged: якщо програма керована Stage Manager, Compiz спрямовує ламповий ефект до координат картки Stage Manager на лівому краї екрана.
+  3) Синхронне перемикання через Док:
+     * Додано перехоплення Main.activateWindow та обробку _onWindowMap: при відкритті/активації вікна через док інші відкриті вікна плавно згортаються в док, а нове відкривається з доку без зайвих клонів.
+  4) Очищення Hover:
+     * Функції _showPreview та _showIconPreview переведено у no-op, прибрано 220ms таймер виклику великого передогляду.
+     * Замість _applyBellCurve запроваджено масштабування лише hovered картки (scale_x: base * 1.05, scale_y: base * 1.05) без жодного оберту (rotation_angle_y та 3D-перспектива залишаються статичними).
+  5) Позиціонування ближче до лівого краю:
+     * _box.x_align = Clutter.ActorAlign.START та padding 4px зліва, _wrapCard x_align = START.
+  6) Зменшення зони перекриття:
+     * У _isAreaClear() координати колізії розраховуються строго за межами карток + 8px замість фіксованої ширини всієї панелі (220px).
+  7) Оновлення контрольних сум та синхронізація:
+     * Оновлено sha256 у config/extensions.lock.json.
+     * Синхронізовано до ~/.local/share/gnome-shell/extensions/.
+     * Усі 5 верифікаційних тестів пройшли на 100%: mac-extension-guard (21/21), mac-audit-sync (5/5), test-macw1y-animations (12/12), unittests (39/39), mac-i18n-verify.
+     * 0 кириличних символів в install.sh.
+
+- Зачеплені файли:
+  * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
+  * [extensions/compiz-alike-magic-lamp-effect@hermes83.github.com/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/compiz-alike-magic-lamp-effect@hermes83.github.com/extension.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
