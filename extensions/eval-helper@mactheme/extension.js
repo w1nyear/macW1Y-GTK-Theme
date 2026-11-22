@@ -5492,6 +5492,10 @@ export default class EvalHelper extends Extension {
                 entry.effect.straight_corners = false;
                 entry.effect.radius = currentRadius;
 
+                if (typeof entry.effect.detach_actor_clip_sync === 'function') {
+                    entry.effect.detach_actor_clip_sync(entry.actor);
+                }
+
                 let frame = null, buffer = null;
                 try {
                     frame = win?.get_frame_rect?.();
@@ -5566,6 +5570,9 @@ export default class EvalHelper extends Extension {
                 effect.enabled = !isFs;
 
                 actor.add_effect_with_name('mac-forced-corner-effect', effect);
+                if (typeof effect.detach_actor_clip_sync === 'function') {
+                    effect.detach_actor_clip_sync(actor);
+                }
 
                 const entry = { actor, effect, signals: [], actorSignal: null, actorDestroyId: null };
 

@@ -183,6 +183,25 @@ const CornerEffectClass = utils.IS_IN_PREFERENCES ? null : class CornerEffect ex
 
         sync_actor_clip(actor) {
             this.detach_actor_clip_sync(actor);
+            const win = actor?.meta_window;
+            if (win) {
+                const updateClip = () => {
+                    try {
+                        const frame = win.get_frame_rect?.();
+                        const buf = win.get_buffer_rect?.();
+                        if (frame && buf && frame.width > 0 && frame.height > 0) {
+                            const cx = Math.max(0, frame.x - buf.x);
+                            const cy = Math.max(0, frame.y - buf.y);
+                            this.clip = [cx, cy, frame.width, frame.height];
+                            return;
+                        }
+                    } catch (_) {}
+                    this.clip = actor.has_clip ? actor.get_clip() : [0, 0, -10, -10];
+                };
+                updateClip();
+                this._actor_connection_clip_rect_id = actor.connect('notify::clip-rect', updateClip);
+                return;
+            }
             this.clip = actor.has_clip ? actor.get_clip() : [0, 0, -10, -10];
             this._actor_connection_clip_rect_id = actor.connect('notify::clip-rect', _ => {
                 this.clip = actor.has_clip ? actor.get_clip() : [0, 0, -10, -10];

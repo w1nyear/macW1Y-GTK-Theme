@@ -3892,3 +3892,18 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [extensions/kiwi@kemma/apps/labelBlur.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/labelBlur.js)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+894. Оптимізація Stage Manager (плавне 60/120 FPS перемикання вікон, посадка у верхній слот, зміщення ліворуч, 26° 3D-поворот) та відновлення жорсткого заокруглення вікон:
+  - Плавне 60/120 FPS перемикання без фризів: заблоковано небажані проміжні виклики _refresh(), _scheduleRefresh(), _checkOverlap(), _onWindowMinimize() та _onWindowUnminimize() під час активної анімації (this._isSwitching), що раніше знищували DOM бічної панелі на 80-й мілісекунді та спричиняли ефект «10 FPS».
+  - Точна посадка у слот 0: вікно, що згортається з робочого столу при перемиканні або мінімізації, тепер летить строго у верхній слот (slot0Y) бічної панелі Stage Manager, а картки зверху плавно зсуваються вниз, усуваючи помилкове складання вниз стейджа або перестрибування.
+  - Розміщення впритул до лівого краю: змінено x_align на Clutter.ActorAlign.START у _box, встановлено опорну точку карток на лівий край (pivotX: 0.0), зменшено бічні відступи та наближено панель до самого краю екрана (x: 2px, картки x: 2px).
+  - Посилений 3D-нахил по осі Y (26°): збільшено кут повороту до 26° з пропорційним масштабуванням scale_z, що забезпечує чіткий естетичний 3D-вигляд карток у стилі macOS без розтягування пропорцій та виходу за межі панелі.
+  - Відновлення стабільного заокруглення вікон: у extensions/blur-my-shell@aunetx/effects/corner.js метод sync_actor_clip тепер автоматично прив'язує clip прямокутника до win.get_frame_rect() відносно буфера вікна, а в eval-helper@mactheme від'єднано notify::clip-rect від скидання кліпу в [0, 0, -10, -10], відновлюючи ідеально однакове та жорстке заокруглення кутів (radius 24px) для всіх вікон.
+  - Оновлено хеші цілісності в config/extensions.lock.json та /usr/share/mactheme/config/extensions.lock.json. Усі 21/21 розширень успішно верифіковані (mac-extension-guard: PASS), mac-audit-sync: 100% PASS, test-macw1y-animations: 12/12 PASS, тести test_*.py: 39/39 PASS.
+- Зачеплені файли:
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [extensions/blur-my-shell@aunetx/effects/corner.js](file:///home/vitaliy/MACTHEMEFILES/extensions/blur-my-shell@aunetx/effects/corner.js)
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

@@ -93,11 +93,11 @@ function _groupByApp(workspace, focusedWindow, mergeMap = new Map()) {
         (b.get_user_time() || 0) - (a.get_user_time() || 0)
     );
 
-    const openWins = allWins.filter(w => !w.minimized);
+    const openWins = allWins.filter(w => !w.minimized && !w._isMinimizing);
     const openAppIds = new Set(openWins.map(w => tracker.get_window_app(w)?.get_id()).filter(Boolean));
 
     for (const win of sorted) {
-        if (!win.minimized) continue;
+        if (!win.minimized && !win._isMinimizing) continue;
         const app = tracker.get_window_app(win);
         if (!app) continue;
         const id = app.get_id();
@@ -472,7 +472,7 @@ class StageSidebar {
     }
     _panelVisiblePos(mon, topH) {
         if (!this._VERTICAL) return [mon.x, mon.y + mon.height - this._PANEL_W];
-        return [this._POS === 'right' ? mon.x + mon.width - this._PANEL_W : mon.x, mon.y + topH];
+        return [this._POS === 'right' ? mon.x + mon.width - this._PANEL_W : mon.x + 2, mon.y + topH];
     }
     _panelHiddenPos(mon, topH) {
         if (!this._VERTICAL) return [mon.x, mon.y + mon.height];
@@ -658,7 +658,7 @@ class StageSidebar {
         this._box = new St.BoxLayout({
             reactive: true,
             clip_to_allocation: false,
-            x_align: Clutter.ActorAlign.CENTER,
+            x_align: this._POS === 'right' ? Clutter.ActorAlign.END : Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
             y_expand: true,
@@ -840,7 +840,7 @@ class StageSidebar {
         }
         const pivotX = (this._POS === 'right') ? 1.0 : 0.0;
         box.set_pivot_point(pivotX, 0.5);
-        box.rotation_angle_y = this._ROT_SIGN * 10 * factor;
+        box.rotation_angle_y = this._ROT_SIGN * 26 * factor;
     }
 
 
@@ -1167,8 +1167,15 @@ class StageSidebar {
     _getInactiveGroups() {
         const ws = this._activeWs();
         const activeId = this._activeIds.get(ws);
-        return this._groups.filter(g =>
-            g.ws === ws && g.id !== activeId && this._groupWindows(g).length > 0);
+        return this._groups
+            .filter(g => g.ws === ws && g.id !== activeId && this._groupWindows(g).length > 0)
+            .sort((a, b) => {
+                const aWins = this._groupWindows(a);
+                const bWins = this._groupWindows(b);
+                const aTime = aWins[0] ? (aWins[0].get_user_time() || 0) : 0;
+                const bTime = bWins[0] ? (bWins[0].get_user_time() || 0) : 0;
+                return bTime - aTime;
+            });
     }
 
 
@@ -1281,34 +1288,14 @@ class StageSidebar {
         const bufRect = win.get_buffer_rect();
         const actor = win.get_compositor_private();
         if (actor && rect && rect.width > 0 && rect.height > 0) {
+            this._isSwitching = true;
             const mon = _getMon();
             const topH = Main.panel ? Main.panel.height : 0;
             const sf = this._scaleFactor || 1;
             const cardW = 140 * sf;
             const cardH = 90 * sf;
-            const cardX = this._POS === 'right' ? (mon.x + mon.width - 200 * sf) : (mon.x + 24 * sf);
-
-            let cardY;
-            if (this._cards && this._cards.length > 0) {
-                let totalH = cardH;
-                for (const c of this._cards) {
-                    const [, ch] = c.get_transformed_size();
-                    totalH += (ch || (cardH + 30 * sf)) + 10 * sf;
-                }
-                const availH = mon.height - topH;
-                cardY = mon.y + topH + Math.max(10 * sf, Math.round((availH - totalH) / 2));
-
-                const shiftY = Math.round((cardH + 10 * sf) / 2);
-                for (const c of this._cards) {
-                    c.ease({
-                        translation_y: shiftY,
-                        duration: 280,
-                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                    });
-                }
-            } else {
-                cardY = Math.round(mon.y + topH + (mon.height - topH - cardH) / 2);
-            }
+            const spacing = 10 * sf;
+            const cardX = this._POS === 'right' ? (mon.x + mon.width - cardW - 4 * sf) : (mon.x + 4 * sf);
 
             const winW = (bufRect && bufRect.width > 0) ? bufRect.width : rect.width;
             const winH = (bufRect && bufRect.height > 0) ? bufRect.height : rect.height;
@@ -1328,9 +1315,12 @@ class StageSidebar {
             Main.uiGroup.add_child(clone);
             this._activeClones?.add(clone);
 
-            // Pre-refresh Stage Manager so destination card is created and positioned
+            // Pre-refresh Stage Manager so destination card is created at the top
+            win._isMinimizing = true;
             this._signature = null;
             this._refresh();
+            win._isMinimizing = false;
+
             const targetCard = this._cards.find(c => {
                 if (c._windows && c._windows.includes(win)) return true;
                 if (c._group?.windows) {
@@ -1338,27 +1328,26 @@ class StageSidebar {
                     if (c._group.windows.has && c._group.windows.has(win)) return true;
                 }
                 return false;
-            });
-            if (targetCard) {
-                targetCard.opacity = 0;
-                try {
-                    let targetActor = targetCard._thumb?._frontLayer ?? targetCard._thumb?._previewBox ?? targetCard._thumb ?? targetCard;
-                    if (targetActor.get_children?.().length > 0)
-                        targetActor = targetActor.get_children()[0];
-                    const [cx, cy] = targetActor.get_transformed_position();
-                    const [cw, ch] = targetActor.get_transformed_size();
-                    if (cw > 0 && ch > 0) {
-                        cardX = cx; cardY = cy; cardW = cw; cardH = ch;
-                    }
-                } catch (_) {}
-            }
+            }) ?? (this._cards.length > 0 ? this._cards[0] : null);
+
+            let targetIdx = targetCard ? this._cards.indexOf(targetCard) : 0;
+            if (targetIdx === -1) targetIdx = 0;
+
+            const nCards = Math.max(1, this._cards.length);
+            const totalH = nCards * cardH + (nCards - 1) * spacing;
+            const availH = mon.height - topH;
+            const startY = mon.y + topH + Math.max(10 * sf, Math.round((availH - totalH) / 2));
+            const cardY = startY + targetIdx * (cardH + spacing);
+
+            if (targetCard) targetCard.opacity = 0;
 
             // Animate other cards moving down to make room for targetCard
             if (this._cards && this._cards.length > 1) {
-                const shiftY = Math.round((cardH + 10 * sf) / 2);
-                for (const c of this._cards) {
-                    if (c !== targetCard) {
-                        c.translation_y = -shiftY;
+                for (let i = 0; i < this._cards.length; i++) {
+                    if (i === targetIdx) continue;
+                    const c = this._cards[i];
+                    if (i > targetIdx) {
+                        c.translation_y = -(cardH + spacing);
                         c.ease({
                             translation_x: 0,
                             translation_y: 0,
@@ -1381,7 +1370,7 @@ class StageSidebar {
                 scale_x: destScale,
                 scale_y: destScale,
                 scale_z: destScale,
-                rotation_angle_y: this._ROT_SIGN * 10,
+                rotation_angle_y: this._ROT_SIGN * 26,
                 opacity: 255,
                 duration: 280,
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
@@ -1389,6 +1378,7 @@ class StageSidebar {
                     if (targetCard) targetCard.opacity = 255;
                     clone.destroy();
                     this._activeClones?.delete(clone);
+                    this._isSwitching = false;
                 },
             });
         } else {
@@ -1584,6 +1574,14 @@ class StageSidebar {
             }) ?? null;
         }
 
+        const mon = _getMon();
+        const topH = Main.panel ? Main.panel.height : 0;
+        const sf = this._scaleFactor || 1;
+        const stdCardW = 140 * sf;
+        const stdCardH = 90 * sf;
+        const spacing = 10 * sf;
+        const stageCardX = this._POS === 'right' ? (mon.x + mon.width - stdCardW - 4 * sf) : (mon.x + 4 * sf);
+
         let cardX, cardY, cardW, cardH;
         if (card) {
             try {
@@ -1597,22 +1595,34 @@ class StageSidebar {
             card.opacity = 0;
         }
         if (!cardX || !cardW || cardW <= 0) {
-            const mon = _getMon();
-            const topH = Main.panel ? Main.panel.height : 0;
-            const sf = this._scaleFactor || 1;
-            cardX = this._POS === 'right' ? (mon.x + mon.width - 200 * sf) : (mon.x + 24 * sf);
+            cardX = stageCardX;
             cardY = Math.round(mon.y + topH + (mon.height - topH) / 2 - 50 * sf);
-            cardW = 140 * sf; cardH = 90 * sf;
+            cardW = stdCardW; cardH = stdCardH;
         }
 
-        // If unfolding from an empty desktop, remaining cards smoothly slide to re-center
-        if (activeWins.length === 0 && card && this._cards && this._cards.length > 1) {
-            const sf = this._scaleFactor || 1;
-            const shiftY = Math.round((cardH + 10 * sf) / 2);
-            const targetIdx = this._cards.indexOf(card);
+        // When switching, the active window folds into the TOP slot (slot 0) of Stage Manager,
+        // while the clicked card unfolds onto the desktop.
+        const nCards = Math.max(1, this._cards ? this._cards.length : 1);
+        const totalH = nCards * stdCardH + (nCards - 1) * spacing;
+        const availH = mon.height - topH;
+        const slot0Y = mon.y + topH + Math.max(10 * sf, Math.round((availH - totalH) / 2));
+
+        const targetIdx = card ? this._cards.indexOf(card) : -1;
+        if (this._cards && this._cards.length > 0) {
             for (let i = 0; i < this._cards.length; i++) {
                 const c = this._cards[i];
-                if (c !== card) {
+                if (c === card) continue;
+                if (activeWins.length > 0) {
+                    if (targetIdx !== -1 && i < targetIdx) {
+                        c.ease({
+                            translation_x: 0,
+                            translation_y: stdCardH + spacing,
+                            duration: 280,
+                            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                        });
+                    }
+                } else {
+                    const shiftY = Math.round((stdCardH + spacing) / 2);
                     const dir = (targetIdx !== -1 && i < targetIdx) ? 1 : -1;
                     c.ease({
                         translation_x: 0,
@@ -1624,7 +1634,12 @@ class StageSidebar {
             }
         }
 
-        // 1. Fold active windows from desktop into Stage Manager sidebar
+        // 1. Fold active windows from desktop into Stage Manager sidebar at slot 0
+        const foldW = (cardW > 0) ? cardW : stdCardW;
+        const foldH = (cardH > 0) ? cardH : stdCardH;
+        const foldDestX = stageCardX;
+        const foldDestY = slot0Y;
+
         for (const win of activeWins) {
             try {
                 const rect = win.get_frame_rect();
@@ -1641,7 +1656,7 @@ class StageSidebar {
                 const actor = win.get_compositor_private();
                 win._stageSwitching = true;
                 win._stageManaged = true;
-                win._stageCardRect = { x: cardX, y: cardY, width: cardW, height: cardH };
+                win._stageCardRect = { x: foldDestX, y: foldDestY, width: foldW, height: foldH };
 
                 const winW = (bufRect && bufRect.width > 0) ? bufRect.width : rect.width;
                 const winH = (bufRect && bufRect.height > 0) ? bufRect.height : rect.height;
@@ -1663,11 +1678,11 @@ class StageSidebar {
                     Main.uiGroup.add_child(clone);
                     this._activeClones.add(clone);
 
-                    const destScale = Math.min(cardW / winW, cardH / winH);
+                    const destScale = Math.min(foldW / winW, foldH / winH);
                     const fitW = winW * destScale;
                     const fitH = winH * destScale;
-                    const destX = cardX + Math.round((cardW - fitW) / 2);
-                    const destY = cardY + Math.round((cardH - fitH) / 2);
+                    const destX = foldDestX + Math.round((foldW - fitW) / 2);
+                    const destY = foldDestY + Math.round((foldH - fitH) / 2);
 
                     clone.ease({
                         x: destX,
@@ -1675,7 +1690,7 @@ class StageSidebar {
                         scale_x: destScale,
                         scale_y: destScale,
                         scale_z: destScale,
-                        rotation_angle_y: this._ROT_SIGN * 10,
+                        rotation_angle_y: this._ROT_SIGN * 26,
                         opacity: 255,
                         duration: 280,
                         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
@@ -1750,7 +1765,7 @@ class StageSidebar {
                     clone.scale_z = startScale;
                     const pivotX = (this._POS === 'right') ? 1.0 : 0.0;
                     clone.set_pivot_point(pivotX, 0.5);
-                    clone.rotation_angle_y = this._ROT_SIGN * 10;
+                    clone.rotation_angle_y = this._ROT_SIGN * 26;
                     clone.opacity = 255;
                     Main.uiGroup.add_child(clone);
                     this._activeClones.add(clone);
@@ -1945,21 +1960,20 @@ class StageSidebar {
     }
 
     _scheduleRefresh() {
-
-
+        if (this._isSwitching) return;
         if (this._refreshTimer) { GLib.source_remove(this._refreshTimer); this._untrackTimer(this._refreshTimer); this._refreshTimer = null; }
         this._refreshTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 200, () => {
             this._untrackTimer(this._refreshTimer); this._refreshTimer = null;
+            if (this._isSwitching) return;
             if (this._visible && !this._hovered) this._refresh();
             return GLib.SOURCE_REMOVE;
         });
         this._timers.push(this._refreshTimer);
     }
 
-
-
     _refresh() {
         if (!this._box) return;
+        if (this._isSwitching) return;
 
 
 
@@ -2121,7 +2135,8 @@ class StageSidebar {
         card.add_child(thumb);
         card._thumb = thumb;
 
-        card.set_pivot_point(0.5, 0.5);
+        const pivotX = (this._POS === 'right') ? 1.0 : 0.0;
+        card.set_pivot_point(pivotX, 0.5);
         this._applyPerspective(card, 1.0);
         const idx = this._cards.length;
         this._wireCardEvents(card, thumb, windows, idx);
@@ -2237,7 +2252,8 @@ class StageSidebar {
         card.add_child(thumb);
         card._thumb = thumb;
 
-        card.set_pivot_point(0.5, 0.5);
+        const pivotX = (this._POS === 'right') ? 1.0 : 0.0;
+        card.set_pivot_point(pivotX, 0.5);
         this._applyPerspective(card, 1.0);
 
         const idx = this._cards.length;
@@ -2262,7 +2278,8 @@ class StageSidebar {
         card.add_child(thumb);
         card._thumb = thumb;
 
-        card.set_pivot_point(0.5, 0.5);
+        const pivotX = (this._POS === 'right') ? 1.0 : 0.0;
+        card.set_pivot_point(pivotX, 0.5);
         this._applyPerspective(card, 1.0);
         const idx = this._cards.length;
         this._wireCardEvents(card, thumb, windows, idx);
@@ -2312,6 +2329,8 @@ class StageSidebar {
             const inner = new St.Widget({
                 reactive: false,
                 content: geom.content,
+                width: w,
+                height: h,
             });
             inner.set_content_gravity?.(Clutter.ContentGravity.RESIZE_FILL);
             inner.set_size(w, h);
@@ -2319,10 +2338,13 @@ class StageSidebar {
         }
 
         if (geom.actor) {
-            const clone = new Clutter.Clone({ source: geom.actor, reactive: false });
-            clone.set_size(aw, ah);
-            clone.set_pivot_point(0, 0);
-            clone.set_scale(scale, scale);
+            const clone = new Clutter.Clone({
+                source: geom.actor,
+                reactive: false,
+                width: w,
+                height: h,
+            });
+            clone.set_size(w, h);
             return clone;
         }
 
@@ -2436,9 +2458,13 @@ class StageSidebar {
         const totalH = (layers - 1) * sh;
         const totalV = (layers - 1) * sv;
         const container = new St.Widget({ reactive: false, clip_to_allocation: false });
+        container.width = tw + totalH;
+        container.height = th + totalV;
         container.set_size(tw + totalH, th + totalV);
 
         const previewBox = new St.Widget({ reactive: false, clip_to_allocation: false });
+        previewBox.width = tw + totalH;
+        previewBox.height = th + totalV;
         previewBox.set_size(tw + totalH, th + totalV);
         container.add_child(previewBox);
         container._previewBox = previewBox;
@@ -2546,7 +2572,8 @@ class StageSidebar {
             }));
         }
 
-        card.set_pivot_point(0.5, 0.5);
+        const pivotX = (this._POS === 'right') ? 1.0 : 0.0;
+        card.set_pivot_point(pivotX, 0.5);
         this._applyPerspective(card, 1.0);
         const idx = this._cards.length;
         this._wireCardEvents(card, thumb, wins, idx);
@@ -3140,7 +3167,8 @@ class ArcSidebar {
                 clip_to_allocation: true,
                 style: `border-radius: ${r}px;`,
             });
-            card.set_pivot_point(0.5, 0.5);
+            const pivotX = (this._POS === 'right') ? 1.0 : 0.0;
+        card.set_pivot_point(pivotX, 0.5);
 
             if (actor)
                 card.add_child(new Clutter.Clone({ source: actor, width: cW, height: cH }));
