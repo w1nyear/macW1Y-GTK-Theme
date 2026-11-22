@@ -2597,9 +2597,11 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
     }
 
 
-    effect.setSurfaceLightEnabled(true);
+    effect.setSurfaceLightEnabled(!pure);
     try {
         if (pure) {
+            effect.setSurfaceLightEnabled(false);
+            effect._setFloat('surface_light_enabled', 0.0);
             effect._setFloat('sheen_intensity', 0);
             effect._setFloat('rim_intensity', 0);
 
@@ -2613,6 +2615,8 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
             effect._setFloat('chroma_strength', 0);
             effect._setFloat('edge_smoothing', edgePx > 0 ? edgePx : BACKDROP_PAD);
         } else {
+            effect.setSurfaceLightEnabled(true);
+            effect._setFloat('surface_light_enabled', 1.0);
             effect._setFloat('sheen_intensity', _qsGlassGlare() * 0.6);
             effect._setFloat('rim_intensity', _qsInt('tahoe-qs-rim-intensity', 8) / 100);
             effect._setFloat('rim_width', _qsInt('tahoe-qs-rim-width', 50) / 10);

@@ -4074,3 +4074,17 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+904. Видалення відблисків скла (specular edge highlights) на фоні розмиття Центру керування (Control Center backdrop):
+  - Виявлено першопричину появи яскравих білих смуг відблисків зверху та знизу на розмитому фоні Центру керування: шейдер liquid-glass (glass.frag) містить дирекційні контурні підсвічування (Directional Glass Edge Highlights & Specular Borders), де біла лінія та внутрішній перелив whiteBorder генеруються з інтенсивністю 0.48 зверху та 0.28 знизу. У модулях tahoeControlCenter.js, tahoeQuickSettings.js та tahoeNotifications.js функція _makeGlassStack безумовно вмикала освітлення поверхні (effect.setSurfaceLightEnabled(true)) для всіх скляних стеків, не вимикаючи його для чистого розмиття фону (pure === true, група 'backdrop').
+  - Виправлено конфігурацію скляного стеку фону: для pure-стеків (заднього фону Центру керування та Центру сповіщень) surface_light_enabled тепер примусово вимикається (effect.setSurfaceLightEnabled(!pure) та effect._setFloat('surface_light_enabled', 0.0)). При цьому для внутрішніх елементів і плиток (Wi-Fi, Bluetooth, Режим, аудіоплеєр, повзунки яскравості/гучності тощо) автентичні скляні фаски та відблиски збережено в повному обсязі.
+  - Посилено захист у шейдері glass.frag: затемнення бічних граней (darkBorder) також прив'язано до множника surface_light_enabled, що гарантує абсолютно чисте, монолітне матове розмиття фону без сторонніх градієнтів чи крайових артефактів при вимкненому освітленні.
+  - Оновлено хеші цілісності в config/extensions.lock.json для розширень kiwi@kemma та liquid-glass@thinkingcoding1231.gmail.com.
+  - 100% проходження верифікаційних сценаріїв: mac-extension-guard verify (21/21 pinned lock hashes), mac-audit-sync check (100% PASS), test-macw1y-animations.py (12/12 100%), модульні тести (39/39 OK), 0 кириличних символів в install.sh.
+  * [extensions/kiwi@kemma/apps/tahoeControlCenter.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeControlCenter.js)
+  * [extensions/kiwi@kemma/apps/tahoeQuickSettings.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeQuickSettings.js)
+  * [extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotifications.js)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

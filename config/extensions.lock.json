@@ -273,7 +273,7 @@
         "50",
         "51"
       ],
-      "sha256": "0fa6df793ce29c1d52f14022900cc20317f230d480e974db205cebc2542a7c7c",
+      "sha256": "24fe47e28aea2160c634b585b4607830e6a332fbeb925d51dd4367abda0112a4",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -285,11 +285,11 @@
       ],
       "has_custom_patches": true,
       "patch_description": "macW1Y Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macW1Y Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macW1Y Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macW1Y horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
-      "last_verified": "2026-11-09",
-      "integrity_hash": "96c5d02e77c698cc5c7202800395c89b4ad73fe57990049703f083a91027415a",
-      "pinned_sha256": "96c5d02e77c698cc5c7202800395c89b4ad73fe57990049703f083a91027415a",
-      "expected_hash": "96c5d02e77c698cc5c7202800395c89b4ad73fe57990049703f083a91027415a",
-      "dir_hash": "96c5d02e77c698cc5c7202800395c89b4ad73fe57990049703f083a91027415a"
+      "last_verified": "2026-11-22",
+      "integrity_hash": "24fe47e28aea2160c634b585b4607830e6a332fbeb925d51dd4367abda0112a4",
+      "pinned_sha256": "24fe47e28aea2160c634b585b4607830e6a332fbeb925d51dd4367abda0112a4",
+      "expected_hash": "24fe47e28aea2160c634b585b4607830e6a332fbeb925d51dd4367abda0112a4",
+      "dir_hash": "24fe47e28aea2160c634b585b4607830e6a332fbeb925d51dd4367abda0112a4"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {
       "uuid": "liquid-glass@thinkingcoding1231.gmail.com",
@@ -303,7 +303,7 @@
         "50",
         "51"
       ],
-      "sha256": "13cd8c9d3f7a61e7f2dfcbfc894a861ebec270a793d3464eb16fa4dee19676a9",
+      "sha256": "0955216d9a47b243ccf6d1624dc12459522816f71aa605ccb8c92bef58325f88",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -314,8 +314,8 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Local custom Liquid Glass GLSL refraction & border shader; UI container owner check for strict rounded rectangle radius enforcement and setShapeType API",
-      "last_verified": "2026-11-04",
-      "integrity_hash": "5f3ec0ed2f1085744d10bf569f1d6aa033e02a2773f7131f8f940ff82c83e8b9",
+      "last_verified": "2026-11-22",
+      "integrity_hash": "0955216d9a47b243ccf6d1624dc12459522816f71aa605ccb8c92bef58325f88",
       "files": {
         "global.d.ts": "02492c5b3b37afc11cb19dee9ae1e9ae8f4e6f8502920b57ae6d0b6f8175c41a",
         "package-lock.json": "2610757c38df98269142accd24a1e84a464bbd02e884569ae6d4c9bec586f5db",
@@ -330,7 +330,7 @@
         "shaders/gaussian_v.frag": "604b318b9750f807b3ad52b08cba8181638a16f73d12cf3bb2c46733d1937c55",
         "shaders/downsample.frag": "35d971052c1730e7da0e5edf15c57c04300573a0c2fdd9de197739b9aa1c9b4c",
         "shaders/gaussian_h.frag": "1375ac86287fce5a2a1878bfebb4cb39d90eccd3e3128381bc0611e8feaa734d",
-        "shaders/glass.frag": "a56345018ef05808ccb99ddc10ad4c3e58ddedd8b929e884486930b63a4a77c0",
+        "shaders/glass.frag": "b50b2c1799640381bdb51a187ff5a331154d101a65aa32198a62432724be114f",
         "shaders/upsample.frag": "5b499e75ee05a69429948049ba130b6b160a8cf35e63bdc709aec754688e0b03",
         "schemas/gschemas.compiled": "61af4893ac7b5510f13e548a81c72f4cb707dfd24239788a2944fe785caeacd9",
         "schemas/org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com.gschema.xml": "8069d7797fd064f2583643d1b54cf94b61bfdb14d11854a706ff328258078d13",

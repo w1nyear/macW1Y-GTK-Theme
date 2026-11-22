@@ -1141,7 +1141,7 @@ void main() {
     float darkBorder = (darkLine * 0.75 + darkInwardSheen) * darkIntensity * darkFalloff * cornerSuppression;
 
     // Apply dark border directly to base glass color
-    baseColor *= (1.0 - darkBorder * insideMask);
+    baseColor *= (1.0 - darkBorder * insideMask * surface_light_enabled);
 
     float safeRimWidth = max(rim_width, 0.001);
     float edgeBand = (1.0 - smoothstep(0.0, safeRimWidth, abs(d))) * step(0.0005, rim_width);

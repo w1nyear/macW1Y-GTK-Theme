@@ -313,9 +313,11 @@ function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0, noWin 
         effect.setSaturation(1.0);
     }
 
-    effect.setSurfaceLightEnabled(true);
+    effect.setSurfaceLightEnabled(!pure);
     try {
         if (pure) {
+            effect.setSurfaceLightEnabled(false);
+            effect._setFloat('surface_light_enabled', 0.0);
             effect._setFloat('sheen_intensity', 0);
             effect._setFloat('rim_intensity', 0);
             effect._setFloat('rim_width', 0);
@@ -325,6 +327,8 @@ function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0, noWin 
             effect._setFloat('chroma_strength', 0);
             effect._setFloat('edge_smoothing', edgePx > 0 ? edgePx : BACKDROP_PAD);
         } else {
+            effect.setSurfaceLightEnabled(true);
+            effect._setFloat('surface_light_enabled', 1.0);
             effect._setFloat('sheen_intensity', 0);
             effect._setFloat('rim_intensity', 0.08);
             effect._setFloat('rim_width', 5.0);
