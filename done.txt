@@ -3623,3 +3623,27 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+
+### Завдання №885: Stage Manager — приховування панелі під час відкриття огляду (Overview / Mission Control)
+- Дата: 2026-11-22
+- Мета:
+  Стейдж менеджер під час відкриття режиму огляду (Overview / Mission Control) має зникати подібно до інших програм та віджетів робочого столу, а не висіти поверх огляду робочих просторів.
+- Реалізовані зміни:
+  1) Підключення сигналів огляду (extensions/stage-manager@gnome-stage-manager/extension.js):
+     * У StageSidebar та ArcSidebar підключено слухачі Main.overview ('showing', 'shown', 'hiding', 'hidden').
+     * При сигналі 'showing' панель Stage Manager плавно згасає (ease opacity: 0 за 180ms) і приховується (hide()), а активна зона краю екрана _edge вимикається.
+     * При 'shown' панель переводиться у стан повної невидимості (opacity = 0, hide()).
+     * При виході з огляду ('hiding' / 'hidden') панель повертається на робочий стіл (ease opacity: 255 за 220ms), відновлюється перевірка колізій _checkOverlap() та активність краю екрана _syncEdge().
+  2) Захист від передчасного показу:
+     * У методах _show(), _onEdgeTriggered(), enter-event тригера краю, _checkOverlap(), _syncEdge() та _wantStruts() додано перевірку на !Main.overview.visible && !Main.overview.visibleTarget.
+  3) Синхронізація та верифікація:
+     * Зміни синхронізовано до ~/.local/share/gnome-shell/extensions/stage-manager@gnome-stage-manager/ та перевантажено в GNOME Shell.
+     * Протестовано циклічне відкриття/закриття Overview через DBus.
+     * Усі 5 наборів тестів пройшли на 100%: mac-extension-guard (21/21), mac-audit-sync (5/5), test-macw1y-animations (12/12), unittests (39/39), mac-i18n-verify.
+     * 0 кириличних символів в install.sh.
+
+- Зачеплені файли:
+  * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

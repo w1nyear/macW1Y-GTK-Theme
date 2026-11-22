@@ -422,6 +422,10 @@ class StageSidebar {
 
     _checkOverlap() {
         if (!this._panel) return;
+        if (Main.overview.visible || Main.overview.visibleTarget) {
+            if (this._panel.visible) this._panel.hide();
+            return;
+        }
         const clear = this._isAreaClear();
         if (clear) {
             if (this._flyoutMode) {
@@ -597,6 +601,7 @@ class StageSidebar {
     }
 
     _onEdgeTriggered() {
+        if (this._fullscreen() || Main.overview.visible || Main.overview.visibleTarget) return;
         if (!this._isAreaClear()) {
             this._flyoutMode = true;
         }
@@ -620,7 +625,7 @@ class StageSidebar {
         this._edge.set_position(edgeX, edgeY);
         Main.layoutManager.addChrome(this._edge, { trackFullscreen: false });
         this._sig(this._edge, 'enter-event', () => {
-            if (this._fullscreen()) return;
+            if (this._fullscreen() || Main.overview.visible || Main.overview.visibleTarget) return;
             const delay = this._EDGE_DELAY_MS;
             if (delay <= 0) {
                 this._onEdgeTriggered();
@@ -631,7 +636,8 @@ class StageSidebar {
                 this._untrackTimer(this._edgeTimer); this._edgeTimer = null;
 
 
-                if (!this._fullscreen()) this._onEdgeTriggered();
+                if (!this._fullscreen() && !Main.overview.visible && !Main.overview.visibleTarget)
+                    this._onEdgeTriggered();
                 return GLib.SOURCE_REMOVE;
             });
             this._timers.push(this._edgeTimer);
@@ -716,7 +722,8 @@ class StageSidebar {
     _wantStruts() {
         return this._settings.get_boolean('sidebar-reserve-space') &&
                !this._settings.get_boolean('sidebar-auto-hide') &&
-               this._visible && !this._fullscreen();
+               this._visible && !this._fullscreen() &&
+               !Main.overview.visible && !Main.overview.visibleTarget;
     }
 
 
@@ -874,7 +881,8 @@ class StageSidebar {
 
     _syncEdge() {
         if (!this._edge) return;
-        const wanted = !this._visible && !this._fullscreen();
+        const wanted = !this._visible && !this._fullscreen() &&
+                       !Main.overview.visible && !Main.overview.visibleTarget;
         if (wanted) this._edge.show();
         else this._edge.hide();
     }
@@ -989,6 +997,56 @@ class StageSidebar {
         });
         this._sig(global.display, 'in-fullscreen-changed', () => this._onFullscreen());
         this._sig(Main.layoutManager, 'monitors-changed', () => this._rebuildLayout());
+
+        this._sig(Main.overview, 'showing', () => {
+            this._destroyPreview();
+            this._killHideTimer();
+            if (this._edge) this._edge.hide();
+            if (this._panel) {
+                this._panel.remove_all_transitions();
+                this._panel.ease({
+                    opacity: 0,
+                    duration: 180,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        if (Main.overview.visible || Main.overview.visibleTarget) {
+                            this._panel.hide();
+                        }
+                    },
+                });
+            }
+        });
+
+        this._sig(Main.overview, 'shown', () => {
+            if (this._panel) {
+                this._panel.remove_all_transitions();
+                this._panel.opacity = 0;
+                this._panel.hide();
+            }
+            if (this._edge) this._edge.hide();
+        });
+
+        this._sig(Main.overview, 'hiding', () => {
+            if (this._panel) {
+                this._panel.show();
+                this._panel.remove_all_transitions();
+                if (this._visible && !this._fullscreen() && this._isAreaClear()) {
+                    this._panel.ease({
+                        opacity: 255,
+                        duration: 220,
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    });
+                }
+            }
+        });
+
+        this._sig(Main.overview, 'hidden', () => {
+            if (this._panel) {
+                this._panel.show();
+            }
+            this._checkOverlap();
+            this._syncEdge();
+        });
 
         const themeCtx = St.ThemeContext.get_for_stage(global.stage);
         this._sig(themeCtx, 'notify::scale-factor', () => {
@@ -1601,7 +1659,7 @@ class StageSidebar {
 
     _show() {
         if (this._visible || !this._panel) return;
-        if (this._fullscreen()) return;
+        if (this._fullscreen() || Main.overview.visible || Main.overview.visibleTarget) return;
 
         this._visible = true;
         this._killHideTimer();
@@ -2507,6 +2565,18 @@ class ArcSidebar {
             this._scheduleRefresh();
         });
         this._sig(Main.layoutManager, 'monitors-changed', () => this._rebuild());
+        this._sig(Main.overview, 'showing', () => {
+            if (this._panel) this._panel.hide();
+            if (this._edge) this._edge.hide();
+        });
+        this._sig(Main.overview, 'shown', () => {
+            if (this._panel) this._panel.hide();
+            if (this._edge) this._edge.hide();
+        });
+        this._sig(Main.overview, 'hidden', () => {
+            if (this._panel) this._panel.show();
+            if (this._edge) this._edge.show();
+        });
         this._sig(this._settings, 'changed', (_s, key) => {
             if (key === 'arc-order-map') { this._loadOrderMap(); this._scheduleRefresh(); }
             else if (key === 'arc-merge-map') { this._loadMergeMap(); this._scheduleRefresh(); }
