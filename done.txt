@@ -4063,3 +4063,14 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [bin/mac-build-theme](file:///home/vitaliy/MACTHEMEFILES/bin/mac-build-theme)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+903. Виправлення зміщення скляного розмиття та тінту модальних діалогів попереджень (Alert / ModalDialog / EndSessionDialog):
+  - Виявлено першопричину з'їжджання фону вниз і вправо: під час відкриття діалогу функція _fadeOpen запускала 420мс анімацію масштабування content (this.dialogLayout) з scale 0.72 до 1.0 (EASE_OUT_BACK). Водночас стандартне згасання прозорості тривало лише 100мс, після чого генерувався сигнал 'opened', який зчитував dialogBox.get_transformed_position(). Оскільки get_transformed_position() повертав координати проміжного масштабу (~0.94), зміщені до центру екрана, а ширина й висота бралися немасштабованими, скло BackdropGlass заморожувалося зі зсувом праворуч на ~12-56px та вниз на ~4-18px і більше ніколи не оновлювалося.
+  - Виправлено розрахунок геометрії скла (syncDialogGlass): позиціонування скляного фону тепер здійснюється за незмінною алокацією картки dialogBox (get_allocation_box) та центрованими координатами екрана ((screenW - bgW) / 2, (screenH - bgH) / 2), повністю незалежними від будь-яких матричних трансформацій, зуму чи зсувів під час анімацій.
+  - Синхронізовано анімацію та півот BackdropGlass: актору скла встановлено точку трансформації set_pivot_point(0.5, 0.5) (центр екрана) у повній синхронізації з dialogLayout. У _fadeOpen та close скло плавно масштабується та розчиняється разом із вмістом діалогу (0.72 -> 1.0 при появі, 1.0 -> 0.84 при закритті), а після завершення переходу спрацьовує callback onComplete для фінальної точної ресинхронізації.
+  - Забезпечено коректний стан для довготривалих системних діалогів (зокрема EndSessionDialog із destroyOnClose: false): при виклику open() масштаб примусово скидається в 1.0, що унеможливлює накопичення похибок координат при повторних відкриттях.
+  - 100% перевірка всіх верифікаційних сценаріїв: mac-extension-guard verify (21/21 pinned hashes), mac-audit-sync check (100% PASS), test-macw1y-animations.py (12/12 100%), unit tests (39/39 100%), перевірка відсутності кирилиці в install.sh (CLEAN, 0 входжень).
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

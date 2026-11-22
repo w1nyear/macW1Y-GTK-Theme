@@ -2120,7 +2120,7 @@ export default class EvalHelper extends Extension {
                     glass.name = 'liquid-glass-dialog-actor';
 
                     stack.insert_child_below(glass, dialogLayout);
-                    try { glass.set_pivot_point(0, 0); } catch (_) {}
+                    try { glass.set_pivot_point(0.5, 0.5); } catch (_) {}
                     try { glass.x_expand = true; glass.y_expand = true; } catch (_) {}
 
                     glass.setIsDock(false);
@@ -2157,7 +2157,11 @@ export default class EvalHelper extends Extension {
                     );
                     dialogActor.connectObject(
                         'opened', () => syncDialogGlass(state),
-                        'closed', () => { if (glass.visible) glass.hide(); },
+                        'closed', () => {
+                            if (glass.visible) glass.hide();
+                            glass.scale_x = 1.0;
+                            glass.scale_y = 1.0;
+                        },
                         'notify::opacity', () => syncDialogGlass(state),
                         'notify::visible', () => syncDialogGlass(state),
                         'destroy', cleanUpState,
@@ -2190,15 +2194,12 @@ export default class EvalHelper extends Extension {
                     if (!dialogActor || !dialogBox || !glass) return;
                     if (dialogActor.is_finalized?.() || dialogBox.is_finalized?.() || glass.is_finalized?.()) return;
 
-                    const isOpening = (dialogActor._state === ModalDialogMod.State.OPENING);
                     const isClosing = (dialogActor._state === ModalDialogMod.State.CLOSING || dialogActor._state === ModalDialogMod.State.CLOSED);
                     const isOpeningOrOpen = dialogActor.visible && dialogActor.mapped && dialogActor.opacity > 0;
                     const shadersReady = (glass._effect?._shadersLoaded === true);
 
-
-
-                    if (!isOpeningOrOpen || isOpening || isClosing || !shadersReady) {
-                        if (glass.visible) glass.hide();
+                    if (isClosing || !shadersReady) {
+                        if (glass.visible && isClosing) glass.hide();
                         return;
                     }
 
@@ -2209,22 +2210,27 @@ export default class EvalHelper extends Extension {
                     } catch (_) {}
                     if (monitorIndex < 0) monitorIndex = global.display.get_current_monitor();
                     let monitor = Main.layoutManager.monitors[monitorIndex] || Main.layoutManager.primaryMonitor;
-                    const monitorX = monitor?.x ?? 0;
-                    const monitorY = monitor?.y ?? 0;
                     const screenW = Math.max(1, monitor?.width ?? 1);
                     const screenH = Math.max(1, monitor?.height ?? 1);
 
-                    const [diagAbsX, diagAbsY] = dialogBox.get_transformed_position();
-                    const [w, h] = dialogBox.get_size();
-                    if (diagAbsX == null || diagAbsY == null || Number.isNaN(diagAbsX) || Number.isNaN(diagAbsY) || w <= 1 || h <= 1) {
-                        if (glass.visible) glass.hide();
-                        return;
+                    const box = dialogBox.get_allocation_box();
+                    let bgW = Math.round(box.x2 - box.x1);
+                    let bgH = Math.round(box.y2 - box.y1);
+                    if (bgW <= 1 || bgH <= 1) {
+                        const [w, h] = dialogBox.get_size();
+                        bgW = Math.round(w);
+                        bgH = Math.round(h);
                     }
+                    if (bgW <= 1 || bgH <= 1) return;
 
-                    const localBgX = Math.round(diagAbsX - monitorX);
-                    const localBgY = Math.round(diagAbsY - monitorY);
-                    const bgW = Math.round(w);
-                    const bgH = Math.round(h);
+                    let localBgX = Math.round(box.x1);
+                    let localBgY = Math.round(box.y1);
+                    if (localBgX <= 0 || (localBgX + bgW > screenW)) {
+                        localBgX = Math.round((screenW - bgW) / 2);
+                    }
+                    if (localBgY <= 0 || (localBgY + bgH > screenH)) {
+                        localBgY = Math.round((screenH - bgH) / 2);
+                    }
 
                     if (state.lastX !== localBgX || state.lastY !== localBgY || state.lastW !== bgW || state.lastH !== bgH || state.forceResync) {
                         state.lastX = localBgX;
@@ -2240,7 +2246,6 @@ export default class EvalHelper extends Extension {
 
                         const isTrash = dialogBox.has_style_class_name('mac-empty-trash-dialog');
                         const radius = isTrash ? 30.0 : 34.0;
-
 
                         glass.setResolution(screenW, screenH);
                         glass.setCornerRadius(radius);
@@ -2283,21 +2288,22 @@ export default class EvalHelper extends Extension {
                             }
                         } catch (_) {}
 
-
                         const CLIP_PAD = 40;
                         glass.set_clip(localBgX - CLIP_PAD, localBgY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
                     }
 
-                    if (!glass.visible) {
-                        glass.opacity = 0;
-                        glass.show();
-                        glass.ease({
-                            opacity: dialogActor.opacity,
-                            duration: 120,
-                            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                        });
-                    } else if (!glass.get_transition('opacity')) {
-                        glass.opacity = dialogActor.opacity;
+                    if (isOpeningOrOpen) {
+                        if (!glass.visible) {
+                            glass.opacity = 0;
+                            glass.show();
+                            glass.ease({
+                                opacity: dialogActor.opacity,
+                                duration: 120,
+                                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                            });
+                        } else if (!glass.get_transition('opacity') && !glass.get_transition('scale_x')) {
+                            glass.opacity = dialogActor.opacity;
+                        }
                     }
 
                     if (typeof glass.syncSources === 'function') glass.syncSources();
@@ -2376,13 +2382,32 @@ export default class EvalHelper extends Extension {
                 try { if (Main.endSessionDialog) attachIfSystemDialog(Main.endSessionDialog); } catch (_) {}
 
                 globalThis._macAttachDialogGlass = attachDialogGlass;
-                if (!ModalDialog.prototype._macRecoveryAlertPatchedV1) {
-                    ModalDialog.prototype._macRecoveryAlertPatchedV1 = true;
-                    ModalDialog.prototype._macOrigOpen = ModalDialog.prototype.open;
-                    ModalDialog.prototype._macOrigClose = ModalDialog.prototype.close;
-                    ModalDialog.prototype._macOrigFadeOpen = ModalDialog.prototype._fadeOpen;
+                if (!ModalDialog.prototype._macRecoveryAlertPatchedV2) {
+                    ModalDialog.prototype._macRecoveryAlertPatchedV2 = true;
+                    if (!ModalDialog.prototype._macOrigOpen)
+                        ModalDialog.prototype._macOrigOpen = ModalDialog.prototype.open;
+                    if (!ModalDialog.prototype._macOrigClose)
+                        ModalDialog.prototype._macOrigClose = ModalDialog.prototype.close;
+                    if (!ModalDialog.prototype._macOrigFadeOpen)
+                        ModalDialog.prototype._macOrigFadeOpen = ModalDialog.prototype.fadeOpen || ModalDialog.prototype._fadeOpen;
                     ModalDialog.prototype._fadeOpen = function (...args) {
                         const content = this.dialogLayout;
+                        const glass = this.backgroundStack?.get_children?.().find(c => c.name === 'liquid-glass-dialog-actor');
+                        if (glass) {
+                            glass.remove_all_transitions();
+                            glass.set_pivot_point(0.5, 0.5);
+                            glass.scale_x = 0.72;
+                            glass.scale_y = 0.72;
+                            glass.opacity = 0;
+                            glass.show();
+                            glass.ease({
+                                scale_x: 1.0,
+                                scale_y: 1.0,
+                                opacity: 255,
+                                duration: 420,
+                                mode: Clutter.AnimationMode.EASE_OUT_BACK,
+                            });
+                        }
                         if (content) {
                             content.remove_all_transitions();
                             content.set_pivot_point(0.5, 0.5);
@@ -2398,17 +2423,49 @@ export default class EvalHelper extends Extension {
                                 opacity: 255,
                                 duration: 420,
                                 mode: Clutter.AnimationMode.EASE_OUT_BACK,
+                                onComplete: () => {
+                                    if (this._macDlgGlassState && typeof this._macDlgGlassState === 'object') {
+                                        this._macDlgGlassState.forceResync = true;
+                                        syncDialogGlass(this._macDlgGlassState);
+                                    }
+                                },
                             });
                         }
                         return result;
                     };
                     ModalDialog.prototype.open = function (...args) {
-                        try { globalThis._macAttachDialogGlass?.(this); } catch (_) {}
+                        try {
+                            if (this.dialogLayout) {
+                                this.dialogLayout.scale_x = 1.0;
+                                this.dialogLayout.scale_y = 1.0;
+                            }
+                            const glass = this.backgroundStack?.get_children?.().find(c => c.name === 'liquid-glass-dialog-actor');
+                            if (glass) {
+                                glass.scale_x = 1.0;
+                                glass.scale_y = 1.0;
+                            }
+                            globalThis._macAttachDialogGlass?.(this);
+                        } catch (_) {}
                         return ModalDialog.prototype._macOrigOpen.call(this, ...args);
                     };
                     ModalDialog.prototype.close = function (...args) {
                         if (this.state === ModalDialogMod.State.CLOSED || this.state === ModalDialogMod.State.CLOSING)
                             return;
+                        const glass = this.backgroundStack?.get_children?.().find(c => c.name === 'liquid-glass-dialog-actor');
+                        if (glass) {
+                            glass.ease({
+                                scale_x: 0.84,
+                                scale_y: 0.84,
+                                opacity: 0,
+                                duration: 160,
+                                mode: Clutter.AnimationMode.EASE_IN_QUAD,
+                                onComplete: () => {
+                                    if (glass.visible) glass.hide();
+                                    glass.scale_x = 1.0;
+                                    glass.scale_y = 1.0;
+                                },
+                            });
+                        }
                         if (this._shouldFadeOut) {
                             this._setState(ModalDialogMod.State.CLOSING);
                             this.popModal();
@@ -2427,6 +2484,10 @@ export default class EvalHelper extends Extension {
                                     opacity: 0,
                                     duration: 160,
                                     mode: Clutter.AnimationMode.EASE_IN_QUAD,
+                                    onComplete: () => {
+                                        content.scale_x = 1.0;
+                                        content.scale_y = 1.0;
+                                    },
                                 });
                             }
                             return;
@@ -2443,7 +2504,11 @@ export default class EvalHelper extends Extension {
                                 opacity: 0,
                                 duration: 180,
                                 mode: Clutter.AnimationMode.EASE_IN_CUBIC,
-                                onComplete: () => this._closeComplete(),
+                                onComplete: () => {
+                                    content.scale_x = 1.0;
+                                    content.scale_y = 1.0;
+                                    this._closeComplete();
+                                },
                             });
                             this.ease({
                                 opacity: 0,
