@@ -4029,3 +4029,14 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+901. Комплексне виправлення взаємодії, пропорцій карток, анімації та стабільності Stage Manager (macOS Tahoe):
+  - Виправлено зону кліку та наведення (hit-testing): контейнер карток (container), 3D-блок прев'ю (previewBox) та шари (layer) тепер мають reactive: true, а обробники enter-event та leave-event валідують родинні зв'язки акторів (rel && card.contains(rel)). Завдяки цьому кліки (ЛКМ) та ефект наведення (hover) бездоганно працюють по всій площині вікна прев'ю, включаючи праву сторону та бейджі іконок.
+  - Оптимізовано ширину карток у Stage Manager: базову ширину зменшено зі 132px до 105px, висоту з 86px до 72px (у _thumbSize, _onWindowMinimize та _switchWindows). Це усунуло надмірну візуальну розтягнутість карток по горизонталі при 3D-нахилі (26°), повернувши автентичні пропорції macOS Tahoe.
+  - Усунено обрізання нижнього вікна під час анімації згортання: зміщення існуючих карток вниз у вертикально центрованій колонці відкалібровано на половину висоти слота (Math.round((stdCardH + spacing) / 2)), що запобігає вильоту останньої картки за межі контейнера та ліквідує стрибок позицій при завершенні анімації.
+  - Виправлено втрату 3D-перспективи після повноекранного режиму: усунено примусове скидання кута повороту в 0° через _isFlatMode. При виході з повноекранного режиму скидається _flyoutMode, очищується сигнатура та негайно відновлюється кут нахилу 26° для всіх карток.
+  - Виправлено фантомні закриті вікна та краш сесії GNOME Shell: усунено блокування таймерів у _switchWindows (де _refresh скасовувався через активний _isSwitching), додано сигнал unmanaged для всіх вікон, негайне вилучення карток закритих вікон з this._cards у _onWindowDestroy та захисні перевірки фіналізованих вікон (win.is_finalized?.()). Закриті програми миттєво зникають зі стейджа і не спричиняють вильоту сесії.
+  - Успішно пройдено повний набір верифікацій: mac-extension-guard verify (21/21), mac-audit-sync check (100%), test-macw1y-animations.py (12/12 100%), unit tests (39/39 100%), перевірка відсутності кирилиці в install.sh (CLEAN).
+  * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
