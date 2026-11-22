@@ -296,12 +296,20 @@ export function buildNotificationCard(source, notification, options = {}) {
 
 
     const gicon = notification.gicon || source?.icon || source?.app?.get_app_info()?.get_icon() || null;
+    const iconWrapper = new St.Widget({
+        layout_manager: new Clutter.BinLayout(),
+        x_align: Clutter.ActorAlign.CENTER,
+        y_align: Clutter.ActorAlign.START,
+        clip_to_allocation: false,
+        style: 'width: 44px !important; height: 44px !important; margin-top: 2px !important;',
+    });
+
     const iconBin = new St.Bin({
         style_class: 'mac-notification-icon-bin',
         x_align: Clutter.ActorAlign.CENTER,
-        y_align: Clutter.ActorAlign.START,
+        y_align: Clutter.ActorAlign.CENTER,
         clip_to_allocation: true,
-        style: 'width: 44px !important; height: 44px !important; border-radius: 10px !important; background-color: rgba(255, 255, 255, 0.12) !important; margin-top: 2px !important;',
+        style: 'width: 44px !important; height: 44px !important; border-radius: 10px !important; background-color: rgba(255, 255, 255, 0.12) !important;',
     });
     const iconParams = {
         icon_size: 44,
@@ -316,7 +324,20 @@ export function buildNotificationCard(source, notification, options = {}) {
     }
     const icon = new St.Icon(iconParams);
     iconBin.set_child(icon);
-    mainBox.add_child(iconBin);
+    iconWrapper.add_child(iconBin);
+
+    const countBadge = new St.Label({
+        text: '',
+        style_class: 'mac-notification-count-badge',
+        style: 'background-color: #ffffff !important; color: #000000 !important; font-size: 11px !important; font-weight: 700 !important; border-radius: 9999px !important; padding: 0px 5px !important; min-width: 16px !important; height: 16px !important; text-align: center; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.40) !important;',
+        x_align: Clutter.ActorAlign.END,
+        y_align: Clutter.ActorAlign.START,
+        translation_x: 5,
+        translation_y: -4,
+        visible: false,
+    });
+    iconWrapper.add_child(countBadge);
+    mainBox.add_child(iconWrapper);
 
     const bannerWidth = (typeof options?.width === 'number' && options.width > 0) ? options.width : 440;
     const padH = 28;
@@ -358,15 +379,6 @@ export function buildNotificationCard(source, notification, options = {}) {
     });
     appLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
     appHeaderBox.add_child(appLabel);
-
-    const countBadge = new St.Label({
-        text: '',
-        style_class: 'mac-notification-count-badge',
-        style: 'color: rgba(255, 255, 255, 0.90); background-color: rgba(255, 255, 255, 0.20); font-size: 10px !important; font-weight: 600 !important; border-radius: 9999px !important; padding: 1px 6px !important; margin-left: 6px !important;',
-        y_align: Clutter.ActorAlign.CENTER,
-        visible: false,
-    });
-    appHeaderBox.add_child(countBadge);
 
 
 
@@ -697,13 +709,13 @@ export class MacNotificationGroup {
         this.layer2 = new St.Widget({
             x_expand: true,
             x_align: Clutter.ActorAlign.FILL,
-            height: 24,
+            height: 78,
             y_align: Clutter.ActorAlign.START,
             visible: false,
             reactive: true,
             style: isDark
-                ? 'background-color: rgba(30, 30, 32, 0.35); border: 1px solid rgba(255, 255, 255, 0.10); border-radius: 14px; margin-left: 24px; margin-right: 24px;'
-                : 'background-color: rgba(255, 255, 255, 0.35); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 14px; margin-left: 24px; margin-right: 24px;',
+                ? 'background-color: rgba(30, 32, 38, 0.94) !important; border: 1px solid rgba(255, 255, 255, 0.10) !important; border-top: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 18px !important; margin-left: 20px !important; margin-right: 20px !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.30) !important;'
+                : 'background-color: rgba(230, 230, 236, 0.94) !important; border: 1px solid rgba(0, 0, 0, 0.08) !important; border-radius: 18px !important; margin-left: 20px !important; margin-right: 20px !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;',
         });
         this.layer2.connect('button-press-event', handleExpandClick);
         this.collapsedContainer.add_child(this.layer2);
@@ -712,13 +724,13 @@ export class MacNotificationGroup {
         this.layer1 = new St.Widget({
             x_expand: true,
             x_align: Clutter.ActorAlign.FILL,
-            height: 24,
+            height: 78,
             y_align: Clutter.ActorAlign.START,
             visible: false,
             reactive: true,
             style: isDark
-                ? 'background-color: rgba(38, 38, 40, 0.40); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 15px; margin-left: 12px; margin-right: 12px;'
-                : 'background-color: rgba(255, 255, 255, 0.40); border: 1px solid rgba(255, 255, 255, 0.30); border-radius: 15px; margin-left: 12px; margin-right: 12px;',
+                ? 'background-color: rgba(36, 38, 44, 0.96) !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-top: 1px solid rgba(255, 255, 255, 0.20) !important; border-radius: 18px !important; margin-left: 10px !important; margin-right: 10px !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.30) !important;'
+                : 'background-color: rgba(240, 240, 244, 0.96) !important; border: 1px solid rgba(0, 0, 0, 0.12) !important; border-radius: 18px !important; margin-left: 10px !important; margin-right: 10px !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;',
         });
         this.layer1.connect('button-press-event', handleExpandClick);
         this.collapsedContainer.add_child(this.layer1);
@@ -728,8 +740,8 @@ export class MacNotificationGroup {
                 const p1 = { name: 'layer1-blur', mode: BlurOrShell.BlurMode?.BACKGROUND ?? 1, radius: 20 };
                 const p2 = { name: 'layer2-blur', mode: BlurOrShell.BlurMode?.BACKGROUND ?? 1, radius: 18 };
                 if (BlurOrShell.BlurEffect.list_properties?.()?.some?.(p => p.name === 'corner-radius')) {
-                    p1.corner_radius = 15;
-                    p2.corner_radius = 14;
+                    p1.corner_radius = 18;
+                    p2.corner_radius = 18;
                 }
                 this.layer1.add_effect(new BlurOrShell.BlurEffect(p1));
                 this.layer2.add_effect(new BlurOrShell.BlurEffect(p2));
@@ -783,6 +795,17 @@ export class MacNotificationGroup {
         });
         this.collapseBtn.connect('clicked', () => {
             this.collapse();
+        });
+
+        this.expandedCardsBox.connect('notify::height', () => {
+            if (this.isExpanded && this.options.onGeometryChanged) {
+                this.options.onGeometryChanged();
+            }
+        });
+        this.collapsedContainer.connect('notify::height', () => {
+            if (!this.isExpanded && this.options.onGeometryChanged) {
+                this.options.onGeometryChanged();
+            }
         });
     }
 
@@ -839,18 +862,22 @@ export class MacNotificationGroup {
 
     _updateStackLayersGeometry(cardH) {
         if (this.isExpanded) return;
-        const extraBottom = (this.items.length >= 3) ? 11 : (this.items.length >= 2 ? 6 : 0);
-        this.spacer.height = cardH + extraBottom;
-        this.collapsedContainer.height = cardH + extraBottom;
+        const effectiveCardH = Math.max(50, Math.round(cardH || 78));
+        const extraBottom = (this.items.length >= 3) ? 16 : (this.items.length >= 2 ? 8 : 0);
+        this.spacer.height = effectiveCardH + extraBottom;
+        this.collapsedContainer.height = effectiveCardH + extraBottom;
+
+        this.layer1.height = effectiveCardH;
+        this.layer2.height = effectiveCardH;
 
         if (this.items.length >= 3) {
             this.layer2.visible = true;
-            this.layer2.translation_y = cardH + 11 - 24;
+            this.layer2.translation_y = 16;
             this.layer1.visible = true;
-            this.layer1.translation_y = cardH + 6 - 24;
+            this.layer1.translation_y = 8;
         } else if (this.items.length >= 2) {
             this.layer1.visible = true;
-            this.layer1.translation_y = cardH + 6 - 24;
+            this.layer1.translation_y = 8;
             this.layer2.visible = false;
         } else {
             this.layer1.visible = false;
@@ -1071,6 +1098,21 @@ export class MacNotificationGroup {
         if (this.isExpanded || this.items.length <= 1) return;
         this.isExpanded = true;
 
+        let targetExpH = 0;
+        for (const it of this.items) {
+            let bH = 78;
+            if (it.banner) {
+                let [_, bNat] = it.banner.get_preferred_height(380);
+                if (bNat > 30 && bNat < 500) bH = bNat;
+                else if (it.banner.height > 30 && it.banner.height < 500) bH = it.banner.height;
+            }
+            targetExpH += Math.round(bH) + 8;
+        }
+        targetExpH += 36;
+        if (typeof globalThis._macOnCardTargetHeightChange === 'function') {
+            globalThis._macOnCardTargetHeightChange(this.actor, targetExpH, this.actor.height, true);
+        }
+
         this.collapsedContainer.ease({
             opacity: 0,
             duration: 120,
@@ -1133,6 +1175,18 @@ export class MacNotificationGroup {
     collapse() {
         if (!this.isExpanded) return;
         this.isExpanded = false;
+
+        let topH = 78;
+        if (this.items[0]?.banner) {
+            let [_, tNat] = this.items[0].banner.get_preferred_height(380);
+            if (tNat > 30 && tNat < 300) topH = tNat;
+            else if (this.items[0].banner.height > 30 && this.items[0].banner.height < 300) topH = this.items[0].banner.height;
+        }
+        const extra = (this.items.length >= 3) ? 16 : (this.items.length >= 2 ? 8 : 0);
+        const targetCollH = topH + extra;
+        if (typeof globalThis._macOnCardTargetHeightChange === 'function') {
+            globalThis._macOnCardTargetHeightChange(this.actor, targetCollH, this.actor.height, false);
+        }
 
         const count = this.items.length;
         for (let i = 1; i < count; i++) {

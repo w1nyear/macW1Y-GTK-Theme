@@ -2828,107 +2828,37 @@ export const MenuBarController = class MenuBarController {
         }
     }
 
-    async _ensureTahoeNotifGlass() {
-        if (this._notifTahoeGlass && !this._notifTahoeGlass.bgActor.is_finalized?.())
-            return this._notifTahoeGlass;
-        try {
-            const uri = 'file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeControlCenter.js?v=live';
-            const mod = await import(uri);
-            if (mod.ensureLgReady) await mod.ensureLgReady();
-            const monitor = Main.layoutManager.primaryMonitor;
-            if (!monitor) return null;
-
-
-
-            const s = mod._makeGlassStack(monitor, 82, 'nc_backdrop', true, 60);
-            this._notifTahoeGlass = s;
-            if (this._notifCenterActor && s.bgActor) {
-                if (s.bgActor.get_parent() !== Main.layoutManager.uiGroup) {
-                    if (s.bgActor.get_parent()) {
-                        s.bgActor.get_parent().remove_child(s.bgActor);
-                    }
-                    Main.layoutManager.uiGroup.insert_child_below(s.bgActor, this._notifCenterActor);
-                }
-            }
-            return s;
-        } catch (e) {
-            console.error(`[menubar_v28] _ensureTahoeNotifGlass error: ${e}`);
-            return null;
-        }
-    }
-
     _getNotifBlurActor() {
-        this._ensureTahoeNotifGlass().then(() => {
-            if (this._notifCenterOpen) this._syncNotifBackdropBlur();
-        });
-        return this._notifTahoeGlass?.bgActor || null;
+        if (!this._notifBackdropBlur) {
+            this._notifBackdropBlur = new MacFeatheredBackdropBlur('mac-notif-center-feathered-blur');
+            if (this._notifCenterActor) {
+                Main.layoutManager.uiGroup.insert_child_below(this._notifBackdropBlur.actor, this._notifCenterActor);
+            } else {
+                Main.layoutManager.uiGroup.add_child(this._notifBackdropBlur.actor);
+            }
+        }
+        return this._notifBackdropBlur.actor;
     }
 
     _syncNotifBackdropBlur() {
-        const s = this._notifTahoeGlass;
-        if (!s || !this._notifCenterActor || this._notifCenterActor.is_finalized?.()) return;
-        const monitor = Main.layoutManager.primaryMonitor;
-        if (!monitor) return;
-
-        const [nx, ny] = this._notifCenterActor.get_transformed_position();
-        const nw = this._notifCenterActor.width;
-        const nh = this._notifCenterActor.height;
-        if (!(nw > 0) || !(nh > 0) || !Number.isFinite(nx) || !Number.isFinite(ny)) return;
-
-        const monitorX = monitor.x;
-        const monitorY = monitor.y;
-        const screenW = monitor.width;
-        const screenH = monitor.height;
-
-
-
-        const mx = 80;
-        const my = 60;
-        let rx = (nx - monitorX) - mx;
-        let ry = (ny - monitorY) - my;
-        let rw = nw + mx * 2;
-        let rh = nh + my * 2;
-
-        const topEdge = Math.round(Main.layoutManager.panelBox?.height ?? 34) + 12;
-        if (ry < topEdge) {
-            const cut = topEdge - ry;
-            ry = topEdge;
-            rh -= cut;
-            if (!(rh > 0)) return;
+        if (!this._notifBackdropBlur) {
+            this._getNotifBlurActor();
         }
+        if (!this._notifBackdropBlur || !this._notifCenterActor || this._notifCenterActor.is_finalized?.()) return;
 
-        s.bgActor.set_position(monitorX, monitorY);
-        if (!s.bgActor.visible) s.bgActor.show();
+        const cW = this._notifCenterActor.width || (this._notifCenterActor.get_transformed_size ? this._notifCenterActor.get_transformed_size()[0] : 460);
+        const cH = this._notifCenterActor.height || (this._notifCenterActor.get_transformed_size ? this._notifCenterActor.get_transformed_size()[1] : 200);
+        const cX = Number.isFinite(this._notifCenterActor.x) ? this._notifCenterActor.x : (this._notifCenterActor.get_transformed_position ? this._notifCenterActor.get_transformed_position()[0] - (this._notifCenterActor.translation_x || 0) : 1448);
+        const cY = Number.isFinite(this._notifCenterActor.y) ? this._notifCenterActor.y : (this._notifCenterActor.get_transformed_position ? this._notifCenterActor.get_transformed_position()[1] - (this._notifCenterActor.translation_y || 0) : 40);
+        if (cW <= 0 || cH <= 0 || !Number.isFinite(cX) || !Number.isFinite(cY)) return;
 
-        s.liquidBox.set_position(0, 0);
-        s.liquidBox.set_size(screenW, screenH);
-        s.effect.setResolution(screenW, screenH);
+        this._notifBackdropBlur.updateGeometry(cX, cY, cW, cH);
 
-        s.effect.setGlassRegions([{
-            x: rx, y: ry, w: rw, h: rh,
-            tintR: 0, tintG: 0, tintB: 0,
-            baseStrength: 0,
-        }]);
-
-        const CLIP_PADDING = 200;
-        const clip = [rx - CLIP_PADDING, ry - CLIP_PADDING,
-            rw + CLIP_PADDING * 2, rh + CLIP_PADDING * 2];
-        try {
-            s.bgActor.set_clip(clip[0], clip[1], clip[2], clip[3]);
-        } catch (_) {}
-
-        try {
-            s.wcm.setOffset(-monitorX, -monitorY);
-            s.uiSampler.refresh();
-            s.uiSampler.sync(monitorX, monitorY, screenW, screenH);
-            s.wcm.sync();
-        } catch (_) {}
-
-        if (this._notifCenterActor && s.bgActor.get_parent() !== Main.layoutManager.uiGroup) {
-            if (s.bgActor.get_parent()) {
-                s.bgActor.get_parent().remove_child(s.bgActor);
+        if (this._notifBackdropBlur.actor.get_parent() !== Main.layoutManager.uiGroup) {
+            if (this._notifBackdropBlur.actor.get_parent()) {
+                this._notifBackdropBlur.actor.get_parent().remove_child(this._notifBackdropBlur.actor);
             }
-            Main.layoutManager.uiGroup.insert_child_below(s.bgActor, this._notifCenterActor);
+            Main.layoutManager.uiGroup.insert_child_below(this._notifBackdropBlur.actor, this._notifCenterActor);
         }
     }
 
@@ -4259,9 +4189,6 @@ export const MenuBarController = class MenuBarController {
             if (this._notifBackdropBlur?.actor) {
                 this._notifBackdropBlur.actor.opacity = container.opacity;
             }
-            if (this._notifTahoeGlass?.bgActor) {
-                this._notifTahoeGlass.bgActor.opacity = container.opacity;
-            }
         });
         container.connect('notify::allocation', () => {
             if (this._notifCenterOpen) {
@@ -4345,7 +4272,7 @@ export const MenuBarController = class MenuBarController {
             this._notifGlass = new BackdropGlass({
                 extensionPath: path,
                 settings: ext?.stateObj?._settings || null,
-                logger: console,
+                logger: null,
                 owner: 'notification-center',
             });
             const { tintVal, tintStrength } = this._getNotifThemeParams();
@@ -5012,9 +4939,23 @@ export const MenuBarController = class MenuBarController {
                     if (!c.visible) continue;
                     let chH = 0;
                     if (c._macGroup) {
-                        if (c._macGroup.isExpanded && c._macGroup.expandedCardsBox) {
-                            let [_, eNat] = c._macGroup.expandedCardsBox.get_preferred_height(targetW);
-                            chH = (eNat > 0 && eNat < 10000) ? eNat : (c._macGroup.expandedCardsBox.height || 180);
+                        if (c._macGroup.isExpanded) {
+                            let totalExpH = 0;
+                            if (c._macGroup.expandedCardsBox && c._macGroup.expandedCardsBox.height > 0) {
+                                totalExpH = c._macGroup.expandedCardsBox.height;
+                            } else {
+                                for (const it of c._macGroup.items) {
+                                    let bH = 78;
+                                    if (it.banner) {
+                                        let [_, bNat] = it.banner.get_preferred_height(targetW);
+                                        if (bNat > 30 && bNat < 500) bH = bNat;
+                                        else if (it.banner.height > 30 && it.banner.height < 500) bH = it.banner.height;
+                                    }
+                                    totalExpH += Math.round(bH) + 8;
+                                }
+                                totalExpH += 36;
+                            }
+                            chH = totalExpH;
                         } else {
                             let topH = 78;
                             if (c._macGroup.topCardBox) {
@@ -5022,8 +4963,8 @@ export const MenuBarController = class MenuBarController {
                                 if (tNat > 0 && tNat < 300) topH = tNat;
                                 else if (c._macGroup.topCardBox.height > 0 && c._macGroup.topCardBox.height < 300) topH = c._macGroup.topCardBox.height;
                             }
-                            const extra = (c._macGroup.items.length >= 3) ? 14 : (c._macGroup.items.length >= 2 ? 8 : 0);
-                            chH = Math.min(140, Math.max(50, topH + extra));
+                            const extra = (c._macGroup.items.length >= 3) ? 16 : (c._macGroup.items.length >= 2 ? 8 : 0);
+                            chH = Math.min(160, Math.max(50, topH + extra));
                         }
                     } else {
                         let [_, cNat] = c.get_preferred_height(targetW);
@@ -5154,14 +5095,6 @@ export const MenuBarController = class MenuBarController {
         this._isNotifCenterClosing = false;
         this._notifCenterOpen = true;
 
-        if (!this._notifStageLoopId) {
-            this._notifStageLoopId = global.stage.connect('before-update', () => {
-                if (this._notifCenterOpen || this._isNotifCenterClosing) {
-                    this._syncNotifGlassRegions();
-                }
-            });
-        }
-
         const reservedCards = this._populateNotificationCards(activeBanners);
 
         const dateMenu = Main.panel?.statusArea?.dateMenu;
@@ -5176,16 +5109,6 @@ export const MenuBarController = class MenuBarController {
         this._updateNotificationCenterGeometry();
         this._getNotifBlurActor();
         this._syncNotifBackdropBlur();
-        if (this._notifTahoeGlass?.bgActor) {
-            const bg = this._notifTahoeGlass.bgActor;
-            bg.opacity = 0;
-            bg.show();
-            bg.ease({
-                opacity: 255,
-                duration: 320,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            });
-        }
         if (this._notifBackdropBlur) {
             this._notifBackdropBlur.animateSlideIn(480, 320);
         }
@@ -5285,17 +5208,6 @@ export const MenuBarController = class MenuBarController {
             this._blurRebuildTimeout = 0;
         }
         this._disconnectNotifCenterListeners();
-        if (this._notifTahoeGlass?.bgActor) {
-            const bg = this._notifTahoeGlass.bgActor;
-            bg.ease({
-                opacity: 0,
-                duration: 260,
-                mode: Clutter.AnimationMode.EASE_IN_CUBIC,
-                onComplete: () => {
-                    bg.hide();
-                },
-            });
-        }
         if (this._notifBackdropBlur) {
             this._notifBackdropBlur.animateSlideOut(480, 260);
         }

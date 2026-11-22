@@ -3678,3 +3678,35 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+### Завдання №887: Центр повідомлень — відновлення плавного Gaussian-розмиття фону, динамічне розширення висоти при розгортанні стосів, усунення прозорості та артефактів кутів шарів стосу, правильне позиціонування білого бейджа кількості на іконці
+- Дата: 22 листопада 2026 року.
+- Опис проблеми:
+  1) На фоні центру повідомлень було відсутнє розмиття і були помітні строгі прямокутні межі через використання експериментального шейдера liquid glass з жорстким відсіканням замість оригінального плавного розмиття.
+  2) При розгортанні стосу повідомлень висота панелі не збільшувалася (застрягала на 180px) через fallback при неотриманні розмірів відсіку карток, через що відрізалися всі повідомлення нижче другого.
+  3) Шари карток стосу знизу мали форму коротких 24px прямокутників з незгладженими кутами, а верхня рамка (border) третьої картки просвічувала крізь напівпрозоре тіло другої картки.
+  4) Індикатор кількості повідомлень у стосі відображався у рядку заголовка поруч із назвою програми замість кута іконки.
+- Реалізовані зміни:
+  1) Відновлення плавного Gaussian-розмиття (MacFeatheredBackdropBlur):
+     * У extensions/blur-my-shell@aunetx/components/menubar_v29.js відновлено компонент MacFeatheredBackdropBlur із плавною інтерполяцією країв (cubic smoothstep fade 75px, без різких прямокутних граней).
+     * Видалено важкий ітератор global.stage.connect('before-update'), що спричиняв надмірне навантаження на головний потік оболонки.
+     * Заглушено дебаг-логер BackdropGlass (logger: null), запобігши переповненню journald.
+  2) Динамічне розширення висоти центру повідомлень при розгортанні:
+     * У _updateNotificationCenterGeometry() та _handleCardTargetHeightChange() реалізовано динамічний розрахунок сумарної висоти розгорнутого стосу через обчислення висоти карток кожного елемента списку плюс відступи та кнопка «Згорнути».
+     * Підключено сповіщення зміни висоти notify::height на expandedCardsBox та collapsedContainer, що забезпечує автоматичне плавне зростання висоти панелі (до 800+ px) без обрізання вмісту.
+  3) Виправлення геометрії та оптичної щільності шарів стосу:
+     * У extensions/blur-my-shell@aunetx/components/notifications_v4.js та extensions/kiwi@kemma/apps/tahoeNotifications.js нижні шари стосу (layer1, layer2) переведено на повну висоту основної картки (headH / effectiveCardH) з повноцінним заокругленням кутів border-radius: 18px.
+     * Надано непрозоре матове фонове забарвлення (rgba(36, 38, 44, 0.96) для першого шару, rgba(30, 32, 38, 0.94) для другого шару), завдяки чому верхній контур третьої картки повністю перекривається тілом другої картки та не просвічує.
+     * Встановлено коректні зміщення translation_y (8px для першого шару, 16px для другого шару) та відступи в ширині (10px та 20px відповідно).
+  4) Позиціонування та стилізація бейджа кількості:
+     * Контейнер іконки загорнуто у відцентрований iconWrapper (Clutter.BinLayout, clip_to_allocation: false).
+     * countBadge переміщено у правий верхній кут іконки (x_align: END, y_align: START, translation_x: 5, translation_y: -4).
+     * Застосовано суцільний білий фон (background-color: #ffffff !important; color: #000000 !important; font-size: 11px !important; font-weight: 700 !important; border-radius: 9999px !important; padding: 0px 5px !important; min-width: 16px !important; height: 16px !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.40) !important;).
+     * Відображається суто число (кількість повідомлень у стосі, наприклад 7), без зайвих символів, літер або іконок.
+- Зачеплені файли:
+  * [extensions/blur-my-shell@aunetx/components/notifications_v4.js](file:///home/vitaliy/MACTHEMEFILES/extensions/blur-my-shell@aunetx/components/notifications_v4.js)
+  * [extensions/blur-my-shell@aunetx/components/menubar_v29.js](file:///home/vitaliy/MACTHEMEFILES/extensions/blur-my-shell@aunetx/components/menubar_v29.js)
+  * [extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotifications.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

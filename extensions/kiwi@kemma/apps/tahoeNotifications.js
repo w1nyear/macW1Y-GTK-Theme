@@ -144,10 +144,9 @@ function _getToastContentStyle(noglass = false) {
 
 function _getSlabStyle(i, radius = 18) {
     _loadNotifStyling();
-    const tintVal = _notifStyling.tint / 100.0;
     const shadowVal = _notifStyling.shadow / 100.0;
     const rad = radius || _notifStyling.radius || 18;
-    const bgAlpha = (0.04 + tintVal * 0.30).toFixed(2);
+    const bgAlpha = i === 1 ? '0.96' : '0.94';
     let shadow = 'none';
     if (shadowVal > 0.02) {
         const sAlpha = (shadowVal * 0.35).toFixed(2);
@@ -155,14 +154,10 @@ function _getSlabStyle(i, radius = 18) {
         const sY = Math.round(2 + shadowVal * 6);
         shadow = `0 ${sY}px ${sBlur}px rgba(0, 0, 0, ${sAlpha})`;
     }
-    return `background-color: rgba(25, 28, 35, ${bgAlpha}) !important; ` +
+    return `background-color: rgba(36, 38, 44, ${bgAlpha}) !important; ` +
            `border: 1px solid rgba(255, 255, 255, 0.12) !important; ` +
            `border-top: 1px solid rgba(255, 255, 255, 0.16) !important; ` +
-           `border-bottom: 1px solid rgba(255, 255, 255, 0.10) !important; ` +
-           `border-top-left-radius: 0px !important; ` +
-           `border-top-right-radius: 0px !important; ` +
-           `border-bottom-left-radius: ${rad}px !important; ` +
-           `border-bottom-right-radius: ${rad}px !important; ` +
+           `border-radius: ${rad}px !important; ` +
            `box-shadow: ${shadow} !important;`;
 }
 
@@ -2120,14 +2115,14 @@ function _buildGroupStack(g, p) {
 
     for (let i = peersN; i >= 1; i--) {
         const slabW = Math.round(W - i * 16);
-        const slabH = (i * over) + tuck;
+        const slabH = headH;
         const slab = new St.Widget({
             reactive: false,
             can_focus: false,
             x_expand: false,
             y_expand: false,
             x: Math.round((W - slabW) / 2),
-            y: headH - tuck,
+            y: i * over,
             width: slabW,
             height: slabH,
         });
@@ -2157,20 +2152,26 @@ function _buildGroupStack(g, p) {
     if (peersCount > 0) {
         try {
             const mainBox = (newest.get_children?.() ?? [])[0];
-            const rightRail = mainBox?.get_children?.()?.find(c => c.has_style_class_name?.('tahoe-nc-right-rail') || c.layout_manager instanceof Clutter.BinLayout);
-            if (rightRail && !newest._macBadgeAdded) {
-                const badge = new St.Label({
-                    text: `+${peersCount}`,
-                    style: 'font-size: 11px; font-weight: 700; color: rgba(255, 255, 255, 0.85); background-color: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.20); border-radius: 9999px; padding: 1px 7px; margin-bottom: 3px;',
-                    x_align: Clutter.ActorAlign.END,
-                    y_align: Clutter.ActorAlign.CENTER,
-                });
-                newest._macStackBadge = badge;
-                newest._macBadgeAdded = true;
-                rightRail.insert_child_at_index(badge, 0);
-            } else if (newest._macStackBadge) {
-                newest._macStackBadge.text = `+${peersCount}`;
-                newest._macStackBadge.visible = true;
+            const iconTile = mainBox?.get_children?.()?.find(c => c.layout_manager instanceof Clutter.BinLayout && c !== mainBox);
+            if (iconTile) {
+                try { iconTile.set_clip_to_allocation(false); } catch (_) {}
+                try { mainBox.set_clip_to_allocation(false); } catch (_) {}
+                if (!newest._macBadgeAdded) {
+                    const badge = new St.Label({
+                        text: `${g.cards.length}`,
+                        style: 'background-color: #ffffff !important; color: #000000 !important; font-size: 11px !important; font-weight: 700 !important; border-radius: 9999px !important; padding: 0px 5px !important; min-width: 16px !important; height: 16px !important; text-align: center; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.40) !important;',
+                        x_align: Clutter.ActorAlign.END,
+                        y_align: Clutter.ActorAlign.START,
+                        translation_x: 5,
+                        translation_y: -4,
+                    });
+                    newest._macStackBadge = badge;
+                    newest._macBadgeAdded = true;
+                    iconTile.add_child(badge);
+                } else if (newest._macStackBadge) {
+                    newest._macStackBadge.text = `${g.cards.length}`;
+                    newest._macStackBadge.visible = true;
+                }
             }
         } catch (_) {}
     }
@@ -2185,7 +2186,8 @@ function _buildGroupStack(g, p) {
                     container.min_height = newTotalH;
                     for (const slab of container.get_children()) {
                         if (slab._macIsSlab) {
-                            slab.y = curHeadH - tuck;
+                            slab.height = curHeadH;
+                            slab.y = (slab._slabIdx || 1) * over;
                         }
                     }
                 }
