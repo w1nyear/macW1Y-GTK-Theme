@@ -630,6 +630,7 @@ class StageSidebar {
         this._panel = new St.Widget({
             reactive: false,
             opacity: 0,
+            clip_to_allocation: false,
             style: 'background-color: transparent;',
         });
         this._panel.set_size(panelW, panelH);
@@ -646,7 +647,7 @@ class StageSidebar {
             overlay_scrollbars: true,
             hscrollbar_policy: vertical ? St.PolicyType.NEVER : St.PolicyType.EXTERNAL,
             vscrollbar_policy: vertical ? St.PolicyType.EXTERNAL : St.PolicyType.NEVER,
-            clip_to_allocation: true,
+            clip_to_allocation: false,
         });
         this._scroll.set_size(panelW, panelH);
         this._panel.add_child(this._scroll);
@@ -656,6 +657,7 @@ class StageSidebar {
 
         this._box = new St.BoxLayout({
             reactive: true,
+            clip_to_allocation: false,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
@@ -831,20 +833,14 @@ class StageSidebar {
     _applyPerspective(card, factor = 1.0) {
         if (!card || !card._thumb || !card._thumb._previewBox) return;
         const box = card._thumb._previewBox;
+        box.set_transform(null);
         if (!this._VERTICAL || this._isFlatMode || factor <= 0) {
-            box.set_transform(null);
+            box.rotation_angle_y = 0;
             return;
         }
-        const Graphene = imports.gi.Graphene;
-        const m = new Graphene.Matrix();
-        const k = (this._POS === 'right' ? -0.0018 : 0.0018) * factor;
-        m.init_from_float([
-            1, 0, 0, k,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1
-        ]);
-        box.set_transform(m);
+        const pivotX = (this._POS === 'right') ? 1.0 : 0.0;
+        box.set_pivot_point(pivotX, 0.5);
+        box.rotation_angle_y = this._ROT_SIGN * 10 * factor;
     }
 
 
@@ -983,16 +979,8 @@ class StageSidebar {
             if (this._edge) this._edge.hide();
             if (this._panel) {
                 this._panel.remove_all_transitions();
-                this._panel.ease({
-                    opacity: 0,
-                    duration: 180,
-                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                    onComplete: () => {
-                        if (Main.overview.visible || Main.overview.visibleTarget) {
-                            this._panel.hide();
-                        }
-                    },
-                });
+                this._panel.opacity = 0;
+                this._panel.hide();
             }
         });
 
@@ -1328,19 +1316,58 @@ class StageSidebar {
             const winY = (bufRect && bufRect.height > 0) ? bufRect.y : rect.y;
 
             let content = this._snapshots.get(win)?.content;
-            if (!content && actor) {
-                try { content = actor.paint_to_content(null); } catch (_) {}
-            }
             const clone = content
                 ? new St.Widget({ content })
                 : new Clutter.Clone({ source: actor });
             clone.set_content_gravity?.(Clutter.ContentGravity.RESIZE_FILL);
             clone.set_position(winX, winY);
             clone.set_size(winW, winH);
-            clone.set_pivot_point(0.0, 0.0);
+            const pivotX = (this._POS === 'right') ? 1.0 : 0.0;
+            clone.set_pivot_point(pivotX, 0.5);
             clone.scale_z = 1.0;
             Main.uiGroup.add_child(clone);
             this._activeClones?.add(clone);
+
+            // Pre-refresh Stage Manager so destination card is created and positioned
+            this._signature = null;
+            this._refresh();
+            const targetCard = this._cards.find(c => {
+                if (c._windows && c._windows.includes(win)) return true;
+                if (c._group?.windows) {
+                    if (Array.isArray(c._group.windows) && c._group.windows.includes(win)) return true;
+                    if (c._group.windows.has && c._group.windows.has(win)) return true;
+                }
+                return false;
+            });
+            if (targetCard) {
+                targetCard.opacity = 0;
+                try {
+                    let targetActor = targetCard._thumb?._frontLayer ?? targetCard._thumb?._previewBox ?? targetCard._thumb ?? targetCard;
+                    if (targetActor.get_children?.().length > 0)
+                        targetActor = targetActor.get_children()[0];
+                    const [cx, cy] = targetActor.get_transformed_position();
+                    const [cw, ch] = targetActor.get_transformed_size();
+                    if (cw > 0 && ch > 0) {
+                        cardX = cx; cardY = cy; cardW = cw; cardH = ch;
+                    }
+                } catch (_) {}
+            }
+
+            // Animate other cards moving down to make room for targetCard
+            if (this._cards && this._cards.length > 1) {
+                const shiftY = Math.round((cardH + 10 * sf) / 2);
+                for (const c of this._cards) {
+                    if (c !== targetCard) {
+                        c.translation_y = -shiftY;
+                        c.ease({
+                            translation_x: 0,
+                            translation_y: 0,
+                            duration: 280,
+                            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                        });
+                    }
+                }
+            }
 
             const destScale = Math.min(cardW / winW, cardH / winH);
             const fitW = winW * destScale;
@@ -1355,13 +1382,13 @@ class StageSidebar {
                 scale_y: destScale,
                 scale_z: destScale,
                 rotation_angle_y: this._ROT_SIGN * 10,
+                opacity: 255,
                 duration: 280,
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                 onComplete: () => {
+                    if (targetCard) targetCard.opacity = 255;
                     clone.destroy();
                     this._activeClones?.delete(clone);
-                    this._signature = null;
-                    this._refresh();
                 },
             });
         } else {
@@ -1582,10 +1609,14 @@ class StageSidebar {
         if (activeWins.length === 0 && card && this._cards && this._cards.length > 1) {
             const sf = this._scaleFactor || 1;
             const shiftY = Math.round((cardH + 10 * sf) / 2);
-            for (const c of this._cards) {
+            const targetIdx = this._cards.indexOf(card);
+            for (let i = 0; i < this._cards.length; i++) {
+                const c = this._cards[i];
                 if (c !== card) {
+                    const dir = (targetIdx !== -1 && i < targetIdx) ? 1 : -1;
                     c.ease({
-                        translation_y: -shiftY,
+                        translation_x: 0,
+                        translation_y: dir * shiftY,
                         duration: 280,
                         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                     });
@@ -1619,21 +1650,18 @@ class StageSidebar {
 
                 if (actor && winW > 0 && winH > 0) {
                     let content = this._snapshots.get(win)?.content;
-                    if (!content && actor) {
-                        try { content = actor.paint_to_content(null); } catch (_) {}
-                    }
                     const clone = content
                         ? new St.Widget({ content })
                         : new Clutter.Clone({ source: actor });
                     clone.set_content_gravity?.(Clutter.ContentGravity.RESIZE_FILL);
                     clone.set_position(winX, winY);
                     clone.set_size(winW, winH);
-                    clone.set_pivot_point(0.0, 0.0);
+                    const pivotX = (this._POS === 'right') ? 1.0 : 0.0;
+                    clone.set_pivot_point(pivotX, 0.5);
                     clone.scale_z = 1.0;
+                    actor.opacity = 0;
                     Main.uiGroup.add_child(clone);
                     this._activeClones.add(clone);
-
-                    win.minimize();
 
                     const destScale = Math.min(cardW / winW, cardH / winH);
                     const fitW = winW * destScale;
@@ -1654,6 +1682,8 @@ class StageSidebar {
                         onComplete: () => {
                             clone.destroy();
                             this._activeClones?.delete(clone);
+                            win.minimize();
+                            actor.opacity = 255;
                             win._stageSwitching = false;
                         },
                     });
@@ -1703,9 +1733,6 @@ class StageSidebar {
                 if (actor && targetW > 0 && targetH > 0) {
                     actor.opacity = 0;
                     let content = this._snapshots.get(win)?.content;
-                    if (!content && actor) {
-                        try { content = actor.paint_to_content(null); } catch (_) {}
-                    }
                     const clone = content
                         ? new St.Widget({ content })
                         : new Clutter.Clone({ source: actor });
@@ -1721,7 +1748,8 @@ class StageSidebar {
                     clone.set_size(targetW, targetH);
                     clone.set_scale(startScale, startScale);
                     clone.scale_z = startScale;
-                    clone.set_pivot_point(0.0, 0.0);
+                    const pivotX = (this._POS === 'right') ? 1.0 : 0.0;
+                    clone.set_pivot_point(pivotX, 0.5);
                     clone.rotation_angle_y = this._ROT_SIGN * 10;
                     clone.opacity = 255;
                     Main.uiGroup.add_child(clone);
@@ -2266,19 +2294,39 @@ class StageSidebar {
 
 
     _makeWindowClone(win, maxW, maxH, maxScale = Infinity) {
-
-
-        const geom = this._windowGeometry(win) ?? this._snapshots.get(win);
+        let geom = this._snapshots.get(win);
+        if (!geom || !geom.content) {
+            this._captureSnapshot(win);
+            geom = this._snapshots.get(win);
+        }
+        if (!geom) geom = this._windowGeometry(win);
         if (!geom) return null;
 
         const { aw, ah } = geom;
+        if (!(aw > 0) || !(ah > 0)) return null;
         const scale = Math.min(maxW / aw, maxH / ah, maxScale);
+        const w = Math.round(aw * scale);
+        const h = Math.round(ah * scale);
 
-        const inner = geom.content
-            ? new St.Widget({ reactive: false, content: geom.content })
-            : new Clutter.Clone({ source: geom.actor, reactive: false });
-        inner.set_size(Math.round(aw * scale), Math.round(ah * scale));
-        return inner;
+        if (geom.content) {
+            const inner = new St.Widget({
+                reactive: false,
+                content: geom.content,
+            });
+            inner.set_content_gravity?.(Clutter.ContentGravity.RESIZE_FILL);
+            inner.set_size(w, h);
+            return inner;
+        }
+
+        if (geom.actor) {
+            const clone = new Clutter.Clone({ source: geom.actor, reactive: false });
+            clone.set_size(aw, ah);
+            clone.set_pivot_point(0, 0);
+            clone.set_scale(scale, scale);
+            return clone;
+        }
+
+        return null;
     }
 
 
@@ -2387,10 +2435,10 @@ class StageSidebar {
         const layers = Math.max(n, 1);
         const totalH = (layers - 1) * sh;
         const totalV = (layers - 1) * sv;
-        const container = new St.Widget({ reactive: false });
+        const container = new St.Widget({ reactive: false, clip_to_allocation: false });
         container.set_size(tw + totalH, th + totalV);
 
-        const previewBox = new St.Widget({ reactive: false });
+        const previewBox = new St.Widget({ reactive: false, clip_to_allocation: false });
         previewBox.set_size(tw + totalH, th + totalV);
         container.add_child(previewBox);
         container._previewBox = previewBox;
@@ -2404,6 +2452,7 @@ class StageSidebar {
 
             const layer = new St.Widget({
                 reactive: false,
+                clip_to_allocation: true,
                 style_class: this._cls(isFront ? 'stage-thumb-layer' : 'stage-thumb-layer-back'),
                 opacity: layerOpacity,
             });

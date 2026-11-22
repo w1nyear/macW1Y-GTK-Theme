@@ -272,20 +272,10 @@ export const PopupBlurMessageStacks = class PopupBlurMessageStacks {
             return;
         }
 
-
-        const height = message.height || message.get_height() || 0;
-        const width = message.width || message.get_width() || 0;
-
-        if (height <= 0 || width <= 0)
-            return;
-
-        const base_edge = (index === 1) ? 10 : (index === 2 ? 7 : 0);
-        const visible_edge = Math.max(1, Math.round(base_edge + (height - base_edge) * expansion));
-        const clip_y = Math.max(0, height - visible_edge);
-
-        message.set_clip(0, clip_y, Math.max(1, width), visible_edge);
-        this.bms_clipped.add(message);
-
+        if (this.bms_clipped.has(message)) {
+            message.remove_clip();
+            this.bms_clipped.delete(message);
+        }
 
         const stagger_start = Math.min(0.8, index * 0.04);
         const progress = Math.min(1.0, Math.max(0.0, (expansion - stagger_start) / (1.0 - stagger_start)));
@@ -304,38 +294,16 @@ export const PopupBlurMessageStacks = class PopupBlurMessageStacks {
         if (!this.watch_actor(message))
             return;
 
-        const height = message.height || message.get_height() || 0;
-        const width = message.width || message.get_width() || 0;
-
-        if (height <= 0 || width <= 0)
-            return;
+        if (this.bms_clipped.has(message)) {
+            message.remove_clip();
+            this.bms_clipped.delete(message);
+        }
 
         const index = this.get_message_index_in_group(message);
 
-        if (index === 1) {
-
-            const visible_edge = 10;
-            const clip_y = Math.max(0, height - visible_edge);
-            message.set_clip(0, clip_y, Math.max(1, width), visible_edge);
-            this.bms_clipped.add(message);
-        } else if (index === 2) {
-
-            const visible_edge = 7;
-            const clip_y = Math.max(0, height - visible_edge);
-            message.set_clip(0, clip_y, Math.max(1, width), visible_edge);
-            this.bms_clipped.add(message);
-        } else if (index >= 3) {
-
+        if (index >= 3) {
             message.opacity = 0;
-            message.remove_clip();
-            this.bms_clipped.delete(message);
-        } else {
-
-            const is_second = this.has_pseudo_class(message, 'second-in-stack');
-            const visible_edge = is_second ? 10 : 6;
-            const clip_y = Math.max(0, height - visible_edge);
-            message.set_clip(0, clip_y, Math.max(1, width), visible_edge);
-            this.bms_clipped.add(message);
+            this.restore_message_content(message);
         }
     }
 

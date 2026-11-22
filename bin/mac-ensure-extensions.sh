@@ -49,7 +49,6 @@ done
 
 # Ensure bloat remains disabled
 BLOAT_EXTS=(
-    "stage-manager@gnome-stage-manager"
     "snapd-prompting@canonical.com"
     "snapd-search-provider@canonical.com"
     "web-search-provider@ubuntu.com"

@@ -2767,7 +2767,17 @@ export default class EvalHelper extends Extension {
                 const labels = Main.uiGroup.get_children().filter(a => a.has_style_class_name && a.has_style_class_name('dash-label'));
                 for (const l of labels) {
                     l.set_style(styleStr);
-                    if (l._blurPillActor) {
+                    if (l._blurActor) {
+                        const eff = l._blurActor._blurEff;
+                        if (eff) {
+                            eff.enabled = (blur > 0);
+                            eff.radius = blur;
+                            eff.brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
+                            eff.queue_repaint?.();
+                        }
+                        const effL = l.get_effects?.()?.find(e => e.name === 'tahoe-label-blur');
+                        if (effL) effL.enabled = false;
+                    } else if (l._blurPillActor) {
                         const effP = l._blurPillActor._blurEff;
                         if (effP) {
                             effP.enabled = (blur > 0);
@@ -2891,19 +2901,11 @@ export default class EvalHelper extends Extension {
                         tail.allocate(tBox);
                     } catch (_) {}
 
-                    if (label._blurPillActor) {
-                        label._blurPillActor.set_size(pillWidth, pillHeight);
-                        label._blurPillActor.set_position(lx, ly);
-                        if (label._blurPillActor._blurEff && 'corner_radius' in label._blurPillActor._blurEff) {
-                            label._blurPillActor._blurEff.corner_radius = Math.round(pillHeight / 2);
-                        }
-                    }
-
-                    if (label._blurArrowActor) {
-                        label._blurArrowActor.set_size(Math.round(arrowBoxW), Math.round(arrowBoxH));
-                        label._blurArrowActor.set_position(arrowX, arrowY);
-                        if (label._blurArrowActor._blurEff && 'corner_radius' in label._blurArrowActor._blurEff) {
-                            label._blurArrowActor._blurEff.corner_radius = 4;
+                    if (label._blurActor) {
+                        label._blurActor.set_size(Math.round(tailW), Math.round(tailH));
+                        label._blurActor.set_position(Math.round(posX), Math.round(posY));
+                        if (label._blurActor._blurEff && 'corner_radius' in label._blurActor._blurEff) {
+                            label._blurActor._blurEff.corner_radius = Math.round(pillHeight / 2);
                         }
                     }
 
@@ -2925,64 +2927,39 @@ export default class EvalHelper extends Extension {
                         labelBlurEff.enabled = false;
                     }
 
-                    if (!label._blurPillActor) {
-                        const blurPill = new St.Widget({
-                            style_class: 'dash-label-blur-pill',
+                    if (!label._blurActor) {
+                        const blurActor = new St.Widget({
+                            style_class: 'dash-label-blur-unified',
                             reactive: false,
                         });
-                        label._blurPillActor = blurPill;
-
-                        const blurArrow = new St.Widget({
-                            style_class: 'dash-label-blur-arrow',
-                            reactive: false,
-                        });
-                        label._blurArrowActor = blurArrow;
+                        label._blurActor = blurActor;
 
                         const cfg = globalThis._macLabelStylingConfig || { blur: 30, tint: 28, shadow: 25 };
                         const radius = cfg.blur ?? 30;
                         const brightness = Math.max(0.3, 1.0 - ((cfg.tint ?? 28) / 100.0) * 0.4);
 
                         if (Blur?.BlurEffect) {
-                            blurPill._blurEff = new Blur.BlurEffect({
-                                name: 'dash-label-pill-blur',
+                            blurActor._blurEff = new Blur.BlurEffect({
+                                name: 'dash-label-unified-blur',
                                 mode: 1,
                                 radius: radius,
-                                corner_radius: 13,
+                                corner_radius: 14,
                                 brightness: brightness,
                             });
-                            blurPill.add_effect(blurPill._blurEff);
-
-                            blurArrow._blurEff = new Blur.BlurEffect({
-                                name: 'dash-label-arrow-blur',
-                                mode: 1,
-                                radius: radius,
-                                corner_radius: 4,
-                                brightness: brightness,
-                            });
-                            blurArrow.add_effect(blurArrow._blurEff);
+                            blurActor.add_effect(blurActor._blurEff);
                         } else if (Shell?.BlurEffect) {
-                            blurPill._blurEff = new Shell.BlurEffect({
-                                name: 'dash-label-pill-blur',
+                            blurActor._blurEff = new Shell.BlurEffect({
+                                name: 'dash-label-unified-blur',
                                 mode: Shell.BlurMode.BACKGROUND,
                                 radius: radius,
                             });
-                            blurPill.add_effect(blurPill._blurEff);
-
-                            blurArrow._blurEff = new Shell.BlurEffect({
-                                name: 'dash-label-arrow-blur',
-                                mode: Shell.BlurMode.BACKGROUND,
-                                radius: radius,
-                            });
-                            blurArrow.add_effect(blurArrow._blurEff);
+                            blurActor.add_effect(blurActor._blurEff);
                         }
 
-                        Main.uiGroup.add_child(blurPill);
-                        Main.uiGroup.add_child(blurArrow);
+                        Main.uiGroup.add_child(blurActor);
 
-                        label.bind_property('visible', blurPill, 'visible', GObject.BindingFlags.SYNC_CREATE);
-                        label.bind_property('opacity', blurPill, 'opacity', GObject.BindingFlags.SYNC_CREATE);
-                        label.bind_property('visible', blurArrow, 'visible', GObject.BindingFlags.SYNC_CREATE);
-                        label.bind_property('opacity', blurArrow, 'opacity', GObject.BindingFlags.SYNC_CREATE);
+                        label.bind_property('visible', blurActor, 'visible', GObject.BindingFlags.SYNC_CREATE);
+                        label.bind_property('opacity', blurActor, 'opacity', GObject.BindingFlags.SYNC_CREATE);
                     }
 
                     if (!label._arrowTailActor) {
@@ -3020,9 +2997,8 @@ export default class EvalHelper extends Extension {
                             const rad = ph / 2.0;
 
                             const rise = 7.0;
-                            const halfBase = 5.5;
-                            const fillet = 7.5;
-                            const filletH = 2.2;
+                            const halfBase = 5.0;
+                            const fillet = 10.0;
                             const tipR = 1.8;
 
                             const pos = label._arrowPos ?? position ?? St.Side.BOTTOM;
@@ -3035,10 +3011,10 @@ export default class EvalHelper extends Extension {
                                     const cx = ox + pw / 2.0;
                                     cr.moveTo(ox + rad, oy);
                                     cr.lineTo(cx - halfBase - fillet, oy);
-                                    cr.curveTo(cx - halfBase - fillet * 0.45, oy, cx - halfBase - fillet * 0.05, oy - filletH * 0.35, cx - halfBase, oy - filletH);
-                                    cr.curveTo(cx - halfBase * 0.65, oy - filletH - (rise - filletH) * 0.5, cx - tipR * 1.4, oy - rise + 0.2, cx, oy - rise);
-                                    cr.curveTo(cx + tipR * 1.4, oy - rise + 0.2, cx + halfBase * 0.65, oy - filletH - (rise - filletH) * 0.5, cx + halfBase, oy - filletH);
-                                    cr.curveTo(cx + halfBase + fillet * 0.05, oy - filletH * 0.35, cx + halfBase + fillet * 0.45, oy, cx + halfBase + fillet, oy);
+                                    cr.curveTo(cx - halfBase - fillet * 0.5, oy, cx - halfBase - 1.2, oy - rise * 0.25, cx - halfBase, oy - rise * 0.55);
+                                    cr.curveTo(cx - halfBase + 1.2, oy - rise * 0.85, cx - tipR * 1.3, oy - rise, cx, oy - rise);
+                                    cr.curveTo(cx + tipR * 1.3, oy - rise, cx + halfBase - 1.2, oy - rise * 0.85, cx + halfBase, oy - rise * 0.55);
+                                    cr.curveTo(cx + halfBase + 1.2, oy - rise * 0.25, cx + halfBase + fillet * 0.5, oy, cx + halfBase + fillet, oy);
                                     cr.lineTo(ox + pw - rad, oy);
                                     cr.arc(ox + pw - rad, oy + rad, rad, 1.5 * Math.PI, 2.0 * Math.PI);
                                     cr.arc(ox + pw - rad, oy + ph - rad, rad, 0, 0.5 * Math.PI);
@@ -3057,10 +3033,10 @@ export default class EvalHelper extends Extension {
                                     cr.lineTo(ox + rad, oy + ph);
                                     cr.arc(ox + rad, oy + ph - rad, rad, 0.5 * Math.PI, Math.PI);
                                     cr.lineTo(ox, cy + halfBase + fillet);
-                                    cr.curveTo(ox, cy + halfBase + fillet * 0.45, ox - filletH * 0.35, cy + halfBase + fillet * 0.05, ox - filletH, cy + halfBase);
-                                    cr.curveTo(ox - filletH - (rise - filletH) * 0.5, cy + halfBase * 0.65, ox - rise + 0.2, cy + tipR * 1.4, ox - rise, cy);
-                                    cr.curveTo(ox - rise + 0.2, cy - tipR * 1.4, ox - filletH - (rise - filletH) * 0.5, cy - halfBase * 0.65, ox - filletH, cy - halfBase);
-                                    cr.curveTo(ox - filletH * 0.35, cy - halfBase - fillet * 0.05, ox, cy - halfBase - fillet * 0.45, ox, cy - halfBase - fillet);
+                                    cr.curveTo(ox, cy + halfBase + fillet * 0.5, ox - rise * 0.25, cy + halfBase + 1.2, ox - rise * 0.55, cy + halfBase);
+                                    cr.curveTo(ox - rise * 0.85, cy + halfBase - 1.2, ox - rise, cy + tipR * 1.3, ox - rise, cy);
+                                    cr.curveTo(ox - rise, cy - tipR * 1.3, ox - rise * 0.85, cy - halfBase + 1.2, ox - rise * 0.55, cy - halfBase);
+                                    cr.curveTo(ox - rise * 0.25, cy - halfBase - 1.2, ox, cy - halfBase - fillet * 0.5, ox, cy - halfBase - fillet);
                                     cr.lineTo(ox, oy + rad);
                                     cr.arc(ox + rad, oy + rad, rad, Math.PI, 1.5 * Math.PI);
                                     cr.closePath();
@@ -3072,10 +3048,10 @@ export default class EvalHelper extends Extension {
                                     cr.lineTo(ox + pw - rad, oy);
                                     cr.arc(ox + pw - rad, oy + rad, rad, 1.5 * Math.PI, 2.0 * Math.PI);
                                     cr.lineTo(ox + pw, cy - halfBase - fillet);
-                                    cr.curveTo(ox + pw, cy - halfBase - fillet * 0.45, ox + pw + filletH * 0.35, cy - halfBase - fillet * 0.05, ox + pw + filletH, cy - halfBase);
-                                    cr.curveTo(ox + pw + filletH + (rise - filletH) * 0.5, cy - halfBase * 0.65, ox + pw + rise - 0.2, cy - tipR * 1.4, ox + pw + rise, cy);
-                                    cr.curveTo(ox + pw + rise - 0.2, cy + tipR * 1.4, ox + pw + filletH + (rise - filletH) * 0.5, cy + halfBase * 0.65, ox + pw + filletH, cy + halfBase);
-                                    cr.curveTo(ox + pw + filletH * 0.35, cy + halfBase + fillet * 0.05, ox + pw, cy + halfBase + fillet * 0.45, ox + pw, cy + halfBase + fillet);
+                                    cr.curveTo(ox + pw, cy - halfBase - fillet * 0.5, ox + pw + rise * 0.25, cy - halfBase - 1.2, ox + pw + rise * 0.55, cy - halfBase);
+                                    cr.curveTo(ox + pw + rise * 0.85, cy - halfBase + 1.2, ox + pw + rise, cy - tipR * 1.3, ox + pw + rise, cy);
+                                    cr.curveTo(ox + pw + rise, cy + tipR * 1.3, ox + pw + rise * 0.85, cy + halfBase - 1.2, ox + pw + rise * 0.55, cy + halfBase);
+                                    cr.curveTo(ox + pw + rise * 0.25, cy + halfBase + 1.2, ox + pw, cy + halfBase + fillet * 0.5, ox + pw, cy + halfBase + fillet);
                                     cr.lineTo(ox + pw, oy + ph - rad);
                                     cr.arc(ox + pw - rad, oy + ph - rad, rad, 0, 0.5 * Math.PI);
                                     cr.lineTo(ox + rad, oy + ph);
@@ -3091,10 +3067,10 @@ export default class EvalHelper extends Extension {
                                     cr.arc(ox + pw - rad, oy + rad, rad, 1.5 * Math.PI, 2.0 * Math.PI);
                                     cr.arc(ox + pw - rad, oy + ph - rad, rad, 0, 0.5 * Math.PI);
                                     cr.lineTo(cx + halfBase + fillet, oy + ph);
-                                    cr.curveTo(cx + halfBase + fillet * 0.45, oy + ph, cx + halfBase + fillet * 0.05, oy + ph + filletH * 0.35, cx + halfBase, oy + ph + filletH);
-                                    cr.curveTo(cx + halfBase * 0.65, oy + ph + filletH + (rise - filletH) * 0.5, cx + tipR * 1.4, oy + ph + rise - 0.2, cx, oy + ph + rise);
-                                    cr.curveTo(cx - tipR * 1.4, oy + ph + rise - 0.2, cx - halfBase * 0.65, oy + ph + filletH + (rise - filletH) * 0.5, cx - halfBase, oy + ph + filletH);
-                                    cr.curveTo(cx - halfBase - fillet * 0.05, oy + ph + filletH * 0.35, cx - halfBase - fillet * 0.45, oy + ph, cx - halfBase - fillet, oy + ph);
+                                    cr.curveTo(cx + halfBase + fillet * 0.5, oy + ph, cx + halfBase + 1.2, oy + ph + rise * 0.25, cx + halfBase, oy + ph + rise * 0.55);
+                                    cr.curveTo(cx + halfBase - 1.2, oy + ph + rise * 0.85, cx + tipR * 1.3, oy + ph + rise, cx, oy + ph + rise);
+                                    cr.curveTo(cx - tipR * 1.3, oy + ph + rise, cx - halfBase + 1.2, oy + ph + rise * 0.85, cx - halfBase, oy + ph + rise * 0.55);
+                                    cr.curveTo(cx - halfBase - 1.2, oy + ph + rise * 0.25, cx - halfBase - fillet * 0.5, oy + ph, cx - halfBase - fillet, oy + ph);
                                     cr.lineTo(ox + rad, oy + ph);
                                     cr.arc(ox + rad, oy + ph - rad, rad, 0.5 * Math.PI, Math.PI);
                                     cr.closePath();
@@ -3132,15 +3108,10 @@ export default class EvalHelper extends Extension {
                         label.bind_property('opacity', tail, 'opacity', GObject.BindingFlags.SYNC_CREATE);
 
                         label.connect('destroy', () => {
-                            if (label._blurPillActor) {
-                                Main.uiGroup.remove_child(label._blurPillActor);
-                                label._blurPillActor.destroy();
-                                label._blurPillActor = null;
-                            }
-                            if (label._blurArrowActor) {
-                                Main.uiGroup.remove_child(label._blurArrowActor);
-                                label._blurArrowActor.destroy();
-                                label._blurArrowActor = null;
+                            if (label._blurActor) {
+                                Main.uiGroup.remove_child(label._blurActor);
+                                label._blurActor.destroy();
+                                label._blurActor = null;
                             }
                             if (label._arrowTailActor) {
                                 Main.uiGroup.remove_child(label._arrowTailActor);
@@ -3158,10 +3129,8 @@ export default class EvalHelper extends Extension {
                         });
                     }
 
-                    if (label._blurPillActor && label._arrowTailActor)
-                        Main.uiGroup.set_child_below_sibling(label._blurPillActor, label._arrowTailActor);
-                    if (label._blurArrowActor && label._arrowTailActor)
-                        Main.uiGroup.set_child_below_sibling(label._blurArrowActor, label._arrowTailActor);
+                    if (label._blurActor && label._arrowTailActor)
+                        Main.uiGroup.set_child_below_sibling(label._blurActor, label._arrowTailActor);
                     if (label._arrowTailActor)
                         Main.uiGroup.set_child_below_sibling(label._arrowTailActor, label);
 
@@ -3201,7 +3170,7 @@ export default class EvalHelper extends Extension {
                             other.remove_all_transitions();
                             other.opacity = 0;
                             other.hide();
-                            for (const sub of [other._blurPillActor, other._blurArrowActor, other._arrowTailActor]) {
+                            for (const sub of [other._blurActor, other._arrowTailActor]) {
                                 if (sub) {
                                     sub.remove_all_transitions();
                                     sub.opacity = 0;
@@ -3215,10 +3184,8 @@ export default class EvalHelper extends Extension {
                     this.label.remove_all_transitions();
                     if (this.label._arrowTailActor)
                         this.label._arrowTailActor.remove_all_transitions();
-                    if (this.label._blurPillActor)
-                        this.label._blurPillActor.remove_all_transitions();
-                    if (this.label._blurArrowActor)
-                        this.label._blurArrowActor.remove_all_transitions();
+                    if (this.label._blurActor)
+                        this.label._blurActor.remove_all_transitions();
 
                     this.label.opacity = 0;
                     this.label.show();
@@ -3226,13 +3193,9 @@ export default class EvalHelper extends Extension {
                         this.label._arrowTailActor.opacity = 0;
                         this.label._arrowTailActor.show();
                     }
-                    if (this.label._blurPillActor) {
-                        this.label._blurPillActor.opacity = 0;
-                        this.label._blurPillActor.show();
-                    }
-                    if (this.label._blurArrowActor) {
-                        this.label._blurArrowActor.opacity = 0;
-                        this.label._blurArrowActor.show();
+                    if (this.label._blurActor) {
+                        this.label._blurActor.opacity = 0;
+                        this.label._blurActor.show();
                     }
 
                     const transparentStyle =
@@ -3256,14 +3219,12 @@ export default class EvalHelper extends Extension {
                     if (globalThis._macLabelStylingConfig) {
                         const { blur, tint } = globalThis._macLabelStylingConfig;
                         const brightness = Math.max(0.3, 1.0 - (tint / 100.0) * 0.4);
-                        for (const bActor of [this.label._blurPillActor, this.label._blurArrowActor]) {
-                            const eff = bActor?._blurEff;
-                            if (eff) {
-                                eff.enabled = (blur > 0);
-                                eff.radius = blur;
-                                eff.brightness = brightness;
-                                eff.queue_repaint?.();
-                            }
+                        const eff = this.label._blurActor?._blurEff;
+                        if (eff) {
+                            eff.enabled = (blur > 0);
+                            eff.radius = blur;
+                            eff.brightness = brightness;
+                            eff.queue_repaint?.();
                         }
                     }
 
@@ -3275,8 +3236,7 @@ export default class EvalHelper extends Extension {
                         duration: 200,
                         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                         onComplete: () => {
-                            this.label._blurPillActor?._blurEff?.queue_repaint?.();
-                            this.label._blurArrowActor?._blurEff?.queue_repaint?.();
+                            this.label._blurActor?._blurEff?.queue_repaint?.();
                         },
                     });
                 };
@@ -3286,7 +3246,7 @@ export default class EvalHelper extends Extension {
                         return;
 
                     this.label.remove_all_transitions();
-                    const subs = [this.label._arrowTailActor, this.label._blurPillActor, this.label._blurArrowActor];
+                    const subs = [this.label._arrowTailActor, this.label._blurActor];
                     for (const sub of subs) {
                         if (sub) sub.remove_all_transitions();
                     }
@@ -3313,6 +3273,8 @@ export default class EvalHelper extends Extension {
                                 if (sub) sub.hide();
                             }
                         },
+                    });
+                };
                     });
                 };
 
@@ -5310,6 +5272,7 @@ export default class EvalHelper extends Extension {
 
         const applySnapshotOverlay = (actor) => {
             if (!actor || !actor.meta_window) return;
+            if (globalThis._stageManagerEnabled || actor.meta_window._stageSwitching) return;
 
 
             if (hasMagicLampTransition(actor)) return;

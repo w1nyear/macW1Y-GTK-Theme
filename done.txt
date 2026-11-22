@@ -3831,3 +3831,50 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+---
+
+892. Комплексне виправлення Stage Manager (плавний поворот і приземлення без розривів, усунення бокового зміщення, зникнення в огляді GNOME, збереження стану після перезапуску), обʼєднання розмиття та плавний перехід біртагів Dock/Overview, та вдосконалення Центру повідомлень (динамічна висота розгортання стосів, видалення прямокутних контурів карток і мʼяке розмите тло):
+- Опис проблем:
+  1) Stage Manager:
+     - При згортанні вікна клон зникав через opacity: 0, після чого різко створювався інший статичний елемент у Stage Manager без плавного переходу повороту.
+     - При розгортанні вікна програми зверху чи знизу зсувалися вбік замість плавного заповнення порожнього місця по вертикалі.
+     - При зміні вікон стейджу права грань карток обрізалася через clip_to_allocation: true у контейнері скролу.
+     - У thumbnail-прев'ю Nautilus та інших програм відмальовувалися у 1:1 масштабі (без масштабування Clutter.Clone) та перетворювалися на витягнуту трапецію через екран.
+     - Stage Manager показувався під час відкриття огляду GNOME (Overview) замість того, щоб зникати разом із програмами на робочому столі.
+     - Після перезавантаження системи Stage Manager автоматично вимикався скриптом mac-ensure-extensions.sh через наявність у списку BLOAT_EXTS.
+  2) Біртаги (Tooltips) Dock та Overview:
+     - Стрілка над/під програмою мала окремий актор розмиття від пілюлі, утворювала прямий кут 90° та не мала плавного радіусного переходу (скруглення/fillet) до пілюлі.
+  3) Центр повідомлень:
+     - Тло Центру повідомлень мало жорсткі прямокутні межі без плавного розмиття через виклик _applyWidgetGlassParams на бекдропі.
+     - При розгортанні стосу повідомлень висота Центру повідомлень була зафіксована, через що нижні повідомлення не відображалися.
+     - Під першим повідомленням стосу було видно гострі контури нижніх повідомлень (через set_clip та напівпрозоре тло).
+     - Бейдж кількості повідомлень стосу мав некоректне розміщення та стиль замість правого верхнього кута іконки з суцільно білим фоном і чорною цифрою.
+
+- Виправлення:
+  1) Stage Manager:
+     - У _onWindowMinimize: встановлено опорну точку pivot_point(pivotX, 0.5), клон зберігає непрозорість opacity: 255 та плавно обертається rotation_angle_y: this._ROT_SIGN * 10, сідаючи точно у слот цільової картки, тоді як наявні картки синхронно зміщуються вниз без стрибків.
+     - У _switchWindows: при розгортанні картки на порожній робочий стіл решта карток плавно центруються строго по вертикалі (translation_x: 0, translation_y: dir * shiftY) без жодного бокового зміщення.
+     - Усунено обрізання карток: для _panel, _scroll, _box, container, previewBox встановлено clip_to_allocation = false.
+     - У _makeWindowClone: виправлено клонування (якщо geom.content, застосовується RESIZE_FILL; для geom.actor застосовується clone.set_size(aw, ah); clone.set_scale(scale, scale)), а layer у _makeStackedThumb ізольовано обмежує розмір прев'ю tw x th, усуваючи гігантські витягнуті трапеції.
+     - В огляді GNOME (Overview): Main.overview на подію showing миттєво приховує панель Stage Manager (opacity = 0; hide()), тож панель залишається на робочому столі й не показується в огляді.
+     - Збереження стану після перезапуску: видалено 'stage-manager@gnome-stage-manager' зі списку BLOAT_EXTS у bin/mac-ensure-extensions.sh та синхронізовано з /usr/local/bin/mac-ensure-extensions.sh.
+  2) Біртаги Dock та Overview:
+     - В appIcons.js (Dock) та eval-helper@mactheme/extension.js (Overview) об'єднано розмиття стрілки та пілюлі в один суцільний шар _blurActor (dash-label-blur-unified), з плавним криволінійним сполученням (fillet) з горизонтальною дотичною між стрілкою та пілюлею без гострих стиків.
+  3) Центр повідомлень:
+     - У tahoeNotifications.js: додано функцію _syncNcHeight(p), яка динамічно плавно анімує висоту панелі box та panelBg при розгортанні/згортанні стосів повідомлень і перебудові списку.
+     - Відновлено м'яке дифузне розмиття: для бекдропу видалено виклик _applyWidgetGlassParams та встановлено baseStrength: 0, зберігаючи NC_RADIUS = 82.
+     - Стос повідомлень: у message_stacks.js видалено обрізання set_clip, а в темах macW1Y-Dark та macW1Y-Light нижні шари стосу наділені суцільними непрозорими кольорами, усуваючи просвічування рамок.
+     - Бейдж стосу: розміщено у правому верхньому куті іконки додатку (translation_x: 6, translation_y: -6) з суцільно білим фоном (#ffffff), чорним жирним шрифтом та тінню.
+- Зачеплені файли:
+  * [bin/mac-ensure-extensions.sh](file:///home/vitaliy/MACTHEMEFILES/bin/mac-ensure-extensions.sh)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [extensions/blur-my-shell@aunetx/components/popup/message_stacks.js](file:///home/vitaliy/MACTHEMEFILES/extensions/blur-my-shell@aunetx/components/popup/message_stacks.js)
+  * [extensions/dash2dock-motion@unmade.space/appIcons.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/appIcons.js)
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotifications.js)
+  * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
+  * [macW1Y-Dark/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark/gnome-shell/gnome-shell.css)
+  * [macW1Y-Light/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light/gnome-shell/gnome-shell.css)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

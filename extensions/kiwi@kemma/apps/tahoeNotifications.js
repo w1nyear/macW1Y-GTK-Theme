@@ -2046,6 +2046,7 @@ function _rebuild(merges = null) {
             enterIdx++;
         }
         try { _collapseNcGroups(p, merges); } catch (ex) { console.error('[tahoe-nc] groups: ' + ex); }
+        _syncNcHeight(p);
     } catch (e) {
         console.error(`[tahoe-nc] _rebuild error: ${e}`);
     }
@@ -2152,18 +2153,27 @@ function _buildGroupStack(g, p) {
     if (peersCount > 0) {
         try {
             const mainBox = (newest.get_children?.() ?? [])[0];
-            const iconTile = mainBox?.get_children?.()?.find(c => c.layout_manager instanceof Clutter.BinLayout && c !== mainBox);
+            let iconTile = null;
+            if (mainBox) {
+                for (const c of mainBox.get_children?.() ?? []) {
+                    if (c.layout_manager instanceof Clutter.BinLayout && c !== mainBox) {
+                        iconTile = c;
+                        break;
+                    }
+                }
+            }
             if (iconTile) {
                 try { iconTile.set_clip_to_allocation(false); } catch (_) {}
                 try { mainBox.set_clip_to_allocation(false); } catch (_) {}
+                try { newest.set_clip_to_allocation(false); } catch (_) {}
                 if (!newest._macBadgeAdded) {
                     const badge = new St.Label({
                         text: `${g.cards.length}`,
-                        style: 'background-color: #ffffff !important; color: #000000 !important; font-size: 11px !important; font-weight: 700 !important; border-radius: 9999px !important; padding: 0px 5px !important; min-width: 16px !important; height: 16px !important; text-align: center; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.40) !important;',
+                        style: 'background-color: #ffffff !important; color: #000000 !important; font-size: 11px !important; font-weight: 700 !important; border-radius: 9999px !important; padding: 1px 5px !important; min-width: 17px !important; height: 17px !important; text-align: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45) !important; border: 1.5px solid rgba(0, 0, 0, 0.12) !important;',
                         x_align: Clutter.ActorAlign.END,
                         y_align: Clutter.ActorAlign.START,
-                        translation_x: 5,
-                        translation_y: -4,
+                        translation_x: 6,
+                        translation_y: -6,
                     });
                     newest._macStackBadge = badge;
                     newest._macBadgeAdded = true;
@@ -2267,6 +2277,46 @@ function _collapseNcGroups(p, merges = null) {
     }
 }
 
+function _syncNcHeight(p) {
+    if (!p || !p.box || !p.panelBg) return;
+    try {
+        const W = p.box.width || NC_W;
+        const workArea = Main.layoutManager.getWorkAreaForMonitor(Main.layoutManager.primaryIndex);
+        const topBarH = Math.round(Main.layoutManager.panelBox?.height ?? 34);
+        const maxH = Math.max(200, (workArea ? workArea.height : 800) - topBarH - 24);
+
+        let neededH = 54;
+        if (p.list) {
+            const [, lh] = p.list.get_preferred_height(W);
+            neededH += Math.ceil(lh) + 16;
+        }
+        const targetH = Math.min(maxH, Math.max(70, neededH));
+        p.box.min_height = 0;
+        p.panelBg.min_height = 0;
+        p.box.ease({
+            height: targetH,
+            duration: 250,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            onUpdate: () => {
+                try { p.panelBg.set_size(p.box.width, p.box.height); } catch (_) {}
+            },
+            onComplete: () => {
+                try {
+                    p.box.set_size(W, targetH);
+                    p.panelBg.set_size(W, targetH);
+                } catch (_) {}
+            }
+        });
+        p.panelBg.ease({
+            height: targetH,
+            duration: 250,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+        });
+    } catch (e) {
+        console.error('[tahoe-nc] _syncNcHeight: ' + e);
+    }
+}
+
 function _expandGroup(g) {
     try {
         const cont = g?.container;
@@ -2358,6 +2408,7 @@ function _expandGroup(g) {
         try { cont.destroy(); } catch (_) {}
         g.container = null;
         g.held = null;
+        _syncNcHeight(p);
     } catch (e) {
         console.error('[tahoe-nc] expand: ' + e);
     }
@@ -2398,6 +2449,7 @@ function _collapseGroup(g) {
 
         const container = _buildGroupStack(g, p);
         p.list.insert_child_at_index(container, pos);
+        _syncNcHeight(p);
     } catch (e) {
         console.error('[tahoe-nc] collapse: ' + e);
     }
@@ -2630,7 +2682,7 @@ function _syncGlass(p, monitor, s) {
         s.effect.setGlassRegions([{
             x: rx, y: ry,
             w: rw, h: rh,
-            tintR: 0, tintG: 0, tintB: 0, baseStrength: (_notifStyling.tint / 100.0),
+            tintR: 0, tintG: 0, tintB: 0, baseStrength: (s.kind === 'backdrop' ? 0 : (_notifStyling.tint / 100.0)),
         }]);
         s.effect.setResolution(monitor.width, monitor.height);
 
@@ -2854,7 +2906,7 @@ function _buildPanel(merges = null) {
     try {
         const bd = _makeGlassStack(monitor, NC_RADIUS, 'nc-backdrop', true, 0);
         bd.kind = 'backdrop';
-        try { _applyWidgetGlassParams(bd.effect); } catch (_) {}
+        // Keep backdrop diffuse without widget params
         overlay.insert_child_at_index(bd.bgActor, 1);
         try {
             overlay.set_child_above_sibling(panelBg, bd.bgActor);

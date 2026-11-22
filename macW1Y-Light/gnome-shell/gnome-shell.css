@@ -6673,15 +6673,15 @@ StWidget.focused .app-grid-running-dot {
 /* Stacked card layers (macW1Y card deck effect) */
 .message:second-in-stack {
   border-radius: 24px !important;
-  background-color: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background-color: #f0f0f3 !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
   box-shadow: none !important;
 }
 
 .message:lower-in-stack {
   border-radius: 24px !important;
-  background-color: rgba(255, 255, 255, 0.02) !important;
-  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  background-color: #e6e6ea !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
   box-shadow: none !important;
 }
 
