@@ -32,8 +32,8 @@ const CARD_MARGIN = 8;
 const SCROLL_STEP = 55;
 const PERSP_HEADROOM = 0.18;
 
-const THUMB_ASPECT_MIN = 0.7;
-const THUMB_ASPECT_MAX = 2.4;
+const THUMB_ASPECT_MIN = 0.85;
+const THUMB_ASPECT_MAX = 1.55;
 const CARD_REST_OPACITY = 190;
 const CARD_HOVER_OPACITY = 255;
 
@@ -93,15 +93,11 @@ function _groupByApp(workspace, focusedWindow, mergeMap = new Map()) {
         (b.get_user_time() || 0) - (a.get_user_time() || 0)
     );
 
-    const openWins = allWins.filter(w => !w.minimized && !w._isMinimizing);
-    const openAppIds = new Set(openWins.map(w => tracker.get_window_app(w)?.get_id()).filter(Boolean));
-
     for (const win of sorted) {
         if (!win.minimized && !win._isMinimizing) continue;
         const app = tracker.get_window_app(win);
         if (!app) continue;
         const id = app.get_id();
-        if (openAppIds.has(id)) continue;
 
         if (!appMap.has(id))
             appMap.set(id, { app, windows: [] });
@@ -1288,81 +1284,64 @@ class StageSidebar {
         const bufRect = win.get_buffer_rect();
         const actor = win.get_compositor_private();
         if (actor && rect && rect.width > 0 && rect.height > 0) {
-            this._isSwitching = true;
+            this._captureSnapshot(win);
+
             const mon = _getMon();
             const topH = Main.panel ? Main.panel.height : 0;
             const sf = this._scaleFactor || 1;
-            const cardW = 140 * sf;
-            const cardH = 90 * sf;
-            const spacing = 10 * sf;
-            const cardX = this._POS === 'right' ? (mon.x + mon.width - cardW - 4 * sf) : (mon.x + 4 * sf);
+            const stdCardW = Math.round(132 * sf);
+            const stdCardH = Math.round(86 * sf);
+            const spacing = Math.round(10 * sf);
+            const cardX = this._POS === 'right' ? (mon.x + mon.width - stdCardW - 4 * sf) : (mon.x + 4 * sf);
 
             const winW = (bufRect && bufRect.width > 0) ? bufRect.width : rect.width;
             const winH = (bufRect && bufRect.height > 0) ? bufRect.height : rect.height;
             const winX = (bufRect && bufRect.width > 0) ? bufRect.x : rect.x;
             const winY = (bufRect && bufRect.height > 0) ? bufRect.y : rect.y;
 
+            // In Stage Manager, any minimized window always lands in Slot 0 (the top slot)
+            const nCards = Math.max(1, (this._cards ? this._cards.length : 0) + 1);
+            const totalH = nCards * stdCardH + (nCards - 1) * spacing;
+            const availH = mon.height - topH;
+            const slot0Y = mon.y + topH + Math.max(10 * sf, Math.round((availH - totalH) / 2));
+
+            const destScale = Math.min(stdCardW / winW, stdCardH / winH);
+            const fitW = winW * destScale;
+            const fitH = winH * destScale;
+            const destX = cardX + Math.round((stdCardW - fitW) / 2);
+            const destY = slot0Y + Math.round((stdCardH - fitH) / 2);
+
+            actor.remove_all_transitions();
+            actor.opacity = 0;
+
             let content = this._snapshots.get(win)?.content;
             const clone = content
                 ? new St.Widget({ content })
                 : new Clutter.Clone({ source: actor });
             clone.set_content_gravity?.(Clutter.ContentGravity.RESIZE_FILL);
+            clone.set_content_scaling_filters?.(Clutter.ScalingFilter.TRILINEAR, Clutter.ScalingFilter.LINEAR);
             clone.set_position(winX, winY);
             clone.set_size(winW, winH);
             const pivotX = (this._POS === 'right') ? 1.0 : 0.0;
-            clone.set_pivot_point(pivotX, 0.5);
+            clone.set_pivot_point(pivotX, 0.0);
             clone.scale_z = 1.0;
             Main.uiGroup.add_child(clone);
             this._activeClones?.add(clone);
 
-            // Pre-refresh Stage Manager so destination card is created at the top
-            win._isMinimizing = true;
-            this._signature = null;
-            this._refresh();
-            win._isMinimizing = false;
+            this._isSwitching = true;
 
-            const targetCard = this._cards.find(c => {
-                if (c._windows && c._windows.includes(win)) return true;
-                if (c._group?.windows) {
-                    if (Array.isArray(c._group.windows) && c._group.windows.includes(win)) return true;
-                    if (c._group.windows.has && c._group.windows.has(win)) return true;
-                }
-                return false;
-            }) ?? (this._cards.length > 0 ? this._cards[0] : null);
-
-            let targetIdx = targetCard ? this._cards.indexOf(targetCard) : 0;
-            if (targetIdx === -1) targetIdx = 0;
-
-            const nCards = Math.max(1, this._cards.length);
-            const totalH = nCards * cardH + (nCards - 1) * spacing;
-            const availH = mon.height - topH;
-            const startY = mon.y + topH + Math.max(10 * sf, Math.round((availH - totalH) / 2));
-            const cardY = startY + targetIdx * (cardH + spacing);
-
-            if (targetCard) targetCard.opacity = 0;
-
-            // Animate other cards moving down to make room for targetCard
-            if (this._cards && this._cards.length > 1) {
-                for (let i = 0; i < this._cards.length; i++) {
-                    if (i === targetIdx) continue;
-                    const c = this._cards[i];
-                    if (i > targetIdx) {
-                        c.translation_y = -(cardH + spacing);
-                        c.ease({
-                            translation_x: 0,
-                            translation_y: 0,
-                            duration: 280,
-                            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                        });
-                    }
+            // Existing cards smoothly slide DOWN by (stdCardH + spacing) to make room for slot 0
+            if (this._cards && this._cards.length > 0) {
+                for (const c of this._cards) {
+                    c.translation_y = 0;
+                    c.ease({
+                        translation_x: 0,
+                        translation_y: stdCardH + spacing,
+                        duration: 280,
+                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                    });
                 }
             }
-
-            const destScale = Math.min(cardW / winW, cardH / winH);
-            const fitW = winW * destScale;
-            const fitH = winH * destScale;
-            const destX = cardX + Math.round((cardW - fitW) / 2);
-            const destY = cardY + Math.round((cardH - fitH) / 2);
 
             clone.ease({
                 x: destX,
@@ -1375,10 +1354,12 @@ class StageSidebar {
                 duration: 280,
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                 onComplete: () => {
-                    if (targetCard) targetCard.opacity = 255;
                     clone.destroy();
                     this._activeClones?.delete(clone);
+                    actor.opacity = 255;
                     this._isSwitching = false;
+                    this._signature = null;
+                    this._refresh();
                 },
             });
         } else {
@@ -1577,9 +1558,9 @@ class StageSidebar {
         const mon = _getMon();
         const topH = Main.panel ? Main.panel.height : 0;
         const sf = this._scaleFactor || 1;
-        const stdCardW = 140 * sf;
-        const stdCardH = 90 * sf;
-        const spacing = 10 * sf;
+        const stdCardW = Math.round(132 * sf);
+        const stdCardH = Math.round(86 * sf);
+        const spacing = Math.round(10 * sf);
         const stageCardX = this._POS === 'right' ? (mon.x + mon.width - stdCardW - 4 * sf) : (mon.x + 4 * sf);
 
         let cardX, cardY, cardW, cardH;
@@ -1669,10 +1650,11 @@ class StageSidebar {
                         ? new St.Widget({ content })
                         : new Clutter.Clone({ source: actor });
                     clone.set_content_gravity?.(Clutter.ContentGravity.RESIZE_FILL);
+                    clone.set_content_scaling_filters?.(Clutter.ScalingFilter.TRILINEAR, Clutter.ScalingFilter.LINEAR);
                     clone.set_position(winX, winY);
                     clone.set_size(winW, winH);
                     const pivotX = (this._POS === 'right') ? 1.0 : 0.0;
-                    clone.set_pivot_point(pivotX, 0.5);
+                    clone.set_pivot_point(pivotX, 0.0);
                     clone.scale_z = 1.0;
                     actor.opacity = 0;
                     Main.uiGroup.add_child(clone);
@@ -1752,6 +1734,7 @@ class StageSidebar {
                         ? new St.Widget({ content })
                         : new Clutter.Clone({ source: actor });
                     clone.set_content_gravity?.(Clutter.ContentGravity.RESIZE_FILL);
+                    clone.set_content_scaling_filters?.(Clutter.ScalingFilter.TRILINEAR, Clutter.ScalingFilter.LINEAR);
 
                     const startScale = Math.min(cardW / targetW, cardH / targetH);
                     const fitW = targetW * startScale;
@@ -1764,7 +1747,7 @@ class StageSidebar {
                     clone.set_scale(startScale, startScale);
                     clone.scale_z = startScale;
                     const pivotX = (this._POS === 'right') ? 1.0 : 0.0;
-                    clone.set_pivot_point(pivotX, 0.5);
+                    clone.set_pivot_point(pivotX, 0.0);
                     clone.rotation_angle_y = this._ROT_SIGN * 26;
                     clone.opacity = 255;
                     Main.uiGroup.add_child(clone);
@@ -2326,6 +2309,7 @@ class StageSidebar {
         const h = Math.round(ah * scale);
 
         if (geom.content) {
+            try { geom.content.get_texture?.()?.set_auto_mipmap?.(true); } catch (_) {}
             const inner = new St.Widget({
                 reactive: false,
                 content: geom.content,
@@ -2333,6 +2317,7 @@ class StageSidebar {
                 height: h,
             });
             inner.set_content_gravity?.(Clutter.ContentGravity.RESIZE_FILL);
+            inner.set_content_scaling_filters?.(Clutter.ScalingFilter.TRILINEAR, Clutter.ScalingFilter.LINEAR);
             inner.set_size(w, h);
             return inner;
         }
@@ -2341,10 +2326,11 @@ class StageSidebar {
             const clone = new Clutter.Clone({
                 source: geom.actor,
                 reactive: false,
-                width: w,
-                height: h,
             });
-            clone.set_size(w, h);
+            clone.set_size(aw, ah);
+            clone.set_pivot_point(0, 0);
+            clone.set_scale(scale, scale);
+            clone.set_content_scaling_filters?.(Clutter.ScalingFilter.TRILINEAR, Clutter.ScalingFilter.LINEAR);
             return clone;
         }
 
@@ -2368,10 +2354,9 @@ class StageSidebar {
         const geom = this._windowGeometry(win);
         if (!geom) return;
 
-
-
         const content = geom.actor.paint_to_content(null);
         if (!content) return;
+        try { content.get_texture?.()?.set_auto_mipmap?.(true); } catch (_) {}
         this._snapshots.delete(win);
         this._snapshots.set(win, { aw: geom.aw, ah: geom.ah, actor: null, content });
         while (this._snapshots.size > MAX_SNAPSHOTS)
@@ -2430,13 +2415,19 @@ class StageSidebar {
             return [Math.round(h * ratio), h];
         }
 
-        const budget = (this._PANEL_W - CARD_MARGIN * sf) / perspective - 2 * CARD_PAD_X * sf;
-        const k = STACK_H / THUMB_W;
-        const fitted = budget / (1 + (layers - 1) * k);
-
-
-        const w = Math.round(Math.max(MIN_THUMB_W * sf, fitted));
-        return [w, Math.round(w / ratio)];
+        const maxW = Math.round(132 * sf);
+        const maxH = Math.round(86 * sf);
+        let w = maxW;
+        let h = Math.round(w / ratio);
+        if (h > maxH) {
+            h = maxH;
+            w = Math.round(h * ratio);
+        }
+        if (w > maxW) {
+            w = maxW;
+            h = Math.round(w / ratio);
+        }
+        return [w, h];
     }
 
 
@@ -2512,7 +2503,7 @@ class StageSidebar {
         }
 
         if (this._settings.get_boolean('show-app-icons') && apps && apps.length > 0) {
-            const badgeSize = Math.round(44 * sf);
+            const badgeSize = Math.round(36 * sf);
             const badgeOffset = Math.round(20 * sf);
             const pad = Math.round(4 * sf);
             const frontClone = container._frontLayer?.get_children()?.[0];
@@ -2523,11 +2514,23 @@ class StageSidebar {
 
             for (let idx = 0; idx < apps.length; idx++) {
                 const app = apps[idx];
-                const icon = app.create_icon_texture(badgeSize);
-                if (icon) {
-                    icon.add_style_class_name('stage-app-icon-badge');
-                    icon.set_position(frontX + pad + idx * badgeOffset, badgeY);
-                    container.add_child(icon);
+                const gicon = app.get_icon?.();
+                let iconActor = null;
+                if (gicon) {
+                    iconActor = new St.Icon({
+                        gicon,
+                        icon_size: badgeSize,
+                        style_class: 'stage-app-icon-badge',
+                    });
+                } else if (app.create_icon_texture) {
+                    iconActor = app.create_icon_texture(badgeSize);
+                    iconActor?.add_style_class_name?.('stage-app-icon-badge');
+                }
+                if (iconActor) {
+                    iconActor.set_content_scaling_filters?.(Clutter.ScalingFilter.TRILINEAR, Clutter.ScalingFilter.LINEAR);
+                    iconActor.set_size(badgeSize, badgeSize);
+                    iconActor.set_position(frontX + pad + idx * badgeOffset, badgeY);
+                    container.add_child(iconActor);
                 }
             }
         }
@@ -2541,9 +2544,15 @@ class StageSidebar {
         if (app) {
             const sf = this._scaleFactor;
             const iconPx = 48 * sf;
-            const icon = app.create_icon_texture(48);
-            icon.set_position((tw - iconPx) / 2, (th - iconPx) / 2);
-            layer.add_child(icon);
+            const gicon = app.get_icon?.();
+            const icon = gicon
+                ? new St.Icon({ gicon, icon_size: iconPx })
+                : app.create_icon_texture(48);
+            if (icon) {
+                icon.set_content_scaling_filters?.(Clutter.ScalingFilter.TRILINEAR, Clutter.ScalingFilter.LINEAR);
+                icon.set_position((tw - iconPx) / 2, (th - iconPx) / 2);
+                layer.add_child(icon);
+            }
         }
     }
 

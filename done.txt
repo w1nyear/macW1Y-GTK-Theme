@@ -3907,3 +3907,14 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+895. Виправлення відображення згорнутих програм, пропорцій мініатюр, якості іконок та точки посадки у Stage Manager:
+  - Відображення згорнутих програм: знято блокування виклику _refresh() прапорцем _isSwitching у _onWindowMinimize() та видалено фільтрацію openAppIds у _groupByApp, завдяки чому будь-яка згорнута програма своєчасно додається до панелі карток Stage Manager.
+  - Усунення розтягування по ширині: у _thumbSize() встановлено суворі границі maxW (132 * sf) та maxH (86 * sf) із динамічним розрахунком пропорцій без перевищення меж (aspect bounds 0.85–1.55), що виключає появу надшироких смуг.
+  - Покращення якості рендерингу (усунення піксельних «драбинок»): увімкнено апаратну генерацію міпмапів (set_auto_mipmap(true)) для текстур вікон, застосовано трилінійну фільтрацію (TRILINEAR/LINEAR) на клонах та внутрішніх віджетах, а також переведено іконки бейджів на нативний векторний St.Icon розміром 36px із трилінійним згладжуванням.
+  - Точна посадка у слот 0 без зміщення вниз екрана: змінено вертикальну опорну точку clone.set_pivot_point(pivotX, 0.0) для анімацій мінімізації та перемикання (замість 0.5, що раніше зміщувало віджет на 400–500px вниз під час зменшення масштабу), завдяки чому вікно приземляється точно на призначене місце у верхній слот Stage Manager.
+  - Верифікація: mac-extension-guard: PASS, mac-audit-sync: 100% PASS, test-macw1y-animations.py: 12/12 PASS, модульні тести: 39/39 PASS, install.sh: 0 кириличних символів.
+- Зачеплені файли:
+  * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
