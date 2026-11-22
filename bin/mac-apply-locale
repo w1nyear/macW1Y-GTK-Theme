@@ -496,6 +496,13 @@ def notify_gnome_shell(lang_code, posix, lang_env):
             }}
         }} catch (_) {{}}
 
+        // Notify AppMenu if present
+        try {{
+            if (globalThis._macAppMenuExtension && typeof globalThis._macAppMenuExtension.updateLocale === 'function') {{
+                globalThis._macAppMenuExtension.updateLocale('{lang_code}');
+            }}
+        }} catch (_) {{}}
+
         return true;
     }})()"""
 

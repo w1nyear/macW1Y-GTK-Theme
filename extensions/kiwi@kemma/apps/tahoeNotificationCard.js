@@ -137,7 +137,7 @@ export function formatNotificationTimestamp(datetime) {
     if (diffDays <= 0) {
         return timeStr;
     } else if (diffDays === 1) {
-        return tf('yesterday_time', { time: timeStr }, `Вчора, ${timeStr}`);
+        return tf('yesterday_time', { time: timeStr }, `Yesterday, ${timeStr}`);
     } else if (dt.get_year() === now.get_year()) {
         return `${dt.format('%d.%m')}, ${timeStr}`;
     } else {
@@ -157,12 +157,12 @@ export function formatRelativeNotifAge(datetime) {
     const diffSec = Math.max(0, now.to_unix() - dt.to_unix());
     const min = Math.floor(diffSec / 60);
     if (min < 1)
-        return t('just_now', 'тільки що');
+        return t('just_now', 'just now');
     if (min < 60)
-        return tf('min_ago', { min }, `${min} хв тому`);
+        return tf('min_ago', { min }, `${min}m ago`);
     const h = Math.floor(min / 60);
     if (h < 24)
-        return tf('hour_ago', { hour: h }, `${h} год тому`);
+        return tf('hour_ago', { hour: h }, `${h}h ago`);
     const d = Math.floor(h / 24);
     if (d < 7)
         return `${d} d`;
@@ -182,18 +182,18 @@ export function formatToastAge(datetime) {
         }
         const sec = Math.max(0, now.to_unix() - dt.to_unix());
         if (sec < 60)
-            return t('just_now', 'Щойно');
+            return t('just_now', 'just now');
         const min = Math.floor(sec / 60);
         if (min < 60)
-            return tf('min_ago', { min }, `${min} хв тому`);
+            return tf('min_ago', { min }, `${min}m ago`);
         const hr = Math.floor(min / 60);
         if (hr < 24)
-            return tf('hour_ago', { hour: hr }, `${hr} год тому`);
+            return tf('hour_ago', { hour: hr }, `${hr}h ago`);
         if (hr < 48)
-            return tf('yesterday_time', { time: dt.format('%H:%M') }, `Вчора, ${dt.format('%H:%M')}`);
+            return tf('yesterday_time', { time: dt.format('%H:%M') }, `Yesterday, ${dt.format('%H:%M')}`);
         return formatNotificationTimestamp(dt);
     } catch (_) {
-        return t('just_now', 'Щойно');
+        return t('just_now', 'just now');
     }
 }
 
@@ -346,7 +346,7 @@ export function buildNotificationCard(source, notification, options = {}) {
 
 
 
-        const shotApp = appName && !appName.includes('Захоплення') ? appName : 'Скріншот';
+        const shotApp = appName && !appName.includes('Захоплення') && !appName.includes('Capture') ? appName : t('screenshot', 'Screenshot');
         appLabel = new St.Label({
             text: shotApp,
             y_align: Clutter.ActorAlign.CENTER,
@@ -356,7 +356,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         try { appLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END; } catch (_) {}
         contentBox.add_child(appLabel);
 
-        const shotTitle = rawTitle || t('screenshot_taken', 'Скріншот створено');
+        const shotTitle = rawTitle || t('screenshot_taken', 'Screenshot Captured');
         titleLabel = new St.Label({
             x_expand: true,
             style: 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; color: rgba(255, 255, 255, 0.95) !important; font-size: 13.5px !important; font-weight: 400 !important;',
@@ -384,7 +384,7 @@ export function buildNotificationCard(source, notification, options = {}) {
 
         if (appName && (!isDuplicateTitle || hasBody || isCritical)) {
             appLabel = new St.Label({
-                text: isCritical ? `⚠ ${t('urgent', 'ТЕРМІНОВО')}` : appName,
+                text: isCritical ? `⚠ ${t('urgent', 'URGENT')}` : appName,
                 y_align: Clutter.ActorAlign.CENTER,
                 x_expand: true,
                 style: isCritical
@@ -396,7 +396,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         }
 
 
-        const displayTitle = rawTitle || (!hasBody ? (appName || 'Повідомлення') : '');
+        const displayTitle = rawTitle || (!hasBody ? (appName || t('notification', 'Notification')) : '');
         if (displayTitle && (!isDuplicateTitle || !hasBody)) {
             titleLabel = new St.Label({
                 x_expand: true,

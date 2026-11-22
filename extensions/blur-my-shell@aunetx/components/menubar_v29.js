@@ -784,7 +784,7 @@ const VolumeButton = GObject.registerClass({
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
 
-        const secHeader = createMacSectionHeader(t('output_device', 'Вихідний пристрій'));
+        const secHeader = createMacSectionHeader(t('output_device', 'Output Device'));
         this.menu.addMenuItem(secHeader);
 
         const sinks = this._control.get_sinks() || [];
@@ -806,7 +806,7 @@ const VolumeButton = GObject.registerClass({
             sinkItem.add_child(icon);
 
             const desc = new St.Label({
-                text: s.get_description() || t('audio_output', 'Аудіовихід'),
+                text: s.get_description() || t('audio_output', 'Audio Output'),
                 x_expand: true,
                 y_align: Clutter.ActorAlign.CENTER,
             });
@@ -833,7 +833,7 @@ const VolumeButton = GObject.registerClass({
 
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        const settingsItem = new PopupMenu.PopupMenuItem(t('sound_settings', 'Параметри звуку...'), { style_class: 'mac-menu-footer-button' });
+        const settingsItem = new PopupMenu.PopupMenuItem(t('sound_settings', 'Sound Settings…'), { style_class: 'mac-menu-footer-button' });
         setupMacMenuItem(settingsItem);
         settingsItem.connect('activate', () => {
             this.menu.close();
@@ -1187,7 +1187,7 @@ const BatteryWidget = GObject.registerClass({
         headerBox.add_child(topRow);
 
         const titleLbl = new St.Label({
-            text: t('battery', 'Акумулятор'),
+            text: t('battery', 'Battery'),
             style_class: 'mac-menu-header-title',
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
@@ -1202,8 +1202,8 @@ const BatteryWidget = GObject.registerClass({
         topRow.add_child(pctLbl);
 
         const powerSourceText = isCharging
-            ? t('power_source_adapter', 'Джерело живлення: адаптер живлення')
-            : t('power_source_battery', 'Джерело живлення: акумулятор');
+            ? t('power_source_adapter', 'Power Source: Power Adapter')
+            : t('power_source_battery', 'Power Source: Battery');
         const subLbl = new St.Label({
             text: powerSourceText,
             style_class: 'mac-menu-header-subtitle',
@@ -1215,7 +1215,7 @@ const BatteryWidget = GObject.registerClass({
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
 
-        const pwrModeHeader = createMacSectionHeader(t('energy_mode', 'Режим енергоспоживання'));
+        const pwrModeHeader = createMacSectionHeader(t('energy_mode', 'Energy Mode'));
         this.menu.addMenuItem(pwrModeHeader);
 
 
@@ -1249,7 +1249,7 @@ const BatteryWidget = GObject.registerClass({
         saverItem.add_child(badgeBox);
 
         const saverLbl = new St.Label({
-            text: t('low_power_mode', 'Енергозбереження'),
+            text: t('low_power_mode', 'Low Power Mode'),
             style_class: 'mac-menu-item-title',
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
@@ -1277,14 +1277,14 @@ const BatteryWidget = GObject.registerClass({
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
 
-        const statusItem = createMacStatusText(t('no_apps_using_energy', 'Немає програм із високим споживанням енергії'));
+        const statusItem = createMacStatusText(t('no_apps_using_energy', 'No Apps Using Significant Energy'));
         this.menu.addMenuItem(statusItem);
 
 
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
 
-        const settingsItem = new PopupMenu.PopupMenuItem(t('battery_settings', 'Параметри акумулятора...'), {
+        const settingsItem = new PopupMenu.PopupMenuItem(t('battery_settings', 'Battery Settings…'), {
             style_class: 'mac-menu-footer-button',
             can_focus: false,
         });
@@ -1409,7 +1409,7 @@ const PrivacyIndicator = GObject.registerClass({
             header._ornamentLabel = null;
         }
         const titleLbl = new St.Label({
-            text: t('privacy', 'Конфіденційність'),
+            text: t('privacy', 'Privacy'),
             style_class: 'mac-menu-header-title',
             y_align: Clutter.ActorAlign.CENTER,
         });
@@ -1423,11 +1423,11 @@ const PrivacyIndicator = GObject.registerClass({
         const isCamActive = Boolean(cam?.cameras_in_use);
 
         if (outputs.length > 0) {
-            const micSec = createMacSectionHeader(t('mic_in_use', 'Мікрофон використовується'));
+            const micSec = createMacSectionHeader(t('mic_in_use', 'Microphone In Use'));
             this.menu.addMenuItem(micSec);
 
             for (const out of outputs) {
-                const appName = out.get_name() || out.get_application_id() || t('application', 'Програма');
+                const appName = out.get_name() || out.get_application_id() || t('application', 'Application');
                 const item = new PopupMenu.PopupBaseMenuItem({ reactive: false });
                 item.add_style_class_name('mac-menu-item-row');
                 const icon = new St.Icon({
@@ -1447,7 +1447,7 @@ const PrivacyIndicator = GObject.registerClass({
         }
 
         if (isCamActive) {
-            const camSec = createMacSectionHeader(t('cam_in_use', 'Камера використовується'));
+            const camSec = createMacSectionHeader(t('cam_in_use', 'Camera In Use'));
             this.menu.addMenuItem(camSec);
 
             const camItem = new PopupMenu.PopupBaseMenuItem({ reactive: false });
@@ -1459,7 +1459,7 @@ const PrivacyIndicator = GObject.registerClass({
             });
             camItem.add_child(cIcon);
             const cLbl = new St.Label({
-                text: t('app_using_webcam', 'Програма використовує вебкамеру'),
+                text: t('app_using_webcam', 'Application Using Webcam'),
                 x_expand: true,
                 y_align: Clutter.ActorAlign.CENTER,
             });
@@ -3251,7 +3251,7 @@ export const MenuBarController = class MenuBarController {
         emojiItem.add_child(emojiBadge);
 
         const emojiLbl = new St.Label({
-            text: t('show_emoji_and_symbols', 'Показати панель «Емодзі та символи»'),
+            text: t('show_emoji_and_symbols', 'Show Emoji & Symbols'),
             style_class: 'mac-menu-item-title',
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
@@ -3283,7 +3283,7 @@ export const MenuBarController = class MenuBarController {
         layoutItem.add_child(layoutBadge);
 
         const layoutLbl = new St.Label({
-            text: t('show_keyboard_viewer', 'Показати панель «Клавіатура»'),
+            text: t('show_keyboard_viewer', 'Show Keyboard Viewer'),
             style_class: 'mac-menu-item-title',
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
@@ -3321,7 +3321,7 @@ export const MenuBarController = class MenuBarController {
         showNameItem.add_child(showNameCheck);
 
         const showNameLbl = new St.Label({
-            text: t('show_input_source_name', 'Показувати назву джерела введення'),
+            text: t('show_input_source_name', 'Show Input Source Name'),
             style_class: 'mac-menu-item-title',
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
@@ -3352,7 +3352,7 @@ export const MenuBarController = class MenuBarController {
         settingsItem.add_child(settingsCheck);
 
         const settingsLbl = new St.Label({
-            text: t('keyboard_settings', 'Відкрити параметри клавіатури...'),
+            text: t('keyboard_settings', 'Keyboard Settings…'),
             style_class: 'mac-menu-item-title',
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
@@ -4057,7 +4057,7 @@ export const MenuBarController = class MenuBarController {
         });
 
         const label = new St.Label({
-            text: t('notification_center', 'Центр повідомлень'),
+            text: t('notification_center', 'Notification Center'),
             style_class: 'mac-notif-center-title',
             style: 'font-family: "Default Display", "Default", default, system-ui, sans-serif, sans-serif !important; font-size: 20px !important; font-weight: 700 !important; color: #ffffff !important; text-shadow: 0 0 14px rgba(255, 255, 255, 0.55), 0 0 24px rgba(0, 0, 0, 0.8), 0 2px 12px rgba(0, 0, 0, 0.9) !important; background: transparent !important; margin: 0 !important; padding: 0 !important;',
             y_align: Clutter.ActorAlign.CENTER,
@@ -4067,7 +4067,7 @@ export const MenuBarController = class MenuBarController {
 
         const clearBtn = new St.Button({
             style_class: 'mac-notif-clear-btn',
-            label: t('clear_all', 'Очистити всі'),
+            label: t('clear_all', 'Clear All'),
             can_focus: true,
             reactive: true,
             y_align: Clutter.ActorAlign.CENTER,
@@ -4163,7 +4163,7 @@ export const MenuBarController = class MenuBarController {
 
 
         const emptyLabel = new St.Label({
-            text: t('no_new_notifications', 'Немає нових повідомлень'),
+            text: t('no_new_notifications', 'No New Notifications'),
             style_class: 'mac-notif-empty-label',
             style: 'font-family: "Default", default, system-ui, sans-serif, sans-serif !important; font-size: 14px !important; color: rgba(255, 255, 255, 0.6) !important; text-shadow: 0 0 10px rgba(255, 255, 255, 0.45), 0 0 18px rgba(0, 0, 0, 0.85), 0 2px 10px rgba(0, 0, 0, 0.7) !important; text-align: center; padding: 36px 10px !important; margin: 0 !important;',
             x_expand: true,

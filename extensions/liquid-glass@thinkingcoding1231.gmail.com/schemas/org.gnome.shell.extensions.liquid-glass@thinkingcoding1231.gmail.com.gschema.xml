@@ -620,7 +620,7 @@
     </key>
 
     <key name="glass-blur-downscale" type="i">
-      <default>1</default>
+      <default>2</default>
       <summary>Blur resolution</summary>
       <description>Divisor for the resolution the background blur is computed at. 1 = full resolution (1:1 pixel-perfect, crisp &amp; clear). 2 = half resolution. 4 = quarter resolution.</description>
     </key>

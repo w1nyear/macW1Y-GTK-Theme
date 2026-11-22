@@ -32,6 +32,7 @@ export default class AppMenuExtension extends Extension {
     }
 
     async enable() {
+        globalThis._macAppMenuExtension = this;
         this._settings = this.getSettings('org.gnome.shell.extensions.appmenu');
         initI18n(this);
         setLoggerSettings(this._settings);
@@ -307,7 +308,20 @@ export default class AppMenuExtension extends Extension {
         );
     }
 
+    updateLocale(lang) {
+        if (lang) {
+            import('./i18n.js').then(mod => {
+                if (mod.setDebugLocale) mod.setDebugLocale(lang);
+                if (this._menuManager) {
+                    const win = global.display.get_focus_window();
+                    this._updateMenu(win);
+                }
+            }).catch(() => {});
+        }
+    }
+
     disable() {
+        globalThis._macAppMenuExtension = null;
         debug('Disabling extension.');
 
         const uuid = this.metadata.uuid || 'appmenu@ChathurangaBW.github.io';

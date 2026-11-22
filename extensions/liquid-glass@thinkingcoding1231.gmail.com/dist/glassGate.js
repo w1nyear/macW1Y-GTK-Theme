@@ -133,13 +133,7 @@ export function installGlassSceneListeners() {
         }
     } catch (_) {}
 
-    try {
-        const stagePaintId = global.stage.connect('after-paint', () => {
-            _backdropDamageVersion++;
-            notifyGlassWake(null, 'stage-paint');
-        });
-        _sceneSignalIds.push([global.stage, stagePaintId]);
-    } catch (_) {}
+
 }
 
 export function removeGlassSceneListeners() {

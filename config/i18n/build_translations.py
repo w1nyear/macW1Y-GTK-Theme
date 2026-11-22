@@ -52,6 +52,14 @@ export const TRANSLATIONS = ''' + json.dumps(TRANSLATIONS, ensure_ascii=False, i
 export function getLocale() {
     if (_debugLocale) return _debugLocale;
     try {
+        if (typeof globalThis._macModpackLocale === 'string' && globalThis._macModpackLocale) {
+            const loc = globalThis._macModpackLocale.toLowerCase();
+            if (TRANSLATIONS[loc]) return loc;
+            const base = loc.split('_')[0].split('-')[0];
+            if (TRANSLATIONS[base]) return base;
+        }
+    } catch (_) {}
+    try {
         const file = `${GLib.get_home_dir()}/.config/mac-styling/locale`;
         if (GLib.file_test(file, GLib.FileTest.EXISTS)) {
             const [ok, bytes] = GLib.file_get_contents(file);
@@ -214,7 +222,7 @@ def tf(key, params=None, fallback=None, override_locale=None):
         "system_account", "storage_alert", "software_update_alert", "search",
         "ssot_restored_notification", "dock_edge_distance", "dock_edge_distance_desc",
         "dock_icon_size", "dock_icon_size_desc", "dock_size", "dock_size_desc",
-        "dock_spacing", "dock_spacing_desc"
+        "dock_spacing", "dock_spacing_desc", "stage_manager", "light", "light_mode"
     ]
     c_languages = sorted(TRANSLATIONS, key=lambda code: (-len(code), code))
 

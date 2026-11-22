@@ -827,52 +827,57 @@ export class DashManager {
             return false;
 
 
-        let icons = [];
-        const walkIcons = (a) => {
-            if (!a) return;
-            const name = a.constructor?.name || '';
-            const cls = a.has_style_class_name ? a.get_style_class_name() : '';
-            if ((name === 'St_Icon' || name === 'BaseIcon' || cls?.includes('overview-icon')) && a.visible) {
-                let [ix, iy] = a.get_transformed_position();
-                let [iw, ih] = a.get_transformed_size();
-                if (Number.isFinite(ix) && Number.isFinite(iy) && iw > 0 && ih > 0) {
-                    icons.push({ x: ix, y: iy, w: iw, h: ih });
-                }
-            }
-            for (const ch of (a.get_children ? a.get_children() : [])) {
-                walkIcons(ch);
-            }
-        };
-        walkIcons(this.targetActor);
-
-        let iconBounds = null;
-        if (icons.length > 0) {
-            icons.sort((a, b) => a.x - b.x);
-            let minX = icons[0].x;
-            let maxX = icons[icons.length - 1].x + icons[icons.length - 1].w;
-
-
-
-            const minH = Math.min(...icons.map(ic => ic.h));
-            const restingIcons = icons.filter(ic => ic.h <= minH + 6);
-            const targetIcons = restingIcons.length > 0 ? restingIcons : icons;
-
-            let minY = Infinity, maxY = -Infinity;
-            for (const ic of targetIcons) {
-                if (ic.y < minY) minY = ic.y;
-                if (ic.y + ic.h > maxY) maxY = ic.y + ic.h;
-            }
-            if (minY < maxY) {
-                iconBounds = {
-                    minX, maxX, minY, maxY,
-                    h: maxY - minY,
-                    centerY: (minY + maxY) * 0.5
-                };
-            }
-        }
-
-
         let hasSlabBounds = false;
+        let iconBounds = null;
+        const getIconBounds = () => {
+            if (iconBounds !== null) return iconBounds;
+            let icons = [];
+            const walkIcons = (a) => {
+                if (!a) return;
+                const name = a.constructor?.name || '';
+                const cls = a.has_style_class_name ? a.get_style_class_name() : '';
+                if ((name === 'St_Icon' || name === 'BaseIcon' || cls?.includes('overview-icon')) && a.visible) {
+                    let [ix, iy] = a.get_transformed_position();
+                    let [iw, ih] = a.get_transformed_size();
+                    if (Number.isFinite(ix) && Number.isFinite(iy) && iw > 0 && ih > 0) {
+                        icons.push({ x: ix, y: iy, w: iw, h: ih });
+                    }
+                }
+                for (const ch of (a.get_children ? a.get_children() : [])) {
+                    walkIcons(ch);
+                }
+            };
+            walkIcons(this.targetActor);
+
+            if (icons.length > 0) {
+                icons.sort((a, b) => a.x - b.x);
+                let minX = icons[0].x;
+                let maxX = icons[icons.length - 1].x + icons[icons.length - 1].w;
+
+                const minH = Math.min(...icons.map(ic => ic.h));
+                const restingIcons = icons.filter(ic => ic.h <= minH + 6);
+                const targetIcons = restingIcons.length > 0 ? restingIcons : icons;
+
+                let minY = Infinity, maxY = -Infinity;
+                for (const ic of targetIcons) {
+                    if (ic.y < minY) minY = ic.y;
+                    if (ic.y + ic.h > maxY) maxY = ic.y + ic.h;
+                }
+                if (minY < maxY) {
+                    iconBounds = {
+                        minX, maxX, minY, maxY,
+                        h: maxY - minY,
+                        centerY: (minY + maxY) * 0.5
+                    };
+                } else {
+                    iconBounds = false;
+                }
+            } else {
+                iconBounds = false;
+            }
+            return iconBounds;
+        };
+
         const slab = this._findDashBackground(this.targetActor.get_parent() || this.targetActor);
         if (slab) {
             if (!slab.visible) {
@@ -899,9 +904,9 @@ export class DashManager {
 
                 let pillW = slW - 8;
                 let pillX = slX + 4;
-                let pillH = (slH && slH > 30) ? slH : (iconBounds ? (iconBounds.h + 20) : 74);
-
-                let pillY = (Number.isFinite(slY) && slY > 0) ? slY : (iconBounds ? Math.round(iconBounds.centerY - (pillH * 0.5)) : slY);
+                const ib = (slH && slH > 30 && Number.isFinite(slY) && slY > 0) ? null : getIconBounds();
+                let pillH = (slH && slH > 30) ? slH : (ib ? (ib.h + 20) : 74);
+                let pillY = (Number.isFinite(slY) && slY > 0) ? slY : (ib ? Math.round(ib.centerY - (pillH * 0.5)) : slY);
 
                 absX = pillX - 4;
                 absY = pillY - 4;
@@ -912,28 +917,29 @@ export class DashManager {
         }
 
         let hasIconBounds = false;
-        if (!hasSlabBounds && !isD2DTransitioning && iconBounds) {
+        const fallbackIb = (!hasSlabBounds && !isD2DTransitioning) ? getIconBounds() : null;
+        if (fallbackIb) {
             const screenBottom = monitor ? (monitor.y + monitor.height) : 1080;
-            if (iconBounds.minY >= screenBottom) {
+            if (fallbackIb.minY >= screenBottom) {
                 this.bgActor.hide();
                 this.bgActor.opacity = 0;
                 return false;
             }
 
-            let isHorizontal = (iconBounds.maxX - iconBounds.minX) >= iconBounds.h;
+            let isHorizontal = (fallbackIb.maxX - fallbackIb.minX) >= fallbackIb.h;
             let pillX, pillY, pillW, pillH;
             let sidePad = 12;
             if (isHorizontal) {
-                pillH = (this._lastSlabH && this._lastSlabH > 30) ? this._lastSlabH : (iconBounds.h + 20);
-                pillY = Math.round(iconBounds.centerY - (pillH * 0.5));
-                pillX = iconBounds.minX - sidePad;
-                pillW = (iconBounds.maxX - iconBounds.minX) + sidePad * 2;
+                pillH = (this._lastSlabH && this._lastSlabH > 30) ? this._lastSlabH : (fallbackIb.h + 20);
+                pillY = Math.round(fallbackIb.centerY - (pillH * 0.5));
+                pillX = fallbackIb.minX - sidePad;
+                pillW = (fallbackIb.maxX - fallbackIb.minX) + sidePad * 2;
             } else {
-                pillW = iconBounds.h + 20;
-                let isLeft = monitor && (iconBounds.minX - monitor.x < (monitor.x + monitor.width) - iconBounds.maxX);
-                pillX = isLeft ? (monitor.x + 4) : (monitor ? (monitor.x + monitor.width - 4 - pillW) : (iconBounds.minX - 11));
-                pillY = iconBounds.minY - sidePad;
-                pillH = iconBounds.h + sidePad * 2;
+                pillW = fallbackIb.h + 20;
+                let isLeft = monitor && (fallbackIb.minX - monitor.x < (monitor.x + monitor.width) - fallbackIb.maxX);
+                pillX = isLeft ? (monitor.x + 4) : (monitor ? (monitor.x + monitor.width - 4 - pillW) : (fallbackIb.minX - 11));
+                pillY = fallbackIb.minY - sidePad;
+                pillH = fallbackIb.h + sidePad * 2;
             }
             absX = pillX - 4;
             absY = pillY - 4;

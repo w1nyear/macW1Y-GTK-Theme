@@ -1,8 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# macW1Y 0.7 Complete Multi-Language Translations Dictionary
-# Total Languages: 58 | Total Keys: 439
-
-RTL_LANGUAGES = {'ps', 'sd', 'ug', 'he', 'ar', 'ur', 'fa', 'skr'}
+RTL_LANGUAGES = {"fa", "skr", "sd", "ug", "ar", "ur", "he", "ps"}
 
 TRANSLATIONS = {
     "ace": {
@@ -444,7 +441,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y installation simulation completed successfully! In demo mode, computer is not restarted.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Transformation & Maintenance System",
-        "installer_done": "Pemasangan ka leupah beireh!"
+        "installer_done": "Pemasangan ka leupah beireh!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "af": {
         "wifi": "Wi-Fi",
@@ -885,7 +885,10 @@ TRANSLATIONS = {
         "installer_mock_done": "De macW1Y-installatiesimulatie is succesvol voltooid! In testmodus wordt de computer niet opnieuw opgestart.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Transformatie- & Onderhoudssysteem",
-        "installer_done": "Installasie suksesvol voltooi!"
+        "installer_done": "Installasie suksesvol voltooi!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "ak": {
         "wifi": "Wi-Fi",
@@ -1326,7 +1329,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y installation simulation completed successfully! In demo mode, computer is not restarted.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Transformation & Maintenance System",
-        "installer_done": "Nhyehyɛe no awie pɛpɛɛpɛ!"
+        "installer_done": "Nhyehyɛe no awie pɛpɛɛpɛ!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "am": {
         "wifi": "ዋይ-ፋይ",
@@ -1767,7 +1773,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y installation simulation completed successfully! In demo mode, computer is not restarted.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Transformation & Maintenance System",
-        "installer_done": "መጫኑ በተሳካ ሁኔታ ተጠናቋል!"
+        "installer_done": "መጫኑ በተሳካ ሁኔታ ተጠናቋል!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "ar": {
         "wifi": "Wi-Fi",
@@ -2208,7 +2217,10 @@ TRANSLATIONS = {
         "installer_mock_done": "اكتملت محاكاة تثبيت macW1Y بنجاح! في الوضع التجريبي، لا تتم إعادة تشغيل الكمبيوتر.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "نظام التحويل والصيانة",
-        "installer_done": "اكتمل التثبيت بنجاح!"
+        "installer_done": "اكتمل التثبيت بنجاح!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "as": {
         "wifi": "ৱাই-ফাই",
@@ -2649,7 +2661,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y ইনস্টলেশন সিমুলেশন সফলভাবে সম্পন্ন হয়েছে! ডেমো মোডে কম্পিউটার রিবুট হয় না।",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "রূপান্তর এবং রক্ষণাবেক্ষণ সিস্টেম",
-        "installer_done": "ইনষ্টলেশ্বন সফলতাৰে সম্পূৰ্ণ হ'ল!"
+        "installer_done": "ইনষ্টলেশ্বন সফলতাৰে সম্পূৰ্ণ হ'ল!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "ast": {
         "wifi": "Wi-Fi",
@@ -3090,7 +3105,10 @@ TRANSLATIONS = {
         "installer_mock_done": "¡La simulación de instalación de macW1Y finalizó con éxito! En modo de prueba no se reinicia el equipo.",
         "installer_banner_title": "Paquete de transformación macW1Y Transformation",
         "installer_banner_sub": "Sistema de transformación y mantenimiento",
-        "installer_done": "¡Instalación completada con ésitu!"
+        "installer_done": "¡Instalación completada con ésitu!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "awa": {
         "wifi": "Wi-Fi",
@@ -3531,7 +3549,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y स्थापना सिमुलेशन सफलतापूर्वक पूरा हुआ! डेमो मोड में कंप्यूटर पुनरारंभ नहीं होता है।",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "रूपांतरण और रखरखाव प्रणाली",
-        "installer_done": "इंस्टॉलेशन बढ़िया से पूरा भा!"
+        "installer_done": "इंस्टॉलेशन बढ़िया से पूरा भा!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "ay": {
         "wifi": "Wi-Fi ukax utjiwa",
@@ -3972,7 +3993,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y installation simulation completed successfully! In demo mode, computer is not restarted.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Transformation & Maintenance System",
-        "installer_done": "Uchayawixa walikïxiwa!"
+        "installer_done": "Uchayawixa walikïxiwa!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "az": {
         "wifi": "Wi-Fi",
@@ -4413,7 +4437,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y yükleme simülasyonu başarıyla tamamlandı! Tanıtım modunda bilgisayar yeniden başlatılmaz.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Dönüşüm ve Bakım Sistemi",
-        "installer_done": "Quraşdırma uğurla başa çatdı!"
+        "installer_done": "Quraşdırma uğurla başa çatdı!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "ba": {
         "wifi": "Wi-Fi",
@@ -4854,7 +4881,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y yükleme simülasyonu başarıyla tamamlandı! Tanıtım modunda bilgisayar yeniden başlatılmaz.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Dönüşüm ve Bakım Sistemi",
-        "installer_done": "Ҡуйыу уңышлы тамамланды!"
+        "installer_done": "Ҡуйыу уңышлы тамамланды!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "be": {
         "wifi": "Wi-Fi",
@@ -5295,7 +5325,10 @@ TRANSLATIONS = {
         "installer_mock_done": "Сімуляцыя ўсталявання macW1Y паспяхова завершана! У тэставым рэжыме перазагрузка камп'ютара не адбываецца.",
         "installer_banner_title": "Пакет трансфармацыі macW1Y Transformation",
         "installer_banner_sub": "Сістэма трансфармацыі і абслугоўвання",
-        "installer_done": "Усталяванне паспяхова завершана!"
+        "installer_done": "Усталяванне паспяхова завершана!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "bg": {
         "wifi": "Wi-Fi",
@@ -5736,7 +5769,10 @@ TRANSLATIONS = {
         "installer_mock_done": "Симулацията на инсталацията на macW1Y завърши успешно! В тестов режим компютърът не се рестартира.",
         "installer_banner_title": "Пакет за трансформация macW1Y Transformation",
         "installer_banner_sub": "Система за трансформация и поддръжка",
-        "installer_done": "Инсталацията приключи успешно!"
+        "installer_done": "Инсталацията приключи успешно!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "bho": {
         "wifi": "Wi-Fi",
@@ -6177,7 +6213,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y स्थापना सिमुलेशन सफलतापूर्वक पूरा हुआ! डेमो मोड में कंप्यूटर पुनरारंभ नहीं होता है।",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "रूपांतरण और रखरखाव प्रणाली",
-        "installer_done": "इंस्टॉलेशन बढ़िया से पूरा भइल!"
+        "installer_done": "इंस्टॉलेशन बढ़िया से पूरा भइल!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "bn": {
         "wifi": "Wi-Fi",
@@ -6618,7 +6657,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y ইনস্টলেশন সিমুলেশন সফলভাবে সম্পন্ন হয়েছে! ডেমো মোডে কম্পিউটার রিবুট হয় না।",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "রূপান্তর এবং রক্ষণাবেক্ষণ সিস্টেম",
-        "installer_done": "ইনস্টলেশন সফলভাবে সম্পন্ন হয়েছে!"
+        "installer_done": "ইনস্টলেশন সফলভাবে সম্পন্ন হয়েছে!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "cjy": {
         "wifi": "Wi-Fi",
@@ -7059,7 +7101,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y 安装模拟已成功完成！在演示模式下不会重启电脑。",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "系统转换与维护套件",
-        "installer_done": "安装成啦！"
+        "installer_done": "安装成啦！",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "cs": {
         "wifi": "Wi-Fi",
@@ -7500,7 +7545,10 @@ TRANSLATIONS = {
         "installer_mock_done": "Simulace instalace macW1Y byla úspěšně dokončena! V testovacím režimu se počítač nerestartuje.",
         "installer_banner_title": "Transformační balíček macW1Y Transformation",
         "installer_banner_sub": "Systém transformace a údržby",
-        "installer_done": "Instalace úspěšně dokončena!"
+        "installer_done": "Instalace úspěšně dokončena!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "de": {
         "wifi": "WLAN",
@@ -7941,7 +7989,10 @@ TRANSLATIONS = {
         "installer_mock_done": "Die macW1Y-Installationssimulation wurde erfolgreich abgeschlossen! Im Testmodus erfolgt kein Neustart.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Transformations- & Wartungssystem",
-        "installer_done": "Installation erfolgreich abgeschlossen!"
+        "installer_done": "Installation erfolgreich abgeschlossen!",
+        "stage_manager": "Stage Manager",
+        "light": "Hell",
+        "light_mode": "Heller Modus"
     },
     "en": {
         "wifi": "Wi-Fi",
@@ -8382,7 +8433,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y installation simulation completed successfully! In demo mode, computer is not restarted.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Transformation & Maintenance System",
-        "installer_done": "Installation completed successfully!"
+        "installer_done": "Installation completed successfully!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "es": {
         "wifi": "Wi-Fi",
@@ -8823,7 +8877,10 @@ TRANSLATIONS = {
         "installer_mock_done": "¡La simulación de instalación de macW1Y finalizó con éxito! En modo de prueba no se reinicia el equipo.",
         "installer_banner_title": "Paquete de transformación macW1Y Transformation",
         "installer_banner_sub": "Sistema de transformación y mantenimiento",
-        "installer_done": "¡Instalación completada con éxito!"
+        "installer_done": "¡Instalación completada con éxito!",
+        "stage_manager": "Organizador visual",
+        "light": "Claro",
+        "light_mode": "Modo claro"
     },
     "et": {
         "wifi": "Wi-Fi",
@@ -9264,7 +9321,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y paigalduse simulatsioon lõpetati edukalt! Demorežiimis arvutit ei taaskäivitata.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Transformatsiooni- ja hooldussüsteem",
-        "installer_done": "Paigaldamine lõpetati edukalt!"
+        "installer_done": "Paigaldamine lõpetati edukalt!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "fa": {
         "wifi": "وای‌فای",
@@ -9705,7 +9765,10 @@ TRANSLATIONS = {
         "installer_mock_done": "شبیه‌سازی نصب macW1Y با موفقیت انجام شد! در حالت آزمایشی، سیستم راه‌اندازی مجدد نمی‌شود.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "سیستم تبدیل و نگهداری رابط کاربری",
-        "installer_done": "نصب با موفقیت انجام شد!"
+        "installer_done": "نصب با موفقیت انجام شد!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "fr": {
         "wifi": "Wi-Fi",
@@ -10146,7 +10209,10 @@ TRANSLATIONS = {
         "installer_mock_done": "La simulation de l'installation de macW1Y s'est terminée avec succès ! En mode démo, l'ordinateur n'est pas redémarré.",
         "installer_banner_title": "Pack de transformation macW1Y Transformation",
         "installer_banner_sub": "Système de transformation et de maintenance",
-        "installer_done": "Installation terminée avec succès !"
+        "installer_done": "Installation terminée avec succès !",
+        "stage_manager": "Stage Manager",
+        "light": "Clair",
+        "light_mode": "Mode clair"
     },
     "gan": {
         "wifi": "Wi-Fi",
@@ -10587,7 +10653,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y 安装模拟已成功完成！在演示模式下不会重启电脑。",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "系统转换与维护套件",
-        "installer_done": "安装搞定喽！"
+        "installer_done": "安装搞定喽！",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "hak": {
         "wifi": "Wi-Fi",
@@ -11028,7 +11097,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y 安裝模擬已成功完成！在示範模式下不會重新開機。",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "系統轉換與維護套件",
-        "installer_done": "安裝成功完成！"
+        "installer_done": "安裝成功完成！",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "he": {
         "wifi": "Wi-Fi",
@@ -11469,7 +11541,10 @@ TRANSLATIONS = {
         "installer_mock_done": "הדמיית התקנת macW1Y הושלמה בהצלחה! במצב הדגמה המחשב אינו מופעל מחדש.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "מערכת שינוי עיצוב ותחזוקה",
-        "installer_done": "ההתקנה הושלמה בהצלחה!"
+        "installer_done": "ההתקנה הושלמה בהצלחה!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "hi": {
         "wifi": "Wi-Fi",
@@ -11910,7 +11985,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y स्थापना सिमुलेशन सफलतापूर्वक पूरा हुआ! डेमो मोड में कंप्यूटर पुनरारंभ नहीं होता है।",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "रूपांतरण और रखरखाव प्रणाली",
-        "installer_done": "स्थापना सफलतापूर्वक संपन्न हुई!"
+        "installer_done": "स्थापना सफलतापूर्वक संपन्न हुई!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "hne": {
         "wifi": "Wi-Fi",
@@ -12351,7 +12429,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y स्थापना सिमुलेशन सफलतापूर्वक पूरा हुआ! डेमो मोड में कंप्यूटर पुनरारंभ नहीं होता है।",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "रूपांतरण और रखरखाव प्रणाली",
-        "installer_done": "इंस्टॉलेशन सुग्घर पूरा हो गे!"
+        "installer_done": "इंस्टॉलेशन सुग्घर पूरा हो गे!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "hr": {
         "wifi": "Wi-Fi",
@@ -12792,7 +12873,10 @@ TRANSLATIONS = {
         "installer_mock_done": "Simulacija instalacije macW1Y uspješno je završena! U probnom načinu rada računalo se ne pokreće ponovno.",
         "installer_banner_title": "Paket transformacije macW1Y Transformation",
         "installer_banner_sub": "Sustav transformacije i održavanja",
-        "installer_done": "Instalacija je uspješno završena!"
+        "installer_done": "Instalacija je uspješno završena!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "hsn": {
         "wifi": "Wi-Fi",
@@ -13233,7 +13317,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y 安装模拟已成功完成！在演示模式下不会重启电脑。",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "系统转换与维护套件",
-        "installer_done": "安装搞定哒！"
+        "installer_done": "安装搞定哒！",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "hu": {
         "wifi": "Wi-Fi",
@@ -13674,7 +13761,10 @@ TRANSLATIONS = {
         "installer_mock_done": "A macW1Y telepítési szimuláció sikeresen befejeződött! Demó módban a gép nem indul újra.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Átalakítási és karbantartási rendszer",
-        "installer_done": "A telepítés sikeresen befejeződött!"
+        "installer_done": "A telepítés sikeresen befejeződött!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "it": {
         "wifi": "Wi-Fi",
@@ -14115,7 +14205,10 @@ TRANSLATIONS = {
         "installer_mock_done": "La simulazione dell'installazione di macW1Y è terminata con successo! In modalità demo il computer non viene riavviato.",
         "installer_banner_title": "Modpack di trasformazione macW1Y Transformation",
         "installer_banner_sub": "Sistema di trasformazione e manutenzione",
-        "installer_done": "Installazione completata con successo!"
+        "installer_done": "Installazione completata con successo!",
+        "stage_manager": "Stage Manager",
+        "light": "Chiaro",
+        "light_mode": "Modalità chiara"
     },
     "ja": {
         "wifi": "Wi-Fi",
@@ -14556,7 +14649,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y のインストールシミュレーションが正常に完了しました！デモモードではコンピュータは再起動されません。",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "トランスフォーメーション＆メンテナンスシステム",
-        "installer_done": "インストールが正常に完了しました！"
+        "installer_done": "インストールが正常に完了しました！",
+        "stage_manager": "ステージマネージャ",
+        "light": "ライト",
+        "light_mode": "ライトモード"
     },
     "ko": {
         "wifi": "Wi-Fi",
@@ -14997,7 +15093,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y 설치 시뮬레이션이 성공적으로 완료되었습니다! 데모 모드에서는 컴퓨터가 재시동되지 않습니다.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "시스템 변환 및 유지 관리 스위트",
-        "installer_done": "설치가 성공적으로 완료되었습니다!"
+        "installer_done": "설치가 성공적으로 완료되었습니다!",
+        "stage_manager": "스테이지 매니저",
+        "light": "라이트",
+        "light_mode": "라이트 모드"
     },
     "lt": {
         "wifi": "Wi-Fi",
@@ -15438,7 +15537,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y diegimo modeliavimas sėkmingai baigtas! Demonstraciniu režimu kompiuteris nepaleidžiamas iš naujo.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Transformacijos ir priežiūros sistema",
-        "installer_done": "Diegimas sėkmingai baigtas!"
+        "installer_done": "Diegimas sėkmingai baigtas!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "lv": {
         "wifi": "Wi-Fi",
@@ -15879,7 +15981,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y instalēšanas simulācija veiksmīgi pabeigta! Demonstrācijas režīmā dators netiek restartēts.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Transformācijas un uzturēšanas sistēma",
-        "installer_done": "Instalēšana veiksmīgi pabeigta!"
+        "installer_done": "Instalēšana veiksmīgi pabeigta!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "mag": {
         "wifi": "Wi-Fi",
@@ -16320,7 +16425,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y स्थापना सिमुलेशन सफलतापूर्वक पूरा हुआ! डेमो मोड में कंप्यूटर पुनरारंभ नहीं होता है।",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "रूपांतरण और रखरखाव प्रणाली",
-        "installer_done": "इंस्टॉलेशन बढ़िया से पूरा भेलई!"
+        "installer_done": "इंस्टॉलेशन बढ़िया से पूरा भेलई!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "mwr": {
         "wifi": "Wi-Fi",
@@ -16761,7 +16869,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y स्थापना सिमुलेशन सफलतापूर्वक पूरा हुआ! डेमो मोड में कंप्यूटर पुनरारंभ नहीं होता है।",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "रूपांतरण और रखरखाव प्रणाली",
-        "installer_done": "इंस्टॉलेशन घणी चोखी तरियां पूरो हुयो!"
+        "installer_done": "इंस्टॉलेशन घणी चोखी तरियां पूरो हुयो!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "nan": {
         "wifi": "Wi-Fi",
@@ -17202,7 +17313,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y 安裝模擬已成功完成！在示範模式下不會重新開機。",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "系統轉換與維護套件",
-        "installer_done": "安裝成功完成！"
+        "installer_done": "安裝成功完成！",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "nl": {
         "wifi": "Wifi",
@@ -17643,7 +17757,10 @@ TRANSLATIONS = {
         "installer_mock_done": "De macW1Y-installatiesimulatie is succesvol voltooid! In testmodus wordt de computer niet opnieuw opgestart.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Transformatie- & Onderhoudssysteem",
-        "installer_done": "Installatie succesvol voltooid!"
+        "installer_done": "Installatie succesvol voltooid!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "om": {
         "wifi": "Wi-Fi",
@@ -18084,7 +18201,10 @@ TRANSLATIONS = {
         "installer_mock_done": "Yaaliin fe'iinsa macW1Y milkaa'inaan xumurameera! Mode kanaan kompiitarri hin ka'u.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Sirna Jijjiirraa fi Suphaa",
-        "installer_done": "Fe'iinsi milkaa'inaan xumurameera!"
+        "installer_done": "Fe'iinsi milkaa'inaan xumurameera!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "pcm": {
         "wifi": "Wi-Fi",
@@ -18525,7 +18645,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y installation test don finish fine! Computer no go restart for demo mode.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Transformation & Maintenance System",
-        "installer_done": "Installation finish successfully!"
+        "installer_done": "Installation finish successfully!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "pl": {
         "wifi": "Wi-Fi",
@@ -18966,7 +19089,10 @@ TRANSLATIONS = {
         "installer_mock_done": "Symulacja instalacji macW1Y zakończona sukcesem! W trybie demonstracyjnym komputer nie jest uruchamiany ponownie.",
         "installer_banner_title": "Modpack transformacji macW1Y Transformation",
         "installer_banner_sub": "System transformacji i konserwacji",
-        "installer_done": "Instalacja zakończona pomyślnie!"
+        "installer_done": "Instalacja zakończona pomyślnie!",
+        "stage_manager": "Stage Manager",
+        "light": "Jasny",
+        "light_mode": "Tryb jasny"
     },
     "pt": {
         "wifi": "Wi-Fi",
@@ -19407,7 +19533,10 @@ TRANSLATIONS = {
         "installer_mock_done": "A simulação de instalação do macW1Y terminou com êxito! Em modo de teste o computador não é reiniciado.",
         "installer_banner_title": "Pacote de transformação macW1Y Transformation",
         "installer_banner_sub": "Sistema de transformação e manutenção",
-        "installer_done": "Instalação concluída com sucesso!"
+        "installer_done": "Instalação concluída com sucesso!",
+        "stage_manager": "Stage Manager",
+        "light": "Claro",
+        "light_mode": "Modo claro"
     },
     "ro": {
         "wifi": "Wi-Fi",
@@ -19848,7 +19977,10 @@ TRANSLATIONS = {
         "installer_mock_done": "Simularea instalării macW1Y s-a încheiat cu succes! În modul demonstrativ computerul nu este repornit.",
         "installer_banner_title": "Pachet de transformare macW1Y Transformation",
         "installer_banner_sub": "Sistem de transformare și întreținere",
-        "installer_done": "Instalare finalizată cu succes!"
+        "installer_done": "Instalare finalizată cu succes!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "ru": {
         "wifi": "Wi-Fi",
@@ -20289,7 +20421,10 @@ TRANSLATIONS = {
         "installer_mock_done": "Симуляция установки macW1Y успешно завершена! В демонстрационном режиме перезагрузка компьютера не выполняется.",
         "installer_banner_title": "Пакет трансформации macW1Y Transformation",
         "installer_banner_sub": "Система трансформации и обслуживания",
-        "installer_done": "Установка успешно завершена!"
+        "installer_done": "Установка успешно завершена!",
+        "stage_manager": "Stage Manager",
+        "light": "Светлая",
+        "light_mode": "Светлый режим"
     },
     "sk": {
         "wifi": "Wi-Fi",
@@ -20730,7 +20865,10 @@ TRANSLATIONS = {
         "installer_mock_done": "Simulácia inštalácie macW1Y bola úspešne dokončená! V testovacom režime sa počítač nereštartuje.",
         "installer_banner_title": "Transformačný balíček macW1Y Transformation",
         "installer_banner_sub": "Systém transformácie a údržby",
-        "installer_done": "Inštalácia bola úspešne dokončená!"
+        "installer_done": "Inštalácia bola úspešne dokončená!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "skr": {
         "wifi": "وائی فائی",
@@ -21171,7 +21309,10 @@ TRANSLATIONS = {
         "installer_mock_done": "انسٹالیشن ٹیسٹ کامیاب تھی ڳیا! ڈیمو موڈ وچ کمپیوٹر ولدا چالو نئیں تھیندا۔",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "تبدیلی تے دیکھ بھال دا سسٹم",
-        "installer_done": "انسٹالیشن کامیابی نال مکمل تھی ڳئی!"
+        "installer_done": "انسٹالیشن کامیابی نال مکمل تھی ڳئی!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "sl": {
         "wifi": "Wi-Fi",
@@ -21612,7 +21753,10 @@ TRANSLATIONS = {
         "installer_mock_done": "Simulacija namestitve macW1Y se je uspešno zaključila! V preizkusnem načinu se računalnik ne zažene znova.",
         "installer_banner_title": "Paket transformacije macW1Y Transformation",
         "installer_banner_sub": "Sistem transformacije in vzdrževanja",
-        "installer_done": "Namestitev je bila uspešno končana!"
+        "installer_done": "Namestitev je bila uspešno končana!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "sr": {
         "wifi": "Wi-Fi",
@@ -22053,7 +22197,10 @@ TRANSLATIONS = {
         "installer_mock_done": "Симулација инсталације macW1Y је успешно завршена! У пробном режиму рачунар се не покреће поново.",
         "installer_banner_title": "Пакет трансформације macW1Y Transformation",
         "installer_banner_sub": "Систем трансформације и одржавања",
-        "installer_done": "Инсталација је успешно завршена!"
+        "installer_done": "Инсталација је успешно завршена!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "th": {
         "wifi": "Wi-Fi",
@@ -22494,7 +22641,10 @@ TRANSLATIONS = {
         "installer_mock_done": "การจำลองการติดตั้ง macW1Y เสร็จสมบูรณ์แล้ว! ในโหมดสาธิต คอมพิวเตอร์จะไม่ถูกรีสตาร์ท",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "ระบบการแปลงโฉมและบำรุงรักษาระบบ",
-        "installer_done": "การติดตั้งเสร็จสมบูรณ์เรียบร้อยแล้ว!"
+        "installer_done": "การติดตั้งเสร็จสมบูรณ์เรียบร้อยแล้ว!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "tr": {
         "wifi": "Wi-Fi",
@@ -22935,7 +23085,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y yükleme simülasyonu başarıyla tamamlandı! Tanıtım modunda bilgisayar yeniden başlatılmaz.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Dönüşüm ve Bakım Sistemi",
-        "installer_done": "Yükleme başarıyla tamamlandı!"
+        "installer_done": "Yükleme başarıyla tamamlandı!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "uk": {
         "wifi": "Wi-Fi",
@@ -23376,7 +23529,10 @@ TRANSLATIONS = {
         "installer_mock_done": "Встановлення macW1Y успішно протестовано в тестовому режимі!\nУ режимі муляжу перезавантаження комп'ютера не виконується.",
         "installer_banner_title": "Модпак macW1Y Transformation",
         "installer_banner_sub": "Система трансформації та обслуговування",
-        "installer_done": "Встановлення успішно завершено!"
+        "installer_done": "Встановлення успішно завершено!",
+        "stage_manager": "Stage Manager",
+        "light": "Світла",
+        "light_mode": "Світлий режим"
     },
     "vi": {
         "wifi": "Wi-Fi",
@@ -23817,7 +23973,10 @@ TRANSLATIONS = {
         "installer_mock_done": "Mô phỏng cài đặt macW1Y đã hoàn tất thành công! Trong chế độ demo, máy tính sẽ không khởi động lại.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Hệ thống chuyển đổi & bảo trì giao diện",
-        "installer_done": "Cài đặt hoàn tất thành công!"
+        "installer_done": "Cài đặt hoàn tất thành công!",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "wuu": {
         "wifi": "Wi-Fi",
@@ -24258,7 +24417,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y 安装模拟已成功完成！在演示模式下不会重启电脑。",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "系统转换与维护套件",
-        "installer_done": "安装成功完成！"
+        "installer_done": "安装成功完成！",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "yue": {
         "wifi": "Wi-Fi",
@@ -24699,7 +24861,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y 安裝模擬已成功完成！在示範模式下不會重新開機。",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "系統轉換與維護套件",
-        "installer_done": "安裝成功搞掂！"
+        "installer_done": "安裝成功搞掂！",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "zh": {
         "wifi": "Wi-Fi",
@@ -25140,7 +25305,10 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y 安装模拟已成功完成！在演示模式下不会重启电脑。",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "系统转换与维护套件",
-        "installer_done": "安装成功完成！"
+        "installer_done": "安装成功完成！",
+        "stage_manager": "Stage Manager",
+        "light": "Light",
+        "light_mode": "Light Mode"
     },
     "zh_tw": {
         "wifi": "Wi-Fi",
@@ -25581,6 +25749,9 @@ TRANSLATIONS = {
         "installer_mock_done": "macW1Y 安裝模擬已成功完成！在示範模式下不會重新開機。",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "系統轉換與維護套件",
-        "installer_done": "安裝成功完成！"
+        "installer_done": "安裝成功完成！",
+        "stage_manager": "幕前調度",
+        "light": "淺色",
+        "light_mode": "淺色模式"
     }
 }
