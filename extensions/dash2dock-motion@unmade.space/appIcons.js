@@ -1956,6 +1956,26 @@ class DockShowAppsIconMenu extends DockAppIconMenu {
     }
 }
 
+function _getLabelStylingConfig() {
+    if (globalThis._macLabelStylingConfig)
+        return globalThis._macLabelStylingConfig;
+    try {
+        const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+        if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+            const [ok, bytes] = GLib.file_get_contents(confPath);
+            if (ok) {
+                const conf = JSON.parse(new TextDecoder().decode(bytes));
+                const blur = (typeof conf.label_blur === 'number') ? conf.label_blur : 20;
+                const tint = (typeof conf.label_tint === 'number') ? conf.label_tint : 20;
+                const shadow = (typeof conf.label_shadow === 'number') ? conf.label_shadow : 25;
+                globalThis._macLabelStylingConfig = { blur, tint, shadow };
+                return globalThis._macLabelStylingConfig;
+            }
+        }
+    } catch (_) {}
+    return { blur: 20, tint: 20, shadow: 25 };
+}
+
 function _updateTailPosition(label, position) {
     const tail = label._arrowTailActor;
     if (!tail || !label.get_stage())
@@ -2040,6 +2060,14 @@ function _updateTailPosition(label, position) {
     if (label._blurActor) {
         label._blurActor.set_size(pillWidth, pillHeight);
         label._blurActor.set_position(lx, ly);
+        try {
+            const bBox = new Clutter.ActorBox();
+            bBox.x1 = lx;
+            bBox.y1 = ly;
+            bBox.x2 = lx + pillWidth;
+            bBox.y2 = ly + pillHeight;
+            label._blurActor.allocate(bBox);
+        } catch (_) {}
         if (label._blurActor._blurEff && 'corner_radius' in label._blurActor._blurEff) {
             label._blurActor._blurEff.corner_radius = Math.round(pillHeight / 2);
         }
@@ -2064,6 +2092,17 @@ function _ensureLabelTail(label, position) {
         labelBlurEff.enabled = false;
     }
 
+    if (label._blurActor && (!label._blurActor.get_parent?.() || label._blurActor._isDisposed)) {
+        try {
+            Main.uiGroup.remove_child(label._blurActor);
+            label._blurActor.destroy();
+        } catch (_) {}
+        label._blurActor = null;
+    }
+
+    const cfg = _getLabelStylingConfig();
+    const radius = (typeof cfg.blur === 'number') ? cfg.blur : 20;
+
     if (!label._blurActor) {
         const blurActor = new St.Widget({
             style_class: 'dash-label-blur-pill',
@@ -2071,9 +2110,6 @@ function _ensureLabelTail(label, position) {
         });
         blurActor.set_style('background-color: transparent !important; background: transparent !important; border: none !important; box-shadow: none !important;');
         label._blurActor = blurActor;
-
-        const cfg = globalThis._macLabelStylingConfig || { blur: 20, tint: 20, shadow: 25 };
-        const radius = (typeof cfg.blur === 'number') ? cfg.blur : 20;
 
         if (Blur?.BlurEffect) {
             blurActor._blurEff = new Blur.BlurEffect({
@@ -2099,6 +2135,17 @@ function _ensureLabelTail(label, position) {
 
         label.bind_property('visible', blurActor, 'visible', GObject.BindingFlags.SYNC_CREATE);
         label.bind_property('opacity', blurActor, 'opacity', GObject.BindingFlags.SYNC_CREATE);
+    } else if (label._blurActor._blurEff) {
+        label._blurActor._blurEff.enabled = (radius > 0);
+        label._blurActor._blurEff.radius = radius;
+    }
+
+    if (label._arrowTailActor && (!label._arrowTailActor.get_parent?.() || label._arrowTailActor._isDisposed)) {
+        try {
+            Main.uiGroup.remove_child(label._arrowTailActor);
+            label._arrowTailActor.destroy();
+        } catch (_) {}
+        label._arrowTailActor = null;
     }
 
     if (!label._arrowTailActor) {
@@ -2111,10 +2158,10 @@ function _ensureLabelTail(label, position) {
             cr.setLineCap(cairo.LineCap.ROUND);
             cr.setLineJoin(cairo.LineJoin.ROUND);
 
-            const cfg = globalThis._macLabelStylingConfig || { blur: 20, tint: 20, shadow: 25 };
-            const tintVal = (typeof cfg.tint === 'number') ? cfg.tint : 20;
+            const cfgTail = _getLabelStylingConfig();
+            const tintVal = (typeof cfgTail.tint === 'number') ? cfgTail.tint : 20;
             const tintAlpha = Math.max(0.05, Math.min(0.95, tintVal / 100.0));
-            const shadowVal = (typeof cfg.shadow === 'number') ? cfg.shadow : 25;
+            const shadowVal = (typeof cfgTail.shadow === 'number') ? cfgTail.shadow : 25;
             const shadowAlpha = Math.max(0.0, Math.min(1.0, shadowVal / 100.0));
 
             const isLight = (Main.sessionMode && Main.sessionMode.currentMode === 'light') ||
@@ -2281,6 +2328,7 @@ function _ensureLabelTail(label, position) {
         Main.uiGroup.set_child_below_sibling(label._arrowTailActor, label);
 
     _updateTailPosition(label, position);
+    globalThis._macEnsureDockLabelTail = _ensureLabelTail;
 }
 
 export function positionItemLabel(item) {
@@ -2384,8 +2432,6 @@ export function itemShowLabel() {
                 bw.remove_all_transitions();
                 bw.opacity = 0;
                 bw.hide();
-                Main.uiGroup.remove_child(bw);
-                bw.destroy();
             } catch (_) {}
         }
     } catch (_) {}
@@ -2427,14 +2473,12 @@ export function itemShowLabel() {
     _ensureLabelTail(this.label, Utils.getPosition());
     positionItemLabel(this);
 
-    if (globalThis._macLabelStylingConfig) {
-        const { blur } = globalThis._macLabelStylingConfig;
-        const eff = this.label._blurActor?._blurEff;
-        if (eff) {
-            eff.enabled = (blur > 0);
-            eff.radius = blur;
-            eff.queue_repaint?.();
-        }
+    const cfg = _getLabelStylingConfig();
+    const eff = this.label._blurActor?._blurEff;
+    if (eff) {
+        eff.enabled = (cfg.blur > 0);
+        eff.radius = cfg.blur;
+        eff.queue_repaint?.();
     }
 
     if (this.label._arrowTailActor)

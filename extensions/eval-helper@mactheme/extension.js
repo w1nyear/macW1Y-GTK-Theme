@@ -2828,6 +2828,14 @@ export default class EvalHelper extends Extension {
                     if (label._blurActor) {
                         label._blurActor.set_size(pillWidth, pillHeight);
                         label._blurActor.set_position(lx, ly);
+                        try {
+                            const bBox = new Clutter.ActorBox();
+                            bBox.x1 = lx;
+                            bBox.y1 = ly;
+                            bBox.x2 = lx + pillWidth;
+                            bBox.y2 = ly + pillHeight;
+                            label._blurActor.allocate(bBox);
+                        } catch (_) {}
                         if (label._blurActor._blurEff && 'corner_radius' in label._blurActor._blurEff) {
                             label._blurActor._blurEff.corner_radius = Math.round(pillHeight / 2);
                         }
@@ -2851,6 +2859,17 @@ export default class EvalHelper extends Extension {
                         labelBlurEff.enabled = false;
                     }
 
+                    if (label._blurActor && (!label._blurActor.get_parent?.() || label._blurActor._isDisposed)) {
+                        try {
+                            Main.uiGroup.remove_child(label._blurActor);
+                            label._blurActor.destroy();
+                        } catch (_) {}
+                        label._blurActor = null;
+                    }
+
+                    const cfg = globalThis._macLabelStylingConfig || { blur: 20, tint: 20, shadow: 25 };
+                    const radius = (typeof cfg.blur === 'number') ? cfg.blur : 20;
+
                     if (!label._blurActor) {
                         const blurActor = new St.Widget({
                             style_class: 'dash-label-blur-pill',
@@ -2858,9 +2877,6 @@ export default class EvalHelper extends Extension {
                         });
                         blurActor.set_style('background-color: transparent !important; background: transparent !important; border: none !important; box-shadow: none !important;');
                         label._blurActor = blurActor;
-
-                        const cfg = globalThis._macLabelStylingConfig || { blur: 20, tint: 20, shadow: 25 };
-                        const radius = (typeof cfg.blur === 'number') ? cfg.blur : 20;
 
                         if (Blur?.BlurEffect) {
                             blurActor._blurEff = new Blur.BlurEffect({
@@ -2886,6 +2902,17 @@ export default class EvalHelper extends Extension {
 
                         label.bind_property('visible', blurActor, 'visible', GObject.BindingFlags.SYNC_CREATE);
                         label.bind_property('opacity', blurActor, 'opacity', GObject.BindingFlags.SYNC_CREATE);
+                    } else if (label._blurActor._blurEff) {
+                        label._blurActor._blurEff.enabled = (radius > 0);
+                        label._blurActor._blurEff.radius = radius;
+                    }
+
+                    if (label._arrowTailActor && (!label._arrowTailActor.get_parent?.() || label._arrowTailActor._isDisposed)) {
+                        try {
+                            Main.uiGroup.remove_child(label._arrowTailActor);
+                            label._arrowTailActor.destroy();
+                        } catch (_) {}
+                        label._arrowTailActor = null;
                     }
 
                     if (!label._arrowTailActor) {
@@ -3078,16 +3105,46 @@ export default class EvalHelper extends Extension {
                     const stageX = extents.get_x();
                     const stageY = extents.get_y();
                     const itemWidth = extents.get_width();
+                    const itemHeight = extents.get_height();
 
                     const [minW, natW] = item.label.get_preferred_width(-1);
                     const labelWidth = Math.ceil(natW > 0 ? natW : (item.label.get_width() || 0));
                     const [minH, natH] = item.label.get_preferred_height(labelWidth);
                     const labelHeight = Math.ceil(natH > 0 ? natH : (item.label.get_height() || 25));
 
-                    const position = St.Side.BOTTOM;
+                    const position = item._position ?? St.Side.BOTTOM;
                     const iconCenterX = stageX + itemWidth / 2;
-                    const y = Math.round(stageY - labelHeight - 20);
-                    const x = Math.round(iconCenterX - (labelWidth / 2));
+                    const iconCenterY = stageY + itemHeight / 2;
+
+                    let x, y;
+                    switch (position) {
+                    case St.Side.LEFT:
+                        y = Math.round(iconCenterY - labelHeight / 2);
+                        x = Math.round(stageX + itemWidth + 20);
+                        break;
+                    case St.Side.RIGHT:
+                        y = Math.round(iconCenterY - labelHeight / 2);
+                        x = Math.round(stageX - labelWidth - 20);
+                        break;
+                    case St.Side.TOP:
+                        y = Math.round(stageY + itemHeight + 20);
+                        x = Math.round(iconCenterX - (labelWidth / 2));
+                        break;
+                    case St.Side.BOTTOM:
+                    default:
+                        y = Math.round(stageY - labelHeight - 20);
+                        x = Math.round(iconCenterX - (labelWidth / 2));
+                        break;
+                    }
+
+                    const monitor = Main.layoutManager.findMonitorForActor(item);
+                    if (monitor) {
+                        const gap = 5;
+                        if (x - monitor.x < gap)
+                            x += monitor.x - x;
+                        else if (x + labelWidth > monitor.x + monitor.width - gap)
+                            x -= x + labelWidth - (monitor.x + monitor.width) + gap;
+                    }
 
                     item.label.set_position(x, y);
                     _updateTailPos(item.label, position);
@@ -3152,7 +3209,7 @@ export default class EvalHelper extends Extension {
                     if (this.label.set_offscreen_redirect)
                         this.label.set_offscreen_redirect(0);
 
-                    _ensureTail(this.label, St.Side.BOTTOM);
+                    _ensureTail(this.label, this._position ?? St.Side.BOTTOM);
                     _posLabel(this);
 
                     if (globalThis._macLabelStylingConfig) {
@@ -3220,6 +3277,24 @@ export default class EvalHelper extends Extension {
                     first.constructor.prototype.hideLabel = _hideLabel;
                 }
 
+                const patchDockItems = () => {
+                    const d2d = Main.uiGroup?.get_children?.()?.find(c => c.name === 'dashtodockContainer');
+                    const d2dItems = d2d?.dash?._box?.get_children?.() || [];
+                    const d2dFirst = d2dItems.find(it => it && typeof it.showLabel === 'function');
+                    if (d2dFirst?.constructor?.prototype) {
+                        d2dFirst.constructor.prototype.showLabel = _showLabel;
+                        d2dFirst.constructor.prototype.hideLabel = _hideLabel;
+                    }
+                    for (const it of d2dItems) {
+                        if (it && typeof it.showLabel === 'function') {
+                            it.showLabel = _showLabel;
+                            it.hideLabel = _hideLabel;
+                        }
+                    }
+                };
+                patchDockItems();
+                globalThis._macPatchDockLabels = patchDockItems;
+
                 import('resource:///org/gnome/shell/ui/dash.js').then((Dash) => {
                     if (Dash?.DashItemContainer?.prototype) {
                         Dash.DashItemContainer.prototype.showLabel = _showLabel;
@@ -3259,11 +3334,25 @@ export default class EvalHelper extends Extension {
                 const labels = Main.uiGroup.get_children().filter(a => a && a.has_style_class_name && a.has_style_class_name('dash-label'));
                 for (const l of labels) {
                     l.set_style(styleStr);
+                    if (l._blurActor && (!l._blurActor.get_parent?.() || l._blurActor._isDisposed)) {
+                        try {
+                            Main.uiGroup.remove_child(l._blurActor);
+                            l._blurActor.destroy();
+                        } catch (_) {}
+                        l._blurActor = null;
+                    }
+                    if (l._arrowTailActor && (!l._arrowTailActor.get_parent?.() || l._arrowTailActor._isDisposed)) {
+                        try {
+                            Main.uiGroup.remove_child(l._arrowTailActor);
+                            l._arrowTailActor.destroy();
+                        } catch (_) {}
+                        l._arrowTailActor = null;
+                    }
                     if (l._arrowTailActor && !l._blurActor) {
-                        if (_sharedEnsureTail) {
-                            _sharedEnsureTail(l, l._arrowPos ?? St.Side.BOTTOM);
-                        } else if (typeof globalThis._macEnsureDockLabelTail === 'function') {
+                        if (typeof globalThis._macEnsureDockLabelTail === 'function') {
                             globalThis._macEnsureDockLabelTail(l, l._arrowPos ?? St.Side.BOTTOM);
+                        } else if (_sharedEnsureTail) {
+                            _sharedEnsureTail(l, l._arrowPos ?? St.Side.BOTTOM);
                         }
                     }
                     if (l._blurActor && l._blurActor._blurEff) {
@@ -3276,6 +3365,29 @@ export default class EvalHelper extends Extension {
                     if (l._arrowTailActor) {
                         l._arrowTailActor.queue_repaint();
                     }
+                }
+
+                const pills = Main.uiGroup.get_children().filter(
+                    a => a && a.has_style_class_name &&
+                         (a.has_style_class_name('dash-label-blur-pill') ||
+                          a.has_style_class_name('dash-label-blur-unified'))
+                );
+                for (const p of pills) {
+                    if (p._blurEff) {
+                        p._blurEff.enabled = (blur > 0);
+                        p._blurEff.radius = blur;
+                        p._blurEff.queue_repaint?.();
+                    }
+                }
+                const tails = Main.uiGroup.get_children().filter(
+                    a => a && a.has_style_class_name && a.has_style_class_name('dash-label-tail')
+                );
+                for (const t of tails) {
+                    t.queue_repaint();
+                }
+
+                if (typeof patchDockItems === 'function') {
+                    patchDockItems();
                 }
             } catch (e) {
                 console.error('[EvalHelper] syncAllLabels error: ' + e);

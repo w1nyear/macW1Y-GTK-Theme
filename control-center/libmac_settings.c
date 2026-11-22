@@ -1185,6 +1185,12 @@ static void apply_label_settings(void) {
             "org.gnome.Shell.Extensions.EvalHelper",
             "SyncLabelStyling",
             NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+        g_dbus_connection_call(bus,
+            "org.gnome.Shell",
+            "/org/gnome/Shell/Extensions/EvalHelper",
+            "org.gnome.Shell.Extensions.EvalHelper",
+            "Eval",
+            g_variant_new("(s)", "globalThis._macSyncLabelStyling?.()"), NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
         g_object_unref(bus);
     }
 }

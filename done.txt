@@ -4009,3 +4009,23 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+900. Виправлення динамічної зміни розмиття бір тагів (Tooltips) у Dock та синхронізації з налаштуваннями Mac Styling:
+  - Усунено критичну помилку знищення blur-віджетів у dash2dock-motion: раніше цикл itemShowLabel видаляв та знищував (bw.destroy()) _blurActor усіх інших іконок Dock при показі мітки будь-якої програми, що призводило до перманентної втрати розмиття для всіх біртагів Dock.
+  - Реалізовано захист від знищення фонових віджетів: тепер сторонні віджети лише плавно приховуються (opacity = 0; hide()), без деструкції та видалення з Main.uiGroup.
+  - Додано автоматичне відновлення та валідацію _blurActor та _arrowTailActor у _ensureLabelTail та _ensureTail: у разі відсутності батьківського актора (get_parent() == null) чи переходу у стан _isDisposed актор коректно очищується та створюється заново.
+  - Реалізовано миттєву синхронізацію радіуса розмиття з параметром label_blur з ~/.config/mac-styling/styling.json як при створенні та показі мітки, так і під час переміщення повзунка у Налаштуваннях через D-Bus виклики SyncLabelStyling та Eval(globalThis._macSyncLabelStyling).
+  - В eval-helper реалізовано динамічний патч DockDashItemContainer для Dock-панелі та пряме оновлення всіх dash-label-blur-pill та dash-label-tail у Main.uiGroup, що забезпечує миттєве оновлення ефекту Blur.BlurEffect / Shell.BlurEffect без затримок чи потреби перезапуску сесії.
+  - Перекомпільовано та синхронізовано libmac_settings.so у всіх системних та локальних директоріях.
+  - Оновлено хеші блокування в config/extensions.lock.json та /usr/share/mactheme/config/extensions.lock.json (21/21 перевірено).
+  - Успішно пройдено повний набір верифікацій: mac-extension-guard verify (21/21), mac-audit-sync check (100%), test-macw1y-animations.py (12/12 100%), unit tests (39/39 100%), перевірка відсутності кирилиці в install.sh (CLEAN).
+  * [extensions/dash2dock-motion@unmade.space/appIcons.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/appIcons.js)
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [gnome-control-center-overlay/libmac_settings.so](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.so)
+  * [control-center/libmac_settings.so](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.so)
+  * [lib/libmac_settings.so](file:///home/vitaliy/MACTHEMEFILES/lib/libmac_settings.so)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
