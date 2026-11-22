@@ -3932,15 +3932,13 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
 
-896. Виправлення синхронізації параметрів мак-стилізації бір тагів (розмиття, затемнення, тінь) у док-панелі та огляді:
-  - Відновлено та інтегровано апаратне розмиття фону (_blurActor): створено капсульний актор розмиття St.Widget (style_class: 'dash-label-blur-pill'), що строго обмежений межами капсули (lx, ly, pillWidth, pillHeight) з corner_radius = Math.round(pillHeight / 2) та Blur.BlurEffect (mode: 1), виключаючи будь-які темні прямокутні артефакти або виступи за межі стрілки.
-  - Реалізовано повну чуйність до повзунка «Затемнення» (tint): усунено жорстко закодовану мінімальну непрозорість (раніше a = Math.max(0.82, ... + 0.55)), впроваджено динамічний розрахунок прозорості a = Math.max(0.18, Math.min(0.95, tintAlpha)) для темної теми та a = Math.max(0.18, Math.min(0.95, tintAlpha * 0.85)) для світлої теми, що забезпечує ідеальний вигляд матового напівпрозорого скла на значенні 20 (як у передперегляді Центру керування) та плавне затемнення від 0 до 100.
-  - Синхронізовано повзунок «Тінь» (shadow): додано м'яку багаторівневу розмиту тінь (3-прохідна з масштабованим зсувом 1.5px та alpha * 0.14 / s), повністю ідентичну відмальовці в libmac_settings.c.
-  - Миттєва двостороння синхронізація через DBus SyncLabelStyling: функція syncAllLabels у реальному часі оновлює радіус розмиття (_blurEff.radius = blur, enabled = (blur > 0)) та викликає queue_repaint() на _arrowTailActor для всіх активних та створюваних підказок док-панелі та огляду.
-  - Оновлено хеші цілісності в config/extensions.lock.json та /usr/share/mactheme/config/extensions.lock.json. Усі 21/21 розширень верифіковані (mac-extension-guard: PASS), mac-audit-sync: 100% PASS, test-macw1y-animations: 12/12 PASS, модульні тести: 39/39 PASS, install.sh: 0 кириличних символів.
+897. Виправлення нескінченного циклу відкриття/закриття Stage Manager при перекритті вікном та у повноекранному режимі:
+  - Ліквідовано петлю зворотного зв'язку (oscillation thrashing) в _isAreaClear(): видалено динамічне опитування трансформованих екранних координат карток (c.get_transformed_position()), через яке при приховуванні панелі за межі монітора координати ставали від'ємними (px2 < 0), функція помилково повертала clear=true, а _checkOverlap() знову відкривав панель кожні 100 мс.
+  - Впроваджено фіксовану опорну геометрію стейдж-зони: перевірка накладання вікон тепер стабільно аналізує статичну ділянку слота на екрані (px1 = mon.x, px2 = mon.x + Math.min(panelW, 120 * sf), py1 = vy, py2 = vy + panelH), яка не залежить від положення анімованої чи прихованої панелі, гарантуючи, що доки вікно закриває лівий край — Stage Manager чисто ховається і залишається прихованим без ривків і миготінь.
+  - Повне блокування у повноекранному режимі: розширено _fullscreen() для надійної перевірки як global.display.get_monitor_in_fullscreen(), так і прапорця w.is_fullscreen() на активних вікнах. У _checkOverlap() та _isAreaClear() додано негайне повернення false/hide при переході в повноекранний режим, усуваючи повторні спроби виклику _show().
+  - Оптимізовано обробник виходу з повноекрану: виклик _show() замінено на _checkOverlap(), що унеможливлює раптове розгортання стейдж-бару під максимізованими вікнами після виходу з повноекранного режиму.
+  - Верифікація: mac-extension-guard: PASS, mac-audit-sync: 100% PASS, test-macw1y-animations.py: 12/12 PASS, модульні тести: 39/39 PASS, install.sh: 0 кириличних символів.
 - Зачеплені файли:
-  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
-  * [extensions/dash2dock-motion@unmade.space/appIcons.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/appIcons.js)
-  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

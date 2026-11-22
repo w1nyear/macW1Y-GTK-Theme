@@ -353,6 +353,7 @@ class StageSidebar {
 
     _isAreaClear() {
         try {
+            if (this._fullscreen()) return false;
             const ws = global.workspace_manager.get_active_workspace();
             if (!ws) return true;
             const mon = _getMon();
@@ -362,50 +363,40 @@ class StageSidebar {
             const [vx, vy] = this._panelVisiblePos(mon, topH);
 
             const sf = this._scaleFactor || 1;
-            let px1 = vx;
-            let py1 = vy;
-            let px2 = vx + (this._VERTICAL ? Math.min(panelW, 110 * sf) : panelW);
-            let py2 = vy + (this._VERTICAL ? panelH : Math.min(panelH, 110 * sf));
+            let px1, px2, py1, py2;
+            const stageSpan = Math.min(panelW, 120 * sf);
 
-            if (this._box && this._cards && this._cards.length > 0) {
-                try {
-                    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-                    for (const c of this._cards) {
-                        if (!c || !c.get_stage?.()) continue;
-                        const cpos = c.get_transformed_position?.();
-                        const csize = c.get_transformed_size?.();
-                        if (cpos && csize && cpos[0] !== null && cpos[1] !== null) {
-                            minX = Math.min(minX, cpos[0]);
-                            maxX = Math.max(maxX, cpos[0] + csize[0]);
-                            minY = Math.min(minY, cpos[1]);
-                            maxY = Math.max(maxY, cpos[1] + csize[1]);
-                        }
-                    }
-                    if (maxX > minX && maxY > minY) {
-                        if (this._POS === 'right') {
-                            px1 = Math.max(vx, minX - 8 * sf);
-                            px2 = vx + panelW;
-                        } else {
-                            px1 = vx;
-                            px2 = Math.min(vx + panelW, maxX + 8 * sf);
-                        }
-                        py1 = Math.max(vy, minY);
-                        py2 = Math.min(vy + panelH, maxY);
-                    }
-                } catch (_) {}
+            if (this._VERTICAL) {
+                if (this._POS === 'right') {
+                    px1 = mon.x + mon.width - stageSpan;
+                    px2 = mon.x + mon.width;
+                } else {
+                    px1 = mon.x;
+                    px2 = mon.x + stageSpan;
+                }
+                py1 = vy;
+                py2 = vy + panelH;
+            } else {
+                px1 = vx;
+                px2 = vx + panelW;
+                py1 = mon.y + mon.height - stageSpan;
+                py2 = mon.y + mon.height;
             }
 
             const windows = ws.list_windows().filter(w => {
                 if (!w || w.is_override_redirect()) return false;
                 if (w.minimized || w._stageSwitching) return false;
+                if (w.get_compositor_private?.()?.is_finalized?.()) return false;
                 const t = w.get_window_type();
                 if (t === Meta.WindowType.DESKTOP || t === Meta.WindowType.DOCK) return false;
                 return true;
             });
 
             for (const win of windows) {
+                if (win.is_fullscreen && win.is_fullscreen()) return false;
                 const r = win.get_frame_rect();
-                if (r && r.x < px2 && r.x + r.width > px1 && r.y < py2 && r.y + r.height > py1) {
+                if (!r || r.width <= 0 || r.height <= 0) continue;
+                if (r.x < px2 && r.x + r.width > px1 && r.y < py2 && r.y + r.height > py1) {
                     return false;
                 }
             }
@@ -416,33 +407,34 @@ class StageSidebar {
     }
 
     _checkOverlap() {
-        if (!this._panel) return;
-        if (this._isSwitching) return;
+        if (!this._panel || this._isSwitching) return;
+        if (this._fullscreen()) {
+            if (this._visible) {
+                this._hide();
+            }
+            return;
+        }
         if (Main.overview.visible || Main.overview.visibleTarget) {
             if (this._panel.visible) this._panel.hide();
             return;
         }
+        if (this._flyoutMode) return;
+
         const clear = this._isAreaClear();
         if (clear) {
-            if (this._flyoutMode) {
-                this._flyoutMode = false;
-                this._resetAllCardScales();
-            }
             if (!this._visible && !this._settings.get_boolean('sidebar-auto-hide')) {
                 this._show();
             }
         } else {
-            if (!this._flyoutMode) {
-                if (this._visible) {
-                    this._hide();
-                }
+            if (this._visible) {
+                this._hide();
             }
         }
     }
 
     _armOverlapTimer() {
         this._killOverlapTimer();
-        this._overlapTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+        this._overlapTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
             if (!this._flyoutMode) {
                 this._checkOverlap();
             }
@@ -918,6 +910,7 @@ class StageSidebar {
             if (win) {
                 this._sig(win, 'position-changed', () => this._checkOverlap());
                 this._sig(win, 'size-changed', () => this._checkOverlap());
+                this._sig(win, 'notify::fullscreen', () => this._onFullscreen());
                 this._onWindowMap(win);
             }
             this._checkOverlap();
@@ -926,6 +919,7 @@ class StageSidebar {
             if (win) {
                 this._sig(win, 'position-changed', () => this._checkOverlap());
                 this._sig(win, 'size-changed', () => this._checkOverlap());
+                this._sig(win, 'notify::fullscreen', () => this._onFullscreen());
             }
             this._checkOverlap();
         });
@@ -1823,7 +1817,22 @@ class StageSidebar {
 
 
     _fullscreen() {
-        return global.display.get_monitor_in_fullscreen(_getMon().index);
+        try {
+            const mon = _getMon();
+            const monIdx = mon ? mon.index : 0;
+            if (monIdx >= 0 && global.display.get_monitor_in_fullscreen(monIdx)) return true;
+            if (global.display.get_monitor_in_fullscreen(Main.layoutManager.primaryIndex)) return true;
+            const ws = global.workspace_manager.get_active_workspace();
+            if (ws) {
+                const wins = ws.list_windows();
+                for (const w of wins) {
+                    if (w && !w.minimized && !w.is_override_redirect()) {
+                        if (w.is_fullscreen && w.is_fullscreen()) return true;
+                    }
+                }
+            }
+        } catch (_) {}
+        return false;
     }
 
     _onFullscreen() {
@@ -1831,21 +1840,20 @@ class StageSidebar {
             this._destroyPreview();
             if (this._visible) {
                 this._visible = false;
+                this._flyoutMode = false;
                 if (this._panel) {
                     this._panel.remove_all_transitions();
                     const m = _getMon();
                     this._panel.set_position(
                         ...this._panelHiddenPos(m, Main.panel ? Main.panel.height : 0));
+                    this._panel.opacity = 0;
                 }
             }
             this._syncEdge();
             this._applyChrome();
         } else {
             this._syncEdge();
-
-
-            if (!this._settings.get_boolean('sidebar-auto-hide') || this._shouldForceShow())
-                this._show();
+            this._checkOverlap();
         }
     }
 
