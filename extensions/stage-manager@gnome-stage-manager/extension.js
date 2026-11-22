@@ -93,18 +93,15 @@ function _groupByApp(workspace, focusedWindow, mergeMap = new Map()) {
         (b.get_user_time() || 0) - (a.get_user_time() || 0)
     );
 
-    let activeAppId = null;
-    if (focusedWindow) {
-        const fa = tracker.get_window_app(focusedWindow);
-        if (fa) activeAppId = fa.get_id();
-    }
+    const openWins = allWins.filter(w => !w.minimized);
+    const openAppIds = new Set(openWins.map(w => tracker.get_window_app(w)?.get_id()).filter(Boolean));
 
     for (const win of sorted) {
         if (!win.minimized) continue;
         const app = tracker.get_window_app(win);
         if (!app) continue;
         const id = app.get_id();
-        if (id === activeAppId) continue;
+        if (openAppIds.has(id)) continue;
 
         if (!appMap.has(id))
             appMap.set(id, { app, windows: [] });
@@ -500,6 +497,8 @@ class StageSidebar {
     }
 
     enable() {
+        globalThis._stageManager = this;
+        globalThis._stageManagerEnabled = true;
         this._recomputeScale();
         this._recomputeThemeClass();
         this._loadAppMergeMap();
@@ -509,33 +508,6 @@ class StageSidebar {
         this._addKeybinding();
         this._armOverlapTimer();
 
-        this._origActivateWindow = Main.activateWindow;
-        Main.activateWindow = (window, time, workspaceNum) => {
-            if (window && !window._stageSwitching) {
-                const ws = window.get_workspace() || global.workspace_manager.get_active_workspace();
-                const tracker = Shell.WindowTracker.get_default();
-                const targetApp = tracker.get_window_app(window);
-                const targetAppId = targetApp ? targetApp.get_id() : null;
-
-                const openWins = ws ? ws.list_windows().filter(w =>
-                    _isNormal(w) && !w.minimized && w !== window
-                ) : [];
-
-                for (const other of openWins) {
-                    const otherApp = tracker.get_window_app(other);
-                    const otherAppId = otherApp ? otherApp.get_id() : null;
-                    if (otherAppId !== targetAppId) {
-                        other._stageManaged = false;
-                        other._stageCardRect = null;
-                        other.minimize();
-                    }
-                }
-                window._stageManaged = false;
-                window._stageCardRect = null;
-            }
-            return this._origActivateWindow.call(Main, window, time, workspaceNum);
-        };
-
         if (this._isAreaClear() && !this._settings.get_boolean('sidebar-auto-hide'))
             this._show();
         else if (this._shouldForceShow())
@@ -544,11 +516,8 @@ class StageSidebar {
     }
 
     disable() {
-        if (this._origActivateWindow) {
-            Main.activateWindow = this._origActivateWindow;
-            this._origActivateWindow = null;
-        }
-
+        globalThis._stageManager = null;
+        globalThis._stageManagerEnabled = false;
 
         this._killRefreshTimer();
         this._killHideTimer();
@@ -1293,10 +1262,7 @@ class StageSidebar {
     _onWindowMinimize(win) {
         if (!_isNormal(win)) return;
 
-
         if (this._expectMinimize.delete(win)) return;
-
-
 
         this._captureSnapshot(win);
 
@@ -1305,7 +1271,6 @@ class StageSidebar {
             this._evictIfMoved(win);
             const group = this._findGroupForWindow(win);
             if (!group) {
-
                 if (ws) this._groups.push({ id: this._nextGid++, ws, windows: new Set([win]) });
             } else if (this._isActiveGroup(group)) {
                 group.windows.delete(win);
@@ -1313,7 +1278,45 @@ class StageSidebar {
                 this._cleanupEmptyGroups();
             }
         }
-        this._scheduleRefresh();
+
+        const rect = win.get_frame_rect();
+        const actor = win.get_compositor_private();
+        if (actor && rect && rect.width > 0 && rect.height > 0) {
+            const mon = _getMon();
+            const topH = Main.panel ? Main.panel.height : 0;
+            const sf = this._scaleFactor || 1;
+            const cardW = 160 * sf;
+            const cardH = 100 * sf;
+            const cardX = this._POS === 'right' ? (mon.x + mon.width - 200 * sf) : (mon.x + 24 * sf);
+            const cardY = Math.round(mon.y + topH + (mon.height - topH) / 2 - cardH / 2);
+
+            const clone = new Clutter.Clone({ source: actor });
+            clone.set_position(rect.x, rect.y);
+            clone.set_size(rect.width, rect.height);
+            clone.set_pivot_point(0.0, 0.5);
+            Main.uiGroup.add_child(clone);
+
+            const destScaleX = (cardW * 0.85) / rect.width;
+            const destScaleY = (cardH * 0.85) / rect.height;
+
+            clone.ease({
+                x: cardX,
+                y: cardY,
+                scale_x: destScaleX,
+                scale_y: destScaleY,
+                rotation_angle_y: this._ROT_SIGN * 25,
+                duration: 280,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                onComplete: () => {
+                    clone.destroy();
+                    this._signature = null;
+                    this._refresh();
+                },
+            });
+        } else {
+            this._scheduleRefresh();
+        }
+
         this._syncForceShow();
     }
 
@@ -1491,7 +1494,7 @@ class StageSidebar {
                         scale_x: destScaleX,
                         scale_y: destScaleY,
                         rotation_angle_y: this._ROT_SIGN * 25,
-                        opacity: 0,
+                        opacity: 255,
                         duration: 300,
                         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
                         onComplete: () => {
@@ -1520,16 +1523,28 @@ class StageSidebar {
                 win._stageManaged = true;
                 win._stageCardRect = { x: cardX, y: cardY, width: cardW, height: cardH };
 
+                const actor = win.get_compositor_private();
+                if (actor) {
+                    actor.remove_all_transitions();
+                    actor.opacity = 0;
+                }
+
                 if (win.minimized) win.unminimize();
+                if (actor) {
+                    actor.opacity = 0;
+                }
+
                 if (targetRect && targetRect.width > 0 && targetRect.height > 0)
                     win.move_resize_frame?.(true, targetRect.x, targetRect.y, targetRect.width, targetRect.height);
 
-                const actor = win.get_compositor_private();
                 if (actor && targetRect && targetRect.width > 0 && targetRect.height > 0) {
                     actor.opacity = 0;
-                    const geom = this._windowGeometry(win) ?? this._snapshots.get(win);
-                    const clone = geom?.content
-                        ? new St.Widget({ content: geom.content })
+                    let content = this._snapshots.get(win)?.content;
+                    if (!content && actor) {
+                        try { content = actor.paint_to_content(null); } catch (_) {}
+                    }
+                    const clone = content
+                        ? new St.Widget({ content })
                         : new Clutter.Clone({ source: actor });
 
                     clone.set_position(cardX, cardY);
@@ -1537,7 +1552,7 @@ class StageSidebar {
                     clone.set_scale(cardW / targetRect.width, cardH / targetRect.height);
                     clone.set_pivot_point(0.0, 0.5);
                     clone.rotation_angle_y = this._ROT_SIGN * 25;
-                    clone.opacity = 220;
+                    clone.opacity = 255;
                     Main.uiGroup.add_child(clone);
 
                     clone.ease({
@@ -1558,10 +1573,13 @@ class StageSidebar {
                     });
                 } else {
                     win._stageSwitching = false;
+                    if (actor) actor.opacity = 255;
                     if (i === 0) win.activate(global.get_current_time());
                 }
             } catch (_) {
                 win._stageSwitching = false;
+                const actor = win.get_compositor_private();
+                if (actor) actor.opacity = 255;
                 if (win.minimized) win.unminimize();
                 if (i === 0) win.activate(global.get_current_time());
             }
@@ -3618,7 +3636,8 @@ export default class StageManagerExtension extends Extension {
     }
 
     disable() {
-
+        globalThis._stageManager = null;
+        globalThis._stageManagerEnabled = false;
 
         if (this._side) this._side.disable();
         if (this._max) this._max.disable();

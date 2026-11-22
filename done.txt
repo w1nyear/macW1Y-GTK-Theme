@@ -3710,3 +3710,35 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+---
+
+888. Виправлення анімацій згортання/розгортання Stage Manager, ліквідація дублювання анімацій із Compiz, усунення передчасної появи вікна по центру та коректне відображення кількох згорнутих програм у Stage Manager:
+- Опис проблеми:
+  1) Під час згортання вікна у Stage Manager запускався магічний ефект лампи Compiz до доку замість плавного зменшення, руху вбік та 3D-оберту по осі Y на слот картки.
+  2) При розгортанні програми зі Stage Manager відтворювалися дві анімації одночасно (витягання з доку через Compiz та розгортання зі стейджа).
+  3) При розгортанні або зміні програм у стейджі по центру екрана раптово з'являлося вікно на повну непрозорість без анімації, і одночасно поверх нього йшла анімація розгортання зі стейджа.
+  4) При згортанні другої програми у Stage Manager вона не відображалася в бічній панелі (показувалася тільки одна програма замість двох), і перша програма не зміщувалася вертикально для центрування.
+- Реалізовані зміни:
+  1) Скасування Compiz Magic Lamp при роботі Stage Manager:
+     * У extensions/compiz-alike-magic-lamp-effect@hermes83.github.com/extension.js додано перевірку globalThis._stageManagerEnabled та win._stageSwitching.
+     * При згортанні вікна в режимі Stage Manager ефект лампи Compiz повністю пропускається (Main.wm._minimizeWindowDone), передаючи керування Stage Manager.
+     * При розгортанні зі стейджу Compiz викликає Main.wm._unminimizeWindowDone та одразу встановлює actor.set_opacity(0), запобігаючи подвійній анімації та спалаху вікна.
+  2) Власна 3D-анімація згортання у Stage Manager:
+     * У extensions/stage-manager@gnome-stage-manager/extension.js у функції _onWindowMinimize() реалізовано плавне зменшення клону (scale 0.85), рух до бічної панелі Stage Manager та оберт навколо осі Y на кут 25° (rotation_angle_y) з наступним знищенням клону та оновленням панелі.
+     * У _switchWindows() усунено передчасне зникнення (opacity: 0) активного вікна під час згортання у бічну панель.
+  3) Усунення передчасної появи вікна по центру екрана:
+     * У _switchWindows() перед викликом win.unminimize() реальний actor вікна отримує opacity: 0 та очищаються всі переходи.
+     * Клон формується зі знімка вікна (snapshot content) або paint_to_content(null) і плавно розгортається від картки Stage Manager (зі збереженням початкового кута 25° та масштабу) до цільового прямокутника на робочому столі (масштаб 1.0, кут 0°).
+     * Тільки після завершення анімації (onComplete) клон знищується, а реальний actor отримує opacity: 255 та фокусується.
+  4) Підтримка кількох згорнутих програм у Stage Manager та їх центрування:
+     * У функції _groupByApp() виправлено фільтрацію: замість помилкового activeAppId (який відкидав щойно згорнуте вікно через збереження на ньому фокусу в Mutter) запроваджено множину openAppIds лише для відкритих (не згорнутих) вікон. Усі згорнуті програми коректно групуються і відображаються у бічній панелі як окремі картки.
+     * Завдяки y_align: Clutter.ActorAlign.CENTER у _box при появі другої або наступних карток весь стос автоматично плавно центрується по вертикалі екрана.
+  5) Очищення застарілих хуків:
+     * Видалено конфліктне перевизначення Main.activateWindow, яке спричиняло блокуючу помилку TypeError: "activateWindow" is read-only.
+- Зачеплені файли:
+  * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
+  * [extensions/compiz-alike-magic-lamp-effect@hermes83.github.com/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/compiz-alike-magic-lamp-effect@hermes83.github.com/extension.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
