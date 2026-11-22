@@ -3942,3 +3942,29 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+898. Оновлення версії модпаку з 0.8 на 0.7.1 та реліз у гілку main на GitHub:
+  - Знижено та уніфіковано версію модпаку з 0.8 до 0.7.1 в усіх системних компонентах, скриптах встановлення, утилітах та конфігураціях: config/mac-styling/version, install.sh (NEW_VERSION="0.7.1"), bin/macW1Y, bin/mac-setup-wizard, bin/mac-installer-gui, bin/mac_i18n.py, bin/mac-i18n-verify, bin/mac-audit-sync, bin/mac-lowspec-optimizer, bin/mac-graphics-profile, bin/mac-build-theme, bin/mac-theme-sync, config/gtk-4.0/macw1y-tokens.css, extensions/eval-helper@mactheme/macSetupWizard.js, MULTIPLATFORM_MIGRATION_STATUS.md.
+  - Оновлено хеші цілісності в config/extensions.lock.json та /usr/share/mactheme/config/extensions.lock.json для eval-helper@mactheme. Усі 21/21 розширень валідовані mac-extension-guard.
+  - Синхронізовано модифіковані бінарні скрипти з /usr/local/bin/ (mac-audit-sync: 100% PASS).
+  - Підготовлено та відправлено реліз у віддалений репозиторій GitHub (гілка main) для виправлення блокування користувачів під час першого входу на етапі «Вітаємо в macW1Y».
+  - Верифікація: mac-extension-guard: PASS, mac-audit-sync: 100% PASS, test-macw1y-animations.py: 12/12 PASS, модульні тести: 39/39 PASS, install.sh: 0 кириличних символів.
+- Зачеплені файли:
+  * [config/mac-styling/version](file:///home/vitaliy/MACTHEMEFILES/config/mac-styling/version)
+  * [install.sh](file:///home/vitaliy/MACTHEMEFILES/install.sh)
+  * [bin/macW1Y](file:///home/vitaliy/MACTHEMEFILES/bin/macW1Y)
+  * [bin/mac-setup-wizard](file:///home/vitaliy/MACTHEMEFILES/bin/mac-setup-wizard)
+  * [bin/mac-installer-gui](file:///home/vitaliy/MACTHEMEFILES/bin/mac-installer-gui)
+  * [bin/mac_i18n.py](file:///home/vitaliy/MACTHEMEFILES/bin/mac_i18n.py)
+  * [bin/mac-i18n-verify](file:///home/vitaliy/MACTHEMEFILES/bin/mac-i18n-verify)
+  * [bin/mac-audit-sync](file:///home/vitaliy/MACTHEMEFILES/bin/mac-audit-sync)
+  * [bin/mac-lowspec-optimizer](file:///home/vitaliy/MACTHEMEFILES/bin/mac-lowspec-optimizer)
+  * [bin/mac-graphics-profile](file:///home/vitaliy/MACTHEMEFILES/bin/mac-graphics-profile)
+  * [bin/mac-build-theme](file:///home/vitaliy/MACTHEMEFILES/bin/mac-build-theme)
+  * [bin/mac-theme-sync](file:///home/vitaliy/MACTHEMEFILES/bin/mac-theme-sync)
+  * [config/gtk-4.0/macw1y-tokens.css](file:///home/vitaliy/MACTHEMEFILES/config/gtk-4.0/macw1y-tokens.css)
+  * [extensions/eval-helper@mactheme/macSetupWizard.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/macSetupWizard.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [MULTIPLATFORM_MIGRATION_STATUS.md](file:///home/vitaliy/MACTHEMEFILES/MULTIPLATFORM_MIGRATION_STATUS.md)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

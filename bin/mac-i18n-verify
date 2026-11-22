@@ -36,7 +36,7 @@ def check(title, condition, detail=""):
         return False
 
 def main():
-    print(f"\n{C_CYAN}{C_BOLD}=== macW1Y 0.8 i18n / l10n VALIDATION SUITE ==={C_RESET}\n")
+    print(f"\n{C_CYAN}{C_BOLD}=== macW1Y 0.7.1 i18n / l10n VALIDATION SUITE ==={C_RESET}\n")
     all_ok = True
 
     # 1. Catalog Verification

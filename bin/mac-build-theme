@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-macW1Y 0.8 — Centralized Master Theme Compiler (mac-build-theme)
+macW1Y 0.7.1 — Centralized Master Theme Compiler (mac-build-theme)
 Reads Single Source of Truth (SSOT) from config/macw1y-tokens.json
 and generates unified stylesheets for GTK 4, GTK 3, and Libadwaita.
 """
@@ -34,7 +34,7 @@ def generate_gtk4_tokens_css(tokens, is_dark=False):
     d = tokens["dimensions"]
     t = tokens["typography"]
     
-    css = f"""/* macW1Y 0.8 — Generated Master Design Tokens for GTK 4 / Libadwaita */
+    css = f"""/* macW1Y 0.7.1 — Generated Master Design Tokens for GTK 4 / Libadwaita */
 /* DO NOT EDIT DIRECTLY: Generated from config/macw1y-tokens.json */
 
 @define-color accent_bg_color {c["accent_bg"]};
@@ -112,7 +112,7 @@ def generate_gtk4_components_css(tokens, is_dark=False):
     slider_glass_url = "file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass.svg"
     slider_glass_v_url = "file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass-vertical.svg"
 
-    css = f"""/* macW1Y 0.8 — Master Unified Component Stylesheet for GTK 4 / Libadwaita */
+    css = f"""/* macW1Y 0.7.1 — Master Unified Component Stylesheet for GTK 4 / Libadwaita */
 /* DO NOT EDIT DIRECTLY: Generated from config/macw1y-tokens.json */
 
 /* =========================================================================

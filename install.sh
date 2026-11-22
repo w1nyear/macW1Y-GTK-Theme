@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ==============================================================================
 #  macW1Y Transformation Modpack (macW1Y Release)
-#  Installer & Maintenance System - Version 0.8
+#  Installer & Maintenance System - Version 0.7.1
 # ==============================================================================
 
 set -e
 
 # Version Constants
-NEW_VERSION="0.8"
+NEW_VERSION="0.7.1"
 
 # ANSI Color Codes
 C_RESET="\033[0m"

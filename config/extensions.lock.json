@@ -247,7 +247,7 @@
         "50",
         "51"
       ],
-      "sha256": "6fa325343673a004c6c11df5cf0eff03870b1098c7e3b501499d20b7fe03da90",
+      "sha256": "1b1ad5dcb2a6fd8b683fd59e79f7ac971bc6ed6363b646d95c43c5854cfc65d4",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -258,8 +258,8 @@
       "has_custom_patches": true,
       "patch_description": "Local D-Bus EvalHelper service and macW1Y Alt+Tab switcher enhancements",
       "last_verified": "2026-11-21",
-      "pinned_sha256": "019739c0ffefad490211b168d2d7c8374e7ccc00200780684dd19719839abe95",
-      "integrity_hash": "019739c0ffefad490211b168d2d7c8374e7ccc00200780684dd19719839abe95"
+      "pinned_sha256": "1b1ad5dcb2a6fd8b683fd59e79f7ac971bc6ed6363b646d95c43c5854cfc65d4",
+      "integrity_hash": "1b1ad5dcb2a6fd8b683fd59e79f7ac971bc6ed6363b646d95c43c5854cfc65d4"
     },
     "kiwi@kemma": {
       "uuid": "kiwi@kemma",
