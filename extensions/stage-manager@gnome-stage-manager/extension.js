@@ -1285,25 +1285,40 @@ class StageSidebar {
             const mon = _getMon();
             const topH = Main.panel ? Main.panel.height : 0;
             const sf = this._scaleFactor || 1;
-            const cardW = 160 * sf;
-            const cardH = 100 * sf;
+            const cardW = 140 * sf;
+            const cardH = 90 * sf;
             const cardX = this._POS === 'right' ? (mon.x + mon.width - 200 * sf) : (mon.x + 24 * sf);
-            const cardY = Math.round(mon.y + topH + (mon.height - topH) / 2 - cardH / 2);
+
+            let cardY;
+            if (this._cards && this._cards.length > 0) {
+                let totalH = cardH;
+                for (const c of this._cards) {
+                    const [, ch] = c.get_transformed_size();
+                    totalH += (ch || (cardH + 30 * sf)) + 10 * sf;
+                }
+                const availH = mon.height - topH;
+                cardY = mon.y + topH + Math.max(10 * sf, Math.round((availH - totalH) / 2));
+            } else {
+                cardY = Math.round(mon.y + topH + (mon.height - topH - cardH) / 2);
+            }
 
             const clone = new Clutter.Clone({ source: actor });
             clone.set_position(rect.x, rect.y);
             clone.set_size(rect.width, rect.height);
-            clone.set_pivot_point(0.0, 0.5);
+            clone.set_pivot_point(0.0, 0.0);
             Main.uiGroup.add_child(clone);
 
-            const destScaleX = (cardW * 0.85) / rect.width;
-            const destScaleY = (cardH * 0.85) / rect.height;
+            const destScale = Math.min(cardW / rect.width, cardH / rect.height);
+            const fitW = rect.width * destScale;
+            const fitH = rect.height * destScale;
+            const destX = cardX + Math.round((cardW - fitW) / 2);
+            const destY = cardY + Math.round((cardH - fitH) / 2);
 
             clone.ease({
-                x: cardX,
-                y: cardY,
-                scale_x: destScaleX,
-                scale_y: destScaleY,
+                x: destX,
+                y: destY,
+                scale_x: destScale,
+                scale_y: destScale,
                 rotation_angle_y: this._ROT_SIGN * 25,
                 duration: 280,
                 mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
@@ -1448,17 +1463,19 @@ class StageSidebar {
         let cardX, cardY, cardW, cardH;
         if (card) {
             try {
-                const [cx, cy] = card.get_transformed_position();
-                const [cw, ch] = card.get_transformed_size();
+                const targetActor = card._thumb?._previewBox ?? card._thumb ?? card;
+                const [cx, cy] = targetActor.get_transformed_position();
+                const [cw, ch] = targetActor.get_transformed_size();
                 cardX = cx; cardY = cy; cardW = cw; cardH = ch;
             } catch (_) {}
         }
         if (!cardX || !cardW || cardW <= 0) {
             const mon = _getMon();
             const topH = Main.panel ? Main.panel.height : 0;
-            cardX = this._POS === 'right' ? (mon.x + mon.width - 200) : (mon.x + 24);
-            cardY = Math.round(mon.y + topH + (mon.height - topH) / 2 - 50);
-            cardW = 160; cardH = 100;
+            const sf = this._scaleFactor || 1;
+            cardX = this._POS === 'right' ? (mon.x + mon.width - 200 * sf) : (mon.x + 24 * sf);
+            cardY = Math.round(mon.y + topH + (mon.height - topH) / 2 - 50 * sf);
+            cardW = 140 * sf; cardH = 90 * sf;
         }
 
         // 1. Fold active windows from desktop into Stage Manager sidebar
@@ -1480,19 +1497,22 @@ class StageSidebar {
                     const clone = new Clutter.Clone({ source: actor });
                     clone.set_position(rect.x, rect.y);
                     clone.set_size(rect.width, rect.height);
-                    clone.set_pivot_point(0.0, 0.5);
+                    clone.set_pivot_point(0.0, 0.0);
                     Main.uiGroup.add_child(clone);
 
                     win.minimize();
 
-                    const destScaleX = (cardW * 0.85) / rect.width;
-                    const destScaleY = (cardH * 0.85) / rect.height;
+                    const destScale = Math.min(cardW / rect.width, cardH / rect.height);
+                    const fitW = rect.width * destScale;
+                    const fitH = rect.height * destScale;
+                    const destX = cardX + Math.round((cardW - fitW) / 2);
+                    const destY = cardY + Math.round((cardH - fitH) / 2);
 
                     clone.ease({
-                        x: cardX,
-                        y: cardY,
-                        scale_x: destScaleX,
-                        scale_y: destScaleY,
+                        x: destX,
+                        y: destY,
+                        scale_x: destScale,
+                        scale_y: destScale,
                         rotation_angle_y: this._ROT_SIGN * 25,
                         opacity: 255,
                         duration: 300,
@@ -1547,10 +1567,16 @@ class StageSidebar {
                         ? new St.Widget({ content })
                         : new Clutter.Clone({ source: actor });
 
-                    clone.set_position(cardX, cardY);
+                    const startScale = Math.min(cardW / targetRect.width, cardH / targetRect.height);
+                    const fitW = targetRect.width * startScale;
+                    const fitH = targetRect.height * startScale;
+                    const startX = cardX + Math.round((cardW - fitW) / 2);
+                    const startY = cardY + Math.round((cardH - fitH) / 2);
+
+                    clone.set_position(startX, startY);
                     clone.set_size(targetRect.width, targetRect.height);
-                    clone.set_scale(cardW / targetRect.width, cardH / targetRect.height);
-                    clone.set_pivot_point(0.0, 0.5);
+                    clone.set_scale(startScale, startScale);
+                    clone.set_pivot_point(0.0, 0.0);
                     clone.rotation_angle_y = this._ROT_SIGN * 25;
                     clone.opacity = 255;
                     Main.uiGroup.add_child(clone);
@@ -1976,22 +2002,14 @@ class StageSidebar {
         for (let i = 0; i < this._cards.length; i++) {
             const card = this._cards[i];
 
-            card.set_opacity(0);
-            card.translation_y = 24;
-            card.set_scale(base * 0.82, base * 0.82);
+            card.remove_all_transitions();
+            card.set_opacity(255);
+            card.translation_y = 0;
+            card.translation_x = 0;
+            card.set_scale(base, base);
             card.rotation_angle_y = 0;
             card.rotation_angle_x = 0;
             this._applyPerspective(card, 1.0);
-
-            card.ease({
-                opacity: CARD_REST_OPACITY,
-                translation_y: 0,
-                scale_x: base,
-                scale_y: base,
-                duration: 300,
-                delay: i * 55,
-                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            });
         }
     }
 
