@@ -9,7 +9,7 @@ build() {
     local flags
     flags=$(pkg-config --cflags --libs $packages)
     # pkg-config повертає окремі аргументи компілятора.
-    gcc -shared -fPIC -O2 -Werror=implicit-function-declaration -Wl,-z,defs -o "$work/$name.so" "$root/$source" $flags -ldl -lm
+    gcc -shared -fPIC -O3 -Werror=implicit-function-declaration -Wl,-z,defs -o "$work/$name.so" "$root/$source" $flags -ldl -lm
 }
 build libmacpopover src/mac_popover.c 'gtk4 glib-2.0 gobject-2.0'
 build libmac_terminal src/mac_terminal.c 'gtk4 libadwaita-1'

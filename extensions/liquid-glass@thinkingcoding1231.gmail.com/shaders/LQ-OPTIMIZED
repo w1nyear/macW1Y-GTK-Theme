@@ -213,44 +213,72 @@ void main() {
     float bevelWidth = clamp(max_z * 0.75 + r * 0.2, 4.0, 28.0);
     float depth = clamp(-d / bevelWidth, 0.0, 1.0);
 
-    // Smooth physical dome profile & analytical 3D normal
-    float u = 1.0 - depth;
-    float nPower = clamp(profile_shape_n * 0.45, 2.0, 5.0);
-    float slope = pow(u, nPower) * 0.85;
-    float sinA = sin(slope);
-    float cosA = cos(slope);
-    vec3 normal = vec3(-normal2D * sinA, cosA);
-
-    // Dynamic Snell refraction using uniform ior and displacement_scale
-    float effIor = max(ior, 1.001);
-    float eta = 1.0 / effIor;
-    float k = 1.0 - eta * eta * sinA * sinA;
-    float factor = (k >= 0.0) ? (sqrt(k) - eta * cosA) : 0.0;
-    float ray_xy = factor * sinA;
-    float ray_z = -eta - factor * cosA;
-    float safe_z = max(-ray_z, 0.15);
-
-    // Smooth edge dampening: zero displacement at glass perimeter
-    float edgeDampen = smoothstep(0.0, edgeFeather * 3.0, -d);
-
-    float minRes = max(min(resolution.x, resolution.y), 1.0);
-    float thicknessNorm = displacement_scale / minRes;
-    float dispFactor = (ray_xy / safe_z) * thicknessNorm * edgeDampen;
-    vec2 dispVec = -normal2D * dispFactor;
-
-    // 4. HIGH-PERFORMANCE TEXTURE SAMPLING
-    // Single tap without chroma; 3 taps when chromatic aberration is enabled
-    vec2 refrUv = screenUv + dispVec;
     vec4 refrColor;
+    float finalRim = 0.0;
+    float sheen = 0.0;
+    float ao = 1.0;
 
-    if (chroma_strength > 0.0001 && dispFactor > 0.00001) {
-        vec2 chromaOffset = -normal2D * (chroma_strength / minRes) * edgeDampen;
-        float rCol = texture2D(cogl_sampler1, refrUv + chromaOffset).r;
-        vec4 gCol  = texture2D(cogl_sampler1, refrUv);
-        float bCol = texture2D(cogl_sampler1, refrUv - chromaOffset).b;
-        refrColor = vec4(rCol, gCol.g, bCol, gCol.a);
+    if (depth < 0.999) {
+        // Smooth physical dome profile & analytical 3D normal
+        float u = 1.0 - depth;
+        float nPower = clamp(profile_shape_n * 0.45, 2.0, 5.0);
+        float slope = pow(u, nPower) * 0.85;
+        float sinA = sin(slope);
+        float cosA = cos(slope);
+        vec3 normal = vec3(-normal2D * sinA, cosA);
+
+        // Dynamic Snell refraction using uniform ior and displacement_scale
+        float effIor = max(ior, 1.001);
+        float eta = 1.0 / effIor;
+        float k = 1.0 - eta * eta * sinA * sinA;
+        float factor = (k >= 0.0) ? (sqrt(k) - eta * cosA) : 0.0;
+        float ray_xy = factor * sinA;
+        float ray_z = -eta - factor * cosA;
+        float safe_z = max(-ray_z, 0.15);
+
+        // Smooth edge dampening: zero displacement at glass perimeter
+        float edgeDampen = smoothstep(0.0, edgeFeather * 3.0, -d);
+
+        float minRes = max(min(resolution.x, resolution.y), 1.0);
+        float thicknessNorm = displacement_scale / minRes;
+        float dispFactor = (ray_xy / safe_z) * thicknessNorm * edgeDampen;
+        vec2 dispVec = -normal2D * dispFactor;
+
+        // 4. HIGH-PERFORMANCE TEXTURE SAMPLING
+        // Single tap without chroma; 3 taps when chromatic aberration is enabled
+        vec2 refrUv = screenUv + dispVec;
+
+        if (chroma_strength > 0.0001 && dispFactor > 0.00001) {
+            vec2 chromaOffset = -normal2D * (chroma_strength / minRes) * edgeDampen;
+            float rCol = texture2D(cogl_sampler1, refrUv + chromaOffset).r;
+            vec4 gCol  = texture2D(cogl_sampler1, refrUv);
+            float bCol = texture2D(cogl_sampler1, refrUv - chromaOffset).b;
+            refrColor = vec4(rCol, gCol.g, bCol, gCol.a);
+        } else {
+            refrColor = texture2D(cogl_sampler1, refrUv);
+        }
+
+        // Ambient occlusion darkening near the rim
+        float aoRadius = max(ao_radius, 4.0);
+        float aoBand = 1.0 - smoothstep(0.0, aoRadius, -d);
+        ao = 1.0 - aoBand * (ao_intensity * 0.45);
+
+        // 6. PHYSICAL RIM LIGHT & SPECULAR GLINT
+        float lightRad = light_angle_deg * 0.01745329;
+        vec3 lightDir = normalize(vec3(cos(lightRad), sin(lightRad), 0.38));
+
+        float rimDot = 1.0 - max(normal.z, 0.0);
+        float rimFresnel = pow(rimDot, max(rim_power, 1.0));
+        float nDotL = max(dot(normal, lightDir), 0.0);
+        float lightMask = pow(nDotL, max(rim_directional_power, 1.0));
+
+        float edgeBand = 1.0 - depth;
+        finalRim = rimFresnel * lightMask * (rim_intensity * 1.5) * edgeBand * surface_light_enabled;
+        sheen = pow(nDotL, 2.0) * sheen_intensity * 0.4 * surface_light_enabled;
     } else {
-        refrColor = texture2D(cogl_sampler1, refrUv);
+        // Interior flat glass fast path (zero refraction distortion, single direct tap)
+        refrColor = texture2D(cogl_sampler1, screenUv);
+        sheen = 0.1261 * sheen_intensity * 0.4 * surface_light_enabled;
     }
 
     // Dark/Neutral fallback if sampled area has low alpha
@@ -264,24 +292,7 @@ void main() {
     baseColor = mix(baseColor, activeTint, activeBaseStrength);
     baseColor = mix(baseColor, vec3(tint_r, tint_g, tint_b), tint_strength);
 
-    // Ambient occlusion darkening near the rim
-    float aoRadius = max(ao_radius, 4.0);
-    float aoBand = 1.0 - smoothstep(0.0, aoRadius, -d);
-    float ao = 1.0 - aoBand * (ao_intensity * 0.45);
     baseColor *= ao;
-
-    // 6. PHYSICAL RIM LIGHT & SPECULAR GLINT
-    float lightRad = light_angle_deg * 0.01745329;
-    vec3 lightDir = normalize(vec3(cos(lightRad), sin(lightRad), 0.38));
-
-    float rimDot = 1.0 - max(normal.z, 0.0);
-    float rimFresnel = pow(rimDot, max(rim_power, 1.0));
-    float nDotL = max(dot(normal, lightDir), 0.0);
-    float lightMask = pow(nDotL, max(rim_directional_power, 1.0));
-
-    float edgeBand = 1.0 - depth;
-    float finalRim = rimFresnel * lightMask * (rim_intensity * 1.5) * edgeBand * surface_light_enabled;
-    float sheen = pow(nDotL, 2.0) * sheen_intensity * 0.4 * surface_light_enabled;
 
     // Subtle touch brightening highlight
     float touchGlow = 0.0;

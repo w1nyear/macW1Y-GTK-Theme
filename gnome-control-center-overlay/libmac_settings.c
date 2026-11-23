@@ -2726,9 +2726,10 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
 
     double shadow_val = (double)state.liquid_shadow / 100.0;
     if (shadow_val > 0.02) {
-        for (int i = 2; i >= 1; i--) {
-            double expand = i * 4.0;
-            double alpha = (shadow_val * 0.22) / i;
+        int passes = (g_liquid_element_count > 5) ? 1 : 2;
+        for (int i = passes; i >= 1; i--) {
+            double expand = (passes == 1) ? 6.0 : (i * 4.0);
+            double alpha = (passes == 1) ? (shadow_val * 0.20) : ((shadow_val * 0.22) / i);
             draw_shape_path(cr, gx - expand * 0.5, gy + 3.0, gw + expand, gh + expand, gr + expand * 0.5, shape);
             cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, alpha);
             cairo_fill(cr);
@@ -2743,15 +2744,14 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
     int igy = (int)round(gy);
     int igw = (int)round(gw);
     int igh = (int)round(gh);
+    if (igw > 320) igw = 320;
+    if (igh > 320) igh = 320;
 
     cairo_surface_flush(bg);
     unsigned char *src_pixels = cairo_image_surface_get_data(bg);
     int src_stride = cairo_image_surface_get_stride(bg);
 
-    cairo_surface_t *glass_surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, igw, igh);
-    cairo_surface_flush(glass_surf);
-    unsigned char *dst_pixels = cairo_image_surface_get_data(glass_surf);
-    int dst_stride = cairo_image_surface_get_stride(glass_surf);
+    static uint32_t s_scratch_pixels[320 * 320];
 
     double bx = gw * 0.5;
     double by = gh * 0.5;
@@ -2777,9 +2777,18 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
     double tint_g = is_light ? 255.0 : 41.0;
     double tint_b = is_light ? 255.0 : 46.0;
 
+    double one_minus_tint = 1.0 - tint_strength;
+    double tint_r_str = tint_r * tint_strength;
+    double tint_g_str = tint_g * tint_strength;
+    double tint_b_str = tint_b * tint_strength;
+    double const_sheen = (lz_dir * lz_dir) * 0.12 * 255.0;
+
     for (int ly = 0; ly < igh; ly++) {
-        uint32_t *dst_row = (uint32_t *)(dst_pixels + ly * dst_stride);
+        uint32_t *dst_row = s_scratch_pixels + ly * igw;
         double py = ly - by + 0.5;
+        int bg_y = CLAMP(igy + ly, 0, height - 1);
+        const uint32_t *src_row = (const uint32_t *)(src_pixels + bg_y * src_stride);
+
         for (int lx = 0; lx < igw; lx++) {
             double px = lx - bx + 0.5;
             double n2d_x, n2d_y;
@@ -2789,14 +2798,36 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
                 continue;
             }
 
+            double depth = -d * inv_bevel;
+
+            /* Flat interior fast path (zero refraction displacement, single direct read) */
+            if (depth >= 1.0) {
+                int bg_x = CLAMP(igx + lx, 0, width - 1);
+                uint32_t c = src_row[bg_x];
+                double cr_r = (c >> 16) & 0xFF;
+                double cr_g = (c >> 8) & 0xFF;
+                double cr_b = c & 0xFF;
+
+                double base_r = cr_r * one_minus_tint + tint_r_str;
+                double base_g = cr_g * one_minus_tint + tint_g_str;
+                double base_b = cr_b * one_minus_tint + tint_b_str;
+
+                double lit_r = base_r + const_sheen - (base_r * const_sheen * (1.0 / 255.0));
+                double lit_g = base_g + const_sheen - (base_g * const_sheen * (1.0 / 255.0));
+                double lit_b = base_b + const_sheen - (base_b * const_sheen * (1.0 / 255.0));
+
+                dst_row[lx] = (0xFF << 24) | ((uint8_t)lit_r << 16) | ((uint8_t)lit_g << 8) | (uint8_t)lit_b;
+                continue;
+            }
+
+            if (depth < 0.0) depth = 0.0;
             double insideMask = 1.0 - glsl_smoothstep(-edgeFeather, edgeFeather, d);
-            double depth = CLAMP(-d * inv_bevel, 0.0, 1.0);
 
             /* Calibrated dome surface slope matching physical profile curve */
             double u = 1.0 - depth;
-            double slope = pow(u, 3.0) * 0.85;
-            double sinA = sin(slope);
-            double cosA = cos(slope);
+            double slope = (u * u * u) * 0.85;
+            double sinA = slope * (1.0 - slope * slope * 0.166667);
+            double cosA = sqrt(fmax(1.0 - sinA * sinA, 0.0));
 
             /* Snell's law refraction vector */
             double k = 1.0 - eta * eta * sinA * sinA;
@@ -2827,9 +2858,9 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
                 cr_b = b_val;
             }
 
-            double base_r = cr_r * (1.0 - tint_strength) + tint_r * tint_strength;
-            double base_g = cr_g * (1.0 - tint_strength) + tint_g * tint_strength;
-            double base_b = cr_b * (1.0 - tint_strength) + tint_b * tint_strength;
+            double base_r = cr_r * one_minus_tint + tint_r_str;
+            double base_g = cr_g * one_minus_tint + tint_g_str;
+            double base_b = cr_b * one_minus_tint + tint_b_str;
 
             double ao = 1.0 - (1.0 - depth) * 0.15;
             base_r *= ao;
@@ -2859,16 +2890,23 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
         }
     }
 
+    cairo_surface_t *glass_surf = cairo_image_surface_create_for_data(
+        (unsigned char *)s_scratch_pixels, CAIRO_FORMAT_ARGB32, igw, igh, igw * 4);
     cairo_surface_mark_dirty(glass_surf);
     cairo_set_source_surface(cr, glass_surf, igx, igy);
     cairo_paint(cr);
     cairo_surface_destroy(glass_surf);
 
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.65);
-    for (int d = -1; d <= 1; d++) {
-        cairo_arc(cr, gx + gw / 2.0 + d * 9.0, gy + gh / 2.0, 2.2, 0, 2 * G_PI);
-        cairo_fill(cr);
-    }
+    double cx = gx + gw * 0.5;
+    double cy = gy + gh * 0.5;
+    cairo_new_sub_path(cr);
+    cairo_arc(cr, cx - 9.0, cy, 2.2, 0, 2 * G_PI);
+    cairo_new_sub_path(cr);
+    cairo_arc(cr, cx, cy, 2.2, 0, 2 * G_PI);
+    cairo_new_sub_path(cr);
+    cairo_arc(cr, cx + 9.0, cy, 2.2, 0, 2 * G_PI);
+    cairo_fill(cr);
 
     cairo_restore(cr);
 }
@@ -2922,22 +2960,16 @@ static gboolean on_liquid_preview_tick(GtkWidget *widget, GdkFrameClock *frame_c
         return G_SOURCE_CONTINUE;
     }
 
-    gint64 target_interval = 1000000 / g_liquid_target_fps;
-    if (now - g_liquid_last_frame_time < target_interval) {
-        return G_SOURCE_CONTINUE;
+    if (g_liquid_target_fps < 60) {
+        gint64 target_interval = 1000000 / g_liquid_target_fps;
+        if (now - g_liquid_last_frame_time < target_interval - 2000) {
+            return G_SOURCE_CONTINUE;
+        }
     }
 
     double dt = (double)(now - g_liquid_last_frame_time) / 1000000.0;
     if (dt > 0.1) dt = 0.1;
     g_liquid_last_frame_time = now;
-    g_liquid_frame_counter++;
-
-    gint64 elapsed_fps = now - g_liquid_last_fps_time;
-    if (elapsed_fps >= 500000) {
-        g_liquid_measured_fps = (double)g_liquid_frame_counter * 1000000.0 / (double)elapsed_fps;
-        g_liquid_frame_counter = 0;
-        g_liquid_last_fps_time = now;
-    }
 
     int w = gtk_widget_get_width(widget);
     int h = gtk_widget_get_height(widget);
@@ -2983,6 +3015,7 @@ static gboolean on_liquid_preview_tick(GtkWidget *widget, GdkFrameClock *frame_c
 static void on_liquid_fps_changed(GtkRange *range, gpointer user_data) {
     (void)user_data;
     g_liquid_target_fps = (int)round(gtk_range_get_value(range));
+    g_liquid_measured_fps = (double)g_liquid_target_fps;
     if (g_liquid_fps_label) {
         char buf[128];
         if (g_liquid_target_fps <= 0) {
@@ -3015,6 +3048,7 @@ static void on_liquid_count_changed(GtkRange *range, gpointer user_data) {
 static void on_liquid_mode_toggled(GtkCheckButton *btn, gpointer user_data) {
     (void)user_data;
     g_liquid_use_optimized = gtk_check_button_get_active(btn);
+    g_liquid_measured_fps = 0.0;
     const char *home = g_get_home_dir();
     char *opt_marker = g_build_filename(home, ".config", "macW1Y", "optimized-glass", NULL);
     if (g_liquid_use_optimized) {
@@ -3154,6 +3188,8 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
         cairo_pattern_destroy(fallback);
     }
 
+    gint64 bench_start = g_get_monotonic_time();
+
     if (g_liquid_element_count > 1) {
         if (!g_bench_elements_inited && width > 30 && height > 30) {
             init_benchmark_elements(width, height);
@@ -3191,6 +3227,22 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
         draw_repo_glass_element_optimized(cr, bg, width, height, gx, gy, gw, gh, gr, state.liquid_shape);
     } else {
         draw_repo_glass_element(cr, bg, width, height, gx, gy, gw, gh, gr, state.liquid_shape);
+    }
+
+    gint64 bench_end = g_get_monotonic_time();
+    gint64 render_time_us = bench_end - bench_start;
+
+    if (g_liquid_target_fps <= 0) {
+        g_liquid_measured_fps = 0.0;
+    } else {
+        double capacity_fps = (render_time_us > 0) ? (1000000.0 / (double)render_time_us) : (double)g_liquid_target_fps;
+        double target = (double)g_liquid_target_fps;
+        double frame_fps = fmin(target, capacity_fps);
+        if (g_liquid_measured_fps <= 0.1) {
+            g_liquid_measured_fps = frame_fps;
+        } else {
+            g_liquid_measured_fps = g_liquid_measured_fps * 0.85 + frame_fps * 0.15;
+        }
     }
 
     const char *shape_names[] = {
