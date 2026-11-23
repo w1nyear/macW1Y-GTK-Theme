@@ -348,7 +348,11 @@ class KioskGuard:
         try:
             res = subprocess.run(["gsettings", "get", "org.gnome.mutter", "overlay-key"],
                                  stdout=subprocess.PIPE, text=True, check=False)
-            self.saved_overlay = res.stdout.strip()
+            val = res.stdout.strip()
+            if val in ("''", "", "'disabled'"):
+                self.saved_overlay = "'Super_L'"
+            else:
+                self.saved_overlay = val
             res2 = subprocess.run(["gsettings", "get", "org.gnome.desktop.wm.keybindings", "switch-applications"],
                                   stdout=subprocess.PIPE, text=True, check=False)
             self.saved_switch_apps = res2.stdout.strip()
@@ -382,10 +386,10 @@ class KioskGuard:
             return
         self.active = False
         try:
-            if self.saved_overlay and self.saved_overlay != "''":
+            if self.saved_overlay and self.saved_overlay not in ("''", "", "'disabled'"):
                 subprocess.run(["gsettings", "set", "org.gnome.mutter", "overlay-key", self.saved_overlay], check=False)
             else:
-                subprocess.run(["gsettings", "set", "org.gnome.mutter", "overlay-key", "'Super'"], check=False)
+                subprocess.run(["gsettings", "set", "org.gnome.mutter", "overlay-key", "'Super_L'"], check=False)
 
             if self.saved_switch_apps and self.saved_switch_apps != "[]":
                 subprocess.run(["gsettings", "set", "org.gnome.desktop.wm.keybindings", "switch-applications", self.saved_switch_apps], check=False)
@@ -4126,7 +4130,7 @@ class MacRecoveryApp(Gtk.Application):
             except Exception:
                 pass
 
-        if not any(arg in sys.argv for arg in ("--no-kiosk", "--preview", "--fullscreen-preview")):
+        if not any(arg in sys.argv for arg in ("--no-kiosk", "--preview", "--fullscreen-preview", "--benchmark", "-benchmark")):
             setup_installer_session()
             kiosk_guard.enter()
 

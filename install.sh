@@ -1184,6 +1184,7 @@ install_extensions() {
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com dock-margin-bottom 8 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.keybindings toggle-message-tray "['<Super>m']" 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.appmenu clipboard-shortcut "['<Super>v']" 2>/dev/null || true
+    run_as_user gsettings set org.gnome.mutter overlay-key 'Super_L' 2>/dev/null || true
 
     if [ "$APPLY_LOW_SPEC" = "true" ]; then
         log_info "Configuring pure blur mode for Intel HD / Low-Spec hardware..."

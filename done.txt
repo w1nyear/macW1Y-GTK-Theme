@@ -4575,3 +4575,22 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+#923: Виправлено відкриття огляду (Activities Overview) клавішею Super: відновлено коректний параметр org.gnome.mutter overlay-key 'Super_L' та захищено його від перезапису в інсталяторі
+  - Модифіковані компоненти:
+    * bin/mac-installer-gui та /usr/local/bin/mac-installer-gui: у класі KioskGuard виправлено відновлення overlay-key при виході (leave); усунено скидання значення в дефолтне 'Super' (яке призводить до відсутності реакції на фізичне натискання Super у Wayland на низці клавіатур) на користь нативного 'Super_L'; додано захист від збереження порожніх/disabled значень; виключено запуск блокування кіоску (kiosk_guard.enter()) під час виклику бенчмарку (--benchmark / -benchmark), щоб тестування продуктивності не вимикало системні клавіші та робоче середовище користувача.
+    * install.sh: додано явне встановлення коректного ключа gsettings set org.gnome.mutter overlay-key 'Super_L' під час конфігурації оточення; збережено сувору відповідність 100% ASCII (0 кириличних символів).
+    * dconf/gnome-all.dconf: додано overlay-key='Super_L' у секцію [org/gnome/mutter] для консистентності імпорту конфігурації GNOME.
+    * Поточна сесія: оновлено значення org.gnome.mutter overlay-key на 'Super_L' та скинуто порожній toggle-overview; перевірено відкриття та закриття огляду через симуляцію Super-key у Clutter.
+  - Результати перевірки:
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 bin/mac-audit-sync check: 100% PASS (0 розбіжностей).
+    * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh: 0 збігів (Strict ASCII OK).
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+  * [bin/mac-installer-gui](file:///home/vitaliy/MACTHEMEFILES/bin/mac-installer-gui)
+  * [/usr/local/bin/mac-installer-gui](file:///usr/local/bin/mac-installer-gui)
+  * [install.sh](file:///home/vitaliy/MACTHEMEFILES/install.sh)
+  * [dconf/gnome-all.dconf](file:///home/vitaliy/MACTHEMEFILES/dconf/gnome-all.dconf)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

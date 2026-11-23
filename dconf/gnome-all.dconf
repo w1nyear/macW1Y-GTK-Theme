@@ -273,6 +273,7 @@ enable-fingerprint-authentication=false
 [org/gnome/mutter]
 dynamic-workspaces=false
 edge-tiling=true
+overlay-key='Super_L'
 
 [org/gnome/mutter/keybindings]
 toggle-tiled-left=@as []
