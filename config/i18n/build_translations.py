@@ -185,8 +185,14 @@ def get_locale():
         pass
     return 'en'
 
-def is_rtl():
-    return get_locale() in RTL_LANGUAGES
+def is_rtl(lang=None):
+    if lang is None:
+        lang = get_locale()
+    if not lang:
+        return False
+    lang = lang.replace('-', '_').split('.')[0]
+    base = lang.split('_')[0].lower()
+    return lang.lower() in RTL_LANGUAGES or base in RTL_LANGUAGES
 
 def t(key, fallback=None, override_locale=None):
     lang = override_locale or get_locale()
