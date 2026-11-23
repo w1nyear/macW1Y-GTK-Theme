@@ -2962,9 +2962,9 @@ static void on_liquid_fps_changed(GtkRange *range, gpointer user_data) {
     if (g_liquid_fps_label) {
         char buf[128];
         if (g_liquid_target_fps <= 0) {
-            g_snprintf(buf, sizeof(buf), "Швидкість оновлення: 0 FPS (Пауза)");
+            g_snprintf(buf, sizeof(buf), "%s: 0 FPS (%s)", mac_tr("bench_refresh_rate", "Швидкість оновлення"), mac_tr("pause", "Пауза"));
         } else {
-            g_snprintf(buf, sizeof(buf), "Швидкість оновлення: %d FPS", g_liquid_target_fps);
+            g_snprintf(buf, sizeof(buf), "%s: %d FPS", mac_tr("bench_refresh_rate", "Швидкість оновлення"), g_liquid_target_fps);
         }
         gtk_label_set_text(GTK_LABEL(g_liquid_fps_label), buf);
     }
@@ -2980,7 +2980,7 @@ static void on_liquid_count_changed(GtkRange *range, gpointer user_data) {
     if (g_liquid_element_count > MAX_BENCHMARK_ELEMENTS) g_liquid_element_count = MAX_BENCHMARK_ELEMENTS;
     if (g_liquid_count_label) {
         char buf[128];
-        g_snprintf(buf, sizeof(buf), "Кількість скляних елементів: %d", g_liquid_element_count);
+        g_snprintf(buf, sizeof(buf), "%s: %d", mac_tr("bench_element_count", "Кількість скляних елементів"), g_liquid_element_count);
         gtk_label_set_text(GTK_LABEL(g_liquid_count_label), buf);
     }
     if (g_liquid_preview_w) {
@@ -3012,13 +3012,15 @@ static GtkWidget *create_liquid_benchmark_panel(void) {
 
     GtkWidget *header_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
     GtkWidget *title_lbl = gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(title_lbl), "<b>Бенчмарк шейдера Liquid Glass</b>");
+    char title_markup[256];
+    g_snprintf(title_markup, sizeof(title_markup), "<b>%s</b>", mac_tr("bench_glass_title", "Бенчмарк шейдера Liquid Glass"));
+    gtk_label_set_markup(GTK_LABEL(title_lbl), title_markup);
     gtk_widget_set_hexpand(title_lbl, TRUE);
     gtk_label_set_xalign(GTK_LABEL(title_lbl), 0.0);
     gtk_box_append(GTK_BOX(header_box), title_lbl);
 
     GtkWidget *btn_opt = gtk_check_button_new_with_label("LQ-OPTIMIZED");
-    GtkWidget *btn_orig = gtk_check_button_new_with_label("Оригінальне скло");
+    GtkWidget *btn_orig = gtk_check_button_new_with_label(mac_tr("bench_original_glass", "Оригінальне скло"));
     gtk_check_button_set_group(GTK_CHECK_BUTTON(btn_orig), GTK_CHECK_BUTTON(btn_opt));
     gtk_check_button_set_active(GTK_CHECK_BUTTON(btn_opt), TRUE);
     g_signal_connect(btn_opt, "toggled", G_CALLBACK(on_liquid_mode_toggled), NULL);
@@ -3032,7 +3034,9 @@ static GtkWidget *create_liquid_benchmark_panel(void) {
 
     GtkWidget *fps_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
     GtkWidget *fps_top = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-    g_liquid_fps_label = gtk_label_new("Швидкість оновлення: 60 FPS");
+    char init_fps_str[128];
+    g_snprintf(init_fps_str, sizeof(init_fps_str), "%s: 60 FPS", mac_tr("bench_refresh_rate", "Швидкість оновлення"));
+    g_liquid_fps_label = gtk_label_new(init_fps_str);
     gtk_widget_set_hexpand(g_liquid_fps_label, TRUE);
     gtk_label_set_xalign(GTK_LABEL(g_liquid_fps_label), 0.0);
     gtk_box_append(GTK_BOX(fps_top), g_liquid_fps_label);
@@ -3041,7 +3045,9 @@ static GtkWidget *create_liquid_benchmark_panel(void) {
     g_liquid_fps_scale = gtk_scale_new(GTK_ORIENTATION_HORIZONTAL, adj_fps);
     gtk_scale_set_draw_value(GTK_SCALE(g_liquid_fps_scale), TRUE);
     gtk_scale_set_value_pos(GTK_SCALE(g_liquid_fps_scale), GTK_POS_RIGHT);
-    gtk_scale_add_mark(GTK_SCALE(g_liquid_fps_scale), 0.0, GTK_POS_BOTTOM, "0 (Пауза)");
+    char pause_mark[64];
+    g_snprintf(pause_mark, sizeof(pause_mark), "0 (%s)", mac_tr("pause", "Пауза"));
+    gtk_scale_add_mark(GTK_SCALE(g_liquid_fps_scale), 0.0, GTK_POS_BOTTOM, pause_mark);
     gtk_scale_add_mark(GTK_SCALE(g_liquid_fps_scale), 30.0, GTK_POS_BOTTOM, "30");
     gtk_scale_add_mark(GTK_SCALE(g_liquid_fps_scale), 60.0, GTK_POS_BOTTOM, "60");
     gtk_scale_add_mark(GTK_SCALE(g_liquid_fps_scale), 120.0, GTK_POS_BOTTOM, "120");
@@ -3054,7 +3060,9 @@ static GtkWidget *create_liquid_benchmark_panel(void) {
 
     GtkWidget *cnt_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
     GtkWidget *cnt_top = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-    g_liquid_count_label = gtk_label_new("Кількість скляних елементів: 1");
+    char init_cnt_str[128];
+    g_snprintf(init_cnt_str, sizeof(init_cnt_str), "%s: 1", mac_tr("bench_element_count", "Кількість скляних елементів"));
+    g_liquid_count_label = gtk_label_new(init_cnt_str);
     gtk_widget_set_hexpand(g_liquid_count_label, TRUE);
     gtk_label_set_xalign(GTK_LABEL(g_liquid_count_label), 0.0);
     gtk_box_append(GTK_BOX(cnt_top), g_liquid_count_label);
@@ -3075,7 +3083,9 @@ static GtkWidget *create_liquid_benchmark_panel(void) {
     gtk_box_append(GTK_BOX(card), cnt_box);
 
     GtkWidget *hint_lbl = gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(hint_lbl), "<span size=\"small\" alpha=\"65%\">Підказка: натисніть ПКМ по полю передогляду ще раз, щоб приховати або показати бенчмарк.</span>");
+    char hint_markup[512];
+    g_snprintf(hint_markup, sizeof(hint_markup), "<span size=\"small\" alpha=\"65%%\">%s</span>", mac_tr("bench_hint", "Підказка: натисніть ПКМ по полю передогляду ще раз, щоб приховати або показати бенчмарк."));
+    gtk_label_set_markup(GTK_LABEL(hint_lbl), hint_markup);
     gtk_label_set_xalign(GTK_LABEL(hint_lbl), 0.0);
     gtk_box_append(GTK_BOX(card), hint_lbl);
 
@@ -3143,9 +3153,9 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     }
 
     const char *shape_names[] = {
-        "Заокруглений прямокутник",
-        "Коло",
-        "Капсула"
+        mac_tr("shape_rect", "Заокруглений прямокутник"),
+        mac_tr("shape_circle", "Коло"),
+        mac_tr("shape_capsule", "Капсула")
     };
     int shape_idx = CLAMP(state.liquid_shape, 0, 2);
     char badge_text[128];
@@ -3174,18 +3184,22 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_show_text(cr, badge_text);
 
     char fps_badge[96];
+    const char *orig_str = mac_tr("original", "Оригінал");
+    const char *pause_str = mac_tr("pause", "Пауза");
+    const char *elem_str = mac_tr("elements_short", "ел.");
     if (g_liquid_target_fps <= 0) {
-        g_snprintf(fps_badge, sizeof(fps_badge), "0.0 FPS (Пауза) • %s",
-                   g_liquid_use_optimized ? "LQ-OPTIMIZED" : "Оригінал");
+        g_snprintf(fps_badge, sizeof(fps_badge), "0.0 FPS (%s) • %s",
+                   pause_str,
+                   g_liquid_use_optimized ? "LQ-OPTIMIZED" : orig_str);
     } else {
         if (g_liquid_element_count > 1) {
-            g_snprintf(fps_badge, sizeof(fps_badge), "%.1f FPS (%d ел.) • %s",
-                       g_liquid_measured_fps, g_liquid_element_count,
-                       g_liquid_use_optimized ? "LQ-OPTIMIZED" : "Оригінал");
+            g_snprintf(fps_badge, sizeof(fps_badge), "%.1f FPS (%d %s) • %s",
+                       g_liquid_measured_fps, g_liquid_element_count, elem_str,
+                       g_liquid_use_optimized ? "LQ-OPTIMIZED" : orig_str);
         } else {
             g_snprintf(fps_badge, sizeof(fps_badge), "%.1f FPS • %s",
                        g_liquid_measured_fps,
-                       g_liquid_use_optimized ? "LQ-OPTIMIZED" : "Оригінал");
+                       g_liquid_use_optimized ? "LQ-OPTIMIZED" : orig_str);
         }
     }
 

@@ -222,7 +222,9 @@ def tf(key, params=None, fallback=None, override_locale=None):
         "system_account", "storage_alert", "software_update_alert", "search",
         "ssot_restored_notification", "dock_edge_distance", "dock_edge_distance_desc",
         "dock_icon_size", "dock_icon_size_desc", "dock_size", "dock_size_desc",
-        "dock_spacing", "dock_spacing_desc", "stage_manager", "light", "light_mode"
+        "dock_spacing", "dock_spacing_desc", "stage_manager", "light", "light_mode",
+        "bench_glass_title", "bench_original_glass", "bench_refresh_rate", "bench_element_count",
+        "bench_hint", "shape_rect", "shape_circle", "shape_capsule", "pause", "original", "elements_short"
     ]
     c_languages = sorted(TRANSLATIONS, key=lambda code: (-len(code), code))
 

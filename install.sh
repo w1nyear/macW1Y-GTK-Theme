@@ -481,6 +481,10 @@ install_mac_shared_lib() {
         sync_or_update_file "$src" "/usr/lib/$filename" true
         sudo chmod 755 "/usr/lib/$filename" 2>/dev/null || true
     fi
+    if [ -d "/usr/lib64" ] && [ "$SYS_LIB_DIR" != "/usr/lib64" ]; then
+        sync_or_update_file "$src" "/usr/lib64/$filename" true
+        sudo chmod 755 "/usr/lib64/$filename" 2>/dev/null || true
+    fi
 }
 
 install_mac_typelib() {

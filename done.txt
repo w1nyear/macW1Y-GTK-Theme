@@ -4459,3 +4459,36 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+
+919. 2026-11-23 — Повна локалізація бенчмарка Liquid Glass (LQ-OPTIMIZED) під 58 мов та кросплатформна синхронізація для Ubuntu, Debian, Fedora, Arch Linux і CachyOS:
+  - Змінені файли та рядки:
+    * config/i18n/translations_data.py: додано 11 нових ключів локалізації (bench_glass_title, bench_original_glass, bench_refresh_rate, bench_element_count, bench_hint, shape_rect, shape_circle, shape_capsule, pause, original, elements_short) для всіх 58 підтримуваних мовних пакетів.
+    * config/i18n/build_translations.py (рядки 225-228): зареєстровано нові ключі в c_keys для експорту в C-заголовки mac_i18n.h.
+    * config/i18n/translations.json: скомпільовано оновлені словники для всіх 58 мов.
+    * bin/mac_i18n.py: синхронізовано оновлені переклади для консольних утиліт.
+    * control-center/mac_i18n.h, src/mac_i18n.h, gnome-control-center-overlay/mac_i18n.h: згенеровано масиви локалізації для C-бібліотеки libmac_settings.so.
+    * control-center/libmac_settings.c (рядки 2962-2970, 2981-2985, 3014-3085, 3155-3200): жорстко закодовані рядки бенчмарка передогляду замінено на динамічні виклики mac_tr(), виправлено екранування відсотків у Pango-розмітці (alpha="65%%").
+    * gnome-control-center-overlay/libmac_settings.c: повністю синхронізовано з control-center/libmac_settings.c (100% ідентичність).
+    * install.sh (рядки 483-487): у функції install_mac_shared_lib() додано розгортання бібліотек у /usr/lib64 для кросплатформної сумісності з Fedora/RHEL/openSUSE; перевірка perl на кирилицю повернула 0 збігів.
+    * lib/libmac_settings.so: перекомпільовано через build-native.sh та розгорнуто по всіх системних шляхах (/usr/lib/x86_64-linux-gnu, /usr/lib64, /usr/lib, /usr/local/lib, ~/.local/lib, /usr/share/mactheme/...).
+    * extensions/.../mac_i18n.js (appmenu, blur-my-shell, eval-helper, kiwi): оновлено файли локалізації розширень GNOME Shell.
+    * config/extensions.lock.json та /usr/share/mactheme/config/extensions.lock.json: оновлено контрольні суми sha256-tree-v2 для керованих розширень.
+  - Опис змін:
+    * Усі елементи інтерактивного бенчмарка скла Liquid Glass (заголовок, кнопки режимів LQ-OPTIMIZED / Оригінальне скло, мітки FPS та пауз, кількість елементів, підказки ПКМ, назви геометричних форм та плашки) тепер динамічно відображаються вибраною користувачем мовою системи серед усіх 58 мов без жодного англійського чи українського хардкоду.
+    * Забезпечено повну кросплатформну підтримку та розгортання динамічних бібліотек на Ubuntu, Debian, Fedora, Arch Linux та CachyOS (шляхи /usr/lib/x86_64-linux-gnu, /usr/lib64, /usr/lib).
+  - Результати валідації чек-листа AI_INSTRUCTIONS.md:
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 bin/mac-audit-sync check: 100% PASS (0 розбіжностей).
+    * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh: 0 збігів.
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+  * [config/i18n/translations_data.py](file:///home/vitaliy/MACTHEMEFILES/config/i18n/translations_data.py)
+  * [config/i18n/build_translations.py](file:///home/vitaliy/MACTHEMEFILES/config/i18n/build_translations.py)
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [control-center/mac_i18n.h](file:///home/vitaliy/MACTHEMEFILES/control-center/mac_i18n.h)
+  * [install.sh](file:///home/vitaliy/MACTHEMEFILES/install.sh)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
