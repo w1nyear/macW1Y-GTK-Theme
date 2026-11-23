@@ -4342,3 +4342,25 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+
+915. Виправлення обрізання карток у Stage Manager під час анімації згортання (мінімізації) вікна:
+  - Виявлено причину проблеми:
+    * При згортанні вікна у Stage Manager наявні картки у бічній панелі плавно зміщуються вниз на півслота (`shiftDownY = Math.round((stdCardH + spacing) / 2)`), щоб звільнити місце для слота 0 та відцентрувати новий стек з (N+1) карток.
+    * Проте під час самої анімації (тривалістю 280мс) контейнер `this._box` (`St.BoxLayout`), що містить картки всередині скрол-області, зберігав стару висоту попереднього макету для N карток.
+    * Внаслідок того, що `St.BoxLayout` обмежує відмальовування дочірніх елементів межами власної контентної зони (content box), нижня картка стека під час руху вниз виходила за нижню межу алокації `this._box`. Це призводило до різкого горизонтального зрізання нижньої частини картки, мініатюри та бейджа іконки аж до закінчення анімації і виклику `this._refresh()`.
+  - Реалізовано рішення:
+    * У методі `_onWindowMinimize(win)` класу `StageSidebar` на самому початку анімації розмір контейнера `this._box` завчасно збільшується на розмір додаткового слота (`origBoxH + slotStep`, де `slotStep = stdCardH + spacing`).
+    * Оскільки `this._box` має вертикальне вирівнювання по центру (`y_align: Clutter.ActorAlign.CENTER`), збільшення висоти контейнера зміщує його власну верхню межу вгору на півслота (`shiftSlot`).
+    * Для збереження стабільної безперервної візуальної позиції наявних карток їх початкова трансформація `translation_y` одразу ініціалізується значенням `shiftSlot` (компенсуючи підйом контейнера так, що екранні координати карток на початковому кадрі не змінюються).
+    * Далі кожна картка плавно анімується від `shiftSlot` до `slotStep` (`c.ease({ translation_y: slotStep, duration: 280, mode: Clutter.AnimationMode.EASE_OUT_CUBIC })`). Завдяки цьому на екрані всі наявні картки плавно опускаються на свої нові центровані позиції, залишаючись на 100% всередині розширеної алокації `this._box` без жодного зрізання чи кліпінгу.
+    * По завершенню анімації (у колбеку `onComplete`), а також на початку `_refresh()` висота та ширина `this._box` скидаються у природній режим (`this._box.height = -1; this._box.width = -1`), що гарантує безшовний перехід до нового згенерованого стану.
+    * Аналогічну підтримку реалізовано і для горизонтальної орієнтації сайдбара (якщо панель розміщена знизу).
+  - Усі перевірки пройдено успішно:
+    * `mac-extension-guard verify`: 21/21 PASS.
+    * `mac-audit-sync check`: 100% PASS (macW1Y 0.8).
+    * `python3 -m unittest discover -s tests -p test_*.py`: 39/39 PASS.
+    * `install.sh`: 0 кириличних символів.
+  * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

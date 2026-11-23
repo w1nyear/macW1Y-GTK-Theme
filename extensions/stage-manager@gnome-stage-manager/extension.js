@@ -1528,17 +1528,43 @@ class StageSidebar {
 
             this._isSwitching = true;
 
-            // Existing cards smoothly slide DOWN by half-slot to their new centered positions in (N+1) layout
-            const shiftDownY = Math.round((stdCardH + spacing) / 2);
+            // Existing cards smoothly slide DOWN by half-slot to their new centered positions in (N+1) layout.
+            // Expand _box allocation to (N+1) layout immediately so that cards sliding down
+            // are never clipped by _box's boundary during the transition.
+            const vertical = this._VERTICAL;
+            const slotStep = vertical ? (stdCardH + spacing) : (stdCardW + spacing);
+            const shiftSlot = Math.round(slotStep / 2);
+
             if (this._cards && this._cards.length > 0) {
+                if (this._box) {
+                    if (vertical) {
+                        const origBoxH = this._box.height;
+                        if (origBoxH > 0)
+                            this._box.height = origBoxH + slotStep;
+                    } else {
+                        const origBoxW = this._box.width;
+                        if (origBoxW > 0)
+                            this._box.width = origBoxW + slotStep;
+                    }
+                }
                 for (const c of this._cards) {
-                    c.translation_y = 0;
-                    c.ease({
-                        translation_x: 0,
-                        translation_y: shiftDownY,
-                        duration: 280,
-                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-                    });
+                    if (vertical) {
+                        c.translation_y = shiftSlot;
+                        c.ease({
+                            translation_x: 0,
+                            translation_y: slotStep,
+                            duration: 280,
+                            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                        });
+                    } else {
+                        c.translation_x = shiftSlot;
+                        c.ease({
+                            translation_x: slotStep,
+                            translation_y: 0,
+                            duration: 280,
+                            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                        });
+                    }
                 }
             }
 
@@ -1558,6 +1584,10 @@ class StageSidebar {
                     actor.opacity = 255;
                     this._isSwitching = false;
                     this._signature = null;
+                    if (this._box) {
+                        this._box.height = -1;
+                        this._box.width = -1;
+                    }
                     this._refresh();
                 },
             });
@@ -2201,6 +2231,8 @@ class StageSidebar {
     _refresh() {
         if (!this._box) return;
         if (this._isSwitching) return;
+        this._box.height = -1;
+        this._box.width = -1;
 
 
 
