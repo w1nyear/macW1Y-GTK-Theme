@@ -25,6 +25,8 @@ SYSTEM_STATE_FILE = "/etc/macW1Y/lowspec-engine.json"
 USER_STATE_FILE = os.path.join(CONFIG_DIR, "lowspec-engine.json")
 SYSCTL_CONF = "/etc/sysctl.d/99-macw1y-performance.conf"
 SERVICE_FILE = "/etc/systemd/system/macw1y-zram.service"
+USER_PURE_BLUR = os.path.join(CONFIG_DIR, "pure-blur")
+SYS_PURE_BLUR = "/etc/macW1Y/pure-blur"
 
 def get_target_state_paths():
     paths = [SYSTEM_STATE_FILE, USER_STATE_FILE]
@@ -243,14 +245,47 @@ def apply_all():
         run_cmd("mac-graphics-profile set eco")
         print(" • [4/5] Графічний профіль швидкодії: ✔ Перемкнуто на 'Eco' (легкі шейдери, швидкі анімації).")
     
-    # 5. GNOME Shell settings tuning
+    # 5. Pure Blur instead of heavy Liquid Glass shader
+    # For Intel HD Graphics & older GPUs, disable glass shader and use native fast blur
+    run_cmd("gnome-extensions disable liquid-glass@thinkingcoding1231.gmail.com 2>/dev/null")
+    run_cmd("gsettings set org.gnome.shell.extensions.blur-my-shell.panel blur true 2>/dev/null")
+    run_cmd("gsettings set org.gnome.shell.extensions.blur-my-shell.dash-to-dock blur true 2>/dev/null")
+    run_cmd("gsettings set org.gnome.shell.extensions.blur-my-shell.popup blur true 2>/dev/null")
+    run_cmd("gsettings set org.gnome.shell.extensions.blur-my-shell.overview blur true 2>/dev/null")
+    run_cmd("gsettings set org.gnome.shell.extensions.blur-my-shell.applications blur false 2>/dev/null")
+    run_cmd("gsettings set org.gnome.shell.extensions.blur-my-shell sigma 16 2>/dev/null")
+    try:
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        with open(USER_PURE_BLUR, "w") as f:
+            f.write("1\n")
+        sudo_user = os.environ.get("SUDO_USER")
+        if sudo_user:
+            u_dir = os.path.expanduser(f"~{sudo_user}/.config/macW1Y")
+            os.makedirs(u_dir, exist_ok=True)
+            with open(os.path.join(u_dir, "pure-blur"), "w") as f:
+                f.write("1\n")
+            subprocess.run(["chown", "-R", f"{sudo_user}:{sudo_user}", u_dir], check=False)
+        if is_root():
+            os.makedirs("/etc/macW1Y", exist_ok=True)
+            with open(SYS_PURE_BLUR, "w") as f:
+                f.write("1\n")
+    except Exception:
+        pass
+    try:
+        run_cmd("gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell/Extensions/EvalHelper --method org.gnome.Shell.Extensions.EvalHelper.Eval 'globalThis._macPureBlurMode = true; true;'")
+    except Exception:
+        pass
+    print(" • [5/6] Режим простого розмиття замість скла: ✔ Шейдер скла вимкнено, активовано нативне розмиття.")
+
+    # 6. GNOME Shell settings tuning
     run_cmd("gsettings set org.gnome.mutter center-new-windows true")
     run_cmd("gsettings set org.gnome.desktop.interface enable-animations true")
-    print(" • [5/5] Налаштування інтерфейсу GNOME: ✔ Адаптовано композитор для низького навантаження.")
+    print(" • [6/6] Налаштування інтерфейсу GNOME: ✔ Адаптовано композитор для низького навантаження.")
     
     # Save state
     state = {
         "enabled": True,
+        "pure_blur_mode": True,
         "activated_at": datetime.now().isoformat(),
         "profile": "eco"
     }
@@ -274,8 +309,31 @@ def restore_all():
     
     if shutil.which("mac-graphics-profile"):
         run_cmd("mac-graphics-profile set balanced")
-        
-    save_state({"enabled": False, "restored_at": datetime.now().isoformat(), "profile": "balanced"})
+
+    # Restore liquid glass and dock/popup blur settings
+    run_cmd("gnome-extensions enable liquid-glass@thinkingcoding1231.gmail.com 2>/dev/null")
+    run_cmd("gsettings set org.gnome.shell.extensions.blur-my-shell.dash-to-dock blur false 2>/dev/null")
+    run_cmd("gsettings set org.gnome.shell.extensions.blur-my-shell.popup blur false 2>/dev/null")
+    for p in [USER_PURE_BLUR, SYS_PURE_BLUR]:
+        if os.path.exists(p):
+            try:
+                os.remove(p)
+            except Exception:
+                pass
+    sudo_user = os.environ.get("SUDO_USER")
+    if sudo_user:
+        u_p = os.path.expanduser(f"~{sudo_user}/.config/macW1Y/pure-blur")
+        if os.path.exists(u_p):
+            try:
+                os.remove(u_p)
+            except Exception:
+                pass
+    try:
+        run_cmd("gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell/Extensions/EvalHelper --method org.gnome.Shell.Extensions.EvalHelper.Eval 'globalThis._macPureBlurMode = false; true;'")
+    except Exception:
+        pass
+
+    save_state({"enabled": False, "pure_blur_mode": False, "restored_at": datetime.now().isoformat(), "profile": "balanced"})
             
     print("✔ Стандартні параметри системи відновлено.")
     return True

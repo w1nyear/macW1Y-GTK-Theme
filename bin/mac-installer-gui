@@ -2683,9 +2683,9 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             self.option_widgets[act_id] = row_btn
 
         self.chk_lowspec = Gtk.CheckButton.new_with_label(
-            "Оптимізація для Intel HD / слабких ПК (ZRAM, твіки ядра та легкі шейдери)"
+            "Оптимізація для Intel HD / слабких ПК (просте розмиття замість шейдера скла, ZRAM, твіки ядра)"
             if is_uk
-            else self.tr("installer_lowspec_opt", "Optimize for Intel HD / low-spec PCs (ZRAM, kernel tweaks, eco shaders)")
+            else self.tr("installer_lowspec_opt", "Optimize for Intel HD / low-spec PCs (pure blur instead of glass shader, ZRAM, kernel tweaks)")
         )
         self.chk_lowspec.set_margin_top(8)
         self.chk_lowspec.set_margin_bottom(2)

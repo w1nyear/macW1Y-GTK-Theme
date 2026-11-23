@@ -1069,6 +1069,10 @@ install_extensions() {
         "desktop-widgets@r3nhick"
     )
     for ext_id in "${EXT_LIST[@]}"; do
+        if [ "$APPLY_LOW_SPEC" = "true" ] && [ "$ext_id" = "liquid-glass@thinkingcoding1231.gmail.com" ]; then
+            run_as_user gnome-extensions disable "$ext_id" 2>/dev/null || true
+            continue
+        fi
         run_as_user gnome-extensions enable "$ext_id" 2>/dev/null || true
     done
 
@@ -1164,6 +1168,21 @@ install_extensions() {
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com dock-margin-bottom 8 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.keybindings toggle-message-tray "['<Super>m']" 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.appmenu clipboard-shortcut "['<Super>v']" 2>/dev/null || true
+
+    if [ "$APPLY_LOW_SPEC" = "true" ]; then
+        log_info "Configuring pure blur mode for Intel HD / Low-Spec hardware..."
+        run_as_user gnome-extensions disable "liquid-glass@thinkingcoding1231.gmail.com" 2>/dev/null || true
+        run_as_user gsettings set org.gnome.shell.extensions.blur-my-shell.panel blur true 2>/dev/null || true
+        run_as_user gsettings set org.gnome.shell.extensions.blur-my-shell.dash-to-dock blur true 2>/dev/null || true
+        run_as_user gsettings set org.gnome.shell.extensions.blur-my-shell.popup blur true 2>/dev/null || true
+        run_as_user gsettings set org.gnome.shell.extensions.blur-my-shell.overview blur true 2>/dev/null || true
+        run_as_user gsettings set org.gnome.shell.extensions.blur-my-shell.applications blur false 2>/dev/null || true
+        run_as_user gsettings set org.gnome.shell.extensions.blur-my-shell sigma 16 2>/dev/null || true
+        run_as_user mkdir -p "$TARGET_HOME/.config/macW1Y" 2>/dev/null || true
+        run_as_user touch "$TARGET_HOME/.config/macW1Y/pure-blur" 2>/dev/null || true
+        mkdir -p "/etc/macW1Y" 2>/dev/null || true
+        touch "/etc/macW1Y/pure-blur" 2>/dev/null || true
+    fi
     log_success "GNOME Shell extensions configured successfully!"
 }
 

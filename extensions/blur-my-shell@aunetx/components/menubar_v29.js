@@ -2941,6 +2941,24 @@ export const MenuBarController = class MenuBarController {
     async _ensureLiquidGlassLoaded() {
         try {
             const lgUuid = 'liquid-glass@thinkingcoding1231.gmail.com';
+            // Pure blur / low-spec mode check: do not load or force-enable liquid-glass
+            // when pure blur is enabled for older/integrated GPUs (e.g. Intel HD 520)
+            const pureBlurUser = Gio.File.new_for_path(GLib.build_filenamev([GLib.get_home_dir(), '.config', 'macW1Y', 'pure-blur']));
+            const pureBlurSys = Gio.File.new_for_path('/etc/macW1Y/pure-blur');
+            if (pureBlurUser.query_exists(null) || pureBlurSys.query_exists(null) || globalThis._macPureBlurMode) {
+                console.log('[MenuBarController] Pure blur mode is active: skipping liquid-glass load');
+                return;
+            }
+
+            try {
+                const shellSettings = new Gio.Settings({ schema_id: 'org.gnome.shell' });
+                const enabledExts = shellSettings.get_strv('enabled-extensions') || [];
+                if (!enabledExts.includes(lgUuid)) {
+                    console.log('[MenuBarController] liquid-glass is not enabled in GNOME Shell: skipping auto-enable');
+                    return;
+                }
+            } catch (_) {}
+
             if (Main.extensionManager) {
                 let ext = Main.extensionManager.lookup(lgUuid);
                 if (!ext) {

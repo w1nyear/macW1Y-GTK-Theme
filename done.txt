@@ -4423,3 +4423,39 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [/etc/sysctl.d/99-macw1y-performance.conf](file:///etc/sysctl.d/99-macw1y-performance.conf)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+
+918. Підтримка слабких ПК (Intel HD Graphics / старі GPU) з чистим розмиттям замість шейдера скла та збереження розкладки клавіатури при зміні мови:
+  - Установник та підтримка слабких ПК (Intel HD Graphics):
+    * У графічному установнику (bin/mac-installer-gui) оновлено підпис опції для слабких ПК: «Оптимізація для Intel HD / слабких ПК (просте розмиття замість шейдера скла, ZRAM, твіки ядра)» та додано локалізовані описи для всіх 58 мов.
+    * При активації опції (--low-spec / --eco / -e) під час встановлення чи оновлення (install.sh) важкий шейдер Liquid Glass (liquid-glass@thinkingcoding1231.gmail.com) не вмикається (або вимикається), а замість нього активується нативне чисте розмиття (Pure Blur) через blur-my-shell для панелі, дока, спливаючих вікон та огляду (panel blur true, dash-to-dock blur true, popup blur true, overview blur true, sigma 16).
+    * Утиліта bin/mac-lowspec-optimizer (команди apply та restore) налаштована на керування чистим розмиттям замість шейдерів: вимикає шейдер скла, записує маркери pure-blur та повідомляє GNOME Shell без потреби перезавантаження; у restore відновлює стандартний шейдер скла.
+    * В extension blur-my-shell@aunetx (menubar_v29.js) метод _ensureLiquidGlassLoaded() більше не форсує повторне ввімкнення liquid-glass, якщо активовано режим чистого розмиття або якщо розширення вимкнено користувачем/оптимізатором.
+    * У kiwi@kemma (tahoeControlCenter.js та tahoeNotifications.js) додано нативний fallback Shell.BlurEffect(radius: 24) для panelBg: якщо шейдери скла вимкнено або відсутні, Центр керування та Центр сповіщень рендеряться з чистим матовим розмиттям на стабільних 60 FPS без навантаження на інтегроване відеоядро (Intel HD 520 тощо).
+  - Збереження розкладки клавіатури при зміні мови:
+    * У bin/mac-apply-locale метод apply_keyboard_layout() більше не перезаписує org.gnome.desktop.input-sources sources. Зміна мови інтерфейсу тепер повністю зберігає розкладку клавіатури, налаштовану користувачем.
+  - Повна локалізація та усунення змішування мов (Mixed Languages):
+    * Усунено жорстко закодований український текст «Робочий стіл N» у appmenu@ChathurangaBW.github.io/workspaceIndicator.js: замінено на динамічну локалізацію t('desktop', 'Робочий стіл') із підтримкою активної мови.
+    * Модуль appmenu@ChathurangaBW.github.io/i18n.js зв'язано з глобальним mac_i18n.js, що забезпечує автоматичний переклад меню на всі 58 підтримуваних мов.
+    * У kiwi@kemma/apps/tahoeNotifications.js рядки 2210 та 2214 переведено на t('notifications', 'Повідомлення') та t('screen_capture', 'Захоплення знімків екрана').
+    * У wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/mainUtils.js додано багатомовний підпис екрана блокування («TouchID або пароль», «TouchID o contraseña», «TouchID or Password», «TouchID oder Passwort» тощо).
+    * У config/i18n/translations_data.py додано ключі desktop, screen_capture, installer_lowspec_opt, installer_lowspec_desc, rec_pipewire_broadcast для всіх 58 мовних пакетів; згенеровано оновлені словники через build_translations.py.
+  - Валідація та тести:
+    * mac-extension-guard verify: 21/21 PASS.
+    * mac-audit-sync check: 100% PASS.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+    * install.sh: 0 кириличних символів.
+  * [bin/mac-installer-gui](file:///home/vitaliy/MACTHEMEFILES/bin/mac-installer-gui)
+  * [bin/mac-lowspec-optimizer](file:///home/vitaliy/MACTHEMEFILES/bin/mac-lowspec-optimizer)
+  * [bin/mac-apply-locale](file:///home/vitaliy/MACTHEMEFILES/bin/mac-apply-locale)
+  * [install.sh](file:///home/vitaliy/MACTHEMEFILES/install.sh)
+  * [extensions/blur-my-shell@aunetx/components/menubar_v29.js](file:///home/vitaliy/MACTHEMEFILES/extensions/blur-my-shell@aunetx/components/menubar_v29.js)
+  * [extensions/kiwi@kemma/apps/tahoeControlCenter.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeControlCenter.js)
+  * [extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotifications.js)
+  * [extensions/appmenu@ChathurangaBW.github.io/workspaceIndicator.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/workspaceIndicator.js)
+  * [extensions/appmenu@ChathurangaBW.github.io/i18n.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/i18n.js)
+  * [extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/mainUtils.js](file:///home/vitaliy/MACTHEMEFILES/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/main/mainUtils.js)
+  * [config/i18n/translations_data.py](file:///home/vitaliy/MACTHEMEFILES/config/i18n/translations_data.py)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

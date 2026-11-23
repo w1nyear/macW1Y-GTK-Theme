@@ -2207,11 +2207,11 @@ function _collapseNcGroups(p, merges = null) {
     const gr = new Map();
     const order = [];
     for (const b of kids) {
-        let app = String(b._macApp ?? '').trim() || 'Повідомлення';
+        let app = String(b._macApp ?? '').trim() || t('notifications', 'Повідомлення');
         if (/знім|screenshot|screen\s*capture/i.test(app) ||
             /знім|screenshot/i.test(b._notification?.title || '') ||
             (b._notification?.source?.id && /screenshot/i.test(b._notification.source.id))) {
-            app = 'Захоплення знімків екрана';
+            app = t('screen_capture', 'Захоплення знімків екрана');
         }
         let g = gr.get(app);
         if (!g) {
@@ -2993,7 +2993,15 @@ function _buildPanel(merges = null) {
             p.tickId = 0;
         }
     } catch (e) {
-        console.error(`[tahoe-nc] glass failed: ${e}`);
+        console.warn(`[tahoe-nc] glass stack unavailable (${e}), falling back to pure blur`);
+        if (panelBg && !panelBg._fallbackBlur) {
+            try {
+                const blurEffect = new Shell.BlurEffect({ mode: Shell.BlurMode.BACKGROUND, radius: 24 });
+                panelBg.add_effect_with_name('pure-blur-effect', blurEffect);
+                panelBg._fallbackBlur = blurEffect;
+                panelBg.style = 'background-color: rgba(32, 34, 42, 0.78); border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);';
+            } catch (_) {}
+        }
     }
 
     _watchTray(p);

@@ -4,6 +4,7 @@
 
 
 import GLib from 'gi://GLib';
+import { t as mac_t } from './mac_i18n.js';
 
 export const TRANSLATIONS = {
     "uk": {
@@ -1180,6 +1181,15 @@ export function _(str) {
             if (res && res !== str) return res;
         } catch (_) {}
     }
+
+    try {
+        const trKey = clean.toLowerCase().replace(/[\s\-_]+/g, '_');
+        const translated = mac_t(trKey, null) || mac_t(clean, null);
+        if (translated && translated !== trKey && translated !== clean) {
+            const hasEllipsis = str.endsWith('...') || str.endsWith('…');
+            return hasEllipsis ? translated + '…' : translated;
+        }
+    } catch (_) {}
 
     return str;
 }

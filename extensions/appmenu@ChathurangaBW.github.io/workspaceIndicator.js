@@ -7,6 +7,7 @@ import Pango from 'gi://Pango';
 import Shell from 'gi://Shell';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import { t } from './mac_i18n.js';
 
 const INDICATOR_NAME = 'appmenu@ChathurangaBW.github.io-workspace-indicator';
 const PANEL_NORMAL_HEIGHT = 34;
@@ -49,20 +50,27 @@ function getWorkspaceNames() {
 
 function getWorkspaceName(index) {
     const names = getWorkspaceNames();
+    const desk = t('desktop', t('bookmark_desktop', 'Робочий стіл'));
     if (names[index] && names[index].trim()) {
-        return names[index].trim();
+        const val = names[index].trim();
+        const m = val.match(/^Робочий стіл\s*(\d+)$/i);
+        if (m) {
+            return `${desk} ${m[1]}`;
+        }
+        return val;
     }
-    return `Робочий стіл ${index + 1}`;
+    return `${desk} ${index + 1}`;
 }
 
 function setWorkspaceName(index, name) {
     try {
+        const desk = t('desktop', t('bookmark_desktop', 'Робочий стіл'));
         const settings = new Gio.Settings({ schema_id: 'org.gnome.desktop.wm.preferences' });
         const names = settings.get_strv('workspace-names') || [];
         while (names.length <= index) {
-            names.push(`Робочий стіл ${names.length + 1}`);
+            names.push(`${desk} ${names.length + 1}`);
         }
-        names[index] = name.trim() || `Робочий стіл ${index + 1}`;
+        names[index] = name.trim() || `${desk} ${index + 1}`;
         settings.set_strv('workspace-names', names);
     } catch (e) {
         console.error(`[SpacesBar] Failed to save workspace name: ${e}`);
@@ -756,7 +764,8 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         wsManager.append_new_workspace(false, global.get_current_time());
 
         const newIdx = newCount - 1;
-        const defaultName = `Робочий стіл ${newCount}`;
+        const desk = t('desktop', t('bookmark_desktop', 'Робочий стіл'));
+        const defaultName = `${desk} ${newCount}`;
         setWorkspaceName(newIdx, defaultName);
 
         this._expand();

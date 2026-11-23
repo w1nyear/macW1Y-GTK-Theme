@@ -3701,8 +3701,19 @@ function _startGlass(slideOffset = 0) {
     const monitor = Main.layoutManager.primaryMonitor;
     if (!monitor)
         return;
-    if (!_lgReady())
+    if (!_lgReady()) {
+        try {
+            if (_panel?.panelBg && !_panel.panelBg._fallbackBlur) {
+                const blurEffect = new Shell.BlurEffect({ mode: Shell.BlurMode.BACKGROUND, radius: 24 });
+                _panel.panelBg.add_effect_with_name('pure-blur-effect', blurEffect);
+                _panel.panelBg._fallbackBlur = blurEffect;
+                _panel.panelBg.style = 'background-color: rgba(32, 34, 42, 0.78); border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);';
+            }
+        } catch (e) {
+            console.warn('[tahoeControlCenter] pure blur fallback error:', e);
+        }
         return;
+    }
 
     try {
         const stacks = GLASS_GROUPS.map(g => ({
