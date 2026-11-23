@@ -2620,12 +2620,7 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     double gx = CLAMP(g_glass_x, 6.0, width - gw - 6.0);
     double gy = CLAMP(g_glass_y, 6.0, height - gh - 6.0);
 
-
-    cairo_surface_t *bg_for_glass = bg;
-    cairo_surface_t *bl = get_cached_blurred_wallpaper_surface(width, height, 16);
-    if (bl) bg_for_glass = bl;
-
-    draw_repo_glass_element(cr, bg_for_glass, width, height, gx, gy, gw, gh, gr, state.liquid_shape);
+    draw_repo_glass_element(cr, bg, width, height, gx, gy, gw, gh, gr, state.liquid_shape);
 
 
     const char *shape_names[] = {
