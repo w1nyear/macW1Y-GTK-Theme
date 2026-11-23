@@ -226,6 +226,7 @@ const TOAST_PILL_CORNER = 40;
 
 let _ = (m) => m;
 let _nc = null;
+let _cachedGlassStacks = null;
 let _trayWasBlocked = false;
 let _hooked = false;
 
@@ -1810,9 +1811,14 @@ function _setupNcStack(p, s, monitor = null) {
             s.liquidBox.set_position(0, 0);
             s.liquidBox.set_size(monitor.width, monitor.height);
             s.effect.setResolution(monitor.width, monitor.height);
-            s.uiSampler?.sync(monitor.x, monitor.y, monitor.width, monitor.height);
-            s.uiSampler?.refresh?.();
-            s.wcm?.sync?.();
+            GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                try {
+                    s.uiSampler?.sync(monitor.x, monitor.y, monitor.width, monitor.height);
+                    s.uiSampler?.refresh?.();
+                    s.wcm?.sync?.();
+                } catch (_) {}
+                return GLib.SOURCE_REMOVE;
+            });
         } else {
             s.uiSampler?.refresh?.();
         }
@@ -2912,8 +2918,18 @@ function _buildPanel(merges = null) {
 
 
     try {
-        const bd = _makeGlassStack(monitor, NC_RADIUS, 'nc-backdrop', true, 0);
-        bd.kind = 'backdrop';
+        let bd, cards;
+        if (_cachedGlassStacks && _cachedGlassStacks.length === 2) {
+            bd = _cachedGlassStacks[0];
+            cards = _cachedGlassStacks[1];
+            _cachedGlassStacks = null;
+        } else {
+            bd = _makeGlassStack(monitor, NC_RADIUS, 'nc-backdrop', true, 0);
+            bd.kind = 'backdrop';
+            cards = _makeGlassStack(monitor, _notifStyling.radius || 18, 'nc-cards', true);
+            cards.kind = 'cards';
+        }
+
         // Keep backdrop diffuse without widget params
         overlay.insert_child_at_index(bd.bgActor, 1);
         try {
@@ -2924,8 +2940,6 @@ function _buildPanel(merges = null) {
         bd.bgActor.opacity = 0;
         bd.bgActor.visible = false;
 
-        const cards = _makeGlassStack(monitor, _notifStyling.radius || 18, 'nc-cards', true);
-        cards.kind = 'cards';
         try { _applyWidgetGlassParams(cards.effect); } catch (_) {}
         try {
             overlay.insert_child_at_index(cards.bgActor, 2);
@@ -3036,6 +3050,7 @@ function _buildPanel(merges = null) {
 function _destroyNC(p) {
     if (!p)
         return;
+    _nc = null;
 
     try { _killMergingSlots(); } catch (_) {}
     try {
@@ -3064,11 +3079,23 @@ function _destroyNC(p) {
     }
     const stacks = p.stacks;
     p.stacks = [];
-    for (const s of stacks) {
-        try { s.effect?.cleanup?.(); } catch (_) {}
-        try { s.uiSampler?.destroy?.(); } catch (_) {}
-        try { s.wcm?.destroy?.(); } catch (_) {}
-        try { s.bgActor?.destroy?.(); } catch (_) {}
+    if (!_cachedGlassStacks && stacks && stacks.length === 2) {
+        for (const s of stacks) {
+            try {
+                if (s.bgActor?.get_parent())
+                    s.bgActor.get_parent().remove_child(s.bgActor);
+                s.bgActor.hide();
+                s.bgActor.opacity = 0;
+            } catch (_) {}
+        }
+        _cachedGlassStacks = stacks;
+    } else {
+        for (const s of stacks || []) {
+            try { s.effect?.cleanup?.(); } catch (_) {}
+            try { s.uiSampler?.destroy?.(); } catch (_) {}
+            try { s.wcm?.destroy?.(); } catch (_) {}
+            try { s.bgActor?.destroy?.(); } catch (_) {}
+        }
     }
     try {
         p.gbfEffect?.detach?.();
@@ -3125,6 +3152,21 @@ export function getNCOverlay() {
     }
 }
 
+export function ensurePrewarmed() {
+    if (_cachedGlassStacks) return;
+    try {
+        const monitor = Main.layoutManager.primaryMonitor;
+        const bd = _makeGlassStack(monitor, NC_RADIUS, 'nc-backdrop', true, 0);
+        bd.kind = 'backdrop';
+        const cards = _makeGlassStack(monitor, _notifStyling.radius || 18, 'nc-cards', true);
+        cards.kind = 'cards';
+        _cachedGlassStacks = [bd, cards];
+    } catch (e) {
+        console.warn('[tahoe-nc] ensurePrewarmed error:', e);
+    }
+}
+globalThis._tahoeNCEnsurePrewarmed = ensurePrewarmed;
+
 export function openNC() {
     if (_nc) {
         if (_nc._closing) {
@@ -3177,6 +3219,7 @@ export function openNC() {
         if (_toastsEnabled && _toastBox?.get_children().length)
             merges = _takeToastMerges();
     } catch (_) {}
+
     try {
         _buildPanel(merges);
     } catch (e) {
@@ -3198,18 +3241,12 @@ export function closeNC(immediate = false) {
 
     globalThis._tahoeNCOpen = false;
 
-
-
-
     try { _killMergingSlots(); } catch (_) {}
 
     if (immediate) {
         _destroyNC(p);
         return;
     }
-
-
-
 
     try {
         p.box.remove_all_transitions();
@@ -3224,7 +3261,7 @@ export function closeNC(immediate = false) {
                         continue;
                     bg.ease({
                         opacity: 0,
-                        duration: 260,
+                        duration: 180,
                         mode: Clutter.AnimationMode.EASE_IN_CUBIC,
                     });
                 } catch (_) {}
@@ -3234,7 +3271,7 @@ export function closeNC(immediate = false) {
             p.panelBg.ease({
                 translation_x: 480,
                 opacity: 0,
-                duration: 260,
+                duration: 180,
                 mode: Clutter.AnimationMode.EASE_IN_CUBIC,
             });
         } catch (_) {}
@@ -3242,7 +3279,7 @@ export function closeNC(immediate = false) {
             p.box.ease({
                 translation_x: 480,
                 opacity: 0,
-                duration: 260,
+                duration: 180,
                 mode: Clutter.AnimationMode.EASE_IN_CUBIC,
                 onComplete: () => {
                     _destroyNC(p);
@@ -3416,6 +3453,15 @@ export function disable() {
     try {
         closeNC();
     } catch (_) {}
+    if (_cachedGlassStacks) {
+        for (const s of _cachedGlassStacks) {
+            try { s.effect?.cleanup?.(); } catch (_) {}
+            try { s.uiSampler?.destroy?.(); } catch (_) {}
+            try { s.wcm?.destroy?.(); } catch (_) {}
+            try { s.bgActor?.destroy?.(); } catch (_) {}
+        }
+        _cachedGlassStacks = null;
+    }
 
     try {
         _unhookToastTray();

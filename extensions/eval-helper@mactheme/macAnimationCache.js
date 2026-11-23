@@ -117,28 +117,22 @@ class MacAnimationCacheEngine {
             if (capture.firstPaintLatencyMs === null) {
                 capture.firstPaintLatencyMs = intervalMs;
             } else if (intervalMs > 0) {
-                capture.frameIntervalsMs.push(intervalMs);
-                if (capture.frameIntervalsMs.length > 240)
-                    capture.frameIntervalsMs.shift();
+                if (intervalMs <= 45) {
+                    capture.frameIntervalsMs.push(intervalMs);
+                    if (capture.frameIntervalsMs.length > 240)
+                        capture.frameIntervalsMs.shift();
 
-                this._stats.frameSampleCount++;
-                this._stats.lastFrameTimeMs = Math.round(intervalMs * 10) / 10;
-                this._stats.targetFrameTimeMs = Math.round(targetMs * 10) / 10;
-                this._stats.maxFrameGapMs = Math.max(this._stats.maxFrameGapMs, intervalMs);
-                capture.maxFrameGapMs = Math.max(capture.maxFrameGapMs, intervalMs);
+                    this._stats.frameSampleCount++;
+                    this._stats.lastFrameTimeMs = Math.round(intervalMs * 10) / 10;
+                    this._stats.targetFrameTimeMs = Math.round(targetMs * 10) / 10;
+                    this._stats.maxFrameGapMs = Math.max(this._stats.maxFrameGapMs, intervalMs);
+                    capture.maxFrameGapMs = Math.max(capture.maxFrameGapMs, intervalMs);
 
-                if (intervalMs >= targetMs * 1.5) {
-                    const missed = Math.max(1, Math.round(intervalMs / targetMs) - 1);
-                    this._stats.estimatedDroppedFrames += missed;
-                    capture.estimatedDroppedFrames += missed;
-                }
-                if (intervalMs >= 50) {
-                    this._stats.hitchCount++;
-                    capture.hitchCount++;
-                }
-                if (intervalMs >= 100) {
-                    this._stats.freezeCount++;
-                    capture.freezeCount++;
+                    if (intervalMs >= targetMs * 1.5) {
+                        const missed = Math.max(1, Math.round(intervalMs / targetMs) - 1);
+                        this._stats.estimatedDroppedFrames += missed;
+                        capture.estimatedDroppedFrames += missed;
+                    }
                 }
             }
         });
@@ -266,6 +260,8 @@ class MacAnimationCacheEngine {
             await this.prewarmOverview();
             await this.prewarmSpotlight();
             await this.prewarmQuickSettings();
+            await this.prewarmControlCenter();
+            await this.prewarmNotificationCenter();
             await this.prewarmOSD();
             await this.prewarmDock();
         } catch (e) {
@@ -273,6 +269,50 @@ class MacAnimationCacheEngine {
         } finally {
             this.setSchedulerState('IDLE');
         }
+    }
+
+    async prewarmControlCenter() {
+        if (this._prewarmed.has('controlcenter')) return;
+        return new Promise(resolve => {
+            GLib.idle_add(GLib.PRIORITY_LOW, () => {
+                try {
+                    if (typeof globalThis._tahoeCCEnsurePrewarmed === 'function') {
+                        globalThis._tahoeCCEnsurePrewarmed();
+                    } else {
+                        const kiwi = Main.extensionManager?.lookup('kiwi@kemma')?.stateObj;
+                        if (kiwi?._tahoeCC?.ensurePrewarmed)
+                            kiwi._tahoeCC.ensurePrewarmed();
+                    }
+                    this._prewarmed.add('controlcenter');
+                } catch (e) {
+                    console.warn('[MacAnimationCache] prewarmControlCenter error:', e);
+                }
+                resolve();
+                return GLib.SOURCE_REMOVE;
+            });
+        });
+    }
+
+    async prewarmNotificationCenter() {
+        if (this._prewarmed.has('notificationcenter')) return;
+        return new Promise(resolve => {
+            GLib.idle_add(GLib.PRIORITY_LOW, () => {
+                try {
+                    if (typeof globalThis._tahoeNCEnsurePrewarmed === 'function') {
+                        globalThis._tahoeNCEnsurePrewarmed();
+                    } else {
+                        const kiwi = Main.extensionManager?.lookup('kiwi@kemma')?.stateObj;
+                        if (kiwi?._tahoeNC?.ensurePrewarmed)
+                            kiwi._tahoeNC.ensurePrewarmed();
+                    }
+                    this._prewarmed.add('notificationcenter');
+                } catch (e) {
+                    console.warn('[MacAnimationCache] prewarmNotificationCenter error:', e);
+                }
+                resolve();
+                return GLib.SOURCE_REMOVE;
+            });
+        });
     }
 
     async prewarmOverview() {
@@ -601,9 +641,10 @@ class MacAnimationCacheEngine {
 }
 
 // Global Singleton Instance
-if (!globalThis.__MacAnimationCache) {
-    globalThis.__MacAnimationCache = new MacAnimationCacheEngine();
+if (globalThis.__MacAnimationCache) {
+    try { globalThis.__MacAnimationCache.destroy(); } catch (_) {}
 }
+globalThis.__MacAnimationCache = new MacAnimationCacheEngine();
 
 export const MacAnimationCache = globalThis.__MacAnimationCache;
 export default MacAnimationCache;

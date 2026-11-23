@@ -301,6 +301,7 @@ let _origClose = null;
 let _origToggle = null;
 let _monitorsChangedId = 0;
 let _panel = null;
+let _cachedPanel = null;
 let _closing = false;
 let _panelOpening = false;
 let _editMode = false;
@@ -3991,6 +3992,8 @@ function _destroyGlass() {
 function _teardownPanel(p) {
     if (!p)
         return;
+    if (_cachedPanel === p)
+        _cachedPanel = null;
     const {overlay, state} = p;
     _panel = null;
     _closing = false;
@@ -4060,13 +4063,119 @@ function _teardownPanel(p) {
     } catch (_) {}
 }
 
+function _hidePanel(p) {
+    if (!p)
+        return;
+    _panel = null;
+    _closing = false;
+    _panelOpening = false;
+    globalThis._tahoeQSOpen = false;
+    _cachedPanel = p;
+    try {
+        p.overlay.hide();
+        p.box.hide();
+        p.panelBg.hide();
+        if (p.glass?.stacks) {
+            for (const s of p.glass.stacks) {
+                try { s.bgActor?.hide(); } catch (_) {}
+            }
+        }
+    } catch (_) {}
+}
+
+function _restorePanel(p) {
+    _panel = p;
+    _cachedPanel = null;
+    _closing = false;
+    _panelOpening = true;
+
+    const monitor = Main.layoutManager.primaryMonitor;
+    const panelH = Main.layoutManager.panelBox?.height ?? 32;
+    const W = PANEL_W;
+    const slideOffset = PANEL_W + 30;
+    const X = monitor.x + monitor.width - W - 12;
+    const Y = monitor.y + panelH + 10;
+
+    try {
+        p.overlay.set_clip(monitor.x, monitor.y, monitor.width, monitor.height);
+        p.overlay.set_size(global.stage.width, global.stage.height);
+        p.panelBg.set_position(X, Y);
+        p.box.set_position(X, Y);
+
+        if (p.overlay.get_parent() !== Main.layoutManager.uiGroup) {
+            Main.layoutManager.uiGroup.add_child(p.overlay);
+        }
+        try {
+            Main.layoutManager.uiGroup.set_child_below_sibling(p.overlay, Main.layoutManager.panelBox);
+        } catch (_) {}
+        for (const child of Main.layoutManager.uiGroup.get_children()) {
+            if (child && (child.has_style_class_name?.('corner-decoration') || child.name?.includes('corner'))) {
+                try { Main.layoutManager.uiGroup.set_child_above_sibling(child, p.overlay); } catch (_) {}
+            }
+        }
+
+        p.overlay.show();
+        p.panelBg.show();
+        p.box.show();
+
+        p.box.remove_all_transitions();
+        p.panelBg.remove_all_transitions();
+        p.box.translation_x = slideOffset;
+        p.box.opacity = 0;
+        p.panelBg.translation_x = slideOffset;
+        p.panelBg.opacity = 0;
+
+        if (p.glass?.stacks) {
+            for (const s of p.glass.stacks) {
+                try {
+                    s.bgActor.show();
+                    s.bgActor.remove_all_transitions();
+                    s.bgActor.translation_x = slideOffset;
+                    s.bgActor.opacity = 0;
+                    s.bgActor.ease({
+                        translation_x: 0,
+                        opacity: 255,
+                        duration: 180,
+                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                    });
+                } catch (_) {}
+            }
+        }
+
+        p.box.ease({
+            translation_x: 0,
+            opacity: 255,
+            duration: 180,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            onComplete: () => {
+                _panelOpening = false;
+            },
+        });
+        p.panelBg.ease({
+            translation_x: 0,
+            opacity: 255,
+            duration: 180,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+        });
+
+        try { _refreshPowerMode(p.mode || p.air); } catch (_) {}
+        try { _refreshWifi(p.wifi); } catch (_) {}
+        try { _refreshFocus(p.focus); } catch (_) {}
+        try { _refreshDarkCircle(p.dark); } catch (_) {}
+    } catch (e) {
+        console.error('[tahoe-qs] restore failed:', e);
+        _teardownPanel(p);
+        _buildPanel();
+    }
+}
+
 function _closePanel(immediate = false) {
     _closeActiveSubmenu();
     if (!_panel || _closing)
         return;
     const p = _panel;
     if (immediate) {
-        _teardownPanel(p);
+        _hidePanel(p);
         return;
     }
     _closing = true;
@@ -4109,11 +4218,11 @@ function _closePanel(immediate = false) {
             duration: 190,
             mode: Clutter.AnimationMode.EASE_IN_CUBIC,
             onComplete: () => {
-                _teardownPanel(p);
+                _hidePanel(p);
             },
         });
     } catch (_) {
-        _teardownPanel(p);
+        _hidePanel(p);
     }
 }
 
@@ -4121,6 +4230,19 @@ export function closePanel(immediate = false) {
     _closePanel(immediate);
 }
 globalThis._tahoeQSClose = _closePanel;
+
+export function ensurePrewarmed() {
+    if (_panel || _cachedPanel) return;
+    try {
+        _buildPanel();
+        if (_panel) {
+            _hidePanel(_panel);
+        }
+    } catch (e) {
+        console.warn('[tahoe-qs] ensurePrewarmed error:', e);
+    }
+}
+globalThis._tahoeCCEnsurePrewarmed = ensurePrewarmed;
 
 function _openPanel() {
     if (_panel) {
@@ -4157,6 +4279,12 @@ function _openPanel() {
             try { mod.closeNC?.(); } catch (_) {}
         }).catch(() => {});
     } catch (_) {}
+
+    if (_cachedPanel && !_cachedPanel.box?.is_finalized?.() && !_cachedPanel.overlay?.is_finalized?.()) {
+        _restorePanel(_cachedPanel);
+        return;
+    }
+
     _buildPanel();
 }
 
@@ -4578,6 +4706,10 @@ export function disable() {
 
     }
     _closePanel();
+    if (_cachedPanel) {
+        _teardownPanel(_cachedPanel);
+        _cachedPanel = null;
+    }
     _settings = null;
     _ = (m) => m;
 }

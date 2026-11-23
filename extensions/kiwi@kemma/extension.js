@@ -39,7 +39,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] tahoeInkEnable: ${e}`);
         }
         try {
-            const ncUri = this.dir.get_child('apps').get_child('tahoeNotifications.js').get_uri();
+            const ncUri = `${this.dir.get_child('apps').get_child('tahoeNotifications.js').get_uri()}?v=${Date.now()}`;
             import(ncUri).then(mod => {
                 if (this._tahoeNC && this._tahoeNC !== mod) {
                     try { this._tahoeNC.disable(); } catch (_) {}
@@ -54,7 +54,7 @@ export default class KiwiExtension extends Extension {
             console.warn(`[kiwi] tahoeNCEnable: ${e}`);
         }
         try {
-            const ccUri = this.dir.get_child('apps').get_child('tahoeControlCenter.js').get_uri();
+            const ccUri = `${this.dir.get_child('apps').get_child('tahoeControlCenter.js').get_uri()}?v=${Date.now()}`;
             import(ccUri).then(mod => {
                 if (this._tahoeCC && this._tahoeCC !== mod) {
                     try { this._tahoeCC.disable(); } catch (_) {}

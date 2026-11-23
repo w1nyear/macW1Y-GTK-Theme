@@ -505,7 +505,16 @@ export class DockMagnifier {
         const horizontal = this._horizontal;
         const dashPos = this._dash.get_transformed_position();
         const dashP = horizontal ? dashPos[0] : dashPos[1];
+        let boxP = 0;
+        if (this._dash._box) {
+            for (let a = this._dash._box; a && a !== this._dash; a = a.get_parent())
+                boxP += horizontal ? a.allocation.x1 : a.allocation.y1;
+        }
+        const boxBaseP = dashP + boxP;
+
         const baseP = child => {
+            if (child.get_parent() === this._dash._box)
+                return boxBaseP + (horizontal ? child.allocation.x1 : child.allocation.y1);
             let p = dashP;
             for (let a = child; a && a !== this._dash; a = a.get_parent())
                 p += horizontal ? a.allocation.x1 : a.allocation.y1;
@@ -774,60 +783,7 @@ export class DockMagnifier {
         try {
             if (!this._dash?.get_stage?.())
                 return;
-            const monitor = Main.layoutManager.findMonitorForActor(this._dash) ??
-                            Main.layoutManager.primaryMonitor;
-            if (!monitor)
-                return;
-
-            const container = this._dash.get_parent()?.get_parent()?.get_parent();
-            container?.queue_redraw?.();
             this._dash.queue_redraw();
-
-            const PADDING = 360;
-            let rect;
-            switch (this._position) {
-            case St.Side.BOTTOM:
-                rect = new Mtk.Rectangle({
-                    x: monitor.x,
-                    y: Math.max(0, monitor.y + monitor.height - PADDING),
-                    width: monitor.width,
-                    height: PADDING,
-                });
-                break;
-            case St.Side.TOP:
-                rect = new Mtk.Rectangle({
-                    x: monitor.x,
-                    y: monitor.y,
-                    width: monitor.width,
-                    height: PADDING,
-                });
-                break;
-            case St.Side.LEFT:
-                rect = new Mtk.Rectangle({
-                    x: monitor.x,
-                    y: monitor.y,
-                    width: PADDING,
-                    height: monitor.height,
-                });
-                break;
-            case St.Side.RIGHT:
-                rect = new Mtk.Rectangle({
-                    x: Math.max(0, monitor.x + monitor.width - PADDING),
-                    y: monitor.y,
-                    width: PADDING,
-                    height: monitor.height,
-                });
-                break;
-            default:
-                rect = new Mtk.Rectangle({
-                    x: monitor.x,
-                    y: Math.max(0, monitor.y + monitor.height - PADDING),
-                    width: monitor.width,
-                    height: PADDING,
-                });
-                break;
-            }
-            global.stage.queue_redraw_with_clip(rect);
         } catch (_) {}
     }
 

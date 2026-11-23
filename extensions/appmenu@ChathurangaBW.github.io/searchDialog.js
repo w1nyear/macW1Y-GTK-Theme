@@ -2779,14 +2779,27 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             this._appsView.visible = (initialMode === 'apps');
             this._clipboardView.visible = (initialMode === 'clipboard');
 
+            if (!this._appsGIcon) {
+                this._appsGIcon = new Gio.FileIcon({ file: Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-apps.svg`) });
+                this._clipboardGIcon = new Gio.FileIcon({ file: Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-clipboard.svg`) });
+                this._filesGIcon = new Gio.FileIcon({ file: Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-files.svg`) });
+                try {
+                    Shell.AppSystem.get_default().connect('installed-changed', () => {
+                        this._appsButtonsBuilt = false;
+                    });
+                } catch (_) {}
+            }
+
             if (initialMode === 'apps') {
-                const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-apps.svg`);
-                this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
+                this._searchIcon.set_gicon(this._appsGIcon);
                 this._searchIcon.icon_size = 26;
                 this._searchIcon.set_style('color: rgba(255, 255, 255, 0.85); margin-left: 0px; margin-right: 14px;');
                 this._entry.hint_text = t('applications', 'Програми');
                 this._selectedAppsCategory = null;
-                this._buildAppsCategoryButtons();
+                if (!this._appsButtonsBuilt) {
+                    this._buildAppsCategoryButtons();
+                    this._appsButtonsBuilt = true;
+                }
                 this._appsDefaultLoaded = false;
                 this._loadAppsView();
                 try {
@@ -2798,15 +2811,13 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                     if (hAdj) hAdj.set_value(0);
                 } catch (_) {}
             } else if (initialMode === 'clipboard') {
-                const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-clipboard.svg`);
-                this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
+                this._searchIcon.set_gicon(this._clipboardGIcon);
                 this._searchIcon.icon_size = 20;
                 this._searchIcon.set_style('color: rgba(255, 255, 255, 0.85); margin-left: 0px; margin-right: 14px;');
                 this._entry.hint_text = t('search_clipboard', 'Пошук у буфері');
                 this._loadClipboardView();
             } else if (initialMode === 'files') {
-                const f = Gio.File.new_for_path(`${ICONS_DIR}/mac-spotlight-files.svg`);
-                this._searchIcon.set_gicon(new Gio.FileIcon({ file: f }));
+                this._searchIcon.set_gicon(this._filesGIcon);
                 this._searchIcon.icon_size = 20;
                 this._searchIcon.set_style('color: rgba(255, 255, 255, 0.85); margin-left: 0px; margin-right: 14px;');
                 this._entry.hint_text = t('files', 'Файли');
@@ -2821,16 +2832,19 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             this._buttonsCollapsed = false;
             this._isCollapsing = false;
 
-            try { this._searchPill.remove_all_transitions(); } catch (_) {}
-            this._searchPill.set_size(COLLAPSED_PILL_WIDTH, PILL_HEIGHT);
-            this._searchPill.width = COLLAPSED_PILL_WIDTH;
-            this._searchPill.scale_x = 1.0;
-            this._searchPill.scale_y = 1.0;
-            this._searchPill.translation_x = 0;
-            this._searchPill.translation_y = 0;
-            this._searchPill.opacity = 255;
-            this._searchPill.set_style(PILL_COLLAPSED_STYLE);
-            this._topRow.set_style('height: 54px; min-height: 54px;');
+            if (!this._searchPillPrepped) {
+                try { this._searchPill.remove_all_transitions(); } catch (_) {}
+                this._searchPill.set_size(COLLAPSED_PILL_WIDTH, PILL_HEIGHT);
+                this._searchPill.width = COLLAPSED_PILL_WIDTH;
+                this._searchPill.scale_x = 1.0;
+                this._searchPill.scale_y = 1.0;
+                this._searchPill.translation_x = 0;
+                this._searchPill.translation_y = 0;
+                this._searchPill.opacity = 255;
+                this._searchPill.set_style(PILL_COLLAPSED_STYLE);
+                this._topRow.set_style('height: 54px; min-height: 54px;');
+                this._searchPillPrepped = true;
+            }
 
             try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
             this._buttonsBox.set_style('margin-left: 16px; width: 192px; min-width: 192px; height: 54px; padding-right: 8px;');
