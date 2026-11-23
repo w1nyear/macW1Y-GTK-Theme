@@ -158,7 +158,7 @@ const TahoeSegSlider = GObject.registerClass({
             const isOveramp = this._isOveramp || v > 1.0001;
 
             const n = 16;
-            const gap = 2.0;
+            const gap = 1.0;
             const barH = 5;
             const barY = Math.round((h - barH) / 2);
             const r = barH / 2;
@@ -191,7 +191,7 @@ const TahoeSegSlider = GObject.registerClass({
             cr.setOperator(0);
             const segW = w / n;
             for (let i = 1; i < n; i++) {
-                const gx = i * segW - gap / 2.0;
+                const gx = Math.round(i * segW) - gap / 2.0;
                 cr.rectangle(gx, barY - 1, gap, barH + 2);
                 cr.fill();
             }
@@ -528,6 +528,52 @@ function _getAudioDeviceTitle() {
     return t('speakers', 'Динаміки');
 }
 
+function _isHeadphoneOrSpeakerActive() {
+    try {
+        const ctrl = (_control && _control.get_state() === Gvc.MixerControlState.READY)
+            ? _control
+            : (Main.panel.statusArea.quickSettings?._volumeOutput?._control ?? null);
+        if (ctrl) {
+            const sink = ctrl.get_default_sink();
+            if (sink) {
+                const name = (sink.get_name ? sink.get_name() : (sink.name || '')).toLowerCase();
+                const desc = (sink.get_description ? sink.get_description() : (sink.description || '')).toLowerCase();
+                const icon = (sink.get_icon_name ? sink.get_icon_name() : (sink.icon_name || '')).toLowerCase();
+
+                let portName = '';
+                try {
+                    const port = sink.get_port ? sink.get_port() : null;
+                    if (port)
+                        portName = ((port.port || '') + ' ' + (port.human_name || '')).toLowerCase();
+                } catch (_) {}
+
+                const combined = `${name} ${desc} ${icon} ${portName}`;
+
+                if (combined.includes('headphone') || combined.includes('headset') ||
+                    combined.includes('airpod') || combined.includes('buds') ||
+                    combined.includes('earphone') || combined.includes('earbud') ||
+                    combined.includes('handsfree') || combined.includes('навушник') ||
+                    combined.includes('casque') || combined.includes('auriculares') ||
+                    combined.includes('kopfhörer') || combined.includes('słuchawk')) {
+                    return true;
+                }
+
+                if (combined.includes('bluez') || icon.includes('bluetooth') || name.includes('bluez')) {
+                    return true;
+                }
+
+                if (combined.includes('jbl') || combined.includes('soundbar') ||
+                    combined.includes('lineout') || combined.includes('line-out') ||
+                    combined.includes('колонк') ||
+                    (combined.includes('usb') && (combined.includes('audio') || combined.includes('speaker') || combined.includes('dac')))) {
+                    return true;
+                }
+            }
+        }
+    } catch (_) {}
+    return false;
+}
+
 function _handleOsdCall(monitorIndex, icon, label, level, maxLevel) {
     let iconName = '';
     if (icon) {
@@ -586,10 +632,13 @@ function _handleOsdCall(monitorIndex, icon, label, level, maxLevel) {
         }
         val = Math.max(0, Math.min(maxLimit, val));
         const title = _getAudioDeviceTitle();
-        _show('volume', title,
-            isMuted ? 'audio-volume-muted-symbolic' : (val > 1.0001 ? 'audio-volume-overamplified-symbolic' : 'audio-volume-low-symbolic'),
-            isMuted ? 'audio-volume-muted-symbolic' : (val > 1.0001 ? 'audio-volume-overamplified-symbolic' : 'audio-volume-high-symbolic'),
-            isMuted ? 0 : val);
+        const isHeadphoneOrSpeaker = _isHeadphoneOrSpeakerActive() ||
+                                     iconName.includes('headphone') || iconName.includes('headset') ||
+                                     iconName.includes('bluetooth') || iconName.includes('airpod');
+        const volIcon = isHeadphoneOrSpeaker
+            ? 'audio-headphones-symbolic'
+            : (isMuted ? 'audio-volume-muted-symbolic' : (val > 1.0001 ? 'audio-volume-overamplified-symbolic' : 'audio-volume-high-symbolic'));
+        _show('volume', title, volIcon, volIcon, isMuted ? 0 : val);
         return true;
     }
 
@@ -1151,9 +1200,18 @@ function _show(kind, title, iconL, iconR, value) {
 
 
     let dynamicIcon = 'audio-volume-high-symbolic';
+    let isHeadphoneOrSpeaker = false;
     if (kind === 'volume') {
         const isMuted = (value <= 0.001 || nameL.includes('muted') || nameR.includes('muted'));
-        if (isMuted) {
+        isHeadphoneOrSpeaker = _isHeadphoneOrSpeakerActive() ||
+                               nameL.includes('headphone') || nameR.includes('headphone') ||
+                               nameL.includes('headset') || nameR.includes('headset') ||
+                               nameL.includes('bluetooth') || nameR.includes('bluetooth') ||
+                               nameL.includes('airpod') || nameR.includes('airpod');
+
+        if (isHeadphoneOrSpeaker) {
+            dynamicIcon = 'audio-headphones-symbolic';
+        } else if (isMuted) {
             dynamicIcon = 'audio-volume-muted-symbolic';
         } else if (isOveramp) {
             dynamicIcon = 'audio-volume-overamplified-symbolic';
@@ -1171,10 +1229,24 @@ function _show(kind, title, iconL, iconR, value) {
     }
 
     try {
-        if (_iconL)
-            _iconL.icon_name = dynamicIcon;
-        if (_iconR)
+        if (_iconL) {
+            if (isHeadphoneOrSpeaker) {
+                const customIconPath = GLib.build_filenamev([GLib.get_home_dir(), '.local/share/gnome-shell/extensions/kiwi@kemma/icons/audio-headphones-symbolic.svg']);
+                if (GLib.file_test(customIconPath, GLib.FileTest.EXISTS)) {
+                    _iconL.gicon = new Gio.FileIcon({ file: Gio.File.new_for_path(customIconPath) });
+                } else {
+                    _iconL.gicon = null;
+                    _iconL.icon_name = 'audio-headphones-symbolic';
+                }
+            } else {
+                _iconL.gicon = null;
+                _iconL.icon_name = dynamicIcon;
+            }
+        }
+        if (_iconR) {
+            _iconR.gicon = null;
             _iconR.icon_name = dynamicIcon;
+        }
         if (_slider)
             _slider.setValue(value, isOveramp);
     } catch (_) {}

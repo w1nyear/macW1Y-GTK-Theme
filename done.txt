@@ -4195,3 +4195,25 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+910. Відображення іконки навушників при підключенні колонки/навушників та зменшення відступів слайдера OSD:
+  - У tahoeOSD.js та tahoeOnScreenDisplay.js реалізовано динамічне визначення підключеної колонки чи навушників (_isHeadphoneOrSpeakerActive):
+    * Здійснюється аналіз властивостей активного пристрою виводу звуку у системі (Gvc/PipeWire/PulseAudio): перевіряються назва поточного sink, його опис, назва іконки та активний порт.
+    * Визначаються Bluetooth-аудіопристрої (bluez, зокрема JBL Charge 3, AirPods Pro), навушники й гарнітури (3.5mm mini-jack, USB DAC, аналогові виходи headphones), а також зовнішні динаміки/саундбари.
+    * За наявності підключених навушників або колонки OSD динамічно встановлює іконку audio-headphones-symbolic, повністю відтворюючи векторний стиль SF Symbols з референсу (гладка наголовна дуга та закруглені капсульні амбушури). При відтворенні через вбудовані динаміки ноутбука відображається стандартна іконка гучномовця.
+  - У слайдері TahoeSegSlider зменшено відступи між поділками (точками/сегментами):
+    * Значення gap зменшено з 2.0 до 1.0 із цілочисельним піксельним центруванням Math.round(i * segW) - gap / 2.0.
+    * Проміжки між 16 поділками слайдера стали ультратонкими й чіткими волосяними лініями (1px), ідентично до еталонного дизайну macOS Tahoe / Sequoia на фотореференсі.
+  - Створено та оновлено векторні іконки audio-headphones-symbolic.svg у kiwi@kemma/icons/, наборах іконок macW1Y, macW1Y-dark та системних каталогах MacTahoe.
+  - Оновлено хеш цілісності розширення kiwi@kemma в config/extensions.lock.json (0a45f764...).
+  - Усі перевірки пройдено успішно:
+    * mac-extension-guard verify: 21/21 PASS.
+    * mac-audit-sync check: 100% PASS.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+    * install.sh: 0 кириличних символів.
+  * [extensions/kiwi@kemma/apps/tahoeOSD.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeOSD.js)
+  * [extensions/kiwi@kemma/apps/tahoeOnScreenDisplay.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeOnScreenDisplay.js)
+  * [extensions/kiwi@kemma/icons/audio-headphones-symbolic.svg](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/icons/audio-headphones-symbolic.svg)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
