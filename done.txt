@@ -4594,3 +4594,34 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [dconf/gnome-all.dconf](file:///home/vitaliy/MACTHEMEFILES/dconf/gnome-all.dconf)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+#924: Виправлено анімацію появи меню попереджень (EndSessionDialog/ModalDialog), ліквідовано підстрибування, піднято кнопки вгору, замінено «Завершити роботу» на «Вимкнути» та вирівняно текст по лівому краю
+  - Модифіковані компоненти:
+    * extensions/eval-helper@mactheme/extension.js:
+      - Усунено десинхронізацію розмірів фону та елементів: _macOrigFadeOpen тепер викликається першим, що гарантує стан is_mapped() === true для всього піддерева діалогу; glass.show() усуває приховування скляного шару BackdropGlass; для обох акторів (glass та content) застосовано абсолютно синхронний ease від scale 0.84 до 1.0 та opacity від 0 до 255 тривалістю 260мс;
+      - Ліквідовано підстрибування/ривок у кінці анімації: анімацію переведено з пружинного EASE_OUT_BACK з овершутом на плавну кубічну Apple-деселерацію Clutter.AnimationMode.EASE_OUT_CUBIC; прибрано примусовий forceResync геометрії в onComplete;
+      - Виправлено перевірку активних переходів у syncDialogGlass: ім'я властивості Clutter виправлено з 'scale_x' на 'scale-x' та додано перевірку 'scale-y', завдяки чому opacity діалогу не скидає плавний перехід під час відкриття;
+      - Кнопки піднято трохи вгору: у syncDialogGlass для modal-dialog-button-box встановлено padding-top: 3px !important; spacing: 8px !important;, а паддінг діалогу скориговано до 15px 18px 14px 18px;
+      - Заміна тексту кнопки: перехоплено метод Dialog.Dialog.prototype.addButton та додано динамічну перевірку в syncDialogGlass; написи «Завершити роботу» та «Вимкнути живлення» (а також «Power Off») замінено на коротке та чітке «Вимкнути», що запобігає обрізанню тексту до «Завершити...»;
+      - Вирівнювання тексту по лівому краю з відступом кнопок: message-dialog-content встановлено x_align: START, а для message-dialog-title та message-dialog-description призначено text-align: left, x-align: start, line_alignment: Pango.Alignment.LEFT та margin-left: 4px; margin-right: 4px (що точно відповідає відступу кнопок 4px).
+    * macW1Y-Dark/gnome-shell/gnome-shell.css, macW1Y-Light/gnome-shell/gnome-shell.css, macW1Y-Dark-solid/gnome-shell/gnome-shell.css, macW1Y-Light-solid/gnome-shell/gnome-shell.css та gnome-shell-theme/gnome-shell.css:
+      - Оновлено стилі .modal-dialog: padding 15px 18px 14px 18px;
+      - Оновлено .modal-dialog-button-box: padding-top: 3px;
+      - Оновлено .message-dialog-content, .message-dialog-title, .message-dialog-description: text-align: left !important; x-align: start !important; margin-left: 4px !important; margin-right: 4px !important;.
+    * ~/.themes та /usr/share/themes: синхронізовано оновлені файли gnome-shell.css для всіх варіантів тем.
+    * config/extensions.lock.json та /usr/share/mactheme/config/extensions.lock.json: оновлено контрольний хеш dir_hash (sha256-tree-v2) для eval-helper@mactheme.
+  - Результати валідації:
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 bin/mac-audit-sync check: 100% PASS (0 розбіжностей).
+    * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh: 0 збігів (Strict ASCII OK).
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [macW1Y-Dark/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark/gnome-shell/gnome-shell.css)
+  * [macW1Y-Light/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light/gnome-shell/gnome-shell.css)
+  * [macW1Y-Dark-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark-solid/gnome-shell/gnome-shell.css)
+  * [macW1Y-Light-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light-solid/gnome-shell/gnome-shell.css)
+  * [gnome-shell-theme/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/gnome-shell-theme/gnome-shell.css)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

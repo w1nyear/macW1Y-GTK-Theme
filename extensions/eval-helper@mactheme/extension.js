@@ -2106,6 +2106,35 @@ export default class EvalHelper extends Extension {
                 const ModalDialog = ModalDialogMod.ModalDialog;
                 if (!ModalDialog) return;
 
+                try {
+                    const DialogMod = await import('resource:///org/gnome/shell/ui/dialog.js');
+                    const Dialog = DialogMod.Dialog;
+                    if (Dialog && !Dialog.prototype._macButtonPatched) {
+                        Dialog.prototype._macButtonPatched = true;
+                        if (!Dialog.prototype._macOrigAddButton)
+                            Dialog.prototype._macOrigAddButton = Dialog.prototype.addButton;
+                        Dialog.prototype.addButton = function (buttonInfo) {
+                            if (buttonInfo && typeof buttonInfo.label === 'string') {
+                                const trimmed = buttonInfo.label.trim();
+                                if (trimmed === 'Завершити роботу' || trimmed === 'Вимкнути живлення' || trimmed === 'Power Off') {
+                                    buttonInfo.label = 'Вимкнути';
+                                }
+                            }
+                            const btn = Dialog.prototype._macOrigAddButton.call(this, buttonInfo);
+                            if (btn) {
+                                const checkLabel = () => {
+                                    if (btn.label && (btn.label.trim() === 'Завершити роботу' || btn.label.trim() === 'Вимкнути живлення' || btn.label.trim() === 'Power Off')) {
+                                        btn.label = 'Вимкнути';
+                                    }
+                                };
+                                btn.connectObject?.('notify::label', checkLabel, btn);
+                                checkLabel();
+                            }
+                            return btn;
+                        };
+                    }
+                } catch (_) {}
+
                 const getLiquidGlassPath = () => {
                     const ext = Main.extensionManager.lookup('liquid-glass@thinkingcoding1231.gmail.com');
                     return ext?.path || `${GLib.get_user_data_dir()}/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com`;
@@ -2320,10 +2349,42 @@ export default class EvalHelper extends Extension {
                         }
 
                         try {
-                            const extra = ' width: 260px !important; min-width: 260px !important; max-width: 260px !important; padding: 16px 18px 14px 18px !important;';
+                            const extra = ' width: 260px !important; min-width: 260px !important; max-width: 260px !important; padding: 15px 18px 14px 18px !important;';
                             dialogBox.set_style(`background-color: transparent !important; border-radius: ${Math.round(radius)}px !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; box-shadow: 0 16px 45px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important;${extra}`);
+                            for (const btnBox of dialogBox.get_children().filter(c => c.has_style_class_name?.('modal-dialog-button-box') || c.get_children?.().some(b => b.has_style_class_name?.('modal-dialog-button')))) {
+                                try {
+                                    btnBox.set_style('padding-top: 3px !important; spacing: 8px !important;');
+                                } catch (_) {}
+                            }
                             for (const button of dialogBox.get_children().flatMap(child => child.get_children?.() || []).flatMap(child => child.get_children?.() || []).filter(child => child.has_style_class_name?.('modal-dialog-button') || child.has_style_class_name?.('modal-dialog-linked-button'))) {
                                 button.set_style('min-height: 28px !important; height: 28px !important; border-radius: 999px !important; margin: 0 4px !important; padding: 0 10px !important;');
+                                if (button.label && (button.label.trim() === 'Завершити роботу' || button.label.trim() === 'Вимкнути живлення' || button.label.trim() === 'Power Off')) {
+                                    button.label = 'Вимкнути';
+                                }
+                                const ct = button.get_child?.();
+                                if (ct && (ct.text?.trim() === 'Завершити роботу' || ct.text?.trim() === 'Вимкнути живлення' || ct.text?.trim() === 'Power Off')) {
+                                    ct.text = 'Вимкнути';
+                                }
+                            }
+                            for (const mdc of dialogBox.get_children().flatMap(child => child.get_children?.() || []).filter(child => child.has_style_class_name?.('message-dialog-content') || child.name === 'MessageDialogContent')) {
+                                try {
+                                    mdc.set_x_align(Clutter.ActorAlign.START);
+                                    mdc.set_style('text-align: left !important; x-align: start !important; spacing: 3px !important;');
+                                } catch (_) {}
+                            }
+                            for (const label of dialogBox.get_children().flatMap(child => child.get_children?.() || []).flatMap(child => child.get_children?.() || []).filter(child => child.has_style_class_name?.('message-dialog-title') || child.has_style_class_name?.('message-dialog-description'))) {
+                                try {
+                                    label.set_x_align(Clutter.ActorAlign.START);
+                                    if (label.clutter_text) {
+                                        label.clutter_text.set_line_alignment(Pango.Alignment.LEFT);
+                                        label.clutter_text.set_x_align(Clutter.ActorAlign.START);
+                                    }
+                                    if (label.has_style_class_name?.('message-dialog-title')) {
+                                        label.set_style('text-align: left !important; x-align: start !important; margin-left: 4px !important; margin-right: 4px !important; margin-bottom: 2px !important;');
+                                    } else {
+                                        label.set_style('text-align: left !important; x-align: start !important; margin-left: 4px !important; margin-right: 4px !important; margin-top: 0px !important;');
+                                    }
+                                } catch (_) {}
                             }
                         } catch (_) {}
 
@@ -2340,7 +2401,7 @@ export default class EvalHelper extends Extension {
                                 duration: 120,
                                 mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                             });
-                        } else if (!glass.get_transition('opacity') && !glass.get_transition('scale_x')) {
+                        } else if (!glass.get_transition('opacity') && !glass.get_transition('scale-x') && !glass.get_transition('scale-y')) {
                             glass.opacity = dialogActor.opacity;
                         }
                     }
@@ -2430,41 +2491,42 @@ export default class EvalHelper extends Extension {
                     if (!ModalDialog.prototype._macOrigFadeOpen)
                         ModalDialog.prototype._macOrigFadeOpen = ModalDialog.prototype.fadeOpen || ModalDialog.prototype._fadeOpen;
                     ModalDialog.prototype._fadeOpen = function (...args) {
+                        const result = ModalDialog.prototype._macOrigFadeOpen.call(this, ...args);
                         const content = this.dialogLayout;
                         const glass = this.backgroundStack?.get_children?.().find(c => c.name === 'liquid-glass-dialog-actor');
+                        const START_SCALE = 0.84;
+                        const ANIM_DURATION = 260;
+                        const ANIM_MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
+
                         if (glass) {
+                            glass.show();
                             glass.remove_all_transitions();
                             glass.set_pivot_point(0.5, 0.5);
-                            glass.scale_x = 0.72;
-                            glass.scale_y = 0.72;
+                            glass.scale_x = START_SCALE;
+                            glass.scale_y = START_SCALE;
                             glass.opacity = 0;
-                            glass.show();
                             glass.ease({
                                 scale_x: 1.0,
                                 scale_y: 1.0,
                                 opacity: 255,
-                                duration: 420,
-                                mode: Clutter.AnimationMode.EASE_OUT_BACK,
+                                duration: ANIM_DURATION,
+                                mode: ANIM_MODE,
                             });
                         }
                         if (content) {
                             content.remove_all_transitions();
                             content.set_pivot_point(0.5, 0.5);
-                            content.scale_x = 0.72;
-                            content.scale_y = 0.72;
+                            content.scale_x = START_SCALE;
+                            content.scale_y = START_SCALE;
                             content.opacity = 0;
-                        }
-                        const result = ModalDialog.prototype._macOrigFadeOpen.call(this, ...args);
-                        if (content) {
                             content.ease({
                                 scale_x: 1.0,
                                 scale_y: 1.0,
                                 opacity: 255,
-                                duration: 420,
-                                mode: Clutter.AnimationMode.EASE_OUT_BACK,
+                                duration: ANIM_DURATION,
+                                mode: ANIM_MODE,
                                 onComplete: () => {
                                     if (this._macDlgGlassState && typeof this._macDlgGlassState === 'object') {
-                                        this._macDlgGlassState.forceResync = true;
                                         syncDialogGlass(this._macDlgGlassState);
                                     }
                                 },
