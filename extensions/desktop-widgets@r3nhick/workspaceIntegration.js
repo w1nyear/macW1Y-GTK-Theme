@@ -259,18 +259,10 @@ export class WorkspaceIntegration {
       return targets;
     };
 
-    const workspaceView = controls._workspacesDisplay?._workspacesViews?.[primaryIndex];
-
-    for (const workspace of workspaceView?._workspaces ?? []) {
-      const container = workspace._background?._backgroundGroup;
-
-      if (workspace.monitorIndex === primaryIndex && container) {
-        targets.set(container, {
-          fillContainer: true,
-          aboveSiblings: true,
-        });
-      };
-    };
+    // Note: Do not clone live widget layer into overview workspace preview cards
+    // as multi-pass Gaussian blur effects & LiquidGlass shaders on moving workspaces
+    // degrade render frame rate to ~10-15 FPS and drop frames during swipe transitions.
+    // In macOS Mission Control, desktop widgets are kept cleanly on the desktop.
 
     for (const thumbnail of controls._thumbnailsBox?._thumbnails ?? []) {
       const container = thumbnail._contents;

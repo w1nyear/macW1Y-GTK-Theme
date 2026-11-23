@@ -3593,6 +3593,13 @@ export default class EvalHelper extends Extension {
                 const controls = Main.overview?._overview?.controls;
                 if (!controls) return;
 
+                if (Main.overview && !Main.overview._origChangeShownState) {
+                    Main.overview._origChangeShownState = Main.overview._changeShownState;
+                    Main.overview._changeShownState = function(state) {
+                        if (state === this._shownState) return;
+                        return this._origChangeShownState(state);
+                    };
+                }
 
                 const lm = controls.layout_manager;
                 if (lm && !lm._macOverviewSpacingPatchedV3) {
@@ -3692,7 +3699,10 @@ export default class EvalHelper extends Extension {
                             WorkspaceBackground.prototype._init = function(...args) {
                                 origInit.apply(this, args);
                                 this.opacity = 255;
-                                if (this._bin) this._bin.opacity = 255;
+                                if (this._bin) {
+                                    this._bin.opacity = 255;
+                                    this._bin.clip_to_allocation = false;
+                                }
                                 if (this._backgroundGroup) this._backgroundGroup.opacity = 255;
                             };
                         }
@@ -3704,6 +3714,10 @@ export default class EvalHelper extends Extension {
                                 try {
                                     const monitor = Main.layoutManager.monitors[this._monitorIndex] || Main.layoutManager.primaryMonitor;
                                     if (monitor) {
+                                        if (this._macClipWidth === monitor.width && this._macClipHeight === monitor.height)
+                                            return;
+                                        this._macClipWidth = monitor.width;
+                                        this._macClipHeight = monitor.height;
                                         const rect = new Graphene.Rect();
                                         rect.origin.x = 0;
                                         rect.origin.y = 0;
@@ -3931,10 +3945,16 @@ export default class EvalHelper extends Extension {
                                     if (wsActor._background._bin) {
                                         if (wsActor._background._bin.opacity !== 255) wsActor._background._bin.opacity = 255;
                                         if (!wsActor._background._bin.visible) wsActor._background._bin.visible = true;
+                                        wsActor._background._bin.clip_to_allocation = false;
                                     }
                                     if (wsActor._background._backgroundGroup) {
                                         if (wsActor._background._backgroundGroup.opacity !== 255) wsActor._background._backgroundGroup.opacity = 255;
                                         if (!wsActor._background._backgroundGroup.visible) wsActor._background._backgroundGroup.visible = true;
+                                        for (const child of (wsActor._background._backgroundGroup.get_children ? wsActor._background._backgroundGroup.get_children() : [])) {
+                                            if (child.constructor.name === 'Clutter_Clone') {
+                                                child.destroy();
+                                            }
+                                        }
                                     }
                                 }
                             }

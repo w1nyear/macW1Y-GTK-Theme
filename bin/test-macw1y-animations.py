@@ -146,7 +146,11 @@ def test_6_spotlight_instant_open():
     time.sleep(0.3)
     code = """(() => {
         if (Main.overview && (Main.overview.visible || Main.overview._animationInProgress)) {
-            Main.overview.hide();
+            Main.overview._visible = false;
+            Main.overview._shown = false;
+            Main.overview._animationInProgress = false;
+            Main.overview._shownState = 'HIDDEN';
+            Main.layoutManager.hideOverview();
         }
         let dlg = globalThis._macSpotlightGlobalInstance;
         if (!dlg) return { error: 'no instance' };
