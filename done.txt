@@ -4131,3 +4131,22 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+907. Реалізація автентичних macOS анімацій увімкнення та вимкнення Stage Manager: плавне згортання фонових програм у стейдж менеджер та виїзд карток ліворуч із fade-ефектом:
+  - Реалізовано анімацію вимкнення Stage Manager (disable):
+    * При вимкненні Stage Manager (через Центр керування, гарячі клавіші або налаштування) панель бічної смуги та всі картки вікон не знищуються миттєво, а плавно з'їжджають ліворуч за межі екрана (exitX = mon.x - panel.width - 80) із каскадним зсувом translation_x (-80px - i*15px) та плавною fade-анімацією зникнення непрозорості (opacity: 0, 300ms EASE_OUT_QUAD).
+    * Тільки після повного завершення анімації актори панелі та клонів коректно знищуються і видаляються з UI-сцени GNOME Shell без візуальних стрибків.
+    * Аналогічний плавний від'їзд карток ліворуч додано до методу _hide() при автоприховуванні чи накладанні вікон.
+  - Реалізовано анімацію увімкнення Stage Manager (enable):
+    * При активації Stage Manager визначається остання активна програма у фокусі (leadWin). Вона залишається на робочому столі в активній групі.
+    * Усі інші відкриті фонові програми (toFold) автоматично згортаються з плавною 3D-анімацією згортання у бічну смугу Stage Manager: створюються апаратні Clutter-клони зі збереженням кадрових розкладок і знімків, які плавно переміщуються у відповідні слоти карток Stage Manager ліворуч зі зменшенням масштабу, поворотом у перспективі (rotation_angle_y = ROT_SIGN * 26) та тривалістю 320ms EASE_OUT_CUBIC.
+    * По завершенні польоту клонів фонові вікна мінімізуються, а бічна смуга Stage Manager відображає сформовані мініатюри груп програм, тоді як сфокусоване вікно залишається на робочому столі вільним для взаємодії.
+  - Повна верифікація тестового набору:
+    * mac-extension-guard verify: 21/21 PASS (100% відповідність усіх розширень).
+    * mac-audit-sync check: 100% PASS (система та репозиторій повністю синхронізовані).
+    * test-macw1y-animations.py: 12/12 PASS (100% проходження всіх анімаційних та системних сценаріїв).
+    * unit tests: 39/39 PASS.
+    * install.sh: 0 кириличних символів.
+  * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

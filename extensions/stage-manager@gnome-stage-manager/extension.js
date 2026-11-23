@@ -495,13 +495,15 @@ class StageSidebar {
         this._loadAppMergeMap();
         this._build();
         this._wire();
-        this._initGroups();
+        this._initGroups(true);
         this._addKeybinding();
         this._armOverlapTimer();
 
         if (this._isAreaClear() && !this._settings.get_boolean('sidebar-auto-hide'))
             this._show();
         else if (this._shouldForceShow())
+            this._show();
+        else
             this._show();
         this._syncEdge();
     }
@@ -527,7 +529,6 @@ class StageSidebar {
         this._cancelAppDrag();
 
         this._destroyPreview();
-        this._safeDestroyContent();
         this._isSwitching = false;
         if (this._activeClones) {
             for (const c of this._activeClones) {
@@ -535,7 +536,6 @@ class StageSidebar {
             }
             this._activeClones.clear();
         }
-        this._cards = [];
         this._groups = [];
         this._activeIds.clear();
         this._expectMinimize.clear();
@@ -546,24 +546,65 @@ class StageSidebar {
         this._maxOrigin.clear();
         this._signature = null;
 
-
-        if (this._box) {
-            this._box.destroy();
-            this._box = null;
-        }
-        if (this._scroll) {
-            this._scroll.destroy();
-            this._scroll = null;
-        }
-        if (this._panel) {
-            Main.layoutManager.removeChrome(this._panel);
-            this._panel.destroy();
-            this._panel = null;
-        }
         if (this._edge) {
-            Main.layoutManager.removeChrome(this._edge);
+            try { Main.layoutManager.removeChrome(this._edge); } catch (_) {}
             this._edge.destroy();
             this._edge = null;
+        }
+
+        const panelToExit = this._panel;
+        const boxToExit = this._box;
+        const cardsToExit = this._cards ? [...this._cards] : [];
+
+        this._panel = null;
+        this._box = null;
+        this._scroll = null;
+        this._cards = [];
+
+        if (panelToExit) {
+            try { Main.layoutManager.removeChrome(panelToExit); } catch (_) {}
+
+            const mon = _getMon();
+            const exitX = mon.x - (panelToExit.width || 220) - 80;
+
+            if (panelToExit.visible && panelToExit.opacity > 0) {
+                if (panelToExit.get_parent()) {
+                    try { panelToExit.get_parent().remove_child(panelToExit); } catch (_) {}
+                }
+                try { Main.uiGroup.add_child(panelToExit); } catch (_) {}
+
+                for (let i = 0; i < cardsToExit.length; i++) {
+                    const card = cardsToExit[i];
+                    try {
+                        card.remove_all_transitions();
+                        card.ease({
+                            translation_x: -80 - (i * 15),
+                            opacity: 0,
+                            duration: 280,
+                            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        });
+                    } catch (_) {}
+                }
+
+                panelToExit.remove_all_transitions();
+                panelToExit.ease({
+                    x: exitX,
+                    opacity: 0,
+                    duration: 300,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        try {
+                            if (boxToExit) _nullCloneSources(boxToExit);
+                            panelToExit.destroy();
+                        } catch (_) {}
+                    },
+                });
+            } else {
+                try {
+                    if (boxToExit) _nullCloneSources(boxToExit);
+                    panelToExit.destroy();
+                } catch (_) {}
+            }
         }
     }
 
@@ -1079,14 +1120,14 @@ class StageSidebar {
 
 
 
-    _initGroups() {
+    _initGroups(isEnabling = false) {
         this._pruneDeadWorkspaces();
         this._reapMovedWindows();
         const ws = this._activeWs();
         if (!ws) return;
 
         if (this._groupsFor(ws).length === 0)
-            this._seedGroups(ws);
+            this._seedGroups(ws, isEnabling);
         else
             this._adoptStrayWindows(ws);
 
@@ -1094,26 +1135,178 @@ class StageSidebar {
         this._syncForceShow();
     }
 
-    _seedGroups(ws) {
+    _seedGroups(ws, animate = false) {
         const allWins = ws.list_windows().filter(w => _isNormal(w));
-
         const visible = allWins.filter(w => !w.minimized);
-        if (visible.length > 0) {
-            const g = { id: this._nextGid++, ws, windows: new Set(visible) };
-            this._groups.push(g);
-            this._activeIds.set(ws, g.id);
+
+        if (visible.length === 0) {
+            const tracker = Shell.WindowTracker.get_default();
+            const byApp = new Map();
+            for (const win of allWins.filter(w => w.minimized)) {
+                const app = tracker ? tracker.get_window_app(win) : null;
+                const key = app ? app.get_id() : `_anon_${win.get_id()}`;
+                if (!byApp.has(key)) byApp.set(key, []);
+                byApp.get(key).push(win);
+            }
+            for (const [, wins] of byApp) {
+                this._groups.push({ id: this._nextGid++, ws, windows: new Set(wins) });
+            }
+            return;
         }
 
+        const focusedWin = global.display.get_focus_window();
+        let leadWin = (focusedWin && focusedWin.get_workspace() === ws && _isNormal(focusedWin) && !focusedWin.minimized)
+            ? focusedWin
+            : null;
+        if (!leadWin && visible.length > 0) {
+            const sorted = [...visible].sort((a, b) => (b.get_user_time() || 0) - (a.get_user_time() || 0));
+            leadWin = sorted[0];
+        }
+
+        const activeGroup = { id: this._nextGid++, ws, windows: new Set([leadWin]) };
+        this._groups.push(activeGroup);
+        this._activeIds.set(ws, activeGroup.id);
+
+        const toFold = visible.filter(w => w !== leadWin);
         const tracker = Shell.WindowTracker.get_default();
         const byApp = new Map();
-        for (const win of allWins.filter(w => w.minimized)) {
-            const app = tracker.get_window_app(win);
+        for (const win of [...toFold, ...allWins.filter(w => w.minimized)]) {
+            const app = tracker ? tracker.get_window_app(win) : null;
             const key = app ? app.get_id() : `_anon_${win.get_id()}`;
             if (!byApp.has(key)) byApp.set(key, []);
             byApp.get(key).push(win);
         }
         for (const [, wins] of byApp) {
             this._groups.push({ id: this._nextGid++, ws, windows: new Set(wins) });
+        }
+
+        if (toFold.length > 0) {
+            for (const win of toFold) {
+                win._isMinimizing = true;
+            }
+            if (animate) {
+                const timerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+                    this._untrackTimer(timerId);
+                    this._animateFoldWindows(toFold, leadWin);
+                    return GLib.SOURCE_REMOVE;
+                });
+                this._timers.push(timerId);
+            } else {
+                for (const win of toFold) {
+                    win._isMinimizing = false;
+                    win.minimize();
+                }
+            }
+        }
+    }
+
+    _animateFoldWindows(toFold, leadWin) {
+        if (!toFold || toFold.length === 0) return;
+        toFold = toFold.filter(w => w && !w.is_finalized?.() && w.get_workspace?.());
+        if (toFold.length === 0) return;
+
+        if (!this._activeClones) this._activeClones = new Set();
+
+        const mon = _getMon();
+        const topH = Main.panel ? Main.panel.height : 0;
+        const sf = this._scaleFactor || 1;
+        const stdCardW = Math.round(105 * sf);
+        const stdCardH = Math.round(72 * sf);
+        const spacing = Math.round(10 * sf);
+        const stageCardX = this._POS === 'right' ? (mon.x + mon.width - stdCardW - 4 * sf) : (mon.x + 4 * sf);
+
+        const nCards = Math.max(1, toFold.length);
+        const totalH = nCards * stdCardH + (nCards - 1) * spacing;
+        const availH = mon.height - topH;
+        const slot0Y = mon.y + topH + Math.max(10 * sf, Math.round((availH - totalH) / 2));
+
+        for (let i = 0; i < toFold.length; i++) {
+            const win = toFold[i];
+            try {
+                const rect = win.get_frame_rect();
+                const bufRect = win.get_buffer_rect();
+                if (rect && rect.width > 0 && rect.height > 0) {
+                    this._savedLayouts.set(win, {
+                        x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+                        bufX: bufRect.x, bufY: bufRect.y, bufW: bufRect.width, bufH: bufRect.height,
+                    });
+                }
+
+                this._captureSnapshot(win);
+                this._expectMinimize.add(win);
+                win._isMinimizing = true;
+                win._stageSwitching = true;
+                win._stageManaged = true;
+
+                const actor = win.get_compositor_private();
+                const winW = (bufRect && bufRect.width > 0) ? bufRect.width : rect.width;
+                const winH = (bufRect && bufRect.height > 0) ? bufRect.height : rect.height;
+                const winX = (bufRect && bufRect.width > 0) ? bufRect.x : rect.x;
+                const winY = (bufRect && bufRect.height > 0) ? bufRect.y : rect.y;
+
+                const slotY = slot0Y + i * (stdCardH + spacing);
+                const foldW = stdCardW;
+                const foldH = stdCardH;
+                const destScale = Math.min(foldW / winW, foldH / winH);
+                const fitW = winW * destScale;
+                const fitH = winH * destScale;
+                const destX = stageCardX + Math.round((foldW - fitW) / 2);
+                const destY = slotY + Math.round((foldH - fitH) / 2);
+
+                win._stageCardRect = { x: stageCardX, y: slotY, width: foldW, height: foldH };
+
+                if (actor && winW > 0 && winH > 0) {
+                    let content = this._snapshots.get(win)?.content;
+                    const clone = content
+                        ? new St.Widget({ content })
+                        : new Clutter.Clone({ source: actor });
+                    clone.set_content_gravity?.(Clutter.ContentGravity.RESIZE_FILL);
+                    clone.set_content_scaling_filters?.(Clutter.ScalingFilter.TRILINEAR, Clutter.ScalingFilter.LINEAR);
+                    clone.set_position(winX, winY);
+                    clone.set_size(winW, winH);
+                    const pivotX = (this._POS === 'right') ? 1.0 : 0.0;
+                    clone.set_pivot_point(pivotX, 0.0);
+                    clone.scale_z = 1.0;
+                    actor.opacity = 0;
+                    Main.uiGroup.add_child(clone);
+                    this._activeClones.add(clone);
+
+                    clone.ease({
+                        x: destX,
+                        y: destY,
+                        scale_x: destScale,
+                        scale_y: destScale,
+                        scale_z: destScale,
+                        rotation_angle_y: this._ROT_SIGN * 26,
+                        opacity: 255,
+                        duration: 320,
+                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                        onComplete: () => {
+                            try { clone.destroy(); } catch (_) {}
+                            this._activeClones?.delete(clone);
+                            win._isMinimizing = false;
+                            win.minimize();
+                            actor.opacity = 255;
+                            win._stageSwitching = false;
+                            this._expectMinimize.delete(win);
+                            if (this._visible) this._refresh();
+                        },
+                    });
+                } else {
+                    win._isMinimizing = false;
+                    win.minimize();
+                    win._stageSwitching = false;
+                    this._expectMinimize.delete(win);
+                }
+            } catch (_) {
+                win._isMinimizing = false;
+                win._stageSwitching = false;
+                win.minimize();
+            }
+        }
+
+        if (leadWin && !leadWin.minimized) {
+            try { leadWin.activate(global.get_current_time()); } catch (_) {}
         }
     }
 
@@ -1946,11 +2139,24 @@ class StageSidebar {
         this._destroyPreview();
         this._syncEdge();
 
-
         this._applyChrome();
 
-
         this._signature = null;
+
+        if (this._cards && this._cards.length > 0) {
+            for (let i = 0; i < this._cards.length; i++) {
+                const card = this._cards[i];
+                try {
+                    card.remove_all_transitions();
+                    card.ease({
+                        translation_x: -60 - (i * 12),
+                        opacity: 0,
+                        duration: this._SLIDE_MS,
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    });
+                } catch (_) {}
+            }
+        }
 
         const [hx, hy] = this._panelHiddenPos(_getMon(), Main.panel ? Main.panel.height : 0);
         this._panel.remove_all_transitions();
@@ -1960,7 +2166,7 @@ class StageSidebar {
             duration: this._SLIDE_MS,
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             onComplete: () => {
-                this._panel.opacity = 0;
+                if (this._panel) this._panel.opacity = 0;
             },
         });
     }
@@ -2932,7 +3138,7 @@ class ArcSidebar {
         this._sigSources.clear();
         this._disconnectCardSigs();
 
-        this._destroyUI();
+        this._destroyUI(true);
         this._settings = null;
     }
 
@@ -3401,12 +3607,46 @@ class ArcSidebar {
         this._sig(this._panel, 'scroll-event', (_a, event) => { this._handleScroll(event); return Clutter.EVENT_STOP; });
     }
 
-    _destroyUI() {
+    _destroyUI(animateExit = false) {
         this._cancelHide();
-        this._containers.forEach(c => c.destroy());
+        const panelToExit = this._panel;
+        const containersToExit = this._containers ? [...this._containers] : [];
+        this._panel = null;
         this._containers = [];
-        if (this._edge)  { this._edge.destroy();  this._edge = null; }
-        if (this._panel) { this._panel.destroy(); this._panel = null; }
+
+        if (this._edge) {
+            try { this._edge.destroy(); } catch (_) {}
+            this._edge = null;
+        }
+
+        if (panelToExit) {
+            const mon = this._monitor || _getMon();
+            const exitX = mon.x - (panelToExit.width || 220) - 80;
+            if (animateExit && this._isVisible && panelToExit.opacity > 0) {
+                if (panelToExit.get_parent()) {
+                    try { panelToExit.get_parent().remove_child(panelToExit); } catch (_) {}
+                }
+                try { Main.uiGroup.add_child(panelToExit); } catch (_) {}
+                panelToExit.remove_all_transitions();
+                panelToExit.ease({
+                    x: exitX,
+                    opacity: 0,
+                    duration: 300,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        containersToExit.forEach(c => {
+                            try { _nullCloneSources(c); c.destroy(); } catch (_) {}
+                        });
+                        try { panelToExit.destroy(); } catch (_) {}
+                    },
+                });
+            } else {
+                containersToExit.forEach(c => {
+                    try { _nullCloneSources(c); c.destroy(); } catch (_) {}
+                });
+                try { panelToExit.destroy(); } catch (_) {}
+            }
+        }
     }
 
     _rebuild() {
