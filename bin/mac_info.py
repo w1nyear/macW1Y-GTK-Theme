@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 DEFAULT_NAME = "macW1Y"
-DEFAULT_VERSION = "0.7.1"
+DEFAULT_VERSION = "0.8"
 DEFAULT_CODENAME = "Tahoe"
 
 def find_info_json():

@@ -1,6 +1,6 @@
 # macW1Y — Multiplatform Architecture & Migration Status
 
-**Поточна версія:** macW1Y 0.7.1  
+**Поточна версія:** macW1Y 0.8  
 **Базова платформа:** Ubuntu 24.04 LTS (Noble Numbat) / GNOME Shell 46 (Wayland)  
 **Дата оновлення:** 21 листопада 2026 р.  
 **Статус готовності ядра:** 100% (Повністю протестовано та валідовано для релізу)

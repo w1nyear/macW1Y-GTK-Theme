@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 #  macW1Y Transformation Modpack (macW1Y Release)
-#  Installer & Maintenance System - Version 0.7.1
+#  Installer & Maintenance System - Version 0.8
 # ==============================================================================
 
 set -e
@@ -19,7 +19,7 @@ get_project_version() {
             fi
         fi
     done
-    echo "0.7.1"
+    echo "0.8"
 }
 NEW_VERSION="$(get_project_version)"
 

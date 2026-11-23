@@ -3969,6 +3969,11 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
 
+================================================================================
+Початок циклу розробки macW1Y версії 0.8 (після випуску хотфіксу версії 0.7.1)
+Усі подальші правки та завдання (починаючи з #899) входять до релізу версії 0.8:
+================================================================================
+
 899. Виправлення проблеми мультиязичності (Language Issues) та оптимізація продуктивності Liquid Glass:
   - Усунено дефект одночасної появи 2–3 мов (обраної користувачем іспанської/іншої локалі, англійської та української/авторської):
     1) Повністю переведено та синхронізовано `extensions/appmenu@ChathurangaBW.github.io/i18n.js`: додано переклади всіх 155 ключів меню для іспанської (`es`), німецької (`de`), французької (`fr`), італійської (`it`), польської (`pl`), усунуто жорстку прив'язку до кешу `GLib.get_language_names()`, додано підтримку `globalThis._macModpackLocale` та динамічного методу `updateLocale(lang)` у `AppMenuExtension`.
@@ -4247,6 +4252,46 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [gnome-shell-theme/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/gnome-shell-theme/gnome-shell.css)
   * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
   * [gnome-control-center-overlay/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/cc-mac-styling-panel.ui)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+
+912. Оновлення поточної версії macW1Y до 0.8 та переведення правок циклу (починаючи з #899) у версію 0.8:
+  - Підвищено та уніфіковано версію проєкту до 0.8 в усіх системних компонентах, маніфестах, скриптах встановлення, утилітах та конфігураціях:
+    * info.json та /usr/share/mactheme/info.json: встановлено "version": "0.8".
+    * config/mac-styling/version, ~/.config/mac-styling/version та /etc/macW1Y/version: оновлено до "0.8".
+    * install.sh: оновлено заголовок та вивід версії до 0.8 (get_project_version).
+    * bin/macW1Y: оновлено VERSION="0.8".
+    * bin/mac_info.py: встановлено DEFAULT_VERSION = "0.8".
+    * bin/mac-audit-sync: оновлено заголовок та fallback return "0.8".
+    * bin/mac-build-theme: оновлено заголовок та fallback return "0.8".
+    * bin/mac-graphics-profile: оновлено fallback return "0.8".
+    * bin/mac-i18n-verify: оновлено fallback return "0.8".
+    * bin/mac-installer-gui: оновлено fallback return "0.8".
+    * bin/mac-lowspec-optimizer: оновлено fallback return "0.8".
+    * bin/mac-setup-wizard: оновлено fallback return "0.8".
+    * bin/mac-theme-sync: оновлено fallback return "0.8".
+    * config/gtk-4.0/macw1y-tokens.css: оновлено заголовок дизайну macW1Y 0.8.
+    * extensions/eval-helper@mactheme/macSetupWizard.js: getModpackVersion() повертає '0.8'.
+    * MULTIPLATFORM_MIGRATION_STATUS.md: встановлено «Поточна версія: macW1Y 0.8».
+  - У журналі done.txt структуровано, що всі останні правки починаючи від останнього виправлення mac setup wizard (після випуску версії 0.7.1 у завданні #898) — завдання #899..#912 — входять до складу версії 0.8.
+  - Оновлено хеш цілісності eval-helper@mactheme (d007be90...) в config/extensions.lock.json та /usr/share/mactheme/config/extensions.lock.json.
+  - Синхронізовано всі бінарні скрипти з /usr/local/bin/ та ~/.local/bin/.
+  - Усі перевірки пройдено успішно:
+    * mac-extension-guard verify: 21/21 PASS.
+    * mac-audit-sync check: 100% PASS (macW1Y 0.8).
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+    * install.sh: 0 кириличних символів.
+  * [info.json](file:///home/vitaliy/MACTHEMEFILES/info.json)
+  * [config/mac-styling/version](file:///home/vitaliy/MACTHEMEFILES/config/mac-styling/version)
+  * [install.sh](file:///home/vitaliy/MACTHEMEFILES/install.sh)
+  * [bin/macW1Y](file:///home/vitaliy/MACTHEMEFILES/bin/macW1Y)
+  * [bin/mac_info.py](file:///home/vitaliy/MACTHEMEFILES/bin/mac_info.py)
+  * [bin/mac-audit-sync](file:///home/vitaliy/MACTHEMEFILES/bin/mac-audit-sync)
+  * [bin/mac-build-theme](file:///home/vitaliy/MACTHEMEFILES/bin/mac-build-theme)
+  * [bin/mac-setup-wizard](file:///home/vitaliy/MACTHEMEFILES/bin/mac-setup-wizard)
+  * [extensions/eval-helper@mactheme/macSetupWizard.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/macSetupWizard.js)
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

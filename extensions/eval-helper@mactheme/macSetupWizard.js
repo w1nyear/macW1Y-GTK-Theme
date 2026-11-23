@@ -285,7 +285,7 @@ export function getModpackVersion() {
             }
         }
     } catch (_) {}
-    return '0.7.1';
+    return '0.8';
 }
 
 export function saveModpackLocale(langCode) {
