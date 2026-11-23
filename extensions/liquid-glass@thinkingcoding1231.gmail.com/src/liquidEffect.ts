@@ -1371,7 +1371,16 @@ export const LiquidEffect = GObject.registerClass({
     try {
       this._downsampleSource = await this._readFileAsync(`${this._extensionPath}/shaders/downsample.frag`);
       this._upsampleSource = await this._readFileAsync(`${this._extensionPath}/shaders/upsample.frag`);
-      this._glassSource = await this._readFileAsync(`${this._extensionPath}/shaders/glass.frag`);
+      let shaderFile = 'glass.frag';
+      const optShaderPath = `${this._extensionPath}/shaders/LQ-OPTIMIZED.frag`;
+      const optMarkerUser = `${GLib.get_home_dir()}/.config/macW1Y/optimized-glass`;
+      const optMarkerSys = '/etc/macW1Y/optimized-glass';
+      if (GLib.file_test(optShaderPath, GLib.FileTest.EXISTS)) {
+        if (GLib.file_test(optMarkerUser, GLib.FileTest.EXISTS) || GLib.file_test(optMarkerSys, GLib.FileTest.EXISTS)) {
+          shaderFile = 'LQ-OPTIMIZED.frag';
+        }
+      }
+      this._glassSource = await this._readFileAsync(`${this._extensionPath}/shaders/${shaderFile}`);
 
       this._shadersLoaded = true;
 

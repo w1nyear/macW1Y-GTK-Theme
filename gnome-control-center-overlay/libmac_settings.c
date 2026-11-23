@@ -14,7 +14,10 @@
 
 
 #include <math.h>
+#include <glib/gstdio.h>
 #include "mac_i18n.h"
+
+static gboolean g_liquid_use_optimized = TRUE;
 
 typedef struct {
     int menubar_tint;
@@ -251,6 +254,9 @@ static void load_config(void) {
                 state.liquid_refraction = (int)json_object_get_int_member(obj, "liquid_refraction");
             else
                 state.liquid_refraction = 80;
+
+            if (json_object_has_member(obj, "liquid_use_optimized"))
+                g_liquid_use_optimized = json_object_get_boolean_member(obj, "liquid_use_optimized");
 
             if (json_object_has_member(obj, "liquid_blur"))
                 state.liquid_blur = (int)json_object_get_int_member(obj, "liquid_blur");
@@ -548,6 +554,7 @@ static void save_styling_json(void) {
         "  \"menubar_blur\": %d,\n"
         "  \"liquid_shape\": %d,\n"
         "  \"liquid_refraction\": %d,\n"
+        "  \"liquid_use_optimized\": %s,\n"
         "  \"liquid_blur\": %d,\n"
         "  \"liquid_tint\": %d,\n"
         "  \"liquid_chroma\": %d,\n"
@@ -604,6 +611,7 @@ static void save_styling_json(void) {
         state.menubar_blur,
         state.liquid_shape,
         state.liquid_refraction,
+        g_liquid_use_optimized ? "true" : "false",
         state.liquid_blur,
         state.liquid_tint,
         state.liquid_chroma,
@@ -2508,7 +2516,7 @@ static void draw_repo_glass_element(cairo_t *cr, cairo_surface_t *bg, int width,
     double profile_n = 7.0;
     double edge_smoothing = 2.0;
     double edgeFeather = fmax(edge_smoothing, 0.75);
-    double ior = 2.40;
+    double ior = 1.0 + ((double)state.liquid_refraction / 100.0) * 1.40;
     double eta = 1.0 / fmax(ior, 1.001);
 
 
@@ -2668,7 +2676,6 @@ typedef struct {
 static GlassBenchmarkElement g_bench_elements[MAX_BENCHMARK_ELEMENTS];
 static gboolean g_bench_elements_inited = FALSE;
 
-static gboolean g_liquid_use_optimized = TRUE;
 static int g_liquid_target_fps = 60;
 static int g_liquid_element_count = 1;
 static double g_liquid_measured_fps = 60.0;
@@ -2752,16 +2759,23 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
     double bevel_width = CLAMP(max_z * 0.75 + gr * 0.2, 4.0, 28.0);
     double inv_bevel = 1.0 / bevel_width;
 
+    double ior = 1.0 + ((double)state.liquid_refraction / 100.0) * 1.40;
+    double eta = 1.0 / fmax(ior, 1.001);
     double disp_scale = ((double)state.liquid_refraction / 60.0) * 18.0;
     double chroma_str = ((double)state.liquid_chroma / 30.0) * 2.0;
     double tint_strength = ((double)state.liquid_tint / 100.0);
     double rim_intensity = ((double)state.liquid_rim / 50.0) * 0.60;
-    double edgeFeather = 1.2;
+    double edgeFeather = 1.8;
 
     double ly_dir = 1.0;
     double lz_dir = 0.38;
     double l_len = sqrt(ly_dir * ly_dir + lz_dir * lz_dir);
     ly_dir /= l_len; lz_dir /= l_len;
+
+    gboolean is_light = mac_is_light_mode();
+    double tint_r = is_light ? 255.0 : 41.0;
+    double tint_g = is_light ? 255.0 : 41.0;
+    double tint_b = is_light ? 255.0 : 46.0;
 
     for (int ly = 0; ly < igh; ly++) {
         uint32_t *dst_row = (uint32_t *)(dst_pixels + ly * dst_stride);
@@ -2778,11 +2792,22 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
             double insideMask = 1.0 - glsl_smoothstep(-edgeFeather, edgeFeather, d);
             double depth = CLAMP(-d * inv_bevel, 0.0, 1.0);
 
-            double angle = (1.0 - depth) * (M_PI * 0.5);
-            double sinA = sin(angle);
-            double cosA = cos(angle);
+            /* Calibrated dome surface slope matching physical profile curve */
+            double u = 1.0 - depth;
+            double slope = pow(u, 3.0) * 0.85;
+            double sinA = sin(slope);
+            double cosA = cos(slope);
 
-            double disp_factor = disp_scale * sinA;
+            /* Snell's law refraction vector */
+            double k = 1.0 - eta * eta * sinA * sinA;
+            double factor = (k >= 0.0) ? (sqrt(k) - eta * cosA) : 0.0;
+            double ray_x = factor * sinA;
+            double ray_z = -eta - factor * cosA;
+            double safe_z = fmax(-ray_z, 0.15);
+
+            /* Edge dampening smoothly blends refraction to 0 at the glass perimeter */
+            double edgeDampen = glsl_smoothstep(0.0, edgeFeather * 3.0, -d);
+            double disp_factor = (ray_x / safe_z) * disp_scale * edgeDampen;
             double disp_x = -n2d_x * disp_factor;
             double disp_y = -n2d_y * disp_factor;
 
@@ -2792,9 +2817,9 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
             double cr_r, cr_g, cr_b;
             sample_bilinear(src_pixels, src_stride, width, height, sx, sy, &cr_r, &cr_g, &cr_b);
 
-            if (chroma_str > 0.01 && disp_factor > 0.5) {
-                double c_off_x = -n2d_x * chroma_str;
-                double c_off_y = -n2d_y * chroma_str;
+            if (chroma_str > 0.01 && disp_factor > 0.1) {
+                double c_off_x = -n2d_x * chroma_str * edgeDampen;
+                double c_off_y = -n2d_y * chroma_str * edgeDampen;
                 double r_val, dummy_g, dummy_b, b_val;
                 sample_bilinear(src_pixels, src_stride, width, height, sx + c_off_x, sy + c_off_y, &r_val, &dummy_g, &dummy_b);
                 sample_bilinear(src_pixels, src_stride, width, height, sx - c_off_x, sy - c_off_y, &dummy_g, &dummy_b, &b_val);
@@ -2802,7 +2827,6 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
                 cr_b = b_val;
             }
 
-            double tint_r = 41.0, tint_g = 41.0, tint_b = 46.0;
             double base_r = cr_r * (1.0 - tint_strength) + tint_r * tint_strength;
             double base_g = cr_g * (1.0 - tint_strength) + tint_g * tint_strength;
             double base_b = cr_b * (1.0 - tint_strength) + tint_b * tint_strength;
@@ -2991,9 +3015,25 @@ static void on_liquid_count_changed(GtkRange *range, gpointer user_data) {
 static void on_liquid_mode_toggled(GtkCheckButton *btn, gpointer user_data) {
     (void)user_data;
     g_liquid_use_optimized = gtk_check_button_get_active(btn);
+    const char *home = g_get_home_dir();
+    char *opt_marker = g_build_filename(home, ".config", "macW1Y", "optimized-glass", NULL);
+    if (g_liquid_use_optimized) {
+        char *dir = g_build_filename(home, ".config", "macW1Y", NULL);
+        g_mkdir_with_parents(dir, 0755);
+        g_free(dir);
+        GError *err = NULL;
+        g_file_set_contents(opt_marker, "1\n", -1, &err);
+        if (err) g_error_free(err);
+    } else {
+        if (g_file_test(opt_marker, G_FILE_TEST_EXISTS)) {
+            g_unlink(opt_marker);
+        }
+    }
+    g_free(opt_marker);
     if (g_liquid_preview_w) {
         gtk_widget_queue_draw(g_liquid_preview_w);
     }
+    schedule_json_save();
 }
 
 static void on_liquid_right_click(GtkGestureClick *gesture, int n_press, double x, double y, gpointer user_data) {
@@ -3022,7 +3062,8 @@ static GtkWidget *create_liquid_benchmark_panel(void) {
     GtkWidget *btn_opt = gtk_check_button_new_with_label("LQ-OPTIMIZED");
     GtkWidget *btn_orig = gtk_check_button_new_with_label(mac_tr("bench_original_glass", "Оригінальне скло"));
     gtk_check_button_set_group(GTK_CHECK_BUTTON(btn_orig), GTK_CHECK_BUTTON(btn_opt));
-    gtk_check_button_set_active(GTK_CHECK_BUTTON(btn_opt), TRUE);
+    gtk_check_button_set_active(GTK_CHECK_BUTTON(btn_opt), g_liquid_use_optimized);
+    gtk_check_button_set_active(GTK_CHECK_BUTTON(btn_orig), !g_liquid_use_optimized);
     g_signal_connect(btn_opt, "toggled", G_CALLBACK(on_liquid_mode_toggled), NULL);
 
     gtk_box_append(GTK_BOX(header_box), btn_opt);

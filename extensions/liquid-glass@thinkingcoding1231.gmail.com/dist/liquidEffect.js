@@ -1087,7 +1087,16 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
         try {
             this._downsampleSource = await this._readFileAsync(`${this._extensionPath}/shaders/downsample.frag`);
             this._upsampleSource = await this._readFileAsync(`${this._extensionPath}/shaders/upsample.frag`);
-            this._glassSource = await this._readFileAsync(`${this._extensionPath}/shaders/glass.frag`);
+            let shaderFile = 'glass.frag';
+            const optShaderPath = `${this._extensionPath}/shaders/LQ-OPTIMIZED.frag`;
+            const optMarkerUser = `${GLib.get_home_dir()}/.config/macW1Y/optimized-glass`;
+            const optMarkerSys = '/etc/macW1Y/optimized-glass';
+            if (GLib.file_test(optShaderPath, GLib.FileTest.EXISTS)) {
+                if (GLib.file_test(optMarkerUser, GLib.FileTest.EXISTS) || GLib.file_test(optMarkerSys, GLib.FileTest.EXISTS)) {
+                    shaderFile = 'LQ-OPTIMIZED.frag';
+                }
+            }
+            this._glassSource = await this._readFileAsync(`${this._extensionPath}/shaders/${shaderFile}`);
             this._shadersLoaded = true;
             const elapsedMs = (GLib.get_monotonic_time() - diagStart) / 1000;
             this._logger?.log(`[Liquid Glass][diag] LiquidEffect: async shader load finished in ${elapsedMs.toFixed(1)}ms, ` +

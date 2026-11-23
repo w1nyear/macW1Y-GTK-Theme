@@ -4492,3 +4492,32 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+
+920. 2026-11-23 — Оптимізація та фізичне калібрування рефракції шейдера Liquid Glass (LQ-OPTIMIZED) під динамічні параметри повзунків:
+  - Змінені файли та рядки:
+    * control-center/libmac_settings.c (рядки 16-20, 252-258, 550-555, 608-614, 2512-2518, 2750-2820, 3010-3035, 3060-3075): виправлено формулу рефракції у функції швидкого рендерингу draw_repo_glass_element_optimized(), додано динамічне обчислення кута нахилу фаски через кубічний профіль купола (pow(u, 3.0) * 0.85), закон Снеліуса та обов'язкове плавне згасання рефракції на межі скла (edgeDampen), що повністю усунуло надмірне спотворення (ефект «рибʼячого ока») та злам зображення; додано збереження та завантаження режиму liquid_use_optimized у styling.json та синхронізацію маркера ~/.config/macW1Y/optimized-glass.
+    * gnome-control-center-overlay/libmac_settings.c: повністю синхронізовано з control-center/libmac_settings.c (100% ідентичність).
+    * extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED.frag (рядки 210-250, 265-275) та shaders/LQ-OPTIMIZED: усунено статичні/жорстко закодовані коефіцієнти рефракції; впроваджено повноцінне динамічне використання uniform-параметрів (displacement_scale, ior, edge_smoothing, profile_shape_n, chroma_strength, ao_radius) зі згладжуванням граней через edgeDampen та калібруванням сили рефракції до еквівалентної природної оптичної сили оригінального скла.
+    * extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js (рядки 1087-1098) та src/liquidEffect.ts (рядки 1370-1382): додано перевірку наявності оптимізованого шейдера та системного/користувацького маркера optimized-glass для автоматичного завантаження LQ-OPTIMIZED.frag у GNOME Shell.
+    * lib/libmac_settings.so, control-center/libmac_settings.so, gnome-control-center-overlay/libmac_settings.so: скомпільовано через dependencies/build-native.sh та розгорнуто по всіх системних шляхах (/usr/lib/x86_64-linux-gnu, /usr/lib64, /usr/lib, /usr/local/lib, ~/.local/lib, /usr/share/mactheme/...).
+    * config/extensions.lock.json та /usr/share/mactheme/config/extensions.lock.json: оновлено контрольний хеш sha256-tree-v2 для liquid-glass@thinkingcoding1231.gmail.com (3bd1c3f6...).
+  - Опис змін:
+    * Відкалібровано чутливість повзунка «Рефракція (заломлення)» у превʼю та шейдері: усунено 4-кратне надлишкове зміщення пікселів у LQ-OPTIMIZED (раніше досягало 24px без згасання, що деформувало шпалери у грубу лінзу). Тепер максимальне оптичне зміщення при стандартних 80% становить елегантні ~5.9px, що в точності відповідає витонченій естетиці оригінального шейдера скла.
+    * Забезпечено плавний перехід на межі елемента (d=0) без візуальних артефактів, смуг чи розривів текстури.
+    * Повзунки затемнення (тінту), хроматичної аберації, світла фаски (rim light) та тіней тепер коректно масштабуються та взаємодіють із динамічними uniform-змінними.
+  - Результати валідації чек-листа AI_INSTRUCTIONS.md:
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 bin/mac-audit-sync check: 100% PASS (0 розбіжностей).
+    * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh: 0 збігів.
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED.frag](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED.frag)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/src/liquidEffect.ts](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/src/liquidEffect.ts)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
