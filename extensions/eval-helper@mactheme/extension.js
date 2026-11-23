@@ -1346,8 +1346,30 @@ export default class EvalHelper extends Extension {
                 const SwitcherList = SwitcherPopupMod.SwitcherList;
                 if (!SwitcherPopup || !SwitcherList) return;
 
+                const _macGetAccentColorRgba = (alpha = 0.80) => {
+                    try {
+                        const ifaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+                        const acc = ifaceSettings.get_string('accent-color');
+                        const ACCENTS = {
+                            'blue': [0, 122, 255],
+                            'teal': [48, 176, 199],
+                            'green': [52, 199, 89],
+                            'yellow': [255, 204, 0],
+                            'orange': [255, 149, 0],
+                            'red': [255, 59, 48],
+                            'pink': [255, 45, 85],
+                            'purple': [175, 82, 222],
+                            'slate': [142, 142, 147]
+                        };
+                        const rgb = ACCENTS[acc] || [255, 149, 0];
+                        return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+                    } catch (_) {
+                        return `rgba(255, 149, 0, ${alpha})`;
+                    }
+                };
+
                 const _macGetAltTabConfig = () => {
-                    let iconSize = 64, padding = 10, spacing = 12, radius = 50, blur = 1, tint = 5, shadow = 25;
+                    let iconSize = 64, padding = 7, spacing = 12, radius = 33, blur = 20, tint = 15, shadow = 25;
                     try {
                         const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
                         if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
@@ -1385,18 +1407,22 @@ export default class EvalHelper extends Extension {
                     }
                     const iconActor = child?._iconBin || child?._icon || (child?.get_children ? child.get_children()[0] : null);
                     const label = child?.label || item.label_actor;
-                    const isSelected = (i === this._highlighted);
+                    const isSelected = (i === this._highlighted) || item.hover;
 
-                    const tileRad = Math.max(8, Math.round(baseIconSize * 0.24));
+                    const outlineRad = Math.max(10, Math.round(baseIconSize * 0.28));
+                    const accentColor = _macGetAccentColorRgba(0.80);
+                    const iconBoxSize = Math.max(20, baseIconSize - 6);
 
                     if (iconActor) {
-                        iconActor.set_size(baseIconSize, baseIconSize);
+                        iconActor.set_size(iconBoxSize, iconBoxSize);
+                        iconActor.x_align = Clutter.ActorAlign.CENTER;
+                        iconActor.y_align = Clutter.ActorAlign.CENTER;
                         if (isSelected) {
-                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 3px solid rgba(255, 255, 255, 0.55) !important; background-color: transparent !important; background: transparent !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important; transition-duration: 150ms !important;`;
+                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid ${accentColor} !important; background-color: transparent !important; background: transparent !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important; transition-duration: 150ms !important;`;
                             if (typeof iconActor.add_style_pseudo_class === 'function') iconActor.add_style_pseudo_class('selected');
                             if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('selected');
                         } else {
-                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 3px solid transparent !important; background-color: transparent !important; background: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
+                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid transparent !important; background-color: transparent !important; background: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                             if (typeof iconActor.remove_style_pseudo_class === 'function') iconActor.remove_style_pseudo_class('selected');
                             if (typeof iconActor.remove_style_class_name === 'function') iconActor.remove_style_class_name('selected');
                         }
@@ -1416,11 +1442,12 @@ export default class EvalHelper extends Extension {
                             this._setIconSize();
                         }
                         const tileH = cfg.iconSize;
-                        const labelH = 14;
-                        const labelGap = 4;
+                        const labelH = 13;
+                        const labelGap = 1;
                         const vPad = cfg.padding;
 
-                        const totalH = tileH + labelGap + labelH + vPad * 2;
+                        const contentH = tileH + labelGap + labelH;
+                        const totalH = contentH + vPad * 2;
                         return [totalH, totalH];
                     };
                 }
@@ -1436,15 +1463,18 @@ export default class EvalHelper extends Extension {
                         const H = box.y2 - box.y1;
 
                         const tileH = cfg.iconSize;
-                        const labelH = 14;
-                        const labelGap = 4;
+                        const labelH = 13;
+                        const labelGap = 1;
                         const vPad = cfg.padding;
+
+                        const contentH = tileH + labelGap + labelH;
+                        const topOffset = Math.max(vPad, Math.floor((H - contentH) / 2));
 
                         const scrollBox = new Clutter.ActorBox();
                         scrollBox.x1 = 0;
                         scrollBox.x2 = W;
-                        scrollBox.y1 = vPad;
-                        scrollBox.y2 = vPad + tileH;
+                        scrollBox.y1 = topOffset;
+                        scrollBox.y2 = topOffset + tileH;
                         this._scrollView.allocate(scrollBox);
 
                         if (this._leftArrow) this._leftArrow.opacity = 0;
@@ -1473,7 +1503,7 @@ export default class EvalHelper extends Extension {
                                 }
                                 lBox.x1 = Math.max(6, lx1);
                                 lBox.x2 = Math.min(W - 6, lx2);
-                                lBox.y1 = vPad + tileH + labelGap;
+                                lBox.y1 = topOffset + tileH + labelGap;
                                 lBox.y2 = Math.min(H - 2, lBox.y1 + Math.max(natH, labelH));
                                 this._activeAppLabel.allocate(lBox);
                             }
@@ -1537,7 +1567,8 @@ export default class EvalHelper extends Extension {
                         const bbox = origAddItem.call(this, item, label);
                         const cfg = _macGetAltTabConfig();
                         const tileW = this._itemTileSize || cfg.iconSize;
-                        const tileRad = Math.max(8, Math.round(tileW * 0.22));
+                        const boxSize = Math.max(20, tileW - 6);
+                        const outlineRad = Math.max(10, Math.round(tileW * 0.28));
 
                         bbox._square = false;
                         bbox.x_align = Clutter.ActorAlign.CENTER;
@@ -1558,8 +1589,8 @@ export default class EvalHelper extends Extension {
                             if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('alt-tab-icon-bin');
                             iconActor.x_align = Clutter.ActorAlign.CENTER;
                             iconActor.y_align = Clutter.ActorAlign.CENTER;
-                            if (typeof iconActor.set_size === 'function') iconActor.set_size(tileW, tileW);
-                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
+                            if (typeof iconActor.set_size === 'function') iconActor.set_size(boxSize, boxSize);
+                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                         }
                         if (this._leftArrow) this._leftArrow.opacity = 0;
                         if (this._rightArrow) this._rightArrow.opacity = 0;
@@ -1594,20 +1625,21 @@ export default class EvalHelper extends Extension {
                         origAppIconInit.call(this, app);
                         const cfg = _macGetAltTabConfig();
                         const tileW = cfg.iconSize;
-                        const tileRad = Math.max(8, Math.round(tileW * 0.22));
+                        const boxSize = Math.max(20, tileW - 6);
+                        const outlineRad = Math.max(10, Math.round(tileW * 0.28));
                         if (this._iconBin) {
                             this._iconBin.add_style_class_name('alt-tab-icon-bin');
                             this._iconBin.x_align = Clutter.ActorAlign.CENTER;
                             this._iconBin.y_align = Clutter.ActorAlign.CENTER;
-                            if (typeof this._iconBin.set_size === 'function') this._iconBin.set_size(tileW, tileW);
-                            this._iconBin.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
+                            if (typeof this._iconBin.set_size === 'function') this._iconBin.set_size(boxSize, boxSize);
+                            this._iconBin.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                         }
                         if (this.label) {
                             this.label.add_style_class_name('alt-tab-app-label');
                             this.label.opacity = 0;
                             if (typeof this.label.set_height === 'function') this.label.set_height(0);
                             this.label.x_align = Clutter.ActorAlign.CENTER;
-                            this.label.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", default, system-ui, sans-serif, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 2px !important;';
+                            this.label.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", default, system-ui, sans-serif, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 0px !important;';
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this.label.clutter_text.line_wrap = false;
@@ -1632,7 +1664,8 @@ export default class EvalHelper extends Extension {
                         origWindowIconInit.call(this, window, 2);
                         const cfg = _macGetAltTabConfig();
                         const baseIconSize = cfg.iconSize;
-                        const tileRad = Math.max(8, Math.round(baseIconSize * 0.22));
+                        const boxSize = Math.max(20, baseIconSize - 6);
+                        const outlineRad = Math.max(10, Math.round(baseIconSize * 0.28));
 
                         if (this._icon) {
                             this._icon.destroy_all_children();
@@ -1645,8 +1678,10 @@ export default class EvalHelper extends Extension {
                             appIcon.x_align = Clutter.ActorAlign.CENTER;
                             appIcon.y_align = Clutter.ActorAlign.CENTER;
                             this._icon.add_child(appIcon);
-                            this._icon.set_size(baseIconSize, baseIconSize);
-                            this._icon.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 2px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
+                            this._icon.x_align = Clutter.ActorAlign.CENTER;
+                            this._icon.y_align = Clutter.ActorAlign.CENTER;
+                            this._icon.set_size(boxSize, boxSize);
+                            this._icon.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                             if (typeof this._icon.add_style_class_name === 'function') this._icon.add_style_class_name('alt-tab-icon-bin');
                         }
 
@@ -1661,7 +1696,7 @@ export default class EvalHelper extends Extension {
                             this.label.x_align = Clutter.ActorAlign.CENTER;
                             this.label.opacity = 0;
                             if (typeof this.label.set_height === 'function') this.label.set_height(0);
-                            this.label.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", default, system-ui, sans-serif, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 2px !important;';
+                            this.label.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", default, system-ui, sans-serif, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 0px !important;';
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this.label.clutter_text.line_wrap = false;
@@ -1726,7 +1761,9 @@ export default class EvalHelper extends Extension {
                                 itemW = baseIconSize;
                             }
 
-                            const tileRad = Math.max(8, Math.round(baseIconSize * 0.24));
+                            const boxSize = Math.max(20, itemW - 6);
+                            const outlineRad = Math.max(10, Math.round(itemW * 0.28));
+                            const accentColor = _macGetAccentColorRgba(0.80);
                             this._iconSize = baseIconSize;
                             this._squareItems = false;
                             this._itemTileSize = itemW;
@@ -1758,12 +1795,12 @@ export default class EvalHelper extends Extension {
                                         if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('alt-tab-icon-bin');
                                         iconActor.x_align = Clutter.ActorAlign.CENTER;
                                         iconActor.y_align = Clutter.ActorAlign.CENTER;
-                                        iconActor.set_size(itemW, itemW);
+                                        iconActor.set_size(boxSize, boxSize);
                                         const isSelected = (i === this._highlighted);
                                         if (isSelected) {
-                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 3px solid rgba(255, 255, 255, 0.55) !important; background-color: transparent !important; background: transparent !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important; transition-duration: 150ms !important;`;
+                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid ${accentColor} !important; background-color: transparent !important; background: transparent !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important; transition-duration: 150ms !important;`;
                                         } else {
-                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 3px solid transparent !important; background-color: transparent !important; background: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
+                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid transparent !important; background-color: transparent !important; background: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                                         }
                                     }
                                     if (this.icons[i].label) {
@@ -1813,7 +1850,9 @@ export default class EvalHelper extends Extension {
                                 itemW = baseIconSize;
                             }
 
-                            const tileRad = Math.max(8, Math.round(baseIconSize * 0.24));
+                            const boxSize = Math.max(20, itemW - 6);
+                            const outlineRad = Math.max(10, Math.round(itemW * 0.28));
+                            const accentColor = _macGetAccentColorRgba(0.80);
                             this._iconSize = baseIconSize;
                             this._squareItems = false;
                             this._itemTileSize = itemW;
@@ -1843,12 +1882,12 @@ export default class EvalHelper extends Extension {
                                     iconObj.style = 'padding: 0px !important; margin: 0px !important; spacing: 0px !important;';
                                     const iconActor = iconObj._icon || iconObj._iconBin || (iconObj.get_children ? iconObj.get_children()[0] : null);
                                     if (iconActor) {
-                                        iconActor.set_size(itemW, itemW);
+                                        iconActor.set_size(boxSize, boxSize);
                                         const isSelected = (i === this._highlighted);
                                         if (isSelected) {
-                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 3px solid rgba(255, 255, 255, 0.55) !important; background-color: transparent !important; background: transparent !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important; transition-duration: 150ms !important;`;
+                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid ${accentColor} !important; background-color: transparent !important; background: transparent !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important; transition-duration: 150ms !important;`;
                                         } else {
-                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${tileRad}px !important; border: 3px solid transparent !important; background-color: transparent !important; background: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
+                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid transparent !important; background-color: transparent !important; background: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                                         }
                                     }
                                 }
@@ -2766,11 +2805,11 @@ export default class EvalHelper extends Extension {
                     if (ok) conf = JSON.parse(new TextDecoder().decode(bytes));
                 }
                 const iconSize = (typeof conf.alttab_icon_size === 'number') ? conf.alttab_icon_size : 64;
-                const padding = (typeof conf.alttab_padding === 'number') ? conf.alttab_padding : 10;
+                const padding = (typeof conf.alttab_padding === 'number') ? conf.alttab_padding : 7;
                 const spacing = (typeof conf.alttab_spacing === 'number') ? conf.alttab_spacing : 12;
-                const radius = (typeof conf.alttab_radius === 'number') ? conf.alttab_radius : 50;
-                const blur = (typeof conf.alttab_blur === 'number') ? conf.alttab_blur : 1;
-                const tint = (typeof conf.alttab_tint === 'number') ? conf.alttab_tint : 5;
+                const radius = (typeof conf.alttab_radius === 'number') ? conf.alttab_radius : 33;
+                const blur = (typeof conf.alttab_blur === 'number') ? conf.alttab_blur : 20;
+                const tint = (typeof conf.alttab_tint === 'number') ? conf.alttab_tint : 15;
                 const shadow = (typeof conf.alttab_shadow === 'number') ? conf.alttab_shadow : 25;
 
                 globalThis._macAltTabConfig = { iconSize, padding, spacing, radius, blur, tint, shadow };

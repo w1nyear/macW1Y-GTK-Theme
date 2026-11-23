@@ -3060,10 +3060,10 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .switcher-list {
   background-color: rgba(22, 22, 22, 0.05) !important;
   background: rgba(22, 22, 22, 0.05) !important;
-  border-radius: 50px !important;
+  border-radius: 33px !important;
   border: 1px solid rgba(255, 255, 255, 0.22) !important;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25) !important;
-  padding: 10px 14px 10px 14px !important;
+  padding: 7px 14px 7px 14px !important;
 }
 
 .switcher-list .item-box,
@@ -3089,8 +3089,8 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .alt-tab-icon-bin {
   padding: 0px !important;
   margin: 0px !important;
-  border-radius: 16px !important;
-  border: 3px solid transparent !important;
+  border-radius: 18px !important;
+  border: 2.5px solid transparent !important;
   background-color: transparent !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -3101,7 +3101,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .switcher-list .item-box:hover .alt-tab-icon-bin {
   background-color: transparent !important;
   background: transparent !important;
-  border: 3px solid transparent !important;
+  border: 2.5px solid transparent !important;
   box-shadow: none !important;
 }
 
@@ -3111,7 +3111,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .switcher-list .item-box.selected .alt-tab-icon-bin {
   background-color: transparent !important;
   background: transparent !important;
-  border: 3px solid rgba(255, 255, 255, 0.55) !important;
+  border: 2.5px solid rgba(255, 149, 0, 0.80) !important;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
 }
 
@@ -3127,7 +3127,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
   color: #ffffff !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
   text-align: center !important;
-  margin-top: 4px !important;
+  margin-top: 1px !important;
   padding: 0 1px !important;
   background-color: transparent !important;
   background: transparent !important;

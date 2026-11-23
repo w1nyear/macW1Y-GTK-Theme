@@ -75,6 +75,9 @@ typedef struct {
     int osd_tint;
     int osd_shadow;
 
+    int alttab_blur;
+    int alttab_tint;
+    int alttab_shadow;
 
     int dock_sigma;
     int dock_radius;
@@ -100,6 +103,8 @@ static void apply_notification_settings(void);
 static void schedule_notification_apply(void);
 static void apply_osd_settings(void);
 static void schedule_osd_apply(void);
+static void apply_alttab_settings(void);
+static void schedule_alttab_apply(void);
 static void apply_spotlight_settings(void);
 
 static void redraw_menubar_preview(void);
@@ -109,6 +114,7 @@ static void redraw_alerts_preview(void);
 static void redraw_notifications_preview(void);
 static void redraw_spotlight_preview(void);
 static void redraw_osd_preview(void);
+static void redraw_alttab_preview(void);
 static void redraw_blur_preview(void);
 static void redraw_context_menu_preview(void);
 static void redraw_widgets_preview(void);
@@ -162,6 +168,10 @@ static MacStylingData state = {
     .osd_blur = 25,
     .osd_tint = 15,
     .osd_shadow = 25,
+
+    .alttab_blur = 20,
+    .alttab_tint = 15,
+    .alttab_shadow = 25,
 
     .blur_sigma = 31,
     .blur_tint = 29,
@@ -467,6 +477,21 @@ static void load_config(void) {
             else
                 state.osd_shadow = 25;
 
+            if (json_object_has_member(obj, "alttab_blur"))
+                state.alttab_blur = (int)json_object_get_int_member(obj, "alttab_blur");
+            else
+                state.alttab_blur = 20;
+
+            if (json_object_has_member(obj, "alttab_tint"))
+                state.alttab_tint = (int)json_object_get_int_member(obj, "alttab_tint");
+            else
+                state.alttab_tint = 15;
+
+            if (json_object_has_member(obj, "alttab_shadow"))
+                state.alttab_shadow = (int)json_object_get_int_member(obj, "alttab_shadow");
+            else
+                state.alttab_shadow = 25;
+
 
             if (json_object_has_member(obj, "dock_sigma"))
                 state.dock_sigma = (int)json_object_get_int_member(obj, "dock_sigma");
@@ -551,6 +576,9 @@ static void save_styling_json(void) {
         "  \"osd_blur\": %d,\n"
         "  \"osd_tint\": %d,\n"
         "  \"osd_shadow\": %d,\n"
+        "  \"alttab_blur\": %d,\n"
+        "  \"alttab_tint\": %d,\n"
+        "  \"alttab_shadow\": %d,\n"
         "  \"blur_sigma\": %d,\n"
         "  \"blur_tint\": %d,\n"
         "  \"menu_tint\": %d,\n"
@@ -604,6 +632,9 @@ static void save_styling_json(void) {
         state.osd_blur,
         state.osd_tint,
         state.osd_shadow,
+        state.alttab_blur,
+        state.alttab_tint,
+        state.alttab_shadow,
         state.blur_sigma,
         state.blur_tint,
         state.menu_tint,
@@ -1025,6 +1056,46 @@ static void schedule_osd_apply(void) {
         osd_timer_id = 0;
     }
     osd_timer_id = g_timeout_add(50, (GSourceFunc)apply_osd_cb, NULL);
+}
+
+static guint alttab_timer_id = 0;
+
+static void apply_alttab_settings(void) {
+    save_styling_json();
+    GError *dbus_err = NULL;
+    GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, &dbus_err);
+    if (bus) {
+        g_dbus_connection_call(bus,
+            "org.gnome.Shell",
+            "/org/gnome/Shell/Extensions/EvalHelper",
+            "org.gnome.Shell.Extensions.EvalHelper",
+            "SyncAltTabStyling",
+            NULL, NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+        g_dbus_connection_call(bus,
+            "org.gnome.Shell",
+            "/org/gnome/Shell/Extensions/EvalHelper",
+            "org.gnome.Shell.Extensions.EvalHelper",
+            "Eval",
+            g_variant_new("(s)", "globalThis._macSyncAltTabStyling?.()"), NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+        g_object_unref(bus);
+    } else if (dbus_err) {
+        g_error_free(dbus_err);
+    }
+}
+
+static gboolean apply_alttab_cb(gpointer user_data) {
+    (void)user_data;
+    alttab_timer_id = 0;
+    apply_alttab_settings();
+    return G_SOURCE_REMOVE;
+}
+
+static void schedule_alttab_apply(void) {
+    if (alttab_timer_id != 0) {
+        g_source_remove(alttab_timer_id);
+        alttab_timer_id = 0;
+    }
+    alttab_timer_id = g_timeout_add(50, (GSourceFunc)apply_alttab_cb, NULL);
 }
 
 static void apply_dock_settings(void) {
@@ -2094,6 +2165,7 @@ static const TintRowInfo s_tint_rows[] = {
     { "notification_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
     { "spotlight_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
     { "osd_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
+    { "alttab_tint_row", "Затемнення (тінт)", "Засвітлення (тінт)", "Oscurecido (tinte)", "Aclarado (tinte)", "Darkening (tint)", "Lightening (tint)" },
     { "blur_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
     { "menu_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
     { "widget_tint_row", "Затемнення фону", "Засвітлення фону", "Oscurecido de fondo", "Aclarado de fondo", "Darkening background", "Lightening background" },
@@ -2119,6 +2191,7 @@ static const TintGroupInfo s_tint_groups[] = {
     { "notification_group", "Параметри розмиття, затемнення та тіні для сповіщень та Центру повідомлень", "Параметри розмиття, засвітлення та тіні для сповіщень та Центру повідомлень", "Ajustes de desenfoque, oscurecido y sombra de las notificaciones", "Ajustes de desenfoque, aclarado y sombra de las notificaciones", "Notification blur, darkening and shadow settings", "Notification blur, lightening and shadow settings" },
     { "spotlight_group", "Параметри розмиття, затемнення та тіні Spotlight і Spotlight меню", "Параметри розмиття, засвітлення та тіні Spotlight і Spotlight меню", "Ajustes de desenfoque, oscurecido y sombra de Spotlight", "Ajustes de desenfoque, aclarado y sombra de Spotlight", "Spotlight blur, darkening and shadow settings", "Spotlight blur, lightening and shadow settings" },
     { "osd_group", "Параметри розмиття, затемнення та тіні скла екранних індикаторів", "Параметри розмиття, засвітлення та тіні скла екранних індикаторів", "Ajustes de desenfoque, oscurecido y sombra de los indicadores en pantalla", "Ajustes de desenfoque, aclarado y sombra de los indicadores en pantalla", "Screen indicator (OSD) blur, darkening and shadow settings", "Screen indicator (OSD) blur, lightening and shadow settings" },
+    { "alttab_group", "Параметри розмиття, затемнення та тіні перемикача програм", "Параметри розмиття, засвітлення та тіні перемикача програм", "Ajustes de desenfoque, oscurecido y sombra del selector de aplicaciones", "Ajustes de desenfoque, aclarado y sombra del selector de aplicaciones", "App switcher (Alt+Tab) blur, darkening and shadow settings", "App switcher (Alt+Tab) blur, lightening and shadow settings" },
     { "blur_group", "Глобальні параметри фонового розмиття та затемнення", "Глобальні параметри фонового розмиття та засвітлення", "Ajustes globales de desenfoque y oscurecido de fondo", "Ajustes globales de desenfoque y aclarado de fondo", "Global background blur and darkening settings", "Global background blur and lightening settings" },
     { "menu_group", "Глобальні параметри затемнення та розмиття контекстних меню", "Глобальні параметри засвітлення та розмиття контекстних меню", "Ajustes globales de oscurecido y desenfoque de menús contextuales", "Ajustes globales de aclarado y desenfoque de menús contextuales", "Context menu darkening and blur settings", "Context menu lightening and blur settings" },
     { "widget_group", "Параметри заокруглення, тіні, розмиття та затемнення фону віджетів стільниці", "Параметри заокруглення, тіні, розмиття та засвітлення фону віджетів стільниці", "Ajustes de radio, sombra, desenfoque y oscurecido de los widgets del escritorio", "Ajustes de radio, sombra, desenfoque y aclarado de los widgets del escritorio", "Desktop widget radius, shadow, blur and darkening settings", "Desktop widget radius, shadow, blur and lightening settings" },
@@ -2134,6 +2207,7 @@ static void redraw_all_mac_styling_previews(void) {
     redraw_notifications_preview();
     redraw_spotlight_preview();
     redraw_osd_preview();
+    redraw_alttab_preview();
     redraw_blur_preview();
     redraw_context_menu_preview();
     redraw_widgets_preview();
@@ -4103,6 +4177,156 @@ void init_osd_preview(void *widget, gpointer data) {
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), osd_preview_draw_func, NULL, NULL);
 }
 
+static GtkWidget *g_alttab_preview_w = NULL;
+
+static void redraw_alttab_preview(void) {
+    if (g_alttab_preview_w && GTK_IS_WIDGET(g_alttab_preview_w)) {
+        gtk_widget_queue_draw(g_alttab_preview_w);
+    }
+}
+
+static void alttab_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer user_data) {
+    (void)area; (void)user_data;
+    if (width <= 0 || height <= 0) return;
+
+    cairo_save(cr);
+    draw_rounded_rect_path(cr, 0, 0, width, height, 14.0);
+    cairo_clip(cr);
+
+    cairo_surface_t *bg = get_cached_wallpaper_surface(width, height);
+    if (bg) {
+        cairo_set_source_surface(cr, bg, 0, 0);
+        cairo_paint(cr);
+    } else {
+        cairo_set_source_rgb(cr, 0.12, 0.15, 0.22);
+        cairo_paint(cr);
+    }
+
+    double card_w = 236.0;
+    double card_h = 76.0;
+    double card_r = 24.0;
+    double cx = (width - card_w) / 2.0;
+    double cy = (height - card_h) / 2.0;
+
+    int blur_r = CLAMP(state.alttab_blur, 0, 50);
+    cairo_surface_t *blurred_bg = get_cached_blurred_wallpaper_surface(width, height, blur_r);
+
+    double tint_val = (double)state.alttab_tint / 100.0;
+    double shadow_a = ((double)state.alttab_shadow / 100.0) * 0.90;
+    double card_tint_a = 0.20 + tint_val * 0.55;
+
+    draw_frosted_glass_card(cr, blurred_bg, cx, cy, card_w, card_h, card_r, card_tint_a, shadow_a, 0.18);
+
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.22);
+    cairo_set_line_width(cr, 1.0);
+    cairo_move_to(cr, cx + card_r, cy + 0.5);
+    cairo_line_to(cr, cx + card_w - card_r, cy + 0.5);
+    cairo_stroke(cr);
+
+    double icon_sz = 38.0;
+    double gap = 12.0;
+    double start_x = cx + (card_w - (4.0 * icon_sz + 3.0 * gap)) / 2.0;
+    double icon_y = cy + 10.0;
+    double icon_r = 9.0;
+
+    /* Icon 1: Messages (green) */
+    double ix0 = start_x;
+    draw_rounded_rect_path(cr, ix0, icon_y, icon_sz, icon_sz, icon_r);
+    cairo_set_source_rgb(cr, 0.20, 0.78, 0.35);
+    cairo_fill(cr);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
+    cairo_arc(cr, ix0 + icon_sz / 2.0, icon_y + icon_sz / 2.0 - 1.0, 9.5, 0, 2 * G_PI);
+    cairo_fill(cr);
+    cairo_move_to(cr, ix0 + 12.0, icon_y + 24.0);
+    cairo_line_to(cr, ix0 + 9.0, icon_y + 29.0);
+    cairo_line_to(cr, ix0 + 16.0, icon_y + 26.0);
+    cairo_close_path(cr);
+    cairo_fill(cr);
+
+    /* Icon 2: AyuGram / Telegram (blue paper airplane) */
+    double ix1 = ix0 + icon_sz + gap;
+    draw_rounded_rect_path(cr, ix1, icon_y, icon_sz, icon_sz, icon_r);
+    cairo_set_source_rgb(cr, 0.16, 0.67, 0.93);
+    cairo_fill(cr);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
+    cairo_move_to(cr, ix1 + 10.0, icon_y + 19.0);
+    cairo_line_to(cr, ix1 + 29.0, icon_y + 11.0);
+    cairo_line_to(cr, ix1 + 24.0, icon_y + 27.0);
+    cairo_line_to(cr, ix1 + 18.0, icon_y + 22.0);
+    cairo_close_path(cr);
+    cairo_fill(cr);
+
+    /* Icon 3: Finder / Files (selected) */
+    double ix2 = ix1 + icon_sz + gap;
+    draw_rounded_rect_path(cr, ix2, icon_y, icon_sz, icon_sz, icon_r);
+    cairo_set_source_rgb(cr, 0.14, 0.55, 0.94);
+    cairo_fill(cr);
+    cairo_save(cr);
+    draw_rounded_rect_path(cr, ix2, icon_y, icon_sz, icon_sz, icon_r);
+    cairo_clip(cr);
+    cairo_move_to(cr, ix2 + icon_sz, icon_y);
+    cairo_line_to(cr, ix2 + 18.0, icon_y);
+    cairo_curve_to(cr, ix2 + 16.0, icon_y + 14.0, ix2 + 20.0, icon_y + 22.0, ix2 + 19.0, icon_y + icon_sz);
+    cairo_line_to(cr, ix2 + icon_sz, icon_y + icon_sz);
+    cairo_close_path(cr);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.22);
+    cairo_fill(cr);
+    cairo_restore(cr);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
+    cairo_arc(cr, ix2 + 13.0, icon_y + 14.0, 1.6, 0, 2 * G_PI);
+    cairo_fill(cr);
+    cairo_arc(cr, ix2 + 25.0, icon_y + 14.0, 1.6, 0, 2 * G_PI);
+    cairo_fill(cr);
+    cairo_set_line_width(cr, 1.6);
+    cairo_arc(cr, ix2 + 19.0, icon_y + 19.0, 8.0, 0.2 * G_PI, 0.8 * G_PI);
+    cairo_stroke(cr);
+
+    /* Selection squircle: zero-gap around icon with accent color and 80% opacity */
+    double ar, ag, ab;
+    get_system_accent_color(&ar, &ag, &ab);
+    cairo_set_source_rgba(cr, ar, ag, ab, 0.80);
+    cairo_set_line_width(cr, 2.0);
+    draw_rounded_rect_path(cr, ix2, icon_y, icon_sz, icon_sz, icon_r + 1.0);
+    cairo_stroke(cr);
+
+    /* Selected app label close underneath */
+    const char *loc = mac_get_locale();
+    gboolean is_uk = (loc && (strcmp(loc, "uk") == 0 || strcmp(loc, "uk_UA") == 0));
+    const char *files_label = is_uk ? "Файли" : "Files";
+
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, 9.5);
+    cairo_text_extents_t te;
+    cairo_text_extents(cr, files_label, &te);
+    double lx = ix2 + (icon_sz - te.width) / 2.0 - te.x_bearing;
+    double ly = icon_y + icon_sz + 11.0;
+
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.85);
+    cairo_move_to(cr, lx, ly + 1.0);
+    cairo_show_text(cr, files_label);
+
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
+    cairo_move_to(cr, lx, ly);
+    cairo_show_text(cr, files_label);
+
+    /* Icon 4: Safari (compass) */
+    double ix3 = ix2 + icon_sz + gap;
+    draw_safari_compass_icon(cr, ix3 + icon_sz / 2.0, icon_y + icon_sz / 2.0, icon_sz / 2.0 - 1.0);
+
+    cairo_restore(cr);
+
+    draw_rounded_rect_path(cr, 0.5, 0.5, width - 1.0, height - 1.0, 14.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+}
+
+void init_alttab_preview(void *widget, gpointer data) {
+    (void)data;
+    g_alttab_preview_w = GTK_WIDGET(widget);
+    gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), alttab_preview_draw_func, NULL, NULL);
+}
+
 
 
 
@@ -4794,6 +5018,63 @@ void on_osd_shadow_changed(void *widget, gpointer data) {
     state.osd_shadow = (int)lround(gtk_range_get_value(widget));
     redraw_osd_preview();
     schedule_osd_apply();
+    schedule_json_save();
+}
+
+void init_alttab_blur(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.alttab_blur);
+    in_init = 0;
+}
+
+void on_alttab_blur_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.alttab_blur = (int)lround(gtk_range_get_value(widget));
+    redraw_alttab_preview();
+    schedule_alttab_apply();
+    schedule_json_save();
+}
+
+void init_alttab_tint(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.alttab_tint);
+    in_init = 0;
+}
+
+void on_alttab_tint_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.alttab_tint = (int)lround(gtk_range_get_value(widget));
+    redraw_alttab_preview();
+    schedule_alttab_apply();
+    schedule_json_save();
+}
+
+void init_alttab_shadow(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.alttab_shadow);
+    in_init = 0;
+}
+
+void on_alttab_shadow_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.alttab_shadow = (int)lround(gtk_range_get_value(widget));
+    redraw_alttab_preview();
+    schedule_alttab_apply();
     schedule_json_save();
 }
 

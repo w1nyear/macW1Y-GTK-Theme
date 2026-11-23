@@ -4217,3 +4217,36 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+
+911. Оновлення Alt+Tab меню та додавання розділу Alt+Tab у Центр керування (Мак стилізація):
+  - Оновлено геометрію та візуальний вигляд HUD Alt+Tab:
+    * Зменшено загальну висоту меню з 102px+ до 88px (вертикальні відступи зменшено до 7px, щільний відступ підпису 1px).
+    * Іконки та текстовий підпис активної програми точно відцентровано по новій висоті меню.
+    * Зменшено радіус заокруглення капсули в 1.5 разів: з 50px до 33px.
+    * Текстовий підпис назви програми піднесено впритул до іконки (margin-top: 1px, gap 1px).
+    * Радіус обводки виділення навколо іконок збільшено (outlineRad: 18px), колір адаптовано до системного кольору акценту (accent-color) з непрозорістю 80% (rgba(R, G, B, 0.80)), без суцільного білого.
+    * Відступи між обводкою та іконкою зменшено до 0 (розмір контейнера _iconBin точно охоплює сквиркл іконки без проміжків).
+  - Підключено повноцінний Liquid Glass до фону Alt+Tab HUD:
+    * Застосовано шейдер BackdropGlass з динамічним оновленням параметрів заломлення, розмиття, тінту та тіні.
+    * Реалізовано D-Bus синхронізацію SyncAltTabStyling та глобальну функцію globalThis._macSyncAltTabStyling() для миттєвого застосування змін без перезавантаження.
+  - У параметри системи (Мак стилізація) додано розділ «Alt+Tab меню»:
+    * Інтерактивний передогляд (Cairo drawing area) на базі шпалер із відтворенням зменшеної капсули меню, ефектом Liquid Glass та 4 іконками (Повідомлення, Telegram, Файли, Safari) із виділеною акцентною рамкою 80% непрозорості та підписом «Файли» під іконкою.
+    * Додано повзунки налаштування: «Розмиття» (0..50), «Затемнення (тінт)» (0..100) та «Тінь» (0..100).
+    * Збереження налаштувань у ~/.config/mac-styling/styling.json (alttab_blur, alttab_tint, alttab_shadow).
+    * Оновлено та скомпільовано libmac_settings.so, синхронізовано до всіх системних шляхів (/usr/lib/x86_64-linux-gnu/, /usr/local/lib/, /usr/share/mactheme/).
+    * Додано розмітку alttab_group до cc-mac-styling-panel.ui для всіх локалей (uk, en, es, de, fr, it, pl).
+  - Оновлено стилі .switcher-list, .alt-tab-icon-bin, .alt-tab-app-label у темах gnome-shell (gnome-shell-theme, macW1Y-Dark, macW1Y-Light, macW1Y-Dark-solid, macW1Y-Light-solid, MacTahoe-Dark).
+  - Оновлено хеш цілісності eval-helper@mactheme в config/extensions.lock.json (32b1e563...).
+  - Усі верифікації пройдено успішно:
+    * mac-extension-guard verify: 21/21 PASS.
+    * mac-audit-sync check: 100% PASS.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+    * install.sh: 0 кириличних символів.
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [gnome-shell-theme/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/gnome-shell-theme/gnome-shell.css)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [gnome-control-center-overlay/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/cc-mac-styling-panel.ui)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
