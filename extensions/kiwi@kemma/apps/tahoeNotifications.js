@@ -2082,12 +2082,8 @@ function _buildGroupStack(g, p) {
         } catch (_) {}
     }
     headH = Math.max(54, Math.ceil(headH) || 68);
-    const over = 9;
-    const tuck = 6;
-    const peersN = Math.min(2, g.cards.length - 1);
-    const radius = _notifStyling.radius || 18;
     const W = NC_W - 40;
-    const groupH = headH + peersN * over;
+    const groupH = headH;
 
     const container = new St.Widget({
         reactive: true,
@@ -2099,11 +2095,10 @@ function _buildGroupStack(g, p) {
         height: groupH,
         min_height: groupH,
         x_align: Clutter.ActorAlign.CENTER,
+        style: 'background-color: transparent !important; background: none !important; border: none !important; box-shadow: none !important;',
     });
     container._macPeekGroup = g;
     g.container = container;
-
-
 
     const held = new St.Widget({ visible: false, x_expand: false, y_expand: false });
     g.held = held;
@@ -2115,27 +2110,6 @@ function _buildGroupStack(g, p) {
         held.add_child(b);
     }
     container.add_child(held);
-
-
-
-    for (let i = peersN; i >= 1; i--) {
-        const slabW = Math.round(W - i * 16);
-        const slabH = headH;
-        const slab = new St.Widget({
-            reactive: false,
-            can_focus: false,
-            x_expand: false,
-            y_expand: false,
-            x: Math.round((W - slabW) / 2),
-            y: i * over,
-            width: slabW,
-            height: slabH,
-        });
-        slab._macIsSlab = true;
-        slab._slabIdx = i;
-        slab.set_style(_getSlabStyle(i, radius));
-        container.add_child(slab);
-    }
 
     if (newest.get_parent() === p.list)
         p.list.remove_child(newest);
@@ -2195,15 +2169,8 @@ function _buildGroupStack(g, p) {
             try {
                 if (container && !container.is_finalized?.() && container._macPeekGroup && !g.expanded) {
                     const curHeadH = newest.height;
-                    const newTotalH = curHeadH + peersN * over;
-                    container.set_height(newTotalH);
-                    container.min_height = newTotalH;
-                    for (const slab of container.get_children()) {
-                        if (slab._macIsSlab) {
-                            slab.height = curHeadH;
-                            slab.y = (slab._slabIdx || 1) * over;
-                        }
-                    }
+                    container.set_height(curHeadH);
+                    container.min_height = curHeadH;
                 }
             } catch (_) {}
         });
@@ -2285,16 +2252,33 @@ function _syncNcHeight(p) {
     if (!p || !p.box || !p.panelBg) return;
     try {
         const W = p.box.width || NC_W;
-        const workArea = Main.layoutManager.getWorkAreaForMonitor(Main.layoutManager.primaryIndex);
+        const monitor = Main.layoutManager.primaryMonitor;
         const topBarH = Math.round(Main.layoutManager.panelBox?.height ?? 34);
-        const maxH = Math.max(200, (workArea ? workArea.height : 800) - topBarH - 24);
+        const startY = p.box.y > 0 ? p.box.y : ((monitor ? monitor.y : 0) + topBarH + 10);
+        const screenBottom = monitor ? (monitor.y + monitor.height) : 800;
+        const maxH = Math.max(200, screenBottom - startY - 20);
 
-        let neededH = 54;
+        let listH = 0;
         if (p.list) {
-            const [, lh] = p.list.get_preferred_height(W);
-            neededH += Math.ceil(lh) + 16;
+            const [, lh] = p.list.get_preferred_height(W - 28);
+            let sumH = 0;
+            const kids = p.list.get_children();
+            for (let i = 0; i < kids.length; i++) {
+                const kid = kids[i];
+                if (!kid.visible) continue;
+                const [, kh] = kid.get_preferred_height(W - 28);
+                const actualH = Math.max(kh, kid.height || 0, 54);
+                sumH += actualH + (i > 0 ? 10 : 0);
+            }
+            listH = Math.max(lh || 0, sumH);
         }
-        const targetH = Math.min(maxH, Math.max(70, neededH));
+        const neededH = Math.max(70, listH + 70);
+        const targetH = Math.min(maxH, neededH);
+
+        if (p.scroll) {
+            p.scroll.style = `max-height: ${maxH - 60}px; -st-vfade-offset: 0px;`;
+        }
+
         p.box.min_height = 0;
         p.panelBg.min_height = 0;
         p.box.ease({
@@ -2302,12 +2286,26 @@ function _syncNcHeight(p) {
             duration: 250,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onUpdate: () => {
-                try { p.panelBg.set_size(p.box.width, p.box.height); } catch (_) {}
+                try {
+                    p.panelBg.set_size(p.box.width, p.box.height);
+                    for (const s of p.stacks) {
+                        if (s.kind === 'cards')
+                            _syncCards(p, monitor, s);
+                        else
+                            _syncGlass(p, monitor, s);
+                    }
+                } catch (_) {}
             },
             onComplete: () => {
                 try {
                     p.box.set_size(W, targetH);
                     p.panelBg.set_size(W, targetH);
+                    for (const s of p.stacks) {
+                        if (s.kind === 'cards')
+                            _syncCards(p, monitor, s);
+                        else
+                            _syncGlass(p, monitor, s);
+                    }
                 } catch (_) {}
             }
         });
@@ -2413,6 +2411,10 @@ function _expandGroup(g) {
         g.container = null;
         g.held = null;
         _syncNcHeight(p);
+        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            try { _syncNcHeight(p); } catch (_) {}
+            return GLib.SOURCE_REMOVE;
+        });
     } catch (e) {
         console.error('[tahoe-nc] expand: ' + e);
     }
@@ -2454,6 +2456,10 @@ function _collapseGroup(g) {
         const container = _buildGroupStack(g, p);
         p.list.insert_child_at_index(container, pos);
         _syncNcHeight(p);
+        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            try { _syncNcHeight(p); } catch (_) {}
+            return GLib.SOURCE_REMOVE;
+        });
     } catch (e) {
         console.error('[tahoe-nc] collapse: ' + e);
     }
@@ -2510,13 +2516,11 @@ function _syncCards(p, monitor, s) {
                         const cw = newest.width, ch = newest.height;
                         if (cw > 0 && ch > 0 && isFinite(cx) && isFinite(cy)) {
                             const m = SHADER_PADDING;
-                            const peersN = Math.min(2, Math.max(0, (g.cards?.length ?? 1) - 1));
-                            const totalH = ch + peersN * 9;
                             regions.push({
                                 x: (cx - monitor.x) - m,
                                 y: (cy - monitor.y) - m,
                                 w: cw + m * 2,
-                                h: totalH + m * 2,
+                                h: ch + m * 2,
                                 tintR: 0, tintG: 0, tintB: 0, baseStrength: _notifStyling.tint / 100.0,
                             });
                         }
@@ -2839,13 +2843,13 @@ function _buildPanel(merges = null) {
     const scroll = new St.ScrollView({
         style_class: 'tahoe-nc-scroll',
         x_expand: true,
-        y_expand: false,
+        y_expand: true,
     });
-    scroll.style = `max-height: ${maxH}px; -st-vfade-offset: 36px;`;
+    scroll.style = `max-height: ${maxH - 54}px; -st-vfade-offset: 0px;`;
     try {
-        scroll.vscrollbar_policy = St.PolicyType.AUTOMATIC;
+        scroll.vscrollbar_policy = St.PolicyType.NEVER;
         scroll.hscrollbar_policy = St.PolicyType.NEVER;
-        scroll.overlay_scrollbars = true;
+        scroll.overlay_scrollbars = false;
     } catch (_) {}
 
     const list = new St.BoxLayout({
@@ -2862,7 +2866,7 @@ function _buildPanel(merges = null) {
         Main.layoutManager.uiGroup.set_child_below_sibling(overlay, Main.layoutManager.panelBox);
     } catch (_) {}
 
-    const gbfEffect = applyGradientBlurFade(scroll, 36, 36);
+    const gbfEffect = null;
 
     const p = {
         overlay,

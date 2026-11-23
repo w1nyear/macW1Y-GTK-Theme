@@ -1298,7 +1298,16 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     color: #1d1d1f;
 }
 .tahoe-qs-dark .tahoe-nc-title-big { color: #ffffff; }
-.tahoe-nc-scroll { -st-vfade-offset: 36px; }
+.tahoe-nc-scroll {
+    -st-vfade-offset: 0px;
+}
+.tahoe-nc-scroll StScrollBar {
+    width: 0px !important;
+    height: 0px !important;
+    min-width: 0px !important;
+    min-height: 0px !important;
+    opacity: 0 !important;
+}
 .kiwi-notification-scroll { -st-vfade-offset: 36px; }
 .tahoe-nc-list { spacing: 10px; }
 .tahoe-nc-empty {

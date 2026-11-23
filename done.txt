@@ -4150,3 +4150,31 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+908. Очищення фону стосу повідомлень, видалення додаткових плашок і скролбару, виправлення розгортання та видалення темного розмиття внизу Центру повідомлень:
+  - Усунено додаткові напівпрозорі/темні плашки (_macIsSlab) та обводки під верхньою карткою у згорнутому стосі:
+    * Видалено створення псевдокарток (slabs) зі стилем rgba(36, 38, 44, 0.96), які просвічувалися під першим повідомленням, перекриваючи рідне розмите скло Tahoe Notification Center.
+    * Контейнер згорнутого стосу оптимізовано під чистий прозорий фон без рамок і зовнішніх тіней (transparent, border: none, box-shadow: none), а висота контейнера точно відповідає розміру головної картки без зайвого зсуву.
+    * При наявності кількох повідомлень кількість чітко відображається круглим бейджем на значку програми (як на macOS), без нашарування зайвих темних фонів під карткою.
+    * У функції _syncCards область шейдерного скла (Liquid Glass) для згорнутого стосу тепер розраховується строго під габарити активної картки (h: ch + m * 2) замість зайвого запасу по висоті.
+  - Повністю видалено вертикальний скролбар у списку повідомлень Центру повідомлень:
+    * Встановлено scroll.vscrollbar_policy = NEVER, scroll.hscrollbar_policy = NEVER, scroll.overlay_scrollbars = false.
+    * У stylesheet.css для .tahoe-nc-scroll StScrollBar встановлено width: 0px, height: 0px, opacity: 0 з пріоритетом !important.
+  - Виправлено висоту та розгортання Центру повідомлень при розкритті стосу:
+    * Для scroll встановлено y_expand = true, що дозволяє списку адаптивно займати весь вільний простір контейнера.
+    * У _syncNcHeight розрахунок висоти вдосконалено з урахуванням висот усіх вкладених карток та відступів, а максимальну висоту (maxH) прив'язано до нижньої межі основного монітора (screenBottom - startY - 20) замість штучного обмеження workArea, дозволяючи панелі розгортатися на всю висоту екрана за потреби.
+    * Додано синхронізацію висоти через GLib.idle_add при розкритті (_expandGroup) та згортанні (_collapseGroup) стосів, а також плавне оновлення позицій шейдерів карток у процесі ease-анімації.
+  - Видалено чорне затемнення/розмиття внизу панелі повідомлень:
+    * Вимкнено дію applyGradientBlurFade(scroll, 36, 36) та встановлено -st-vfade-offset: 0px у стилях і в CSS для .tahoe-nc-scroll, завдяки чому картки внизу залишаються чіткими, читабельними та з кришталевим склом без чорного градієнтного ореолу.
+  - Оновлено хеш цілісності розширення kiwi@kemma в config/extensions.lock.json (c21d9dbf...).
+  - Усі перевірки пройдено успішно:
+    * mac-extension-guard verify: 21/21 PASS.
+    * mac-audit-sync check: 100% PASS.
+    * test-macw1y-animations.py: 12/12 PASS.
+    * unit tests: 39/39 PASS.
+    * install.sh: 0 кириличних символів.
+  * [extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotifications.js)
+  * [extensions/kiwi@kemma/stylesheet.css](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/stylesheet.css)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
