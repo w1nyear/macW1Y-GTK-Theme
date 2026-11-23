@@ -4110,3 +4110,24 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [bin/test-macw1y-animations.py](file:///home/vitaliy/MACTHEMEFILES/bin/test-macw1y-animations.py)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+906. Покращення інтерфейсу та взаємодії Launchpad (Spotlight Apps): збільшення іконки, оптимізація відступів сітки, плавне інерційне гортання, hover-обводка з fade-анімацією (80% непрозорості) та інтерактивне автозаповнення стрілками:
+  - Збільшено головну іконку Launchpad у верхньому лівому куті заголовка з 22px до 26px (icon_size = 26) для режимів 'apps' та 'search' відповідно до оригінального macOS UI.
+  - Оптимізовано вертикальні відступи між рядами іконок у сітці програм: висоту елементів скориговано з 78px до 75px, нижній відступ контейнера скорочено з 11px до 7px, відступи роздільників встановлено в 4px 6px 8px 6px, що забезпечило щільніше та гармонійніше розташування рядків без стиснення підписів.
+  - Покращено hover/фокус обводку іконок програм: товщину рамки акцентного кольору збільшено з 2px до 2.5px, встановлено цільову непрозорість ~80% (opacity: 204), додано плавні анімації появи (fade-in 140ms ease-out) та зникнення (fade-out 120ms ease-out) через Clutter.Actor.ease.
+  - Додано плавне гортання списків за інерцією (kinetic / inertial scrolling) за допомогою фізичного контролера makeSmoothInertialScrollView для горизонтальної смуги категорій фільтрації (_appsCategoryScrollView) та вертикальної сітки додатків (_appsScrollView): плавний розрахунок дельти скролу, коефіцієнт тертя 0.88, плавне гальмування та обробка меж прокрутки.
+  - Реалізовано динамічне автозаповнення та навігацію клавішами зі стрілками (Left, Right, Up, Down):
+    * При першому відкритті Launchpad поле містить чисту підказку ("Приложения" / "Програми") без виділення іконок (відповідно до Фото 1 референсу).
+    * При натисканні клавіш навігації зі стрілками або наведенні миші активується вибір відповідної програми, в полі пошуку з'являється ім'я програми з підписом " — Відкрити" (ghost text), праворуч від поля відображається мініатюрна іконка програми (Фото 2 референсу), а фокусна іконка плавно підсвічується акцентною обводкою.
+    * Натискання Enter запускає вибрану програму, а Tab / стрілка вправо підставляє повну назву програми в поле введення.
+  - Оновлено закріплені контрольні хеші sha256 у config/extensions.lock.json для appmenu@ChathurangaBW.github.io.
+  - Повна верифікація тестового набору:
+    * mac-extension-guard verify: 21/21 PASS (100% відповідність усіх розширень).
+    * mac-audit-sync check: 100% PASS (система та репозиторій повністю синхронізовані).
+    * test-macw1y-animations.py: 12/12 PASS (100% проходження всіх анімаційних та системних сценаріїв).
+    * unit tests: 39/39 PASS.
+    * install.sh: 0 кириличних символів.
+  * [extensions/appmenu@ChathurangaBW.github.io/searchDialog.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/searchDialog.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
