@@ -452,21 +452,10 @@ fi
         pass
 
 def apply_keyboard_layout(xkb_code):
-    if not xkb_code:
-        return
-    try:
-        r = subprocess.run(["gsettings", "get", "org.gnome.desktop.input-sources", "sources"], capture_output=True, text=True)
-        if r.returncode == 0:
-            out = r.stdout.strip()
-            # If xkb is already in list, do not duplicate
-            if f"'xkb', '{xkb_code}'" not in out:
-                if xkb_code == "us":
-                    new_val = "[('xkb', 'us')]"
-                else:
-                    new_val = f"[('xkb', 'us'), ('xkb', '{xkb_code}')]"
-                subprocess.run(["gsettings", "set", "org.gnome.desktop.input-sources", "sources", new_val], check=False)
-    except Exception as e:
-        print(f"[mac-apply-locale] Warning: could not set input sources: {e}", file=sys.stderr)
+    # Keyboard layout preservation: as requested by the user, changing
+    # the system/display language must NEVER modify or reset the user's
+    # configured keyboard layouts in org.gnome.desktop.input-sources.
+    return
 
 def notify_gnome_shell(lang_code, posix, lang_env):
     js = f"""(() => {{

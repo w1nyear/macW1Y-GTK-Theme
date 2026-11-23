@@ -2656,15 +2656,439 @@ static void draw_repo_glass_element(cairo_t *cr, cairo_surface_t *bg, int width,
     cairo_restore(cr);
 }
 
+#define MAX_BENCHMARK_ELEMENTS 50
+
+typedef struct {
+    double x, y;
+    double vx, vy;
+    double w, h, r;
+    int shape;
+} GlassBenchmarkElement;
+
+static GlassBenchmarkElement g_bench_elements[MAX_BENCHMARK_ELEMENTS];
+static gboolean g_bench_elements_inited = FALSE;
+
+static gboolean g_liquid_use_optimized = TRUE;
+static int g_liquid_target_fps = 60;
+static int g_liquid_element_count = 1;
+static double g_liquid_measured_fps = 60.0;
+static gint64 g_liquid_last_frame_time = 0;
+static gint64 g_liquid_last_fps_time = 0;
+static int g_liquid_frame_counter = 0;
+static guint g_liquid_tick_id = 0;
+
+static GtkWidget *g_liquid_benchmark_revealer = NULL;
+static GtkWidget *g_liquid_fps_scale = NULL;
+static GtkWidget *g_liquid_fps_label = NULL;
+static GtkWidget *g_liquid_count_scale = NULL;
+static GtkWidget *g_liquid_count_label = NULL;
+
+static inline double fast_sd_shape(double px, double py, double bx, double by, double r, int shape, double *out_nx, double *out_ny) {
+    if (shape == 2) {
+        r = fmin(bx, by);
+    } else if (shape == 1) {
+        double len = sqrt(px * px + py * py) + 1e-6;
+        *out_nx = px / len;
+        *out_ny = py / len;
+        return len - fmin(bx, by);
+    }
+
+    double qx = fabs(px) - bx + r;
+    double qy = fabs(py) - by + r;
+    double max_qx = fmax(qx, 0.0);
+    double max_qy = fmax(qy, 0.0);
+    double out_len = sqrt(max_qx * max_qx + max_qy * max_qy);
+    double in_dist = fmin(fmax(qx, qy), 0.0);
+    double d = out_len + in_dist - r;
+
+    if (out_len > 1e-5) {
+        double sign_x = (px >= 0.0) ? 1.0 : -1.0;
+        double sign_y = (py >= 0.0) ? 1.0 : -1.0;
+        *out_nx = sign_x * (max_qx / out_len);
+        *out_ny = sign_y * (max_qy / out_len);
+    } else {
+        *out_nx = (qx > qy) ? ((px >= 0.0) ? 1.0 : -1.0) : 0.0;
+        *out_ny = (qx > qy) ? 0.0 : ((py >= 0.0) ? 1.0 : -1.0);
+    }
+    return d;
+}
+
+static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, int width, int height,
+                                              double gx, double gy, double gw, double gh, double gr, int shape) {
+    if (!bg) return;
+
+    double shadow_val = (double)state.liquid_shadow / 100.0;
+    if (shadow_val > 0.02) {
+        for (int i = 2; i >= 1; i--) {
+            double expand = i * 4.0;
+            double alpha = (shadow_val * 0.22) / i;
+            draw_shape_path(cr, gx - expand * 0.5, gy + 3.0, gw + expand, gh + expand, gr + expand * 0.5, shape);
+            cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, alpha);
+            cairo_fill(cr);
+        }
+    }
+
+    cairo_save(cr);
+    draw_shape_path(cr, gx, gy, gw, gh, gr, shape);
+    cairo_clip(cr);
+
+    int igx = (int)round(gx);
+    int igy = (int)round(gy);
+    int igw = (int)round(gw);
+    int igh = (int)round(gh);
+
+    cairo_surface_flush(bg);
+    unsigned char *src_pixels = cairo_image_surface_get_data(bg);
+    int src_stride = cairo_image_surface_get_stride(bg);
+
+    cairo_surface_t *glass_surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, igw, igh);
+    cairo_surface_flush(glass_surf);
+    unsigned char *dst_pixels = cairo_image_surface_get_data(glass_surf);
+    int dst_stride = cairo_image_surface_get_stride(glass_surf);
+
+    double bx = gw * 0.5;
+    double by = gh * 0.5;
+    double max_z = 25.0;
+    double bevel_width = CLAMP(max_z * 0.75 + gr * 0.2, 4.0, 28.0);
+    double inv_bevel = 1.0 / bevel_width;
+
+    double disp_scale = ((double)state.liquid_refraction / 60.0) * 18.0;
+    double chroma_str = ((double)state.liquid_chroma / 30.0) * 2.0;
+    double tint_strength = ((double)state.liquid_tint / 100.0);
+    double rim_intensity = ((double)state.liquid_rim / 50.0) * 0.60;
+    double edgeFeather = 1.2;
+
+    double ly_dir = 1.0;
+    double lz_dir = 0.38;
+    double l_len = sqrt(ly_dir * ly_dir + lz_dir * lz_dir);
+    ly_dir /= l_len; lz_dir /= l_len;
+
+    for (int ly = 0; ly < igh; ly++) {
+        uint32_t *dst_row = (uint32_t *)(dst_pixels + ly * dst_stride);
+        double py = ly - by + 0.5;
+        for (int lx = 0; lx < igw; lx++) {
+            double px = lx - bx + 0.5;
+            double n2d_x, n2d_y;
+            double d = fast_sd_shape(px, py, bx, by, gr, shape, &n2d_x, &n2d_y);
+            if (d > 0.8) {
+                dst_row[lx] = 0;
+                continue;
+            }
+
+            double insideMask = 1.0 - glsl_smoothstep(-edgeFeather, edgeFeather, d);
+            double depth = CLAMP(-d * inv_bevel, 0.0, 1.0);
+
+            double angle = (1.0 - depth) * (M_PI * 0.5);
+            double sinA = sin(angle);
+            double cosA = cos(angle);
+
+            double disp_factor = disp_scale * sinA;
+            double disp_x = -n2d_x * disp_factor;
+            double disp_y = -n2d_y * disp_factor;
+
+            double sx = gx + lx + disp_x;
+            double sy = gy + ly + disp_y;
+
+            double cr_r, cr_g, cr_b;
+            sample_bilinear(src_pixels, src_stride, width, height, sx, sy, &cr_r, &cr_g, &cr_b);
+
+            if (chroma_str > 0.01 && disp_factor > 0.5) {
+                double c_off_x = -n2d_x * chroma_str;
+                double c_off_y = -n2d_y * chroma_str;
+                double r_val, dummy_g, dummy_b, b_val;
+                sample_bilinear(src_pixels, src_stride, width, height, sx + c_off_x, sy + c_off_y, &r_val, &dummy_g, &dummy_b);
+                sample_bilinear(src_pixels, src_stride, width, height, sx - c_off_x, sy - c_off_y, &dummy_g, &dummy_b, &b_val);
+                cr_r = r_val;
+                cr_b = b_val;
+            }
+
+            double tint_r = 41.0, tint_g = 41.0, tint_b = 46.0;
+            double base_r = cr_r * (1.0 - tint_strength) + tint_r * tint_strength;
+            double base_g = cr_g * (1.0 - tint_strength) + tint_g * tint_strength;
+            double base_b = cr_b * (1.0 - tint_strength) + tint_b * tint_strength;
+
+            double ao = 1.0 - (1.0 - depth) * 0.15;
+            base_r *= ao;
+            base_g *= ao;
+            base_b *= ao;
+
+            double rimDot = 1.0 - cosA;
+            double rimFresnel = rimDot * rimDot;
+            double nDotL = fmax(-n2d_y * sinA * ly_dir + cosA * lz_dir, 0.0);
+            double lightMask = nDotL * nDotL;
+            double edgeBand = 1.0 - depth;
+            double finalRimLight = rimFresnel * lightMask * (rim_intensity * 1.5) * edgeBand * 255.0;
+
+            double sheenLight = (nDotL * nDotL) * 0.12 * 255.0;
+
+            double added = finalRimLight + sheenLight;
+            double lit_r = base_r + added - (base_r * added / 255.0);
+            double lit_g = base_g + added - (base_g * added / 255.0);
+            double lit_b = base_b + added - (base_b * added / 255.0);
+
+            uint8_t out_a = (uint8_t)CLAMP(insideMask * 255.0, 0, 255);
+            uint8_t out_r = (uint8_t)CLAMP(lit_r, 0, 255);
+            uint8_t out_g = (uint8_t)CLAMP(lit_g, 0, 255);
+            uint8_t out_b = (uint8_t)CLAMP(lit_b, 0, 255);
+
+            dst_row[lx] = (out_a << 24) | (out_r << 16) | (out_g << 8) | out_b;
+        }
+    }
+
+    cairo_surface_mark_dirty(glass_surf);
+    cairo_set_source_surface(cr, glass_surf, igx, igy);
+    cairo_paint(cr);
+    cairo_surface_destroy(glass_surf);
+
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.65);
+    for (int d = -1; d <= 1; d++) {
+        cairo_arc(cr, gx + gw / 2.0 + d * 9.0, gy + gh / 2.0, 2.2, 0, 2 * G_PI);
+        cairo_fill(cr);
+    }
+
+    cairo_restore(cr);
+}
+
+static void init_benchmark_elements(int width, int height) {
+    if (width <= 0) width = 600;
+    if (height <= 0) height = 210;
+
+    for (int i = 0; i < MAX_BENCHMARK_ELEMENTS; i++) {
+        int sh = i % 3;
+        double w = 110.0, h = 70.0, r = 20.0;
+        if (sh == 1) {
+            w = 70.0; h = 70.0; r = 35.0;
+        } else if (sh == 2) {
+            w = 120.0; h = 60.0; r = 30.0;
+        } else {
+            w = 100.0; h = 65.0; r = 18.0;
+        }
+        g_bench_elements[i].w = w;
+        g_bench_elements[i].h = h;
+        g_bench_elements[i].r = r;
+        g_bench_elements[i].shape = sh;
+
+        double max_x = fmax(width - w - 10.0, 10.0);
+        double max_y = fmax(height - h - 10.0, 10.0);
+        g_bench_elements[i].x = 10.0 + ((i * 53) % (int)max_x);
+        g_bench_elements[i].y = 10.0 + ((i * 37) % (int)max_y);
+
+        double speed_x = 45.0 + (i * 13 % 45);
+        double speed_y = 35.0 + (i * 19 % 45);
+        if (i % 2 == 1) speed_x = -speed_x;
+        if ((i / 2) % 2 == 1) speed_y = -speed_y;
+        g_bench_elements[i].vx = speed_x;
+        g_bench_elements[i].vy = speed_y;
+    }
+    g_bench_elements_inited = TRUE;
+}
+
+static gboolean on_liquid_preview_tick(GtkWidget *widget, GdkFrameClock *frame_clock, gpointer user_data) {
+    (void)frame_clock; (void)user_data;
+    if (!g_liquid_preview_w || !GTK_IS_WIDGET(g_liquid_preview_w)) return G_SOURCE_CONTINUE;
+
+    gint64 now = g_get_monotonic_time();
+    if (g_liquid_last_fps_time == 0) {
+        g_liquid_last_fps_time = now;
+        g_liquid_last_frame_time = now;
+    }
+
+    if (g_liquid_target_fps <= 0) {
+        g_liquid_measured_fps = 0.0;
+        return G_SOURCE_CONTINUE;
+    }
+
+    gint64 target_interval = 1000000 / g_liquid_target_fps;
+    if (now - g_liquid_last_frame_time < target_interval) {
+        return G_SOURCE_CONTINUE;
+    }
+
+    double dt = (double)(now - g_liquid_last_frame_time) / 1000000.0;
+    if (dt > 0.1) dt = 0.1;
+    g_liquid_last_frame_time = now;
+    g_liquid_frame_counter++;
+
+    gint64 elapsed_fps = now - g_liquid_last_fps_time;
+    if (elapsed_fps >= 500000) {
+        g_liquid_measured_fps = (double)g_liquid_frame_counter * 1000000.0 / (double)elapsed_fps;
+        g_liquid_frame_counter = 0;
+        g_liquid_last_fps_time = now;
+    }
+
+    int w = gtk_widget_get_width(widget);
+    int h = gtk_widget_get_height(widget);
+    if (!g_bench_elements_inited && w > 30 && h > 30) {
+        init_benchmark_elements(w, h);
+    }
+
+    if (g_bench_elements_inited && g_liquid_element_count > 1) {
+        for (int i = 1; i < g_liquid_element_count; i++) {
+            g_bench_elements[i].x += g_bench_elements[i].vx * dt;
+            g_bench_elements[i].y += g_bench_elements[i].vy * dt;
+
+            double min_x = 6.0;
+            double max_x = w - g_bench_elements[i].w - 6.0;
+            double min_y = 6.0;
+            double max_y = h - g_bench_elements[i].h - 6.0;
+
+            if (max_x > min_x) {
+                if (g_bench_elements[i].x < min_x) {
+                    g_bench_elements[i].x = min_x;
+                    g_bench_elements[i].vx = fabs(g_bench_elements[i].vx);
+                } else if (g_bench_elements[i].x > max_x) {
+                    g_bench_elements[i].x = max_x;
+                    g_bench_elements[i].vx = -fabs(g_bench_elements[i].vx);
+                }
+            }
+            if (max_y > min_y) {
+                if (g_bench_elements[i].y < min_y) {
+                    g_bench_elements[i].y = min_y;
+                    g_bench_elements[i].vy = fabs(g_bench_elements[i].vy);
+                } else if (g_bench_elements[i].y > max_y) {
+                    g_bench_elements[i].y = max_y;
+                    g_bench_elements[i].vy = -fabs(g_bench_elements[i].vy);
+                }
+            }
+        }
+    }
+
+    gtk_widget_queue_draw(widget);
+    return G_SOURCE_CONTINUE;
+}
+
+static void on_liquid_fps_changed(GtkRange *range, gpointer user_data) {
+    (void)user_data;
+    g_liquid_target_fps = (int)round(gtk_range_get_value(range));
+    if (g_liquid_fps_label) {
+        char buf[128];
+        if (g_liquid_target_fps <= 0) {
+            g_snprintf(buf, sizeof(buf), "Швидкість оновлення: 0 FPS (Пауза)");
+        } else {
+            g_snprintf(buf, sizeof(buf), "Швидкість оновлення: %d FPS", g_liquid_target_fps);
+        }
+        gtk_label_set_text(GTK_LABEL(g_liquid_fps_label), buf);
+    }
+    if (g_liquid_preview_w) {
+        gtk_widget_queue_draw(g_liquid_preview_w);
+    }
+}
+
+static void on_liquid_count_changed(GtkRange *range, gpointer user_data) {
+    (void)user_data;
+    g_liquid_element_count = (int)round(gtk_range_get_value(range));
+    if (g_liquid_element_count < 1) g_liquid_element_count = 1;
+    if (g_liquid_element_count > MAX_BENCHMARK_ELEMENTS) g_liquid_element_count = MAX_BENCHMARK_ELEMENTS;
+    if (g_liquid_count_label) {
+        char buf[128];
+        g_snprintf(buf, sizeof(buf), "Кількість скляних елементів: %d", g_liquid_element_count);
+        gtk_label_set_text(GTK_LABEL(g_liquid_count_label), buf);
+    }
+    if (g_liquid_preview_w) {
+        gtk_widget_queue_draw(g_liquid_preview_w);
+    }
+}
+
+static void on_liquid_mode_toggled(GtkCheckButton *btn, gpointer user_data) {
+    (void)user_data;
+    g_liquid_use_optimized = gtk_check_button_get_active(btn);
+    if (g_liquid_preview_w) {
+        gtk_widget_queue_draw(g_liquid_preview_w);
+    }
+}
+
+static void on_liquid_right_click(GtkGestureClick *gesture, int n_press, double x, double y, gpointer user_data) {
+    (void)gesture; (void)n_press; (void)x; (void)y; (void)user_data;
+    if (g_liquid_benchmark_revealer) {
+        gboolean current = gtk_revealer_get_reveal_child(GTK_REVEALER(g_liquid_benchmark_revealer));
+        gtk_revealer_set_reveal_child(GTK_REVEALER(g_liquid_benchmark_revealer), !current);
+    }
+}
+
+static GtkWidget *create_liquid_benchmark_panel(void) {
+    GtkWidget *card = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+    gtk_widget_add_css_class(card, "card");
+    gtk_widget_set_margin_top(card, 8);
+    gtk_widget_set_margin_bottom(card, 4);
+
+    GtkWidget *header_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
+    GtkWidget *title_lbl = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(title_lbl), "<b>Бенчмарк шейдера Liquid Glass</b>");
+    gtk_widget_set_hexpand(title_lbl, TRUE);
+    gtk_label_set_xalign(GTK_LABEL(title_lbl), 0.0);
+    gtk_box_append(GTK_BOX(header_box), title_lbl);
+
+    GtkWidget *btn_opt = gtk_check_button_new_with_label("LQ-OPTIMIZED");
+    GtkWidget *btn_orig = gtk_check_button_new_with_label("Оригінальне скло");
+    gtk_check_button_set_group(GTK_CHECK_BUTTON(btn_orig), GTK_CHECK_BUTTON(btn_opt));
+    gtk_check_button_set_active(GTK_CHECK_BUTTON(btn_opt), TRUE);
+    g_signal_connect(btn_opt, "toggled", G_CALLBACK(on_liquid_mode_toggled), NULL);
+
+    gtk_box_append(GTK_BOX(header_box), btn_opt);
+    gtk_box_append(GTK_BOX(header_box), btn_orig);
+    gtk_box_append(GTK_BOX(card), header_box);
+
+    GtkWidget *sep = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
+    gtk_box_append(GTK_BOX(card), sep);
+
+    GtkWidget *fps_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    GtkWidget *fps_top = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    g_liquid_fps_label = gtk_label_new("Швидкість оновлення: 60 FPS");
+    gtk_widget_set_hexpand(g_liquid_fps_label, TRUE);
+    gtk_label_set_xalign(GTK_LABEL(g_liquid_fps_label), 0.0);
+    gtk_box_append(GTK_BOX(fps_top), g_liquid_fps_label);
+
+    GtkAdjustment *adj_fps = gtk_adjustment_new(60.0, 0.0, 120.0, 5.0, 10.0, 0.0);
+    g_liquid_fps_scale = gtk_scale_new(GTK_ORIENTATION_HORIZONTAL, adj_fps);
+    gtk_scale_set_draw_value(GTK_SCALE(g_liquid_fps_scale), TRUE);
+    gtk_scale_set_value_pos(GTK_SCALE(g_liquid_fps_scale), GTK_POS_RIGHT);
+    gtk_scale_add_mark(GTK_SCALE(g_liquid_fps_scale), 0.0, GTK_POS_BOTTOM, "0 (Пауза)");
+    gtk_scale_add_mark(GTK_SCALE(g_liquid_fps_scale), 30.0, GTK_POS_BOTTOM, "30");
+    gtk_scale_add_mark(GTK_SCALE(g_liquid_fps_scale), 60.0, GTK_POS_BOTTOM, "60");
+    gtk_scale_add_mark(GTK_SCALE(g_liquid_fps_scale), 120.0, GTK_POS_BOTTOM, "120");
+    gtk_widget_set_hexpand(g_liquid_fps_scale, TRUE);
+    g_signal_connect(g_liquid_fps_scale, "value-changed", G_CALLBACK(on_liquid_fps_changed), NULL);
+
+    gtk_box_append(GTK_BOX(fps_box), fps_top);
+    gtk_box_append(GTK_BOX(fps_box), g_liquid_fps_scale);
+    gtk_box_append(GTK_BOX(card), fps_box);
+
+    GtkWidget *cnt_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    GtkWidget *cnt_top = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    g_liquid_count_label = gtk_label_new("Кількість скляних елементів: 1");
+    gtk_widget_set_hexpand(g_liquid_count_label, TRUE);
+    gtk_label_set_xalign(GTK_LABEL(g_liquid_count_label), 0.0);
+    gtk_box_append(GTK_BOX(cnt_top), g_liquid_count_label);
+
+    GtkAdjustment *adj_cnt = gtk_adjustment_new(1.0, 1.0, 50.0, 1.0, 5.0, 0.0);
+    g_liquid_count_scale = gtk_scale_new(GTK_ORIENTATION_HORIZONTAL, adj_cnt);
+    gtk_scale_set_draw_value(GTK_SCALE(g_liquid_count_scale), TRUE);
+    gtk_scale_set_value_pos(GTK_SCALE(g_liquid_count_scale), GTK_POS_RIGHT);
+    gtk_scale_add_mark(GTK_SCALE(g_liquid_count_scale), 1.0, GTK_POS_BOTTOM, "1");
+    gtk_scale_add_mark(GTK_SCALE(g_liquid_count_scale), 10.0, GTK_POS_BOTTOM, "10");
+    gtk_scale_add_mark(GTK_SCALE(g_liquid_count_scale), 25.0, GTK_POS_BOTTOM, "25");
+    gtk_scale_add_mark(GTK_SCALE(g_liquid_count_scale), 50.0, GTK_POS_BOTTOM, "50");
+    gtk_widget_set_hexpand(g_liquid_count_scale, TRUE);
+    g_signal_connect(g_liquid_count_scale, "value-changed", G_CALLBACK(on_liquid_count_changed), NULL);
+
+    gtk_box_append(GTK_BOX(cnt_box), cnt_top);
+    gtk_box_append(GTK_BOX(cnt_box), g_liquid_count_scale);
+    gtk_box_append(GTK_BOX(card), cnt_box);
+
+    GtkWidget *hint_lbl = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(hint_lbl), "<span size=\"small\" alpha=\"65%\">Підказка: натисніть ПКМ по полю передогляду ще раз, щоб приховати або показати бенчмарк.</span>");
+    gtk_label_set_xalign(GTK_LABEL(hint_lbl), 0.0);
+    gtk_box_append(GTK_BOX(card), hint_lbl);
+
+    return card;
+}
+
 static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer user_data) {
     (void)area; (void)user_data;
     if (width <= 0 || height <= 0) return;
 
-
     cairo_save(cr);
     draw_rounded_rect_path(cr, 0, 0, width, height, 14.0);
     cairo_clip(cr);
-
 
     cairo_surface_t *bg = get_cached_wallpaper_surface(width, height);
     if (bg) {
@@ -2679,6 +3103,24 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
         cairo_pattern_destroy(fallback);
     }
 
+    if (g_liquid_element_count > 1) {
+        if (!g_bench_elements_inited && width > 30 && height > 30) {
+            init_benchmark_elements(width, height);
+        }
+        for (int i = 1; i < g_liquid_element_count; i++) {
+            if (g_liquid_use_optimized) {
+                draw_repo_glass_element_optimized(cr, bg, width, height,
+                    g_bench_elements[i].x, g_bench_elements[i].y,
+                    g_bench_elements[i].w, g_bench_elements[i].h,
+                    g_bench_elements[i].r, g_bench_elements[i].shape);
+            } else {
+                draw_repo_glass_element(cr, bg, width, height,
+                    g_bench_elements[i].x, g_bench_elements[i].y,
+                    g_bench_elements[i].w, g_bench_elements[i].h,
+                    g_bench_elements[i].r, g_bench_elements[i].shape);
+            }
+        }
+    }
 
     double gw = 150.0, gh = 110.0, gr = 24.0;
     if (state.liquid_shape == 1) {
@@ -2694,8 +3136,11 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     double gx = CLAMP(g_glass_x, 6.0, width - gw - 6.0);
     double gy = CLAMP(g_glass_y, 6.0, height - gh - 6.0);
 
-    draw_repo_glass_element(cr, bg, width, height, gx, gy, gw, gh, gr, state.liquid_shape);
-
+    if (g_liquid_use_optimized) {
+        draw_repo_glass_element_optimized(cr, bg, width, height, gx, gy, gw, gh, gr, state.liquid_shape);
+    } else {
+        draw_repo_glass_element(cr, bg, width, height, gx, gy, gw, gh, gr, state.liquid_shape);
+    }
 
     const char *shape_names[] = {
         "Заокруглений прямокутник",
@@ -2704,7 +3149,9 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     };
     int shape_idx = CLAMP(state.liquid_shape, 0, 2);
     char badge_text[128];
-    g_snprintf(badge_text, sizeof(badge_text), "Liquid Glass • %s", shape_names[shape_idx]);
+    g_snprintf(badge_text, sizeof(badge_text), "%s • %s",
+               g_liquid_use_optimized ? "Liquid Glass (LQ-OPTIMIZED)" : "Liquid Glass",
+               shape_names[shape_idx]);
 
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.0);
@@ -2726,6 +3173,53 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
     cairo_show_text(cr, badge_text);
 
+    char fps_badge[96];
+    if (g_liquid_target_fps <= 0) {
+        g_snprintf(fps_badge, sizeof(fps_badge), "0.0 FPS (Пауза) • %s",
+                   g_liquid_use_optimized ? "LQ-OPTIMIZED" : "Оригінал");
+    } else {
+        if (g_liquid_element_count > 1) {
+            g_snprintf(fps_badge, sizeof(fps_badge), "%.1f FPS (%d ел.) • %s",
+                       g_liquid_measured_fps, g_liquid_element_count,
+                       g_liquid_use_optimized ? "LQ-OPTIMIZED" : "Оригінал");
+        } else {
+            g_snprintf(fps_badge, sizeof(fps_badge), "%.1f FPS • %s",
+                       g_liquid_measured_fps,
+                       g_liquid_use_optimized ? "LQ-OPTIMIZED" : "Оригінал");
+        }
+    }
+
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, 11.0);
+    cairo_text_extents_t f_ext;
+    cairo_text_extents(cr, fps_badge, &f_ext);
+
+    double f_x = 12.0;
+    double f_y = 12.0;
+    double f_w = f_ext.width + 26.0;
+    double f_h = 22.0;
+
+    draw_rounded_rect_path(cr, f_x, f_y, f_w, f_h, 7.0);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.70);
+    cairo_fill(cr);
+    draw_rounded_rect_path(cr, f_x, f_y, f_w, f_h, 7.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.16);
+    cairo_set_line_width(cr, 0.8);
+    cairo_stroke(cr);
+
+    if (g_liquid_measured_fps >= 50.0) {
+        cairo_set_source_rgba(cr, 0.22, 0.86, 0.38, 0.95);
+    } else if (g_liquid_measured_fps >= 25.0) {
+        cairo_set_source_rgba(cr, 0.95, 0.78, 0.22, 0.95);
+    } else {
+        cairo_set_source_rgba(cr, 0.95, 0.30, 0.25, 0.95);
+    }
+    cairo_arc(cr, f_x + 9.5, f_y + f_h * 0.5, 3.2, 0, 2 * M_PI);
+    cairo_fill(cr);
+
+    cairo_move_to(cr, f_x + 18.0, f_y + 15.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
+    cairo_show_text(cr, fps_badge);
 
     cairo_restore(cr);
     draw_rounded_rect_path(cr, 0.5, 0.5, width - 1.0, height - 1.0, 14.0);
@@ -2736,6 +3230,9 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
 
 void init_liquid_preview(void *widget, gpointer data) {
     (void)data;
+    if (g_liquid_preview_w == GTK_WIDGET(widget) && g_liquid_benchmark_revealer != NULL) {
+        return;
+    }
     g_liquid_preview_w = GTK_WIDGET(widget);
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), liquid_preview_draw_func, NULL, NULL);
 
@@ -2746,7 +3243,29 @@ void init_liquid_preview(void *widget, gpointer data) {
     g_signal_connect(drag, "drag-end", G_CALLBACK(on_liquid_drag_end), widget);
     gtk_widget_add_controller(GTK_WIDGET(widget), GTK_EVENT_CONTROLLER(drag));
 
+    GtkGestureClick *right_click = GTK_GESTURE_CLICK(gtk_gesture_click_new());
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(right_click), GDK_BUTTON_SECONDARY);
+    g_signal_connect(right_click, "pressed", G_CALLBACK(on_liquid_right_click), widget);
+    gtk_widget_add_controller(GTK_WIDGET(widget), GTK_EVENT_CONTROLLER(right_click));
+
     gtk_widget_set_cursor_from_name(GTK_WIDGET(widget), "grab");
+
+    if (g_liquid_tick_id == 0) {
+        g_liquid_tick_id = gtk_widget_add_tick_callback(GTK_WIDGET(widget), on_liquid_preview_tick, NULL, NULL);
+    }
+
+    GtkWidget *parent = gtk_widget_get_parent(GTK_WIDGET(widget));
+    if (parent && GTK_IS_BOX(parent) && !g_liquid_benchmark_revealer) {
+        g_liquid_benchmark_revealer = gtk_revealer_new();
+        gtk_revealer_set_transition_type(GTK_REVEALER(g_liquid_benchmark_revealer), GTK_REVEALER_TRANSITION_TYPE_SLIDE_DOWN);
+        gtk_revealer_set_transition_duration(GTK_REVEALER(g_liquid_benchmark_revealer), 250);
+        gtk_revealer_set_reveal_child(GTK_REVEALER(g_liquid_benchmark_revealer), FALSE);
+
+        GtkWidget *bench_panel = create_liquid_benchmark_panel();
+        gtk_revealer_set_child(GTK_REVEALER(g_liquid_benchmark_revealer), bench_panel);
+
+        gtk_box_append(GTK_BOX(parent), g_liquid_benchmark_revealer);
+    }
 }
 
 
