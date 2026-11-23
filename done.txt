@@ -4625,3 +4625,22 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+#925: Launchpad: сірий прозорий hover мишею замість акцентного (акцентний лише для стрілок клавіатури); Spotlight: усунено надмірну ширину при першому відкритті та виправлено позиціювання й фон рекомендацій пошуку
+  - Модифіковані компоненти:
+    * extensions/appmenu@ChathurangaBW.github.io/searchDialog.js та ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/searchDialog.js:
+      - Launchpad (Apps view): додано розмежування джерела вибору (клавіатура чи миша) через прапорець isKeyboard у _setSelectedAppIndex(index, updateAutocomplete, isKeyboard); під час наведення курсору миші (hover/motion-event) тепер відображається делікатний напівпрозорий сірий ховер (background-color: rgba(255, 255, 255, 0.18); border: 1.5px solid rgba(255, 255, 255, 0.28); border-radius: 13.5px); акцентний контур (border: 2.5px solid ${accent}) з'являється виключно під час навігації клавіатурою (стрілками); додано безпечне скидання ховеру при виході курсору за межі сітки програм;
+      - Spotlight (ширина при першому відкритті): усунено обхід скидання ширини через _searchPillPrepped у open('search'); тепер при відкритті Spotlight завжди безумовно встановлюється згорнута ширина COLLAPSED_PILL_WIDTH (480px), стиль PILL_COLLAPSED_STYLE та SPOTLIGHT_GLASS_STYLE для _box, завдяки чому _box більше не відображає широкий 714px темний непрозорий прямокутник при першому запуску; аналогічне коректне скидання інтегровано в close();
+      - Spotlight (фон та вирівнювання рекомендацій пошуку): усунено помилкове центрування _ghostLabel у Clutter.BinLayout додаванням x_expand: true; у методі _updateSearchResultDisplay встановлено напівпрозорий капсульний фон поля (background-color: rgba(255, 255, 255, 0.18) !important; border-radius: 10px !important; padding: 3px 12px !important;) для _entryPillBox з x_expand: false та увімкненням _searchSpacer; введений текст і суфікс рекомендації («назва — Відкрити») тепер компактно згруповані разом у спільному капсульному полі введення біля іконки пошуку ліворуч, без розриву і без зміщення в центр діалогу;
+    * config/extensions.lock.json та /usr/share/mactheme/config/extensions.lock.json:
+      - Перераховано та оновлено контрольний хеш цілісності dir_hash (sha256-tree-v2) для appmenu@ChathurangaBW.github.io (0237db4cae169bf719925e16c026aa9b6630dc411ef6a02e14d9cebee006c4e9).
+  - Результати валідації:
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK (100% збіг хешів).
+    * bin/mac-audit-sync check: 100% PASS (0 розбіжностей).
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+    * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh: 0 збігів (Strict ASCII OK).
+  * [extensions/appmenu@ChathurangaBW.github.io/searchDialog.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/searchDialog.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

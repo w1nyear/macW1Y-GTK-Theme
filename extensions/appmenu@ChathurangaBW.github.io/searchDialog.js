@@ -578,6 +578,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._selectedAppsCategory = null;
         this._appsCategoryButtons = [];
         this._hasArrowNavigatedApps = false;
+        this._isKeyboardNavigating = false;
 
         this._appSystem = Shell.AppSystem.get_default();
         this._resultButtons = [];
@@ -622,8 +623,8 @@ export const MacSpotlightDialog = GObject.registerClass({
             track_hover: true,
             clip_to_allocation: false,
         });
-        this._box.set_style(this._getFallbackStyle());
-        this._box._isUsingFallback = true;
+        this._box.set_style(SPOTLIGHT_GLASS_STYLE);
+        this._box._isUsingFallback = false;
         this._box.set_offscreen_redirect(Clutter.OffscreenRedirect.AUTOMATIC_FOR_OPACITY);
         this.add_child(this._box);
         this._box.connect('motion-event', (_actor, event) => {
@@ -759,6 +760,7 @@ export const MacSpotlightDialog = GObject.registerClass({
                    'color: #ffffff !important; padding: 0px !important; margin: 0px !important; background: none !important; border: none !important;',
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.START,
+            x_expand: true,
             visible: false,
             reactive: false,
         });
@@ -1419,7 +1421,8 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             if (symbol === Clutter.KEY_BackSpace && this._mode === 'apps' && this._entry.text.length === 0) {
                 if (this._hasArrowNavigatedApps || this._selectedAppIndex >= 0) {
                     this._hasArrowNavigatedApps = false;
-                    this._setSelectedAppIndex(-1, false);
+                    this._isKeyboardNavigating = false;
+                    this._setSelectedAppIndex(-1, false, false);
                     this._clearAutocompleteDisplay();
                     return Clutter.EVENT_STOP;
                 }
@@ -1507,8 +1510,9 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                     }
                     if (handled) {
                         this._hasArrowNavigatedApps = true;
+                        this._isKeyboardNavigating = true;
                         this._resetPointerTracking();
-                        this._setSelectedAppIndex(next, true);
+                        this._setSelectedAppIndex(next, true, true);
                         return Clutter.EVENT_STOP;
                     }
                 } else if (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter) {
@@ -2832,19 +2836,17 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             this._buttonsCollapsed = false;
             this._isCollapsing = false;
 
-            if (!this._searchPillPrepped) {
-                try { this._searchPill.remove_all_transitions(); } catch (_) {}
-                this._searchPill.set_size(COLLAPSED_PILL_WIDTH, PILL_HEIGHT);
-                this._searchPill.width = COLLAPSED_PILL_WIDTH;
-                this._searchPill.scale_x = 1.0;
-                this._searchPill.scale_y = 1.0;
-                this._searchPill.translation_x = 0;
-                this._searchPill.translation_y = 0;
-                this._searchPill.opacity = 255;
-                this._searchPill.set_style(PILL_COLLAPSED_STYLE);
-                this._topRow.set_style('height: 54px; min-height: 54px;');
-                this._searchPillPrepped = true;
-            }
+            try { this._searchPill.remove_all_transitions(); } catch (_) {}
+            this._searchPill.set_size(COLLAPSED_PILL_WIDTH, PILL_HEIGHT);
+            this._searchPill.width = COLLAPSED_PILL_WIDTH;
+            this._searchPill.scale_x = 1.0;
+            this._searchPill.scale_y = 1.0;
+            this._searchPill.translation_x = 0;
+            this._searchPill.translation_y = 0;
+            this._searchPill.opacity = 255;
+            this._searchPill.set_style(PILL_COLLAPSED_STYLE);
+            this._topRow.set_style('height: 54px; min-height: 54px;');
+            this._searchPillPrepped = true;
 
             try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
             this._buttonsBox.set_style('margin-left: 16px; width: 192px; min-width: 192px; height: 54px; padding-right: 8px;');
@@ -2854,6 +2856,9 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             this._buttonsBox.scale_y = 1.0;
             this._buttonsBox.translation_x = 0;
             this._buttonsBox.translation_y = 0;
+
+            this._box.set_style(SPOTLIGHT_GLASS_STYLE);
+            this._box._isUsingFallback = false;
 
             for (const btn of [this._btnApps, this._btnFiles, this._btnClipboard]) {
                 if (btn) {
@@ -3007,6 +3012,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         try { globalThis.MacAnimationCache?.beginUiCapture?.('spotlight-close'); } catch (_) {}
         this._isOpen = false;
         this._hasArrowNavigatedApps = false;
+        this._isKeyboardNavigating = false;
         try { this._appsCategoryScrollView?._stopInertiaPhysics?.(); } catch (_) {}
         try { this._appsScrollView?._stopInertiaPhysics?.(); } catch (_) {}
         try { this._clearAutocompleteDisplay?.(); } catch (_) {}
@@ -3174,12 +3180,17 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 this._box.translation_y = 0;
                 this._box.scale_x = 1.0;
                 this._box.scale_y = 1.0;
+                this._box.set_style(SPOTLIGHT_GLASS_STYLE);
+                this._box._isUsingFallback = false;
                 try { this._searchPill.remove_all_transitions(); } catch (_) {}
                 this._searchPill.opacity = 255;
                 this._searchPill.scale_x = 1.0;
                 this._searchPill.scale_y = 1.0;
                 this._searchPill.translation_x = 0;
                 this._searchPill.translation_y = 0;
+                this._searchPill.set_size(COLLAPSED_PILL_WIDTH, PILL_HEIGHT);
+                this._searchPill.width = COLLAPSED_PILL_WIDTH;
+                this._searchPill.set_style(PILL_COLLAPSED_STYLE);
                 try { this._buttonsBox.remove_all_transitions(); } catch (_) {}
                 this._buttonsBox.opacity = 255;
                 this._buttonsBox.visible = true;
@@ -4011,6 +4022,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         if (this._ghostLabel) {
             try {
                 this._ghostLabel.clutter_text.set_markup(ghostMarkup);
+                this._ghostLabel.x_expand = true;
                 this._ghostLabel.set_style(
                     'font-size: 19px !important; font-weight: 500 !important; ' +
                     'font-family: Inter, default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", sans-serif !important; ' +
@@ -4110,6 +4122,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         if (this._ghostLabel) {
             try {
                 this._ghostLabel.clutter_text.set_markup(ghostMarkup);
+                this._ghostLabel.x_expand = true;
                 this._ghostLabel.set_style(
                     'font-size: 19px !important; font-weight: 500 !important; ' +
                     'font-family: Inter, default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", sans-serif !important; ' +
@@ -4120,18 +4133,17 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             } catch (_) {}
         }
 
-        // In Spotlight mode: MUST NOT have inner background box!
-        // Spotlight pill already has its own glass background and border.
         if (this._entryPillBox) {
             this._entryPillBox.set_style(
-                'background-color: transparent !important; background: none !important; ' +
-                'border: none !important; box-shadow: none !important; padding: 0px !important;'
+                'background-color: rgba(255, 255, 255, 0.18) !important; ' +
+                'border-radius: 10px !important; ' +
+                'padding: 3px 12px !important;'
             );
-            this._entryPillBox.x_expand = true;
+            this._entryPillBox.x_expand = false;
         }
 
         if (this._searchSpacer) {
-            this._searchSpacer.visible = false;
+            this._searchSpacer.visible = true;
         }
         if (this._firstAppMiniBtn) {
             this._firstAppMiniBtn.visible = false;
@@ -4223,7 +4235,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         }
     }
 
-    _setSelectedAppIndex(index, updateAutocomplete = true) {
+    _setSelectedAppIndex(index, updateAutocomplete = true, isKeyboard = false) {
         if (this._selectedAppIndex >= 0 && this._appsGridButtons[this._selectedAppIndex]) {
             const prev = this._appsGridButtons[this._selectedAppIndex];
             prev.remove_style_class_name('selected');
@@ -4234,13 +4246,13 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                     duration: 120,
                     mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                     onComplete: () => {
-                        prev._outlineActor.set_style('width: 44px; height: 44px; min-width: 44px; min-height: 44px; max-width: 44px; max-height: 44px; border: 2.5px solid transparent; border-radius: 13.5px;');
+                        prev._outlineActor.set_style('width: 44px; height: 44px; min-width: 44px; min-height: 44px; max-width: 44px; max-height: 44px; border: 2.5px solid transparent; border-radius: 13.5px; background-color: transparent;');
                     },
                 });
             } else {
                 const icon = prev._iconActor || (prev._iconBox ? prev._iconBox.get_first_child() : null);
                 if (icon) {
-                    icon.set_style('border: 2.5px solid transparent; border-radius: 13.5px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);');
+                    icon.set_style('border: 2.5px solid transparent; border-radius: 13.5px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18); background-color: transparent;');
                 }
             }
         }
@@ -4252,16 +4264,29 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             const accent = getSystemAccentColor();
             if (curr._outlineActor) {
                 curr._outlineActor.remove_all_transitions();
-                curr._outlineActor.set_style(`width: 44px; height: 44px; min-width: 44px; min-height: 44px; max-width: 44px; max-height: 44px; border: 2.5px solid ${accent}; border-radius: 13.5px;`);
-                curr._outlineActor.ease({
-                    opacity: Math.round(255 * 0.80),
-                    duration: 140,
-                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                });
+                if (isKeyboard) {
+                    curr._outlineActor.set_style(`width: 44px; height: 44px; min-width: 44px; min-height: 44px; max-width: 44px; max-height: 44px; border: 2.5px solid ${accent}; border-radius: 13.5px; background-color: transparent;`);
+                    curr._outlineActor.ease({
+                        opacity: Math.round(255 * 0.85),
+                        duration: 140,
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    });
+                } else {
+                    curr._outlineActor.set_style('width: 44px; height: 44px; min-width: 44px; min-height: 44px; max-width: 44px; max-height: 44px; border: 1.5px solid rgba(255, 255, 255, 0.28); border-radius: 13.5px; background-color: rgba(255, 255, 255, 0.18);');
+                    curr._outlineActor.ease({
+                        opacity: 255,
+                        duration: 140,
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    });
+                }
             } else {
                 const icon = curr._iconActor || (curr._iconBox ? curr._iconBox.get_first_child() : null);
                 if (icon) {
-                    icon.set_style(`border: 2.5px solid ${accent}; border-radius: 13.5px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);`);
+                    if (isKeyboard) {
+                        icon.set_style(`border: 2.5px solid ${accent}; border-radius: 13.5px; icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18); background-color: transparent;`);
+                    } else {
+                        icon.set_style('border: 1.5px solid rgba(255, 255, 255, 0.28); border-radius: 13.5px; background-color: rgba(255, 255, 255, 0.18); icon-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.18);');
+                    }
                 }
             }
             try { Util.ensureActorVisibleInScrollView?.(this._appsScrollView, curr); } catch (_) {}
@@ -4339,8 +4364,20 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         item._app = app;
         item.connect('notify::hover', () => {
             if (item.hover && this._mouseMoved) {
+                this._isKeyboardNavigating = false;
                 this._hasArrowNavigatedApps = true;
-                this._setSelectedAppIndex(index, true);
+                this._setSelectedAppIndex(index, true, false);
+            } else if (!item.hover && this._selectedAppIndex === index && !this._isKeyboardNavigating) {
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+                    if (!this._isKeyboardNavigating && this._selectedAppIndex === index) {
+                        const hovered = this._appsGridButtons.some(b => b.hover);
+                        if (!hovered) {
+                            this._setSelectedAppIndex(-1, false, false);
+                            this._clearAutocompleteDisplay();
+                        }
+                    }
+                    return GLib.SOURCE_REMOVE;
+                });
             }
         });
 
@@ -4351,9 +4388,10 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                     this._mouseMoved = true;
                 }
             }
-            if (this._mouseMoved && this._selectedAppIndex !== index) {
+            if (this._mouseMoved && (this._selectedAppIndex !== index || this._isKeyboardNavigating)) {
+                this._isKeyboardNavigating = false;
                 this._hasArrowNavigatedApps = true;
-                this._setSelectedAppIndex(index, true);
+                this._setSelectedAppIndex(index, true, false);
             }
             return Clutter.EVENT_PROPAGATE;
         });
