@@ -1783,6 +1783,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             ("Про macW1Y", "app.about"),
             None,
             ("Термінал...", "app.terminal"),
+            ("Бенчмарк...", "app.benchmark"),
             ("Дискова утиліта...", "app.disk_utility"),
             None,
             ("Перезавантажити...", "app.reboot"),
@@ -1851,6 +1852,9 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.stack.add_named(self._build_screen_disk(), "screen_disk")
         self.stack.add_named(self._build_screen_progress(), "screen_progress")
         self.stack.add_named(self._build_screen_reboot(), "screen_reboot")
+        self.stack.add_named(self._build_screen_benchmark_intro(), "screen_benchmark_intro")
+        self.stack.add_named(self._build_screen_benchmark_progress(), "screen_benchmark_progress")
+        self.stack.add_named(self._build_screen_benchmark_result(), "screen_benchmark_result")
 
         self.stack.set_visible_child_name("screen_language")
 
@@ -1933,6 +1937,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         items_utils = [
             (self.tr("menu_terminal", "Terminal…"), "app.terminal"),
+            (self.tr("menu_benchmark", "Benchmark…"), "app.benchmark"),
             (self.tr("menu_disk_utility", "Disk Utility…"), "app.disk_utility"),
             (self.tr("menu_sysinfo", "System Information…"), "app.sysinfo"),
         ]
@@ -2154,7 +2159,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         if curr in ["screen_user", "screen_language"] and target == "screen_options":
             self.card.add_css_class("mac-card-options")
             self._animate_card_size(650, 490, 480, 350, duration=0.30, on_done=lambda: self.card.set_size_request(-1, -1))
-        elif curr == "screen_options" and target in ["screen_user", "screen_language", "screen_welcome"]:
+        elif curr == "screen_options" and target in ["screen_user", "screen_language", "screen_welcome", "screen_benchmark_intro", "screen_benchmark_progress", "screen_benchmark_result"]:
             self.card.remove_css_class("mac-card-options")
             self._animate_card_size(480, 350, 650, 490, duration=0.30, on_done=lambda: self.card.set_size_request(-1, -1))
         elif target == "screen_options":
@@ -2171,6 +2176,9 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             "screen_language",
             "screen_user",
             "screen_options",
+            "screen_benchmark_intro",
+            "screen_benchmark_progress",
+            "screen_benchmark_result",
             "screen_welcome",
             "screen_disk",
             "screen_progress",
@@ -3451,6 +3459,379 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self._show_modal_reboot_confirm()
 
     # --------------------------------------------------------------------------
+    # Benchmark Screens & Process Controller
+    # --------------------------------------------------------------------------
+    def _build_screen_benchmark_intro(self):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        box.set_vexpand(True)
+        box.set_valign(Gtk.Align.FILL)
+        box.set_halign(Gtk.Align.FILL)
+
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        content.set_vexpand(True)
+        content.set_valign(Gtk.Align.CENTER)
+        content.set_halign(Gtk.Align.CENTER)
+
+        bench_svg = os.path.join(ASSETS_DIR, "benchmark.svg")
+        if not os.path.exists(bench_svg):
+            bench_svg = os.path.join(SCRIPT_DIR, "assets", "recovery", "benchmark.svg")
+        img_icon = Gtk.Image.new_from_file(bench_svg)
+        img_icon.set_pixel_size(96)
+        img_icon.set_halign(Gtk.Align.CENTER)
+        content.append(img_icon)
+
+        lbl_t = Gtk.Label(label=self.tr("benchmark_title", "Бенчмарк продуктивності"))
+        lbl_t.add_css_class("mac-title-large")
+        content.append(lbl_t)
+
+        lbl_d = Gtk.Label(label=self.tr("benchmark_desc",
+            "Тестування швидкодії комп'ютера для оптимального вибору графічного режиму скла.\n\n"
+            "Інсталятор проведе 10-секундний стрес-тест шейдера Liquid Glass у фоновому режимі (до 50 елементів при 120 FPS) "
+            "та допоможе визначити, чи підходить вашому комп'ютеру фізичний шейдер скла, чи краще увімкнути режим простого "
+            "розмиття (Blur) для максимальної плавності та стабільності."
+        ))
+        lbl_d.add_css_class("mac-subtitle")
+        lbl_d.set_wrap(True)
+        lbl_d.set_halign(Gtk.Align.CENTER)
+        lbl_d.set_justify(Gtk.Justification.CENTER)
+        lbl_d.set_max_width_chars(54)
+        content.append(lbl_d)
+
+        box.append(content)
+
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        btn_row.set_halign(Gtk.Align.FILL)
+        btn_row.set_valign(Gtk.Align.END)
+        btn_row.set_margin_bottom(6)
+
+        btn_back = Gtk.Button(label=self.tr("wizard_btn_back", "Назад"))
+        btn_back.add_css_class("mac-btn-secondary")
+        btn_back.set_halign(Gtk.Align.START)
+        btn_back.connect("clicked", lambda b: self._on_benchmark_back())
+        btn_row.append(btn_back)
+
+        spacer = Gtk.Box()
+        spacer.set_hexpand(True)
+        btn_row.append(spacer)
+
+        btn_next = Gtk.Button(label=self.tr("wizard_btn_continue", "Вперед"))
+        btn_next.add_css_class("mac-btn-pill-primary")
+        btn_next.set_halign(Gtk.Align.END)
+        btn_next.connect("clicked", lambda b: self._show_modal_benchmark_warning())
+        btn_row.append(btn_next)
+
+        box.append(btn_row)
+        return box
+
+    def _show_modal_benchmark_warning(self):
+        sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        sheet.add_css_class("mac-modal-sheet")
+        sheet.add_css_class("mac-alert-sheet")
+
+        lbl_t = Gtk.Label(label=self.tr("benchmark_warn_title", "Попередження тестування продуктивності"))
+        lbl_t.add_css_class("mac-modal-title")
+        lbl_t.set_halign(Gtk.Align.START)
+        lbl_t.set_xalign(0.0)
+        lbl_t.set_wrap(True)
+        sheet.append(lbl_t)
+
+        lbl_s = Gtk.Label(label=self.tr("benchmark_warn_desc",
+            "Під час випробування (тривалістю рівно 10 секунд) комп'ютер може короткочасно "
+            "підгальмовувати або затримувати реакцію через інтенсивне навантаження шейдера скла Liquid Glass.\n\n"
+            "Тестування виконується у фоновому режимі поза вікном користувача. Бажаєте розпочати тест?"
+        ))
+        lbl_s.add_css_class("mac-modal-desc")
+        lbl_s.set_halign(Gtk.Align.START)
+        lbl_s.set_xalign(0.0)
+        lbl_s.set_wrap(True)
+        lbl_s.set_margin_top(4)
+        sheet.append(lbl_s)
+
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_row.set_homogeneous(True)
+        btn_row.set_hexpand(True)
+        btn_row.set_halign(Gtk.Align.FILL)
+        btn_row.set_margin_top(12)
+
+        btn_cancel = Gtk.Button(label=self.tr("modal_btn_cancel", "Скасувати"))
+        btn_cancel.add_css_class("mac-btn-secondary")
+        btn_cancel.connect("clicked", lambda b: self.hide_modal())
+        btn_row.append(btn_cancel)
+
+        btn_cont = Gtk.Button(label=self.tr("modal_btn_continue", "Продовжити"))
+        btn_cont.add_css_class("mac-btn-primary")
+        btn_cont.connect("clicked", lambda b: self._on_confirm_start_benchmark())
+        btn_row.append(btn_cont)
+
+        sheet.append(btn_row)
+        self.show_modal(sheet)
+
+    def _build_screen_benchmark_progress(self):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        box.set_vexpand(True)
+        box.set_valign(Gtk.Align.FILL)
+        box.set_halign(Gtk.Align.FILL)
+
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        content.set_vexpand(True)
+        content.set_valign(Gtk.Align.CENTER)
+        content.set_halign(Gtk.Align.CENTER)
+
+        bench_svg = os.path.join(ASSETS_DIR, "benchmark.svg")
+        if not os.path.exists(bench_svg):
+            bench_svg = os.path.join(SCRIPT_DIR, "assets", "recovery", "benchmark.svg")
+        img_icon = Gtk.Image.new_from_file(bench_svg)
+        img_icon.set_pixel_size(96)
+        img_icon.set_halign(Gtk.Align.CENTER)
+        content.append(img_icon)
+
+        lbl_t = Gtk.Label(label=self.tr("benchmark_prog_title", "Випробування швидкодії Liquid Glass..."))
+        lbl_t.add_css_class("mac-title-large")
+        content.append(lbl_t)
+
+        prog_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        prog_box.set_halign(Gtk.Align.CENTER)
+        prog_box.set_size_request(380, -1)
+        prog_box.set_margin_top(8)
+
+        self.bench_prog_bar = Gtk.ProgressBar()
+        self.bench_prog_bar.add_css_class("mac-progress")
+        self.bench_prog_bar.set_fraction(0.0)
+        prog_box.append(self.bench_prog_bar)
+
+        self.bench_lbl_status = Gtk.Label(label=self.tr("benchmark_starting", "Запуск фонового тестування..."))
+        self.bench_lbl_status.add_css_class("mac-subtitle")
+        prog_box.append(self.bench_lbl_status)
+
+        self.bench_lbl_detail = Gtk.Label(label=self.tr("benchmark_measuring", "Вимірювання FPS (до 50 елементів)..."))
+        self.bench_lbl_detail.add_css_class("mac-subtitle")
+        prog_box.append(self.bench_lbl_detail)
+
+        content.append(prog_box)
+        box.append(content)
+
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        btn_row.set_halign(Gtk.Align.CENTER)
+        btn_row.set_valign(Gtk.Align.END)
+        btn_row.set_margin_bottom(6)
+
+        btn_abort = Gtk.Button(label=self.tr("installer_cancel_btn", "Скасувати"))
+        btn_abort.add_css_class("mac-btn-secondary")
+        btn_abort.connect("clicked", lambda b: self._abort_benchmark())
+        btn_row.append(btn_abort)
+
+        box.append(btn_row)
+        return box
+
+    def _build_screen_benchmark_result(self):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        box.set_vexpand(True)
+        box.set_valign(Gtk.Align.FILL)
+        box.set_halign(Gtk.Align.FILL)
+
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        content.set_vexpand(True)
+        content.set_valign(Gtk.Align.CENTER)
+        content.set_halign(Gtk.Align.CENTER)
+
+        bench_svg = os.path.join(ASSETS_DIR, "benchmark.svg")
+        if not os.path.exists(bench_svg):
+            bench_svg = os.path.join(SCRIPT_DIR, "assets", "recovery", "benchmark.svg")
+        img_icon = Gtk.Image.new_from_file(bench_svg)
+        img_icon.set_pixel_size(88)
+        img_icon.set_halign(Gtk.Align.CENTER)
+        content.append(img_icon)
+
+        lbl_t = Gtk.Label(label=self.tr("benchmark_res_title", "Результати тестування продуктивності"))
+        lbl_t.add_css_class("mac-title-large")
+        content.append(lbl_t)
+
+        res_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        res_card.set_size_request(420, -1)
+        res_card.set_margin_top(8)
+        res_card.set_margin_bottom(8)
+        res_card.add_css_class("mac-card")
+
+        self.bench_res_fps = Gtk.Label(label="")
+        self.bench_res_fps.add_css_class("mac-title-medium")
+        self.bench_res_fps.set_halign(Gtk.Align.CENTER)
+        res_card.append(self.bench_res_fps)
+
+        self.bench_res_rec = Gtk.Label(label="")
+        self.bench_res_rec.add_css_class("mac-title-small")
+        self.bench_res_rec.set_halign(Gtk.Align.CENTER)
+        res_card.append(self.bench_res_rec)
+
+        self.bench_res_desc = Gtk.Label(label="")
+        self.bench_res_desc.add_css_class("mac-subtitle")
+        self.bench_res_desc.set_wrap(True)
+        self.bench_res_desc.set_halign(Gtk.Align.CENTER)
+        self.bench_res_desc.set_justify(Gtk.Justification.CENTER)
+        self.bench_res_desc.set_max_width_chars(52)
+        res_card.append(self.bench_res_desc)
+
+        content.append(res_card)
+        box.append(content)
+
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        btn_row.set_halign(Gtk.Align.FILL)
+        btn_row.set_valign(Gtk.Align.END)
+        btn_row.set_margin_bottom(6)
+
+        btn_retry = Gtk.Button(label=self.tr("benchmark_btn_retest", "Повторити тест"))
+        btn_retry.add_css_class("mac-btn-secondary")
+        btn_retry.set_halign(Gtk.Align.START)
+        btn_retry.connect("clicked", lambda b: self._open_benchmark_screen())
+        btn_row.append(btn_retry)
+
+        spacer = Gtk.Box()
+        spacer.set_hexpand(True)
+        btn_row.append(spacer)
+
+        btn_apply = Gtk.Button(label=self.tr("benchmark_btn_apply", "Застосувати та повернутися"))
+        btn_apply.add_css_class("mac-btn-pill-primary")
+        btn_apply.set_halign(Gtk.Align.END)
+        btn_apply.connect("clicked", lambda b: self._apply_benchmark_choice())
+        btn_row.append(btn_apply)
+
+        box.append(btn_row)
+        return box
+
+    def _open_benchmark_screen(self):
+        curr = self.stack.get_visible_child_name()
+        if curr not in ("screen_benchmark_intro", "screen_benchmark_progress", "screen_benchmark_result"):
+            self._benchmark_prev_screen = curr or "screen_options"
+        self.switch_to_screen("screen_benchmark_intro")
+
+    def _on_benchmark_back(self):
+        prev = getattr(self, "_benchmark_prev_screen", "screen_options")
+        if not prev or prev in ("screen_benchmark_intro", "screen_benchmark_progress", "screen_benchmark_result"):
+            prev = "screen_options"
+        self.switch_to_screen(prev)
+
+    def _on_confirm_start_benchmark(self):
+        self.hide_modal()
+        self.switch_to_screen("screen_benchmark_progress")
+        self._start_benchmark_execution()
+
+    def _start_benchmark_execution(self):
+        self.bench_prog_bar.set_fraction(0.0)
+        self.bench_lbl_status.set_text(self.tr("benchmark_starting", "Запуск фонового тестування..."))
+        self.bench_lbl_detail.set_text(self.tr("benchmark_measuring", "Вимірювання FPS (до 50 елементів)..."))
+        self._benchmark_cancelled = False
+        self._benchmark_recommendation = "shader"
+        self._benchmark_min_fps = 60.0
+        self._benchmark_avg_fps = 60.0
+
+        def run_bench_thread():
+            bench_bin = os.path.join(SCRIPT_DIR, "bin", "mac-liquid-benchmark")
+            if not os.path.exists(bench_bin) or not os.access(bench_bin, os.X_OK):
+                bench_bin = "mac-liquid-benchmark"
+
+            cmd = [bench_bin, "--duration", "10.0"]
+            try:
+                self._benchmark_process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    bufsize=1
+                )
+            except Exception as e:
+                GLib.idle_add(self._show_benchmark_results, 60.0, 60.0, "shader")
+                return
+
+            min_fps = 60.0
+            avg_fps = 60.0
+            recommendation = "shader"
+
+            for line in self._benchmark_process.stdout:
+                if self._benchmark_cancelled:
+                    break
+                line = line.strip()
+                if line.startswith("PROGRESS:"):
+                    parts = line.split(":")
+                    if len(parts) >= 5:
+                        try:
+                            pct = float(parts[1])
+                            n_elems = int(parts[2])
+                            fps = float(parts[3])
+                            cur_min = float(parts[4])
+                            GLib.idle_add(self._update_benchmark_progress, pct, n_elems, fps, cur_min)
+                        except Exception:
+                            pass
+                elif line.startswith("RESULT:"):
+                    parts = line.split(":")
+                    for p in parts[1:]:
+                        if p.startswith("min_fps="):
+                            try: min_fps = float(p.split("=")[1])
+                            except Exception: pass
+                        elif p.startswith("avg_fps="):
+                            try: avg_fps = float(p.split("=")[1])
+                            except Exception: pass
+                        elif p.startswith("recommendation="):
+                            recommendation = p.split("=")[1].strip()
+
+            self._benchmark_process.wait()
+            if not self._benchmark_cancelled:
+                GLib.idle_add(self._show_benchmark_results, min_fps, avg_fps, recommendation)
+
+        t = threading.Thread(target=run_bench_thread, daemon=True)
+        t.start()
+
+    def _update_benchmark_progress(self, pct, n_elems, fps, min_fps):
+        if not hasattr(self, "bench_prog_bar"):
+            return False
+        frac = max(0.0, min(1.0, pct / 100.0))
+        self.bench_prog_bar.set_fraction(frac)
+        sec = int(round(frac * 10.0))
+        elem_str = self.tr("elements_short", "ел.")
+        self.bench_lbl_status.set_text(f"Секунда {sec} з 10 ({n_elems} {elem_str})")
+        self.bench_lbl_detail.set_text(f"Поточна швидкість: {fps:.1f} FPS (мін. {min_fps:.1f} FPS)")
+        return False
+
+    def _abort_benchmark(self):
+        self._benchmark_cancelled = True
+        if hasattr(self, "_benchmark_process") and self._benchmark_process:
+            try:
+                self._benchmark_process.terminate()
+            except Exception:
+                pass
+        self._on_benchmark_back()
+
+    def _show_benchmark_results(self, min_fps, avg_fps, recommendation):
+        self._benchmark_min_fps = min_fps
+        self._benchmark_avg_fps = avg_fps
+        self._benchmark_recommendation = recommendation
+
+        self.bench_res_fps.set_text(f"Мінімальний FPS: {min_fps:.1f} • Середній FPS: {avg_fps:.1f}")
+        if recommendation == "shader":
+            self.bench_res_rec.set_text("Рекомендовано: Ефект Liquid Glass (шейдер скла)")
+            self.bench_res_desc.set_text(
+                "Ваша система успішно витримала стрес-тест (50 елементів). "
+                "Продуктивність графічного процесора достатня для повноцінних фізичних відблисків та рефракції Liquid Glass."
+            )
+        else:
+            self.bench_res_rec.set_text("Рекомендовано: Легке розмиття (Blur mode)")
+            self.bench_res_desc.set_text(
+                "Під час стрес-тестування зафіксовано падіння швидкості нижче 20 FPS (характерно для інтегрованої графіки Intel HD). "
+                "Рекомендовано режим розмиття для плавної роботи без перегріву та затримок."
+            )
+
+        self.switch_to_screen("screen_benchmark_result")
+        return False
+
+    def _apply_benchmark_choice(self):
+        is_blur = (getattr(self, "_benchmark_recommendation", "shader") == "blur")
+        if hasattr(self, "chk_lowspec") and self.chk_lowspec:
+            self.chk_lowspec.set_active(is_blur)
+
+        prev = getattr(self, "_benchmark_prev_screen", "screen_options")
+        if not prev or prev in ("screen_benchmark_intro", "screen_benchmark_progress", "screen_benchmark_result"):
+            prev = "screen_options"
+        self.switch_to_screen(prev)
+
+    # --------------------------------------------------------------------------
     # Worker Subprocess Execution & Live Progress
     # --------------------------------------------------------------------------
     def _start_worker_execution(self):
@@ -3765,6 +4146,10 @@ class MacRecoveryApp(Gtk.Application):
         act_term.connect("activate", lambda a, p: launch_terminal())
         self.add_action(act_term)
 
+        act_bench = Gio.SimpleAction.new("benchmark", None)
+        act_bench.connect("activate", lambda a, p: self.win._open_benchmark_screen())
+        self.add_action(act_bench)
+
         act_disk = Gio.SimpleAction.new("disk_utility", None)
         act_disk.connect("activate", lambda a, p: launch_disk_utility())
         self.add_action(act_disk)
@@ -3836,6 +4221,8 @@ def main():
             cached_password = arg.split("=")[1]
         elif arg.startswith("--lang="):
             initial_lang = arg.split("=")[1]
+        elif arg in ("--benchmark", "-benchmark"):
+            preview_screen = "screen_benchmark_intro"
 
     def sig_handler(sig, frame):
         kiosk_guard.leave()

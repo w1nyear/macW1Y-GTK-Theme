@@ -2720,12 +2720,178 @@ static inline double fast_sd_shape(double px, double py, double bx, double by, d
     return d;
 }
 
+typedef struct {
+    double disp_factor;
+    double sinA;
+    double cosA;
+    double insideMask;
+    double rimEdge;
+    double chromaDampen;
+    double ao;
+} DepthLUT;
+
+static DepthLUT s_depth_lut[256];
+static double s_last_ior = -1.0;
+static double s_last_disp_scale = -1.0;
+static double s_last_rim = -1.0;
+static double s_last_bevel = -1.0;
+
+static void build_depth_lut(double ior, double disp_scale, double rim_intensity, double bevel_width) {
+    if (ior == s_last_ior && disp_scale == s_last_disp_scale && rim_intensity == s_last_rim && bevel_width == s_last_bevel)
+        return;
+    s_last_ior = ior;
+    s_last_disp_scale = disp_scale;
+    s_last_rim = rim_intensity;
+    s_last_bevel = bevel_width;
+
+    double eta = 1.0 / fmax(ior, 1.001);
+    double edgeFeather = 1.8;
+
+    for (int i = 0; i < 256; i++) {
+        double depth = (double)i / 255.0;
+        double d = -depth * bevel_width;
+
+        double insideMask = 1.0 - glsl_smoothstep(-edgeFeather, edgeFeather, d);
+        double u = 1.0 - depth;
+        double slope = (u * u * u) * 0.85;
+        double sinA = slope * (1.0 - slope * slope * 0.166667);
+        double cosA = sqrt(fmax(1.0 - sinA * sinA, 0.0));
+
+        double k = 1.0 - eta * eta * sinA * sinA;
+        double factor = (k >= 0.0) ? (sqrt(k) - eta * cosA) : 0.0;
+        double ray_x = factor * sinA;
+        double ray_z = -eta - factor * cosA;
+        double safe_z = fmax(-ray_z, 0.15);
+
+        double edgeDampen = glsl_smoothstep(0.0, edgeFeather * 3.0, -d);
+        double disp_factor = (ray_x / safe_z) * disp_scale * edgeDampen;
+
+        double rimDot = 1.0 - cosA;
+        double rimFresnel = rimDot * rimDot;
+        double edgeBand = 1.0 - depth;
+        double rimEdge = rimFresnel * (rim_intensity * 1.5) * edgeBand * 255.0;
+
+        double ao = 1.0 - (1.0 - depth) * 0.15;
+
+        s_depth_lut[i].disp_factor = disp_factor;
+        s_depth_lut[i].sinA = sinA;
+        s_depth_lut[i].cosA = cosA;
+        s_depth_lut[i].insideMask = insideMask;
+        s_depth_lut[i].rimEdge = rimEdge;
+        s_depth_lut[i].chromaDampen = edgeDampen;
+        s_depth_lut[i].ao = ao;
+    }
+}
+
+static inline void sample_bilinear_fast(const unsigned char *src_pixels, int stride, int width, int height,
+                                       double sx, double sy, double *out_r, double *out_g, double *out_b) {
+    int x0 = (int)sx;
+    int y0 = (int)sy;
+    if (sx < 0) x0--;
+    if (sy < 0) y0--;
+
+    if (__builtin_expect(x0 >= 0 && x0 < width - 1 && y0 >= 0 && y0 < height - 1, 1)) {
+        int fx = (int)((sx - x0) * 256.0);
+        int fy = (int)((sy - y0) * 256.0);
+        int ifx = 256 - fx;
+        int ify = 256 - fy;
+
+        const uint32_t *row0 = (const uint32_t *)(src_pixels + y0 * stride) + x0;
+        const uint32_t *row1 = (const uint32_t *)(src_pixels + (y0 + 1) * stride) + x0;
+
+        uint32_t c00 = row0[0];
+        uint32_t c10 = row0[1];
+        uint32_t c01 = row1[0];
+        uint32_t c11 = row1[1];
+
+        int w00 = (ifx * ify) >> 8;
+        int w10 = (fx * ify) >> 8;
+        int w01 = (ifx * fy) >> 8;
+        int w11 = (fx * fy) >> 8;
+
+        *out_r = (w00 * ((c00 >> 16) & 0xFF) + w10 * ((c10 >> 16) & 0xFF) +
+                  w01 * ((c01 >> 16) & 0xFF) + w11 * ((c11 >> 16) & 0xFF)) >> 8;
+        *out_g = (w00 * ((c00 >> 8) & 0xFF) + w10 * ((c10 >> 8) & 0xFF) +
+                  w01 * ((c01 >> 8) & 0xFF) + w11 * ((c11 >> 8) & 0xFF)) >> 8;
+        *out_b = (w00 * (c00 & 0xFF) + w10 * (c10 & 0xFF) +
+                  w01 * (c01 & 0xFF) + w11 * (c11 & 0xFF)) >> 8;
+    } else {
+        int cx0 = CLAMP(x0, 0, width - 1);
+        int cx1 = CLAMP(x0 + 1, 0, width - 1);
+        int cy0 = CLAMP(y0, 0, height - 1);
+        int cy1 = CLAMP(y0 + 1, 0, height - 1);
+
+        double fx = sx - x0;
+        double fy = sy - y0;
+
+        uint32_t c00 = *(const uint32_t *)(src_pixels + cy0 * stride + cx0 * 4);
+        uint32_t c10 = *(const uint32_t *)(src_pixels + cy0 * stride + cx1 * 4);
+        uint32_t c01 = *(const uint32_t *)(src_pixels + cy1 * stride + cx0 * 4);
+        uint32_t c11 = *(const uint32_t *)(src_pixels + cy1 * stride + cx1 * 4);
+
+        double r0 = ((c00 >> 16) & 0xFF) * (1.0 - fx) + ((c10 >> 16) & 0xFF) * fx;
+        double g0 = ((c00 >> 8) & 0xFF) * (1.0 - fx) + ((c10 >> 8) & 0xFF) * fx;
+        double b0 = (c00 & 0xFF) * (1.0 - fx) + (c10 & 0xFF) * fx;
+
+        double r1 = ((c01 >> 16) & 0xFF) * (1.0 - fx) + ((c11 >> 16) & 0xFF) * fx;
+        double g1 = ((c01 >> 8) & 0xFF) * (1.0 - fx) + ((c11 >> 8) & 0xFF) * fx;
+        double b1 = (c01 & 0xFF) * (1.0 - fx) + (c11 & 0xFF) * fx;
+
+        *out_r = r0 * (1.0 - fy) + r1 * fy;
+        *out_g = g0 * (1.0 - fy) + g1 * fy;
+        *out_b = b0 * (1.0 - fy) + b1 * fy;
+    }
+}
+
+static inline double sample_channel_fast(const unsigned char *src_pixels, int stride, int width, int height,
+                                         double sx, double sy, int shift) {
+    int x0 = (int)sx;
+    int y0 = (int)sy;
+    if (sx < 0) x0--;
+    if (sy < 0) y0--;
+
+    if (__builtin_expect(x0 >= 0 && x0 < width - 1 && y0 >= 0 && y0 < height - 1, 1)) {
+        int fx = (int)((sx - x0) * 256.0);
+        int fy = (int)((sy - y0) * 256.0);
+        int ifx = 256 - fx;
+        int ify = 256 - fy;
+
+        const uint32_t *row0 = (const uint32_t *)(src_pixels + y0 * stride) + x0;
+        const uint32_t *row1 = (const uint32_t *)(src_pixels + (y0 + 1) * stride) + x0;
+
+        int w00 = (ifx * ify) >> 8;
+        int w10 = (fx * ify) >> 8;
+        int w01 = (ifx * fy) >> 8;
+        int w11 = (fx * fy) >> 8;
+
+        return (w00 * ((row0[0] >> shift) & 0xFF) + w10 * ((row0[1] >> shift) & 0xFF) +
+                w01 * ((row1[0] >> shift) & 0xFF) + w11 * ((row1[1] >> shift) & 0xFF)) >> 8;
+    } else {
+        int cx0 = CLAMP(x0, 0, width - 1);
+        int cx1 = CLAMP(x0 + 1, 0, width - 1);
+        int cy0 = CLAMP(y0, 0, height - 1);
+        int cy1 = CLAMP(y0 + 1, 0, height - 1);
+
+        double fx = sx - x0;
+        double fy = sy - y0;
+
+        uint32_t c00 = *(const uint32_t *)(src_pixels + cy0 * stride + cx0 * 4);
+        uint32_t c10 = *(const uint32_t *)(src_pixels + cy0 * stride + cx1 * 4);
+        uint32_t c01 = *(const uint32_t *)(src_pixels + cy1 * stride + cx0 * 4);
+        uint32_t c11 = *(const uint32_t *)(src_pixels + cy1 * stride + cx1 * 4);
+
+        double v0 = ((c00 >> shift) & 0xFF) * (1.0 - fx) + ((c10 >> shift) & 0xFF) * fx;
+        double v1 = ((c01 >> shift) & 0xFF) * (1.0 - fx) + ((c11 >> shift) & 0xFF) * fx;
+        return v0 * (1.0 - fy) + v1 * fy;
+    }
+}
+
 static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, int width, int height,
                                               double gx, double gy, double gw, double gh, double gr, int shape) {
     if (!bg) return;
 
     double shadow_val = (double)state.liquid_shadow / 100.0;
-    if (shadow_val > 0.02) {
+    if (shadow_val > 0.02 && g_liquid_element_count <= 25) {
         int passes = (g_liquid_element_count > 5) ? 1 : 2;
         for (int i = passes; i >= 1; i--) {
             double expand = (passes == 1) ? 6.0 : (i * 4.0);
@@ -2735,10 +2901,6 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
             cairo_fill(cr);
         }
     }
-
-    cairo_save(cr);
-    draw_shape_path(cr, gx, gy, gw, gh, gr, shape);
-    cairo_clip(cr);
 
     int igx = (int)round(gx);
     int igy = (int)round(gy);
@@ -2755,17 +2917,19 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
 
     double bx = gw * 0.5;
     double by = gh * 0.5;
+    if (shape == 2) gr = fmin(bx, by);
+
     double max_z = 25.0;
     double bevel_width = CLAMP(max_z * 0.75 + gr * 0.2, 4.0, 28.0);
     double inv_bevel = 1.0 / bevel_width;
 
     double ior = 1.0 + ((double)state.liquid_refraction / 100.0) * 1.40;
-    double eta = 1.0 / fmax(ior, 1.001);
     double disp_scale = ((double)state.liquid_refraction / 60.0) * 18.0;
     double chroma_str = ((double)state.liquid_chroma / 30.0) * 2.0;
     double tint_strength = ((double)state.liquid_tint / 100.0);
     double rim_intensity = ((double)state.liquid_rim / 50.0) * 0.60;
-    double edgeFeather = 1.8;
+
+    build_depth_lut(ior, disp_scale, rim_intensity, bevel_width);
 
     double ly_dir = 1.0;
     double lz_dir = 0.38;
@@ -2783,62 +2947,99 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
     double tint_b_str = tint_b * tint_strength;
     double const_sheen = (lz_dir * lz_dir) * 0.12 * 255.0;
 
+    uint8_t lut_r[256], lut_g[256], lut_b[256];
+    for (int i = 0; i < 256; i++) {
+        double base_r = (double)i * one_minus_tint + tint_r_str;
+        double base_g = (double)i * one_minus_tint + tint_g_str;
+        double base_b = (double)i * one_minus_tint + tint_b_str;
+        lut_r[i] = (uint8_t)CLAMP(base_r + const_sheen - (base_r * const_sheen * (1.0 / 255.0)), 0, 255);
+        lut_g[i] = (uint8_t)CLAMP(base_g + const_sheen - (base_g * const_sheen * (1.0 / 255.0)), 0, 255);
+        lut_b[i] = (uint8_t)CLAMP(base_b + const_sheen - (base_b * const_sheen * (1.0 / 255.0)), 0, 255);
+    }
+
+    double circle_r = (shape == 1) ? fmin(bx, by) : 0.0;
+    double safe_inner_x = (shape == 0) ? (bx - bevel_width - gr) : -1.0;
+    double safe_inner_y = (shape == 0) ? (by - bevel_width) : -1.0;
+
     for (int ly = 0; ly < igh; ly++) {
         uint32_t *dst_row = s_scratch_pixels + ly * igw;
         double py = ly - by + 0.5;
         int bg_y = CLAMP(igy + ly, 0, height - 1);
         const uint32_t *src_row = (const uint32_t *)(src_pixels + bg_y * src_stride);
 
+        double qy = fabs(py) - by + gr;
+        double max_qy = fmax(qy, 0.0);
+        double max_qy_sq = max_qy * max_qy;
+        double sign_y = (py >= 0.0) ? 1.0 : -1.0;
+
         for (int lx = 0; lx < igw; lx++) {
             double px = lx - bx + 0.5;
-            double n2d_x, n2d_y;
-            double d = fast_sd_shape(px, py, bx, by, gr, shape, &n2d_x, &n2d_y);
+
+            /* Flat interior fast path (zero refraction displacement, instant LUT read) */
+            if (safe_inner_x > 0.0 && fabs(px) <= safe_inner_x && fabs(py) <= safe_inner_y) {
+                int bg_x = CLAMP(igx + lx, 0, width - 1);
+                uint32_t c = src_row[bg_x];
+                dst_row[lx] = (0xFF << 24) | (lut_r[(c >> 16) & 0xFF] << 16) | (lut_g[(c >> 8) & 0xFF] << 8) | lut_b[c & 0xFF];
+                continue;
+            }
+
+            double n2d_x, n2d_y, d;
+            if (shape == 1) {
+                double len = sqrt(px * px + py * py) + 1e-6;
+                double inv_len = 1.0 / len;
+                n2d_x = px * inv_len;
+                n2d_y = py * inv_len;
+                d = len - circle_r;
+            } else {
+                double qx = fabs(px) - bx + gr;
+                double max_qx = fmax(qx, 0.0);
+                double sign_x = (px >= 0.0) ? 1.0 : -1.0;
+
+                if (max_qx > 0.0 && max_qy > 0.0) {
+                    double out_len = sqrt(max_qx * max_qx + max_qy_sq);
+                    double inv_len = 1.0 / out_len;
+                    n2d_x = sign_x * (max_qx * inv_len);
+                    n2d_y = sign_y * (max_qy * inv_len);
+                    d = out_len - gr;
+                } else if (max_qx > 0.0) {
+                    n2d_x = sign_x;
+                    n2d_y = 0.0;
+                    d = max_qx + qy - gr;
+                } else if (max_qy > 0.0) {
+                    n2d_x = 0.0;
+                    n2d_y = sign_y;
+                    d = max_qy + qx - gr;
+                } else {
+                    if (qx > qy) {
+                        n2d_x = sign_x;
+                        n2d_y = 0.0;
+                        d = qx - gr;
+                    } else {
+                        n2d_x = 0.0;
+                        n2d_y = sign_y;
+                        d = qy - gr;
+                    }
+                }
+            }
+
             if (d > 0.8) {
                 dst_row[lx] = 0;
                 continue;
             }
 
             double depth = -d * inv_bevel;
-
-            /* Flat interior fast path (zero refraction displacement, single direct read) */
             if (depth >= 1.0) {
                 int bg_x = CLAMP(igx + lx, 0, width - 1);
                 uint32_t c = src_row[bg_x];
-                double cr_r = (c >> 16) & 0xFF;
-                double cr_g = (c >> 8) & 0xFF;
-                double cr_b = c & 0xFF;
-
-                double base_r = cr_r * one_minus_tint + tint_r_str;
-                double base_g = cr_g * one_minus_tint + tint_g_str;
-                double base_b = cr_b * one_minus_tint + tint_b_str;
-
-                double lit_r = base_r + const_sheen - (base_r * const_sheen * (1.0 / 255.0));
-                double lit_g = base_g + const_sheen - (base_g * const_sheen * (1.0 / 255.0));
-                double lit_b = base_b + const_sheen - (base_b * const_sheen * (1.0 / 255.0));
-
-                dst_row[lx] = (0xFF << 24) | ((uint8_t)lit_r << 16) | ((uint8_t)lit_g << 8) | (uint8_t)lit_b;
+                dst_row[lx] = (0xFF << 24) | (lut_r[(c >> 16) & 0xFF] << 16) | (lut_g[(c >> 8) & 0xFF] << 8) | lut_b[c & 0xFF];
                 continue;
             }
 
             if (depth < 0.0) depth = 0.0;
-            double insideMask = 1.0 - glsl_smoothstep(-edgeFeather, edgeFeather, d);
+            int lidx = (int)(depth * 255.0);
+            const DepthLUT *item = &s_depth_lut[lidx];
 
-            /* Calibrated dome surface slope matching physical profile curve */
-            double u = 1.0 - depth;
-            double slope = (u * u * u) * 0.85;
-            double sinA = slope * (1.0 - slope * slope * 0.166667);
-            double cosA = sqrt(fmax(1.0 - sinA * sinA, 0.0));
-
-            /* Snell's law refraction vector */
-            double k = 1.0 - eta * eta * sinA * sinA;
-            double factor = (k >= 0.0) ? (sqrt(k) - eta * cosA) : 0.0;
-            double ray_x = factor * sinA;
-            double ray_z = -eta - factor * cosA;
-            double safe_z = fmax(-ray_z, 0.15);
-
-            /* Edge dampening smoothly blends refraction to 0 at the glass perimeter */
-            double edgeDampen = glsl_smoothstep(0.0, edgeFeather * 3.0, -d);
-            double disp_factor = (ray_x / safe_z) * disp_scale * edgeDampen;
+            double disp_factor = item->disp_factor;
             double disp_x = -n2d_x * disp_factor;
             double disp_y = -n2d_y * disp_factor;
 
@@ -2846,42 +3047,31 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
             double sy = gy + ly + disp_y;
 
             double cr_r, cr_g, cr_b;
-            sample_bilinear(src_pixels, src_stride, width, height, sx, sy, &cr_r, &cr_g, &cr_b);
-
             if (chroma_str > 0.01 && disp_factor > 0.1) {
-                double c_off_x = -n2d_x * chroma_str * edgeDampen;
-                double c_off_y = -n2d_y * chroma_str * edgeDampen;
-                double r_val, dummy_g, dummy_b, b_val;
-                sample_bilinear(src_pixels, src_stride, width, height, sx + c_off_x, sy + c_off_y, &r_val, &dummy_g, &dummy_b);
-                sample_bilinear(src_pixels, src_stride, width, height, sx - c_off_x, sy - c_off_y, &dummy_g, &dummy_b, &b_val);
-                cr_r = r_val;
-                cr_b = b_val;
+                cr_g = sample_channel_fast(src_pixels, src_stride, width, height, sx, sy, 8);
+                double c_off_x = -n2d_x * (chroma_str * item->chromaDampen);
+                double c_off_y = -n2d_y * (chroma_str * item->chromaDampen);
+                cr_r = sample_channel_fast(src_pixels, src_stride, width, height, sx + c_off_x, sy + c_off_y, 16);
+                cr_b = sample_channel_fast(src_pixels, src_stride, width, height, sx - c_off_x, sy - c_off_y, 0);
+            } else {
+                sample_bilinear_fast(src_pixels, src_stride, width, height, sx, sy, &cr_r, &cr_g, &cr_b);
             }
 
-            double base_r = cr_r * one_minus_tint + tint_r_str;
-            double base_g = cr_g * one_minus_tint + tint_g_str;
-            double base_b = cr_b * one_minus_tint + tint_b_str;
+            double base_r = (cr_r * one_minus_tint + tint_r_str) * item->ao;
+            double base_g = (cr_g * one_minus_tint + tint_g_str) * item->ao;
+            double base_b = (cr_b * one_minus_tint + tint_b_str) * item->ao;
 
-            double ao = 1.0 - (1.0 - depth) * 0.15;
-            base_r *= ao;
-            base_g *= ao;
-            base_b *= ao;
-
-            double rimDot = 1.0 - cosA;
-            double rimFresnel = rimDot * rimDot;
-            double nDotL = fmax(-n2d_y * sinA * ly_dir + cosA * lz_dir, 0.0);
+            double nDotL = fmax(-n2d_y * item->sinA * ly_dir + item->cosA * lz_dir, 0.0);
             double lightMask = nDotL * nDotL;
-            double edgeBand = 1.0 - depth;
-            double finalRimLight = rimFresnel * lightMask * (rim_intensity * 1.5) * edgeBand * 255.0;
-
-            double sheenLight = (nDotL * nDotL) * 0.12 * 255.0;
+            double finalRimLight = item->rimEdge * lightMask;
+            double sheenLight = lightMask * 0.12 * 255.0;
 
             double added = finalRimLight + sheenLight;
-            double lit_r = base_r + added - (base_r * added / 255.0);
-            double lit_g = base_g + added - (base_g * added / 255.0);
-            double lit_b = base_b + added - (base_b * added / 255.0);
+            double lit_r = base_r + added - (base_r * added * (1.0 / 255.0));
+            double lit_g = base_g + added - (base_g * added * (1.0 / 255.0));
+            double lit_b = base_b + added - (base_b * added * (1.0 / 255.0));
 
-            uint8_t out_a = (uint8_t)CLAMP(insideMask * 255.0, 0, 255);
+            uint8_t out_a = (uint8_t)CLAMP(item->insideMask * 255.0, 0, 255);
             uint8_t out_r = (uint8_t)CLAMP(lit_r, 0, 255);
             uint8_t out_g = (uint8_t)CLAMP(lit_g, 0, 255);
             uint8_t out_b = (uint8_t)CLAMP(lit_b, 0, 255);
@@ -2907,8 +3097,6 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
     cairo_new_sub_path(cr);
     cairo_arc(cr, cx + 9.0, cy, 2.2, 0, 2 * G_PI);
     cairo_fill(cr);
-
-    cairo_restore(cr);
 }
 
 static void init_benchmark_elements(int width, int height) {

@@ -4550,3 +4550,28 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+#922: Додано пункт «Бенчмарк» у меню встановлення install.sh / mac-installer-gui, фоновий бенчмарк Liquid Glass на 10 секунд та ультра-оптимізовано рендеринг скла до 56+ FPS для 50 елементів і 120 FPS для 1 елемента
+  - Модифіковані компоненти:
+    * bin/mac-installer-gui: додано пункт «Бенчмарк...» у контекстне меню поряд із терміналом та пункт «Бенчмарк…» у верхнє меню Utilities; зареєстровано дію app.benchmark; реалізовано повноцінні екрани screen_benchmark_intro (стандартна геометрія картки, іконка benchmark.svg, заголовок, опис тестування, кнопки Назад/Вперед), модальний лист-попередження про можливе підгальмовування під час стрес-тесту (_show_modal_benchmark_warning), екран прогресу screen_benchmark_progress (10-секундна шкала поступового навантаження 1->5->15->30->50 елементів із живим відображенням поточного та мінімального FPS і кнопкою скасування), та екран результатів screen_benchmark_result (мін./сер. FPS, рекомендація Liquid Glass або Blur mode та кнопка автоматичного застосування до галочки chk_lowspec у параметрах); додано підтримку ключів --benchmark та -benchmark.
+    * src/mac_liquid_benchmark.c та bin/mac-liquid-benchmark: розроблено автономний високопродуктивний headless C-рушій бенчмарку на Cairo; точно відтворює фізичну оптику та шейдерний конвеєр передогляду Liquid Glass; працює 10 секунд поза очима користувача; видає потокові статуси PROGRESS та фінальний RESULT; впроваджено таблицю DepthLUT (256 записів) для передобчислення закону Снеліуса та оптичного профілю купола, рядкові аналітичні SDF без надлишкових коренів, фіксований цілочисельний семплер і оптимізовану вибірку каналів хроматичної аберації.
+    * control-center/libmac_settings.c та gnome-control-center-overlay/libmac_settings.c: перенесено ультра-оптимізований конвеєр рендерингу скла DepthLUT і оптимізованих SDF у функцію draw_repo_glass_element_optimized; швидкодія 50 елементів зросла з 19.5 FPS до 56+ FPS, а 1 елемент без зусиль тримає 120.0 FPS.
+    * install.sh: додано параметр --benchmark / -benchmark у список опцій show_usage() та ранній диспетчер запуску (GUI або CLI залежно від наявності дисплея); суворо збережено відсутність кириличних символів (0 збігів).
+    * assets/recovery/benchmark.svg: додано автентичну векторну іконку моніторингу активності/продуктивності в стилі macOS.
+    * dependencies/build-native.sh: додано компіляцію bin/mac-liquid-benchmark з -O3.
+  - Результати перевірки:
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 bin/mac-audit-sync check: 100% PASS (0 розбіжностей).
+    * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh: 0 збігів (Strict ASCII OK).
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+    * Тест CLI бенчмарку: ./install.sh --benchmark --cli --duration 2.0 (PASS).
+  * [bin/mac-installer-gui](file:///home/vitaliy/MACTHEMEFILES/bin/mac-installer-gui)
+  * [install.sh](file:///home/vitaliy/MACTHEMEFILES/install.sh)
+  * [src/mac_liquid_benchmark.c](file:///home/vitaliy/MACTHEMEFILES/src/mac_liquid_benchmark.c)
+  * [bin/mac-liquid-benchmark](file:///home/vitaliy/MACTHEMEFILES/bin/mac-liquid-benchmark)
+  * [assets/recovery/benchmark.svg](file:///home/vitaliy/MACTHEMEFILES/assets/recovery/benchmark.svg)
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

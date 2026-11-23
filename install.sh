@@ -73,6 +73,7 @@ show_usage() {
     echo "  --cli, -cli                      Force CLI text mode instead of launching GUI installer"
     echo "  -debug_install, --debug_install  Interactive CLI installation & maintenance menu"
     echo "  --uninstall, -debug_uninstall    Completely uninstall macW1Y and restore original GNOME appearance"
+    echo "  --benchmark, -benchmark          Run Liquid Glass GPU performance benchmark"
     echo "  --help, -h, -?                   Show all launch parameters and options"
 }
 
@@ -83,6 +84,17 @@ for arg in "$@"; do
         exit 0
     fi
 done
+
+# Early check for benchmark mode
+if [ "$1" = "--benchmark" ] || [ "$1" = "-benchmark" ]; then
+    shift
+    if [ "$1" = "--cli" ] || [ "$1" = "-cli" ] || { [ -z "$DISPLAY" ] && [ -z "$WAYLAND_DISPLAY" ]; }; then
+        [ "$1" = "--cli" ] || [ "$1" = "-cli" ] && shift
+        exec "$SCRIPT_DIR/bin/mac-liquid-benchmark" --cli "$@"
+    else
+        exec "$SCRIPT_DIR/bin/mac-installer-gui" --benchmark "$@"
+    fi
+fi
 
 # Low-Spec, Eco Engine and Mock Simulation Detection
 APPLY_LOW_SPEC="false"

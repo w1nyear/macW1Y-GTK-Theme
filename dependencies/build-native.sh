@@ -18,5 +18,6 @@ build libmac_nautilus src/mac_nautilus.c 'gtk4 libadwaita-1 gio-2.0'
 build libmac_nautilus_menu src/mac_nautilus_menu.c 'gtk4 libnautilus-extension-4 gio-2.0'
 build libmac_settings gnome-control-center-overlay/libmac_settings.c 'glib-2.0 gio-2.0 json-glib-1.0 gtk4 libadwaita-1'
 build libmac_extension_manager extension-manager/libmac_extension_manager.c 'glib-2.0 gio-2.0 gtk4 libadwaita-1'
+gcc -O3 -o "$root/bin/mac-liquid-benchmark" "$root/src/mac_liquid_benchmark.c" $(pkg-config --cflags --libs cairo) -lm
 mkdir -p "$destination"
 cp "$work/"*.so "$destination/"
