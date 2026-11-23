@@ -46,7 +46,7 @@
         "50",
         "51"
       ],
-      "sha256": "4feae1ac0c351bced0c8ad41bccd8c3d97e859fe3681d62a2db83879d35d0e9d",
+      "sha256": "7a07b049736d83f94ee5c21247c973245d8ffc52cb63b88d7bf5547932f461a0",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -58,8 +58,8 @@
       "has_custom_patches": true,
       "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macW1Y horizontal Cairo battery indicator",
       "last_verified": "2026-11-08",
-      "pinned_sha256": "fb3a65bc7cb8f8aa6608c2471edded3964a0b173d4ee06e964f8250d9f048dbc",
-      "dir_hash": "fb3a65bc7cb8f8aa6608c2471edded3964a0b173d4ee06e964f8250d9f048dbc"
+      "pinned_sha256": "7a07b049736d83f94ee5c21247c973245d8ffc52cb63b88d7bf5547932f461a0",
+      "dir_hash": "7a07b049736d83f94ee5c21247c973245d8ffc52cb63b88d7bf5547932f461a0"
     },
     "compiz-alike-magic-lamp-effect@hermes83.github.com": {
       "uuid": "compiz-alike-magic-lamp-effect@hermes83.github.com",
@@ -274,7 +274,7 @@
         "50",
         "51"
       ],
-      "sha256": "1b8f0a5937a13004f59492062dace9286e962689983adfa1c70b503f66f731ba",
+      "sha256": "a44dcd7f5e3a7a2388077cab34bf848d2b26235c4d9f943a53384ce528e1a970",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -287,11 +287,11 @@
       "has_custom_patches": true,
       "patch_description": "macW1Y Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macW1Y Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macW1Y Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macW1Y horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
       "last_verified": "2026-11-22",
-      "integrity_hash": "24fe47e28aea2160c634b585b4607830e6a332fbeb925d51dd4367abda0112a4",
-      "pinned_sha256": "24fe47e28aea2160c634b585b4607830e6a332fbeb925d51dd4367abda0112a4",
-      "expected_hash": "24fe47e28aea2160c634b585b4607830e6a332fbeb925d51dd4367abda0112a4",
-      "dir_hash": "24fe47e28aea2160c634b585b4607830e6a332fbeb925d51dd4367abda0112a4",
-      "integrity": "60037371f5b0dd0a419928ae2b8a1977242f8165ec35481b703389a903c1d9c5"
+      "integrity_hash": "a44dcd7f5e3a7a2388077cab34bf848d2b26235c4d9f943a53384ce528e1a970",
+      "pinned_sha256": "a44dcd7f5e3a7a2388077cab34bf848d2b26235c4d9f943a53384ce528e1a970",
+      "expected_hash": "a44dcd7f5e3a7a2388077cab34bf848d2b26235c4d9f943a53384ce528e1a970",
+      "dir_hash": "a44dcd7f5e3a7a2388077cab34bf848d2b26235c4d9f943a53384ce528e1a970",
+      "integrity": "a44dcd7f5e3a7a2388077cab34bf848d2b26235c4d9f943a53384ce528e1a970"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {
       "uuid": "liquid-glass@thinkingcoding1231.gmail.com",

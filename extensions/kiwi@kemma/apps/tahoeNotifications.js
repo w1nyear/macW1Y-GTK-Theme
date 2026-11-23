@@ -2512,6 +2512,17 @@ function _syncCards(p, monitor, s) {
     try {
         const regions = [];
         let kids = [];
+        let scrollY = -Infinity, scrollH = Infinity;
+        if (p.scroll && p.scroll.mapped) {
+            try {
+                const [, sy] = p.scroll.get_transformed_position();
+                const sh = p.scroll.height;
+                if (isFinite(sy) && sh > 0) {
+                    scrollY = sy;
+                    scrollH = sh;
+                }
+            } catch (_) {}
+        }
         try {
             for (const c of p.list.get_children()) {
                 if (c._macPeekGroup) {
@@ -2521,6 +2532,10 @@ function _syncCards(p, monitor, s) {
                         const [cx, cy] = newest.get_transformed_position();
                         const cw = newest.width, ch = newest.height;
                         if (cw > 0 && ch > 0 && isFinite(cx) && isFinite(cy)) {
+                            if (isFinite(scrollY) && isFinite(scrollH)) {
+                                if (cy + ch < scrollY - 20 || cy > scrollY + scrollH + 20)
+                                    continue;
+                            }
                             const m = SHADER_PADDING;
                             regions.push({
                                 x: (cx - monitor.x) - m,
@@ -2555,8 +2570,10 @@ function _syncCards(p, monitor, s) {
                 if (!(cw > 0) || !(ch > 0) || !isFinite(cx) || !isFinite(cy))
                     continue;
 
-
-
+                if (isFinite(scrollY) && isFinite(scrollH)) {
+                    if (cy + ch < scrollY - 20 || cy > scrollY + scrollH + 20)
+                        continue;
+                }
 
                 const m = SHADER_PADDING;
                 regions.push({
@@ -2615,8 +2632,13 @@ function _syncCards(p, monitor, s) {
         s.effect.setResolution(monitor.width, monitor.height);
         s.liquidBox.set_position(0, 0);
         s.liquidBox.set_size(monitor.width, monitor.height);
-        if (isFinite(bx) && isFinite(by) && bw > 0 && bh > 0)
-            setClipIfChanged(s.bgActor, bx - monitor.x - 200, by - monitor.y - 200, bw + 400, bh + 400);
+        if (isFinite(bx) && isFinite(by) && bw > 0 && bh > 0) {
+            if (isFinite(scrollY) && isFinite(scrollH) && !isSliding) {
+                setClipIfChanged(s.bgActor, bx - monitor.x - 200, scrollY - monitor.y, bw + 400, scrollH);
+            } else {
+                setClipIfChanged(s.bgActor, bx - monitor.x - 200, by - monitor.y - 200, bw + 400, bh + 400);
+            }
+        }
         ensureGlassAllocated(s.bgActor);
 
 
@@ -2853,9 +2875,16 @@ function _buildPanel(merges = null) {
     });
     scroll.style = `max-height: ${maxH - 54}px; -st-vfade-offset: 0px;`;
     try {
-        scroll.vscrollbar_policy = St.PolicyType.NEVER;
+        scroll.vscrollbar_policy = St.PolicyType.AUTOMATIC;
         scroll.hscrollbar_policy = St.PolicyType.NEVER;
-        scroll.overlay_scrollbars = false;
+        scroll.overlay_scrollbars = true;
+        scroll.enable_mouse_scrolling = true;
+        const vscroll = scroll.get_vscroll_bar?.();
+        if (vscroll) {
+            vscroll.opacity = 0;
+            vscroll.width = 0;
+            vscroll.hide?.();
+        }
     } catch (_) {}
 
     const list = new St.BoxLayout({
@@ -2915,7 +2944,20 @@ function _buildPanel(merges = null) {
         p.allocId = 0;
     }
 
-
+    try {
+        const vadj = scroll.get_vscroll_bar()?.get_adjustment();
+        if (vadj) {
+            const vadjId = vadj.connect('notify::value', () => {
+                try {
+                    for (const s of p.stacks || []) {
+                        if (s.kind === 'cards')
+                            _syncCards(p, monitor, s);
+                    }
+                } catch (_) {}
+            });
+            p.trayIds.push([vadj, vadjId]);
+        }
+    } catch (_) {}
 
     try {
         let bd, cards;
@@ -2939,6 +2981,8 @@ function _buildPanel(merges = null) {
         _setupNcStack(p, bd, monitor);
         bd.bgActor.opacity = 0;
         bd.bgActor.visible = false;
+        bd.bgActor.translation_x = 0;
+        bd.bgActor.translation_y = 0;
 
         try { _applyWidgetGlassParams(cards.effect); } catch (_) {}
         try {
@@ -2949,6 +2993,8 @@ function _buildPanel(merges = null) {
         _setupNcStack(p, cards, monitor);
         cards.bgActor.opacity = 0;
         cards.bgActor.visible = false;
+        cards.bgActor.translation_x = 0;
+        cards.bgActor.translation_y = 0;
 
         p.stacks = [bd, cards];
 
@@ -3029,6 +3075,8 @@ function _buildPanel(merges = null) {
         for (const s of p.stacks) {
             s.bgActor.opacity = 0;
             s.bgActor.visible = false;
+            s.bgActor.translation_x = 0;
+            s.bgActor.translation_y = 0;
         }
         box.ease({
             translation_x: 0,
@@ -3094,6 +3142,8 @@ function _destroyNC(p) {
                     s.bgActor.get_parent().remove_child(s.bgActor);
                 s.bgActor.hide();
                 s.bgActor.opacity = 0;
+                s.bgActor.translation_x = 0;
+                s.bgActor.translation_y = 0;
             } catch (_) {}
         }
         _cachedGlassStacks = stacks;
@@ -3257,6 +3307,7 @@ export function closeNC(immediate = false) {
     }
 
     try {
+        const slideOffset = (p.box?.width || NC_W) + 40;
         p.box.remove_all_transitions();
         p.panelBg.remove_all_transitions();
         p.box.set_pivot_point(1.0, 0.0);
@@ -3267,7 +3318,9 @@ export function closeNC(immediate = false) {
                     const bg = s?.bgActor;
                     if (!bg || (typeof bg.is_finalized === 'function' && bg.is_finalized()))
                         continue;
+                    bg.remove_all_transitions();
                     bg.ease({
+                        translation_x: slideOffset,
                         opacity: 0,
                         duration: 180,
                         mode: Clutter.AnimationMode.EASE_IN_CUBIC,
@@ -3277,7 +3330,7 @@ export function closeNC(immediate = false) {
         } catch (_) {}
         try {
             p.panelBg.ease({
-                translation_x: 480,
+                translation_x: slideOffset,
                 opacity: 0,
                 duration: 180,
                 mode: Clutter.AnimationMode.EASE_IN_CUBIC,
@@ -3285,7 +3338,7 @@ export function closeNC(immediate = false) {
         } catch (_) {}
         try {
             p.box.ease({
-                translation_x: 480,
+                translation_x: slideOffset,
                 opacity: 0,
                 duration: 180,
                 mode: Clutter.AnimationMode.EASE_IN_CUBIC,

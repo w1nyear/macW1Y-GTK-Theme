@@ -477,7 +477,7 @@ export function buildNotificationCard(source, notification, options = {}) {
             x_expand: false,
             x_align: Clutter.ActorAlign.START,
             y_align: Clutter.ActorAlign.CENTER,
-            style: 'margin-top: 7px !important; margin-bottom: 2px !important; spacing: 8px !important;',
+            style: 'margin-top: 4px !important; margin-bottom: 2px !important; spacing: 6px !important;',
             visible: true,
             opacity: 255,
         });
@@ -490,12 +490,12 @@ export function buildNotificationCard(source, notification, options = {}) {
                 reactive: true,
                 can_focus: true,
                 x_expand: false,
-                style: 'background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-right: 6px;',
+                style: 'background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 9999px !important; padding: 1px 10px !important; min-height: 14px !important; height: 16px !important; font-size: 10px !important; font-weight: 600 !important; margin-right: 6px;',
             });
             actBtn.connect('notify::hover', () => {
                 actBtn.set_style(actBtn.hover
-                    ? 'background-color: rgba(255, 255, 255, 0.26) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-right: 6px;'
-                    : 'background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 7px !important; padding: 4px 12px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-right: 6px;');
+                    ? 'background-color: rgba(255, 255, 255, 0.26) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; border-radius: 9999px !important; padding: 1px 10px !important; min-height: 14px !important; height: 16px !important; font-size: 10px !important; font-weight: 600 !important; margin-right: 6px;'
+                    : 'background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 9999px !important; padding: 1px 10px !important; min-height: 14px !important; height: 16px !important; font-size: 10px !important; font-weight: 600 !important; margin-right: 6px;');
             });
             actBtn.connect('clicked', () => {
                 try { action.activate(); } catch (e) { logError(e); }

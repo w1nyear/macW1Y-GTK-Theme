@@ -4704,3 +4704,39 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+#928: Виправлено анімацію закриття Центру повідомлень (рух рідкого скла синхронно з картками), відновлено вертикальне гортання списку без скролбара та зменшено висоту кнопок дій у повідомленнях удвічі
+  - Модифіковані компоненти:
+    * extensions/kiwi@kemma/apps/tahoeNotifications.js:
+      - У closeNC() додано bg.remove_all_transitions() та анімацію translation_x: slideOffset (де slideOffset = (p.box?.width || NC_W) + 40) для всіх акторів фону рідкого скла (s.bgActor) карток та бекдропу (раніше там змінювалась лише opacity: 0, через що скляні підкладки залишалися нерухомими на екрані при зсуві карток праворуч);
+      - Синхронізовано translation_x для p.panelBg та p.box через slideOffset;
+      - У _destroyNC() та openNC() додано скидання s.bgActor.translation_x = 0 та translation_y = 0;
+      - У _buildPanel() відновлено гортання списку: змінено scroll.vscrollbar_policy з NEVER на St.PolicyType.AUTOMATIC, встановлено overlay_scrollbars = true та enable_mouse_scrolling = true; при цьому скролбар залишається візуально прихованим (width: 0, opacity: 0);
+      - Підключено сигнал notify::value на вертикальному adjustment скролбара до _syncCards(p, monitor, s), що забезпечує миттєву синхронізацію положення рідкого скла під час коліщатка миші та тачпаду;
+      - У _syncCards() оптимізовано обрізку s.bgActor за вертикальними межами p.scroll та відсікання карток, що виходять за зону видимості прокрутки.
+    * extensions/kiwi@kemma/apps/tahoeNotificationCard.js:
+      - Зменшено висоту кнопок дій (actionsBox) удвічі: висота капсули встановлена на 16px (min-height: 14px), внутрішні відступи зменшено до 1px 10px, розмір шрифту 10px (font-weight: 600), радіус скруглення 9999px;
+      - Зменшено вертикальні відступи actionsBox (margin-top: 4px, margin-bottom: 2px, spacing: 6px);
+      - У computeCardTargetHeight() зменшено додану висоту при розгортанні дій з 34px до 20px (18px для скріншотів) та мінімальну висоту картки minH з 96px до 80px.
+    * extensions/kiwi@kemma/stylesheet.css:
+      - Оновлено .mac-notification-action-btn: висота 16px, min-height 14px, padding: 1px 10px, font-size: 10px, font-weight: 600, border-radius: 9999px;
+      - Оновлено .mac-notification-actions-box: margin-top: 4px, margin-bottom: 2px, spacing: 6px.
+    * extensions/blur-my-shell@aunetx/components/notifications_v4.js:
+      - Синхронізовано компактні розміри та стилі кнопок дій (16px, padding: 1px 10px, font-size: 10px, border-radius: 9999px) для консистентного вигляду у всіх режимах відображення.
+    * config/extensions.lock.json та /usr/share/mactheme/config/extensions.lock.json:
+      - Оновлено хеші контролю цілісності sha256 для kiwi@kemma (a44dcd7f...) та blur-my-shell@aunetx (7a07b049...).
+  - Результати валідації:
+    * Відкриття та закриття Центру повідомлень перевірено наживо через D-Bus EvalHelper: перевірено стан isOpenAfterOpen=true, isOpenAfterClose=false, scrollPolicy=1 (AUTOMATIC), помилок у журналі немає.
+    * Гаряче оновлення розширень kiwi@kemma та blur-my-shell@aunetx виконано через Main.extensionManager.reloadExtension() без перезавантаження сесії.
+    * bin/mac-audit-sync check: 100% PASS (0 розбіжностей).
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK (100% збіг хешів).
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+    * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh: 0 збігів (Strict ASCII OK).
+  * [extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotifications.js)
+  * [extensions/kiwi@kemma/apps/tahoeNotificationCard.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotificationCard.js)
+  * [extensions/kiwi@kemma/stylesheet.css](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/stylesheet.css)
+  * [extensions/blur-my-shell@aunetx/components/notifications_v4.js](file:///home/vitaliy/MACTHEMEFILES/extensions/blur-my-shell@aunetx/components/notifications_v4.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

@@ -433,14 +433,14 @@ export function buildNotificationCard(source, notification, options = {}) {
             visible: false,
             opacity: 0,
             style: isScreenshot
-                ? 'margin-top: 6px !important; margin-bottom: 4px !important; spacing: 6px !important;'
-                : 'margin-top: 8px !important; margin-bottom: 4px !important; spacing: 8px !important;',
+                ? 'margin-top: 4px !important; margin-bottom: 2px !important; spacing: 6px !important;'
+                : 'margin-top: 4px !important; margin-bottom: 2px !important; spacing: 6px !important;',
         });
         actionsBox.set_width(contentW);
         actionsBox.max_width = contentW;
         const btnStyleBase = isScreenshot
-            ? 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 9999px !important; padding: 4px 14px !important; font-size: 11px !important; font-weight: 500 !important; margin-right: 6px !important;'
-            : 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 9999px !important; padding: 5px 16px !important; font-size: 11.5px !important; font-weight: 500 !important; margin-right: 6px !important;';
+            ? 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 9999px !important; padding: 1px 10px !important; min-height: 14px !important; height: 16px !important; font-size: 10px !important; font-weight: 600 !important; margin-right: 6px !important;'
+            : 'font-family: "Default", "Default Display", default, system-ui, sans-serif, sans-serif !important; background-color: rgba(255, 255, 255, 0.16) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 9999px !important; padding: 1px 10px !important; min-height: 14px !important; height: 16px !important; font-size: 10px !important; font-weight: 600 !important; margin-right: 6px !important;';
         const btnStyleHover = btnStyleBase.replace('0.16', '0.26').replace('0.14', '0.20');
 
         for (const action of notification.actions) {
@@ -688,11 +688,10 @@ export function buildNotificationCard(source, notification, options = {}) {
             return isScreenshot ? 54 : 72;
 
         if (actionsBox && isHover) {
-
-            total += isScreenshot ? 30 : 34;
+            total += isScreenshot ? 18 : 20;
         }
         total += (isScreenshot ? 2 : 4) * Math.max(0, count - 1);
-        const minH = isScreenshot ? (isHover && actionsBox ? 88 : 54) : (isHover && actionsBox ? 96 : 72);
+        const minH = isScreenshot ? (isHover && actionsBox ? 72 : 54) : (isHover && actionsBox ? 80 : 72);
         return Math.max(minH, Math.ceil(total));
     };
 
