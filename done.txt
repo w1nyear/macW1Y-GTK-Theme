@@ -4671,3 +4671,36 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [gtk-4.0/macw1y-components.css](file:///home/vitaliy/MACTHEMEFILES/gtk-4.0/macw1y-components.css)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+#927: Виправлено появу меню підтвердження очищення смітника та зависання/відсутність анімації згортання розширеного доку після закриття контекстного меню
+  - Модифіковані компоненти:
+    * extensions/eval-helper@mactheme/extension.js:
+      - Перенесено функцію loadAlertStyling у зовнішню область видимості enable() (раніше вона була локально оголошена всередині patchModalDialogLQVisual, через що виклик showMacEmptyTrashDialog викидав ReferenceError: loadAlertStyling is not defined);
+      - Додано безпечний обробник локалізації tr(k, fallback) для захисту від ReferenceError при відсутності t у контексті виконання;
+      - Забезпечено коректний виклик модального вікна спорожнення смітника (macOS Alert) з підтвердженням видалення файлів через Nautilus DBus або gio trash --empty;
+      - Оновлено встановлену копію розширення у ~/.local/share/gnome-shell/extensions/eval-helper@mactheme/.
+    * extensions/dash2dock-motion@unmade.space/appIcons.js:
+      - Додано емісію сигналу this.emit('menu-state-changed', false) при закритті або знищенні контекстного меню (DockAppIcon._onMenuPoppedDown, destroy-слухачі та DockShowAppsIcon._onMenuPoppedDown);
+      - Раніше сигнал 'menu-state-changed' надсилав лише true при відкритті меню, а при закритті значення false ніколи не випромінювалося, внаслідок чого dash не надсилав 'menu-closed', dock залишався в режимі _ignoreHover = true, а magnifier._paused залишався true назавжди, заморожуючи док у розширеному стані;
+      - Оновлено встановлену копію розширення у ~/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/.
+    * extensions/dash2dock-motion@unmade.space/magnifier.js:
+      - У _startTimeline() прибрано скидання this._cursor = null, якщо якір курсора вже існує, що усунуло миттєвий зрив/стрибок масштабу іконок до 1.0 при закритті контекстного меню поза межами доку;
+      - У _advanceCursor() зафіксовано якір this._cursor під час згортання доку (this._target === 0 && this._cursor !== null), що гарантує плавний пружний спад збільшення іконок та плавне стягування капсули фону доку в початковий розмір;
+      - Забезпечено синхронізацію шейдера рідкого скла через _notifyDockUpdate() при завершенні анімації;
+      - Оновлено встановлену копію розширення у ~/.local/share/gnome-shell/extensions/dash2dock-motion@unmade.space/.
+    * config/extensions.lock.json та /usr/share/mactheme/config/extensions.lock.json:
+      - Оновлено контрольні хеші sha256 для eval-helper@mactheme (c86a4bab...) та dash2dock-motion@unmade.space (9aad9cf9...).
+  - Результати валідації:
+    * Виклик діалогу смітника перевірено наживо: вікно «Спорожнити смітник?» стабільно з'являється без помилок ReferenceError.
+    * Застосовано гарячий патч у пам'яті GNOME Shell без перезавантаження та перевірено стан доку: dockState=2, ignoreHover=false, paused=false, target=0, envelope=0.
+    * bin/mac-audit-sync check: 100% PASS (0 розбіжностей).
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK (100% збіг хешів).
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+    * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh: 0 збігів (Strict ASCII OK).
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [extensions/dash2dock-motion@unmade.space/appIcons.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/appIcons.js)
+  * [extensions/dash2dock-motion@unmade.space/magnifier.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/magnifier.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

@@ -330,8 +330,11 @@ export const DockAbstractAppIcon = GObject.registerClass({
 
 
 
-        this._menu?.close(false);
-        delete this._menu;
+        if (this._menu) {
+            this._menu.close(false);
+            this.emit('menu-state-changed', false);
+            delete this._menu;
+        }
     }
 
     ownsWindow(window) {
@@ -616,6 +619,7 @@ export const DockAbstractAppIcon = GObject.registerClass({
             });
             this._menu.actor.connect('destroy', () => {
                 Main.overview.disconnect(id);
+                this.emit('menu-state-changed', false);
             });
 
             this._menuManager.addMenu(this._menu);
@@ -1874,7 +1878,10 @@ export const DockShowAppsIcon = GObject.registerClass({
     }
 
     _onMenuPoppedDown(...args) {
-        AppDisplay.AppIcon.prototype._onMenuPoppedDown.call(this, ...args);
+        try {
+            AppDisplay.AppIcon.prototype._onMenuPoppedDown?.call(this, ...args);
+        } catch (_) {}
+        this.emit('menu-state-changed', false);
     }
 
     _setPopupTimeout(...args) {
@@ -1908,6 +1915,13 @@ export const DockShowAppsIcon = GObject.registerClass({
         this.add_action(rightClickGesture);
     }
 
+    _onMenuPoppedDown() {
+        try {
+            this.toggleButton?.fake_release?.();
+        } catch (_) {}
+        this.emit('menu-state-changed', false);
+    }
+
     popupMenu() {
         if (!this._hasPopupMenu())
             return false;
@@ -1926,6 +1940,7 @@ export const DockShowAppsIcon = GObject.registerClass({
             });
             this._menu.actor.connect('destroy', () => {
                 Main.overview.disconnect(id);
+                this.emit('menu-state-changed', false);
             });
             this._menuManager.addMenu(this._menu);
         }

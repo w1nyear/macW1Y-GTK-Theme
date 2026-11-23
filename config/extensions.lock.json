@@ -146,7 +146,7 @@
         "50",
         "51"
       ],
-      "sha256": "0a0035783a1aeb1f66188d20e4960fa006437d853b83df8cf230a8866284fdd5",
+      "sha256": "9aad9cf93ce29290a64cfcafc7f8760b46e7d5279135f457fc3cd48057da781c",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -175,9 +175,9 @@
         "docking.js": "a203501322739037a5c6abae430c543cf8ce17333e0fb6f6b2c4db1b7b1844bf",
         "fileManager1API.js": "56715f6acad206e5928337ff3326b24f1a9b25678776c79914ab7fe526b2c450",
         "prefs.js": "b25183a44d102a2a6a130eb87d3afcbc213485c9e53391299c5f013b91b417cb",
-        "appIcons.js": "168a2902703e6ec025779e4b80b475c1fa8bf5efcae15b0bfb09b54514e8b110",
+        "appIcons.js": "5ec2fbd1c6492f9f7d330bf7aee0e648359b736b30069273b261e60f76f30822",
         "appSpread.js": "d9e9e22e4b011ff0a3fe735e982cf01cd5e8cc36d1a6f9a5b90118906d5737c0",
-        "magnifier.js": "3ec1adeceb54169b0e65a8d60760dbf3655dc6dfcaa97d693bd5217671fe1b9b",
+        "magnifier.js": "1be899fcd109bce693c80a1edee97a7b80e45217904a261e91edfd74ccf97c2c",
         "iconTint.js": "b1d507751a0253f6cb0b4a0a35e68a6f17da2d4d42994febc66287b09fbcf8a3",
         "glass.js": "9f5930cee3af48bf5efa1a3295e2bc1b76f751a41e709dd33459a66d1c41b97e",
         "imports.js": "0a6ee5579976398eddafb2eff7bb8b8a13e5dae45497d33abe9a1c0a82529641",
@@ -233,7 +233,7 @@
         "locale/nl/LC_MESSAGES/dash2dock-motion.mo": "ba7e144e0ee6edcb4f84f5ffbd0727eb3104c1b1bd2c1e520cc3af49affd5d39",
         "locale/ro/LC_MESSAGES/dash2dock-motion.mo": "3c44204f5671296cb522d7ee5769b18e0506870f8a413f79a23983ebc04bd3fe"
       },
-      "pinned_sha256": "931d89521eb4a7671117dd3d3b1f898604e0fc91bd98e1b2c72ca51def811ead"
+      "pinned_sha256": "9aad9cf93ce29290a64cfcafc7f8760b46e7d5279135f457fc3cd48057da781c"
     },
     "eval-helper@mactheme": {
       "uuid": "eval-helper@mactheme",
@@ -247,7 +247,7 @@
         "50",
         "51"
       ],
-      "sha256": "bd96bd10ac37ee99fe140556fe0103def3bafe1af077de34e8e0f1e32f555d12",
+      "sha256": "c86a4bab216f6f094f310517bc714a21d45b97b49eb830fb9955b49b240b257f",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -258,9 +258,9 @@
       "has_custom_patches": true,
       "patch_description": "Local D-Bus EvalHelper service and macW1Y Alt+Tab switcher enhancements",
       "last_verified": "2026-11-21",
-      "pinned_sha256": "bd96bd10ac37ee99fe140556fe0103def3bafe1af077de34e8e0f1e32f555d12",
-      "integrity_hash": "bd96bd10ac37ee99fe140556fe0103def3bafe1af077de34e8e0f1e32f555d12",
-      "integrity": "bd96bd10ac37ee99fe140556fe0103def3bafe1af077de34e8e0f1e32f555d12"
+      "pinned_sha256": "c86a4bab216f6f094f310517bc714a21d45b97b49eb830fb9955b49b240b257f",
+      "integrity_hash": "c86a4bab216f6f094f310517bc714a21d45b97b49eb830fb9955b49b240b257f",
+      "integrity": "c86a4bab216f6f094f310517bc714a21d45b97b49eb830fb9955b49b240b257f"
     },
     "kiwi@kemma": {
       "uuid": "kiwi@kemma",

@@ -2097,8 +2097,25 @@ export default class EvalHelper extends Extension {
             return GLib.SOURCE_REMOVE;
         });
 
-
-
+        const loadAlertStyling = () => {
+            let alertTint = 20;
+            let alertBlur = 15;
+            let alertShadow = 35;
+            try {
+                const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+                if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+                    const [ok, data] = GLib.file_get_contents(confPath);
+                    if (ok) {
+                        const text = (data instanceof Uint8Array) ? new TextDecoder().decode(data) : data.toString();
+                        const json = JSON.parse(text);
+                        if (json.alert_tint !== undefined) alertTint = Number(json.alert_tint);
+                        if (json.alert_blur !== undefined) alertBlur = Number(json.alert_blur);
+                        if (json.alert_shadow !== undefined) alertShadow = Number(json.alert_shadow);
+                    }
+                }
+            } catch (_) {}
+            return { alertTint, alertBlur, alertShadow };
+        };
 
         const patchModalDialogLQVisual = async () => {
             try {
@@ -2138,26 +2155,6 @@ export default class EvalHelper extends Extension {
                 const getLiquidGlassPath = () => {
                     const ext = Main.extensionManager.lookup('liquid-glass@thinkingcoding1231.gmail.com');
                     return ext?.path || `${GLib.get_user_data_dir()}/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com`;
-                };
-
-                const loadAlertStyling = () => {
-                    let alertTint = 20;
-                    let alertBlur = 15;
-                    let alertShadow = 35;
-                    try {
-                        const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
-                        if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
-                            const [ok, data] = GLib.file_get_contents(confPath);
-                            if (ok) {
-                                const text = (data instanceof Uint8Array) ? new TextDecoder().decode(data) : data.toString();
-                                const json = JSON.parse(text);
-                                if (json.alert_tint !== undefined) alertTint = Number(json.alert_tint);
-                                if (json.alert_blur !== undefined) alertBlur = Number(json.alert_blur);
-                                if (json.alert_shadow !== undefined) alertShadow = Number(json.alert_shadow);
-                            }
-                        }
-                    } catch (_) {}
-                    return { alertTint, alertBlur, alertShadow };
                 };
 
                 const createDialogGlass = async (dialogActor) => {
@@ -2688,6 +2685,13 @@ export default class EvalHelper extends Extension {
 
         const showMacEmptyTrashDialog = async () => {
             try {
+                const tr = (k, fb) => {
+                    try {
+                        if (typeof t === 'function') return t(k, fb);
+                    } catch (_) {}
+                    return fb;
+                };
+
                 if (globalThis._macActiveEmptyTrashDialog) {
                     try { globalThis._macActiveEmptyTrashDialog.close(); } catch (_) {}
                     globalThis._macActiveEmptyTrashDialog = null;
@@ -2758,7 +2762,7 @@ export default class EvalHelper extends Extension {
                 content.add_child(iconBox);
 
                 const title = new St.Label({
-                    text: t('empty_trash_prompt', 'Спорожнити смітник?'),
+                    text: tr('empty_trash_prompt', 'Спорожнити смітник?'),
                     style: 'font-size: 14.5px; font-weight: 700; color: #ffffff; text-align: center; margin-bottom: 3px;',
                 });
                 title.clutter_text.set_line_wrap(true);
@@ -2766,7 +2770,7 @@ export default class EvalHelper extends Extension {
                 content.add_child(title);
 
                 const body = new St.Label({
-                    text: t('empty_trash_desc', 'Усі об’єкти у смітнику буде\nвилучено остаточно.'),
+                    text: tr('empty_trash_desc', 'Усі об’єкти у смітнику буде\nвилучено остаточно.'),
                     style: 'font-size: 12px; color: rgba(255, 255, 255, 0.72); text-align: center; margin-bottom: 12px; line-height: 1.3;',
                 });
                 body.clutter_text.set_line_wrap(true);
@@ -2781,7 +2785,7 @@ export default class EvalHelper extends Extension {
                 bl.set_style('padding: 0 !important; margin: 0 !important; width: 224px !important;');
 
                 const cancelBtn = dlg.addButton({
-                    label: t('cancel', 'Скасувати'),
+                    label: tr('cancel', 'Скасувати'),
                     action: () => dlg.close(),
                     key: Clutter.KEY_Escape,
                 });
@@ -2793,7 +2797,7 @@ export default class EvalHelper extends Extension {
                 updateCancelStyle();
 
                 const getConfirmText = () => {
-                    const full = t('empty_trash_action', 'Спорожнити');
+                    const full = tr('empty_trash_action', 'Спорожнити');
                     if (full === 'Спорожнити смітник') return 'Спорожнити';
                     if (full === 'Очистить корзину') return 'Очистить';
                     if (full === 'Vaciar la papelera') return 'Vaciar';

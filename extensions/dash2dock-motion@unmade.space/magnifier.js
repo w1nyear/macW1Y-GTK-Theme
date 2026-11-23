@@ -309,7 +309,8 @@ export class DockMagnifier {
         if (this._timeline)
             return;
 
-        this._cursor = null;
+        if (this._cursor === null)
+            this._cursor = this._pointerAxis();
         this._timeline = Clutter.Timeline.new_for_actor(this._dash, 3600 * 1000);
         this._timeline.set_repeat_count(-1);
         this._timeline.connect('new-frame', () => this._onFrame());
@@ -329,6 +330,10 @@ export class DockMagnifier {
     }
 
     _advanceCursor(dt) {
+        if (this._target === 0 && this._cursor !== null) {
+            this._cursorMoved = false;
+            return;
+        }
         const raw = this._pointerAxis();
         if (this._cursor === null) {
             this._cursor = raw;
