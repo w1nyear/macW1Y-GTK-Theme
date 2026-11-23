@@ -3631,43 +3631,69 @@ StWidget.focused .app-grid-running-dot {
 
 .modal-dialog {
   color: #ffffff;
-  padding: 14px 16px;
+  padding: 16px 18px 14px 18px;
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
 }
 
 .modal-dialog .modal-dialog-content-box {
   padding: 0;
-  spacing: 6px;
-  max-width: 28em;
+  spacing: 3px;
+  width: 224px;
+  max-width: 224px;
 }
 
 .modal-dialog .modal-dialog-button-box {
-  padding-top: 10px;
+  padding-top: 8px;
   spacing: 8px;
 }
 
 .modal-dialog .message-dialog-content {
-  spacing: 6px;
+  spacing: 3px;
+  text-align: center !important;
+  x-align: center !important;
 }
 
 .modal-dialog .message-dialog-title {
   color: #ffffff;
-  font-size: 1.18em;
+  font-size: 1.12em;
   font-weight: 700;
+  margin-bottom: 2px;
+  text-align: center !important;
+  x-align: center !important;
 }
 
 .modal-dialog .message-dialog-description {
   color: rgba(255, 255, 255, 0.88);
-  font-size: 0.91em;
+  font-size: 0.88em;
+  margin-top: 0px;
+  text-align: center !important;
+  x-align: center !important;
 }
 
 .modal-dialog .modal-dialog-button,
 .modal-dialog .modal-dialog-linked-button {
-  min-height: 44px;
-  min-width: 148px;
-  padding: 0 18px;
-  margin: 0;
+  min-height: 28px;
+  height: 28px;
+  min-width: 104px;
+  padding: 0 10px;
+  margin: 0 4px;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 9999px !important;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.20) !important;
+  text-shadow: none;
+  icon-shadow: none;
+}
+
+.modal-dialog .message-dialog-content,
+.modal-dialog .message-dialog-title,
+.modal-dialog .message-dialog-description {
+  text-align: center !important;
+  x-align: center !important;
+}
   font-weight: 600;
   color: #ffffff;
   background-color: rgba(255, 255, 255, 0.20) !important;

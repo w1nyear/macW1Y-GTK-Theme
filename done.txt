@@ -4364,3 +4364,35 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [extensions/stage-manager@gnome-stage-manager/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/stage-manager@gnome-stage-manager/extension.js)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+
+916. Оновлення геометрії та компонування діалогових вікон попереджень (Alerts / Prompts):
+  - Зменшено ширину модальних меню попереджень з 360–380px до компактних 260px (як на наданих фото референсах macOS):
+    * Ширина контейнера діалогу зменшена до 260px (`width: 260px !important; min-width: 260px !important; max-width: 260px !important; padding: 16px 18px 14px 18px !important;`).
+    * Внутрішній контентний блок оптимізовано до ширини 224px.
+    * Кнопки дій отримали компактну капсульну форму з розмірами 104–108px по ширині та 28px по висоті (`min-height: 28px; height: 28px; border-radius: 9999px !important; margin: 0 4px; padding: 0 10px;`), з компактним проміжком 8px між ними.
+  - Зменшено вертикальні відступи між елементами:
+    * Відступ між заголовком (title) та описом (description) зменшено до 2–3px (`margin-bottom: 2px–3px`).
+    * Відступ між описом та блоком кнопок зменшено до 6–8px.
+    * Вирівнювання тексту встановлено по центру (`text-align: center !important; x-align: center !important;`), що відповідає еталонному стилю macOS Alert.
+  - Застосовано зміни у всіх відповідних компонентах:
+    * `extensions/eval-helper@mactheme/extension.js` (`syncDialogGlass` та `showMacEmptyTrashDialog`).
+    * `extensions/kiwi@kemma/stylesheet.css` (`.prompt-dialog.tahoe-polkit`, зменшено розмір іконки замка до 44px, згладжено відступи полів вводу та кнопки).
+    * `gnome-shell-theme/gnome-shell.css`, `macW1Y-Dark`, `macW1Y-Light`, `macW1Y-Dark-solid`, `macW1Y-Light-solid` та системних копіях в `~/.themes/`.
+    * Передогляд у Центрі керування («Параметри мак стилізації» -> «Попередження»): в `libmac_settings.c` та `gnome-control-center-overlay/libmac_settings.c` оновлено макет картки передогляду (`cw = 216.0`, `ch = 136.0`, капсульні кнопки `btn_w = 86.0`, `btn_r = 12.0`, відстань між кнопками 8px). Бібліотеку `libmac_settings.so` перекомпільовано та синхронізовано по всіх системних директоріях.
+  - Оновлено хеші цілісності в `config/extensions.lock.json` та `/usr/share/mactheme/config/extensions.lock.json` для `eval-helper@mactheme` та `kiwi@kemma`.
+  - Усі перевірки пройдено успішно:
+    * `mac-extension-guard verify`: 21/21 PASS.
+    * `mac-audit-sync check`: 100% PASS (macW1Y 0.8).
+    * `python3 -m unittest discover -s tests -p 'test_*.py'`: 39/39 PASS.
+    * `install.sh`: 0 кириличних символів.
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [extensions/kiwi@kemma/stylesheet.css](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/stylesheet.css)
+  * [gnome-shell-theme/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/gnome-shell-theme/gnome-shell.css)
+  * [macW1Y-Dark/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark/gnome-shell/gnome-shell.css)
+  * [macW1Y-Light/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light/gnome-shell/gnome-shell.css)
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

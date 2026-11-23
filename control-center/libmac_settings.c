@@ -3331,7 +3331,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_paint(cr);
 
 
-    double cw = 246.0, ch = 140.0, cr_r = 18.0;
+    double cw = 216.0, ch = 136.0, cr_r = 18.0;
     double cx = (width - cw) / 2.0;
     double cy = (height - ch) / 2.0;
 
@@ -3345,8 +3345,8 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
 
 
     double tri_cx = cx + cw / 2.0;
-    double tri_cy = cy + 24.0;
-    double tri_sz = 14.0;
+    double tri_cy = cy + 22.0;
+    double tri_sz = 13.0;
     cairo_move_to(cr, tri_cx, tri_cy - tri_sz);
     cairo_line_to(cr, tri_cx + tri_sz * 1.15, tri_cy + tri_sz * 0.85);
     cairo_line_to(cr, tri_cx - tri_sz * 1.15, tri_cy + tri_sz * 0.85);
@@ -3356,7 +3356,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
 
 
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 13.0);
+    cairo_set_font_size(cr, 12.0);
     cairo_set_source_rgb(cr, 0.10, 0.10, 0.10);
     cairo_text_extents_t ex_w;
     cairo_text_extents(cr, "!", &ex_w);
@@ -3364,30 +3364,30 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_show_text(cr, "!");
 
 
-    cairo_set_font_size(cr, 11.5);
+    cairo_set_font_size(cr, 11.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
     const char *title_txt = "Спорожнити Смітник?";
     cairo_text_extents(cr, title_txt, &ex_w);
-    cairo_move_to(cr, cx + (cw - ex_w.width) / 2.0, cy + 54.0);
+    cairo_move_to(cr, cx + (cw - ex_w.width) / 2.0, cy + 49.0);
     cairo_show_text(cr, title_txt);
 
 
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-    cairo_set_font_size(cr, 9.5);
+    cairo_set_font_size(cr, 9.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.65);
     const char *sub_txt = "Цю дію неможливо скасувати.";
     cairo_text_extents(cr, sub_txt, &ex_w);
-    cairo_move_to(cr, cx + (cw - ex_w.width) / 2.0, cy + 70.0);
+    cairo_move_to(cr, cx + (cw - ex_w.width) / 2.0, cy + 63.0);
     cairo_show_text(cr, sub_txt);
 
 
-    double btn_y = cy + ch - 34.0;
-    double btn_w = 98.0;
+    double btn_y = cy + ch - 32.0;
+    double btn_w = 86.0;
     double btn_h = 24.0;
-    double btn_r = 7.0;
+    double btn_r = 12.0;
 
 
-    double b1_x = cx + 16.0;
+    double b1_x = cx + 18.0;
     draw_rounded_rect_path(cr, b1_x, btn_y, btn_w, btn_h, btn_r);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.14);
     cairo_fill(cr);
@@ -3395,19 +3395,19 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.18);
     cairo_set_line_width(cr, 0.8);
     cairo_stroke(cr);
-    cairo_set_font_size(cr, 10.0);
+    cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.90);
     cairo_text_extents(cr, "Скасувати", &ex_w);
     cairo_move_to(cr, b1_x + (btn_w - ex_w.width) / 2.0, btn_y + 15.5);
     cairo_show_text(cr, "Скасувати");
 
 
-    double b2_x = cx + cw - 16.0 - btn_w;
+    double b2_x = cx + cw - 18.0 - btn_w;
     draw_rounded_rect_path(cr, b2_x, btn_y, btn_w, btn_h, btn_r);
     cairo_set_source_rgb(cr, 0.88, 0.22, 0.20);
     cairo_fill(cr);
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 10.0);
+    cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
     cairo_text_extents(cr, "Спорожнити", &ex_w);
     cairo_move_to(cr, b2_x + (btn_w - ex_w.width) / 2.0, btn_y + 15.5);

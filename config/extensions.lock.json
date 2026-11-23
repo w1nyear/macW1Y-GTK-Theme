@@ -247,7 +247,7 @@
         "50",
         "51"
       ],
-      "sha256": "c3216af34eac6e56015ed5a52eb966c5e1b44a2bdad589b3e6fc9d6c8c499d67",
+      "sha256": "70984e42f6ef1fb2404a7c36d499e2f0531149d8cad7e9dcc270cbb80d6c4e29",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -259,7 +259,8 @@
       "patch_description": "Local D-Bus EvalHelper service and macW1Y Alt+Tab switcher enhancements",
       "last_verified": "2026-11-21",
       "pinned_sha256": "1b1ad5dcb2a6fd8b683fd59e79f7ac971bc6ed6363b646d95c43c5854cfc65d4",
-      "integrity_hash": "1b1ad5dcb2a6fd8b683fd59e79f7ac971bc6ed6363b646d95c43c5854cfc65d4"
+      "integrity_hash": "1b1ad5dcb2a6fd8b683fd59e79f7ac971bc6ed6363b646d95c43c5854cfc65d4",
+      "integrity": "70984e42f6ef1fb2404a7c36d499e2f0531149d8cad7e9dcc270cbb80d6c4e29"
     },
     "kiwi@kemma": {
       "uuid": "kiwi@kemma",
@@ -273,7 +274,7 @@
         "50",
         "51"
       ],
-      "sha256": "0a45f7641b06eb04b4f0a1a3e2820b7e035c063cc50f2285717cb67f3c055c08",
+      "sha256": "60037371f5b0dd0a419928ae2b8a1977242f8165ec35481b703389a903c1d9c5",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -289,7 +290,8 @@
       "integrity_hash": "24fe47e28aea2160c634b585b4607830e6a332fbeb925d51dd4367abda0112a4",
       "pinned_sha256": "24fe47e28aea2160c634b585b4607830e6a332fbeb925d51dd4367abda0112a4",
       "expected_hash": "24fe47e28aea2160c634b585b4607830e6a332fbeb925d51dd4367abda0112a4",
-      "dir_hash": "24fe47e28aea2160c634b585b4607830e6a332fbeb925d51dd4367abda0112a4"
+      "dir_hash": "24fe47e28aea2160c634b585b4607830e6a332fbeb925d51dd4367abda0112a4",
+      "integrity": "60037371f5b0dd0a419928ae2b8a1977242f8165ec35481b703389a903c1d9c5"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {
       "uuid": "liquid-glass@thinkingcoding1231.gmail.com",

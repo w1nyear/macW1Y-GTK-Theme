@@ -2320,10 +2320,10 @@ export default class EvalHelper extends Extension {
                         }
 
                         try {
-                            const extra = ' width: 360px !important; min-width: 360px !important; max-width: 360px !important; padding: 18px 20px !important;';
+                            const extra = ' width: 260px !important; min-width: 260px !important; max-width: 260px !important; padding: 16px 18px 14px 18px !important;';
                             dialogBox.set_style(`background-color: transparent !important; border-radius: ${Math.round(radius)}px !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; box-shadow: 0 16px 45px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important;${extra}`);
                             for (const button of dialogBox.get_children().flatMap(child => child.get_children?.() || []).flatMap(child => child.get_children?.() || []).filter(child => child.has_style_class_name?.('modal-dialog-button') || child.has_style_class_name?.('modal-dialog-linked-button'))) {
-                                button.set_style('min-height: 26px !important; height: 26px !important; border-radius: 999px !important;');
+                                button.set_style('min-height: 28px !important; height: 28px !important; border-radius: 999px !important; margin: 0 4px !important; padding: 0 10px !important;');
                             }
                         } catch (_) {}
 
@@ -2672,20 +2672,20 @@ export default class EvalHelper extends Extension {
                         blur.name = 'mac-alert-blur-effect';
                         d.add_effect(blur);
                     } catch (_) {}
-                    d.set_style(`background-color: ${cardBg} !important; border-radius: 26px !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; border-top: 1px solid rgba(255, 255, 255, 0.28) !important; box-shadow: 0 20px 50px rgba(0, 0, 0, ${shadowVal}) !important; width: 280px !important; min-width: 280px !important; max-width: 280px !important; padding: 22px 20px 20px 20px !important;`);
+                    d.set_style(`background-color: ${cardBg} !important; border-radius: 24px !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; border-top: 1px solid rgba(255, 255, 255, 0.28) !important; box-shadow: 0 20px 50px rgba(0, 0, 0, ${shadowVal}) !important; width: 260px !important; min-width: 260px !important; max-width: 260px !important; padding: 18px 18px 14px 18px !important;`);
                 }
 
                 const content = new St.BoxLayout({
                     vertical: true,
                     x_align: Clutter.ActorAlign.CENTER,
                     y_align: Clutter.ActorAlign.CENTER,
-                    style: 'spacing: 0px; width: 240px;',
+                    style: 'spacing: 0px; width: 224px;',
                 });
 
                 const iconBox = new St.BoxLayout({
                     x_align: Clutter.ActorAlign.CENTER,
                     y_align: Clutter.ActorAlign.CENTER,
-                    style: 'margin-bottom: 12px;',
+                    style: 'margin-bottom: 8px;',
                 });
                 const warnIcon = new St.Icon({
                     icon_name: 'dialog-warning-symbolic',
@@ -2697,7 +2697,7 @@ export default class EvalHelper extends Extension {
 
                 const title = new St.Label({
                     text: t('empty_trash_prompt', 'Спорожнити смітник?'),
-                    style: 'font-size: 15px; font-weight: 700; color: #ffffff; text-align: center; margin-bottom: 6px;',
+                    style: 'font-size: 14.5px; font-weight: 700; color: #ffffff; text-align: center; margin-bottom: 3px;',
                 });
                 title.clutter_text.set_line_wrap(true);
                 title.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
@@ -2705,7 +2705,7 @@ export default class EvalHelper extends Extension {
 
                 const body = new St.Label({
                     text: t('empty_trash_desc', 'Усі об’єкти у смітнику буде\nвилучено остаточно.'),
-                    style: 'font-size: 12.5px; color: rgba(255, 255, 255, 0.72); text-align: center; margin-bottom: 20px; line-height: 1.35;',
+                    style: 'font-size: 12px; color: rgba(255, 255, 255, 0.72); text-align: center; margin-bottom: 12px; line-height: 1.3;',
                 });
                 body.clutter_text.set_line_wrap(true);
                 body.clutter_text.set_x_align(Clutter.ActorAlign.CENTER);
@@ -2715,8 +2715,8 @@ export default class EvalHelper extends Extension {
 
                 const bl = dlg.dialogLayout.buttonLayout;
                 bl.layout_manager.orientation = Clutter.Orientation.HORIZONTAL;
-                bl.layout_manager.spacing = 10;
-                bl.set_style('padding: 0 !important; margin: 0 !important; width: 240px !important;');
+                bl.layout_manager.spacing = 8;
+                bl.set_style('padding: 0 !important; margin: 0 !important; width: 224px !important;');
 
                 const cancelBtn = dlg.addButton({
                     label: t('cancel', 'Скасувати'),
@@ -2725,7 +2725,7 @@ export default class EvalHelper extends Extension {
                 });
                 const updateCancelStyle = () => {
                     const bg = cancelBtn.hover ? 'rgba(255, 255, 255, 0.22)' : 'rgba(255, 255, 255, 0.14)';
-                    cancelBtn.set_style(`background-color: ${bg} !important; background-gradient-direction: none !important; color: white !important; font-weight: 500; font-size: 13px; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 9999px !important; min-height: 32px; height: 32px; min-width: 115px; width: 115px !important; margin: 0; padding: 0 10px;`);
+                    cancelBtn.set_style(`background-color: ${bg} !important; background-gradient-direction: none !important; color: white !important; font-weight: 500; font-size: 13px; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 9999px !important; min-height: 28px; height: 28px; min-width: 108px; width: 108px !important; margin: 0; padding: 0 10px;`);
                 };
                 cancelBtn.connect('notify::hover', updateCancelStyle);
                 updateCancelStyle();
@@ -2749,7 +2749,7 @@ export default class EvalHelper extends Extension {
                 });
                 const updateConfirmStyle = () => {
                     const bg = confirmBtn.hover ? '#ff453a' : '#eb5545';
-                    confirmBtn.set_style(`background-color: ${bg} !important; background-gradient-direction: none !important; color: white !important; font-weight: 600; font-size: 13px; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 9999px !important; min-height: 32px; height: 32px; min-width: 115px; width: 115px !important; margin: 0; padding: 0 10px;`);
+                    confirmBtn.set_style(`background-color: ${bg} !important; background-gradient-direction: none !important; color: white !important; font-weight: 600; font-size: 13px; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 9999px !important; min-height: 28px; height: 28px; min-width: 108px; width: 108px !important; margin: 0; padding: 0 10px;`);
                 };
                 confirmBtn.connect('notify::hover', updateConfirmStyle);
                 updateConfirmStyle();
