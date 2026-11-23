@@ -4321,3 +4321,24 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+
+914. Усунення накладання плейсхолдера пошуку, фону та рекомендацій у Spotlight і Launchpad:
+  - Виправлено накладання тексту плейсхолдера на текст рекомендацій/автозаповнення:
+    * Виявлено причину: при переході стрілками або виборі програми, коли поле введення ще не містить введеного тексту користувачем (`text === ""`), компонент `St.Entry` продовжував відображати власний `hint_text` («Пошук Spotlight» у Spotlight або «Програми» у Launchpad). Одночасно поверх нього у тому самому контейнері `_entryPillBox` шар `_ghostLabel` відмальовував назву обраного елемента та дію « — Відкрити», через що написи накладалися один на один (наприклад, «Пошук Spotlight» на «Plume Impactor» або «Програми» на «Аналізатор використання диска»).
+    * Реалізовано динамічне приховування `this._entry.hint_text = ''` у функціях `_updateAppSelectionDisplay` та `_updateSearchResultDisplay` на весь час активності автозаповнення/рекомендацій, та його коректне відновлення відповідно до режиму (`spotlight_search`, `applications`, `files`, `search_clipboard`) при очищенні вибору через `_clearAutocompleteDisplay`.
+    * Для навігації стрілками (коли `typedText.length === 0`) налаштовано коректне контрастне форматування: назва програми/елемента виводиться білим кольором (`#ffffff`), а суфікс дії (« — Відкрити») — напівпрозорим білим (`#ffffff88`).
+  - Усунено конфлікт та накладання фонових плашок («і фоном»):
+    * У режимі Spotlight (`search` mode) повністю усунено внутрішнє забарвлення `_entryPillBox` (встановлено прозорий фон `background-color: transparent !important; border: none; box-shadow: none;`), оскільки вікно Spotlight уже має власну скляну заокруглену капсулу. Вкладена сіра плашка більше не нашаровується на фон Spotlight.
+    * У Launchpad (`apps` mode) скориговано розміри та радіус капсули (`border-radius: 10px`, `padding: 3px 12px`, `background-color: rgba(255, 255, 255, 0.18)`), виправлено `_loadAppsView` (при простому кліку на категорію програми не автозаповнюються примусово доти, поки користувач не почне навігацію стрілками).
+    * Додано обробку клавіші BackSpace: при натисканні на порожньому вводі з активним вибором стрілками у Launchpad вибір скидається та відновлюється початковий плейсхолдер.
+  - Оновлено контрольний хеш цілісності `appmenu@ChathurangaBW.github.io` в `config/extensions.lock.json` та системному `/usr/share/mactheme/config/extensions.lock.json` (`c4375ec12fdb3cd666435e1f0797e56028ef36076a1c1d12d720d6d56d39c8e8`).
+  - Усі перевірки пройдено успішно:
+    * `mac-extension-guard verify`: 21/21 PASS.
+    * `mac-audit-sync check`: 100% PASS (macW1Y 0.8).
+    * `python3 -m unittest discover -s tests -p 'test_*.py'`: 39/39 PASS.
+    * `install.sh`: 0 кириличних символів.
+  * [extensions/appmenu@ChathurangaBW.github.io/searchDialog.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/searchDialog.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

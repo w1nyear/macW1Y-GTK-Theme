@@ -1416,6 +1416,15 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 return Clutter.EVENT_STOP;
             }
 
+            if (symbol === Clutter.KEY_BackSpace && this._mode === 'apps' && this._entry.text.length === 0) {
+                if (this._hasArrowNavigatedApps || this._selectedAppIndex >= 0) {
+                    this._hasArrowNavigatedApps = false;
+                    this._setSelectedAppIndex(-1, false);
+                    this._clearAutocompleteDisplay();
+                    return Clutter.EVENT_STOP;
+                }
+            }
+
             if (symbol === Clutter.KEY_BackSpace && this._mode !== 'search' && this._entry.text.length === 0) {
                 this._setMode('search');
                 return Clutter.EVENT_STOP;
@@ -2345,6 +2354,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 this._selectedIndex = -1;
                 this._lastQuery = '';
                 this._resetPointerTracking();
+                this._clearAutocompleteDisplay();
 
                 this._box.set_style(
                     'background-color: transparent !important; ' +
@@ -3927,6 +3937,17 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         if (this._firstAppMiniBtn) {
             this._firstAppMiniBtn.visible = false;
         }
+        if (this._entry) {
+            if (this._mode === 'search') {
+                this._entry.hint_text = t('spotlight_search', 'Пошук Spotlight');
+            } else if (this._mode === 'apps') {
+                this._entry.hint_text = t('applications', 'Програми');
+            } else if (this._mode === 'files') {
+                this._entry.hint_text = t('files', 'Файли');
+            } else if (this._mode === 'clipboard') {
+                this._entry.hint_text = t('search_clipboard', 'Пошук у буфері');
+            }
+        }
     }
 
     _updateAppSelectionDisplay(app) {
@@ -3938,15 +3959,9 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         const appName = app.get_name() || '';
         const typedText = this._entry.get_text() || '';
 
-        let ghostSuffix = '';
-        if (typedText.length > 0) {
-            if (appName.toLowerCase().startsWith(typedText.toLowerCase())) {
-                ghostSuffix = appName.slice(typedText.length) + ' — ' + t('action_open', 'Відкрити');
-            } else {
-                ghostSuffix = ' — ' + appName + ' — ' + t('action_open', 'Відкрити');
-            }
-        } else {
-            ghostSuffix = appName + ' — ' + t('action_open', 'Відкрити');
+        // Clear entry hint_text so "Програми" is NEVER displayed simultaneously with recommendation
+        if (this._entry) {
+            this._entry.hint_text = '';
         }
 
         const escapePango = (str) => {
@@ -3958,18 +3973,30 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 .replace(/'/g, '&apos;');
         };
 
+        let ghostMarkup = '';
         let textWidth = 0;
-        try {
-            if (typedText.length > 0) {
+        if (typedText.length > 0) {
+            try {
                 const [w] = this._entry.clutter_text.get_layout().get_pixel_size();
                 textWidth = w;
+            } catch (_) {}
+
+            if (appName.toLowerCase().startsWith(typedText.toLowerCase())) {
+                const suffix = appName.slice(typedText.length);
+                ghostMarkup = `<span foreground="#ffffff88">${escapePango(suffix)} — ${escapePango(t('action_open', 'Відкрити'))}</span>`;
+            } else {
+                ghostMarkup = `<span foreground="#ffffff88"> — ${escapePango(appName)} — ${escapePango(t('action_open', 'Відкрити'))}</span>`;
             }
-        } catch (_) {}
+        } else {
+            // When navigating with arrow keys (no typed text):
+            // Display appName in solid white (#ffffff) and " — Відкрити" in dimmed white (#ffffff88)
+            ghostMarkup = `<span foreground="#ffffff">${escapePango(appName)}</span><span foreground="#ffffff88"> — ${escapePango(t('action_open', 'Відкрити'))}</span>`;
+            textWidth = 0;
+        }
 
         if (this._ghostLabel) {
-            const markup = `<span foreground="#ffffff88">${escapePango(ghostSuffix)}</span>`;
             try {
-                this._ghostLabel.clutter_text.set_markup(markup);
+                this._ghostLabel.clutter_text.set_markup(ghostMarkup);
                 this._ghostLabel.set_style(
                     'font-size: 19px !important; font-weight: 500 !important; ' +
                     'font-family: Inter, default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", sans-serif !important; ' +
@@ -3982,9 +4009,9 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
 
         if (this._entryPillBox) {
             this._entryPillBox.set_style(
-                'background-color: rgba(255, 255, 255, 0.20) !important; ' +
-                'border-radius: 8px !important; ' +
-                'padding: 2px 10px !important;'
+                'background-color: rgba(255, 255, 255, 0.18) !important; ' +
+                'border-radius: 10px !important; ' +
+                'padding: 3px 12px !important;'
             );
             this._entryPillBox.x_expand = false;
         }
@@ -4031,15 +4058,9 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         const action = item.action || (item.type === 'calc' ? t('action_copy', 'Скопіювати') : t('action_open', 'Відкрити'));
         const typedText = this._entry.get_text() || '';
 
-        let ghostSuffix = '';
-        if (typedText.length > 0) {
-            if (title.toLowerCase().startsWith(typedText.toLowerCase())) {
-                ghostSuffix = title.slice(typedText.length) + ' — ' + action;
-            } else {
-                ghostSuffix = ' — ' + title + ' — ' + action;
-            }
-        } else {
-            ghostSuffix = title + ' — ' + action;
+        // Clear entry hint_text so "Пошук Spotlight" is NEVER displayed simultaneously with recommendation
+        if (this._entry) {
+            this._entry.hint_text = '';
         }
 
         const escapePango = (str) => {
@@ -4051,18 +4072,30 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 .replace(/'/g, '&apos;');
         };
 
+        let ghostMarkup = '';
         let textWidth = 0;
-        try {
-            if (typedText.length > 0) {
+        if (typedText.length > 0) {
+            try {
                 const [w] = this._entry.clutter_text.get_layout().get_pixel_size();
                 textWidth = w;
+            } catch (_) {}
+
+            if (title.toLowerCase().startsWith(typedText.toLowerCase())) {
+                const suffix = title.slice(typedText.length);
+                ghostMarkup = `<span foreground="#ffffff88">${escapePango(suffix)} — ${escapePango(action)}</span>`;
+            } else {
+                ghostMarkup = `<span foreground="#ffffff88"> — ${escapePango(title)} — ${escapePango(action)}</span>`;
             }
-        } catch (_) {}
+        } else {
+            // When navigating with arrow keys (no typed text):
+            // Display title in solid white (#ffffff) and " — action" in dimmed white (#ffffff88)
+            ghostMarkup = `<span foreground="#ffffff">${escapePango(title)}</span><span foreground="#ffffff88"> — ${escapePango(action)}</span>`;
+            textWidth = 0;
+        }
 
         if (this._ghostLabel) {
-            const markup = `<span foreground="#ffffff88">${escapePango(ghostSuffix)}</span>`;
             try {
-                this._ghostLabel.clutter_text.set_markup(markup);
+                this._ghostLabel.clutter_text.set_markup(ghostMarkup);
                 this._ghostLabel.set_style(
                     'font-size: 19px !important; font-weight: 500 !important; ' +
                     'font-family: Inter, default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", sans-serif !important; ' +
@@ -4073,31 +4106,21 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             } catch (_) {}
         }
 
+        // In Spotlight mode: MUST NOT have inner background box!
+        // Spotlight pill already has its own glass background and border.
         if (this._entryPillBox) {
             this._entryPillBox.set_style(
-                'background-color: rgba(255, 255, 255, 0.20) !important; ' +
-                'border-radius: 8px !important; ' +
-                'padding: 2px 10px !important;'
+                'background-color: transparent !important; background: none !important; ' +
+                'border: none !important; box-shadow: none !important; padding: 0px !important;'
             );
-            this._entryPillBox.x_expand = false;
+            this._entryPillBox.x_expand = true;
         }
 
         if (this._searchSpacer) {
-            this._searchSpacer.visible = true;
+            this._searchSpacer.visible = false;
         }
-
         if (this._firstAppMiniBtn) {
-            if (item.app) {
-                try {
-                    const miniIcon = createSmoothAppIcon(item.app, 22);
-                    this._firstAppMiniBtn.set_child(miniIcon);
-                    this._firstAppMiniBtn.visible = true;
-                } catch (_) {
-                    this._firstAppMiniBtn.visible = false;
-                }
-            } else {
-                this._firstAppMiniBtn.visible = false;
-            }
+            this._firstAppMiniBtn.visible = false;
         }
     }
 
@@ -4166,11 +4189,8 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
 
         if (this._appsGridButtons.length > 0) {
             this._resetPointerTracking();
-            if (hasFilter) {
-                this._setSelectedAppIndex(0, true);
-            } else {
-                this._setSelectedAppIndex(-1, false);
-            }
+            this._setSelectedAppIndex(-1, false);
+            this._clearAutocompleteDisplay();
         }
 
         try {
