@@ -2073,6 +2073,19 @@ function _updateTailPosition(label, position) {
         }
     }
 
+    if (label._blurArrowActor) {
+        label._blurArrowActor.set_size(arrowBoxW, arrowBoxH);
+        label._blurArrowActor.set_position(arrowX, arrowY);
+        try {
+            const aBox = new Clutter.ActorBox();
+            aBox.x1 = arrowX;
+            aBox.y1 = arrowY;
+            aBox.x2 = arrowX + arrowBoxW;
+            aBox.y2 = arrowY + arrowBoxH;
+            label._blurArrowActor.allocate(aBox);
+        } catch (_) {}
+    }
+
     tail.queue_repaint();
 }
 
@@ -2100,6 +2113,14 @@ function _ensureLabelTail(label, position) {
         label._blurActor = null;
     }
 
+    if (label._blurArrowActor && (!label._blurArrowActor.get_parent?.() || label._blurArrowActor._isDisposed)) {
+        try {
+            Main.uiGroup.remove_child(label._blurArrowActor);
+            label._blurArrowActor.destroy();
+        } catch (_) {}
+        label._blurArrowActor = null;
+    }
+
     const cfg = _getLabelStylingConfig();
     const radius = (typeof cfg.blur === 'number') ? cfg.blur : 20;
 
@@ -2108,7 +2129,7 @@ function _ensureLabelTail(label, position) {
             style_class: 'dash-label-blur-pill',
             reactive: false,
         });
-        blurActor.set_style('background-color: transparent !important; background: transparent !important; border: none !important; box-shadow: none !important;');
+        blurActor.set_style('background: rgba(0, 0, 0, 0.01) !important; border: none !important; box-shadow: none !important;');
         label._blurActor = blurActor;
 
         if (Blur?.BlurEffect) {
@@ -2138,6 +2159,43 @@ function _ensureLabelTail(label, position) {
     } else if (label._blurActor._blurEff) {
         label._blurActor._blurEff.enabled = (radius > 0);
         label._blurActor._blurEff.radius = radius;
+    }
+
+    if (!label._blurArrowActor) {
+        const arrowBlur = new St.Widget({
+            style_class: 'dash-label-blur-arrow',
+            reactive: false,
+        });
+        arrowBlur.set_style('background: rgba(0, 0, 0, 0.01) !important; border: none !important; box-shadow: none !important;');
+        label._blurArrowActor = arrowBlur;
+
+        if (Blur?.BlurEffect) {
+            arrowBlur._blurEff = new Blur.BlurEffect({
+                name: 'dash-label-arrow-blur',
+                mode: 1,
+                radius: radius,
+                corner_radius: 3,
+                brightness: 1.0,
+            });
+            arrowBlur.add_effect(arrowBlur._blurEff);
+            arrowBlur._blurEff.enabled = (radius > 0);
+        } else if (Shell?.BlurEffect) {
+            arrowBlur._blurEff = new Shell.BlurEffect({
+                name: 'dash-label-arrow-blur',
+                mode: Shell.BlurMode.BACKGROUND,
+                radius: radius,
+            });
+            arrowBlur.add_effect(arrowBlur._blurEff);
+            arrowBlur._blurEff.enabled = (radius > 0);
+        }
+
+        Main.uiGroup.add_child(arrowBlur);
+
+        label.bind_property('visible', arrowBlur, 'visible', GObject.BindingFlags.SYNC_CREATE);
+        label.bind_property('opacity', arrowBlur, 'opacity', GObject.BindingFlags.SYNC_CREATE);
+    } else if (label._blurArrowActor._blurEff) {
+        label._blurArrowActor._blurEff.enabled = (radius > 0);
+        label._blurArrowActor._blurEff.radius = radius;
     }
 
     if (label._arrowTailActor && (!label._arrowTailActor.get_parent?.() || label._arrowTailActor._isDisposed)) {
@@ -2303,6 +2361,13 @@ function _ensureLabelTail(label, position) {
                 } catch (_) {}
                 label._blurActor = null;
             }
+            if (label._blurArrowActor) {
+                try {
+                    Main.uiGroup.remove_child(label._blurArrowActor);
+                    label._blurArrowActor.destroy();
+                } catch (_) {}
+                label._blurArrowActor = null;
+            }
             if (label._arrowTailActor) {
                 try {
                     Main.uiGroup.remove_child(label._arrowTailActor);
@@ -2321,9 +2386,11 @@ function _ensureLabelTail(label, position) {
         });
     }
 
-    // Ensure stacking order: blur actor below tail, and tail below label
+    // Ensure stacking order: blur actors below tail, and tail below label
     if (label._blurActor && label._arrowTailActor)
         Main.uiGroup.set_child_below_sibling(label._blurActor, label._arrowTailActor);
+    if (label._blurArrowActor && label._arrowTailActor)
+        Main.uiGroup.set_child_below_sibling(label._blurArrowActor, label._arrowTailActor);
     if (label._arrowTailActor)
         Main.uiGroup.set_child_below_sibling(label._arrowTailActor, label);
 
@@ -2425,7 +2492,8 @@ export function itemShowLabel() {
                  (a.has_style_class_name('dash-label-blur-unified') ||
                   a.has_style_class_name('dash-label-blur-pill') ||
                   a.has_style_class_name('dash-label-blur-arrow')) &&
-                 a !== this.label._blurActor
+                 a !== this.label._blurActor &&
+                 a !== this.label._blurArrowActor
         );
         for (const bw of allBlurWidgets) {
             try {
@@ -2442,6 +2510,8 @@ export function itemShowLabel() {
         this.label._arrowTailActor.remove_all_transitions();
     if (this.label._blurActor)
         this.label._blurActor.remove_all_transitions();
+    if (this.label._blurArrowActor)
+        this.label._blurArrowActor.remove_all_transitions();
 
     this.label.opacity = 0;
     this.label.show();
@@ -2452,6 +2522,10 @@ export function itemShowLabel() {
     if (this.label._blurActor) {
         this.label._blurActor.opacity = 0;
         this.label._blurActor.show();
+    }
+    if (this.label._blurArrowActor) {
+        this.label._blurArrowActor.opacity = 0;
+        this.label._blurArrowActor.show();
     }
 
     const transparentStyle =
@@ -2480,6 +2554,12 @@ export function itemShowLabel() {
         eff.radius = cfg.blur;
         eff.queue_repaint?.();
     }
+    const effArr = this.label._blurArrowActor?._blurEff;
+    if (effArr) {
+        effArr.enabled = (cfg.blur > 0);
+        effArr.radius = cfg.blur;
+        effArr.queue_repaint?.();
+    }
 
     if (this.label._arrowTailActor)
         this.label._arrowTailActor.queue_repaint();
@@ -2490,6 +2570,7 @@ export function itemShowLabel() {
         mode: Clutter.AnimationMode.EASE_OUT_QUAD,
         onComplete: () => {
             this.label._blurActor?._blurEff?.queue_repaint?.();
+            this.label._blurArrowActor?._blurEff?.queue_repaint?.();
             this.label.set_offscreen_redirect?.(0);
         },
     });
@@ -2502,7 +2583,7 @@ export function itemHideLabel(immediate = false) {
         return;
 
     this.label.remove_all_transitions();
-    const subs = [this.label._arrowTailActor, this.label._blurActor];
+    const subs = [this.label._arrowTailActor, this.label._blurActor, this.label._blurArrowActor];
     for (const sub of subs) {
         if (sub) sub.remove_all_transitions();
     }

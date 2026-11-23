@@ -2945,6 +2945,19 @@ export default class EvalHelper extends Extension {
                         }
                     }
 
+                    if (label._blurArrowActor) {
+                        label._blurArrowActor.set_size(arrowBoxW, arrowBoxH);
+                        label._blurArrowActor.set_position(arrowX, arrowY);
+                        try {
+                            const aBox = new Clutter.ActorBox();
+                            aBox.x1 = arrowX;
+                            aBox.y1 = arrowY;
+                            aBox.x2 = arrowX + arrowBoxW;
+                            aBox.y2 = arrowY + arrowBoxH;
+                            label._blurArrowActor.allocate(aBox);
+                        } catch (_) {}
+                    }
+
                     tail.queue_repaint();
                 };
 
@@ -2971,6 +2984,14 @@ export default class EvalHelper extends Extension {
                         label._blurActor = null;
                     }
 
+                    if (label._blurArrowActor && (!label._blurArrowActor.get_parent?.() || label._blurArrowActor._isDisposed)) {
+                        try {
+                            Main.uiGroup.remove_child(label._blurArrowActor);
+                            label._blurArrowActor.destroy();
+                        } catch (_) {}
+                        label._blurArrowActor = null;
+                    }
+
                     const cfg = globalThis._macLabelStylingConfig || { blur: 20, tint: 20, shadow: 25 };
                     const radius = (typeof cfg.blur === 'number') ? cfg.blur : 20;
 
@@ -2979,7 +3000,7 @@ export default class EvalHelper extends Extension {
                             style_class: 'dash-label-blur-pill',
                             reactive: false,
                         });
-                        blurActor.set_style('background-color: transparent !important; background: transparent !important; border: none !important; box-shadow: none !important;');
+                        blurActor.set_style('background: rgba(0, 0, 0, 0.01) !important; border: none !important; box-shadow: none !important;');
                         label._blurActor = blurActor;
 
                         if (Blur?.BlurEffect) {
@@ -3009,6 +3030,43 @@ export default class EvalHelper extends Extension {
                     } else if (label._blurActor._blurEff) {
                         label._blurActor._blurEff.enabled = (radius > 0);
                         label._blurActor._blurEff.radius = radius;
+                    }
+
+                    if (!label._blurArrowActor) {
+                        const arrowBlur = new St.Widget({
+                            style_class: 'dash-label-blur-arrow',
+                            reactive: false,
+                        });
+                        arrowBlur.set_style('background: rgba(0, 0, 0, 0.01) !important; border: none !important; box-shadow: none !important;');
+                        label._blurArrowActor = arrowBlur;
+
+                        if (Blur?.BlurEffect) {
+                            arrowBlur._blurEff = new Blur.BlurEffect({
+                                name: 'dash-label-arrow-blur',
+                                mode: 1,
+                                radius: radius,
+                                corner_radius: 3,
+                                brightness: 1.0,
+                            });
+                            arrowBlur.add_effect(arrowBlur._blurEff);
+                            arrowBlur._blurEff.enabled = (radius > 0);
+                        } else if (Shell?.BlurEffect) {
+                            arrowBlur._blurEff = new Shell.BlurEffect({
+                                name: 'dash-label-arrow-blur',
+                                mode: Shell.BlurMode.BACKGROUND,
+                                radius: radius,
+                            });
+                            arrowBlur.add_effect(arrowBlur._blurEff);
+                            arrowBlur._blurEff.enabled = (radius > 0);
+                        }
+
+                        Main.uiGroup.add_child(arrowBlur);
+
+                        label.bind_property('visible', arrowBlur, 'visible', GObject.BindingFlags.SYNC_CREATE);
+                        label.bind_property('opacity', arrowBlur, 'opacity', GObject.BindingFlags.SYNC_CREATE);
+                    } else if (label._blurArrowActor._blurEff) {
+                        label._blurArrowActor._blurEff.enabled = (radius > 0);
+                        label._blurArrowActor._blurEff.radius = radius;
                     }
 
                     if (label._arrowTailActor && (!label._arrowTailActor.get_parent?.() || label._arrowTailActor._isDisposed)) {
@@ -3173,6 +3231,13 @@ export default class EvalHelper extends Extension {
                                 } catch (_) {}
                                 label._blurActor = null;
                             }
+                            if (label._blurArrowActor) {
+                                try {
+                                    Main.uiGroup.remove_child(label._blurArrowActor);
+                                    label._blurArrowActor.destroy();
+                                } catch (_) {}
+                                label._blurArrowActor = null;
+                            }
                             if (label._arrowTailActor) {
                                 try {
                                     Main.uiGroup.remove_child(label._arrowTailActor);
@@ -3191,9 +3256,11 @@ export default class EvalHelper extends Extension {
                         });
                     }
 
-                    // Ensure stacking order: blur actor below tail, and tail below label
+                    // Ensure stacking order: blur actors below tail, and tail below label
                     if (label._blurActor && label._arrowTailActor)
                         Main.uiGroup.set_child_below_sibling(label._blurActor, label._arrowTailActor);
+                    if (label._blurArrowActor && label._arrowTailActor)
+                        Main.uiGroup.set_child_below_sibling(label._blurArrowActor, label._arrowTailActor);
                     if (label._arrowTailActor)
                         Main.uiGroup.set_child_below_sibling(label._arrowTailActor, label);
 
@@ -3464,6 +3531,11 @@ export default class EvalHelper extends Extension {
                         l._blurActor._blurEff.radius = blur;
                         l._blurActor._blurEff.queue_repaint?.();
                     }
+                    if (l._blurArrowActor && l._blurArrowActor._blurEff) {
+                        l._blurArrowActor._blurEff.enabled = (blur > 0);
+                        l._blurArrowActor._blurEff.radius = blur;
+                        l._blurArrowActor._blurEff.queue_repaint?.();
+                    }
                     const effL = l.get_effects?.()?.find(e => e.name === 'tahoe-label-blur');
                     if (effL && l._arrowTailActor) effL.enabled = false;
                     if (l._arrowTailActor) {
@@ -3474,6 +3546,7 @@ export default class EvalHelper extends Extension {
                 const pills = Main.uiGroup.get_children().filter(
                     a => a && a.has_style_class_name &&
                          (a.has_style_class_name('dash-label-blur-pill') ||
+                          a.has_style_class_name('dash-label-blur-arrow') ||
                           a.has_style_class_name('dash-label-blur-unified'))
                 );
                 for (const p of pills) {
@@ -4659,6 +4732,7 @@ export default class EvalHelper extends Extension {
                     this._origBoxPointerOpen = BoxPointer.BoxPointer.prototype.open;
                     this._origBoxPointerClose = BoxPointer.BoxPointer.prototype.close;
                     this._origBoxPointerCapturedEvent = BoxPointer.BoxPointer.prototype.vfunc_captured_event;
+                    this._origBoxPointerDrawBorder = BoxPointer.BoxPointer.prototype._drawBorder;
                 }
                 BoxPointer.BoxPointer.prototype.open = function(animate, onComplete) {
                     if (this._closeTimeoutId) {
@@ -4863,6 +4937,191 @@ export default class EvalHelper extends Extension {
                         return Clutter.EVENT_STOP;
 
                     return Clutter.EVENT_PROPAGATE;
+                };
+
+                BoxPointer.BoxPointer.prototype._drawBorder = function(area) {
+                    const themeNode = this.get_theme_node();
+
+                    if (this._arrowActor) {
+                        const [sourceX, sourceY] = this._arrowActor.get_transformed_position();
+                        const [sourceWidth, sourceHeight] = this._arrowActor.get_transformed_size();
+                        const [absX, absY] = this.get_transformed_position();
+
+                        if (this._arrowSide === St.Side.TOP ||
+                            this._arrowSide === St.Side.BOTTOM)
+                            this._arrowOrigin = sourceX - absX + sourceWidth / 2;
+                        else
+                            this._arrowOrigin = sourceY - absY + sourceHeight / 2;
+                    }
+
+                    const borderWidth = themeNode.get_length('-arrow-border-width');
+                    const base = themeNode.get_length('-arrow-base') || 18.0;
+                    const rise = themeNode.get_length('-arrow-rise');
+                    const borderRadius = themeNode.get_length('-arrow-border-radius');
+
+                    const halfBorder = borderWidth / 2;
+                    const halfBase = Math.floor(base / 2);
+
+                    const [width, height] = area.get_surface_size();
+                    let [boxWidth, boxHeight] = [width, height];
+                    if (this._arrowSide === St.Side.TOP || this._arrowSide === St.Side.BOTTOM)
+                        boxHeight -= rise;
+                    else
+                        boxWidth -= rise;
+
+                    const cr = area.get_context();
+                    cr.setAntialias(cairo.Antialias.SUBPIXEL);
+                    cr.setLineCap(cairo.LineCap.ROUND);
+                    cr.setLineJoin(cairo.LineJoin.ROUND);
+
+                    // Translate so that box goes from 0,0 to boxWidth,boxHeight,
+                    // with the arrow poking out of that
+                    if (this._arrowSide === St.Side.TOP)
+                        cr.translate(0, rise);
+                    else if (this._arrowSide === St.Side.LEFT)
+                        cr.translate(rise, 0);
+
+                    const [x1, y1] = [halfBorder, halfBorder];
+                    const [x2, y2] = [boxWidth - halfBorder, boxHeight - halfBorder];
+
+                    let skipTopLeft = false;
+                    let skipTopRight = false;
+                    let skipBottomLeft = false;
+                    let skipBottomRight = false;
+
+                    if (rise) {
+                        switch (this._arrowSide) {
+                        case St.Side.TOP:
+                            if (this._arrowOrigin === x1) skipTopLeft = true;
+                            else if (this._arrowOrigin === x2) skipTopRight = true;
+                            break;
+                        case St.Side.RIGHT:
+                            if (this._arrowOrigin === y1) skipTopRight = true;
+                            else if (this._arrowOrigin === y2) skipBottomRight = true;
+                            break;
+                        case St.Side.BOTTOM:
+                            if (this._arrowOrigin === x1) skipBottomLeft = true;
+                            else if (this._arrowOrigin === x2) skipBottomRight = true;
+                            break;
+                        case St.Side.LEFT:
+                            if (this._arrowOrigin === y1) skipTopLeft = true;
+                            else if (this._arrowOrigin === y2) skipBottomLeft = true;
+                            break;
+                        }
+                    }
+
+                    // Smoothed organic birteg tail curve parameters
+                    const f = Math.min(8.0, halfBase * 0.9);
+                    const tipR = 1.8;
+
+                    cr.moveTo(x1 + borderRadius, y1);
+                    if (this._arrowSide === St.Side.TOP && rise) {
+                        if (skipTopLeft) {
+                            cr.moveTo(x1, y2 - borderRadius);
+                            cr.lineTo(x1, y1 - rise);
+                            cr.lineTo(x1 + halfBase, y1);
+                        } else if (skipTopRight) {
+                            cr.lineTo(x2 - halfBase, y1);
+                            cr.lineTo(x2, y1 - rise);
+                            cr.lineTo(x2, y1 + borderRadius);
+                        } else {
+                            const cx = this._arrowOrigin;
+                            cr.lineTo(cx - halfBase - f, y1);
+                            cr.curveTo(cx - halfBase - f * 0.5, y1, cx - halfBase - 1.2, y1 - rise * 0.25, cx - halfBase, y1 - rise * 0.55);
+                            cr.curveTo(cx - halfBase + 1.2, y1 - rise * 0.85, cx - tipR * 1.3, y1 - rise, cx, y1 - rise);
+                            cr.curveTo(cx + tipR * 1.3, y1 - rise, cx + halfBase - 1.2, y1 - rise * 0.85, cx + halfBase, y1 - rise * 0.55);
+                            cr.curveTo(cx + halfBase + 1.2, y1 - rise * 0.25, cx + halfBase + f * 0.5, y1, cx + halfBase + f, y1);
+                        }
+                    }
+
+                    if (!skipTopRight) {
+                        cr.lineTo(x2 - borderRadius, y1);
+                        cr.arc(x2 - borderRadius, y1 + borderRadius, borderRadius, 3 * Math.PI / 2, Math.PI * 2);
+                    }
+
+                    if (this._arrowSide === St.Side.RIGHT && rise) {
+                        if (skipTopRight) {
+                            cr.lineTo(x2 + rise, y1);
+                            cr.lineTo(x2 + rise, y1 + halfBase);
+                        } else if (skipBottomRight) {
+                            cr.lineTo(x2, y2 - halfBase);
+                            cr.lineTo(x2 + rise, y2);
+                            cr.lineTo(x2 - borderRadius, y2);
+                        } else {
+                            const cy = this._arrowOrigin;
+                            cr.lineTo(x2, cy - halfBase - f);
+                            cr.curveTo(x2, cy - halfBase - f * 0.5, x2 + rise * 0.25, cy - halfBase - 1.2, x2 + rise * 0.55, cy - halfBase);
+                            cr.curveTo(x2 + rise * 0.85, cy - halfBase + 1.2, x2 + rise, cy - tipR * 1.3, x2 + rise, cy);
+                            cr.curveTo(x2 + rise, cy + tipR * 1.3, x2 + rise * 0.85, cy + halfBase - 1.2, x2 + rise * 0.55, cy + halfBase);
+                            cr.curveTo(x2 + rise * 0.25, cy + halfBase + 1.2, x2, cy + halfBase + f * 0.5, x2, cy + halfBase + f);
+                        }
+                    }
+
+                    if (!skipBottomRight) {
+                        cr.lineTo(x2, y2 - borderRadius);
+                        cr.arc(x2 - borderRadius, y2 - borderRadius, borderRadius, 0, Math.PI / 2);
+                    }
+
+                    if (this._arrowSide === St.Side.BOTTOM && rise) {
+                        if (skipBottomLeft) {
+                            cr.lineTo(x1 + halfBase, y2);
+                            cr.lineTo(x1, y2 + rise);
+                            cr.lineTo(x1, y2 - borderRadius);
+                        } else if (skipBottomRight) {
+                            cr.lineTo(x2, y2 + rise);
+                            cr.lineTo(x2 - halfBase, y2);
+                        } else {
+                            const cx = this._arrowOrigin;
+                            cr.lineTo(cx + halfBase + f, y2);
+                            cr.curveTo(cx + halfBase + f * 0.5, y2, cx + halfBase + 1.2, y2 + rise * 0.25, cx + halfBase, y2 + rise * 0.55);
+                            cr.curveTo(cx + halfBase - 1.2, y2 + rise * 0.85, cx + tipR * 1.3, y2 + rise, cx, y2 + rise);
+                            cr.curveTo(cx - tipR * 1.3, y2 + rise, cx - halfBase + 1.2, y2 + rise * 0.85, cx - halfBase, y2 + rise * 0.55);
+                            cr.curveTo(cx - halfBase - 1.2, y2 + rise * 0.25, cx - halfBase - f * 0.5, y2, cx - halfBase - f, y2);
+                        }
+                    }
+
+                    if (!skipBottomLeft) {
+                        cr.lineTo(x1 + borderRadius, y2);
+                        cr.arc(x1 + borderRadius, y2 - borderRadius, borderRadius, Math.PI / 2, Math.PI);
+                    }
+
+                    if (this._arrowSide === St.Side.LEFT && rise) {
+                        if (skipTopLeft) {
+                            cr.lineTo(x1, y1 + halfBase);
+                            cr.lineTo(x1 - rise, y1);
+                            cr.lineTo(x1 + borderRadius, y1);
+                        } else if (skipBottomLeft) {
+                            cr.lineTo(x1 - rise, y2);
+                            cr.lineTo(x1 - rise, y2 - halfBase);
+                        } else {
+                            const cy = this._arrowOrigin;
+                            cr.lineTo(x1, cy + halfBase + f);
+                            cr.curveTo(x1, cy + halfBase + f * 0.5, x1 - rise * 0.25, cy + halfBase + 1.2, x1 - rise * 0.55, cy + halfBase);
+                            cr.curveTo(x1 - rise * 0.85, cy + halfBase - 1.2, x1 - rise, cy + tipR * 1.3, x1 - rise, cy);
+                            cr.curveTo(x1 - rise, cy - tipR * 1.3, x1 - rise * 0.85, cy - halfBase + 1.2, x1 - rise * 0.55, cy - halfBase);
+                            cr.curveTo(x1 - rise * 0.25, cy - halfBase - 1.2, x1, cy - halfBase - f * 0.5, x1, cy - halfBase - f);
+                        }
+                    }
+
+                    if (!skipTopLeft) {
+                        cr.lineTo(x1, y1 + borderRadius);
+                        cr.arc(x1 + borderRadius, y1 + borderRadius, borderRadius, Math.PI, 3 * Math.PI / 2);
+                    }
+
+                    const [hasColor, bgColor] = themeNode.lookup_color('-arrow-background-color', false);
+                    if (hasColor) {
+                        cr.setSourceColor(bgColor);
+                        cr.fillPreserve();
+                    }
+
+                    if (borderWidth > 0) {
+                        const borderColor = themeNode.get_color('-arrow-border-color');
+                        cr.setSourceColor(borderColor);
+                        cr.setLineWidth(borderWidth);
+                        cr.stroke();
+                    }
+
+                    cr.$dispose();
                 };
 
 
@@ -5121,11 +5380,13 @@ export default class EvalHelper extends Extension {
                     if (this._origBoxPointerOpen) BoxPointer.BoxPointer.prototype.open = this._origBoxPointerOpen;
                     if (this._origBoxPointerClose) BoxPointer.BoxPointer.prototype.close = this._origBoxPointerClose;
                     if (this._origBoxPointerCapturedEvent) BoxPointer.BoxPointer.prototype.vfunc_captured_event = this._origBoxPointerCapturedEvent;
+                    if (this._origBoxPointerDrawBorder) BoxPointer.BoxPointer.prototype._drawBorder = this._origBoxPointerDrawBorder;
                 });
             } catch (_) {}
             this._origBoxPointerOpen = null;
             this._origBoxPointerClose = null;
             this._origBoxPointerCapturedEvent = null;
+            this._origBoxPointerDrawBorder = null;
         }
 
         if (this._origWmDestroyWindow && Main.wm) {

@@ -498,10 +498,11 @@ export class Animator {
           if (labelActor) {
             labelActor.translation_x = 0;
             labelActor.translation_y = 0;
-            const tail = labelActor._arrowTailActor;
-            if (tail) {
-              tail.translation_x = 0;
-              tail.translation_y = 0;
+            for (const sub of [labelActor._arrowTailActor, labelActor._blurActor, labelActor._blurArrowActor]) {
+              if (sub) {
+                sub.translation_x = 0;
+                sub.translation_y = 0;
+              }
             }
           }
           this._setD2dBadgeOpacity(icon._appwell, 255);
@@ -572,10 +573,11 @@ export class Animator {
       if (labelActor) {
         labelActor.translation_x = jX;
         labelActor.translation_y = jY;
-        const tail = labelActor._arrowTailActor;
-        if (tail) {
-          tail.translation_x = jX;
-          tail.translation_y = jY;
+        for (const sub of [labelActor._arrowTailActor, labelActor._blurActor, labelActor._blurArrowActor]) {
+          if (sub) {
+            sub.translation_x = jX;
+            sub.translation_y = jY;
+          }
         }
       }
     });
@@ -630,10 +632,11 @@ export class Animator {
       if (labelActor) {
         labelActor.translation_x = 0;
         labelActor.translation_y = 0;
-        const tail = labelActor._arrowTailActor;
-        if (tail) {
-          tail.translation_x = 0;
-          tail.translation_y = 0;
+        for (const sub of [labelActor._arrowTailActor, labelActor._blurActor, labelActor._blurArrowActor]) {
+          if (sub) {
+            sub.translation_x = 0;
+            sub.translation_y = 0;
+          }
         }
       }
       this._setD2dBadgeOpacity(icon._appwell, 255);
