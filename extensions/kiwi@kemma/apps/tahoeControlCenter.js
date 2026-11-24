@@ -141,9 +141,9 @@ const CLIP_PADDING = 36;
 
 
 
-const SURF_LIGHT = {c: [0.16, 0.16, 0.18], a: 0.10};
-const SURF_DARK = {c: [0.05, 0.05, 0.07], a: 0.10};
-const CIRCLE_ON = {c: [1, 1, 1], a: 0.45};
+const SURF_LIGHT = {c: [1, 1, 1], a: 0.04};
+const SURF_DARK = {c: [1, 1, 1], a: 0.04};
+const CIRCLE_ON = {c: [1, 1, 1], a: 0.35};
 
 
 
@@ -2521,7 +2521,7 @@ function _buildPanel() {
                 ? iface.get_string('color-scheme') === 'prefer-dark'
                 : _isDark();
             if (isDark)
-                return {c: [1, 1, 1], a: 1};
+                return {c: [1, 1, 1], a: 0.35};
         } catch (_) {
 
         }
@@ -2530,7 +2530,7 @@ function _buildPanel() {
     const stageSurf = () => {
         try {
             if (_isStageManagerActive())
-                return {c: [1, 1, 1], a: 1};
+                return {c: [1, 1, 1], a: 0.35};
         } catch (_) {}
         return _surf();
     };
@@ -3844,26 +3844,23 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
     if (pure) {
         effect.setBlurRadius(24.0);
     } else {
-        effect.setBlurRadius(Math.max(16.0, _qsGlassBlur()));
+        effect.setBlurRadius(0.0);
     }
 
     if (pure) {
-
-
-
         effect.setTintColor(0, 0, 0);
         effect.setTintStrength(0);
         effect.setBrightness(1.0);
         effect.setContrast(1.0);
         effect.setSaturation(1.0);
     } else {
-        effect.setTintColor(0.16, 0.16, 0.18);
+        effect.setTintColor(1.0, 1.0, 1.0);
     }
     if (!pure) {
-        effect.setTintStrength(_qsGlassTint());
-        effect.setBrightness(_qsGlassBrightness());
-        effect.setContrast(1.0);
-        effect.setSaturation(_qsGlassSaturation());
+        effect.setTintStrength(0.06);
+        effect.setBrightness(1.03);
+        effect.setContrast(1.02);
+        effect.setSaturation(1.04);
     }
 
 
@@ -3874,9 +3871,6 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
             effect._setFloat('surface_light_enabled', 0.0);
             effect._setFloat('sheen_intensity', 0);
             effect._setFloat('rim_intensity', 0);
-
-
-
             effect._setFloat('rim_width', 0);
 
             effect._setFloat('ao_intensity', 0);
@@ -3887,19 +3881,21 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
         } else {
             effect.setSurfaceLightEnabled(true);
             effect._setFloat('surface_light_enabled', 1.0);
-            effect._setFloat('sheen_intensity', _qsGlassGlare() * 0.6);
-            effect._setFloat('rim_intensity', _qsInt('tahoe-qs-rim-intensity', 10) / 100);
-            effect._setFloat('rim_width', _qsInt('tahoe-qs-rim-width', 50) / 10);
-            effect._setFloat('rim_power', _qsInt('tahoe-qs-rim-power', 60) / 10);
-            effect._setFloat('rim_directional_power', _qsInt('tahoe-qs-rim-direction', 27) / 10);
-            effect._setFloat('rim_light_color_intensity', _qsInt('tahoe-qs-rim-light', 140) / 100);
-            effect._setFloat('specular_intensity', _qsInt('tahoe-qs-specular', 0) / 100);
+            effect._setFloat('sheen_intensity', 0.08);
+            effect._setFloat('rim_intensity', 0.12);
+            effect._setFloat('rim_width', 3.5);
+            effect._setFloat('rim_power', 4.5);
+            effect._setFloat('rim_directional_power', 2.5);
+            effect._setFloat('rim_light_color_intensity', 1.2);
+            effect._setFloat('specular_intensity', 0.08);
             effect._setFloat('displacement_scale', Math.min(28.0, _qsGlassRefraction()));
-            effect._setFloat('ior', _qsInt('tahoe-qs-ior', 150) / 100);
-            effect._setFloat('chroma_strength', _qsInt('tahoe-qs-chroma', 30) / 10000);
-            effect._setFloat('edge_smoothing', _qsInt('tahoe-qs-edge', 15) / 10);
-            effect._setFloat('profile_shape_n', _qsInt('tahoe-qs-profile', 540) / 100);
-            effect._setFloat('max_z', _qsInt('tahoe-qs-depth', 8));
+            effect._setFloat('ior', 1.45);
+            effect._setFloat('chroma_strength', 0.003);
+            effect._setFloat('edge_smoothing', 1.5);
+            effect._setFloat('profile_shape_n', 5.4);
+            effect._setFloat('max_z', 8.0);
+            effect._setFloat('ao_intensity', 0.04);
+            effect._setFloat('ao_radius', 2.0);
         }
     } catch (_) {
 
@@ -3912,6 +3908,8 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
 
     const exclusions = [global.windowGroup, global.window_group];
     if (_panel?.overlay) exclusions.push(_panel.overlay);
+    if (_panel?.panelBg) exclusions.push(_panel.panelBg);
+    if (_panel?.box) exclusions.push(_panel.box);
     if (_activeSubmenu?.actor) exclusions.push(_activeSubmenu.actor);
     const uiSampler = new UILayerSampler(bgActor, liquidBox,
         exclusions, cloneContainer, name,
@@ -3960,6 +3958,11 @@ function _startGlass(slideOffset = 0) {
             try {
                 s.uiSampler?.rebindSelf?.();
                 s.uiSampler?.addExclusion?.(_panel.overlay);
+                s.uiSampler?.addExclusion?.(_panel.panelBg);
+                s.uiSampler?.addExclusion?.(_panel.box);
+                for (const other of stacks) {
+                    if (other.bgActor) s.uiSampler?.addExclusion?.(other.bgActor);
+                }
                 if (_activeSubmenu?.actor) s.uiSampler?.addExclusion?.(_activeSubmenu.actor);
             } catch (_) {}
         }

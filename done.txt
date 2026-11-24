@@ -5532,3 +5532,23 @@ Task #938:
   * [bin/mac-installer-gui](file:///home/vitaliy/MACTHEMEFILES/bin/mac-installer-gui)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #961: Заміна фону та розмиття кнопок Центру керування на шейдер Liquid Glass з чистим семплюванням фону
+  - Стилізація кнопок Центру керування (extensions/kiwi@kemma/stylesheet.css):
+    * Повністю видалено непрозорий сірий фон та рамки для всіх кнопок і плашок (.tahoe-qs-pill, .tahoe-qs-pill-priv, .tahoe-qs-circle, .tahoe-qs-music, .tahoe-qs-card, .tahoe-qs-edit): задано background-color: transparent !important; background: transparent !important; border: none !important; box-shadow: none !important;.
+    * Тонке підсвічування наведення (hover) адаптовано під делікатний скляний відблиск (rgba(255, 255, 255, 0.08)).
+  - Шейдер скла кнопок (extensions/kiwi@kemma/apps/tahoeControlCenter.js):
+    * Прибрано примусове розмиття на кнопках: для всіх груп кнопок (pill, disc, card, music, edit) effect.setBlurRadius(0.0). Загальний фон панелі (backdrop) зберігає своє розмиття.
+    * Застосовано шейдер Liquid Glass: відблиски по контуру (rim_intensity, rim_width, rim_power), дзеркальні бліки (specular_intensity), рефракція фону (displacement_scale), хроматична дисперсія та фонове затінення (ao_intensity).
+    * Чисте семплювання з-під Центру керування: виключено контейнер оверлею, фон панелі та бекдроп-розмиття зі списку джерел UILayerSampler, завдяки чому кнопки заломлюють чисті шпалери та вікна робочого столу без захоплення розмиття самої панелі Центру керування.
+    * Оновлено SURF_LIGHT/SURF_DARK та активні стани (darkSurf, stageSurf) для прозорого рендерингу без тьмяних плям.
+  - Синхронізація та перевірка:
+    * Зміни скопійовано у ~/.local/share/gnome-shell/extensions/kiwi@kemma/.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK (контрольні суми оновлено в config/extensions.lock.json).
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [extensions/kiwi@kemma/apps/tahoeControlCenter.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeControlCenter.js)
+  * [extensions/kiwi@kemma/stylesheet.css](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/stylesheet.css)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
