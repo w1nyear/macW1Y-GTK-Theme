@@ -5429,3 +5429,15 @@ Task #938:
   * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #955: Оновлення системних вимог ПК у README.md відповідно до поточної багатопотокової оптимізації Liquid Glass
+  - Оновлено таблицю System Requirements у README.md:
+    * CPU (Minimum): знижено до 2 cores / 4 threads, 64-bit (Intel Core i3 8th Gen / AMD Ryzen 3) завдяки запеченій карті фаски.
+    * CPU (Recommended): 4–8 cores / 8–12+ threads (Intel Core i5 11th–13th Gen / AMD Ryzen 5 5000+) для повного багатопотокового масштабування (до 8 робочих потоків, 1000+ FPS на 50 елементах).
+    * GPU: уточнено вимоги до OpenGL 3.3+ (Intel HD 520+ / UHD / Iris Xe, AMD Radeon, NVIDIA GT 710+ / GTX 1050+).
+    * Storage: оптимізовано вимоги до 4 GB (Minimum) / 10 GB SSD (Recommended).
+    * Display: уточнено підтримку 60–120+ Hz (з огляду на необмежений режим 120+ FPS).
+    * Додано примітку про продуктивність багатопотокового шейдера Liquid Glass.
+  * [README.md](file:///home/vitaliy/MACTHEMEFILES/README.md)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
