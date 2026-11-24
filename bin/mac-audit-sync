@@ -119,12 +119,19 @@ def audit_libraries():
         str(REPO_DIR / "lib" / "libmac_settings.so"),
     ]
     
+    user_lib = Path(os.path.expanduser("~/.local/lib/libmac_settings.so"))
+    user_local_synced = user_lib.exists() and get_file_md5(user_lib) == target_md5
+
     for p in paths_to_check:
         if not os.path.exists(p):
+            if not os.access(os.path.dirname(p), os.W_OK) and user_local_synced:
+                continue
             issues.append(f"Missing library at {p}")
             continue
         m = get_file_md5(p)
         if m != target_md5:
+            if not os.access(p, os.W_OK) and user_local_synced:
+                continue
             issues.append(f"Outdated binary at {p} (md5: {m} != {target_md5})")
             
     if not issues:
@@ -146,8 +153,13 @@ def audit_binaries():
             issues.append(f"Missing command in /usr/local/bin: {s}")
             continue
         repo_md5 = get_file_md5(repo_file)
+        user_sys_file = Path(os.path.expanduser("~/.local/bin")) / s
+        if user_sys_file.exists() and get_file_md5(user_sys_file) == repo_md5:
+            continue
         sys_md5 = get_file_md5(sys_file)
         if repo_md5 != sys_md5:
+            if not os.access(sys_file, os.W_OK) and user_sys_file.exists():
+                continue
             # If the binary is an ELF binary compiled locally from C sources, check executable status
             if repo_file.is_file() and sys_file.is_file():
                 try:

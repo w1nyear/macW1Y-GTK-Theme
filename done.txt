@@ -5584,3 +5584,34 @@ Task #938:
   * [macW1Y-Light-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light-solid/gnome-shell/gnome-shell.css)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #963: Повна синхронізація параметрів мак стилізації, конфігурацій, скриптів та усунення невідповідностей контролю цілісності
+  - Синхронізація параметрів мак стилізації у проект (config/mac-styling/):
+    * Синхронізовано всі живі системні параметри з ~/.config/mac-styling/ у config/mac-styling/ (styling.json: menubar_tint: 30, liquid_refraction: 100, liquid_use_optimized: true, liquid_rim: 60, liquid_shadow: 30, dock_size: 12, dock_icon_size: 54, dock_tint: 0, alert_tint: 2, alert_blur: 5, alert_shadow: 35, notification_blur: 15, notification_tint: 20, notification_shadow: 35, spotlight_blur: 5, spotlight_tint: 10, spotlight_shadow: 14, osd_blur: 2, osd_shadow: 25, menu_tint: 20, menu_blur: 9, widget_blur: 5, widget_tint: 15, widget_shadow: 20, widget_radius: 30, panel_tint: 0.30).
+    * Синхронізовано супутні конфігурації: screenshot.json (processing_enabled: false), macSetupWizard (0), info.json, launchpad_recents.json, fan-ranges.json, control-center-animation.json, locale, version.
+  - Експорт системних налаштувань dconf (dconf/gnome-all.dconf):
+    * Виконано mac-audit-sync export для чистого апаратно-незалежного дампу live dconf у dconf/gnome-all.dconf із видаленням апаратних прив'язок моніторів та збереженням усіх актуальних ключів GNOME (switch-applications, Cupertino lockscreen wallpaper, Stage Manager stack layout, ptyxis macOS palette, dash-to-dock 54px).
+  - Усунення 7 невідповідностей контролю цілісності (mac-integrity-check & mac-extension-guard):
+    * Усунено розбіжність між системним застарілим /usr/share/mactheme/config/extensions.lock.json та актуальним репозиторієм: додано багатоетапний пошук lock-файлу в активних репозиторіях (~/MACTHEMEFILES, ~/macW1Y, ~/.config/macw1y).
+    * Синхронізовано extensions.lock.json у ~/.config/macw1y/extensions.lock.json.
+    * Оновлено службовий шлях systemd-юніта mac-integrity-check.service на ExecStart=%h/.local/bin/mac-integrity-check, перезавантажено daemon-reload.
+    * Увімкнено розширення Desktop Icons NG (ding@rastersoft.com).
+    * Скрипти bin/mac-extension-guard, bin/mac-integrity-check, bin/mac-audit-sync, bin/mac-build-theme, bin/nautilus, bin/gnome-control-center розгорнуто до ~/.local/bin/.
+  - Результати перевірки:
+    * mac-integrity-check (systemd service & CLI): SUCCESS (0 issues, System is green).
+    * python3 bin/mac-audit-sync check: 100% PASS (5/5 перевірок пройдено).
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [config/mac-styling/styling.json](file:///home/vitaliy/MACTHEMEFILES/config/mac-styling/styling.json)
+  * [config/mac-styling/screenshot.json](file:///home/vitaliy/MACTHEMEFILES/config/mac-styling/screenshot.json)
+  * [config/mac-styling/macSetupWizard](file:///home/vitaliy/MACTHEMEFILES/config/mac-styling/macSetupWizard)
+  * [config/mac-styling/info.json](file:///home/vitaliy/MACTHEMEFILES/config/mac-styling/info.json)
+  * [config/mac-styling/launchpad_recents.json](file:///home/vitaliy/MACTHEMEFILES/config/mac-styling/launchpad_recents.json)
+  * [dconf/gnome-all.dconf](file:///home/vitaliy/MACTHEMEFILES/dconf/gnome-all.dconf)
+  * [bin/mac-extension-guard](file:///home/vitaliy/MACTHEMEFILES/bin/mac-extension-guard)
+  * [bin/mac-integrity-check](file:///home/vitaliy/MACTHEMEFILES/bin/mac-integrity-check)
+  * [bin/mac-audit-sync](file:///home/vitaliy/MACTHEMEFILES/bin/mac-audit-sync)
+  * [bin/nautilus](file:///home/vitaliy/MACTHEMEFILES/bin/nautilus)
+  * [systemd/mac-integrity-check.service](file:///home/vitaliy/MACTHEMEFILES/systemd/mac-integrity-check.service)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

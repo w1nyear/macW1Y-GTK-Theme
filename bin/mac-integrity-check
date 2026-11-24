@@ -22,8 +22,16 @@ def check_integrity():
     issues = []
 
     # 1. Check extension SHA256 integrity
+    guard_candidates = [
+        os.path.expanduser("~/MACTHEMEFILES/bin/mac-extension-guard"),
+        os.path.expanduser("~/macW1Y/bin/mac-extension-guard"),
+        os.path.expanduser("~/.local/bin/mac-extension-guard"),
+        "/usr/local/bin/mac-extension-guard",
+    ]
+    guard_cmd = next((p for p in guard_candidates if os.path.isfile(p) and os.access(p, os.X_OK)), "mac-extension-guard")
+
     try:
-        res = subprocess.run(["/usr/local/bin/mac-extension-guard", "verify"],
+        res = subprocess.run([guard_cmd, "verify"],
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15)
         if res.returncode != 0:
             for line in res.stdout.splitlines():
@@ -43,7 +51,12 @@ def check_integrity():
         pass
 
     # 3. Quick check of SSOT manifest
-    manifest_path = "/home/vitaliy/MACTHEMEFILES/config/macw1y-manifest.json"
+    manifest_candidates = [
+        os.path.expanduser("~/MACTHEMEFILES/config/macw1y-manifest.json"),
+        os.path.expanduser("~/macW1Y/config/macw1y-manifest.json"),
+        "/usr/share/mactheme/config/macw1y-manifest.json",
+    ]
+    manifest_path = next((p for p in manifest_candidates if os.path.isfile(p)), manifest_candidates[0])
     if os.path.exists(manifest_path):
         try:
             with open(manifest_path) as f:
@@ -64,7 +77,13 @@ def check_integrity():
             issues.append(f"Помилка перевірки маніфесту: {e}")
 
     # 4. Check enabled extensions
-    lock_path = "/home/vitaliy/MACTHEMEFILES/config/extensions.lock.json"
+    lock_candidates = [
+        os.path.expanduser("~/MACTHEMEFILES/config/extensions.lock.json"),
+        os.path.expanduser("~/macW1Y/config/extensions.lock.json"),
+        os.path.expanduser("~/.config/macw1y/extensions.lock.json"),
+        "/usr/share/mactheme/config/extensions.lock.json",
+    ]
+    lock_path = next((p for p in lock_candidates if os.path.isfile(p)), lock_candidates[0])
     if os.path.exists(lock_path):
         try:
             with open(lock_path) as f:

@@ -3,7 +3,7 @@ keyrings-selected=['gnupg://']
 
 [apps/update-manager]
 launch-count=3
-launch-time=int64 1793723674
+launch-time=int64 1795551063
 show-details=true
 window-height=626
 window-width=555
@@ -12,7 +12,7 @@ window-width=555
 is-maximized=false
 
 [com/ubuntu/update-notifier]
-release-check-time=uint32 1793723965
+release-check-time=uint32 1794933869
 
 [desktop/ibus/general/hotkey]
 trigger=['Zenkaku_Hankaku', 'Alt+Kanji', 'Alt+grave', 'Hangul', 'Alt+Release+Alt_R']
@@ -23,8 +23,8 @@ favorites=['🎃']
 [net/nokyan/Resources]
 graph-data-points=uint32 60
 is-maximized=false
-last-viewed-page='cpu'
-processes-sort-by=uint32 3
+last-viewed-page='applications'
+processes-sort-by=uint32 9
 processes-sort-by-ascending=false
 refresh-speed='VeryFast'
 show-logical-cpus=false
@@ -40,13 +40,18 @@ throttle=20
 show-properties=false
 
 [org/gnome/Ptyxis]
+default-columns=uint32 120
 default-profile-uuid='2e3d0a57697030bc1d7286ca6acea541'
+default-rows=uint32 30
+font-name='SF Mono 10.5'
 profile-uuids=['2e3d0a57697030bc1d7286ca6acea541']
+restore-session=false
+restore-window-size=false
 use-system-font=false
-window-size=(uint32 137, uint32 34)
+window-size=(uint32 120, uint32 30)
 
 [org/gnome/Ptyxis/Profiles/2e3d0a57697030bc1d7286ca6acea541]
-palette='Vs Code'
+palette='macOS'
 
 [org/gnome/Ptyxis/Profiles/cb25149b3177fffbeaba42b46ac5118f]
 palette='Vs Code'
@@ -54,6 +59,12 @@ palette='Vs Code'
 [org/gnome/Ptyxis/Profiles/fdeeded7c6afd076814425e76ad24e65]
 opacity=1.0
 palette='Vs Code'
+
+[org/gnome/Weather]
+locations=[<(uint32 2, <('Kyiv', 'UKKK', true, [(0.87967503764377286, 0.53148185187090402)], [(0.88022771360470919, 0.53261631588470038)])>)>]
+window-height=533
+window-maximized=false
+window-width=550
 
 [org/gnome/baobab/ui]
 is-maximized=false
@@ -64,7 +75,7 @@ first-run=false
 view='icon-view'
 window-maximized=false
 window-position=[45, 29]
-window-size=[1560, 930]
+window-size=[1280, 800]
 
 [org/gnome/calculator]
 base=10
@@ -77,7 +88,7 @@ window-size=(360, 616)
 
 [org/gnome/control-center]
 last-panel='system'
-window-state=(1105, 695, false)
+window-state=(1247, 738, false)
 
 [org/gnome/desktop/a11y/magnifier]
 cross-hairs-length=58
@@ -131,24 +142,25 @@ play-sound=true
 
 [org/gnome/desktop/input-sources]
 current=uint32 1
-mru-sources=[('xkb', 'ua'), ('xkb', 'us')]
+mru-sources=[('xkb', 'us'), ('xkb', 'ua')]
 sources=[('xkb', 'us'), ('xkb', 'ua')]
 
 [org/gnome/desktop/interface]
 accent-color='orange'
 clock-show-weekday=true
 color-scheme='prefer-dark'
-cursor-theme='macW1Y-dark'
-document-font-name='Default 11'
+cursor-theme='macOS'
+document-font-name='default 10'
+enable-animations=true
 font-antialiasing='grayscale'
-font-name='Default 11'
+font-name='default 10'
 gtk-theme='macW1Y-Dark'
 icon-theme='macW1Y-dark'
-monospace-font-name='Default Mono 11'
+monospace-font-name='DefaultMono 10'
 show-battery-percentage=false
 
 [org/gnome/desktop/notifications]
-application-children=['update-manager', 'org-gnome-ptyxis', 'firefox-firefox', 'antigravity-antigravity', 'telegram-desktop-telegram-desktop', 'zoom-client-zoom-client', 'snapd-desktop-integration-snapd-desktop-integration', 'org-gnome-settings', 'google-chrome', 'com-teamviewer-teamviewer', 'com-mattjakeman-extensionmanager', 'org-gnome-nautilus', 'steam', 'apport-gtk', 'firmware-updater-firmware-updater', 'rustdesk', 'ai-opencode-desktop', 'org-gnome-boxes', 'steam-steam', 'discord-discord', 'wine-capcut', 'capcut']
+application-children=['update-manager', 'org-gnome-ptyxis', 'firefox-firefox', 'antigravity-antigravity', 'telegram-desktop-telegram-desktop', 'zoom-client-zoom-client', 'snapd-desktop-integration-snapd-desktop-integration', 'org-gnome-settings', 'google-chrome', 'com-teamviewer-teamviewer', 'com-mattjakeman-extensionmanager', 'org-gnome-nautilus', 'steam', 'apport-gtk', 'firmware-updater-firmware-updater', 'rustdesk', 'ai-opencode-desktop', 'org-gnome-boxes', 'steam-steam', 'discord-discord', 'wine-capcut', 'capcut', 'gnome-power-panel', 'discord', 'chatgpt']
 show-banners=true
 
 [org/gnome/desktop/notifications/application/ai-opencode-desktop]
@@ -166,6 +178,9 @@ application-id='apport-gtk.desktop'
 [org/gnome/desktop/notifications/application/capcut]
 application-id='CapCut.desktop'
 
+[org/gnome/desktop/notifications/application/chatgpt]
+application-id='chatgpt.desktop'
+
 [org/gnome/desktop/notifications/application/com-mattjakeman-extensionmanager]
 application-id='com.mattjakeman.ExtensionManager.desktop'
 
@@ -175,11 +190,17 @@ application-id='com.teamviewer.TeamViewer.desktop'
 [org/gnome/desktop/notifications/application/discord-discord]
 application-id='discord_discord.desktop'
 
+[org/gnome/desktop/notifications/application/discord]
+application-id='discord.desktop'
+
 [org/gnome/desktop/notifications/application/firefox-firefox]
 application-id='firefox_firefox.desktop'
 
 [org/gnome/desktop/notifications/application/firmware-updater-firmware-updater]
 application-id='firmware-updater_firmware-updater.desktop'
+
+[org/gnome/desktop/notifications/application/gnome-power-panel]
+application-id='gnome-power-panel.desktop'
 
 [org/gnome/desktop/notifications/application/google-chrome]
 application-id='google-chrome.desktop'
@@ -223,6 +244,9 @@ application-id='wine-capcut.desktop'
 [org/gnome/desktop/notifications/application/zoom-client-zoom-client]
 application-id='zoom-client_zoom-client.desktop'
 
+[org/gnome/desktop/peripherals/keyboard]
+numlock-state=false
+
 [org/gnome/desktop/peripherals/touchpad]
 two-finger-scrolling-enabled=true
 
@@ -235,7 +259,7 @@ daily-limit-seconds=uint32 28800
 [org/gnome/desktop/screensaver]
 color-shading-type='solid'
 picture-options='zoom'
-picture-uri='file:///usr/share/backgrounds/GoldenGate_Day.jpg'
+picture-uri='file:///home/vitaliy/.local/share/backgrounds/2026-10-27-19-51-32-GoldenGate_Day.jpg'
 primary-color='#000000000000'
 secondary-color='#000000000000'
 
@@ -249,7 +273,7 @@ idle-delay=uint32 0
 allow-volume-above-100-percent=true
 event-sounds=true
 input-feedback-sounds=true
-theme-name='macW1Y-Dark'
+theme-name='macOS'
 
 [org/gnome/desktop/wm/keybindings]
 switch-applications=['<Super>Tab', '<Alt>Tab']
@@ -261,7 +285,7 @@ switch-windows-backward=['<Shift><Super>Above_Tab', '<Shift><Alt>Above_Tab']
 button-layout='close,minimize,maximize:'
 num-workspaces=3
 theme='macW1Y-Dark'
-titlebar-font='Default Bold 11'
+titlebar-font='Inter Bold 11'
 workspace-names=['Робочий стіл 1', 'Робочий стіл 2', 'Робочий стіл 3']
 
 [org/gnome/evolution-data-server]
@@ -271,6 +295,7 @@ migrated=true
 enable-fingerprint-authentication=false
 
 [org/gnome/mutter]
+center-new-windows=true
 dynamic-workspaces=false
 edge-tiling=true
 overlay-key='Super_L'
@@ -307,7 +332,10 @@ last-folder-path='/home/vitaliy/Відео/Трансляції з екрана'
 last-folder-path='/home/vitaliy/Завантажене'
 
 [org/gnome/portal/filechooser/com.google.Chrome]
-last-folder-path='/home/vitaliy/Завантажене'
+last-folder-path='/home/vitaliy/Десктоп'
+
+[org/gnome/portal/filechooser/dev.khcrysalis.PlumeImpactor]
+last-folder-path='/home/vitaliy/Завантажене/Telegram Desktop'
 
 [org/gnome/portal/filechooser/firefox_firefox]
 last-folder-path='/home/vitaliy/Завантажене'
@@ -319,7 +347,7 @@ last-folder-path='/run/media/vitaliy/nvme1/DriveFiles/FastInstaller/another'
 last-folder-path='/home/vitaliy/Завантажене'
 
 [org/gnome/portal/filechooser/telegram-desktop_telegram-desktop]
-last-folder-path='/home/vitaliy/Зображення/Знімки екрана'
+last-folder-path='/home/vitaliy/Десктоп'
 
 [org/gnome/ptyxis/profiles/2e3d0a57697030bc1d7286ca6acea541]
 opacity=0.88
@@ -334,21 +362,21 @@ sleep-inactive-ac-type='nothing'
 sleep-inactive-battery-type='nothing'
 
 [org/gnome/shell]
-app-picker-layout=[{'org.gnome.clocks.desktop': <{'position': <0>}>, 'org.gnome.Calculator.desktop': <{'position': <1>}>, 'com.mattjakeman.ExtensionManager.desktop': <{'position': <2>}>, 'org.gnome.tweaks.desktop': <{'position': <3>}>, 'update-manager.desktop': <{'position': <4>}>, 'firmware-updater_firmware-updater.desktop': <{'position': <5>}>, 'gnome-language-selector.desktop': <{'position': <6>}>, 'net.nokyan.Resources.desktop': <{'position': <7>}>, 'org.gnome.TextEditor.desktop': <{'position': <8>}>, 'Utilities': <{'position': <9>}>, 'System': <{'position': <10>}>, 'zoom-client_zoom-client.desktop': <{'position': <11>}>, 'discord_discord.desktop': <{'position': <12>}>, 'damx.desktop': <{'position': <13>}>, 'com.dev47apps.droidcam.desktop': <{'position': <14>}>, 'nvidia-settings.desktop': <{'position': <15>}>, 'steam-nvidia.desktop': <{'position': <16>}>, 'snap-store_snap-store.desktop': <{'position': <17>}>, 'wine-capcut.desktop': <{'position': <18>}>, 'wine.desktop': <{'position': <19>}>}]
-command-history=['killall -3 gnome-shell', 'logout', 'r']
+app-picker-layout=[{'org.gnome.clocks.desktop': <{'position': <0>}>, 'org.gnome.Calculator.desktop': <{'position': <1>}>, 'com.mattjakeman.ExtensionManager.desktop': <{'position': <2>}>, 'org.gnome.tweaks.desktop': <{'position': <3>}>, 'update-manager.desktop': <{'position': <4>}>, 'firmware-updater_firmware-updater.desktop': <{'position': <5>}>, 'gnome-language-selector.desktop': <{'position': <6>}>, 'net.nokyan.Resources.desktop': <{'position': <7>}>, 'org.gnome.TextEditor.desktop': <{'position': <8>}>, 'Utilities': <{'position': <9>}>, 'System': <{'position': <10>}>, 'zoom-client_zoom-client.desktop': <{'position': <11>}>, 'discord_discord.desktop': <{'position': <12>}>, 'damx.desktop': <{'position': <13>}>, 'com.dev47apps.droidcam.desktop': <{'position': <14>}>, 'nvidia-settings.desktop': <{'position': <15>}>, 'steam-nvidia.desktop': <{'position': <16>}>, 'snap-store_snap-store.desktop': <{'position': <17>}>, 'wine.desktop': <{'position': <18>}>, '1022cd65-504d-4627-8076-7d978edb89a4': <{'position': <19>}>, 'org.gnome.Weather.desktop': <{'position': <20>}>, 'gay.pancake.lsfg-vk-ui.desktop': <{'position': <21>}>, 'screenruler.desktop': <{'position': <22>}>, 'info.desktop': <{'position': <23>}>, 'liner.desktop': <{'position': <24>}>, 'PrismLauncher.desktop': <{'position': <25>}>, 'df8a314e-89f6-4c7f-ad4a-eec3eaef93e5': <{'position': <26>}>, 'serein.desktop': <{'position': <27>}>, 'dev.khcrysalis.PlumeImpactor.desktop': <{'position': <28>}>, 'mpv.desktop': <{'position': <29>}>, 'cz.viceverse.serein.desktop': <{'position': <30>}>, 'org.prismlauncher.PrismLauncher.desktop': <{'position': <31>}>, 'rustdesk.desktop': <{'position': <32>}>, 'com.anthropic.Claude.desktop': <{'position': <33>}>, 'deepseek-linux_deepseek-linux.desktop': <{'position': <34>}>, 'ai.opencode.desktop.desktop': <{'position': <35>}>}]
+command-history=['killall -3 gnome-shell', 'logout', 'r', 'ls', 'kill ./gui.sh', 'kill gui.sh']
 disable-extension-version-validation=true
 disable-user-extensions=false
-disabled-extensions=['apps-menu@gnome-shell-extensions.gcampax.github.com', 'ubuntu-dock@ubuntu.com', 'snapd-prompting@canonical.com', 'snapd-search-provider@canonical.com', 'web-search-provider@ubuntu.com', 'tiling-assistant@ubuntu.com', 'dash-to-dock@micxgx.gmail.com', 'spotlight@nin']
-enabled-extensions=['user-theme@gnome-shell-extensions.gcampax.github.com', 'ubuntu-appindicators@ubuntu.com', 'compiz-alike-magic-lamp-effect@hermes83.github.com', 'Rounded_Corners@lennart-k', 'custom-command-toggle@storageb.github.com', 'volume-percentage-quick-settings@imdarktom', 'quick-settings-scroll@diskmth.fr', 'wifi-hotspot-quick-settings@aryan10.github.io', 'top-bar-organizer@julian.gse.jsts.xyz', 'ding@rastersoft.com', 'run-cmd@custom.extension', 'wack-lockscreen-clock@rinzler69-wastaken.github.com', 'cupertino-dock-lite@rinzler69-wastaken.github.com', 'macw1y-touchpad-gestures@mactheme', 'desktop-widgets@r3nhick', 'dash2dock-motion@unmade.space', 'liquid-glass@thinkingcoding1231.gmail.com', 'eval-helper@mactheme', 'kiwi@kemma', 'appmenu@ChathurangaBW.github.io', 'blur-my-shell@aunetx']
-favorite-apps=['org.gnome.Nautilus.desktop', 'launchpad.desktop', 'google-chrome.desktop', 'antigravity_antigravity.desktop', 'ai.opencode.desktop.desktop', 'org.gnome.Ptyxis.desktop', 'telegram-desktop_telegram-desktop.desktop', 'steam_steam.desktop', 'org.gnome.Boxes.desktop', 'org.gnome.Settings.desktop']
-last-selected-power-profile='performance'
+disabled-extensions=['apps-menu@gnome-shell-extensions.gcampax.github.com', 'ubuntu-dock@ubuntu.com', 'snapd-prompting@canonical.com', 'snapd-search-provider@canonical.com', 'web-search-provider@ubuntu.com', 'tiling-assistant@ubuntu.com', 'dash-to-dock@micxgx.gmail.com', 'spotlight@nin', 'live-lockscreen@nick-redwill', 'stage-manager@gnome-stage-manager']
+enabled-extensions=['Rounded_Corners@lennart-k', 'custom-command-toggle@storageb.github.com', 'volume-percentage-quick-settings@imdarktom', 'quick-settings-scroll@diskmth.fr', 'wifi-hotspot-quick-settings@aryan10.github.io', 'top-bar-organizer@julian.gse.jsts.xyz', 'run-cmd@custom.extension', 'macos-touchpad-gestures@mactheme', 'user-theme@gnome-shell-extensions.gcampax.github.com', 'ubuntu-appindicators@ubuntu.com', 'desktop-widgets@r3nhick', 'wack-lockscreen-clock@rinzler69-wastaken.github.com', 'cupertino-dock-lite@rinzler69-wastaken.github.com', 'macw1y-touchpad-gestures@mactheme', 'blur-my-shell@aunetx', 'compiz-alike-magic-lamp-effect@hermes83.github.com', 'liquid-glass@thinkingcoding1231.gmail.com', 'appmenu@ChathurangaBW.github.io', 'dash2dock-motion@unmade.space', 'kiwi@kemma', 'eval-helper@mactheme', 'ding@rastersoft.com']
+favorite-apps=['org.gnome.Nautilus.desktop', 'launchpad.desktop', 'google-chrome.desktop', 'antigravity_antigravity.desktop', 'chatgpt.desktop', 'org.gnome.Ptyxis.desktop', 'telegram-desktop_telegram-desktop.desktop', 'steam_steam.desktop', 'org.gnome.Boxes.desktop', 'spotify_spotify.desktop', 'discord.desktop', 'org.gnome.Settings.desktop']
+last-selected-power-profile='power-saver'
 welcome-dialog-last-shown-version='50.1'
 
 [org/gnome/shell/extensions/appmenu]
 clipboard-shortcut=['<Super>v']
 hide-overview-button=true
 icon-size=16
-menu-icon='system-logo'
+menu-icon='apple-logo'
 search-shortcut=['<Control>space', '<Primary>space']
 show-os-icon=true
 show-user-switcher=false
@@ -360,7 +388,7 @@ hacks-level=1
 pipelines={'pipeline_default': {'name': <'Default'>, 'effects': <[<{'type': <'native_static_gaussian_blur'>, 'id': <'effect_000000000000'>, 'params': <{'unscaled_radius': <30>, 'brightness': <0.59999999999999998>}>}>]>}, 'pipeline_default_rounded': {'name': <'Default rounded'>, 'effects': <[<{'type': <'native_static_gaussian_blur'>, 'id': <'effect_000000000001'>, 'params': <{'unscaled_radius': <30>, 'brightness': <0.59999999999999998>}>}>, <{'type': <'corner'>, 'id': <'effect_000000000002'>, 'params': <{'radius': <24>}>}>]>}, 'pipeline_98777dc6-d6d4-4a4d-abcd-1015072b49fc': {'name': <'MenuBar'>, 'effects': <[<{'type': <'gradient_panel'>, 'id': <'effect_00680760882466'>, 'params': <{'top_darkness': <0>, 'bottom_darkness': <0>, 'top_blur': <25>, 'bottom_blur': <0>}>}>]>}}
 rounded-blur-found=true
 settings-version=2
-sigma=31
+sigma=10
 
 [org/gnome/shell/extensions/blur-my-shell/appfolder]
 blur=true
@@ -372,7 +400,7 @@ style-dialogs=1
 blacklist=['Plank', 'com.desktop.ding', 'Conky', 'gjs', 'telegram-desktop_telegram-desktop', 'telegram-desktop', 'TelegramDesktop', 'Telegram', 'org.telegram.desktop', 'antigravity', 'Antigravity', 'google-chrome', 'Google-chrome', 'chromium', 'Chromium', 'firefox', 'Firefox', 'Brave-browser', 'brave-browser', 'steam', 'Steam', 'steamwebhelper', 'cs2', 'csgo_linux64', 'gamescope', 'wine', 'wine64', 'lutris', 'heroic', 'mpv', 'vlc', 'Vlc', 'CapCut', 'capcut', 'discord', 'Discord', 'code', 'Code', 'blender', 'obs', 'obs64', 'gimp', 'inkscape']
 blur=false
 blur-on-overview=true
-brightness=0.86499999999999999
+brightness=1.0
 corner-radius=24
 corner-when-maximized=true
 dynamic-opacity=false
@@ -394,7 +422,7 @@ brightness=1.0
 corner-radius=28
 override-background=false
 pipeline='pipeline_default_rounded'
-sigma=1
+sigma=3
 static-blur=false
 style-dash-to-dock=0
 unblur-in-overview=true
@@ -439,7 +467,7 @@ menu-corner-radius=14
 notification-corner-radius=24
 pipeline='pipeline_default_rounded'
 quick-settings-corner-radius=24
-sigma=10
+sigma=25
 
 [org/gnome/shell/extensions/blur-my-shell/quick-settings]
 animation-mode='window'
@@ -547,21 +575,29 @@ workspace-agnostic-urgent-windows=true
 appearance=2
 arrange-widgets=false
 battery-show-percent=true
-blur-radius-px=3
+blur-radius-px=5
 calendar-lookahead=3
+chroma-strength-pct=10
 clock-smooth-seconds=false
 digitalclock-show-seconds=false
 drag-active=false
 edit-mode=false
-layout-json='{"version":3,"widgets":[{"id":"clock-1","type":"clock","size":"small","x":1715,"y":49,"data":{"sizeManual":true},"stack":[],"pinned":false},{"id":"calendar-1","type":"calendar","size":"medium","x":1510,"y":254,"data":{},"stack":[],"pinned":false},{"id":"battery-1","type":"battery","size":"mini","x":1650,"y":459,"data":{"sizeManual":true},"stack":[],"pinned":false},{"id":"system-1793898864421","type":"system","size":"medium","x":1305,"y":49,"data":{},"stack":[],"pinned":false}]}'
+layout-json='{"version":3,"widgets":[{"id":"clock-1","type":"clock","size":"small","x":1302.7186279296875,"y":254,"data":{"sizeManual":true},"stack":[],"pinned":false},{"id":"calendar-1","type":"calendar","size":"medium","x":1510,"y":254,"data":{},"stack":[],"pinned":false},{"id":"battery-1","type":"battery","size":"mini","x":830,"y":49,"data":{"sizeManual":true},"stack":[],"pinned":false},{"id":"system-1793898864421","type":"system","size":"medium","x":1100,"y":49,"data":{},"stack":[],"pinned":false},{"id":"music-1794144327395","type":"music","size":"medium","x":1510,"y":49,"data":{"sizeManual":true},"stack":[],"pinned":false}]}'
 music-ignore-browsers=true
+open-prefs-page=''
 open-widget-picker=false
 pause-animations-fullscreen=true
+refract-ior-x100=200
+refract-scale=100
+refract-thickness=35
 show-panel-icon=false
-style-border-radius=35
-style-shadow-size=30
+spec-strength-pct=0
+style-border-radius=30
+style-mode=0
+style-shadow-size=20
+style-use-custom-accent=false
 style-widget-opacity=1.0
-tint-alpha-pct=20
+tint-alpha-pct=15
 use-custom-widget-theme=false
 use-same-theme-for-both=false
 widget-gap=15
@@ -571,6 +607,7 @@ widget-theme-unified='dark'
 
 [org/gnome/shell/extensions/ding]
 check-x11wayland=true
+icon-size='standard'
 show-drop-place=false
 show-home=false
 
@@ -601,7 +638,7 @@ overview-wallpaper-background=false
 panel-gradient=false
 panel-styling=false
 panel-transparency=false
-polkit-dialog-system=false
+polkit-dialog-macos=false
 reduce-window-animations=true
 show-window-controls=false
 show-window-controls-fullscreen-only=false
@@ -648,20 +685,20 @@ application-window-whitelist=['org.gnome.Settings', 'gnome-control-center', 'org
 blur-method=1
 blur-my-shell-popup-blur=false
 desktop-menu-blur-radius=3
-desktop-menu-brightness=0.92500000000000004
+desktop-menu-brightness=0.90000000000000002
 desktop-menu-content-opacity=1.0
 desktop-menu-contrast=1.02
 desktop-menu-corner-radius=20.0
 desktop-menu-saturation=1.1499999999999999
 desktop-menu-tint-color='#000000'
-desktop-menu-tint-strength=0.14999999999999999
-detected-extra-menus=['a11y', 'appindicator-:1.144@/org/ayatana/NotificationItem/livepatch', 'appindicator-:1.144@/org/ayatana/NotificationItem/software_update_available', 'appindicator-:1.144@/org/ayatana/NotificationItem/unattended_upgrade', 'appindicator-:1.221@/StatusNotifierItem', 'appmenu@ChathurangaBW.github.io-0', 'appmenu@ChathurangaBW.github.io-1', 'appmenu@ChathurangaBW.github.io-2', 'appmenu@ChathurangaBW.github.io-3', 'appmenu@ChathurangaBW.github.io-4', 'appmenu@ChathurangaBW.github.io-5', 'appmenu@ChathurangaBW.github.io-6', 'desktop-widgets@r3nhick', 'dwellClick', 'keyboard', 'macBattery', 'macBluetooth', 'macPrivacy', 'macScreenCast', 'macVolume', 'macWifi']
-dock-blur-radius=1
+desktop-menu-tint-strength=0.20000000000000001
+detected-extra-menus=['a11y', 'appindicator-:1.1417@/org/ayatana/NotificationItem/tray_icon_tray_app_rustdesk', 'appindicator-:1.170@/org/ayatana/NotificationItem/livepatch', 'appindicator-:1.170@/org/ayatana/NotificationItem/software_update_available', 'appindicator-:1.170@/org/ayatana/NotificationItem/unattended_upgrade', 'appindicator-:1.252@/StatusNotifierItem', 'appmenu@ChathurangaBW.github.io-0', 'appmenu@ChathurangaBW.github.io-1', 'appmenu@ChathurangaBW.github.io-2', 'appmenu@ChathurangaBW.github.io-3', 'appmenu@ChathurangaBW.github.io-4', 'appmenu@ChathurangaBW.github.io-5', 'appmenu@ChathurangaBW.github.io-6', 'dwellClick', 'keyboard', 'macBattery', 'macBluetooth', 'macPrivacy', 'macScreenCast', 'macVolume', 'macWifi']
+dock-blur-radius=3
 dock-brightness=1.0
 dock-contrast=1.02
 dock-corner-radius=26.0
 dock-glass-expand=0
-dock-margin-bottom=8
+dock-margin-bottom=0
 dock-saturation=1.1499999999999999
 dock-tint-color='#29292e'
 dock-tint-strength=0.0
@@ -676,7 +713,7 @@ enable-osd-glass=false
 enable-panel-menu-animation=false
 enable-quick-settings-animation=false
 enable-quick-settings-glass=false
-glass-ao-intensity=0.040000000000000001
+glass-ao-intensity=0.0
 glass-ao-radius=0.0
 glass-backdrop-highlights=false
 glass-blur-downscale=2
@@ -694,24 +731,24 @@ glass-clock-tall-style='even'
 glass-clock-tint-color='#ffffff'
 glass-clock-tint-strength=0.34999999999999998
 glass-debug-diagnostics=false
-glass-displacement-scale=120.0
+glass-displacement-scale=150.0
 glass-edge-smoothing=2.0
-glass-ior=1.8
+glass-ior=2.0
 glass-light-angle-deg=50.0
 glass-max-z=25.0
 glass-profile-shape-n=7.0
 glass-rim-directional-power=2.7000000000000002
-glass-rim-intensity=0.40000000000000002
+glass-rim-intensity=0.59999999999999998
 glass-rim-light-color-intensity=1.3999999999999999
 glass-rim-power=6.0
 glass-rim-width=5.0
 glass-shape-type=2
-glass-sheen-intensity=0.080000000000000002
+glass-sheen-intensity=0.0
 glass-shininess=42.0
-glass-specular-intensity=0.10000000000000001
+glass-specular-intensity=0.0
 menu-animation-interval-ms=3
 menu-blur-radius=3
-menu-brightness=0.92500000000000004
+menu-brightness=0.90000000000000002
 menu-contrast=1.02
 menu-corner-radius=20.0
 menu-enable-adaptive-text-color=false
@@ -724,10 +761,10 @@ menu-spring-damping=22.0
 menu-spring-mass=1.0
 menu-spring-stiffness=120.0
 menu-tint-color='#000000'
-menu-tint-strength=0.14999999999999999
+menu-tint-strength=0.20000000000000001
 menu-x-offset=29
 menu-y-offset=-2
-notification-blur-radius=0
+notification-blur-radius=15
 notification-brightness=1.0
 notification-contrast=1.0
 notification-corner-radius=24.0
@@ -735,10 +772,10 @@ notification-enable-adaptive-text-color=false
 notification-glass-expand=0
 notification-sample-interval-ms=400
 notification-saturation=1.0
-notification-tint-color='#29292e'
-notification-tint-strength=0.14999999999999999
+notification-tint-color='#000000'
+notification-tint-strength=0.20000000000000001
 notification-y-offset=10
-osd-blur-radius=0
+osd-blur-radius=2
 osd-brightness=1.0
 osd-contrast=1.0
 osd-corner-radius=18.0
@@ -747,12 +784,12 @@ osd-glass-expand=0
 osd-sample-interval-ms=500
 osd-saturation=1.0
 osd-tint-color='#000000'
-osd-tint-strength=0.14999999999999999
+osd-tint-strength=0.050000000000000003
 osd-y-offset=24
-output-logs=true
+output-logs=false
 panel-menu-animation-interval-ms=16
 panel-menu-blur-radius=3
-panel-menu-brightness=0.92500000000000004
+panel-menu-brightness=0.90000000000000002
 panel-menu-contrast=1.02
 panel-menu-corner-radius=20.0
 panel-menu-enable-adaptive-text-color=true
@@ -765,7 +802,7 @@ panel-menu-spring-damping=22.0
 panel-menu-spring-mass=1.0
 panel-menu-spring-stiffness=120.0
 panel-menu-tint-color='#000000'
-panel-menu-tint-strength=0.14999999999999999
+panel-menu-tint-strength=0.20000000000000001
 panel-menu-x-offset=0
 panel-menu-y-offset=0
 quick-settings-apply-to=1
@@ -789,7 +826,8 @@ theme-preference='dark'
 
 [org/gnome/shell/extensions/stage-manager]
 maximize-migrated=true
-sidebar-layout='arc'
+sidebar-layout='stack'
+sidebar-mode='apps'
 
 [org/gnome/shell/extensions/tiling-assistant]
 focus-hint-color='rgb(203,67,20)'
@@ -800,7 +838,7 @@ tiling-popup-all-workspace=true
 [org/gnome/shell/extensions/top-bar-organizer]
 hide=['quickSettings', 'macWifi', 'macBluetooth', 'macVolume', 'macBattery']
 left-box-order=['activities', 'appmenu@ChathurangaBW.github.io-0', 'appmenu@ChathurangaBW.github.io-1', 'appmenu@ChathurangaBW.github.io-2', 'appmenu@ChathurangaBW.github.io-3', 'appmenu@ChathurangaBW.github.io-4', 'appmenu@ChathurangaBW.github.io-5', 'appmenu@ChathurangaBW.github.io-6', 'window-controls', 'testBtnRole']
-right-box-order=['appindicator-kstatusnotifieritem-un-reboot', 'appindicator-kstatusnotifieritem-tray-icon tray app 198404-1', 'desktop-widgets@r3nhick', 'appindicator-kstatusnotifieritem-tray-icon tray app 2042746-1', 'appindicator-kstatusnotifieritem-tray-icon tray app 109405-1', 'appindicator-kstatusnotifieritem-Bionic_status_icon_1', 'appindicator-kstatusnotifieritem-tray-icon tray app 51943-1', 'appindicator-kstatusnotifieritem-tray-icon tray app 94811-1', 'appindicator-kstatusnotifieritem-discord_status_icon_1', 'appindicator-kstatusnotifieritem-tray-icon tray app 95553-1', 'appindicator-kstatusnotifieritem-tray-icon tray app 91276-1', 'appindicator-kstatusnotifieritem-tray-icon tray app 87442-1', 'appindicator-kstatusnotifieritem-tray-icon tray app 215351-1', 'appindicator-kstatusnotifieritem-tray-icon tray app 150558-1', 'appindicator-kstatusnotifieritem-droidcam', 'appindicator-kstatusnotifieritem-zoom', 'appindicator-kstatusnotifieritem-steam', 'quickSettings', 'macWifi', 'macBluetooth', 'macVolume', 'macBattery', 'appindicator-kstatusnotifieritem-unattended-upgrade', 'appindicator-kstatusnotifieritem-livepatch', 'appindicator-kstatusnotifieritem-software-update-available', 'screenRecording', 'screenSharing', 'dwellClick', 'a11y', 'macPrivacy', 'appindicator-kstatusnotifieritem-TelegramDesktop', 'appindicator-kstatusnotifieritem-Antigravity_status_icon_1', 'macScreenCast', 'keyboard', 'kiwi-search-button', 'kiwi-wifi-button', 'ydotool-trigger-button', 'dateMenu']
+right-box-order=['appindicator-kstatusnotifieritem-tray-icon tray app 90622-1', 'appindicator-kstatusnotifieritem-tray-icon tray app rustdesk', 'appindicator-kstatusnotifieritem-chrome_status_icon_1', 'appindicator-kstatusnotifieritem-tray-icon tray app 118173-1', 'appindicator-kstatusnotifieritem-Claude_status_icon_1', 'appindicator-kstatusnotifieritem-serein', 'appindicator-kstatusnotifieritem-spotify-client', 'appindicator-kstatusnotifieritem-un-reboot', 'appindicator-kstatusnotifieritem-tray-icon tray app 198404-1', 'desktop-widgets@r3nhick', 'appindicator-kstatusnotifieritem-tray-icon tray app 2042746-1', 'appindicator-kstatusnotifieritem-tray-icon tray app 109405-1', 'appindicator-kstatusnotifieritem-Bionic_status_icon_1', 'appindicator-kstatusnotifieritem-tray-icon tray app 51943-1', 'appindicator-kstatusnotifieritem-tray-icon tray app 94811-1', 'appindicator-kstatusnotifieritem-discord_status_icon_1', 'appindicator-kstatusnotifieritem-tray-icon tray app 95553-1', 'appindicator-kstatusnotifieritem-tray-icon tray app 91276-1', 'appindicator-kstatusnotifieritem-tray-icon tray app 87442-1', 'appindicator-kstatusnotifieritem-tray-icon tray app 215351-1', 'appindicator-kstatusnotifieritem-tray-icon tray app 150558-1', 'appindicator-kstatusnotifieritem-droidcam', 'appindicator-kstatusnotifieritem-zoom', 'appindicator-kstatusnotifieritem-steam', 'quickSettings', 'macWifi', 'macBluetooth', 'macVolume', 'macBattery', 'appindicator-kstatusnotifieritem-unattended-upgrade', 'appindicator-kstatusnotifieritem-livepatch', 'appindicator-kstatusnotifieritem-software-update-available', 'screenRecording', 'screenSharing', 'dwellClick', 'a11y', 'macPrivacy', 'appindicator-kstatusnotifieritem-TelegramDesktop', 'appindicator-kstatusnotifieritem-Antigravity_status_icon_1', 'macScreenCast', 'keyboard', 'kiwi-search-button', 'kiwi-wifi-button', 'ydotool-trigger-button', 'dateMenu']
 show=['ydotool-trigger-button']
 
 [org/gnome/shell/extensions/user-theme]
@@ -810,7 +848,7 @@ name='macW1Y-Dark'
 clock-weight='bold'
 cupertino-always-show-user=true
 lockscreen-mode='cupertino'
-lockscreen-wallpaper-enable=false
+lockscreen-wallpaper-enable=true
 lockscreen-wallpaper-path='/usr/share/backgrounds/GoldenGate_Day.jpg'
 
 [org/gnome/shell/keybindings]
@@ -818,6 +856,13 @@ toggle-message-tray=['<Super>m']
 
 [org/gnome/shell/ubuntu]
 startup-sound='warty-startup'
+
+[org/gnome/shell/weather]
+automatic-location=true
+locations=[<(uint32 2, <('Kyiv', 'UKKK', true, [(0.87967503764377286, 0.53148185187090402)], [(0.88022771360470919, 0.53261631588470038)])>)>]
+
+[org/gnome/shell/window-switcher]
+app-icon-mode='app-icon-only'
 
 [org/gnome/shell/world-clocks]
 locations=@av []
