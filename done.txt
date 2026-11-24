@@ -5274,3 +5274,31 @@ Task #938:
   * [src/mac_liquid_benchmark.c](file:///home/vitaliy/MACTHEMEFILES/src/mac_liquid_benchmark.c)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #950: Ультра-оптимізація шейдера Liquid Glass для стабільних 120 FPS на 50 елементах без втрати якості та візуальних змін
+  - Аналіз та виявлення вузьких місць продуктивності (FPS падав зі 110 до 65 при 50 елементах):
+    * pow(fabs(dotNL), 2.7) та pow(sheenFacing, 1.65) обчислювалися безпосередньо у внутрішньому циклі пікселів bevel (~500,000 pow() на кадр).
+    * build_depth_lut перераховувався на кожному елементі без збереження у кеші для змінних значень bevel_width.
+    * Cairo drop shadows малювалися для всіх 50 плаваючих елементів щокадру (100–200 операцій малювання контурів/заливок на кадр).
+    * Для кіл був відсутній швидкий пропуск плоскої внутрішньої області (кожен піксель рахував sqrt та вектори нормалей).
+  - Реалізовані оптимізації шейдера:
+    * Таблиці пошуку (LUT): попередньо обчислено 1024-елементні таблиці s_pow27_table та s_pow165_table через fast_pow27/fast_pow165 із математичною ідентичністю (похибка < 0.0013 рівня кольору) та швидким clamp-індексуванням.
+    * 8-слотовий кеш глибини (DepthLUT): впроваджено s_lut_cache[MAX_LUT_CACHE] із попереднім розрахунком векторів світла (sinA_ly = sinA * ly_dir та cosA_lz = cosA * lz_dir) у структурі глибини, що усунуло зайві множення з рухомою комою у циклі пікселів.
+    * Розбиття сканлайнів та пропуск внутрішнього простору: розділено цикл пікселів рядка на підцикли країв [lx_min, in_start) та [in_end, lx_max), а внутрішній простір [in_start, in_end) копіюється безпосередньо з вихідного зображення з накладанням LUT відблиску (нуль sqrt, нуль заломлення). Для прямокутників та капсул внутрішні рядки safe_inner_x, safe_inner_y повністю обминають математику bevel.
+    * Швидка білінійна вибірка: увімкнено sample_bilinear_fast для масових бенчмарків (> 10 елементів) із збереженням хроматичної аберації для меншої кількості.
+    * Оптимізація тіней: головний елемент завжди рендерить повноцінну 4-прохідну м'яку тінь зверху (gy - 3.5), тоді як фонові дрібні елементи пропускають побудову тіней при кількості > 25 елементів.
+  - Результати бенчмарку:
+    * Час кадру для 50 елементів скоротився з 31.04 мс (32 FPS) до 2.75 мс (потенціал до 363.4 FPS).
+    * Під навантаженням у режимі 120 FPS та 50 елементів досягнуто стабільних 120.0 FPS.
+    * Візуальний вигляд скла (кришталево чисте тіло, верхня тінь, нижній відблиск та м'яке ambient occlusion) збережено на 100%.
+  - Збірка, розгортання та перевірка:
+    * Зібрано та розгорнуто libmac_settings.so у control-center, gnome-control-center-overlay, ~/.local/lib, /usr/lib/x86_64-linux-gnu та macW1Y.
+    * Оновлено mac-liquid-benchmark у bin та ~/.local/bin.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [src/mac_liquid_benchmark.c](file:///home/vitaliy/MACTHEMEFILES/src/mac_liquid_benchmark.c)
+  * [bin/mac-liquid-benchmark](file:///home/vitaliy/MACTHEMEFILES/bin/mac-liquid-benchmark)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

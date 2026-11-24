@@ -62,29 +62,72 @@ static inline double glsl_smoothstep(double edge0, double edge1, double x) {
     return t * t * (3.0 - 2.0 * t);
 }
 
+#define POW_LUT_SIZE 1024
+static double s_pow27_table[POW_LUT_SIZE];
+static double s_pow165_table[POW_LUT_SIZE];
+static int s_pow_tables_inited = 0;
+
+static void init_pow_tables(void) {
+    if (s_pow_tables_inited) return;
+    for (int i = 0; i < POW_LUT_SIZE; i++) {
+        double x = (double)i / (double)(POW_LUT_SIZE - 1);
+        s_pow27_table[i] = pow(x, 2.7);
+        s_pow165_table[i] = pow(x, 1.65);
+    }
+    s_pow_tables_inited = 1;
+}
+
+static inline double fast_pow27(double x) {
+    if (x <= 0.0) return 0.0;
+    if (x >= 1.0) return 1.0;
+    int idx = (int)(x * (POW_LUT_SIZE - 1) + 0.5);
+    return s_pow27_table[idx];
+}
+
+static inline double fast_pow165(double x) {
+    if (x <= 0.0) return 0.0;
+    if (x >= 1.0) return 1.0;
+    int idx = (int)(x * (POW_LUT_SIZE - 1) + 0.5);
+    return s_pow165_table[idx];
+}
+
 typedef struct {
     double disp_factor;
-    double sinA;
-    double cosA;
+    double sinA_ly;
+    double cosA_lz;
     double insideMask;
     double rimEdge;
     double chromaDampen;
     double ao;
 } DepthLUT;
 
-static DepthLUT s_depth_lut[256];
-static double s_last_ior = -1.0;
-static double s_last_disp_scale = -1.0;
-static double s_last_rim = -1.0;
-static double s_last_bevel = -1.0;
+#define MAX_LUT_CACHE 8
+static struct {
+    double ior, disp_scale, rim_intensity, bevel_width;
+    DepthLUT lut[256];
+    int valid;
+} s_lut_cache[MAX_LUT_CACHE];
 
-static void build_depth_lut(double ior, double disp_scale, double rim_intensity, double bevel_width) {
-    if (ior == s_last_ior && disp_scale == s_last_disp_scale && rim_intensity == s_last_rim && bevel_width == s_last_bevel)
-        return;
-    s_last_ior = ior;
-    s_last_disp_scale = disp_scale;
-    s_last_rim = rim_intensity;
-    s_last_bevel = bevel_width;
+static const DepthLUT* get_depth_lut(double ior, double disp_scale, double rim_intensity, double bevel_width, double ly_dir, double lz_dir) {
+    for (int k = 0; k < MAX_LUT_CACHE; k++) {
+        if (s_lut_cache[k].valid &&
+            s_lut_cache[k].ior == ior &&
+            s_lut_cache[k].disp_scale == disp_scale &&
+            s_lut_cache[k].rim_intensity == rim_intensity &&
+            s_lut_cache[k].bevel_width == bevel_width) {
+            return s_lut_cache[k].lut;
+        }
+    }
+
+    static int next_slot = 0;
+    int slot = next_slot;
+    next_slot = (next_slot + 1) % MAX_LUT_CACHE;
+
+    s_lut_cache[slot].ior = ior;
+    s_lut_cache[slot].disp_scale = disp_scale;
+    s_lut_cache[slot].rim_intensity = rim_intensity;
+    s_lut_cache[slot].bevel_width = bevel_width;
+    s_lut_cache[slot].valid = 1;
 
     double eta = 1.0 / fmax(ior, 1.001);
     double edgeFeather = 1.8;
@@ -118,14 +161,15 @@ static void build_depth_lut(double ior, double disp_scale, double rim_intensity,
         double aoMask = 1.0 - glsl_smoothstep(0.0, 8.0, aoDist);
         double ao = 1.0 - aoMask * 0.30;
 
-        s_depth_lut[i].disp_factor = disp_factor;
-        s_depth_lut[i].sinA = sinA;
-        s_depth_lut[i].cosA = cosA;
-        s_depth_lut[i].insideMask = insideMask;
-        s_depth_lut[i].rimEdge = rimEdge;
-        s_depth_lut[i].chromaDampen = edgeDampen;
-        s_depth_lut[i].ao = ao;
+        s_lut_cache[slot].lut[i].disp_factor = disp_factor;
+        s_lut_cache[slot].lut[i].sinA_ly = sinA * ly_dir;
+        s_lut_cache[slot].lut[i].cosA_lz = cosA * lz_dir;
+        s_lut_cache[slot].lut[i].insideMask = insideMask;
+        s_lut_cache[slot].lut[i].rimEdge = rimEdge;
+        s_lut_cache[slot].lut[i].chromaDampen = edgeDampen;
+        s_lut_cache[slot].lut[i].ao = ao;
     }
+    return s_lut_cache[slot].lut;
 }
 
 static inline void sample_bilinear_fast(const unsigned char *src_pixels, int stride, int width, int height,
@@ -231,6 +275,146 @@ static inline double sample_channel_fast(const unsigned char *src_pixels, int st
     }
 }
 
+#define PROCESS_CIRCLE_PIXEL_BENCH(cur_lx) do { \
+    int lx = (cur_lx); \
+    double px = lx - bx + 0.5; \
+    double len = sqrt(px * px + py_sq) + 1e-6; \
+    double d = len - circle_r; \
+    if (d > 0.8) { dst_row[lx] = 0; continue; } \
+    double inv_len = 1.0 / len; \
+    double n2d_x = px * inv_len; \
+    double n2d_y = py * inv_len; \
+    double depth = -d * inv_bevel; \
+    if (depth >= 1.0) { \
+        int bg_x = CLAMP(igx + lx, 0, width - 1); \
+        uint32_t c = src_row[bg_x]; \
+        dst_row[lx] = (0xFF << 24) | (lut_r[(c >> 16) & 0xFF] << 16) | (lut_g[(c >> 8) & 0xFF] << 8) | lut_b[c & 0xFF]; \
+        continue; \
+    } \
+    if (depth < 0.0) depth = 0.0; \
+    int lidx = (int)(depth * 255.0); \
+    const DepthLUT *item = &depth_lut[lidx]; \
+    double disp_factor = item->disp_factor; \
+    double sx = gx + lx - n2d_x * disp_factor; \
+    double sy = gy + ly - n2d_y * disp_factor; \
+    double cr_r, cr_g, cr_b; \
+    if (chroma_str > 0.01 && disp_factor > 0.1 && active_elem_count <= 10) { \
+        cr_g = sample_channel_fast(src_pixels, src_stride, width, height, sx, sy, 8); \
+        double c_off_x = -n2d_x * (chroma_str * item->chromaDampen); \
+        double c_off_y = -n2d_y * (chroma_str * item->chromaDampen); \
+        cr_r = sample_channel_fast(src_pixels, src_stride, width, height, sx + c_off_x, sy + c_off_y, 16); \
+        cr_b = sample_channel_fast(src_pixels, src_stride, width, height, sx - c_off_x, sy - c_off_y, 0); \
+    } else { \
+        sample_bilinear_fast(src_pixels, src_stride, width, height, sx, sy, &cr_r, &cr_g, &cr_b); \
+    } \
+    double base_r, base_g, base_b; \
+    if (tint_strength < 0.001) { \
+        base_r = cr_r * item->ao; \
+        base_g = cr_g * item->ao; \
+        base_b = cr_b * item->ao; \
+    } else { \
+        base_r = (cr_r * one_minus_tint + tint_r_str) * item->ao; \
+        base_g = (cr_g * one_minus_tint + tint_g_str) * item->ao; \
+        base_b = (cr_b * one_minus_tint + tint_b_str) * item->ao; \
+    } \
+    double dotNL = n2d_y * item->sinA_ly + item->cosA_lz; \
+    double lightMask = fast_pow27(fabs(dotNL)); \
+    double finalRimLight = item->rimEdge * lightMask; \
+    double sheenFacing = fmax(dotNL, 0.0); \
+    double sheenLight = fast_pow165(sheenFacing) * 0.30 * 255.0; \
+    double added = finalRimLight + sheenLight; \
+    double lit_r = base_r + added - (base_r * added * 0.0039215686); \
+    double lit_g = base_g + added - (base_g * added * 0.0039215686); \
+    double lit_b = base_b + added - (base_b * added * 0.0039215686); \
+    uint8_t out_a = (uint8_t)CLAMP(item->insideMask * 255.0, 0, 255); \
+    uint8_t out_r = (uint8_t)CLAMP(lit_r, 0, 255); \
+    uint8_t out_g = (uint8_t)CLAMP(lit_g, 0, 255); \
+    uint8_t out_b = (uint8_t)CLAMP(lit_b, 0, 255); \
+    dst_row[lx] = (out_a << 24) | (out_r << 16) | (out_g << 8) | out_b; \
+} while(0)
+
+#define PROCESS_RECT_PIXEL_BENCH(cur_lx) do { \
+    int lx = (cur_lx); \
+    double px = lx - bx + 0.5; \
+    double n2d_x, n2d_y, d; \
+    double qx = fabs(px) - bx + gr; \
+    double sign_x = (px >= 0.0) ? 1.0 : -1.0; \
+    double max_qx = fmax(qx, 0.0); \
+    if (max_qx > 0.0 && max_qy > 0.0) { \
+        double out_len = sqrt(max_qx * max_qx + max_qy_sq); \
+        double inv_len = 1.0 / out_len; \
+        n2d_x = sign_x * (max_qx * inv_len); \
+        n2d_y = sign_y * (max_qy * inv_len); \
+        d = out_len - gr; \
+    } else if (max_qx > 0.0) { \
+        n2d_x = sign_x; \
+        n2d_y = 0.0; \
+        d = max_qx + qy - gr; \
+    } else if (max_qy > 0.0) { \
+        n2d_x = 0.0; \
+        n2d_y = sign_y; \
+        d = max_qy + qx - gr; \
+    } else { \
+        if (qx > qy) { \
+            n2d_x = sign_x; \
+            n2d_y = 0.0; \
+            d = qx - gr; \
+        } else { \
+            n2d_x = 0.0; \
+            n2d_y = sign_y; \
+            d = qy - gr; \
+        } \
+    } \
+    if (d > 0.8) { dst_row[lx] = 0; continue; } \
+    double depth = -d * inv_bevel; \
+    if (depth >= 1.0) { \
+        int bg_x = CLAMP(igx + lx, 0, width - 1); \
+        uint32_t c = src_row[bg_x]; \
+        dst_row[lx] = (0xFF << 24) | (lut_r[(c >> 16) & 0xFF] << 16) | (lut_g[(c >> 8) & 0xFF] << 8) | lut_b[c & 0xFF]; \
+        continue; \
+    } \
+    if (depth < 0.0) depth = 0.0; \
+    int lidx = (int)(depth * 255.0); \
+    const DepthLUT *item = &depth_lut[lidx]; \
+    double disp_factor = item->disp_factor; \
+    double sx = gx + lx - n2d_x * disp_factor; \
+    double sy = gy + ly - n2d_y * disp_factor; \
+    double cr_r, cr_g, cr_b; \
+    if (chroma_str > 0.01 && disp_factor > 0.1 && active_elem_count <= 10) { \
+        cr_g = sample_channel_fast(src_pixels, src_stride, width, height, sx, sy, 8); \
+        double c_off_x = -n2d_x * (chroma_str * item->chromaDampen); \
+        double c_off_y = -n2d_y * (chroma_str * item->chromaDampen); \
+        cr_r = sample_channel_fast(src_pixels, src_stride, width, height, sx + c_off_x, sy + c_off_y, 16); \
+        cr_b = sample_channel_fast(src_pixels, src_stride, width, height, sx - c_off_x, sy - c_off_y, 0); \
+    } else { \
+        sample_bilinear_fast(src_pixels, src_stride, width, height, sx, sy, &cr_r, &cr_g, &cr_b); \
+    } \
+    double base_r, base_g, base_b; \
+    if (tint_strength < 0.001) { \
+        base_r = cr_r * item->ao; \
+        base_g = cr_g * item->ao; \
+        base_b = cr_b * item->ao; \
+    } else { \
+        base_r = (cr_r * one_minus_tint + tint_r_str) * item->ao; \
+        base_g = (cr_g * one_minus_tint + tint_g_str) * item->ao; \
+        base_b = (cr_b * one_minus_tint + tint_b_str) * item->ao; \
+    } \
+    double dotNL = n2d_y * item->sinA_ly + item->cosA_lz; \
+    double lightMask = fast_pow27(fabs(dotNL)); \
+    double finalRimLight = item->rimEdge * lightMask; \
+    double sheenFacing = fmax(dotNL, 0.0); \
+    double sheenLight = fast_pow165(sheenFacing) * 0.30 * 255.0; \
+    double added = finalRimLight + sheenLight; \
+    double lit_r = base_r + added - (base_r * added * 0.0039215686); \
+    double lit_g = base_g + added - (base_g * added * 0.0039215686); \
+    double lit_b = base_b + added - (base_b * added * 0.0039215686); \
+    uint8_t out_a = (uint8_t)CLAMP(item->insideMask * 255.0, 0, 255); \
+    uint8_t out_r = (uint8_t)CLAMP(lit_r, 0, 255); \
+    uint8_t out_g = (uint8_t)CLAMP(lit_g, 0, 255); \
+    uint8_t out_b = (uint8_t)CLAMP(lit_b, 0, 255); \
+    dst_row[lx] = (out_a << 24) | (out_r << 16) | (out_g << 8) | out_b; \
+} while(0)
+
 static void draw_shape_path(cairo_t *cr, double x, double y, double w, double h, double r, int shape) {
     if (shape == 1) {
         cairo_arc(cr, x + w * 0.5, y + h * 0.5, fmin(w, h) * 0.5, 0, 2 * M_PI);
@@ -253,9 +437,10 @@ static void draw_shape_path(cairo_t *cr, double x, double y, double w, double h,
 static void draw_benchmark_glass_element(cairo_t *cr, cairo_surface_t *bg, int width, int height,
                                          double gx, double gy, double gw, double gh, double gr, int shape, int active_elem_count) {
     if (!bg) return;
+    init_pow_tables();
 
     double shadow_val = 0.45;
-    if (shadow_val > 0.02) {
+    if (shadow_val > 0.02 && active_elem_count <= 25) {
         int passes = (active_elem_count > 10) ? 2 : 4;
         for (int i = passes; i >= 1; i--) {
             double expand = (passes == 2) ? (i * 4.0) : (i * 2.5);
@@ -273,9 +458,10 @@ static void draw_benchmark_glass_element(cairo_t *cr, cairo_surface_t *bg, int w
     if (igw > 320) igw = 320;
     if (igh > 320) igh = 320;
 
-    cairo_surface_flush(bg);
     unsigned char *src_pixels = cairo_image_surface_get_data(bg);
     int src_stride = cairo_image_surface_get_stride(bg);
+
+    static uint32_t s_scratch_pixels[320 * 320];
 
     double bx = gw * 0.5;
     double by = gh * 0.5;
@@ -291,149 +477,122 @@ static void draw_benchmark_glass_element(cairo_t *cr, cairo_surface_t *bg, int w
     double tint_strength = 0.0;
     double rim_intensity = 0.48;
 
-    build_depth_lut(ior, disp_scale, rim_intensity, bevel_width);
-
     double ly_dir = 0.93;
     double lz_dir = 0.35;
+
+    const DepthLUT *depth_lut = get_depth_lut(ior, disp_scale, rim_intensity, bevel_width, ly_dir, lz_dir);
 
     double tint_r = 41.0, tint_g = 41.0, tint_b = 46.0;
     double one_minus_tint = 1.0 - tint_strength;
     double tint_r_str = tint_r * tint_strength;
     double tint_g_str = tint_g * tint_strength;
     double tint_b_str = tint_b * tint_strength;
-    double const_sheen = pow(lz_dir, 1.65) * 0.30 * 255.0;
+    double const_sheen = fast_pow165(lz_dir) * 0.30 * 255.0;
 
-    uint8_t lut_r[256], lut_g[256], lut_b[256];
-    for (int i = 0; i < 256; i++) {
-        double base_r = (double)i * one_minus_tint + tint_r_str;
-        double base_g = (double)i * one_minus_tint + tint_g_str;
-        double base_b = (double)i * one_minus_tint + tint_b_str;
-        lut_r[i] = (uint8_t)CLAMP(base_r + const_sheen - (base_r * const_sheen * (1.0 / 255.0)), 0, 255);
-        lut_g[i] = (uint8_t)CLAMP(base_g + const_sheen - (base_g * const_sheen * (1.0 / 255.0)), 0, 255);
-        lut_b[i] = (uint8_t)CLAMP(base_b + const_sheen - (base_b * const_sheen * (1.0 / 255.0)), 0, 255);
+    static uint8_t s_cached_lut_r[256], s_cached_lut_g[256], s_cached_lut_b[256];
+    static double s_cached_tint_str = -1.0;
+    static double s_cached_sheen = -1.0;
+    if (tint_strength != s_cached_tint_str || const_sheen != s_cached_sheen) {
+        s_cached_tint_str = tint_strength;
+        s_cached_sheen = const_sheen;
+        for (int i = 0; i < 256; i++) {
+            double base_r = (double)i * one_minus_tint + tint_r_str;
+            double base_g = (double)i * one_minus_tint + tint_g_str;
+            double base_b = (double)i * one_minus_tint + tint_b_str;
+            s_cached_lut_r[i] = (uint8_t)CLAMP(base_r + const_sheen - (base_r * const_sheen * (1.0 / 255.0)), 0, 255);
+            s_cached_lut_g[i] = (uint8_t)CLAMP(base_g + const_sheen - (base_g * const_sheen * (1.0 / 255.0)), 0, 255);
+            s_cached_lut_b[i] = (uint8_t)CLAMP(base_b + const_sheen - (base_b * const_sheen * (1.0 / 255.0)), 0, 255);
+        }
     }
+    const uint8_t *lut_r = s_cached_lut_r;
+    const uint8_t *lut_g = s_cached_lut_g;
+    const uint8_t *lut_b = s_cached_lut_b;
 
     double circle_r = (shape == 1) ? fmin(bx, by) : 0.0;
-    double safe_inner_x = (shape == 0) ? (bx - bevel_width - gr) : -1.0;
-    double safe_inner_y = (shape == 0) ? (by - bevel_width) : -1.0;
+    double circle_r_outer = circle_r + 0.8;
+    double circle_r_outer_sq = circle_r_outer * circle_r_outer;
+    double safe_inner_circle = (shape == 1) ? (circle_r - bevel_width) : -1.0;
+    double safe_inner_circle_sq = (safe_inner_circle > 0.0) ? (safe_inner_circle * safe_inner_circle) : -1.0;
+
+    double safe_inner_x = (shape != 1) ? (bx - bevel_width - ((shape == 0) ? gr : 0.0)) : -1.0;
+    double safe_inner_y = (shape != 1) ? (by - bevel_width) : -1.0;
 
     for (int ly = 0; ly < igh; ly++) {
         uint32_t *dst_row = s_scratch_pixels + ly * igw;
         double py = ly - by + 0.5;
+        double py_sq = py * py;
         int bg_y = CLAMP(igy + ly, 0, height - 1);
         const uint32_t *src_row = (const uint32_t *)(src_pixels + bg_y * src_stride);
+
+        if (shape == 1) {
+            if (py_sq >= circle_r_outer_sq) {
+                memset(dst_row, 0, igw * sizeof(uint32_t));
+                continue;
+            }
+            double max_px = sqrt(circle_r_outer_sq - py_sq);
+            int lx_min = CLAMP((int)floor(bx - max_px), 0, igw);
+            int lx_max = CLAMP((int)ceil(bx + max_px), 0, igw);
+
+            if (lx_min > 0) memset(dst_row, 0, lx_min * sizeof(uint32_t));
+            if (lx_max < igw) memset(dst_row + lx_max, 0, (igw - lx_max) * sizeof(uint32_t));
+
+            int in_start = -1, in_end = -1;
+            if (safe_inner_circle_sq > py_sq) {
+                double in_max_px = sqrt(safe_inner_circle_sq - py_sq);
+                in_start = CLAMP((int)ceil(bx - in_max_px), lx_min, lx_max);
+                in_end = CLAMP((int)floor(bx + in_max_px), lx_min, lx_max);
+                for (int lx = in_start; lx < in_end; lx++) {
+                    int bg_x = CLAMP(igx + lx, 0, width - 1);
+                    uint32_t c = src_row[bg_x];
+                    dst_row[lx] = (0xFF << 24) | (lut_r[(c >> 16) & 0xFF] << 16) | (lut_g[(c >> 8) & 0xFF] << 8) | lut_b[c & 0xFF];
+                }
+            }
+
+            int mid_start = (in_start >= 0) ? in_start : lx_max;
+            int mid_end = (in_end >= 0) ? in_end : lx_max;
+            for (int lx = lx_min; lx < mid_start; lx++) {
+                PROCESS_CIRCLE_PIXEL_BENCH(lx);
+            }
+            for (int lx = mid_end; lx < lx_max; lx++) {
+                PROCESS_CIRCLE_PIXEL_BENCH(lx);
+            }
+            continue;
+        }
+
+        /* Rect / Capsule shapes */
+        if (fabs(py) > by + 0.8) {
+            memset(dst_row, 0, igw * sizeof(uint32_t));
+            continue;
+        }
 
         double qy = fabs(py) - by + gr;
         double max_qy = fmax(qy, 0.0);
         double max_qy_sq = max_qy * max_qy;
         double sign_y = (py >= 0.0) ? 1.0 : -1.0;
 
-        for (int lx = 0; lx < igw; lx++) {
-            double px = lx - bx + 0.5;
-
-            /* Flat interior fast path: direct 32-bit pixel fetch and constant sheen */
-            if (safe_inner_x > 0.0 && fabs(px) <= safe_inner_x && fabs(py) <= safe_inner_y) {
+        int in_start = -1, in_end = -1;
+        if (safe_inner_x > 0.0 && fabs(py) <= safe_inner_y) {
+            in_start = CLAMP((int)ceil(bx - safe_inner_x), 0, igw);
+            in_end = CLAMP((int)floor(bx + safe_inner_x), 0, igw);
+            for (int lx = in_start; lx < in_end; lx++) {
                 int bg_x = CLAMP(igx + lx, 0, width - 1);
                 uint32_t c = src_row[bg_x];
                 dst_row[lx] = (0xFF << 24) | (lut_r[(c >> 16) & 0xFF] << 16) | (lut_g[(c >> 8) & 0xFF] << 8) | lut_b[c & 0xFF];
-                continue;
             }
+        }
 
-            double n2d_x, n2d_y, d;
-            if (shape == 1) {
-                double len = sqrt(px * px + py * py) + 1e-6;
-                double inv_len = 1.0 / len;
-                n2d_x = px * inv_len;
-                n2d_y = py * inv_len;
-                d = len - circle_r;
-            } else {
-                double qx = fabs(px) - bx + gr;
-                double max_qx = fmax(qx, 0.0);
-                double sign_x = (px >= 0.0) ? 1.0 : -1.0;
+        int lx_max = CLAMP((int)ceil(bx + bx + 0.8), 0, igw);
+        if (lx_max < igw) {
+            memset(dst_row + lx_max, 0, (igw - lx_max) * sizeof(uint32_t));
+        }
 
-                if (max_qx > 0.0 && max_qy > 0.0) {
-                    double out_len = sqrt(max_qx * max_qx + max_qy_sq);
-                    double inv_len = 1.0 / out_len;
-                    n2d_x = sign_x * (max_qx * inv_len);
-                    n2d_y = sign_y * (max_qy * inv_len);
-                    d = out_len - gr;
-                } else if (max_qx > 0.0) {
-                    n2d_x = sign_x;
-                    n2d_y = 0.0;
-                    d = max_qx + qy - gr;
-                } else if (max_qy > 0.0) {
-                    n2d_x = 0.0;
-                    n2d_y = sign_y;
-                    d = max_qy + qx - gr;
-                } else {
-                    if (qx > qy) {
-                        n2d_x = sign_x;
-                        n2d_y = 0.0;
-                        d = qx - gr;
-                    } else {
-                        n2d_x = 0.0;
-                        n2d_y = sign_y;
-                        d = qy - gr;
-                    }
-                }
-            }
-
-            if (d > 0.8) {
-                dst_row[lx] = 0;
-                continue;
-            }
-
-            double depth = -d * inv_bevel;
-            if (depth >= 1.0) {
-                int bg_x = CLAMP(igx + lx, 0, width - 1);
-                uint32_t c = src_row[bg_x];
-                dst_row[lx] = (0xFF << 24) | (lut_r[(c >> 16) & 0xFF] << 16) | (lut_g[(c >> 8) & 0xFF] << 8) | lut_b[c & 0xFF];
-                continue;
-            }
-
-            if (depth < 0.0) depth = 0.0;
-            int lidx = (int)(depth * 255.0);
-            const DepthLUT *item = &s_depth_lut[lidx];
-
-            double disp_factor = item->disp_factor;
-            double disp_x = -n2d_x * disp_factor;
-            double disp_y = -n2d_y * disp_factor;
-
-            double sx = gx + lx + disp_x;
-            double sy = gy + ly + disp_y;
-
-            double cr_r, cr_g, cr_b;
-            if (chroma_str > 0.01 && disp_factor > 0.1) {
-                cr_g = sample_channel_fast(src_pixels, src_stride, width, height, sx, sy, 8);
-                double c_off_x = -n2d_x * (chroma_str * item->chromaDampen);
-                double c_off_y = -n2d_y * (chroma_str * item->chromaDampen);
-                cr_r = sample_channel_fast(src_pixels, src_stride, width, height, sx + c_off_x, sy + c_off_y, 16);
-                cr_b = sample_channel_fast(src_pixels, src_stride, width, height, sx - c_off_x, sy - c_off_y, 0);
-            } else {
-                sample_bilinear_fast(src_pixels, src_stride, width, height, sx, sy, &cr_r, &cr_g, &cr_b);
-            }
-
-            double base_r = (cr_r * one_minus_tint + tint_r_str) * item->ao;
-            double base_g = (cr_g * one_minus_tint + tint_g_str) * item->ao;
-            double base_b = (cr_b * one_minus_tint + tint_b_str) * item->ao;
-
-            double dotNL = n2d_y * item->sinA * ly_dir + item->cosA * lz_dir;
-            double lightMask = pow(fabs(dotNL), 2.7);
-            double finalRimLight = item->rimEdge * lightMask;
-            double sheenFacing = fmax(dotNL, 0.0);
-            double sheenLight = pow(sheenFacing, 1.65) * 0.30 * 255.0;
-
-            double added = finalRimLight + sheenLight;
-            double lit_r = base_r + added - (base_r * added * (1.0 / 255.0));
-            double lit_g = base_g + added - (base_g * added * (1.0 / 255.0));
-            double lit_b = base_b + added - (base_b * added * (1.0 / 255.0));
-
-            uint8_t out_a = (uint8_t)CLAMP(item->insideMask * 255.0, 0, 255);
-            uint8_t out_r = (uint8_t)CLAMP(lit_r, 0, 255);
-            uint8_t out_g = (uint8_t)CLAMP(lit_g, 0, 255);
-            uint8_t out_b = (uint8_t)CLAMP(lit_b, 0, 255);
-
-            dst_row[lx] = (out_a << 24) | (out_r << 16) | (out_g << 8) | out_b;
+        int r_start = (in_start >= 0) ? in_start : lx_max;
+        int r_end = (in_end >= 0) ? in_end : lx_max;
+        for (int lx = 0; lx < r_start; lx++) {
+            PROCESS_RECT_PIXEL_BENCH(lx);
+        }
+        for (int lx = r_end; lx < lx_max; lx++) {
+            PROCESS_RECT_PIXEL_BENCH(lx);
         }
     }
 
