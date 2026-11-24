@@ -274,7 +274,7 @@
         "50",
         "51"
       ],
-      "sha256": "a60ab2066cf74a480a8f0e876494590f7235ed9fa580324a05e7b9930bbc589c",
+      "sha256": "d7d391f17d291fe98b899ee1af85d1bb9c11017ff2e7be5f6b5ab4a555211bcf",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -285,13 +285,13 @@
         "control_center_liquid_glass_submenus"
       ],
       "has_custom_patches": true,
-      "patch_description": "macW1Y Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macW1Y Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macW1Y Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macW1Y horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
-      "last_verified": "2026-11-22",
-      "integrity_hash": "0e6812927cfdcd756b709b33ca54cfed86d38589fd39e559ac9a801b7805f21d",
-      "pinned_sha256": "0e6812927cfdcd756b709b33ca54cfed86d38589fd39e559ac9a801b7805f21d",
-      "expected_hash": "0e6812927cfdcd756b709b33ca54cfed86d38589fd39e559ac9a801b7805f21d",
-      "dir_hash": "a60ab206",
-      "integrity": "0e6812927cfdcd756b709b33ca54cfed86d38589fd39e559ac9a801b7805f21d"
+      "patch_description": "macW1Y Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macW1Y Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macW1Y Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macW1Y horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; authentic unfullscreen window shrink animation and menubar slide-down with solid dark dimming backdrop; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
+      "last_verified": "2026-11-24",
+      "integrity_hash": "d7d391f17d291fe98b899ee1af85d1bb9c11017ff2e7be5f6b5ab4a555211bcf",
+      "pinned_sha256": "d7d391f17d291fe98b899ee1af85d1bb9c11017ff2e7be5f6b5ab4a555211bcf",
+      "expected_hash": "d7d391f17d291fe98b899ee1af85d1bb9c11017ff2e7be5f6b5ab4a555211bcf",
+      "dir_hash": "d7d391f1",
+      "integrity": "d7d391f17d291fe98b899ee1af85d1bb9c11017ff2e7be5f6b5ab4a555211bcf"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {
       "uuid": "liquid-glass@thinkingcoding1231.gmail.com",

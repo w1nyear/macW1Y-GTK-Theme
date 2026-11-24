@@ -40,6 +40,7 @@ let _lastDragEndTime = 0;
 
 
 let _hasFullscreen = false;
+let _isUnfullscreenAnimating = false;
 let _topTriggerActor = null;
 let _bottomTriggerActor = null;
 let _panelRevealed = false;
@@ -165,7 +166,7 @@ function _setPanelSolidDarkStyle(enable) {
                 panelBox.set_style('background-color: #000000 !important; background: #000000 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.60) !important;');
             }
             if (panel) {
-                panel.set_style('background-color: #000000 !important; background: #000000 !important;');
+                panel.set_style('background-color: #000000 !important; background: #000000 !important; background-gradient-direction: none !important;');
                 panel.remove_style_class_name('tahoe-ink-dark');
                 panel.add_style_class_name('tahoe-ink-light');
             }
@@ -297,6 +298,187 @@ export function animateEnterFullscreen(win, startRect = null) {
     }
 }
 
+function _startMenubarDockUnfullscreenAnim() {
+    _isUnfullscreenAnimating = true;
+
+    const panelBox = _getPanelBox();
+    const panelHeight = _getPanelHeight();
+    if (panelBox) {
+        panelBox.visible = true;
+        _setPanelTrackFullscreen(false);
+        _setPanelSolidDarkStyle(true);
+        panelBox.remove_all_transitions();
+        if (panelBox.translation_y !== 0 || !_panelRevealed) {
+            panelBox.translation_y = -panelHeight;
+            panelBox.ease({
+                translation_y: 0,
+                duration: 280,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
+    }
+
+    const dc = _getDockContainer();
+    if (dc && typeof dc._animateIn === 'function') {
+        try { dc._animateIn(0.28, 0); } catch (_) {}
+    }
+}
+
+function _finishUnfullscreenTransition(win, onComplete = null, targetRect = null) {
+    _isUnfullscreenAnimating = false;
+    if (win) {
+        win._macExitingFullscreen = false;
+        if (win._fullscreenAnimClone) {
+            try { win._fullscreenAnimClone.destroy(); } catch (_) {}
+            win._fullscreenAnimClone = null;
+        }
+        const actor = win.get_compositor_private();
+        if (actor && !actor.is_finalized?.()) {
+            actor.opacity = 255;
+            actor.translation_x = 0;
+            actor.translation_y = 0;
+            actor.scale_x = 1.0;
+            actor.scale_y = 1.0;
+            actor.set_pivot_point(0, 0);
+        }
+    }
+
+    const panelBox = _getPanelBox();
+    if (panelBox) {
+        panelBox.translation_y = 0;
+        panelBox.visible = true;
+    }
+    _setPanelSolidDarkStyle(false);
+    _setPanelTrackFullscreen(true);
+    try { Main.layoutManager?._updateVisibility?.(); } catch (_) {}
+    _panelRevealed = false;
+    _panelHiding = false;
+
+    if (typeof onComplete === 'function') {
+        try { onComplete(targetRect); } catch (_) {}
+    }
+
+    _queueRecomputeFullscreen();
+}
+
+function _executeUnfullscreenShrinkAnimation(win, actor, fsRect, targetRect, callUnmakeFullscreen, onComplete = null) {
+    _startMenubarDockUnfullscreenAnim();
+
+    const panelBox = _getPanelBox();
+    let clone = null;
+    try {
+        const content = actor.paint_to_content(null);
+        if (content) {
+            clone = new Clutter.Actor({
+                name: 'mac-unfullscreen-shrink-clone',
+                content,
+                x: fsRect.x,
+                y: fsRect.y,
+                width: fsRect.width,
+                height: fsRect.height,
+                opacity: 255,
+                reactive: false,
+            });
+            if (panelBox && panelBox.get_parent() === Main.uiGroup) {
+                Main.uiGroup.insert_child_below(clone, panelBox);
+            } else {
+                Main.uiGroup.add_child(clone);
+            }
+        }
+    } catch (e) {
+        console.warn(`[macWindowManagement] unfullscreen snapshot error: ${e}`);
+    }
+
+    if (win._fullscreenAnimClone) {
+        try { win._fullscreenAnimClone.destroy(); } catch (_) {}
+    }
+    win._fullscreenAnimClone = clone;
+
+    if (clone) {
+        actor.opacity = 0;
+    }
+
+    if (callUnmakeFullscreen) {
+        try {
+            win.unmake_fullscreen();
+            win.unmaximize();
+        } catch (_) {}
+        try {
+            win.move_resize_frame(true, targetRect.x, targetRect.y, targetRect.width, targetRect.height);
+        } catch (_) {}
+    }
+
+    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 380, () => {
+        try {
+            if (actor && !actor.is_finalized?.() && actor.opacity === 0) {
+                actor.opacity = 255;
+            }
+        } catch (_) {}
+        if (_isUnfullscreenAnimating) {
+            _finishUnfullscreenTransition(win, onComplete, targetRect);
+        }
+        return GLib.SOURCE_REMOVE;
+    });
+
+    if (clone) {
+        clone.ease({
+            x: targetRect.x,
+            y: targetRect.y,
+            width: targetRect.width,
+            height: targetRect.height,
+            duration: 280,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            onComplete: () => {
+                try {
+                    if (actor && !actor.is_finalized?.()) {
+                        actor.opacity = 255;
+                    }
+                } catch (_) {}
+                clone.ease({
+                    opacity: 0,
+                    duration: 40,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    onComplete: () => {
+                        try { clone.destroy(); } catch (_) {}
+                        if (win._fullscreenAnimClone === clone) {
+                            win._fullscreenAnimClone = null;
+                        }
+                        _finishUnfullscreenTransition(win, onComplete, targetRect);
+                    },
+                });
+            },
+        });
+    } else {
+        const scaleX = fsRect.width / Math.max(1, targetRect.width);
+        const scaleY = fsRect.height / Math.max(1, targetRect.height);
+        actor.remove_all_transitions();
+        actor.set_pivot_point(0, 0);
+        actor.scale_x = scaleX;
+        actor.scale_y = scaleY;
+        actor.translation_x = fsRect.x - targetRect.x;
+        actor.translation_y = fsRect.y - targetRect.y;
+        actor.opacity = 255;
+        actor.ease({
+            scale_x: 1.0,
+            scale_y: 1.0,
+            translation_x: 0,
+            translation_y: 0,
+            duration: 280,
+            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            onComplete: () => {
+                try {
+                    actor.set_pivot_point(0, 0);
+                    actor.scale_x = 1.0;
+                    actor.scale_y = 1.0;
+                    actor.translation_x = 0;
+                    actor.translation_y = 0;
+                } catch (_) {}
+                _finishUnfullscreenTransition(win, onComplete, targetRect);
+            },
+        });
+    }
+}
+
 export function animateExitFullscreen(win, onComplete = null, targetRectOverride = null) {
     if (!win || win.window_type !== Meta.WindowType.NORMAL)
         return;
@@ -311,11 +493,13 @@ export function animateExitFullscreen(win, onComplete = null, targetRectOverride
         return;
     }
 
+    win._macExitingFullscreen = true;
+    _restoreShrunkActors(false);
+
     const fsRect = win.get_frame_rect();
     const monIndex = win.get_monitor();
     const mon = Main.layoutManager.monitors[monIndex] || Main.layoutManager.primaryMonitor;
     const wa = Main.layoutManager.getWorkAreaForMonitor(monIndex);
-
 
     let targetRect = targetRectOverride || win._macFullscreenFromRect;
     if (!targetRect || targetRect.width < 200 || targetRect.height < 150) {
@@ -329,89 +513,42 @@ export function animateExitFullscreen(win, onComplete = null, targetRectOverride
         };
     }
 
-    let clone = null;
-    try {
-        const content = actor.paint_to_content(null);
-        if (content) {
-            clone = new Clutter.Actor({
-                name: 'mac-fullscreen-contract-clone',
-                content,
-                x: fsRect.x,
-                y: fsRect.y,
-                width: fsRect.width,
-                height: fsRect.height,
-                opacity: 255,
-                reactive: false,
-            });
-            Main.uiGroup.add_child(clone);
-        }
-    } catch (e) {
-        console.warn(`[macWindowManagement] exit snapshot error: ${e}`);
+    _executeUnfullscreenShrinkAnimation(win, actor, fsRect, targetRect, true, onComplete);
+}
+
+function _animateUnfullscreenFromSizeChange(win, actor, oldFrameRect) {
+    if (!win || !actor) return;
+
+    win._macExitingFullscreen = true;
+    _restoreShrunkActors(false);
+
+    const monIndex = win.get_monitor();
+    const mon = Main.layoutManager.monitors[monIndex] || Main.layoutManager.primaryMonitor;
+    const wa = Main.layoutManager.getWorkAreaForMonitor(monIndex);
+
+    const fsRect = (oldFrameRect && oldFrameRect.width >= 200 && oldFrameRect.height >= 150)
+        ? { x: oldFrameRect.x, y: oldFrameRect.y, width: oldFrameRect.width, height: oldFrameRect.height }
+        : { x: mon.x, y: mon.y, width: mon.width, height: mon.height };
+
+    let targetRect = win.get_frame_rect();
+    if (!targetRect || targetRect.width < 200 || targetRect.height < 150) {
+        targetRect = win._macFullscreenFromRect;
     }
-
-    if (win._fullscreenAnimClone) {
-        try { win._fullscreenAnimClone.destroy(); } catch (_) {}
-    }
-    win._fullscreenAnimClone = clone;
-
-    if (clone) {
-        actor.opacity = 0;
-    }
-
-    try {
-        win.unmake_fullscreen();
-        win.unmaximize();
-    } catch (_) {}
-
-
-    try {
-        win.move_resize_frame(true, targetRect.x, targetRect.y, targetRect.width, targetRect.height);
-    } catch (_) {}
-
-
-    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 350, () => {
+    if (!targetRect || targetRect.width < 200 || targetRect.height < 150) {
+        const defaultW = Math.min(1280, Math.round(mon.width * 0.75));
+        const defaultH = Math.min(800, Math.round(mon.height * 0.75));
+        targetRect = {
+            x: Math.round(mon.x + (mon.width - defaultW) / 2),
+            y: Math.round(wa.y + Math.max(20, (wa.height - defaultH) / 2)),
+            width: defaultW,
+            height: defaultH,
+        };
         try {
-            if (actor && !actor.is_finalized?.() && actor.opacity === 0) {
-                actor.opacity = 255;
-            }
+            win.move_resize_frame(true, targetRect.x, targetRect.y, targetRect.width, targetRect.height);
         } catch (_) {}
-        return GLib.SOURCE_REMOVE;
-    });
-
-    if (clone) {
-        clone.ease({
-            x: targetRect.x,
-            y: targetRect.y,
-            width: targetRect.width,
-            height: targetRect.height,
-            duration: 240,
-            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            onComplete: () => {
-                try {
-                    if (actor && !actor.is_finalized?.()) {
-                        actor.opacity = 255;
-                    }
-                } catch (_) {}
-                clone.ease({
-                    opacity: 0,
-                    duration: 50,
-                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                    onComplete: () => {
-                        try { clone.destroy(); } catch (_) {}
-                        if (win._fullscreenAnimClone === clone) {
-                            win._fullscreenAnimClone = null;
-                        }
-                        if (typeof onComplete === 'function') onComplete(targetRect);
-                    },
-                });
-            },
-        });
-    } else {
-        actor.opacity = 255;
-        if (typeof onComplete === 'function') onComplete(targetRect);
     }
 
-    _queueRecomputeFullscreen();
+    _executeUnfullscreenShrinkAnimation(win, actor, fsRect, targetRect, false, null);
 }
 
 function _onGrabOpBegin(_display, window, op) {
@@ -506,13 +643,29 @@ function _onGrabOpEnd(_display, window, _op) {
 
 
 
-function _onSizeChange(_wm, actor, whichChange, _oldFrameRect) {
+function _onSizeChange(_wm, actor, whichChange, oldFrameRect) {
     if (!_enabled || !actor) return;
     const win = actor.meta_window;
     if (!win || win.window_type !== Meta.WindowType.NORMAL) return;
 
     if (whichChange === Meta.SizeChange.FULLSCREEN) {
+        if (!win._macFullscreenFromRect && oldFrameRect && oldFrameRect.width >= 200 && oldFrameRect.height >= 150) {
+            win._macFullscreenFromRect = {
+                x: oldFrameRect.x,
+                y: oldFrameRect.y,
+                width: oldFrameRect.width,
+                height: oldFrameRect.height,
+            };
+        }
         _queueRecomputeFullscreen();
+        return;
+    }
+
+    if (whichChange === Meta.SizeChange.UNFULLSCREEN) {
+        if (win._macExitingFullscreen || win._fullscreenAnimClone) {
+            return;
+        }
+        _animateUnfullscreenFromSizeChange(win, actor, oldFrameRect);
         return;
     }
 
@@ -523,7 +676,7 @@ function _onSizeChange(_wm, actor, whichChange, _oldFrameRect) {
         _shrunkActors.delete(actor);
     } catch (_) {}
 
-    if (whichChange === Meta.SizeChange.UNMAXIMIZE || whichChange === Meta.SizeChange.UNFULLSCREEN) {
+    if (whichChange === Meta.SizeChange.UNMAXIMIZE) {
         _restoreShrunkActors(false);
         _queueRecomputeFullscreen();
         return;
@@ -640,6 +793,7 @@ function _startFullscreenWatcher() {
                     try { _fsDragState.win.move_frame(true, targetX, targetY); } catch (_) {}
                     if (_fsDragState.win._fullscreenAnimClone) {
                         try {
+                            _fsDragState.win._fullscreenAnimClone.remove_all_transitions();
                             _fsDragState.win._fullscreenAnimClone.set_position(targetX, targetY);
                         } catch (_) {}
                     }
@@ -968,25 +1122,25 @@ function _recomputeFullscreen() {
 
         _restoreShrunkActors(false);
 
+        if (!_isUnfullscreenAnimating) {
+            const panelBox = _getPanelBox();
+            if (panelBox) {
+                panelBox.remove_all_transitions();
+                panelBox.translation_y = 0;
+                panelBox.visible = true;
+            }
+            _setPanelSolidDarkStyle(false);
+            _setPanelTrackFullscreen(true);
+            try { Main.layoutManager?._updateVisibility?.(); } catch (_) {}
+            _panelRevealed = false;
+            _panelHiding = false;
 
-        const panelBox = _getPanelBox();
-        if (panelBox) {
-            panelBox.remove_all_transitions();
-            panelBox.translation_y = 0;
-            panelBox.visible = true;
+            const dc = _getDockContainer();
+            if (dc && typeof dc._animateIn === 'function') {
+                try { dc._animateIn(0.3, 0.1); } catch (_) {}
+            }
+            _dockRevealed = false;
         }
-        _setPanelSolidDarkStyle(false);
-        _setPanelTrackFullscreen(true);
-        try { Main.layoutManager?._updateVisibility?.(); } catch (_) {}
-        _panelRevealed = false;
-        _panelHiding = false;
-
-
-        const dc = _getDockContainer();
-        if (dc && typeof dc._animateIn === 'function') {
-            try { dc._animateIn(0.3, 0.1); } catch (_) {}
-        }
-        _dockRevealed = false;
     }
 }
 
@@ -1107,6 +1261,7 @@ export function disable() {
     _draggingWindow = null;
     _snapWindow = null;
     _hasFullscreen = false;
+    _isUnfullscreenAnimating = false;
     _panelRevealed = false;
     _panelHiding = false;
     _dockRevealed = false;
