@@ -487,67 +487,38 @@ popover.menu {
     padding: 0;
 }
 
+popover.mac-popover-menu > arrow,
+popover.menu > arrow {
+    opacity: 0;
+    min-width: 0;
+    min-height: 0;
+    border: none;
+    background: transparent;
+}
+
 popover.mac-popover-menu > contents,
 popover.menu > contents {
-    background-color: rgba(36, 38, 44, 0.92);
+    background-color: rgba(36, 38, 44, 0.94);
     border: 1px solid rgba(255, 255, 255, 0.20);
-    border-radius: 18px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.60);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.60);
     padding: 5px;
     color: #ffffff;
-    min-width: 220px;
+    min-width: 200px;
 }
 
 popover.mac-popover-menu.mac-popover-closing > contents {
     opacity: 0;
 }
 
-/* Hover Sliding Pill Indicator (macW1Y / Sonoma / macW1Y authentic style) */
-.mac-menu-hover-pill {
-    background-color: @mac_accent_color;
-    border-radius: 9999px;
-    box-shadow: none;
-}
-
-/* Menu Item Buttons (Round capsule shape, transparent background so sliding pill is visible) */
-button.mac-menu-item-btn,
-.mac-menu-item-btn {
-    background: transparent;
-    background-color: transparent;
-    background-image: none;
-    border: none;
-    box-shadow: none;
-    border-radius: 9999px;
-    padding: 4px 14px;
-    min-height: 26px;
-    color: #f2f2f7;
-    font-size: 13px;
-    font-weight: 500;
-    transition: color 100ms ease;
-}
-
-button.mac-menu-item-btn:hover,
-button.mac-menu-item-btn:focus,
-button.mac-menu-item-btn:active,
-.mac-menu-item-btn:hover,
-.mac-menu-item-btn:focus,
-.mac-menu-item-btn:active {
-    background: transparent;
-    background-color: transparent;
-    background-image: none;
-    border: none;
-    box-shadow: none;
-    color: #ffffff;
-}
-
-/* Fallback modelbutton styling for standard menus */
+/* Modelbutton styling for PopoverMenu */
 popover.menu modelbutton {
     color: #f0f0f5;
     font-size: 13px;
     font-weight: 500;
-    padding: 4px 14px;
-    border-radius: 9999px;
-    min-height: 24px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    min-height: 22px;
     transition: background-color 120ms ease;
 }
 
@@ -558,7 +529,19 @@ popover.menu modelbutton:focus {
     color: #ffffff;
 }
 
+popover.menu modelbutton accelerator {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 12px;
+    margin-left: 14px;
+}
+
+popover.menu modelbutton:hover accelerator,
+popover.menu modelbutton:selected accelerator {
+    color: rgba(255, 255, 255, 0.85);
+}
+
 /* Separator between menu groups */
+popover.menu separator,
 .mac-menu-separator {
     background-color: rgba(255, 255, 255, 0.12);
     min-height: 1px;
@@ -955,17 +938,17 @@ button.mac-link-btn:hover,
 
 /* Recovery Option Cards & Screen */
 .mac-recovery-card.mac-card-options {
-    padding: 12px 16px 12px 16px;
+    padding: 10px 14px 10px 14px;
     border-radius: 16px;
     min-width: 480px;
-    min-height: 270px;
+    min-height: 200px;
 }
 
 .mac-option-row {
     background-color: transparent;
     border-radius: 8px;
     border: 1px solid transparent;
-    padding: 5px 8px;
+    padding: 4px 8px;
     transition: all 0.15s ease;
 }
 
@@ -982,7 +965,7 @@ button.mac-link-btn:hover,
 
 .mac-option-title {
     color: #ffffff;
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 600;
 }
 
@@ -1192,19 +1175,56 @@ button.mac-lang-item.selected:hover label,
 """
 
 # ------------------------------------------------------------------------------
-# Popover Menu with default / macW1Y Sliding Hover Pill & Frosted Glass
+# Popover Menu with Gio.Menu & Gtk.PopoverMenu (macW1Y authentic styling)
 # ------------------------------------------------------------------------------
-class MacMenuPopover(Gtk.Popover):
+def create_mac_menu_model(items):
+    menu_model = Gio.Menu()
+    current_section = None
+    for item in items:
+        if item is None:
+            if current_section is not None:
+                menu_model.append_section(None, current_section)
+                current_section = None
+            continue
+
+        if isinstance(item, tuple):
+            label = item[0]
+            action = item[1] if len(item) > 1 else None
+            shortcut = item[2] if len(item) > 2 else None
+            is_header = item[3] if len(item) > 3 else False
+        else:
+            label = str(item)
+            action = None
+            shortcut = None
+            is_header = False
+
+        if action:
+            menu_item = Gio.MenuItem.new(label, action)
+        else:
+            menu_item = Gio.MenuItem.new(label, None)
+
+        if current_section is None:
+            current_section = Gio.Menu()
+        current_section.append_item(menu_item)
+
+    if current_section is not None:
+        menu_model.append_section(None, current_section)
+
+    return menu_model
+
+
+class MacMenuPopover(Gtk.PopoverMenu):
     """
     Authentic macW1Y Menubar Popover:
+    - Native Gtk.PopoverMenu avoiding GTK4 layout loops and snapshot warnings
     - Frosted glass backdrop (dark tint + subtle light edge + deep drop shadow)
-    - System accent color for the sliding selection indicator
-    - Rounded menu container (24px) and pill-shaped menu items (border-radius: 9999px)
-    - Sliding hover pill indicator that smoothly glides from item to item on cursor movement
-    - Subtle fade & scale entrance and exit animations
+    - System accent color for selection indicator
+    - Rounded menu container and item styling
     """
     def __init__(self, items, parent_btn=None):
         super().__init__()
+        model = create_mac_menu_model(items)
+        self.set_menu_model(model)
         self.set_has_arrow(False)
         self.set_position(Gtk.PositionType.BOTTOM)
         if "--preview" in sys.argv or any(a.startswith("--open-menu=") for a in sys.argv):
@@ -1214,138 +1234,18 @@ class MacMenuPopover(Gtk.Popover):
         self.add_css_class("mac-popover-menu")
         self.parent_btn = parent_btn
         self.is_closing = False
-
-        # Items container directly as Popover child (avoids Gtk.Overlay + Popover allocation loop in GTK4)
-        self.items_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
-        self.items_box.add_css_class("mac-menu-items-box")
-        self.items_box.set_margin_top(4)
-        self.items_box.set_margin_bottom(4)
-        self.items_box.set_margin_start(4)
-        self.items_box.set_margin_end(4)
-
-        self.set_child(self.items_box)
-
-        # Animation State
-        self.current_y = 0.0
-        self.target_y = 0.0
-        self.current_h = 26.0
-        self.target_h = 26.0
-        self.current_opacity = 0.0
-        self.target_opacity = 0.0
-        self.tick_id = 0
         self.item_buttons = []
 
-        for item in items:
-            if item is None:
-                # Separator
-                sep = Gtk.Box()
-                sep.add_css_class("mac-menu-separator")
-                self.items_box.append(sep)
-                continue
-
-            if isinstance(item, tuple):
-                label_text = item[0]
-                action_name = item[1] if len(item) > 1 else None
-                shortcut = item[2] if len(item) > 2 else None
-                is_header = item[3] if len(item) > 3 else False
-            else:
-                label_text = str(item)
-                action_name = None
-                shortcut = None
-                is_header = False
-
-            if is_header:
-                lbl = Gtk.Label(label=label_text)
-                lbl.add_css_class("mac-menu-header-item")
-                lbl.set_halign(Gtk.Align.START)
-                self.items_box.append(lbl)
-                continue
-
-            btn = Gtk.Button()
-            btn.set_has_frame(False)
-            btn.add_css_class("mac-menu-item-btn")
-
-            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
-            lbl = Gtk.Label(label=label_text)
-            lbl.set_halign(Gtk.Align.START)
-            lbl.set_hexpand(True)
-            row.append(lbl)
-
-            if shortcut:
-                lbl_sc = Gtk.Label(label=shortcut)
-                lbl_sc.add_css_class("mac-menu-shortcut")
-                lbl_sc.set_halign(Gtk.Align.END)
-                row.append(lbl_sc)
-
-            btn.set_child(row)
-
-            if action_name:
-                btn.connect("clicked", lambda b, act=action_name: self._on_item_activated(act))
-
-            # Motion controller on button to glide highlight pill
-            motion = Gtk.EventControllerMotion()
-            motion.connect("enter", lambda c, x, y, b=btn: self.glide_to(b))
-            btn.add_controller(motion)
-
-            self.items_box.append(btn)
-            self.item_buttons.append(btn)
-
-        # Motion controller on items container to fade out when leaving
-        box_motion = Gtk.EventControllerMotion()
-        box_motion.connect("leave", lambda c: self.glide_leave())
-        self.items_box.add_controller(box_motion)
-
-    def _on_item_activated(self, action_name):
-        self.animated_popdown(lambda: self._dispatch_action(action_name))
-
-    def _dispatch_action(self, action_name):
-        app = Gio.Application.get_default()
-        if app and hasattr(app, "lookup_action"):
-            act_id = action_name.replace("app.", "")
-            act = app.lookup_action(act_id)
-            if act:
-                act.activate(None)
-
     def glide_to(self, btn):
-        self.active_btn = btn
-
-    def glide_leave(self):
-        self.active_btn = None
-
-    def _start_anim(self):
         pass
 
-    def _on_tick(self, widget, frame_clock):
-        self.current_y += (self.target_y - self.current_y) * 0.38
-        self.current_h += (self.target_h - self.current_h) * 0.38
-        self.current_opacity += (self.target_opacity - self.current_opacity) * 0.35
-        self.pill.queue_draw()
-
-        if (abs(self.target_y - self.current_y) < 0.4 and 
-            abs(self.target_h - self.current_h) < 0.4 and 
-            abs(self.target_opacity - self.current_opacity) < 0.02):
-            self.current_y = self.target_y
-            self.current_h = self.target_h
-            self.current_opacity = self.target_opacity
-            self.pill.queue_draw()
-            self.tick_id = 0
-            return GLib.SOURCE_REMOVE
-
-        return GLib.SOURCE_CONTINUE
+    def glide_leave(self):
+        pass
 
     def animated_popdown(self, on_closed=None):
-        if self.is_closing:
-            return
-        self.is_closing = True
-        self.add_css_class("mac-popover-closing")
-        def _finish():
-            self.popdown()
-            self.remove_css_class("mac-popover-closing")
-            self.is_closing = False
-            if on_closed:
-                on_closed()
-            return GLib.SOURCE_REMOVE
-        GLib.timeout_add(110, _finish)
+        self.popdown()
+        if on_closed:
+            on_closed()
 
 # ------------------------------------------------------------------------------
 # LiquidGlass Card Overlay & Modal Sheet Host
@@ -2095,10 +1995,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         if curr in ["screen_user", "screen_language"] and target == "screen_options":
             self.card.add_css_class("mac-card-options")
-            self._animate_card_size(650, 490, 480, 270, duration=0.30, on_done=lambda: self.card.set_size_request(-1, -1))
+            self._animate_card_size(650, 490, 480, 200, duration=0.30, on_done=lambda: self.card.set_size_request(-1, -1))
         elif curr == "screen_options" and target in ["screen_user", "screen_language", "screen_welcome", "screen_benchmark_intro", "screen_benchmark_progress", "screen_benchmark_result"]:
             self.card.remove_css_class("mac-card-options")
-            self._animate_card_size(480, 270, 650, 490, duration=0.30, on_done=lambda: self.card.set_size_request(-1, -1))
+            self._animate_card_size(480, 200, 650, 490, duration=0.30, on_done=lambda: self.card.set_size_request(-1, -1))
         elif target == "screen_options":
             self.card.add_css_class("mac-card-options")
             self.card.set_size_request(-1, -1)
@@ -2604,7 +2504,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
             r_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
             img = Gtk.Image.new_from_file(icon_p)
-            img.set_pixel_size(36)
+            img.set_pixel_size(32)
             r_box.append(img)
 
             t_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1)
@@ -2617,7 +2517,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             lbl_d.add_css_class("mac-option-desc")
             lbl_d.set_halign(Gtk.Align.START)
             lbl_d.set_wrap(True)
-            lbl_d.set_max_width_chars(46)
+            lbl_d.set_max_width_chars(52)
             t_box.append(lbl_d)
 
             r_box.append(t_box)
@@ -2629,7 +2529,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         btn_row.set_halign(Gtk.Align.END)
-        btn_row.set_margin_top(10)
+        btn_row.set_margin_top(6)
         btn_row.set_margin_bottom(0)
 
         btn_cont = Gtk.Button(label=self.tr("installer_continue_btn", "Continue"))
@@ -4111,6 +4011,11 @@ class MacRecoveryApp(Gtk.Application):
         act_noop = Gio.SimpleAction.new("noop", None)
         act_noop.connect("activate", lambda a, p: None)
         self.add_action(act_noop)
+
+        self.set_accels_for_action("app.close", ["<Primary>w"])
+        self.set_accels_for_action("app.undo", ["<Primary>z"])
+        self.set_accels_for_action("app.redo", ["<Shift><Primary>z"])
+        self.set_accels_for_action("app.minimize", ["<Primary>m"])
 
         self.win = MacRecoveryInstallerWindow(
             self,

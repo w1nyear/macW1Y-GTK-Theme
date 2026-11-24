@@ -5516,3 +5516,19 @@ Task #938:
   * [bin/mac-installer-gui](file:///home/vitaliy/MACTHEMEFILES/bin/mac-installer-gui)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #960: Повне усунення layout-loop зависання меню-бару через Gtk.PopoverMenu та оптимізація висоти вікна опцій інсталятора
+  - Меню меню-бару та контекстне меню (bin/mac-installer-gui):
+    * Повністю усунено нескінченний цикл релайауту GTK4 (`gdk-frame-clock: layout continuously requested, giving up after 4 tries`) та попередження `Trying to snapshot without a current allocation`: MacMenuPopover переведено на нативний `Gtk.PopoverMenu` на базі `Gio.Menu` (`create_mac_menu_model`).
+    * Додано системні акселератори для дій меню (⌘W для закриття, ⌘Z для скасування, ⇧⌘Z для повторення, ⌘M для згортання).
+    * Оновлено CSS-стилізацію `popover.menu` та `modelbutton`: матове напівпрозоре скло `rgba(36, 38, 44, 0.94)`, заокруглення 14px, фірмовий акцентний колір підсвічування обраного пункту, розділювачі секцій та правильне відображення комбінацій клавіш.
+  - Меню вибору інсталяції (screen_options):
+    * Зменшено `min-height` картки до 200px (та анімацію переходу до 480x200), усунувши зайвий порожній простір унизу.
+    * Оптимізовано розміри елементів списку опцій: іконки 32px, шрифти 12px / 10.5px, перенесення рядків до 52 символів, відступ кнопки «Продовжити» 6px.
+  - Перевірка:
+    * Усі меню меню-бару (Apple, Файл, Правка, Утиліти, Вікно, Wi-Fi, Акумулятор) та ПКМ контекстне меню відкриваються миттєво без жодних зависань та помилок у терміналі.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [bin/mac-installer-gui](file:///home/vitaliy/MACTHEMEFILES/bin/mac-installer-gui)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
