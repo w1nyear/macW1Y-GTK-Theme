@@ -9904,7 +9904,7 @@ window.mac-settings-window navigation-split-view {
     background-image: none;
 }
 
-/* Sidebar floating glass card: rounded on all 4 corners */
+/* Native macOS flush sidebar: seamless left column with crisp divider line */
 window.nautilus-window overlay-split-view > widget.sidebar-pane,
 window.nautilus-window .sidebar-pane,
 window.nautilus-window .sidebar-pane:dir(ltr),
@@ -9917,13 +9917,24 @@ window.mac-settings-window .sidebar-pane,
 window.mac-settings-window .sidebar-pane:dir(ltr),
 window.mac-settings-window .sidebar-pane:dir(rtl),
 navigation-split-view > widget.sidebar-pane,
-navigation-split-view .sidebar-pane {
-    margin: 6px 0px 6px 6px;
+navigation-split-view .sidebar-pane,
+overlay-split-view > widget.sidebar-pane,
+overlay-split-view .sidebar-pane {
+    margin: 0px;
     border: none;
-    border-radius: 20px;
-    background-color: var(--mac-sidebar-bg, #18181a);
+    border-radius: 0px;
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
+    background-color: var(--mac-sidebar-bg, #ebebf0);
     background-clip: padding-box;
     box-shadow: none;
+}
+
+:dir(rtl) window.nautilus-window .sidebar-pane,
+:dir(rtl) window.mac-settings-window .sidebar-pane,
+:dir(rtl) navigation-split-view .sidebar-pane,
+:dir(rtl) overlay-split-view .sidebar-pane {
+    border-right: none;
+    border-left: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 window.mac-settings-window .sidebar-pane toolbarview,
@@ -9937,8 +9948,10 @@ navigation-split-view .sidebar-pane headerbar,
 navigation-split-view .sidebar-pane scrolledwindow,
 navigation-split-view .sidebar-pane viewport,
 navigation-split-view .sidebar-pane list.navigation-sidebar,
-navigation-split-view .sidebar-pane listbox {
-    border-radius: 20px;
+navigation-split-view .sidebar-pane listbox,
+window.nautilus-window .sidebar-pane toolbarview,
+window.nautilus-window .sidebar-pane placessidebar {
+    border-radius: 0px;
     background-color: transparent;
     background-image: none;
     border: none;
@@ -9964,22 +9977,22 @@ window.nautilus-window shadow,
 
 window.nautilus-window .sidebar-pane headerbar,
 window.nautilus-window .nautilus-sidebar-headerbar {
-    margin-top: -6px;
+    margin-top: 0px;
 }
 
 window.nautilus-window .sidebar-pane headerbar windowcontrols.start:dir(ltr),
 window.nautilus-window .nautilus-sidebar-headerbar windowcontrols,
 window.nautilus-window windowcontrols.start {
-    margin-left: 3px;
-    margin-top: -6px;
-    margin-bottom: 6px;
+    margin-left: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 window.nautilus-window .sidebar-pane headerbar windowcontrols button,
 window.nautilus-window .nautilus-sidebar-headerbar windowcontrols button,
 window.nautilus-window windowcontrols.start button {
-    margin-top: 1px;
-    margin-bottom: 21px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 navigation-split-view headerbar windowcontrols.start:dir(ltr),
@@ -10118,18 +10131,18 @@ navigation-split-view adw-navigation-view headerbar > windowhandle > box {
 }
 
 window.mac-settings-window .mac-settings-sidebar-headerbar {
-    margin-top: -10px;
+    margin-top: 0px;
 }
 
 window.mac-settings-window navigation-split-view headerbar windowcontrols.start:dir(ltr),
 window.mac-settings-window .mac-settings-sidebar-headerbar windowcontrols.start:dir(ltr) {
-    margin-top: 6px;
-    margin-left: 5px;
+    margin-top: 0px;
+    margin-left: 0px;
 }
 
 window.nautilus-window .sidebar-pane toolbarview,
 window.nautilus-window .sidebar-pane placessidebar {
-    border-radius: 16px;
+    border-radius: 0px;
     background-color: transparent;
 }
 

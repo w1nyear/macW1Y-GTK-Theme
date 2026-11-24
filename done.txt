@@ -4949,3 +4949,30 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #937: Видалення заокругленого плаваючого контейнера лефтбара (floating sidebar card) у Settings, Nautilus та інших спліт-вʼю вікнах під автентичний macOS дизайн
+  - Видалено плаваючий контейнер та заокруглення лівої панелі (sidebar-pane) у Nautilus, Settings (gnome-control-center) та всіх Adwaita/GTK4 вікнах:
+    * Усунено правило margin: 6px 0px 6px 6px; border-radius: 20px; з bin/mac-build-theme, gtk-4.0/macw1y-components.css, config/gtk-4.0/macw1y-components.css, а також у всіх скомпільованих та користувацьких темах (macW1Y-Dark, macW1Y-Dark-solid, macW1Y-Light, macW1Y-Light-solid, ~/.themes/, /usr/share/themes/).
+    * Встановлено margin: 0px; border-radius: 0px; для navigation-split-view .sidebar-pane, overlay-split-view .sidebar-pane, .sidebar-pane, .mac-settings-sidebar тощо.
+    * Додано чітку нативну вертикальну лінію-розділювач: border-right: 1px solid rgba(255, 255, 255, 0.08); (для темних тем) та border-right: 1px solid rgba(0, 0, 0, 0.08); (для світлих тем); для RTL-режиму встановлено border-left.
+    * Тепер ліва панель є суцільною колонкою на всю висоту вікна від лівого, верхнього до нижнього краю, як в оригінальних macOS Finder та macOS Settings (відповідно до наданих еталонних зображень).
+  - Скинуто вкладені заокруглення внутрішніх контейнерів лівої панелі:
+    * Встановлено border-radius: 0px; для toolbarview, headerbar, placessidebar, scrolledwindow, viewport, list.navigation-sidebar та listbox всередині .sidebar-pane.
+    * Усунено штучні зміщення хедербара та кнопок трафіку в Nautilus (margin-top: -6px; margin-bottom: 21px;) та Settings (margin-top: -10px; margin-top: 6px;), повернувши їх у нормальне вертикальне центрування без перекосів.
+  - Виправлено синтаксичні помилки парсера GTK CSS:
+    * Виправлено пропущені коми у функціях color-mix() в gtk-Light.css.
+    * Видалено некоректні специфікатори !important для властивостей border-radius, margin, transition у стилях списку лівої панелі gtk-Light.css.
+    * Синхронізовано відсутній файл titlebuttons4.css для solid-тем.
+  - Результати перевірки:
+    * bin/mac-audit-sync check: 100% PASS.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+    * Повна валідація Gtk.CssProvider для всіх 13 файлів тем: OK (0 помилок, 0 попереджень).
+  * [bin/mac-build-theme](file:///home/vitaliy/MACTHEMEFILES/bin/mac-build-theme)
+  * [gtk-4.0/macw1y-components.css](file:///home/vitaliy/MACTHEMEFILES/gtk-4.0/macw1y-components.css)
+  * [config/gtk-4.0/macw1y-components.css](file:///home/vitaliy/MACTHEMEFILES/config/gtk-4.0/macw1y-components.css)
+  * [gtk-4.0/gtk-Dark.css](file:///home/vitaliy/MACTHEMEFILES/gtk-4.0/gtk-Dark.css)
+  * [gtk-4.0/gtk-Light.css](file:///home/vitaliy/MACTHEMEFILES/gtk-4.0/gtk-Light.css)
+  * [gtk-4.0/gtk.css](file:///home/vitaliy/MACTHEMEFILES/gtk-4.0/gtk.css)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

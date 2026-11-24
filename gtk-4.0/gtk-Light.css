@@ -1300,7 +1300,7 @@ button.suggested-action {
   background-color: #2E7CF7;
   background-image: none;
   box-shadow: none;
-  border-color: color-mix(in srgb, black 6% #2E7CF7);
+  border-color: color-mix(in srgb, black 6%, #2E7CF7);
 }
 
 button.suggested-action.flat {
@@ -1317,7 +1317,7 @@ button.suggested-action:hover {
   background-color: #478bf8;
   background-image: none;
   box-shadow: none;
-  border-color: color-mix(in srgb, black 6% #478bf8);
+  border-color: color-mix(in srgb, black 6%, #478bf8);
 }
 
 button.suggested-action:active, button.suggested-action:checked {
@@ -1326,7 +1326,7 @@ button.suggested-action:active, button.suggested-action:checked {
   background-color: #156df6;
   background-image: none;
   box-shadow: none;
-  border-color: color-mix(in srgb, black 6% #156df6);
+  border-color: color-mix(in srgb, black 6%, #156df6);
   box-shadow: none;
 }
 
@@ -1350,7 +1350,7 @@ button.destructive-action {
   background-color: #ED5F5D;
   background-image: none;
   box-shadow: none;
-  border-color: color-mix(in srgb, black 6% #ED5F5D);
+  border-color: color-mix(in srgb, black 6%, #ED5F5D);
 }
 
 button.destructive-action.flat {
@@ -1367,7 +1367,7 @@ button.destructive-action:hover {
   background-color: #f07674;
   background-image: none;
   box-shadow: none;
-  border-color: color-mix(in srgb, black 6% #f07674);
+  border-color: color-mix(in srgb, black 6%, #f07674);
 }
 
 button.destructive-action:active, button.destructive-action:checked {
@@ -1376,7 +1376,7 @@ button.destructive-action:active, button.destructive-action:checked {
   background-color: #ea4846;
   background-image: none;
   box-shadow: none;
-  border-color: color-mix(in srgb, black 6% #ea4846);
+  border-color: color-mix(in srgb, black 6%, #ea4846);
   box-shadow: none;
 }
 
@@ -9489,15 +9489,15 @@ placessidebar row,
 placessidebar .navigation-sidebar row,
 .nautilus-window .sidebar-pane placessidebar row,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row {
-    border-radius: 8px !important;
-    margin: 1px 6px !important;
-    padding: 4px 8px !important;
-    min-height: 28px !important;
+    border-radius: 8px;
+    margin: 1px 6px;
+    padding: 4px 8px;
+    min-height: 28px;
     color: rgba(0, 0, 0, 0.85);
-    background-clip: padding-box !important;
-    outline: none !important;
-    transition: background-color 120ms ease, color 120ms ease !important;
-    transition-property: background-color, color !important;
+    background-clip: padding-box;
+    outline: none;
+    transition: background-color 120ms ease, color 120ms ease;
+    transition-property: background-color, color;
 }
 
 /* Hover state - strictly lock border-radius: 8px to completely eliminate square hover glitch during fast mouse movement */
@@ -9515,11 +9515,11 @@ list.navigation-sidebar row:hover:not(:selected),
 placessidebar row:hover:not(:selected),
 .nautilus-window .sidebar-pane placessidebar row:hover:not(:selected),
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:hover {
-    border-radius: 8px !important;
-    background-color: rgba(0, 0, 0, 0.06) !important;
-    outline: none !important;
-    transition: background-color 120ms ease, color 120ms ease !important;
-    transition-property: background-color, color !important;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.06);
+    outline: none;
+    transition: background-color 120ms ease, color 120ms ease;
+    transition-property: background-color, color;
 }
 
 /* Selected state */
@@ -9530,17 +9530,17 @@ placessidebar row:selected,
 placessidebar .navigation-sidebar row:selected,
 .nautilus-window .sidebar-pane placessidebar row:selected,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected {
-    border-radius: 8px !important;
-    background-color: rgba(0, 0, 0, 0.12) !important;
-    color: #000000 !important;
-    outline: none !important;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.12);
+    color: #000000;
+    outline: none;
 }
 
 .navigation-sidebar row:selected label,
 list.navigation-sidebar row:selected label,
 placessidebar row:selected label,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected label {
-    color: #000000 !important;
+    color: #000000;
 }
 
 .navigation-sidebar row:selected:hover,
@@ -9548,10 +9548,10 @@ list.navigation-sidebar row:selected:hover,
 placessidebar row:selected:hover,
 .nautilus-window .sidebar-pane placessidebar row:selected:hover,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:hover {
-    border-radius: 8px !important;
-    background-color: rgba(0, 0, 0, 0.16) !important;
-    color: #000000 !important;
-    outline: none !important;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.16);
+    color: #000000;
+    outline: none;
 }
 
 /* Unhovered state - strictly prevent any transition on border-radius */
@@ -9562,9 +9562,9 @@ placessidebar row:not(:hover),
 placessidebar .navigation-sidebar row:not(:hover),
 .nautilus-window .sidebar-pane placessidebar row:not(:hover),
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:not(:hover) {
-    border-radius: 8px !important;
-    transition: background-color 150ms ease, color 150ms ease !important;
-    transition-property: background-color, color !important;
+    border-radius: 8px;
+    transition: background-color 150ms ease, color 150ms ease;
+    transition-property: background-color, color;
 }
 
 /* Section Header Typography */
@@ -9638,7 +9638,7 @@ window.mac-settings-window navigation-split-view {
     background-image: none;
 }
 
-/* Sidebar floating glass card: rounded on all 4 corners */
+/* Native macOS flush sidebar: seamless left column with crisp divider line */
 window.nautilus-window overlay-split-view > widget.sidebar-pane,
 window.nautilus-window .sidebar-pane,
 window.nautilus-window .sidebar-pane:dir(ltr),
@@ -9651,13 +9651,24 @@ window.mac-settings-window .sidebar-pane,
 window.mac-settings-window .sidebar-pane:dir(ltr),
 window.mac-settings-window .sidebar-pane:dir(rtl),
 navigation-split-view > widget.sidebar-pane,
-navigation-split-view .sidebar-pane {
-    margin: 6px 0px 6px 6px;
+navigation-split-view .sidebar-pane,
+overlay-split-view > widget.sidebar-pane,
+overlay-split-view .sidebar-pane {
+    margin: 0px;
     border: none;
-    border-radius: 20px;
+    border-radius: 0px;
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
     background-color: var(--mac-sidebar-bg, #ebebf0);
     background-clip: padding-box;
     box-shadow: none;
+}
+
+:dir(rtl) window.nautilus-window .sidebar-pane,
+:dir(rtl) window.mac-settings-window .sidebar-pane,
+:dir(rtl) navigation-split-view .sidebar-pane,
+:dir(rtl) overlay-split-view .sidebar-pane {
+    border-right: none;
+    border-left: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 window.mac-settings-window .sidebar-pane toolbarview,
@@ -9671,8 +9682,10 @@ navigation-split-view .sidebar-pane headerbar,
 navigation-split-view .sidebar-pane scrolledwindow,
 navigation-split-view .sidebar-pane viewport,
 navigation-split-view .sidebar-pane list.navigation-sidebar,
-navigation-split-view .sidebar-pane listbox {
-    border-radius: 20px;
+navigation-split-view .sidebar-pane listbox,
+window.nautilus-window .sidebar-pane toolbarview,
+window.nautilus-window .sidebar-pane placessidebar {
+    border-radius: 0px;
     background-color: transparent;
     background-image: none;
     border: none;
@@ -9698,22 +9711,22 @@ window.nautilus-window shadow,
 
 window.nautilus-window .sidebar-pane headerbar,
 window.nautilus-window .nautilus-sidebar-headerbar {
-    margin-top: -6px;
+    margin-top: 0px;
 }
 
 window.nautilus-window .sidebar-pane headerbar windowcontrols.start:dir(ltr),
 window.nautilus-window .nautilus-sidebar-headerbar windowcontrols,
 window.nautilus-window windowcontrols.start {
-    margin-left: 3px;
-    margin-top: -6px;
-    margin-bottom: 6px;
+    margin-left: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 window.nautilus-window .sidebar-pane headerbar windowcontrols button,
 window.nautilus-window .nautilus-sidebar-headerbar windowcontrols button,
 window.nautilus-window windowcontrols.start button {
-    margin-top: 1px;
-    margin-bottom: 21px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 navigation-split-view headerbar windowcontrols.start:dir(ltr),
@@ -9852,18 +9865,18 @@ navigation-split-view adw-navigation-view headerbar > windowhandle > box {
 }
 
 window.mac-settings-window .mac-settings-sidebar-headerbar {
-    margin-top: -10px;
+    margin-top: 0px;
 }
 
 window.mac-settings-window navigation-split-view headerbar windowcontrols.start:dir(ltr),
 window.mac-settings-window .mac-settings-sidebar-headerbar windowcontrols.start:dir(ltr) {
-    margin-top: 6px;
-    margin-left: 5px;
+    margin-top: 0px;
+    margin-left: 0px;
 }
 
 window.nautilus-window .sidebar-pane toolbarview,
 window.nautilus-window .sidebar-pane placessidebar {
-    border-radius: 16px;
+    border-radius: 0px;
     background-color: transparent;
 }
 

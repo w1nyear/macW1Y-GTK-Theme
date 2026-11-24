@@ -1299,7 +1299,7 @@ button.suggested-action {
   background-color: #2E7CF7;
   background-image: none;
   box-shadow: none;
-  border-color: color-mix(in srgb, black 6% #2E7CF7);
+  border-color: color-mix(in srgb, black 6%, #2E7CF7);
 }
 
 button.suggested-action.flat {
@@ -1316,7 +1316,7 @@ button.suggested-action:hover {
   background-color: #478bf8;
   background-image: none;
   box-shadow: none;
-  border-color: color-mix(in srgb, black 6% #478bf8);
+  border-color: color-mix(in srgb, black 6%, #478bf8);
 }
 
 button.suggested-action:active, button.suggested-action:checked {
@@ -1325,7 +1325,7 @@ button.suggested-action:active, button.suggested-action:checked {
   background-color: #156df6;
   background-image: none;
   box-shadow: none;
-  border-color: color-mix(in srgb, black 6% #156df6);
+  border-color: color-mix(in srgb, black 6%, #156df6);
   box-shadow: none;
 }
 
@@ -1349,7 +1349,7 @@ button.destructive-action {
   background-color: #ED5F5D;
   background-image: none;
   box-shadow: none;
-  border-color: color-mix(in srgb, black 6% #ED5F5D);
+  border-color: color-mix(in srgb, black 6%, #ED5F5D);
 }
 
 button.destructive-action.flat {
@@ -1366,7 +1366,7 @@ button.destructive-action:hover {
   background-color: #f07674;
   background-image: none;
   box-shadow: none;
-  border-color: color-mix(in srgb, black 6% #f07674);
+  border-color: color-mix(in srgb, black 6%, #f07674);
 }
 
 button.destructive-action:active, button.destructive-action:checked {
@@ -1375,7 +1375,7 @@ button.destructive-action:active, button.destructive-action:checked {
   background-color: #ea4846;
   background-image: none;
   box-shadow: none;
-  border-color: color-mix(in srgb, black 6% #ea4846);
+  border-color: color-mix(in srgb, black 6%, #ea4846);
   box-shadow: none;
 }
 

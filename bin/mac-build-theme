@@ -184,14 +184,26 @@ overlay-split-view .sidebar-pane,
 .navigation-sidebar-pane {{
   background-color: var(--mac-sidebar-bg, {c["sidebar_bg"]});
   background-image: none;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border: none;
+  border-right: 1px solid {"rgba(255, 255, 255, 0.08)" if is_dark else "rgba(0, 0, 0, 0.08)"};
+  margin: 0px;
+  border-radius: 0px;
 }}
 
 navigation-split-view .sidebar-pane,
 overlay-split-view .sidebar-pane {{
-  margin: 6px 0px 6px 6px;
+  margin: 0px;
   border: none;
-  border-radius: 20px;
+  border-right: 1px solid {"rgba(255, 255, 255, 0.08)" if is_dark else "rgba(0, 0, 0, 0.08)"};
+  border-radius: 0px;
+}}
+
+:dir(rtl) navigation-split-view .sidebar-pane,
+:dir(rtl) overlay-split-view .sidebar-pane,
+:dir(rtl) .sidebar-pane,
+:dir(rtl) .navigation-sidebar-pane {{
+  border-right: none;
+  border-left: 1px solid {"rgba(255, 255, 255, 0.08)" if is_dark else "rgba(0, 0, 0, 0.08)"};
 }}
 
 headerbar,
@@ -2680,6 +2692,21 @@ window.mac-settings-window navigation-split-view > widget:first-child headerbar 
   border: none;
   border-bottom: none;
   box-shadow: none;
+}}
+
+window.mac-settings-window .mac-settings-sidebar,
+window.mac-settings-window navigation-split-view > widget:first-child,
+window.mac-settings-window navigation-split-view .sidebar-pane {{
+  border-right: 1px solid {"rgba(255, 255, 255, 0.08)" if is_dark else "rgba(0, 0, 0, 0.08)"};
+  margin: 0px;
+  border-radius: 0px;
+}}
+
+:dir(rtl) window.mac-settings-window .mac-settings-sidebar,
+:dir(rtl) window.mac-settings-window navigation-split-view > widget:first-child,
+:dir(rtl) window.mac-settings-window navigation-split-view .sidebar-pane {{
+  border-right: none;
+  border-left: 1px solid {"rgba(255, 255, 255, 0.08)" if is_dark else "rgba(0, 0, 0, 0.08)"};
 }}
 
 window.mac-settings-window list.mac-settings-sidebar-list,
