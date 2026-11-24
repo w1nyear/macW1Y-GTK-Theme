@@ -4810,3 +4810,25 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+#931: Стилізовано картку бенчмарку Liquid Glass під дизайн карток параметрів macOS (фон var(--mac-card-bg), рамка 1px, скруглення 14px, внутрішній padding 16px 18px 14px 18px та вирівнювання ширини)
+  - Модифіковані компоненти:
+    * control-center/libmac_settings.c та gnome-control-center-overlay/libmac_settings.c:
+      - Замінено загальний клас "card" на спеціалізований клас "mac-benchmark-card" для контейнера бенчмарку create_liquid_benchmark_panel();
+      - Встановлено margin-start=0 та margin-end=0 (із hexpand=TRUE) як для самої картки, так і для g_liquid_benchmark_revealer, що усунуло подвійний відступ (30px замість 15px), через який панель виглядала звуженою; тепер вона ідеально збігається за шириною з полем попереднього перегляду шпалер зверху та картками налаштувань знизу;
+      - Додано перенесення тексту для підказки (gtk_label_set_wrap(TRUE));
+      - У провайдері стилів CSS додано повноцінне оформлення .mac-benchmark-card: background-color: var(--mac-card-bg, @card_bg_color), border: 1px solid var(--mac-card-border), border-radius: 14px, тінь box-shadow: var(--mac-card-shadow), внутрішній padding: 16px 18px 14px 18px для просторого та елегантного вигляду елементів керування, а також підтримка світлої теми (.mac-theme-light);
+      - Скомпільовано та синхронізовано libmac_settings.so в усі системні розташування (/usr/lib/x86_64-linux-gnu, /usr/share/mactheme, ~/.local/lib, lib/, control-center, gnome-control-center-overlay).
+    * config/gtk-4.0/macw1y-components.css та ~/.config/gtk-4.0/macw1y-components.css:
+      - Додано клас .mac-benchmark-card із підтримкою фону, заокруглення 14px, тіні та відступів.
+  - Результати валідації:
+    * bin/mac-audit-sync check: 100% PASS (0 розбіжностей, усі libmac_settings.so ідентичні).
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK (100% збіг хешів).
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%, Frame time: 4.7 ms, FPS: 213).
+    * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh: 0 збігів (Strict ASCII OK).
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [config/gtk-4.0/macw1y-components.css](file:///home/vitaliy/MACTHEMEFILES/config/gtk-4.0/macw1y-components.css)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

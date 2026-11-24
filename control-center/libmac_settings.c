@@ -3268,9 +3268,12 @@ static void on_liquid_right_click(GtkGestureClick *gesture, int n_press, double 
 
 static GtkWidget *create_liquid_benchmark_panel(void) {
     GtkWidget *card = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-    gtk_widget_add_css_class(card, "card");
-    gtk_widget_set_margin_top(card, 8);
-    gtk_widget_set_margin_bottom(card, 4);
+    gtk_widget_add_css_class(card, "mac-benchmark-card");
+    gtk_widget_set_hexpand(card, TRUE);
+    gtk_widget_set_margin_start(card, 0);
+    gtk_widget_set_margin_end(card, 0);
+    gtk_widget_set_margin_top(card, 10);
+    gtk_widget_set_margin_bottom(card, 8);
 
     GtkWidget *header_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
     GtkWidget *title_lbl = gtk_label_new(NULL);
@@ -3349,6 +3352,7 @@ static GtkWidget *create_liquid_benchmark_panel(void) {
     char hint_markup[512];
     g_snprintf(hint_markup, sizeof(hint_markup), "<span size=\"small\" alpha=\"65%%\">%s</span>", mac_tr("bench_hint", "Підказка: натисніть ПКМ по полю передогляду ще раз, щоб приховати або показати бенчмарк."));
     gtk_label_set_markup(GTK_LABEL(hint_lbl), hint_markup);
+    gtk_label_set_wrap(GTK_LABEL(hint_lbl), TRUE);
     gtk_label_set_xalign(GTK_LABEL(hint_lbl), 0.0);
     gtk_box_append(GTK_BOX(card), hint_lbl);
 
@@ -3556,6 +3560,9 @@ void init_liquid_preview(void *widget, gpointer data) {
         gtk_revealer_set_transition_type(GTK_REVEALER(g_liquid_benchmark_revealer), GTK_REVEALER_TRANSITION_TYPE_SLIDE_DOWN);
         gtk_revealer_set_transition_duration(GTK_REVEALER(g_liquid_benchmark_revealer), 250);
         gtk_revealer_set_reveal_child(GTK_REVEALER(g_liquid_benchmark_revealer), FALSE);
+        gtk_widget_set_hexpand(g_liquid_benchmark_revealer, TRUE);
+        gtk_widget_set_margin_start(g_liquid_benchmark_revealer, 0);
+        gtk_widget_set_margin_end(g_liquid_benchmark_revealer, 0);
 
         GtkWidget *bench_panel = create_liquid_benchmark_panel();
         gtk_revealer_set_child(GTK_REVEALER(g_liquid_benchmark_revealer), bench_panel);
@@ -10469,6 +10476,32 @@ static void init_mac_settings_css(void) {
         "  margin-right: 15px; "
         "  margin-bottom: 12px; "
         "  padding: 0px; "
+        "} "
+        "window.mac-settings-window .mac-benchmark-card, "
+        "window.mac-settings-window box.mac-benchmark-card, "
+        "preferencesgroup .mac-benchmark-card, "
+        ".mac-benchmark-card { "
+        "  background-color: var(--mac-card-bg, @card_bg_color); "
+        "  background: var(--mac-card-bg, @card_bg_color); "
+        "  border: 1px solid var(--mac-card-border, color-mix(in srgb, @window_fg_color 8%, transparent)); "
+        "  border-radius: 14px; "
+        "  box-shadow: var(--mac-card-shadow, 0 1px 3px rgba(0, 0, 0, 0.06)); "
+        "  padding: 16px 18px 14px 18px; "
+        "  margin-left: 0px !important; "
+        "  margin-right: 0px !important; "
+        "  margin-top: 10px; "
+        "  margin-bottom: 8px; "
+        "} "
+        "window.mac-settings-window.mac-theme-light .mac-benchmark-card { "
+        "  background-color: #ffffff; "
+        "  background: #ffffff; "
+        "  border: 1px solid rgba(0, 0, 0, 0.08); "
+        "  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); "
+        "} "
+        ".mac-benchmark-card separator { "
+        "  margin-top: 4px; "
+        "  margin-bottom: 4px; "
+        "  opacity: 0.35; "
         "} "
         "window.mac-settings-window preferencespage list:not(.boxed-list), "
         "window.mac-settings-window preferencespage row.button, "

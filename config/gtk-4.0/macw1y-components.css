@@ -539,6 +539,25 @@ preferencespage list.boxed-list:not(.nested),
   margin-bottom: 12px;
 }
 
+.mac-benchmark-card {
+  background-color: var(--mac-card-bg, #1e1e1e);
+  background-image: none;
+  border: 1px solid var(--mac-card-border, rgba(255, 255, 255, 0.07));
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  padding: 16px 18px 14px 18px;
+  margin-left: 0px !important;
+  margin-right: 0px !important;
+  margin-top: 10px;
+  margin-bottom: 8px;
+}
+
+.mac-benchmark-card separator {
+  margin-top: 4px;
+  margin-bottom: 4px;
+  opacity: 0.35;
+}
+
 /* Expander row reset & child list styling */
 row.expander,
 adwexpanderrow,
