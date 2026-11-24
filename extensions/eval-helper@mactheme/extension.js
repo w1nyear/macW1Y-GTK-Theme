@@ -1409,14 +1409,19 @@ export default class EvalHelper extends Extension {
                     const label = child?.label || item.label_actor;
                     const isSelected = (i === this._highlighted) || item.hover;
 
-                    const outlineRad = Math.max(10, Math.round(baseIconSize * 0.28));
+                    const iconBoxSize = Math.max(20, Math.round(baseIconSize * (52 / 64)));
+                    const outlineRad = Math.max(10, Math.round(iconBoxSize * 0.27));
                     const accentColor = _macGetAccentColorRgba(0.80);
-                    const iconBoxSize = Math.max(20, baseIconSize - 6);
 
                     if (iconActor) {
                         iconActor.set_size(iconBoxSize, iconBoxSize);
                         iconActor.x_align = Clutter.ActorAlign.CENTER;
                         iconActor.y_align = Clutter.ActorAlign.CENTER;
+                        const iconChild = iconActor.child || (iconActor.get_children ? iconActor.get_children()[0] : null);
+                        if (iconChild) {
+                            iconChild.set_pivot_point(0.5, 0.5);
+                            iconChild.set_scale(1.25, 1.25);
+                        }
                         if (isSelected) {
                             iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid ${accentColor} !important; background-color: transparent !important; background: transparent !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important; transition-duration: 150ms !important;`;
                             if (typeof iconActor.add_style_pseudo_class === 'function') iconActor.add_style_pseudo_class('selected');
@@ -1463,7 +1468,7 @@ export default class EvalHelper extends Extension {
                         const H = box.y2 - box.y1;
 
                         const tileH = cfg.iconSize;
-                        const scrollY1 = 12;
+                        const scrollY1 = 15;
 
                         const scrollBox = new Clutter.ActorBox();
                         scrollBox.x1 = 0;
@@ -1498,8 +1503,8 @@ export default class EvalHelper extends Extension {
                                 }
                                 lBox.x1 = Math.max(6, lx1);
                                 lBox.x2 = Math.min(W - 6, lx2);
-                                lBox.y1 = 75;
-                                lBox.y2 = Math.min(H - 3, 75 + Math.max(natH, 13));
+                                lBox.y1 = 76;
+                                lBox.y2 = Math.min(H - 3, 76 + Math.max(natH, 13));
                                 this._activeAppLabel.allocate(lBox);
                             }
                         }
@@ -1562,8 +1567,8 @@ export default class EvalHelper extends Extension {
                         const bbox = origAddItem.call(this, item, label);
                         const cfg = _macGetAltTabConfig();
                         const tileW = this._itemTileSize || cfg.iconSize;
-                        const boxSize = Math.max(20, tileW - 6);
-                        const outlineRad = Math.max(10, Math.round(tileW * 0.28));
+                        const boxSize = Math.max(20, Math.round(tileW * (52 / 64)));
+                        const outlineRad = Math.max(10, Math.round(boxSize * 0.27));
 
                         bbox._square = false;
                         bbox.x_align = Clutter.ActorAlign.CENTER;
@@ -1585,6 +1590,11 @@ export default class EvalHelper extends Extension {
                             iconActor.x_align = Clutter.ActorAlign.CENTER;
                             iconActor.y_align = Clutter.ActorAlign.CENTER;
                             if (typeof iconActor.set_size === 'function') iconActor.set_size(boxSize, boxSize);
+                            const iconChild = iconActor.child || (iconActor.get_children ? iconActor.get_children()[0] : null);
+                            if (iconChild) {
+                                iconChild.set_pivot_point(0.5, 0.5);
+                                iconChild.set_scale(1.25, 1.25);
+                            }
                             iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                         }
                         if (this._leftArrow) this._leftArrow.opacity = 0;
@@ -1620,13 +1630,18 @@ export default class EvalHelper extends Extension {
                         origAppIconInit.call(this, app);
                         const cfg = _macGetAltTabConfig();
                         const tileW = cfg.iconSize;
-                        const boxSize = Math.max(20, tileW - 6);
-                        const outlineRad = Math.max(10, Math.round(tileW * 0.28));
+                        const boxSize = Math.max(20, Math.round(tileW * (52 / 64)));
+                        const outlineRad = Math.max(10, Math.round(boxSize * 0.27));
                         if (this._iconBin) {
                             this._iconBin.add_style_class_name('alt-tab-icon-bin');
                             this._iconBin.x_align = Clutter.ActorAlign.CENTER;
                             this._iconBin.y_align = Clutter.ActorAlign.CENTER;
                             if (typeof this._iconBin.set_size === 'function') this._iconBin.set_size(boxSize, boxSize);
+                            const iconChild = this._iconBin.child || (this._iconBin.get_children ? this._iconBin.get_children()[0] : null);
+                            if (iconChild) {
+                                iconChild.set_pivot_point(0.5, 0.5);
+                                iconChild.set_scale(1.25, 1.25);
+                            }
                             this._iconBin.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                         }
                         if (this.label) {
@@ -1659,8 +1674,8 @@ export default class EvalHelper extends Extension {
                         origWindowIconInit.call(this, window, 2);
                         const cfg = _macGetAltTabConfig();
                         const baseIconSize = cfg.iconSize;
-                        const boxSize = Math.max(20, baseIconSize - 6);
-                        const outlineRad = Math.max(10, Math.round(baseIconSize * 0.28));
+                        const boxSize = Math.max(20, Math.round(baseIconSize * (52 / 64)));
+                        const outlineRad = Math.max(10, Math.round(boxSize * 0.27));
 
                         if (this._icon) {
                             this._icon.destroy_all_children();
@@ -1672,6 +1687,8 @@ export default class EvalHelper extends Extension {
                                 : new St.Icon({ icon_name: 'application-x-executable', icon_size: baseIconSize });
                             appIcon.x_align = Clutter.ActorAlign.CENTER;
                             appIcon.y_align = Clutter.ActorAlign.CENTER;
+                            appIcon.set_pivot_point(0.5, 0.5);
+                            appIcon.set_scale(1.25, 1.25);
                             this._icon.add_child(appIcon);
                             this._icon.x_align = Clutter.ActorAlign.CENTER;
                             this._icon.y_align = Clutter.ActorAlign.CENTER;
@@ -1756,8 +1773,8 @@ export default class EvalHelper extends Extension {
                                 itemW = baseIconSize;
                             }
 
-                            const boxSize = Math.max(20, itemW - 6);
-                            const outlineRad = Math.max(10, Math.round(itemW * 0.28));
+                            const boxSize = Math.max(20, Math.round(itemW * (52 / 64)));
+                            const outlineRad = Math.max(10, Math.round(boxSize * 0.27));
                             const accentColor = _macGetAccentColorRgba(0.80);
                             this._iconSize = baseIconSize;
                             this._squareItems = false;
@@ -1791,6 +1808,11 @@ export default class EvalHelper extends Extension {
                                         iconActor.x_align = Clutter.ActorAlign.CENTER;
                                         iconActor.y_align = Clutter.ActorAlign.CENTER;
                                         iconActor.set_size(boxSize, boxSize);
+                                        const iconChild = iconActor.child || (iconActor.get_children ? iconActor.get_children()[0] : null);
+                                        if (iconChild) {
+                                            iconChild.set_pivot_point(0.5, 0.5);
+                                            iconChild.set_scale(1.25, 1.25);
+                                        }
                                         const isSelected = (i === this._highlighted);
                                         if (isSelected) {
                                             iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid ${accentColor} !important; background-color: transparent !important; background: transparent !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important; transition-duration: 150ms !important;`;
@@ -1845,8 +1867,8 @@ export default class EvalHelper extends Extension {
                                 itemW = baseIconSize;
                             }
 
-                            const boxSize = Math.max(20, itemW - 6);
-                            const outlineRad = Math.max(10, Math.round(itemW * 0.28));
+                            const boxSize = Math.max(20, Math.round(itemW * (52 / 64)));
+                            const outlineRad = Math.max(10, Math.round(boxSize * 0.27));
                             const accentColor = _macGetAccentColorRgba(0.80);
                             this._iconSize = baseIconSize;
                             this._squareItems = false;
@@ -1878,6 +1900,11 @@ export default class EvalHelper extends Extension {
                                     const iconActor = iconObj._icon || iconObj._iconBin || (iconObj.get_children ? iconObj.get_children()[0] : null);
                                     if (iconActor) {
                                         iconActor.set_size(boxSize, boxSize);
+                                        const iconChild = iconActor.child || (iconActor.get_children ? iconActor.get_children()[0] : null);
+                                        if (iconChild) {
+                                            iconChild.set_pivot_point(0.5, 0.5);
+                                            iconChild.set_scale(1.25, 1.25);
+                                        }
                                         const isSelected = (i === this._highlighted);
                                         if (isSelected) {
                                             iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid ${accentColor} !important; background-color: transparent !important; background: transparent !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important; transition-duration: 150ms !important;`;
