@@ -515,8 +515,6 @@ popover.menu > contents {
     padding: 5px;
     color: #ffffff;
     min-width: 220px;
-    animation: macMenuOpen 140ms cubic-bezier(0.16, 1, 0.3, 1);
-    transition: opacity 120ms ease, transform 120ms ease;
 }
 
 popover.mac-popover-menu.mac-popover-closing > contents {
@@ -1236,17 +1234,7 @@ class MacMenuPopover(Gtk.Popover):
         self.parent_btn = parent_btn
         self.is_closing = False
 
-        self.overlay = Gtk.Overlay()
-
-        # Sliding pill background indicator (DrawingArea avoids GTK4 layout-loop warnings)
-        self.pill = Gtk.DrawingArea()
-        self.pill.set_can_target(False)
-        self.pill.set_hexpand(True)
-        self.pill.set_vexpand(True)
-        self.pill.set_draw_func(self._draw_pill)
-        self.overlay.set_child(self.pill)
-
-        # Items container
+        # Items container directly as Popover child (avoids Gtk.Overlay + Popover allocation loop in GTK4)
         self.items_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
         self.items_box.add_css_class("mac-menu-items-box")
         self.items_box.set_margin_top(4)
@@ -1254,9 +1242,7 @@ class MacMenuPopover(Gtk.Popover):
         self.items_box.set_margin_start(4)
         self.items_box.set_margin_end(4)
 
-        self.overlay.add_overlay(self.items_box)
-        self.overlay.set_measure_overlay(self.items_box, True)
-        self.set_child(self.overlay)
+        self.set_child(self.items_box)
 
         # Animation State
         self.current_y = 0.0
@@ -1341,56 +1327,12 @@ class MacMenuPopover(Gtk.Popover):
 
     def glide_to(self, btn):
         self.active_btn = btn
-        ok, bounds = btn.compute_bounds(self.overlay)
-        if ok and bounds.get_height() > 15:
-            ty = max(0.0, float(bounds.get_y()))
-            th = float(bounds.get_height())
-        else:
-            ty = 4.0
-            th = 32.0
-            if hasattr(self, "items_box"):
-                child = self.items_box.get_first_child()
-                while child and child != btn:
-                    _, ch, _, _ = child.measure(Gtk.Orientation.VERTICAL, -1)
-                    ty += max(ch, 1) + 2
-                    child = child.get_next_sibling()
-            _, bh, _, _ = btn.measure(Gtk.Orientation.VERTICAL, -1)
-            th = max(bh, 30)
-
-        self.target_y = ty
-        self.target_h = th
-        self.target_opacity = 1.0
-        if self.current_opacity == 0.0:
-            self.current_y = self.target_y
-            self.current_h = self.target_h
-            self.current_opacity = 1.0
-            self.pill.queue_draw()
-        self._start_anim()
-
-    def _draw_pill(self, area, cr, w, h):
-        if self.current_opacity <= 0.01 or w <= 8 or self.current_h <= 2:
-            return
-        x = 4.0
-        y = self.current_y
-        pw = w - 8.0
-        ph = max(26.0, self.current_h)
-        r = min(ph * 0.5, 13.0)
-        cr.new_sub_path()
-        cr.arc(x + pw - r, y + r, r, -math.pi / 2.0, 0.0)
-        cr.arc(x + pw - r, y + ph - r, r, 0.0, math.pi / 2.0)
-        cr.arc(x + r, y + ph - r, r, math.pi / 2.0, math.pi)
-        cr.arc(x + r, y + r, r, math.pi, 3.0 * math.pi / 2.0)
-        cr.close_path()
-        cr.set_source_rgba(1.0, 1.0, 1.0, 0.14 * self.current_opacity)
-        cr.fill()
 
     def glide_leave(self):
-        self.target_opacity = 0.0
-        self._start_anim()
+        self.active_btn = None
 
     def _start_anim(self):
-        if self.tick_id == 0:
-            self.tick_id = self.add_tick_callback(self._on_tick)
+        pass
 
     def _on_tick(self, widget, frame_clock):
         self.current_y += (self.target_y - self.current_y) * 0.38
