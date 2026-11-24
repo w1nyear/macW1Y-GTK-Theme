@@ -4900,3 +4900,20 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+- Задача #935:
+  - Виправлено розмиття під стрілкою бірктагів (dock tooltip tags) дока:
+    * Виявлено причину дефекту: фоновий актор розмиття _blurArrowActor раніше створювався прямокутним розміром 18×10px із corner_radius 3, тоді як реальна стрілка (хвостик Cairo) має ширину основи 10px та висоту 7px, звужуючись у трикутник до вістря. Через це прямокутні розмиті кути виступали на кілька пікселів з обох боків та знизу під вістрям стрілки.
+    * Розроблено та впроваджено ARROW_MASK_SHADER (Clutter.ShaderEffect) на базі GLSL, який здійснює точне трикутне маскування розмитої текстури відповідно до сторони доку (pos_side: зверху, знизу, зліва чи справа) з гладким smoothstep згладжуванням країв.
+    * Зменшено розміри контейнера розмиття _blurArrowActor точно під геометрію стрілки: ширина 10px (baseW = 2 * halfBase), висота 8px (rise + 1.0 з 1px накладанням у тіло тега для безшовного з'єднання), а координати arrowX та arrowY відцентровано строго по осі стрілки.
+    * Уніфіковано зміни в обох компонентах керування бірктагами: dash2dock-motion@unmade.space/appIcons.js та eval-helper@mactheme/extension.js.
+    * Оновлено активні розширення у ~/.local/share/gnome-shell/extensions/ та зафіксовано нові хеші у config/extensions.lock.json.
+  - Результати валідації:
+    * bin/mac-audit-sync check: 100% PASS.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+  * [extensions/dash2dock-motion@unmade.space/appIcons.js](file:///home/vitaliy/MACTHEMEFILES/extensions/dash2dock-motion@unmade.space/appIcons.js)
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

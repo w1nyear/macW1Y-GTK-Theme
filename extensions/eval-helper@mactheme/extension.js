@@ -2915,6 +2915,42 @@ export default class EvalHelper extends Extension {
 
         const installUnifiedDockLabelHandler = () => {
             try {
+                const ARROW_MASK_SHADER = `
+uniform sampler2D tex;
+uniform float pos_side;
+void main() {
+    vec2 uv = cogl_tex_coord_in[0].xy;
+    float dist = 0.0;
+    if (pos_side > 1.5 && pos_side < 2.5) {
+        float t = clamp((uv.y - 0.125) / 0.875, 0.0, 1.0);
+        float maxHalf = 0.5 * (1.0 - t);
+        dist = abs(uv.x - 0.5) - maxHalf;
+    } else if (pos_side < 0.5) {
+        float t = clamp(uv.y / 0.875, 0.0, 1.0);
+        float maxHalf = 0.5 * t;
+        dist = abs(uv.x - 0.5) - maxHalf;
+    } else if (pos_side > 2.5) {
+        float t = clamp(uv.x / 0.875, 0.0, 1.0);
+        float maxHalf = 0.5 * t;
+        dist = abs(uv.y - 0.5) - maxHalf;
+    } else {
+        float t = clamp((uv.x - 0.125) / 0.875, 0.0, 1.0);
+        float maxHalf = 0.5 * (1.0 - t);
+        dist = abs(uv.y - 0.5) - maxHalf;
+    }
+    float a = 1.0 - smoothstep(-0.06, 0.0, dist);
+    vec4 c = texture2D(tex, uv);
+    cogl_color_out = c * a * cogl_color_in;
+}
+`;
+
+                const _posToFloat = (pos) => {
+                    if (pos === St.Side.TOP) return 0.0;
+                    if (pos === St.Side.RIGHT) return 1.0;
+                    if (pos === St.Side.LEFT) return 3.0;
+                    return 2.0; // St.Side.BOTTOM
+                };
+
                 const _updateTailPos = (label, position) => {
                     const tail = label._arrowTailActor;
                     if (!tail || !label.get_stage())
@@ -2930,17 +2966,18 @@ export default class EvalHelper extends Extension {
                     const pillHeight = Math.ceil(natH > 0 ? natH : (label.height > 0 ? label.height : 25));
 
                     const rise = 7.0;
+                    const halfBase = 5.0;
+                    const baseW = 2.0 * halfBase;
                     const padX = 6.0;
                     const padY = 6.0;
 
                     let tailW, tailH, posX, posY;
                     const lx = Math.round(label.x);
                     const ly = Math.round(label.y);
+                    const cx = Math.round(lx + pillWidth / 2.0);
+                    const cy = Math.round(ly + pillHeight / 2.0);
 
-                    const arrowW = 18.0;
-                    const arrowH = rise + 3.0;
-
-                    let arrowX = 0, arrowY = 0, arrowBoxW = arrowW, arrowBoxH = arrowH;
+                    let arrowX = 0, arrowY = 0, arrowBoxW = baseW, arrowBoxH = rise + 1.0;
 
                     if (position === St.Side.TOP) {
                         tailW = pillWidth + 2 * padX;
@@ -2948,40 +2985,41 @@ export default class EvalHelper extends Extension {
                         posX = lx - padX;
                         posY = ly - rise - padY;
 
-                        arrowX = Math.round(lx + (pillWidth - arrowW) / 2.0);
-                        arrowY = Math.round(ly - rise - 1.0);
-                        arrowBoxW = arrowW;
-                        arrowBoxH = arrowH;
+                        arrowBoxW = baseW;
+                        arrowBoxH = rise + 1.0;
+                        arrowX = Math.round(cx - halfBase);
+                        arrowY = Math.round(ly - rise);
                     } else if (position === St.Side.LEFT) {
                         tailW = pillWidth + rise + 2 * padX;
                         tailH = pillHeight + 2 * padY;
                         posX = lx - rise - padX;
                         posY = ly - padY;
 
-                        arrowX = Math.round(lx - rise - 1.0);
-                        arrowY = Math.round(ly + (pillHeight - arrowW) / 2.0);
-                        arrowBoxW = arrowH;
-                        arrowBoxH = arrowW;
+                        arrowBoxW = rise + 1.0;
+                        arrowBoxH = baseW;
+                        arrowX = Math.round(lx - rise);
+                        arrowY = Math.round(cy - halfBase);
                     } else if (position === St.Side.RIGHT) {
                         tailW = pillWidth + rise + 2 * padX;
                         tailH = pillHeight + 2 * padY;
                         posX = lx - padX;
                         posY = ly - padY;
 
-                        arrowX = Math.round(lx + pillWidth - 2.0);
-                        arrowY = Math.round(ly + (pillHeight - arrowW) / 2.0);
-                        arrowBoxW = arrowH;
-                        arrowBoxH = arrowW;
+                        arrowBoxW = rise + 1.0;
+                        arrowBoxH = baseW;
+                        arrowX = Math.round(lx + pillWidth - 1.0);
+                        arrowY = Math.round(cy - halfBase);
                     } else {
+                        // St.Side.BOTTOM
                         tailW = pillWidth + 2 * padX;
                         tailH = pillHeight + rise + 2 * padY;
                         posX = lx - padX;
                         posY = ly - padY;
 
-                        arrowX = Math.round(lx + (pillWidth - arrowW) / 2.0);
-                        arrowY = Math.round(ly + pillHeight - 2.0);
-                        arrowBoxW = arrowW;
-                        arrowBoxH = arrowH;
+                        arrowBoxW = baseW;
+                        arrowBoxH = rise + 1.0;
+                        arrowX = Math.round(cx - halfBase);
+                        arrowY = Math.round(ly + pillHeight - 1.0);
                     }
 
                     tail.set_size(Math.round(tailW), Math.round(tailH));
@@ -3022,6 +3060,11 @@ export default class EvalHelper extends Extension {
                             aBox.y2 = arrowY + arrowBoxH;
                             label._blurArrowActor.allocate(aBox);
                         } catch (_) {}
+                        if (label._blurArrowActor._maskShader) {
+                            try {
+                                label._blurArrowActor._maskShader.set_uniform_value('pos_side', _posToFloat(position));
+                            } catch (_) {}
+                        }
                     }
 
                     tail.queue_repaint();
@@ -3111,7 +3154,7 @@ export default class EvalHelper extends Extension {
                                 name: 'dash-label-arrow-blur',
                                 mode: 1,
                                 radius: radius,
-                                corner_radius: 3,
+                                corner_radius: 0,
                                 brightness: 1.0,
                             });
                             arrowBlur.add_effect(arrowBlur._blurEff);
@@ -3126,6 +3169,16 @@ export default class EvalHelper extends Extension {
                             arrowBlur._blurEff.enabled = (radius > 0);
                         }
 
+                        try {
+                            const shader = new Clutter.ShaderEffect();
+                            shader.set_shader_source(ARROW_MASK_SHADER);
+                            shader.set_uniform_value('pos_side', _posToFloat(position));
+                            arrowBlur._maskShader = shader;
+                            arrowBlur.add_effect(shader);
+                        } catch (e) {
+                            console.warn(`[eval-helper] arrow blur mask shader error: ${e}`);
+                        }
+
                         Main.uiGroup.add_child(arrowBlur);
 
                         label.bind_property('visible', arrowBlur, 'visible', GObject.BindingFlags.SYNC_CREATE);
@@ -3133,6 +3186,11 @@ export default class EvalHelper extends Extension {
                     } else if (label._blurArrowActor._blurEff) {
                         label._blurArrowActor._blurEff.enabled = (radius > 0);
                         label._blurArrowActor._blurEff.radius = radius;
+                        if (label._blurArrowActor._maskShader) {
+                            try {
+                                label._blurArrowActor._maskShader.set_uniform_value('pos_side', _posToFloat(position));
+                            } catch (_) {}
+                        }
                     }
 
                     if (label._arrowTailActor && (!label._arrowTailActor.get_parent?.() || label._arrowTailActor._isDisposed)) {
