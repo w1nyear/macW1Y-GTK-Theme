@@ -1771,6 +1771,11 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             self._show_modal_cancel_confirm()
         elif m in ["reboot", "restart", "alert"]:
             self._show_modal_reboot_confirm()
+        elif m in ["benchmark_warn", "bench_warn", "warn"]:
+            self._show_modal_benchmark_warning()
+        elif m in ["run_bench", "bench_run"]:
+            self.switch_to_screen("screen_benchmark_progress")
+            self._start_benchmark_execution()
         elif m in ["uninstall"]:
             self._show_modal_uninstall_confirm()
         return GLib.SOURCE_REMOVE
