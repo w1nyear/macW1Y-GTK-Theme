@@ -156,18 +156,10 @@ const GLASS_GROUPS = [
     {name: 'priv', radius: 18},
 
     {name: 'edit', radius: 15},
-
-
-
-    {name: 'backdrop', radius: 82},
+    {name: 'backdrop', radius: 28},
 ];
 export const BACKDROP_PAD = 60;
-
-
-
-export const BACKDROP_REGION = 80;
-
-
+export const BACKDROP_REGION = 60;
 export const BACKDROP_REGION_Y = 60;
 
 
@@ -2358,6 +2350,7 @@ function _buildPanel() {
         music, mTitle, mArtist, mPlayIcon: play.icon, mPrevIcon: prev.icon,
         mNextIcon: next.icon, artBin: art, artIcon, artUrl: '',
         priv: privPill, glass: null};
+    globalThis._tahoeQSPanel = _panel;
 
 
 
@@ -2519,6 +2512,23 @@ function _buildPanel() {
     panelBg.translation_x = slideOffset;
     panelBg.opacity = 0;
 
+    if (_panel?.glass?.stacks) {
+        for (const s of _panel.glass.stacks) {
+            try {
+                s.bgActor.show();
+                s.bgActor.remove_all_transitions();
+                s.bgActor.translation_x = slideOffset;
+                s.bgActor.opacity = 0;
+                s.bgActor.ease({
+                    translation_x: 0,
+                    opacity: 255,
+                    duration: 230,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                });
+            } catch (_) {}
+        }
+    }
+
     box.ease({
         translation_x: 0,
         opacity: 255,
@@ -2535,10 +2545,12 @@ function _buildPanel() {
                 _panel.panelBg.opacity = 255;
             }
             if (_panel?.glass?.stacks) {
+                const mon = Main.layoutManager.primaryMonitor;
                 for (const s of _panel.glass.stacks) {
                     try {
                         s.bgActor.translation_x = 0;
                         s.bgActor.opacity = 255;
+                        if (mon) _syncStack(s, mon);
                     } catch (_) {}
                 }
             }
@@ -3597,6 +3609,17 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
     mirror.set_position(-monitor.x, -monitor.y);
     liquidBox.add_child(mirror);
 
+    try {
+        const extWidgets = Main.extensionManager?.lookup?.('desktop-widgets@r3nhick');
+        const widgetLayer = extWidgets?.stateObj?._controller?._layer;
+        if (widgetLayer && widgetLayer.visible) {
+            const wClone = new Clutter.Clone({ source: widgetLayer });
+            wClone.set_size(global.stage.width, global.stage.height);
+            wClone.set_position(-monitor.x, -monitor.y);
+            liquidBox.add_child(wClone);
+        }
+    } catch (_) {}
+
     const cloneContainer = new UnpickableActor();
     cloneContainer.set_name(`clone-container-${name}`);
     liquidBox.add_child(cloneContainer);
@@ -3616,7 +3639,11 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
     effect.setCornerRadius(radius);
     effect.setIsDock(false);
     effect.setMultiRegionMode(true);
-    effect.setBlurRadius(_qsGlassBlur());
+    if (pure) {
+        effect.setBlurRadius(24.0);
+    } else {
+        effect.setBlurRadius(Math.max(16.0, _qsGlassBlur()));
+    }
 
     if (pure) {
 
@@ -3659,18 +3686,18 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
             effect.setSurfaceLightEnabled(true);
             effect._setFloat('surface_light_enabled', 1.0);
             effect._setFloat('sheen_intensity', _qsGlassGlare() * 0.6);
-            effect._setFloat('rim_intensity', _qsInt('tahoe-qs-rim-intensity', 8) / 100);
+            effect._setFloat('rim_intensity', _qsInt('tahoe-qs-rim-intensity', 10) / 100);
             effect._setFloat('rim_width', _qsInt('tahoe-qs-rim-width', 50) / 10);
             effect._setFloat('rim_power', _qsInt('tahoe-qs-rim-power', 60) / 10);
             effect._setFloat('rim_directional_power', _qsInt('tahoe-qs-rim-direction', 27) / 10);
             effect._setFloat('rim_light_color_intensity', _qsInt('tahoe-qs-rim-light', 140) / 100);
             effect._setFloat('specular_intensity', _qsInt('tahoe-qs-specular', 0) / 100);
-            effect._setFloat('displacement_scale', _qsGlassRefraction());
-            effect._setFloat('ior', _qsInt('tahoe-qs-ior', 240) / 100);
-            effect._setFloat('chroma_strength', _qsInt('tahoe-qs-chroma', 60) / 10000);
-            effect._setFloat('edge_smoothing', _qsInt('tahoe-qs-edge', 20) / 10);
-            effect._setFloat('profile_shape_n', _qsInt('tahoe-qs-profile', 700) / 100);
-            effect._setFloat('max_z', _qsInt('tahoe-qs-depth', 25));
+            effect._setFloat('displacement_scale', Math.min(28.0, _qsGlassRefraction()));
+            effect._setFloat('ior', _qsInt('tahoe-qs-ior', 150) / 100);
+            effect._setFloat('chroma_strength', _qsInt('tahoe-qs-chroma', 30) / 10000);
+            effect._setFloat('edge_smoothing', _qsInt('tahoe-qs-edge', 15) / 10);
+            effect._setFloat('profile_shape_n', _qsInt('tahoe-qs-profile', 540) / 100);
+            effect._setFloat('max_z', _qsInt('tahoe-qs-depth', 8));
         }
     } catch (_) {
 
@@ -3910,6 +3937,14 @@ function _syncStack(s, monitor) {
         else if (typeof s.effect._setFloat === 'function')
             s.effect._setFloat('shape_type', 0.0);
         s.effect.setCornerRadius(22);
+    } else if (s.group === 'backdrop') {
+        s.effect.setCornerRadius(28);
+        try {
+            s.effect._setFloat('edge_smoothing', BACKDROP_PAD);
+            s.effect._setFloat('displacement_scale', 0);
+            s.effect._setFloat('surface_light_enabled', 0.0);
+            s.effect.setBlurRadius(24.0);
+        } catch (_) {}
     }
     s.effect.setGlassRegions(regions);
     if (!s.screen || s.screen[0] !== screenW || s.screen[1] !== screenH) {
@@ -4007,6 +4042,7 @@ function _teardownPanel(p) {
         _cachedPanel = null;
     const {overlay, state} = p;
     _panel = null;
+    globalThis._tahoeQSPanel = null;
     _closing = false;
     _panelOpening = false;
     globalThis._tahoeQSOpen = false;
@@ -4078,6 +4114,7 @@ function _hidePanel(p) {
     if (!p)
         return;
     _panel = null;
+    globalThis._tahoeQSPanel = null;
     _closing = false;
     _panelOpening = false;
     globalThis._tahoeQSOpen = false;
@@ -4096,6 +4133,7 @@ function _hidePanel(p) {
 
 function _restorePanel(p) {
     _panel = p;
+    globalThis._tahoeQSPanel = _panel;
     _cachedPanel = null;
     _closing = false;
     _panelOpening = true;
@@ -4160,6 +4198,16 @@ function _restorePanel(p) {
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onComplete: () => {
                 _panelOpening = false;
+                if (p.glass?.stacks) {
+                    const mon = Main.layoutManager.primaryMonitor;
+                    for (const s of p.glass.stacks) {
+                        try {
+                            s.bgActor.translation_x = 0;
+                            s.bgActor.opacity = 255;
+                            if (mon) _syncStack(s, mon);
+                        } catch (_) {}
+                    }
+                }
             },
         });
         p.panelBg.ease({

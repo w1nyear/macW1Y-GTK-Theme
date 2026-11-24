@@ -4740,3 +4740,34 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+#929: Відновлення шейдера рідкого скла для кнопок та дифузного розмитого фону панелі Центру керування (Control Center)
+  - Модифіковані компоненти:
+    * extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED.frag:
+      - Виправлено інверсію Y-координати: фрагментний шейдер використовував gl_FragCoord.xy (де початок координат (0,0) знаходиться внизу зліва), тоді як текстурні координати Clutter/Cogl та обмежувальні прямокутники регіонів мають початок координат у верхньому лівому кутку; через це всі елементи у верхній частині екрана (Центр керування при y=44) потрапляли під discard і кнопки залишалися пласькими;
+      - Замінено на vec2 uv = cogl_tex_coord_in[0].st; vec2 pixel_coord = uv * resolution; vec2 screenUv = uv;, що повністю синхронізувало розрахунок SDF-радіусів кнопок, капсул та слайдерів;
+      - Оновлено встановлену копію шейдера у ~/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED.frag.
+    * extensions/kiwi@kemma/apps/tahoeControlCenter.js:
+      - Налаштовано коректні фізичні параметри та геометрію бекдропу Центру керування: радіус скруглення 28px (замість спотвореного 82px), симетричний відступ BACKDROP_REGION = 60px (замість асиметричного 80px), дифузне розмиття pure blur = 24.0px аналогічно до Центру повідомлень (nc-backdrop);
+      - Додано клонування шару desktop-widgets (ctrl._layer) у liquidBox Центру керування, завдяки чому віджети робочого столу (календар, Пушин тощо) правильно розмиваються крізь панель та кнопки;
+      - Налаштовано чіткі фізичні параметри скла для кнопок, слайдерів та медіа-картки: displacement_scale: 28.0, ior: 1.50, rim_intensity: 0.10, rim_width: 5.0, edge_smoothing: 1.5, profile_shape_n: 5.40, max_z: 8.0, blur: 16.0;
+      - Додано анімацію появи фону скла s.bgActor.ease при відкритті панелі та примусову синхронізацію _syncStack(s, mon) у колбеку onComplete при завершенні анімації;
+      - Оновлено встановлену копію розширення у ~/.local/share/gnome-shell/extensions/kiwi@kemma/apps/tahoeControlCenter.js.
+    * extensions/kiwi@kemma/apps/centerManager.js та extensions/kiwi@kemma/extension.js:
+      - У функції _macCloseAllCenters додано перевірку activeMenu !== quickSettings.menu та activeMenu !== dateMenu.menu, щоб меню не закривали самі себе при відкритті.
+    * config/extensions.lock.json та /usr/share/mactheme/config/extensions.lock.json:
+      - Оновлено контрольні хеші sha256 для kiwi@kemma (0e681292...) та liquid-glass@thinkingcoding1231.gmail.com (a80a46ef...).
+  - Результати валідації:
+    * Відкриття та закриття Центру керування, а також рендеринг скляного фону перевірено наживо через D-Bus EvalHelper: бекдроп активний, кнопки використовують шейдер рідкого скла, помилок у журналі немає.
+    * bin/mac-audit-sync check: 100% PASS (0 розбіжностей).
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK (100% збіг хешів).
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+    * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh: 0 збігів (Strict ASCII OK).
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED.frag](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED.frag)
+  * [extensions/kiwi@kemma/apps/tahoeControlCenter.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeControlCenter.js)
+  * [extensions/kiwi@kemma/apps/centerManager.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/centerManager.js)
+  * [extensions/kiwi@kemma/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/extension.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

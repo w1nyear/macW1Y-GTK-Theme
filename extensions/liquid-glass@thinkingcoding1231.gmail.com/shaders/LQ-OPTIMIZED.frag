@@ -133,8 +133,9 @@ void main() {
         discard;
     }
 
-    vec2 pixel_coord = gl_FragCoord.xy;
-    vec2 screenUv = pixel_coord / resolution;
+    vec2 uv = cogl_tex_coord_in[0].st;
+    vec2 pixel_coord = uv * resolution;
+    vec2 screenUv = uv;
 
     // Element bounds setup
     vec2 dock_center = vec2(dock_x + dock_w * 0.5, dock_y + dock_h * 0.5);

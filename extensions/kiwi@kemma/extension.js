@@ -249,8 +249,9 @@ export default class KiwiExtension extends Extension {
             }
             if (except !== 'panelMenu') {
                 try {
-                    if (Main.panel?.menuManager?.activeMenu)
-                        Main.panel.menuManager.activeMenu.close(1);
+                    const active = Main.panel?.menuManager?.activeMenu;
+                    if (active && active !== Main.panel?.statusArea?.quickSettings?.menu && active !== Main.panel?.statusArea?.dateMenu?.menu)
+                        active.close(1);
                 } catch (_) {}
             }
         };

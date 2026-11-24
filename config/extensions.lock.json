@@ -274,7 +274,7 @@
         "50",
         "51"
       ],
-      "sha256": "a44dcd7f5e3a7a2388077cab34bf848d2b26235c4d9f943a53384ce528e1a970",
+      "sha256": "0e6812927cfdcd756b709b33ca54cfed86d38589fd39e559ac9a801b7805f21d",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -287,11 +287,11 @@
       "has_custom_patches": true,
       "patch_description": "macW1Y Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macW1Y Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macW1Y Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macW1Y horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
       "last_verified": "2026-11-22",
-      "integrity_hash": "a44dcd7f5e3a7a2388077cab34bf848d2b26235c4d9f943a53384ce528e1a970",
-      "pinned_sha256": "a44dcd7f5e3a7a2388077cab34bf848d2b26235c4d9f943a53384ce528e1a970",
-      "expected_hash": "a44dcd7f5e3a7a2388077cab34bf848d2b26235c4d9f943a53384ce528e1a970",
-      "dir_hash": "a44dcd7f5e3a7a2388077cab34bf848d2b26235c4d9f943a53384ce528e1a970",
-      "integrity": "a44dcd7f5e3a7a2388077cab34bf848d2b26235c4d9f943a53384ce528e1a970"
+      "integrity_hash": "0e6812927cfdcd756b709b33ca54cfed86d38589fd39e559ac9a801b7805f21d",
+      "pinned_sha256": "0e6812927cfdcd756b709b33ca54cfed86d38589fd39e559ac9a801b7805f21d",
+      "expected_hash": "0e6812927cfdcd756b709b33ca54cfed86d38589fd39e559ac9a801b7805f21d",
+      "dir_hash": "0e6812927cfdcd756b709b33ca54cfed86d38589fd39e559ac9a801b7805f21d",
+      "integrity": "0e6812927cfdcd756b709b33ca54cfed86d38589fd39e559ac9a801b7805f21d"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {
       "uuid": "liquid-glass@thinkingcoding1231.gmail.com",
@@ -305,7 +305,7 @@
         "50",
         "51"
       ],
-      "sha256": "5decd09753960f535c1c6f9bab10ea21a599be1d4d4676f4297dc429e3615ed1",
+      "sha256": "a80a46eff6d6843024e03e75786878646b40ce5edc41a327c2996513d2195a39",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
