@@ -3127,7 +3127,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
   color: #ffffff !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
   text-align: center !important;
-  margin-top: 1px !important;
+  margin: 0px !important;
   padding: 0 1px !important;
   background-color: transparent !important;
   background: transparent !important;

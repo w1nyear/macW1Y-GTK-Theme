@@ -5114,3 +5114,23 @@ Task #938:
   * [~/.local/bin/mac_i18n.py](file:///home/vitaliy/.local/bin/mac_i18n.py)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #943: Alt+Tab (AppSwitcher): точне вертикальне центрування кнопок та назви активної програми у висоті елемента без зміни загального розміру меню
+  - Оптимізація вертикального вирівнювання іконок та тексту:
+    * У SwitcherList.prototype.vfunc_allocate (extensions/eval-helper@mactheme/extension.js) скориговано розміщення контейнера іконок _scrollView: координату Y зміщено на 12px (відступ зверху збільшено з 10px до 15px), що усунуло візуальне зміщення кнопок угору та збалансувало висоту над і під іконками.
+    * Для мітки назви поточної програми (_activeAppLabel) зафіксовано вертикальне центрування в нижній зоні елемента (lBox.y1 = 75px, lBox.y2 = 88px, чистий відступ 8px до іконки та 9px до нижньої межі контейнера замість налипання на нижній край).
+    * У стилях CSS .alt-tab-app-label усунено зміщення margin-top, забезпечено нульові поля (margin: 0px !important) для піксельної точності Clutter-розподілу.
+    * Загальну висоту Alt+Tab меню збережено незмінною (91-92px).
+  - Синхронізація та цілісність:
+    * Оновлено теми macW1Y-Dark, macW1Y-Light, macW1Y-Dark-solid, macW1Y-Light-solid та gnome-shell-theme.
+    * Синхронізовано ~/.local/share/gnome-shell/extensions/eval-helper@mactheme/extension.js та системні теми ~/.themes/.
+    * Оновлено контрольний хеш eval-helper@mactheme у config/extensions.lock.json (нова сума f0475633...).
+  - Результати перевірки:
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 bin/mac-audit-sync check: 100% PASS.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [macW1Y-Dark/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark/gnome-shell/gnome-shell.css)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

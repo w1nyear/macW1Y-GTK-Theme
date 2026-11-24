@@ -1463,18 +1463,13 @@ export default class EvalHelper extends Extension {
                         const H = box.y2 - box.y1;
 
                         const tileH = cfg.iconSize;
-                        const labelH = 13;
-                        const labelGap = 1;
-                        const vPad = cfg.padding;
-
-                        const contentH = tileH + labelGap + labelH;
-                        const topOffset = Math.max(vPad, Math.floor((H - contentH) / 2));
+                        const scrollY1 = 12;
 
                         const scrollBox = new Clutter.ActorBox();
                         scrollBox.x1 = 0;
                         scrollBox.x2 = W;
-                        scrollBox.y1 = topOffset;
-                        scrollBox.y2 = topOffset + tileH;
+                        scrollBox.y1 = scrollY1;
+                        scrollBox.y2 = scrollY1 + tileH;
                         this._scrollView.allocate(scrollBox);
 
                         if (this._leftArrow) this._leftArrow.opacity = 0;
@@ -1503,8 +1498,8 @@ export default class EvalHelper extends Extension {
                                 }
                                 lBox.x1 = Math.max(6, lx1);
                                 lBox.x2 = Math.min(W - 6, lx2);
-                                lBox.y1 = topOffset + tileH + labelGap;
-                                lBox.y2 = Math.min(H - 2, lBox.y1 + Math.max(natH, labelH));
+                                lBox.y1 = 75;
+                                lBox.y2 = Math.min(H - 3, 75 + Math.max(natH, 13));
                                 this._activeAppLabel.allocate(lBox);
                             }
                         }
@@ -1525,7 +1520,7 @@ export default class EvalHelper extends Extension {
                             this._activeAppLabel = new St.Label({
                                 style_class: 'alt-tab-app-label',
                             });
-                            this._activeAppLabel.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", "Helvetica Neue", Cantarell, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 2px !important;';
+                            this._activeAppLabel.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", "Helvetica Neue", Cantarell, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin: 0px !important; padding: 0px !important;';
                             if (this._activeAppLabel.clutter_text) {
                                 this._activeAppLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this._activeAppLabel.clutter_text.line_wrap = false;
