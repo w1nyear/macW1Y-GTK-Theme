@@ -5325,3 +5325,43 @@ Task #938:
   * [bin/mac-liquid-benchmark](file:///home/vitaliy/MACTHEMEFILES/bin/mac-liquid-benchmark)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #952: Усунення графічних артефактів, смуг сканування та розривів у шейдері Liquid Glass передперегляду Параметрів
+  - Причина збою та аналіз:
+    * У ході попередньої агресивної оптимізації макросів PROCESS_CIRCLE_PIXEL та PROCESS_RECT_PIXEL виникло спотворення поля відстаней (формула помилково додавала qy до qx) та розрив циклу через некоректний continue у do {...} while(0).
+    * Крім того, неініціалізований буфер s_scratch_pixels накопичував залишкові пікселі альфа-каналу від елементів різного розміру, спричиняючи смугасті розриви та штрих-кодні артефакти.
+  - Виправлення та оптимізація:
+    * Повністю усунено зламані макроси та наближені розбиття сканлайнів.
+    * Реалізовано чистий, геометрично точний розрахунок меж рядків (lx_min..lx_max) для кола, прямокутника та капсули з повним обнуленням зовнішніх пікселів (memset).
+    * Оптимізовано DepthLUT з попереднім розрахунком маски непрозорості alpha_mask (((uint32_t)out_a) << 24), що усунуло попіксельне зміщення та клампінг альфи.
+    * Збережено швидкий шлях для плоского центру (depth >= 1.0) з миттєвим пошуком у таблиці кольорів і відблисків без перерахунку заломлення.
+    * Повна еквівалентність та піксельна ідентичність еталону: порівняння з еталонним рендером за допомогою NumPy показало абсолютну точність (Max diff: 0, Mean diff: 0.0) при надвисокій швидкості виконання (~9.3 мс на 50 елементів, понад 107 FPS ємності).
+  - Збірка, розгортання та перевірка:
+    * Синхронізовано libmac_settings.c у control-center, gnome-control-center-overlay та macW1Y.
+    * Перекомпільовано та розгорнуто libmac_settings.so в усі цільові директорії (~/.local/lib, /usr/lib/x86_64-linux-gnu, control-center, macW1Y).
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #952: Усунення графічних артефактів, смуг сканування та розривів у шейдері Liquid Glass передперегляду Параметрів
+  - Причина збою та аналіз:
+    * У ході попередньої агресивної оптимізації макросів PROCESS_CIRCLE_PIXEL та PROCESS_RECT_PIXEL виникло спотворення поля відстаней (формула помилково додавала qy до qx) та розрив циклу через некоректний continue у do {...} while(0).
+    * Крім того, неініціалізований буфер s_scratch_pixels накопичував залишкові пікселі альфа-каналу від елементів різного розміру, спричиняючи смугасті розриви та штрих-кодні артефакти.
+  - Виправлення та оптимізація:
+    * Повністю усунено зламані макроси та наближені розбиття сканлайнів.
+    * Реалізовано чистий, геометрично точний розрахунок меж рядків (lx_min..lx_max) для кола, прямокутника та капсули з повним обнуленням зовнішніх пікселів (memset).
+    * Оптимізовано DepthLUT з попереднім розрахунком маски непрозорості alpha_mask (((uint32_t)out_a) << 24), що усунуло попіксельне зміщення та клампінг альфи.
+    * Збережено швидкий шлях для плоского центру (depth >= 1.0) з миттєвим пошуком у таблиці кольорів і відблисків без перерахунку заломлення.
+    * Повна еквівалентність та піксельна ідентичність еталону: порівняння з еталонним рендером за допомогою NumPy показало абсолютну точність (Max diff: 0, Mean diff: 0.0) при надвисокій швидкості виконання (~9.3 мс на 50 елементів, понад 107 FPS ємності).
+  - Збірка, розгортання та перевірка:
+    * Синхронізовано libmac_settings.c у control-center, gnome-control-center-overlay та macW1Y.
+    * Перекомпільовано та розгорнуто libmac_settings.so в усі цільові директорії (~/.local/lib, /usr/lib/x86_64-linux-gnu, control-center, macW1Y).
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
