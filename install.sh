@@ -127,17 +127,32 @@ elif [ -z "$MAC_INSTALLER_CLI" ]; then
             if [ "$MOCK_MODE" != "true" ]; then
                 python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || exit 1
             fi
-            # Pre-activate macW1Y environment and disable legacy extensions
-            for ext in "ubuntu-dock@ubuntu.com" "tiling-assistant@ubuntu.com" "ding@rastersoft.com" "dash-to-dock@micxgx.gmail.com" "snapd-prompting@canonical.com" "web-search-provider@ubuntu.com"; do
+            _prep_bar() {
+                local cur=$1 tot=$2 msg=$3
+                local pct=$(( cur * 100 / tot ))
+                local fill=$(( cur * 24 / tot ))
+                local empty=$(( 24 - fill ))
+                printf "\r  [%-24s] %3d%%  %s" "$(printf '%*s' "$fill" '' | tr ' ' '#')" "$pct" "$msg"
+            }
+            _dis_exts=("ubuntu-dock@ubuntu.com" "tiling-assistant@ubuntu.com" "ding@rastersoft.com" "dash-to-dock@micxgx.gmail.com" "snapd-prompting@canonical.com" "web-search-provider@ubuntu.com")
+            _ena_exts=("user-theme@gnome-shell-extensions.gcampax.github.com" "eval-helper@mactheme" "blur-my-shell@aunetx" "dash2dock-motion@unmade.space" "appmenu@ChathurangaBW.github.io" "kiwi@kemma" "desktop-widgets@r3nhick" "macw1y-touchpad-gestures@mactheme" "compiz-alike-magic-lamp-effect@hermes83.github.com" "cupertino-dock-lite@rinzler69-wastaken.github.com" "custom-command-toggle@storageb.github.com" "liquid-glass@thinkingcoding1231.gmail.com" "quick-settings-scroll@diskmth.fr" "Rounded_Corners@lennart-k" "volume-percentage-quick-settings@imdarktom" "wack-lockscreen-clock@rinzler69-wastaken.github.com" "wifi-hotspot-quick-settings@aryan10.github.io")
+            _prep_tot=$(( ${#_dis_exts[@]} + ${#_ena_exts[@]} + 4 ))
+            _prep_cur=0
+            for ext in "${_dis_exts[@]}"; do
                 gnome-extensions disable "$ext" 2>/dev/null || true
+                _prep_cur=$(( _prep_cur + 1 ))
+                _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
             done
-            for ext in "user-theme@gnome-shell-extensions.gcampax.github.com" "eval-helper@mactheme" "blur-my-shell@aunetx" "dash2dock-motion@unmade.space" "appmenu@ChathurangaBW.github.io" "kiwi@kemma" "desktop-widgets@r3nhick" "macw1y-touchpad-gestures@mactheme" "compiz-alike-magic-lamp-effect@hermes83.github.com" "cupertino-dock-lite@rinzler69-wastaken.github.com" "custom-command-toggle@storageb.github.com" "liquid-glass@thinkingcoding1231.gmail.com" "quick-settings-scroll@diskmth.fr" "Rounded_Corners@lennart-k" "volume-percentage-quick-settings@imdarktom" "wack-lockscreen-clock@rinzler69-wastaken.github.com" "wifi-hotspot-quick-settings@aryan10.github.io"; do
+            for ext in "${_ena_exts[@]}"; do
                 gnome-extensions enable "$ext" 2>/dev/null || true
+                _prep_cur=$(( _prep_cur + 1 ))
+                _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
             done
-            gsettings set org.gnome.shell.extensions.user-theme name "macW1Y-Dark" 2>/dev/null || true
-            gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark" 2>/dev/null || true
-            gsettings set org.gnome.desktop.interface icon-theme "macW1Y-dark" 2>/dev/null || true
-            gsettings set org.gnome.desktop.interface font-name "default 10" 2>/dev/null || true
+            gsettings set org.gnome.shell.extensions.user-theme name "macW1Y-Dark" 2>/dev/null || true; _prep_cur=$(( _prep_cur + 1 )); _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
+            gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark" 2>/dev/null || true; _prep_cur=$(( _prep_cur + 1 )); _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
+            gsettings set org.gnome.desktop.interface icon-theme "macW1Y-dark" 2>/dev/null || true; _prep_cur=$(( _prep_cur + 1 )); _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
+            gsettings set org.gnome.desktop.interface font-name "default 10" 2>/dev/null || true; _prep_cur=$(( _prep_cur + 1 )); _prep_bar "$_prep_cur" "$_prep_tot" "Готово! Запуск інсталятора..."
+            printf "\n"
             export MAC_INSTALLER_SCRIPT="$SCRIPT_DIR/install.sh"
             if [ "$MOCK_MODE" = "true" ]; then
                 export MAC_MOCK_INSTALLER="1"
