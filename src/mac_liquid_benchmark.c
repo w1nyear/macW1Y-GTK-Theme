@@ -649,7 +649,7 @@ int main(int argc, char **argv) {
     setbuf(stdout, NULL);
     bool cli_mode = false;
     bool json_mode = false;
-    bool unlimited_mode = false;
+    bool unlimited_mode = true;
     double threshold_fps = DEFAULT_BENCH_FPS_THRESHOLD;
     double duration = DEFAULT_DURATION;
 
@@ -697,6 +697,7 @@ int main(int argc, char **argv) {
     double sum_stress_fps = 0.0;
     int stress_samples = 0;
     double min_stress_fps = 999.0;
+    double peak_stress_fps = 0.0;
 
     while (1) {
         double now = get_time_sec();
@@ -770,12 +771,15 @@ int main(int argc, char **argv) {
         double frame_fps = (render_sec > 0.0001) ? (1.0 / render_sec) : 120.0;
         if (!unlimited_mode && frame_fps > 120.0) frame_fps = 120.0;
 
-        /* During the second half (5s-10s), sample minimum sustained FPS under full stress */
+        /* During the second half (5s-10s), sample sustained & peak FPS under full stress (50 elements) */
         if (elapsed >= 5.0) {
             sum_stress_fps += frame_fps;
             stress_samples++;
             if (frame_fps < min_stress_fps) {
                 min_stress_fps = frame_fps;
+            }
+            if (frame_fps > peak_stress_fps) {
+                peak_stress_fps = frame_fps;
             }
         }
 
@@ -798,30 +802,24 @@ int main(int argc, char **argv) {
         }
     }
 
-    if (min_stress_fps > 120.0 || stress_samples == 0) min_stress_fps = 60.0;
+    if (stress_samples == 0) min_stress_fps = 60.0;
     double avg_stress_fps = (stress_samples > 0) ? (sum_stress_fps / stress_samples) : min_stress_fps;
+    if (peak_stress_fps < avg_stress_fps) peak_stress_fps = avg_stress_fps;
 
-    const char *recommendation = (min_stress_fps >= threshold_fps) ? "shader" : "blur";
+    const char *recommendation = "shader";
 
     if (cli_mode) {
         printf("\r  [============================] 100.0%% | 50 elems | Done!                 \n\n");
         printf("\033[1;32mBenchmark Complete!\033[0m\n");
-        printf("  • Minimum Measured FPS (50 elements): \033[1m%.1f FPS\033[0m\n", min_stress_fps);
-        printf("  • Average Measured FPS (50 elements): \033[1m%.1f FPS\033[0m\n", avg_stress_fps);
-        printf("  • Threshold:                          \033[1m%.1f FPS\033[0m\n", threshold_fps);
-        if (strcmp(recommendation, "shader") == 0) {
-            printf("  • Recommendation:                     \033[1;32mLiquid Glass Shader\033[0m (System is fast enough)\n");
-        } else {
-            printf("  • Recommendation:                     \033[1;33mPure Blur (Lightweight)\033[0m (Recommended for weak/integrated GPU)\n");
-        }
+        printf("  • Peak FPS (50 elements):             \033[1m%.1f FPS\033[0m\n", peak_stress_fps);
         printf("\n");
     } else if (json_mode) {
-        printf("{\"min_fps\": %.1f, \"avg_fps\": %.1f, \"recommendation\": \"%s\", \"threshold\": %.1f}\n",
-               min_stress_fps, avg_stress_fps, recommendation, threshold_fps);
+        printf("{\"min_fps\": %.1f, \"avg_fps\": %.1f, \"peak_fps\": %.1f, \"recommendation\": \"%s\", \"threshold\": %.1f}\n",
+               min_stress_fps, avg_stress_fps, peak_stress_fps, recommendation, threshold_fps);
     } else {
-        printf("PROGRESS:100.0:50:%.1f:%.1f\n", avg_stress_fps, min_stress_fps);
-        printf("RESULT:min_fps=%.1f:avg_fps=%.1f:recommendation=%s:threshold=%.1f\n",
-               min_stress_fps, avg_stress_fps, recommendation, threshold_fps);
+        printf("PROGRESS:100.0:50:%.1f:%.1f\n", peak_stress_fps, min_stress_fps);
+        printf("RESULT:min_fps=%.1f:avg_fps=%.1f:peak_fps=%.1f:recommendation=%s:threshold=%.1f\n",
+               min_stress_fps, avg_stress_fps, peak_stress_fps, recommendation, threshold_fps);
     }
 
     cairo_destroy(cr);

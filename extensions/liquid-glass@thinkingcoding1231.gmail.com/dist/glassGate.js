@@ -25,12 +25,60 @@
 
 
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 export const GLASS_REFRESH_ACTIVE_INTERVAL_US = 8333;
 export const GLASS_REFRESH_BACKGROUND_INTERVAL_US = 16666;
 export const GLASS_REFRESH_60FPS_INTERVAL_US = 16666;
 export const GLASS_REFRESH_HEARTBEAT_US = 1500000;
+
+let _systemGlassFps = 60;
+let _glassFpsIntervalUs = 16666;
+let _glassFpsMonitor = null;
+globalThis._macGlassIntervalUs = _glassFpsIntervalUs;
+
+function _loadGlassFps() {
+    try {
+        const path = GLib.build_filenamev([GLib.get_home_dir(), '.config', 'macW1Y', 'glass-fps']);
+        const file = Gio.File.new_for_path(path);
+        if (file.query_exists(null)) {
+            const [ok, bytes] = file.load_contents(null);
+            if (ok && bytes) {
+                const txt = new TextDecoder().decode(bytes).trim();
+                const parsed = parseInt(txt, 10);
+                if (Number.isFinite(parsed) && parsed >= 10 && parsed <= 240) {
+                    _systemGlassFps = parsed;
+                    _glassFpsIntervalUs = Math.max(4166, Math.round(1000000 / _systemGlassFps));
+                    globalThis._macGlassIntervalUs = _glassFpsIntervalUs;
+                }
+            }
+        }
+    } catch (_) {}
+}
+
+function _ensureGlassFpsMonitor() {
+    if (_glassFpsMonitor) return;
+    _loadGlassFps();
+    try {
+        const path = GLib.build_filenamev([GLib.get_home_dir(), '.config', 'macW1Y', 'glass-fps']);
+        const file = Gio.File.new_for_path(path);
+        _glassFpsMonitor = file.monitor_file(Gio.FileMonitorFlags.NONE, null);
+        _glassFpsMonitor.connect('changed', (_m, _f, _o, eventType) => {
+            if (eventType === Gio.FileMonitorEvent.CHANGED ||
+                eventType === Gio.FileMonitorEvent.CREATED ||
+                eventType === Gio.FileMonitorEvent.CHANGES_DONE_HINT) {
+                _loadGlassFps();
+            }
+        });
+    } catch (_) {}
+}
+
+_ensureGlassFpsMonitor();
+
+export function getGlassRefreshIntervalUs() {
+    return _glassFpsIntervalUs;
+}
 
 let _backdropDamageVersion = 0;
 let _backdropSceneVersion = 1;
@@ -457,7 +505,8 @@ export function glassRefreshDue(glassActor, extraHash) {
         const sinceFull = nowUs - st.lastFull;
 
         if (st.dirty || Main.overview?.visible) {
-            const dueInterval = ownChanged ? GLASS_REFRESH_ACTIVE_INTERVAL_US : GLASS_REFRESH_60FPS_INTERVAL_US;
+            const targetUs = _glassFpsIntervalUs;
+            const dueInterval = ownChanged ? Math.min(GLASS_REFRESH_ACTIVE_INTERVAL_US, targetUs) : targetUs;
             return sinceFull >= dueInterval;
         }
 

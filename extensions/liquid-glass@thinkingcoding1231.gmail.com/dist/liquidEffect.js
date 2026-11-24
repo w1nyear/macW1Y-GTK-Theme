@@ -1826,7 +1826,7 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
 
 
 
-        const minBlurIntervalUs = isActivelyTransforming ? 8333 : 33333;
+        const minBlurIntervalUs = globalThis._macGlassIntervalUs ?? (isActivelyTransforming ? 8333 : 16666);
 
         const canReuseBlur = this.PASS_COUNT > 0 &&
             this._blurResultTex !== null &&

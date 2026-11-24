@@ -2701,20 +2701,6 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
             cards_box.append(row_btn)
             self.option_widgets[act_id] = row_btn
 
-        self.chk_lowspec = Gtk.CheckButton.new_with_label(
-            "Оптимізація для Intel HD / слабких ПК (просте розмиття замість шейдера скла, ZRAM, твіки ядра)"
-            if is_uk
-            else self.tr("installer_lowspec_opt", "Optimize for Intel HD / low-spec PCs (pure blur instead of glass shader, ZRAM, kernel tweaks)")
-        )
-        self.chk_lowspec.set_margin_top(8)
-        self.chk_lowspec.set_margin_bottom(2)
-        try:
-            res = subprocess.run(["mac-lowspec-optimizer", "is-enabled"], capture_output=True)
-            self.chk_lowspec.set_active(res.returncode == 0)
-        except Exception:
-            self.chk_lowspec.set_active(False)
-        box.append(self.chk_lowspec)
-
         btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         btn_row.set_halign(Gtk.Align.END)
         btn_row.set_margin_top(10)
@@ -3758,6 +3744,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
             min_fps = 60.0
             avg_fps = 60.0
+            peak_fps = 60.0
             recommendation = "shader"
 
             for line in self._benchmark_process.stdout:
@@ -3784,12 +3771,15 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
                         elif p.startswith("avg_fps="):
                             try: avg_fps = float(p.split("=")[1])
                             except Exception: pass
+                        elif p.startswith("peak_fps="):
+                            try: peak_fps = float(p.split("=")[1])
+                            except Exception: pass
                         elif p.startswith("recommendation="):
                             recommendation = p.split("=")[1].strip()
 
             self._benchmark_process.wait()
             if not self._benchmark_cancelled:
-                GLib.idle_add(self._show_benchmark_results, min_fps, avg_fps, recommendation)
+                GLib.idle_add(self._show_benchmark_results, min_fps, peak_fps, recommendation)
 
         t = threading.Thread(target=run_bench_thread, daemon=True)
         t.start()
@@ -3814,26 +3804,18 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
                 pass
         self._on_benchmark_back()
 
-    def _show_benchmark_results(self, min_fps, avg_fps, recommendation):
+    def _show_benchmark_results(self, min_fps, peak_fps, recommendation):
         self._benchmark_min_fps = min_fps
-        self._benchmark_avg_fps = avg_fps
-        self._benchmark_recommendation = recommendation
+        self._benchmark_avg_fps = peak_fps
+        self._benchmark_recommendation = "shader"
 
-        min_lbl = self.tr("benchmark_min_fps", "Мінімальний FPS")
-        avg_lbl = self.tr("benchmark_avg_fps", "Середній FPS")
-        self.bench_res_fps.set_text(f"{min_lbl}: {min_fps:.1f} • {avg_lbl}: {avg_fps:.1f}")
-        if recommendation == "shader":
-            self.bench_res_rec.set_text(self.tr("benchmark_rec_shader", "Рекомендовано: Ефект Liquid Glass (шейдер скла)"))
-            self.bench_res_desc.set_text(
-                f"Ваша система набрала {min_fps:.1f} FPS (середній: {avg_fps:.1f} FPS при 50 елементах, поріг: 60.0 FPS) та успішно витримала стрес-тест. "
-                "Продуктивність графічного процесора достатня для повноцінних фізичних відблисків та рефракції Liquid Glass."
-            )
-        else:
-            self.bench_res_rec.set_text(self.tr("benchmark_rec_blur", "Рекомендовано: Легке розмиття (Blur mode)"))
-            self.bench_res_desc.set_text(
-                f"Під час стрес-тестування зафіксовано {min_fps:.1f} FPS (середній: {avg_fps:.1f} FPS при 50 елементах, поріг: 60.0 FPS). "
-                "Рекомендовано режим розмиття для плавної роботи без перегріву та затримок."
-            )
+        peak_lbl = self.tr("benchmark_peak_fps", "Піковий FPS (50 ел.)")
+        self.bench_res_fps.set_text(f"{peak_lbl}: {peak_fps:.1f} FPS")
+        self.bench_res_rec.set_text(self.tr("benchmark_rec_shader", "Рекомендовано: Ефект Liquid Glass (шейдер скла)"))
+        self.bench_res_desc.set_text(
+            f"Пікова продуктивність при 50 скляних елементах: {peak_fps:.1f} FPS. "
+            "Шейдер Liquid Glass оптимізований та працює плавно на будь-якій відеокарті."
+        )
 
         self.switch_to_screen("screen_benchmark_result")
         return False

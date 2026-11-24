@@ -5464,3 +5464,27 @@ Task #938:
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #957: Системний перемикач частоти оновлення скла (10–240 FPS, за замовчуванням 60 FPS), видалення старого скла та оновлення бенчмарку інсталятора
+  - Параметри (control-center/libmac_settings.c, cc-mac-styling-panel.ui):
+    * Видалено перемикач «Оригінальне скло» та старий режим — всюди використовується виключно оптимізований Liquid Glass.
+    * Унизу розділу Liquid Glass додано випадаючий список «Частота оновлення скла» (10, 30, 60, 90, 120, 144, 165, 240 FPS; за замовчуванням 60 FPS).
+    * Обране значення зберігається в JSON (liquid_fps) та синхронізується в ~/.config/macW1Y/glass-fps.
+  - Системне застосування ліміту FPS у GNOME Shell (glassGate.js, liquidEffect.js):
+    * Додано моніторинг ~/.config/macW1Y/glass-fps через Gio.FileMonitor для миттєвого застосування обраної частоти оновлення до всіх елементів скла (док, віджети, контекстні меню, сповіщення, швидкі налаштування, OSD) із дефолтом 60 FPS.
+  - Бенчмарк та інсталятор (src/mac_liquid_benchmark.c, bin/mac-installer-gui):
+    * Знято обмеження 120 FPS у mac-liquid-benchmark — тепер тест завжди працює без ліміту та показує піковий FPS при 50 елементах.
+    * У меню вибору інсталяції mac-installer-gui прибрано галочку «Оптимізація для Intel HD / слабких ПК (просте розмиття замість шейдера скла)».
+  - Збірка, розгортання та перевірка:
+    * Синхронізовано та перекомпільовано libmac_settings.so і mac-liquid-benchmark.
+    * Оновлено хеш у config/extensions.lock.json.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [control-center/cc-mac-styling-panel.ui](file:///home/vitaliy/MACTHEMEFILES/control-center/cc-mac-styling-panel.ui)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js)
+  * [src/mac_liquid_benchmark.c](file:///home/vitaliy/MACTHEMEFILES/src/mac_liquid_benchmark.c)
+  * [bin/mac-installer-gui](file:///home/vitaliy/MACTHEMEFILES/bin/mac-installer-gui)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

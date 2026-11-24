@@ -31,6 +31,7 @@ typedef struct {
     int liquid_rim;
     int liquid_specular;
     int liquid_shadow;
+    int liquid_fps;
 
     int spotlight_blur;
     int spotlight_tint;
@@ -143,6 +144,7 @@ static MacStylingData state = {
     .liquid_rim = 40,
     .liquid_specular = 0,
     .liquid_shadow = 49,
+    .liquid_fps = 60,
 
     .dock_tint = 0,
     .dock_blur = 1,
@@ -256,7 +258,7 @@ static void load_config(void) {
                 state.liquid_refraction = 80;
 
             if (json_object_has_member(obj, "liquid_use_optimized"))
-                g_liquid_use_optimized = json_object_get_boolean_member(obj, "liquid_use_optimized");
+                g_liquid_use_optimized = TRUE;
 
             if (json_object_has_member(obj, "liquid_blur"))
                 state.liquid_blur = (int)json_object_get_int_member(obj, "liquid_blur");
@@ -291,6 +293,11 @@ static void load_config(void) {
                 state.liquid_shadow = (int)json_object_get_int_member(obj, "liquid_shadow");
             else
                 state.liquid_shadow = 49;
+
+            if (json_object_has_member(obj, "liquid_fps"))
+                state.liquid_fps = (int)CLAMP((int)json_object_get_int_member(obj, "liquid_fps"), 10, 240);
+            else
+                state.liquid_fps = 60;
 
 
             if (json_object_has_member(obj, "spotlight_blur")) {
@@ -561,6 +568,7 @@ static void save_styling_json(void) {
         "  \"liquid_rim\": %d,\n"
         "  \"liquid_specular\": %d,\n"
         "  \"liquid_shadow\": %d,\n"
+        "  \"liquid_fps\": %d,\n"
         "  \"dock_tint\": %d,\n"
         "  \"dock_blur\": %d,\n"
         "  \"dock_shadow\": %d,\n"
@@ -618,6 +626,7 @@ static void save_styling_json(void) {
         state.liquid_rim,
         state.liquid_specular,
         state.liquid_shadow,
+        state.liquid_fps,
         state.dock_tint,
         state.dock_blur,
         state.dock_shadow,
@@ -3785,15 +3794,6 @@ static GtkWidget *create_liquid_benchmark_panel(void) {
     gtk_label_set_xalign(GTK_LABEL(title_lbl), 0.0);
     gtk_box_append(GTK_BOX(header_box), title_lbl);
 
-    GtkWidget *btn_opt = gtk_check_button_new_with_label("Liquid Glass");
-    GtkWidget *btn_orig = gtk_check_button_new_with_label(mac_tr("bench_original_glass", "Оригінальне скло"));
-    gtk_check_button_set_group(GTK_CHECK_BUTTON(btn_orig), GTK_CHECK_BUTTON(btn_opt));
-    gtk_check_button_set_active(GTK_CHECK_BUTTON(btn_opt), g_liquid_use_optimized);
-    gtk_check_button_set_active(GTK_CHECK_BUTTON(btn_orig), !g_liquid_use_optimized);
-    g_signal_connect(btn_opt, "toggled", G_CALLBACK(on_liquid_mode_toggled), NULL);
-
-    gtk_box_append(GTK_BOX(header_box), btn_opt);
-    gtk_box_append(GTK_BOX(header_box), btn_orig);
     gtk_box_append(GTK_BOX(card), header_box);
 
     GtkWidget *sep = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
@@ -6109,6 +6109,47 @@ void init_widgets_preview(void *widget, gpointer data) {
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), widgets_preview_draw_func, NULL, NULL);
 }
 
+
+static const int k_glass_fps_choices[] = { 10, 30, 60, 90, 120, 144, 165, 240 };
+#define NUM_GLASS_FPS_CHOICES ((int)(sizeof(k_glass_fps_choices) / sizeof(k_glass_fps_choices[0])))
+
+static void sync_glass_fps_config(int fps) {
+    const char *home = g_get_home_dir();
+    char *dir = g_build_filename(home, ".config", "macW1Y", NULL);
+    g_mkdir_with_parents(dir, 0755);
+    char *path = g_build_filename(dir, "glass-fps", NULL);
+    char buf[32];
+    g_snprintf(buf, sizeof(buf), "%d\n", fps);
+    g_file_set_contents(path, buf, -1, NULL);
+    g_free(path);
+    g_free(dir);
+}
+
+void init_liquid_fps(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    guint sel = 2; /* Default 60 FPS */
+    for (int i = 0; i < NUM_GLASS_FPS_CHOICES; i++) {
+        if (k_glass_fps_choices[i] == state.liquid_fps) {
+            sel = (guint)i;
+            break;
+        }
+    }
+    adw_combo_row_set_selected(ADW_COMBO_ROW(widget), sel);
+    sync_glass_fps_config(state.liquid_fps);
+    in_init = 0;
+}
+
+void on_liquid_fps_limit_changed(void *widget, void *pspec, gpointer data) {
+    (void)pspec; (void)data;
+    if (in_init) return;
+    guint sel = adw_combo_row_get_selected(ADW_COMBO_ROW(widget));
+    int idx = CLAMP((int)sel, 0, NUM_GLASS_FPS_CHOICES - 1);
+    state.liquid_fps = k_glass_fps_choices[idx];
+    sync_glass_fps_config(state.liquid_fps);
+    schedule_json_save();
+}
 
 void init_liquid_shape(void *widget, gpointer data) {
     (void)data;
