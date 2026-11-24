@@ -23,7 +23,7 @@ fi
 export G_RESOURCE_OVERLAYS="/org/gnome/Settings/gtk/cc-window.ui=$LOC_DIR/cc-window.ui:/org/gnome/control-center/system/cc-system-panel.ui=$LOC_DIR/cc-system-panel.ui:/org/gnome/control-center/power/cc-power-panel.ui=$LOC_DIR/cc-power-panel.ui:/org/gnome/control-center/mouse/cc-mouse-panel.ui=$LOC_DIR/cc-mouse-panel.ui:/org/gnome/control-center/background/cc-background-panel.ui=$LOC_DIR/cc-background-panel.ui:/org/gnome/control-center/background/preview.css=$OVERLAY_DIR/preview.css"
 
 find_mac_lib() {
-    for d in /usr/local/lib "$HOME/.local/lib" /usr/lib/*-linux-gnu /usr/lib64 /usr/lib; do
+    for d in "$HOME/.local/lib" /usr/local/lib /usr/lib/*-linux-gnu /usr/lib64 /usr/lib; do
         if [ -f "$d/$1" ]; then
             echo "$d/$1"
             return 0

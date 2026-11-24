@@ -5234,3 +5234,26 @@ Task #938:
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
 
+
+* 2026-11-24 — Task #948: Оновлення та оптимізація Liquid Glass: усунення штучного тінту з тіла скла, перенесення затемнення під рамки елементів (м'яка тінь та крайове AO) і збереження ультрависокого FPS
+  - Усунення штучного сірого тінту з поверхні Liquid Glass:
+    * Виправлено розрахунок Ambient Occlusion у build_depth_lut: замінено global depth ao = 1.0 - (1.0 - depth) * 0.15 (який затемнював 73% площі скляного елемента) на крайове затемнення aoDist = depth * bevel_width; aoMask = 1.0 - glsl_smoothstep(0.0, 8.0, aoDist); ao = 1.0 - aoMask * 0.30, що обмежує затемнення виключно зовнішнім краєм рамки (до 8px), залишаючи внутрішнє тіло скла на 100% прозорим і чистим.
+    * Оновлено базовий блиск const_sheen: замінено (lz_dir * lz_dir) * 0.12 * 255.0 (3.86) на pow(lz_dir, 1.65) * 0.30 * 255.0 (13.76), відновивши природну яскравість поверхні без затьмарення.
+    * Виправлено фасеткове освітлення країв (bevel directional lighting): dotNL = -n2d_y * sinA * ly_dir + cosA * lz_dir; lightMask = pow(fabs(dotNL), 2.7); sheenLight = pow(fmax(dotNL, 0.0), 1.65) * 0.30 * 255.0.
+  - Затемнення під рамками скляних елементів (Frame Drop Shadow):
+    * Реалізовано плавне 4-прохідне затінення Cairo під контуром елемента (gx - expand, gy + 3.5 - expand * 0.5, gw + expand * 2.0, gh + expand * 2.0, gr + expand) з адаптивним перемиканням на 2 проходи при кількості елементів > 10 для збереження високої частоти кадрів.
+    * Утиліта mac-liquid-benchmark тепер використовує tint_strength = 0.0 за замовчуванням, демонструючи кришталево чисте скло на всіх тестових прогонах.
+  - Продуктивність та стабільність FPS:
+    * Проведено стрес-тест mac-liquid-benchmark: 120 FPS на 1, 5 та 15 скляних елементах, ~100 FPS на 30 елементах та >50 FPS на 50 елементах. Час відтворення 1 елемента скла складає ~516 мкс (теоретична пропускна здатність понад 1900 FPS).
+    * Оновлено control-center/libmac_settings.c, gnome-control-center-overlay/libmac_settings.c, src/mac_liquid_benchmark.c та bin/gnome-control-center.
+    * Перекомпільовано libmac_settings.so та mac-liquid-benchmark через dependencies/build-native.sh.
+    * Синхронізовано бінарні файли до системних шляхів (/usr/lib/x86_64-linux-gnu/, ~/.local/lib/, ~/.local/bin/).
+  - Верифікація та цілісність:
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [src/mac_liquid_benchmark.c](file:///home/vitaliy/MACTHEMEFILES/src/mac_liquid_benchmark.c)
+  * [bin/gnome-control-center](file:///home/vitaliy/MACTHEMEFILES/bin/gnome-control-center)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

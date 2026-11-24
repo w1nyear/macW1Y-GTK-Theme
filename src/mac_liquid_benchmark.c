@@ -113,7 +113,10 @@ static void build_depth_lut(double ior, double disp_scale, double rim_intensity,
         double edgeBand = 1.0 - depth;
         double rimEdge = rimFresnel * (rim_intensity * 1.5) * edgeBand * 255.0;
 
-        double ao = 1.0 - (1.0 - depth) * 0.15;
+        /* Ambient occlusion darkens ONLY within 8px of the outer frame edge, never the interior */
+        double aoDist = depth * bevel_width;
+        double aoMask = 1.0 - glsl_smoothstep(0.0, 8.0, aoDist);
+        double ao = 1.0 - aoMask * 0.30;
 
         s_depth_lut[i].disp_factor = disp_factor;
         s_depth_lut[i].sinA = sinA;
@@ -252,12 +255,12 @@ static void draw_benchmark_glass_element(cairo_t *cr, cairo_surface_t *bg, int w
     if (!bg) return;
 
     double shadow_val = 0.45;
-    if (shadow_val > 0.02 && active_elem_count <= 25) {
-        int passes = (active_elem_count > 5) ? 1 : 2;
+    if (shadow_val > 0.02) {
+        int passes = (active_elem_count > 10) ? 2 : 4;
         for (int i = passes; i >= 1; i--) {
-            double expand = (passes == 1) ? 6.0 : (i * 4.0);
-            double alpha = (passes == 1) ? (shadow_val * 0.20) : ((shadow_val * 0.22) / i);
-            draw_shape_path(cr, gx - expand * 0.5, gy + 3.0, gw + expand, gh + expand, gr + expand * 0.5, shape);
+            double expand = (passes == 2) ? (i * 4.0) : (i * 2.5);
+            double alpha = (passes == 2) ? ((shadow_val * 0.22) / i) : ((shadow_val * 0.14) / i);
+            draw_shape_path(cr, gx - expand, gy + 3.5 - expand * 0.5, gw + expand * 2.0, gh + expand * 2.0, gr + expand, shape);
             cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, alpha);
             cairo_fill(cr);
         }
@@ -285,7 +288,7 @@ static void draw_benchmark_glass_element(cairo_t *cr, cairo_surface_t *bg, int w
     double ior = 2.12;
     double disp_scale = 24.0;
     double chroma_str = 0.66;
-    double tint_strength = 0.15;
+    double tint_strength = 0.0;
     double rim_intensity = 0.48;
 
     build_depth_lut(ior, disp_scale, rim_intensity, bevel_width);
@@ -298,7 +301,7 @@ static void draw_benchmark_glass_element(cairo_t *cr, cairo_surface_t *bg, int w
     double tint_r_str = tint_r * tint_strength;
     double tint_g_str = tint_g * tint_strength;
     double tint_b_str = tint_b * tint_strength;
-    double const_sheen = (lz_dir * lz_dir) * 0.12 * 255.0;
+    double const_sheen = pow(lz_dir, 1.65) * 0.30 * 255.0;
 
     uint8_t lut_r[256], lut_g[256], lut_b[256];
     for (int i = 0; i < 256; i++) {
@@ -414,10 +417,11 @@ static void draw_benchmark_glass_element(cairo_t *cr, cairo_surface_t *bg, int w
             double base_g = (cr_g * one_minus_tint + tint_g_str) * item->ao;
             double base_b = (cr_b * one_minus_tint + tint_b_str) * item->ao;
 
-            double nDotL = fmax(-n2d_y * item->sinA * ly_dir + item->cosA * lz_dir, 0.0);
-            double lightMask = nDotL * nDotL;
+            double dotNL = -n2d_y * item->sinA * ly_dir + item->cosA * lz_dir;
+            double lightMask = pow(fabs(dotNL), 2.7);
             double finalRimLight = item->rimEdge * lightMask;
-            double sheenLight = lightMask * 0.12 * 255.0;
+            double sheenFacing = fmax(dotNL, 0.0);
+            double sheenLight = pow(sheenFacing, 1.65) * 0.30 * 255.0;
 
             double added = finalRimLight + sheenLight;
             double lit_r = base_r + added - (base_r * added * (1.0 / 255.0));
