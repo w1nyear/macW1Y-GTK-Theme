@@ -4,7 +4,7 @@
 
 
 import GLib from 'gi://GLib';
-import { t as mac_t } from './mac_i18n.js';
+import { t as mac_t, getLocale as mac_getLocale } from './mac_i18n.js';
 
 export const TRANSLATIONS = {
     "uk": {
@@ -1116,11 +1116,8 @@ export function getLocale() {
         const langs = GLib.get_language_names();
         for (const l of langs) {
             if (!l || l === 'C' || l === 'POSIX') continue;
-            const code = l.split('.')[0].split('_')[0].split('-')[0].toLowerCase();
-            if (code && TRANSLATIONS[code]) {
-                return code;
-            }
-        }
+    try {
+        return mac_getLocale();
     } catch (_) {}
     return 'en';
 }
@@ -1145,35 +1142,30 @@ export function _(str) {
     const lang = getLocale();
     if (lang === 'en') return str;
 
-    const dict = TRANSLATIONS[lang];
-    if (!dict) return str;
+    const dict = TRANSLATIONS[lang] || null;
+    if (dict) {
+        if (dict[str] !== undefined) {
+            return dict[str];
+        }
 
+        const clean = _cleanLabel(str);
+        if (dict[clean] !== undefined) {
+            return dict[clean];
+        }
 
-    if (dict[str] !== undefined) {
-        return dict[str];
-    }
+        const withoutDots = clean.replace(/\.{3}$|…$/g, '').trim();
+        if (dict[withoutDots] !== undefined) {
+            const hasEllipsis = str.endsWith('...') || str.endsWith('…');
+            return hasEllipsis ? dict[withoutDots] + '…' : dict[withoutDots];
+        }
 
-
-    const clean = _cleanLabel(str);
-    if (dict[clean] !== undefined) {
-        return dict[clean];
-    }
-
-
-    const withoutDots = clean.replace(/\.{3}$|…$/g, '').trim();
-    if (dict[withoutDots] !== undefined) {
-        const hasEllipsis = str.endsWith('...') || str.endsWith('…');
-        return hasEllipsis ? dict[withoutDots] + '…' : dict[withoutDots];
-    }
-
-
-    const lower = clean.toLowerCase();
-    for (const [k, v] of Object.entries(dict)) {
-        if (k.toLowerCase() === lower) {
-            return v;
+        const lower = clean.toLowerCase();
+        for (const [k, v] of Object.entries(dict)) {
+            if (k.toLowerCase() === lower) {
+                return v;
+            }
         }
     }
-
 
     if (_origTranslate) {
         try {
@@ -1183,6 +1175,7 @@ export function _(str) {
     }
 
     try {
+        const clean = _cleanLabel(str);
         const trKey = clean.toLowerCase().replace(/[\s\-_]+/g, '_');
         const translated = mac_t(trKey, null) || mac_t(clean, null);
         if (translated && translated !== trKey && translated !== clean) {

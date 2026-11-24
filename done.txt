@@ -5615,3 +5615,43 @@ Task #938:
   * [systemd/mac-integrity-check.service](file:///home/vitaliy/MACTHEMEFILES/systemd/mac-integrity-check.service)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+- Task #964: Повний аудит, оновлення словників та синхронізація локалізації всіх розширень і елементів інтерфейсу для всіх мов (58 мов)
+  - Словник перекладів та генерація модулів (config/i18n/):
+    * Додано 69 нових ключів локалізації до translations_data.py та translations.json (загалом 527 ключів) для всіх 34 повних мов Tier 1-3 та 24 машинних Tier 4 (всього 58 мов, 100% покриття словника, 151 мова Tier 4 із явним English fallback).
+    * Включено ключі: сповіщення (notifications), дії копіювання/вставки (action_copy, copied, pasted), менюбар (view, go, help, tools, format, selection, run, terminal, edit, window, menu_benchmark), віджети бенчмарку (benchmark_*), діалоги майстра інсталятора (installer_opt_*, installer_wizard_*), налаштування Alt+Tab та мак-стилізації (alttab_*, settings_title, lowspec_opt_*, pclogo_*, profile_eco), контроль цілісності (integrity_check_*), деінсталятор додатків (uninstall_*).
+    * Згенеровано оновлені mac_i18n.js для всіх цільових розширень, bin/mac_i18n.py та C-заголовки mac_i18n.h (перекомпільовано libmac_settings.so).
+  - Інтеграція локалізації в кодову базу та розширення:
+    * appmenu@ChathurangaBW.github.io: виправлено витік на англійську для всіх неперелічених мов; тепер i18n.js використовує mac_t() з mac_i18n.js для всіх 58+ локалей.
+    * kiwi@kemma (tahoeApps.js, tahoeControlCenter.js, tahoeQuickSettings.js): повна динамічна локалізація назв категорій (категорії додатків, фільтри, системні додатки), швидких перемикачів (Wi-Fi, Bluetooth, Focus, Display, Sound, Settings) та елементів керування.
+    * macw1y-touchpad-gestures@mactheme: інтегровано mac_i18n.js, OSD-сповіщення жестів переведено на t('copied') та t('pasted').
+    * eval-helper@mactheme: кнопки завершення сеансу/вимкнення локалізовано через t('shutdown_short').
+    * bin/mac-installer-gui: замінено хардкод ternary-перевірок мови на self.tr() з параметризованими рядками.
+    * bin/mac-integrity-check & bin/mac-uninstall-app: переведено на динамічний виклик mac_i18n.t() та mac_i18n.tf().
+  - Синхронізація системи та фіксація цілісності:
+    * Оновлено активні копії модифікованих розширень у ~/.local/share/gnome-shell/extensions/.
+    * Перераховано sha256-tree-v2 хеші для 5 оновлених розширень та оновлено config/extensions.lock.json, ~/.config/macw1y/extensions.lock.json.
+    * Синхронізовано бінарники в ~/.local/bin/ (mac-installer-gui, mac-integrity-check, mac-uninstall-app, mac_i18n.py) та бібліотеку libmac_settings.so у ~/.local/lib/ і /usr/lib/x86_64-linux-gnu/.
+  - Результати верифікації:
+    * python3 bin/mac-i18n-verify: 100% перевірок успішно пройдено (527 ключів у паритеті, 209 локалей каталогу).
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 bin/mac-audit-sync check: 100% PASS (5/5 перевірок пройдено).
+    * python3 bin/mac-integrity-check --check: All checks passed successfully. System is green.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 тестів пройдено успішно.
+  * [config/i18n/translations.json](file:///home/vitaliy/MACTHEMEFILES/config/i18n/translations.json)
+  * [config/i18n/translations_data.py](file:///home/vitaliy/MACTHEMEFILES/config/i18n/translations_data.py)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [bin/mac_i18n.py](file:///home/vitaliy/MACTHEMEFILES/bin/mac_i18n.py)
+  * [bin/mac-installer-gui](file:///home/vitaliy/MACTHEMEFILES/bin/mac-installer-gui)
+  * [bin/mac-integrity-check](file:///home/vitaliy/MACTHEMEFILES/bin/mac-integrity-check)
+  * [bin/mac-uninstall-app](file:///home/vitaliy/MACTHEMEFILES/bin/mac-uninstall-app)
+  * [bin/mac-i18n-verify](file:///home/vitaliy/MACTHEMEFILES/bin/mac-i18n-verify)
+  * [extensions/appmenu@ChathurangaBW.github.io/i18n.js](file:///home/vitaliy/MACTHEMEFILES/extensions/appmenu@ChathurangaBW.github.io/i18n.js)
+  * [extensions/kiwi@kemma/apps/tahoeApps.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeApps.js)
+  * [extensions/kiwi@kemma/apps/tahoeControlCenter.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeControlCenter.js)
+  * [extensions/kiwi@kemma/apps/tahoeQuickSettings.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeQuickSettings.js)
+  * [extensions/macw1y-touchpad-gestures@mactheme/gestureImpl.js](file:///home/vitaliy/MACTHEMEFILES/extensions/macw1y-touchpad-gestures@mactheme/gestureImpl.js)
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+

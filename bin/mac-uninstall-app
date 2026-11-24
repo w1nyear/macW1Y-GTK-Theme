@@ -70,76 +70,32 @@ def main():
     except Exception:
         pass
 
-    if loc.startswith("pl"):
-        title_q = "Usuwanie programu"
-        ok_lbl = "Usuń"
-        cancel_lbl = "Anuluj"
-        info_title = "Usunięto"
-        info_text = f"Program \"{app_name}\" został pomyślnie usunięty z systemu."
+    try:
+        import mac_i18n
+        title_q = mac_i18n.t("uninstall_title", "Uninstall Application", override_locale=loc)
+        ok_lbl = mac_i18n.t("uninstall_app", "Uninstall", override_locale=loc)
+        cancel_lbl = mac_i18n.t("cancel", "Cancel", override_locale=loc)
+        info_title = mac_i18n.t("uninstall_success_title", "Removed", override_locale=loc)
+        info_text = mac_i18n.tf("uninstall_success_text", {"app_name": app_name}, override_locale=loc)
         if pkg_name:
-            prompt_text = f"Czy na pewno chcesz usunąć program \"{app_name}\" ({pkg_name}) z systemu?"
+            prompt_text = mac_i18n.tf("uninstall_confirm_pkg", {"app_name": app_name, "pkg_name": pkg_name}, override_locale=loc)
         else:
-            prompt_text = f"Czy na pewno chcesz usunąć skrót lub program \"{app_name}\" z systemu?"
-    elif loc.startswith("uk"):
-        title_q = "Видалення програми"
-        ok_lbl = "Видалити"
-        cancel_lbl = "Скасувати"
-        info_title = "Видалено"
-        info_text = f"Програму \"{app_name}\" успішно видалено з системи."
-        if pkg_name:
-            prompt_text = f"Ви дійсно бажаєте видалити програму \"{app_name}\" ({pkg_name}) з системи?"
+            prompt_text = mac_i18n.tf("uninstall_confirm_app", {"app_name": app_name}, override_locale=loc)
+    except Exception:
+        if loc.startswith("uk"):
+            title_q = "Видалення програми"
+            ok_lbl = "Видалити"
+            cancel_lbl = "Скасувати"
+            info_title = "Видалено"
+            info_text = f"Програму \"{app_name}\" успішно видалено з системи."
+            prompt_text = f"Ви дійсно бажаєте видалити програму \"{app_name}\" ({pkg_name}) з системи?" if pkg_name else f"Ви дійсно бажаєте видалити ярлик або програму \"{app_name}\" з системи?"
         else:
-            prompt_text = f"Ви дійсно бажаєте видалити ярлик або програму \"{app_name}\" з системи?"
-    elif loc.startswith("de"):
-        title_q = "Anwendung deinstallieren"
-        ok_lbl = "Deinstallieren"
-        cancel_lbl = "Abbrechen"
-        info_title = "Entfernt"
-        info_text = f"Anwendung \"{app_name}\" wurde erfolgreich aus dem System entfernt."
-        if pkg_name:
-            prompt_text = f"Möchten Sie die Anwendung \"{app_name}\" ({pkg_name}) wirklich aus dem System entfernen?"
-        else:
-            prompt_text = f"Möchten Sie die Verknüpfung oder Anwendung \"{app_name}\" wirklich aus dem System entfernen?"
-    elif loc.startswith("fr"):
-        title_q = "Désinstaller l'application"
-        ok_lbl = "Désinstaller"
-        cancel_lbl = "Annuler"
-        info_title = "Supprimé"
-        info_text = f"L'application \"{app_name}\" a été supprimée avec succès du système."
-        if pkg_name:
-            prompt_text = f"Voulez-vous vraiment désinstaller l'application \"{app_name}\" ({pkg_name}) du système ?"
-        else:
-            prompt_text = f"Voulez-vous vraiment supprimer le raccourci ou l'application \"{app_name}\" du système ?"
-    elif loc.startswith("es"):
-        title_q = "Desinstalar aplicación"
-        ok_lbl = "Desinstalar"
-        cancel_lbl = "Cancelar"
-        info_title = "Eliminado"
-        info_text = f"La aplicación \"{app_name}\" se eliminó con éxito del sistema."
-        if pkg_name:
-            prompt_text = f"¿Está seguro de que desea desinstalar la aplicación \"{app_name}\" ({pkg_name}) del sistema?"
-        else:
-            prompt_text = f"¿Está seguro de que desea eliminar el acceso directo o la aplicación \"{app_name}\" del sistema?"
-    elif loc.startswith("it"):
-        title_q = "Disinstalla applicazione"
-        ok_lbl = "Disinstalla"
-        cancel_lbl = "Annulla"
-        info_title = "Rimosso"
-        info_text = f"L'applicazione \"{app_name}\" è stata rimossa con successo dal sistema."
-        if pkg_name:
-            prompt_text = f"Sei sicuro di voler disinstallare l'applicazione \"{app_name}\" ({pkg_name}) dal sistema?"
-        else:
-            prompt_text = f"Sei sicuro di voler rimuovere il collegamento o l'applicazione \"{app_name}\" dal sistema?"
-    else:
-        title_q = "Uninstall Application"
-        ok_lbl = "Uninstall"
-        cancel_lbl = "Cancel"
-        info_title = "Removed"
-        info_text = f"Application \"{app_name}\" was successfully removed from the system."
-        if pkg_name:
-            prompt_text = f"Are you sure you want to uninstall \"{app_name}\" ({pkg_name}) from the system?"
-        else:
-            prompt_text = f"Are you sure you want to remove application \"{app_name}\" from the system?"
+            title_q = "Uninstall Application"
+            ok_lbl = "Uninstall"
+            cancel_lbl = "Cancel"
+            info_title = "Removed"
+            info_text = f"Application \"{app_name}\" was successfully removed from the system."
+            prompt_text = f"Are you sure you want to uninstall \"{app_name}\" ({pkg_name}) from the system?" if pkg_name else f"Are you sure you want to remove the shortcut or application \"{app_name}\" from the system?"
         
     zenity_cmd = [
         "zenity", "--question",

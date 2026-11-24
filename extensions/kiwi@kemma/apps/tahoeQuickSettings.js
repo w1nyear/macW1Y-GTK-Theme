@@ -838,7 +838,7 @@ function _buildPanel() {
     cols.add_child(rightCol);
 
 
-    const wifi = _makePill('network-wireless-symbolic', _('Wi-Fi'), '…');
+    const wifi = _makePill('network-wireless-symbolic', t('wifi', 'Wi-Fi'), '…');
     wifi.btn.connect('clicked', () => {
         try {
             if (state.nm)
@@ -849,7 +849,7 @@ function _buildPanel() {
     });
     leftCol.add_child(wifi.btn);
 
-    const btPill = _makePill('bluetooth-active-symbolic', _('Bluetooth'), '…');
+    const btPill = _makePill('bluetooth-active-symbolic', t('bluetooth', 'Bluetooth'), '…');
     btPill.btn.add_style_class_name('tahoe-qs-pill-bt');
     btPill.btn.connect('clicked', () => {
         try {
@@ -1006,7 +1006,7 @@ function _buildPanel() {
     leftRow.set_width(COL_W);
     rowd.add_child(leftRow);
 
-    const focus = _makePill('weather-clear-night-symbolic', _('Focus'), null);
+    const focus = _makePill('weather-clear-night-symbolic', t('focus', 'Focus'), null);
     if (_gicons().focus)
         focus.icon.gicon = _gicons().focus;
     focus.btn.connect('clicked', () => {
@@ -1032,7 +1032,7 @@ function _buildPanel() {
     _refreshFocus(focus);
 
 
-    const disp = _makeSliderCard(_('Display'),
+    const disp = _makeSliderCard(t('display', 'Display'),
         'display-brightness-symbolic', 'display-brightness-symbolic', false);
     box.add_child(disp.box);
 
@@ -1136,7 +1136,7 @@ function _buildPanel() {
     }
 
 
-    const snd = _makeSliderCard(_('Sound'),
+    const snd = _makeSliderCard(t('sound', 'Sound'),
         'audio-volume-low-symbolic', 'audio-volume-high-symbolic', true);
     snd.box.reactive = true;
     snd.box.connect('button-press-event', (_actor, event) => {
@@ -1197,7 +1197,7 @@ function _buildPanel() {
                                 desc = (port.human_name || port.port || '').toString().trim();
                         }
                     } catch (_) {}
-                    snd.label.text = desc || _('Sound');
+                    snd.label.text = desc || t('sound', 'Sound');
                 };
 
                 const syncVol = () => {
@@ -1294,7 +1294,7 @@ function _buildPanel() {
     box.add_child(editRow);
 
 
-    const setg = _makePill('preferences-system-symbolic', _('Settings'), null);
+    const setg = _makePill('preferences-system-symbolic', t('settings', 'Settings'), null);
     setg.btn.visible = false;
     setg.btn.connect('clicked', () => {
         _closePanel();
@@ -1640,7 +1640,7 @@ function _refreshWifi(wifi) {
             if (id)
                 name = id;
             else if (on)
-                name = _('On');
+                name = t('on', 'On');
         } catch (_) {
 
         }
@@ -1666,7 +1666,7 @@ function _refreshBt(pill) {
             on = false;
         }
         if (pill.subtitle)
-            pill.subtitle.text = on ? _('On') : _('Off');
+            pill.subtitle.text = on ? t('on', 'On') : t('off', 'Off');
         _setActive(pill.btn, on);
         pill.icon.icon_name = on
             ? 'bluetooth-active-symbolic' : 'bluetooth-disabled-symbolic';
@@ -1971,7 +1971,7 @@ function _refreshFocus(focus) {
         const s = new Gio.Settings({schema_id: 'org.gnome.desktop.notifications'});
         const dnd = !s.get_boolean('show-banners');
         if (focus.subtitle)
-            focus.subtitle.text = dnd ? _('On') : _('Off');
+            focus.subtitle.text = dnd ? t('on', 'On') : t('off', 'Off');
         _setActive(focus.btn, dnd);
 
         try {
@@ -3077,18 +3077,18 @@ export function getQSOverlay() {
 function _editCatalog() {
     const g = (() => { try { return _gicons(); } catch (_) { return {}; } })();
     return [
-        {id: 'wifi', title: _('Wi-Fi'), icon: 'network-wireless-symbolic', category: 'connectivity'},
-        {id: 'bt', title: _('Bluetooth'), icon: 'bluetooth-active-symbolic', category: 'connectivity'},
-        {id: 'air', title: _('Режим'), icon: 'power-profile-performance-symbolic', category: 'connectivity'},
-        {id: 'focus', title: _('Focus'), gicon: g.focus, icon: 'weather-clear-night-symbolic', category: 'focus'},
-        {id: 'display', title: _('Display'), icon: 'display-brightness-symbolic', category: 'display'},
-        {id: 'dark', title: _('Dark Mode'), gicon: g.theme, icon: 'weather-clear-night-symbolic', category: 'display'},
-        {id: 'sound', title: _('Sound'), icon: 'audio-volume-high-symbolic', category: 'sounds'},
-        {id: 'music', title: _('Now Playing'), icon: 'multimedia-player-symbolic', category: 'nowplaying'},
-        {id: 'lock', title: _('Lock Screen'), gicon: g.lock, icon: 'system-lock-screen-symbolic', category: 'lockscreen'},
-        {id: 'logout', title: _('Log Out'), gicon: g.logout, icon: 'system-log-out-symbolic', category: 'shortcuts'},
-        {id: 'shot', title: _('Screenshot'), gicon: g.shot, icon: 'camera-photo-symbolic', category: 'screenshot'},
-        {id: 'settings', title: _('Settings'), icon: 'preferences-system-symbolic', category: 'desktop'},
+        {id: 'wifi', title: t('wifi', 'Wi-Fi'), icon: 'network-wireless-symbolic', category: 'connectivity'},
+        {id: 'bt', title: t('bluetooth', 'Bluetooth'), icon: 'bluetooth-active-symbolic', category: 'connectivity'},
+        {id: 'air', title: t('power_mode_short', 'Режим'), icon: 'power-profile-performance-symbolic', category: 'connectivity'},
+        {id: 'focus', title: t('focus', 'Focus'), gicon: g.focus, icon: 'weather-clear-night-symbolic', category: 'focus'},
+        {id: 'display', title: t('display', 'Display'), icon: 'display-brightness-symbolic', category: 'display'},
+        {id: 'dark', title: t('dark_mode', 'Dark Mode'), gicon: g.theme, icon: 'weather-clear-night-symbolic', category: 'display'},
+        {id: 'sound', title: t('sound', 'Sound'), icon: 'audio-volume-high-symbolic', category: 'sounds'},
+        {id: 'music', title: t('now_playing', 'Now Playing'), icon: 'multimedia-player-symbolic', category: 'nowplaying'},
+        {id: 'lock', title: t('lock_screen', 'Lock Screen'), gicon: g.lock, icon: 'system-lock-screen-symbolic', category: 'lockscreen'},
+        {id: 'logout', title: t('logout', 'Log Out'), gicon: g.logout, icon: 'system-log-out-symbolic', category: 'shortcuts'},
+        {id: 'shot', title: t('screenshot', 'Screenshot'), gicon: g.shot, icon: 'camera-photo-symbolic', category: 'screenshot'},
+        {id: 'settings', title: t('settings', 'Settings'), icon: 'preferences-system-symbolic', category: 'desktop'},
     ];
 }
 

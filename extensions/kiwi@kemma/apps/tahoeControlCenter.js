@@ -1810,7 +1810,7 @@ function _buildPanel() {
     cols.add_child(rightCol);
 
 
-    const wifi = _makePill('network-wireless-symbolic', _('Wi-Fi'), '…', true, true);
+    const wifi = _makePill('network-wireless-symbolic', t('wifi', 'Wi-Fi'), '…', true, true);
     const _toggleWifi = () => {
         try {
             const qs = Main.panel.statusArea.quickSettings;
@@ -1855,7 +1855,7 @@ function _buildPanel() {
     }
     leftCol.add_child(wifi.btn);
 
-    const btPill = _makePill('bluetooth-active-symbolic', _('Bluetooth'), '…', true, true);
+    const btPill = _makePill('bluetooth-active-symbolic', t('bluetooth', 'Bluetooth'), '…', true, true);
     btPill.btn.add_style_class_name('tahoe-qs-pill-bt');
     const _toggleBt = () => {
         try {

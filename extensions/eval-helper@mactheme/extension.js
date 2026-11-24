@@ -2177,15 +2177,15 @@ export default class EvalHelper extends Extension {
                         Dialog.prototype.addButton = function (buttonInfo) {
                             if (buttonInfo && typeof buttonInfo.label === 'string') {
                                 const trimmed = buttonInfo.label.trim();
-                                if (trimmed === 'Завершити роботу' || trimmed === 'Вимкнути живлення' || trimmed === 'Power Off') {
-                                    buttonInfo.label = 'Вимкнути';
+                                if (trimmed === 'Завершити роботу' || trimmed === 'Вимкнути живлення' || trimmed === 'Power Off' || trimmed === 'Выключить' || trimmed === 'Ausschalten' || trimmed === 'Éteindre' || trimmed === 'Apagar' || trimmed === 'Spegni' || trimmed === 'Wyłącz') {
+                                    buttonInfo.label = t('shutdown_short', 'Вимкнути');
                                 }
                             }
                             const btn = Dialog.prototype._macOrigAddButton.call(this, buttonInfo);
                             if (btn) {
                                 const checkLabel = () => {
-                                    if (btn.label && (btn.label.trim() === 'Завершити роботу' || btn.label.trim() === 'Вимкнути живлення' || btn.label.trim() === 'Power Off')) {
-                                        btn.label = 'Вимкнути';
+                                    if (btn.label && (btn.label.trim() === 'Завершити роботу' || btn.label.trim() === 'Вимкнути живлення' || btn.label.trim() === 'Power Off' || btn.label.trim() === 'Выключить' || btn.label.trim() === 'Ausschalten' || btn.label.trim() === 'Éteindre' || btn.label.trim() === 'Apagar' || btn.label.trim() === 'Spegni' || btn.label.trim() === 'Wyłącz')) {
+                                        btn.label = t('shutdown_short', 'Вимкнути');
                                     }
                                 };
                                 btn.connectObject?.('notify::label', checkLabel, btn);
@@ -2399,12 +2399,12 @@ export default class EvalHelper extends Extension {
                             }
                             for (const button of dialogBox.get_children().flatMap(child => child.get_children?.() || []).flatMap(child => child.get_children?.() || []).filter(child => child.has_style_class_name?.('modal-dialog-button') || child.has_style_class_name?.('modal-dialog-linked-button'))) {
                                 button.set_style('min-height: 28px !important; height: 28px !important; border-radius: 999px !important; margin: 0 4px !important; padding: 0 10px !important;');
-                                if (button.label && (button.label.trim() === 'Завершити роботу' || button.label.trim() === 'Вимкнути живлення' || button.label.trim() === 'Power Off')) {
-                                    button.label = 'Вимкнути';
+                                if (button.label && (button.label.trim() === 'Завершити роботу' || button.label.trim() === 'Вимкнути живлення' || button.label.trim() === 'Power Off' || button.label.trim() === 'Выключить' || button.label.trim() === 'Ausschalten' || button.label.trim() === 'Éteindre' || button.label.trim() === 'Apagar' || button.label.trim() === 'Spegni' || button.label.trim() === 'Wyłącz')) {
+                                    button.label = t('shutdown_short', 'Вимкнути');
                                 }
                                 const ct = button.get_child?.();
-                                if (ct && (ct.text?.trim() === 'Завершити роботу' || ct.text?.trim() === 'Вимкнути живлення' || ct.text?.trim() === 'Power Off')) {
-                                    ct.text = 'Вимкнути';
+                                if (ct && (ct.text?.trim() === 'Завершити роботу' || ct.text?.trim() === 'Вимкнути живлення' || ct.text?.trim() === 'Power Off' || ct.text?.trim() === 'Выключить' || ct.text?.trim() === 'Ausschalten' || ct.text?.trim() === 'Éteindre' || ct.text?.trim() === 'Apagar' || ct.text?.trim() === 'Spegni' || ct.text?.trim() === 'Wyłącz')) {
+                                    ct.text = t('shutdown_short', 'Вимкнути');
                                 }
                             }
                             for (const mdc of dialogBox.get_children().flatMap(child => child.get_children?.() || []).filter(child => child.has_style_class_name?.('message-dialog-content') || child.name === 'MessageDialogContent')) {

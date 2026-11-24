@@ -152,10 +152,19 @@ def notify_user(issues):
     for iss in issues:
         log(f" - {iss}")
 
-    loc = get_integrity_locale().split('_')[0]
-    data = INTEGRITY_I18N.get(loc, INTEGRITY_I18N["en"])
-    title = data["title"]
-    body = data["body"].format(n=len(issues))
+    loc = get_integrity_locale()
+    title = "macW1Y: Integrity Guard"
+    body = f"Detected {len(issues)} deviation(s) from design standard.\nOpen Settings → Mac Styling to inspect or restore."
+    try:
+        import mac_i18n
+        title = mac_i18n.t("integrity_check_title", override_locale=loc)
+        body = mac_i18n.tf("integrity_check_body", {"n": len(issues)}, override_locale=loc)
+    except Exception:
+        loc_base = loc.split('_')[0]
+        data = INTEGRITY_I18N.get(loc_base, INTEGRITY_I18N.get("en", {}))
+        if data:
+            title = data.get("title", title)
+            body = data.get("body", body).format(n=len(issues))
 
     try:
         subprocess.run([

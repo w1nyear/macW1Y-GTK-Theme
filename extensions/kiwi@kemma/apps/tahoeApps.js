@@ -73,6 +73,18 @@ const CATEGORIES = [
     {title: 'Other', match: null},
 ];
 
+function _getCatTitle(title) {
+    switch (title) {
+        case 'Social': return t('category_social', 'Social');
+        case 'Creativity': return t('category_creativity', 'Creativity');
+        case 'Productivity & Finance': return t('category_productivity_finance', 'Productivity & Finance');
+        case 'Utilities': return t('category_utilities', 'Utilities');
+        case 'Other': return t('category_other', 'Other');
+        case 'Recommended': return t('recommended', 'Recommended');
+        default: return title;
+    }
+}
+
 const ITEM_W = 88;
 const ROW_GAP = 8;
 const COL_GAP = 1;
@@ -735,7 +747,7 @@ class TahoeApps {
         for (const cat of CATEGORIES) {
             const pill = new St.Button({
                 style_class: 'tahoe-pill',
-                label: cat.title,
+                label: _getCatTitle(cat.title),
                 x_expand: true,
                 y_align: Clutter.ActorAlign.CENTER,
                 reactive: true,
@@ -795,7 +807,7 @@ class TahoeApps {
 
         this._empty = new St.Label({
             style_class: 'tahoe-empty',
-            text: 'No applications found',
+            text: t('no_applications_found', 'No applications found'),
             visible: false,
             x_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
@@ -1071,7 +1083,7 @@ class TahoeApps {
             if (group.title && group.title !== 'Recommended') {
                 section.add_child(new St.Label({
                     style_class: 'tahoe-section-title',
-                    text: group.title,
+                    text: _getCatTitle(group.title),
                 }));
             }
 
@@ -1377,7 +1389,7 @@ class TahoeApps {
 
         const entries = [
             {
-                text: 'Group by category',
+                text: t('group_by_category', 'Group by category'),
                 get: () => this._groupByCategory,
                 toggle: () => {
                     this._groupByCategory = !this._groupByCategory;
@@ -1385,7 +1397,7 @@ class TahoeApps {
                 },
             },
             {
-                text: 'Show system apps',
+                text: t('show_system_apps', 'Show system apps'),
                 get: () => this._showSystem,
                 toggle: () => {
                     this._showSystem = !this._showSystem;

@@ -1631,14 +1631,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         # Context menu popover parented directly to root_box
         context_items = [
-            ("Про macW1Y", "app.about"),
+            (self.tr("menu_about", "About macW1Y"), "app.about"),
             None,
-            ("Термінал...", "app.terminal"),
-            ("Бенчмарк...", "app.benchmark"),
-            ("Дискова утиліта...", "app.disk_utility"),
+            (self.tr("menu_terminal", "Terminal…"), "app.terminal"),
+            (self.tr("menu_benchmark", "Benchmark…"), "app.benchmark"),
+            (self.tr("menu_disk_utility", "Disk Utility…"), "app.disk_utility"),
             None,
-            ("Перезавантажити...", "app.reboot"),
-            ("Вимкнути комп'ютер...", "app.poweroff"),
+            (self.tr("menu_reboot", "Restart…"), "app.reboot"),
+            (self.tr("menu_poweroff", "Shut Down…"), "app.poweroff"),
         ]
         self.context_popover = MacMenuPopover(context_items)
         self.context_popover.set_parent(root_box)
@@ -2459,28 +2459,27 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         pkg_v = get_package_version()
         inst_v = get_installed_version()
-        is_uk = getattr(self, "selected_language", "uk") == "uk"
 
         if inst_v and inst_v != pkg_v:
-            update_title = f"Оновлення до macW1Y {pkg_v}" if is_uk else f"Update to macW1Y {pkg_v}"
-            update_desc = (
-                f"Оновити компоненти macW1Y (поточна v{inst_v} → v{pkg_v}) зі збереженням налаштувань."
-                if is_uk
-                else f"Update macW1Y components (installed v{inst_v} → v{pkg_v}) preserving settings."
+            update_title = self.tr("installer_opt_update_title", f"Update to macW1Y {pkg_v}", version=pkg_v)
+            update_desc = self.tr(
+                "installer_opt_update_desc",
+                f"Update macW1Y components (installed v{inst_v} → v{pkg_v}) preserving settings.",
+                inst_v=inst_v,
+                pkg_v=pkg_v,
             )
         else:
-            update_title = f"(Чисте) оновлення модпаку {pkg_v}" if is_uk else f"Clean Modpack Update {pkg_v}"
-            update_desc = (
-                f"Оновити всі компоненти macW1Y {pkg_v} або виконати чисте перевстановлення зі збереженням налаштувань."
-                if is_uk
-                else f"Update all macW1Y {pkg_v} components or clean reinstall preserving settings."
+            update_title = self.tr("installer_opt_clean_update_title", f"Clean Modpack Update {pkg_v}", version=pkg_v)
+            update_desc = self.tr(
+                "installer_opt_clean_update_desc",
+                f"Update all macW1Y {pkg_v} components or clean reinstall preserving settings.",
+                version=pkg_v,
             )
 
-        install_title = f"Встановлення macW1Y {pkg_v}" if is_uk else f"Install macW1Y {pkg_v}"
-        install_desc = (
-            f"Повне розгортання середовища macW1Y {pkg_v} з Wayland та скляними ефектами"
-            if is_uk
-            else self.tr("installer_opt_install_desc", "Full environment deployment with Wayland and glass effects")
+        install_title = self.tr("installer_opt_install_title", f"Install macW1Y {pkg_v}", version=pkg_v)
+        install_desc = self.tr(
+            "installer_opt_install_desc",
+            "Full environment deployment with Wayland and glass effects",
         )
 
         options_data = [
@@ -2494,8 +2493,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
              install_desc),
             ("repo",
              os.path.join(ASSETS_DIR, "safari_globe.svg"),
-             "GitHub репозиторій macW1Y" if is_uk else "GitHub macW1Y Repository",
-             "Відвідати офіційну сторінку репозиторію macW1Y для отримання детальної інформації." if is_uk else "Visit the official macW1Y repository page for details."),
+             self.tr("installer_opt_repo_title", "GitHub macW1Y Repository"),
+             self.tr("installer_opt_repo_desc", "Visit the official macW1Y repository page for details.")),
             ("uninstall",
              os.path.join(ASSETS_DIR, "disk_utility.svg"),
              self.tr("installer_opt_uninstall_title", "Uninstall macW1Y"),
@@ -2637,9 +2636,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.lbl_wizard_title.set_margin_top(6)
         box.append(self.lbl_wizard_title)
 
-        is_uk = getattr(self, "selected_language", "uk") == "uk"
         if getattr(self, "selected_action", "install") == "clean_update":
-            sub_text = f"Для налаштування оновлення macW1Y {ver} натисніть «Продовжити»." if is_uk else f"To configure macW1Y {ver} update, click Continue."
+            sub_text = self.tr("installer_wizard_sub_update", f"To configure macW1Y {ver} update, click Continue.", version=ver)
         else:
             sub_text = self.tr("installer_wizard_sub", "To configure macW1Y installation, click Continue.")
         self.lbl_wizard_sub = Gtk.Label(label=sub_text)
@@ -2769,9 +2767,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     def morph_terms_to_welcome(self, animated=True):
         self.wizard_mode = "welcome"
         ver = get_package_version()
-        is_uk = getattr(self, "selected_language", "uk") == "uk"
         if getattr(self, "selected_action", "install") == "clean_update":
-            sub_text = f"Для налаштування оновлення macW1Y {ver} натисніть «Продовжити»." if is_uk else f"To configure macW1Y {ver} update, click Continue."
+            sub_text = self.tr("installer_wizard_sub_update", f"To configure macW1Y {ver} update, click Continue.", version=ver)
         else:
             sub_text = self.tr("installer_wizard_sub", "To configure macW1Y installation, click Continue.")
         self.lbl_wizard_sub.set_label(sub_text)
@@ -3104,7 +3101,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.prog_bar.set_fraction(0.02)
         prog_box.append(self.prog_bar)
 
-        self.lbl_prog_status = Gtk.Label(label="Підготовка до встановлення..." if getattr(self, "selected_language", "uk") == "uk" else self.tr("installer_stage1", "Preparing system setup…"))
+        self.lbl_prog_status = Gtk.Label(label=self.tr("installer_stage1", "Preparing system setup…"))
         self.lbl_prog_status.add_css_class("mac-subtitle")
         prog_box.append(self.lbl_prog_status)
 

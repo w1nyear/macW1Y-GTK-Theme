@@ -122,12 +122,13 @@ export function tf(key, params = {}, fallback, overrideLocale = null) {
 }
 '''
 
-    # Write mac_i18n.js to the 4 target extension locations
+    # Write mac_i18n.js to the target extension locations
     js_destinations = [
         os.path.join(REPO_ROOT, "extensions/appmenu@ChathurangaBW.github.io/mac_i18n.js"),
         os.path.join(REPO_ROOT, "extensions/blur-my-shell@aunetx/components/mac_i18n.js"),
         os.path.join(REPO_ROOT, "extensions/kiwi@kemma/apps/mac_i18n.js"),
         os.path.join(REPO_ROOT, "extensions/eval-helper@mactheme/mac_i18n.js"),
+        os.path.join(REPO_ROOT, "extensions/macw1y-touchpad-gestures@mactheme/mac_i18n.js"),
     ]
     for dest in js_destinations:
         os.makedirs(os.path.dirname(dest), exist_ok=True)
@@ -230,7 +231,8 @@ def tf(key, params=None, fallback=None, override_locale=None):
         "dock_icon_size", "dock_icon_size_desc", "dock_size", "dock_size_desc",
         "dock_spacing", "dock_spacing_desc", "stage_manager", "light", "light_mode",
         "bench_glass_title", "bench_original_glass", "bench_refresh_rate", "bench_element_count",
-        "bench_hint", "shape_rect", "shape_circle", "shape_capsule", "pause", "original", "elements_short"
+        "bench_hint", "shape_rect", "shape_circle", "shape_capsule", "pause", "original", "elements_short",
+        "unlimited"
     ]
     c_languages = sorted(TRANSLATIONS, key=lambda code: (-len(code), code))
 

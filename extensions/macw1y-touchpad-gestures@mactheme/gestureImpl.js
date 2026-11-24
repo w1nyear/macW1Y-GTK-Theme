@@ -4,6 +4,7 @@ import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
+import { t } from './mac_i18n.js';
 
 const SOCKET_PATH = GLib.build_filenamev([GLib.get_user_runtime_dir(), "mac_touchpad.sock"]);
 
@@ -291,9 +292,9 @@ export default class GestureImpl {
         } else if (cmd === 'TRI_UP') {
             this._showCursor();
         } else if (cmd === 'CMD_COPY') {
-            this._showOsd('Скопійовано', 'edit-copy-symbolic');
+            this._showOsd(t('copied', 'Скопійовано'), 'edit-copy-symbolic');
         } else if (cmd === 'CMD_PASTE') {
-            this._showOsd('Вставлено', 'edit-paste-symbolic');
+            this._showOsd(t('pasted', 'Вставлено'), 'edit-paste-symbolic');
         } else if (cmd === '4FG_TAP') {
             if (Main.overview.visible) {
                 Main.overview.hide();
@@ -560,12 +561,12 @@ export default class GestureImpl {
 
                     this._pinchTriggered = true;
                     this._sendToDaemon('CMD_COPY');
-                    this._showOsd('Скопійовано', 'edit-copy-symbolic');
+                    this._showOsd(t('copied', 'Скопійовано'), 'edit-copy-symbolic');
                 } else if (scale >= 1.18) {
 
                     this._pinchTriggered = true;
                     this._sendToDaemon('CMD_PASTE');
-                    this._showOsd('Вставлено', 'edit-paste-symbolic');
+                    this._showOsd(t('pasted', 'Вставлено'), 'edit-paste-symbolic');
                 }
             }
         } else if (phase === Clutter.TouchpadGesturePhase.END || phase === Clutter.TouchpadGesturePhase.CANCEL) {
