@@ -2839,151 +2839,216 @@ static const DepthLUT* get_depth_lut(double ior, double disp_scale, double rim_i
     return s_lut_cache[slot].lut;
 }
 
-static inline void sample_bilinear_fast(const unsigned char *src_pixels, int stride, int width, int height,
-                                       double sx, double sy, double *out_r, double *out_g, double *out_b) {
-    int x0 = (int)sx;
-    int y0 = (int)sy;
-    if (sx < 0) x0--;
-    if (sy < 0) y0--;
-
-    if (__builtin_expect(x0 >= 0 && x0 < width - 1 && y0 >= 0 && y0 < height - 1, 1)) {
-        int fx = (int)((sx - x0) * 256.0);
-        int fy = (int)((sy - y0) * 256.0);
-        int ifx = 256 - fx;
-        int ify = 256 - fy;
-
+/* Shared 2x2 pixel fetcher for fast integer bilinear & per-channel sampling */
+static inline void fetch_2x2_pixels(const unsigned char *src_pixels, int stride, int width, int height,
+                                    int x0, int y0, uint32_t *c00, uint32_t *c10, uint32_t *c01, uint32_t *c11) {
+    if (__builtin_expect((unsigned)x0 < (unsigned)(width - 1) && (unsigned)y0 < (unsigned)(height - 1), 1)) {
         const uint32_t *row0 = (const uint32_t *)(src_pixels + y0 * stride) + x0;
         const uint32_t *row1 = (const uint32_t *)(src_pixels + (y0 + 1) * stride) + x0;
-
-        uint32_t c00 = row0[0];
-        uint32_t c10 = row0[1];
-        uint32_t c01 = row1[0];
-        uint32_t c11 = row1[1];
-
-        int w00 = (ifx * ify) >> 8;
-        int w10 = (fx * ify) >> 8;
-        int w01 = (ifx * fy) >> 8;
-        int w11 = (fx * fy) >> 8;
-
-        *out_r = (w00 * ((c00 >> 16) & 0xFF) + w10 * ((c10 >> 16) & 0xFF) +
-                  w01 * ((c01 >> 16) & 0xFF) + w11 * ((c11 >> 16) & 0xFF)) >> 8;
-        *out_g = (w00 * ((c00 >> 8) & 0xFF) + w10 * ((c10 >> 8) & 0xFF) +
-                  w01 * ((c01 >> 8) & 0xFF) + w11 * ((c11 >> 8) & 0xFF)) >> 8;
-        *out_b = (w00 * (c00 & 0xFF) + w10 * (c10 & 0xFF) +
-                  w01 * (c01 & 0xFF) + w11 * (c11 & 0xFF)) >> 8;
+        *c00 = row0[0]; *c10 = row0[1];
+        *c01 = row1[0]; *c11 = row1[1];
     } else {
         int cx0 = CLAMP(x0, 0, width - 1);
         int cx1 = CLAMP(x0 + 1, 0, width - 1);
         int cy0 = CLAMP(y0, 0, height - 1);
         int cy1 = CLAMP(y0 + 1, 0, height - 1);
-
-        double fx = sx - x0;
-        double fy = sy - y0;
-
-        uint32_t c00 = *(const uint32_t *)(src_pixels + cy0 * stride + cx0 * 4);
-        uint32_t c10 = *(const uint32_t *)(src_pixels + cy0 * stride + cx1 * 4);
-        uint32_t c01 = *(const uint32_t *)(src_pixels + cy1 * stride + cx0 * 4);
-        uint32_t c11 = *(const uint32_t *)(src_pixels + cy1 * stride + cx1 * 4);
-
-        double r0 = ((c00 >> 16) & 0xFF) * (1.0 - fx) + ((c10 >> 16) & 0xFF) * fx;
-        double g0 = ((c00 >> 8) & 0xFF) * (1.0 - fx) + ((c10 >> 8) & 0xFF) * fx;
-        double b0 = (c00 & 0xFF) * (1.0 - fx) + (c10 & 0xFF) * fx;
-
-        double r1 = ((c01 >> 16) & 0xFF) * (1.0 - fx) + ((c11 >> 16) & 0xFF) * fx;
-        double g1 = ((c01 >> 8) & 0xFF) * (1.0 - fx) + ((c11 >> 8) & 0xFF) * fx;
-        double b1 = (c01 & 0xFF) * (1.0 - fx) + (c11 & 0xFF) * fx;
-
-        *out_r = r0 * (1.0 - fy) + r1 * fy;
-        *out_g = g0 * (1.0 - fy) + g1 * fy;
-        *out_b = b0 * (1.0 - fy) + b1 * fy;
+        const uint32_t *r0 = (const uint32_t *)(src_pixels + cy0 * stride);
+        const uint32_t *r1 = (const uint32_t *)(src_pixels + cy1 * stride);
+        *c00 = r0[cx0]; *c10 = r0[cx1];
+        *c01 = r1[cx0]; *c11 = r1[cx1];
     }
 }
 
-static inline double sample_channel_fast(const unsigned char *src_pixels, int stride, int width, int height,
-                                         double sx, double sy, int shift) {
-    int x0 = (int)sx;
-    int y0 = (int)sy;
-    if (sx < 0) x0--;
-    if (sy < 0) y0--;
+static inline void sample_bilinear_q0(const unsigned char *src_pixels, int stride, int width, int height,
+                                      int32_t sx_fp, int32_t sy_fp, int32_t *out_r, int32_t *out_g, int32_t *out_b) {
+    int x0 = sx_fp >> 8;
+    int y0 = sy_fp >> 8;
+    int fx = sx_fp & 255;
+    int fy = sy_fp & 255;
+    int ifx = 256 - fx;
+    int ify = 256 - fy;
 
-    if (__builtin_expect(x0 >= 0 && x0 < width - 1 && y0 >= 0 && y0 < height - 1, 1)) {
-        int fx = (int)((sx - x0) * 256.0);
-        int fy = (int)((sy - y0) * 256.0);
-        int ifx = 256 - fx;
-        int ify = 256 - fy;
+    int w00 = (ifx * ify) >> 8;
+    int w10 = (fx * ify) >> 8;
+    int w01 = (ifx * fy) >> 8;
+    int w11 = (fx * fy) >> 8;
 
-        const uint32_t *row0 = (const uint32_t *)(src_pixels + y0 * stride) + x0;
-        const uint32_t *row1 = (const uint32_t *)(src_pixels + (y0 + 1) * stride) + x0;
+    uint32_t c00, c10, c01, c11;
+    fetch_2x2_pixels(src_pixels, stride, width, height, x0, y0, &c00, &c10, &c01, &c11);
 
-        int w00 = (ifx * ify) >> 8;
-        int w10 = (fx * ify) >> 8;
-        int w01 = (ifx * fy) >> 8;
-        int w11 = (fx * fy) >> 8;
-
-        return (w00 * ((row0[0] >> shift) & 0xFF) + w10 * ((row0[1] >> shift) & 0xFF) +
-                w01 * ((row1[0] >> shift) & 0xFF) + w11 * ((row1[1] >> shift) & 0xFF)) >> 8;
-    } else {
-        int cx0 = CLAMP(x0, 0, width - 1);
-        int cx1 = CLAMP(x0 + 1, 0, width - 1);
-        int cy0 = CLAMP(y0, 0, height - 1);
-        int cy1 = CLAMP(y0 + 1, 0, height - 1);
-
-        double fx = sx - x0;
-        double fy = sy - y0;
-
-        uint32_t c00 = *(const uint32_t *)(src_pixels + cy0 * stride + cx0 * 4);
-        uint32_t c10 = *(const uint32_t *)(src_pixels + cy0 * stride + cx1 * 4);
-        uint32_t c01 = *(const uint32_t *)(src_pixels + cy1 * stride + cx0 * 4);
-        uint32_t c11 = *(const uint32_t *)(src_pixels + cy1 * stride + cx1 * 4);
-
-        double v0 = ((c00 >> shift) & 0xFF) * (1.0 - fx) + ((c10 >> shift) & 0xFF) * fx;
-        double v1 = ((c01 >> shift) & 0xFF) * (1.0 - fx) + ((c11 >> shift) & 0xFF) * fx;
-        return v0 * (1.0 - fy) + v1 * fy;
-    }
+    *out_r = (w00 * (int32_t)((c00 >> 16) & 0xFF) + w10 * (int32_t)((c10 >> 16) & 0xFF) +
+              w01 * (int32_t)((c01 >> 16) & 0xFF) + w11 * (int32_t)((c11 >> 16) & 0xFF)) >> 8;
+    *out_g = (w00 * (int32_t)((c00 >> 8) & 0xFF) + w10 * (int32_t)((c10 >> 8) & 0xFF) +
+              w01 * (int32_t)((c01 >> 8) & 0xFF) + w11 * (int32_t)((c11 >> 8) & 0xFF)) >> 8;
+    *out_b = (w00 * (int32_t)(c00 & 0xFF) + w10 * (int32_t)(c10 & 0xFF) +
+              w01 * (int32_t)(c01 & 0xFF) + w11 * (int32_t)(c11 & 0xFF)) >> 8;
 }
 
-static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, int width, int height,
-                                              double gx, double gy, double gw, double gh, double gr, int shape, gboolean is_main) {
-    if (!bg) return;
-    init_pow_tables();
+static inline int32_t sample_channel_q0(const unsigned char *src_pixels, int stride, int width, int height,
+                                        int32_t sx_fp, int32_t sy_fp, int shift) {
+    int x0 = sx_fp >> 8;
+    int y0 = sy_fp >> 8;
+    int fx = sx_fp & 255;
+    int fy = sy_fp & 255;
+    int ifx = 256 - fx;
+    int ify = 256 - fy;
 
-    double shadow_val = (double)state.liquid_shadow / 100.0;
-    if (shadow_val > 0.02 && (g_liquid_element_count <= 25 || is_main)) {
-        int passes = (g_liquid_element_count > 10 && !is_main) ? 2 : 4;
-        for (int i = passes; i >= 1; i--) {
-            double expand = (passes == 2) ? (i * 4.0) : (i * 2.5);
-            double alpha = (passes == 2) ? ((shadow_val * 0.22) / i) : ((shadow_val * 0.14) / i);
-            draw_shape_path(cr, gx - expand, gy - 3.5 - expand * 0.5, gw + expand * 2.0, gh + expand * 2.0, gr + expand, shape);
-            cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, alpha);
-            cairo_fill(cr);
+    int w00 = (ifx * ify) >> 8;
+    int w10 = (fx * ify) >> 8;
+    int w01 = (ifx * fy) >> 8;
+    int w11 = (fx * fy) >> 8;
+
+    uint32_t c00, c10, c01, c11;
+    fetch_2x2_pixels(src_pixels, stride, width, height, x0, y0, &c00, &c10, &c01, &c11);
+
+    return (w00 * (int32_t)((c00 >> shift) & 0xFF) + w10 * (int32_t)((c10 >> shift) & 0xFF) +
+            w01 * (int32_t)((c01 >> shift) & 0xFF) + w11 * (int32_t)((c11 >> shift) & 0xFF)) >> 8;
+}
+
+typedef struct {
+    int16_t lx;
+    int16_t dx_q8, dy_q8;
+    int16_t cx_q8, cy_q8;
+    int16_t mul_q12;
+    int16_t add_r_q4, add_g_q4, add_b_q4;
+    uint8_t alpha;
+    uint8_t has_chroma;
+} BakedBevelPixel;
+
+typedef struct {
+    int16_t in_start;
+    int16_t in_end;
+    uint32_t left_offset;
+    uint16_t left_count;
+    uint16_t right_count;
+} BakedBevelRow;
+
+#define MAX_BAKED_SHAPES 16
+#define SDOTS_W 28
+#define SDOTS_H 8
+#define SHADOW_PAD 16
+
+typedef struct {
+    int igw, igh;
+    double gr;
+    int shape;
+    double ior, disp_scale, chroma_str, tint_strength, rim_intensity, shadow_val;
+    int shadow_passes;
+    gboolean is_light;
+    gboolean valid;
+    uint64_t last_used;
+
+    uint8_t lut_r[256], lut_g[256], lut_b[256];
+    BakedBevelRow rows[320];
+    BakedBevelPixel *bevel_pixels;
+    int bevel_count;
+
+    int shadow_w, shadow_h;
+    int shadow_ox, shadow_oy;
+    uint8_t *shadow_alpha;
+
+    double dots_cx_rel, dots_cy_rel;
+} BakedGlassShape;
+
+static BakedGlassShape s_baked_shapes[MAX_BAKED_SHAPES];
+static uint64_t s_baked_tick = 0;
+
+static uint8_t s_dots_sub_lut[4][4][SDOTS_W * SDOTS_H];
+static int s_dots_sub_inited = 0;
+
+/* Pre-renders 4x4 sub-pixel anti-aliased masks for the centered 3-dot icon */
+static void init_subpixel_dots_lut(void) {
+    if (s_dots_sub_inited) return;
+    s_dots_sub_inited = 1;
+    for (int sy = 0; sy < 4; sy++) {
+        for (int sx = 0; sx < 4; sx++) {
+            cairo_surface_t *ds = cairo_image_surface_create(CAIRO_FORMAT_A8, SDOTS_W, SDOTS_H);
+            cairo_t *dcr = cairo_create(ds);
+            cairo_set_source_rgba(dcr, 1.0, 1.0, 1.0, 0.65);
+            double dcx = 13.0 + (double)sx * 0.25;
+            double dcy = 3.0 + (double)sy * 0.25;
+            cairo_new_sub_path(dcr); cairo_arc(dcr, dcx - 9.0, dcy, 2.2, 0, 2 * G_PI);
+            cairo_new_sub_path(dcr); cairo_arc(dcr, dcx, dcy, 2.2, 0, 2 * G_PI);
+            cairo_new_sub_path(dcr); cairo_arc(dcr, dcx + 9.0, dcy, 2.2, 0, 2 * G_PI);
+            cairo_fill(dcr);
+            cairo_destroy(dcr);
+            cairo_surface_flush(ds);
+            int dstride = cairo_image_surface_get_stride(ds);
+            const uint8_t *ddata = cairo_image_surface_get_data(ds);
+            for (int y = 0; y < SDOTS_H; y++) {
+                memcpy(s_dots_sub_lut[sy][sx] + y * SDOTS_W, ddata + y * dstride, SDOTS_W);
+            }
+            cairo_surface_destroy(ds);
         }
     }
+}
 
-    int igx = (int)round(gx);
-    int igy = (int)round(gy);
+/* Bakes geometry-dependent bevel vectors, lighting coefficients, flat spans, and shadow mask */
+static const BakedGlassShape* get_baked_glass_shape(double gw, double gh, double gr, int shape, int shadow_passes) {
+    init_pow_tables();
+
     int igw = (int)round(gw);
     int igh = (int)round(gh);
     if (igw > 320) igw = 320;
     if (igh > 320) igh = 320;
-
-    unsigned char *src_pixels = cairo_image_surface_get_data(bg);
-    int src_stride = cairo_image_surface_get_stride(bg);
-
-    static uint32_t s_scratch_pixels[320 * 320];
+    if (igw <= 0 || igh <= 0) return NULL;
 
     double bx = gw * 0.5;
     double by = gh * 0.5;
     if (shape == 2) gr = fmin(bx, by);
-
-    double max_z = 25.0;
-    double bevel_width = CLAMP(max_z * 0.75 + gr * 0.2, 4.0, 28.0);
-    double inv_bevel = 1.0 / bevel_width;
 
     double ior = 1.0 + ((double)state.liquid_refraction / 100.0) * 1.40;
     double disp_scale = ((double)state.liquid_refraction / 60.0) * 18.0;
     double chroma_str = ((double)state.liquid_chroma / 30.0) * 2.0;
     double tint_strength = ((double)state.liquid_tint / 100.0);
     double rim_intensity = ((double)state.liquid_rim / 50.0) * 0.60;
+    double shadow_val = (double)state.liquid_shadow / 100.0;
+    if (shadow_val <= 0.02) shadow_passes = 0;
+    gboolean is_light = mac_is_light_mode();
+
+    s_baked_tick++;
+
+    int oldest_idx = 0;
+    uint64_t oldest_tick = UINT64_MAX;
+    for (int k = 0; k < MAX_BAKED_SHAPES; k++) {
+        BakedGlassShape *b = &s_baked_shapes[k];
+        if (b->valid &&
+            b->igw == igw && b->igh == igh && b->shape == shape && b->gr == gr &&
+            b->ior == ior && b->disp_scale == disp_scale && b->chroma_str == chroma_str &&
+            b->tint_strength == tint_strength && b->rim_intensity == rim_intensity &&
+            b->shadow_passes == shadow_passes &&
+            (shadow_passes == 0 || b->shadow_val == shadow_val) &&
+            b->is_light == is_light) {
+            b->last_used = s_baked_tick;
+            return b;
+        }
+        if (!b->valid) {
+            oldest_idx = k;
+            oldest_tick = 0;
+        } else if (b->last_used < oldest_tick) {
+            oldest_tick = b->last_used;
+            oldest_idx = k;
+        }
+    }
+
+    BakedGlassShape *b = &s_baked_shapes[oldest_idx];
+    free(b->bevel_pixels);
+    free(b->shadow_alpha);
+    memset(b, 0, sizeof(*b));
+
+    b->igw = igw; b->igh = igh; b->gr = gr; b->shape = shape;
+    b->ior = ior; b->disp_scale = disp_scale; b->chroma_str = chroma_str;
+    b->tint_strength = tint_strength; b->rim_intensity = rim_intensity;
+    b->shadow_val = shadow_val; b->shadow_passes = shadow_passes;
+    b->is_light = is_light;
+    b->last_used = s_baked_tick;
+    b->valid = TRUE;
+    b->dots_cx_rel = gw * 0.5;
+    b->dots_cy_rel = gh * 0.5;
+
+    double max_z = 25.0;
+    double bevel_width = CLAMP(max_z * 0.75 + gr * 0.2, 4.0, 28.0);
+    double inv_bevel = 1.0 / bevel_width;
 
     double ly_dir = 1.0;
     double lz_dir = 0.38;
@@ -2992,94 +3057,58 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
 
     const DepthLUT *depth_lut = get_depth_lut(ior, disp_scale, rim_intensity, bevel_width, ly_dir, lz_dir);
 
-    gboolean is_light = mac_is_light_mode();
     double tint_r = is_light ? 255.0 : 41.0;
     double tint_g = is_light ? 255.0 : 41.0;
     double tint_b = is_light ? 255.0 : 46.0;
-
     double one_minus_tint = 1.0 - tint_strength;
     double tint_r_str = tint_r * tint_strength;
     double tint_g_str = tint_g * tint_strength;
     double tint_b_str = tint_b * tint_strength;
     double const_sheen = fast_pow165(lz_dir) * 0.30 * 255.0;
 
-    static uint8_t s_cached_lut_r[256], s_cached_lut_g[256], s_cached_lut_b[256];
-    static double s_cached_tint_str = -1.0;
-    static double s_cached_sheen = -1.0;
-    static gboolean s_cached_is_light = FALSE;
-    if (tint_strength != s_cached_tint_str || const_sheen != s_cached_sheen || is_light != s_cached_is_light) {
-        s_cached_tint_str = tint_strength;
-        s_cached_sheen = const_sheen;
-        s_cached_is_light = is_light;
-        for (int i = 0; i < 256; i++) {
-            double base_r = (double)i * one_minus_tint + tint_r_str;
-            double base_g = (double)i * one_minus_tint + tint_g_str;
-            double base_b = (double)i * one_minus_tint + tint_b_str;
-            s_cached_lut_r[i] = (uint8_t)CLAMP(base_r + const_sheen - (base_r * const_sheen * (1.0 / 255.0)), 0, 255);
-            s_cached_lut_g[i] = (uint8_t)CLAMP(base_g + const_sheen - (base_g * const_sheen * (1.0 / 255.0)), 0, 255);
-            s_cached_lut_b[i] = (uint8_t)CLAMP(base_b + const_sheen - (base_b * const_sheen * (1.0 / 255.0)), 0, 255);
-        }
+    for (int i = 0; i < 256; i++) {
+        double base_r = (double)i * one_minus_tint + tint_r_str;
+        double base_g = (double)i * one_minus_tint + tint_g_str;
+        double base_b = (double)i * one_minus_tint + tint_b_str;
+        b->lut_r[i] = (uint8_t)CLAMP(base_r + const_sheen - (base_r * const_sheen * (1.0 / 255.0)), 0, 255);
+        b->lut_g[i] = (uint8_t)CLAMP(base_g + const_sheen - (base_g * const_sheen * (1.0 / 255.0)), 0, 255);
+        b->lut_b[i] = (uint8_t)CLAMP(base_b + const_sheen - (base_b * const_sheen * (1.0 / 255.0)), 0, 255);
     }
-    const uint8_t *lut_r = s_cached_lut_r;
-    const uint8_t *lut_g = s_cached_lut_g;
-    const uint8_t *lut_b = s_cached_lut_b;
 
     double r_val = (shape == 2) ? fmin(bx, by) : gr;
-    double r_val_outer = r_val + 0.8;
-    double r_val_outer_sq = r_val_outer * r_val_outer;
+
+    BakedBevelPixel *tmp = (BakedBevelPixel *)malloc((size_t)igw * igh * sizeof(BakedBevelPixel));
+    int count = 0;
 
     for (int ly = 0; ly < igh; ly++) {
-        uint32_t *dst_row = s_scratch_pixels + ly * igw;
         double py = ly - by + 0.5;
         double abs_py = fabs(py);
+        BakedBevelRow *row = &b->rows[ly];
+        row->in_start = 0;
+        row->in_end = 0;
+        row->left_offset = (uint32_t)count;
+        row->left_count = 0;
+        row->right_count = 0;
 
-        if (abs_py > by + 0.8) {
-            memset(dst_row, 0, igw * sizeof(uint32_t));
-            continue;
-        }
-
-        int lx_min = 0;
-        int lx_max = igw;
+        if (abs_py > by + 0.8) continue;
 
         double qy = abs_py - by + r_val;
         double max_qy = fmax(qy, 0.0);
         double max_qy_sq = max_qy * max_qy;
 
-        if (shape == 1) {
-            if (py * py >= r_val_outer_sq) {
-                memset(dst_row, 0, igw * sizeof(uint32_t));
-                continue;
-            }
-            double half_w = sqrt(r_val_outer_sq - py * py);
-            lx_min = CLAMP((int)floor(bx - half_w), 0, igw);
-            lx_max = CLAMP((int)ceil(bx + half_w), 0, igw);
-            if (lx_min > 0) memset(dst_row, 0, lx_min * sizeof(uint32_t));
-            if (lx_max < igw) memset(dst_row + lx_max, 0, (igw - lx_max) * sizeof(uint32_t));
-        } else if (max_qy > 0.0) {
-            if (max_qy_sq >= r_val_outer_sq) {
-                memset(dst_row, 0, igw * sizeof(uint32_t));
-                continue;
-            }
-            double half_w = (bx - r_val) + sqrt(r_val_outer_sq - max_qy_sq);
-            lx_min = CLAMP((int)floor(bx - half_w), 0, igw);
-            lx_max = CLAMP((int)ceil(bx + half_w), 0, igw);
-            if (lx_min > 0) memset(dst_row, 0, lx_min * sizeof(uint32_t));
-            if (lx_max < igw) memset(dst_row + lx_max, 0, (igw - lx_max) * sizeof(uint32_t));
-        }
+        int row_lx[320];
+        BakedBevelPixel row_px[320];
+        int n_row = 0;
+        int first_flat = -1, last_flat = -1;
 
-        int bg_y = CLAMP(igy + ly, 0, height - 1);
-        const uint32_t *src_row = (const uint32_t *)(src_pixels + bg_y * src_stride);
-
-        for (int lx = lx_min; lx < lx_max; lx++) {
+        for (int lx = 0; lx < igw; lx++) {
             double px = lx - bx + 0.5;
             double abs_px = fabs(px);
-
-            double d;
-            double n2d_x, n2d_y;
+            double d, n2d_x, n2d_y;
             if (shape == 1) {
                 double len = sqrt(px * px + py * py) + 1e-6;
                 d = len - r_val;
-                if (d > 0.8) { dst_row[lx] = 0; continue; }
+                if (d > 0.8) continue;
                 double inv_len = 1.0 / len;
                 n2d_x = px * inv_len;
                 n2d_y = py * inv_len;
@@ -3089,8 +3118,7 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
                 double out_len = (max_qx > 0.0 && max_qy > 0.0) ? sqrt(max_qx * max_qx + max_qy_sq) : (max_qx + max_qy);
                 double in_dist = fmin(fmax(qx, qy), 0.0);
                 d = out_len + in_dist - r_val;
-                if (d > 0.8) { dst_row[lx] = 0; continue; }
-
+                if (d > 0.8) continue;
                 if (out_len > 1e-5) {
                     double inv_l = 1.0 / out_len;
                     n2d_x = (px >= 0.0 ? 1.0 : -1.0) * (max_qx * inv_l);
@@ -3102,12 +3130,9 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
             }
 
             double depth = -d * inv_bevel;
-
-            /* Flat interior fast path */
             if (depth >= 1.0) {
-                int bg_x = CLAMP(igx + lx, 0, width - 1);
-                uint32_t c = src_row[bg_x];
-                dst_row[lx] = (0xFF << 24) | (lut_r[(c >> 16) & 0xFF] << 16) | (lut_g[(c >> 8) & 0xFF] << 8) | lut_b[c & 0xFF];
+                if (first_flat < 0) first_flat = lx;
+                last_flat = lx + 1;
                 continue;
             }
 
@@ -3116,67 +3141,453 @@ static void draw_repo_glass_element_optimized(cairo_t *cr, cairo_surface_t *bg, 
             const DepthLUT *item = &depth_lut[lidx];
 
             double disp_factor = item->disp_factor;
-            double sx = gx + lx - n2d_x * disp_factor;
-            double sy = gy + ly - n2d_y * disp_factor;
-
-            double cr_r, cr_g, cr_b;
-            if (chroma_str > 0.01 && disp_factor > 0.1 && g_liquid_element_count <= 10) {
-                cr_g = sample_channel_fast(src_pixels, src_stride, width, height, sx, sy, 8);
-                double c_off_x = -n2d_x * (chroma_str * item->chromaDampen);
-                double c_off_y = -n2d_y * (chroma_str * item->chromaDampen);
-                cr_r = sample_channel_fast(src_pixels, src_stride, width, height, sx + c_off_x, sy + c_off_y, 16);
-                cr_b = sample_channel_fast(src_pixels, src_stride, width, height, sx - c_off_x, sy - c_off_y, 0);
-            } else {
-                sample_bilinear_fast(src_pixels, src_stride, width, height, sx, sy, &cr_r, &cr_g, &cr_b);
-            }
-
-            double base_r, base_g, base_b;
-            if (tint_strength < 0.001) {
-                base_r = cr_r * item->ao;
-                base_g = cr_g * item->ao;
-                base_b = cr_b * item->ao;
-            } else {
-                base_r = (cr_r * one_minus_tint + tint_r_str) * item->ao;
-                base_g = (cr_g * one_minus_tint + tint_g_str) * item->ao;
-                base_b = (cr_b * one_minus_tint + tint_b_str) * item->ao;
-            }
+            double dx = -n2d_x * disp_factor;
+            double dy = -n2d_y * disp_factor;
+            double c_off_x = -n2d_x * (chroma_str * item->chromaDampen);
+            double c_off_y = -n2d_y * (chroma_str * item->chromaDampen);
 
             double dotNL = n2d_y * item->sinA_ly + item->cosA_lz;
             double lightMask = fast_pow27(fabs(dotNL));
             double finalRimLight = item->rimEdge * lightMask;
             double sheenFacing = fmax(dotNL, 0.0);
             double sheenLight = fast_pow165(sheenFacing) * 0.30 * 255.0;
-
             double added = finalRimLight + sheenLight;
-            double lit_r = base_r + added - (base_r * added * 0.0039215686);
-            double lit_g = base_g + added - (base_g * added * 0.0039215686);
-            double lit_b = base_b + added - (base_b * added * 0.0039215686);
 
-            uint8_t out_r = (uint8_t)CLAMP(lit_r, 0, 255);
-            uint8_t out_g = (uint8_t)CLAMP(lit_g, 0, 255);
-            uint8_t out_b = (uint8_t)CLAMP(lit_b, 0, 255);
+            double screen_mul = 1.0 - added * 0.0039215686;
+            double M = one_minus_tint * item->ao * screen_mul;
+            double A_r = tint_r_str * item->ao * screen_mul + added;
+            double A_g = tint_g_str * item->ao * screen_mul + added;
+            double A_b = tint_b_str * item->ao * screen_mul + added;
 
-            dst_row[lx] = item->alpha_mask | (out_r << 16) | (out_g << 8) | out_b;
+            BakedBevelPixel p;
+            p.lx = (int16_t)lx;
+            p.dx_q8 = (int16_t)llround(dx * 256.0);
+            p.dy_q8 = (int16_t)llround(dy * 256.0);
+            p.cx_q8 = (int16_t)llround(c_off_x * 256.0);
+            p.cy_q8 = (int16_t)llround(c_off_y * 256.0);
+            p.mul_q12 = (int16_t)CLAMP(llround(M * 4096.0), -32768, 32767);
+            p.add_r_q4 = (int16_t)CLAMP(llround(A_r * 16.0), -32768, 32767);
+            p.add_g_q4 = (int16_t)CLAMP(llround(A_g * 16.0), -32768, 32767);
+            p.add_b_q4 = (int16_t)CLAMP(llround(A_b * 16.0), -32768, 32767);
+            p.alpha = (uint8_t)(item->alpha_mask >> 24);
+            p.has_chroma = (disp_factor > 0.1 && chroma_str > 0.01) ? 1 : 0;
+
+            row_lx[n_row] = lx;
+            row_px[n_row] = p;
+            n_row++;
+        }
+
+        if (first_flat >= 0) {
+            row->in_start = (int16_t)first_flat;
+            row->in_end = (int16_t)last_flat;
+            int lc = 0, rc = 0;
+            for (int j = 0; j < n_row; j++) {
+                if (row_lx[j] < first_flat) {
+                    tmp[count++] = row_px[j];
+                    lc++;
+                } else if (row_lx[j] >= last_flat) {
+                    tmp[count++] = row_px[j];
+                    rc++;
+                }
+            }
+            row->left_count = (uint16_t)lc;
+            row->right_count = (uint16_t)rc;
+        } else {
+            for (int j = 0; j < n_row; j++) {
+                tmp[count++] = row_px[j];
+            }
+            row->left_count = (uint16_t)n_row;
+            row->right_count = 0;
         }
     }
 
-    cairo_surface_t *glass_surf = cairo_image_surface_create_for_data(
-        (unsigned char *)s_scratch_pixels, CAIRO_FORMAT_ARGB32, igw, igh, igw * 4);
-    cairo_surface_mark_dirty(glass_surf);
-    cairo_set_source_surface(cr, glass_surf, igx, igy);
-    cairo_paint(cr);
-    cairo_surface_destroy(glass_surf);
+    b->bevel_count = count;
+    if (count > 0) {
+        b->bevel_pixels = (BakedBevelPixel *)malloc((size_t)count * sizeof(BakedBevelPixel));
+        memcpy(b->bevel_pixels, tmp, (size_t)count * sizeof(BakedBevelPixel));
+    }
+    free(tmp);
 
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.65);
-    double cx = gx + gw * 0.5;
-    double cy = gy + gh * 0.5;
-    cairo_new_sub_path(cr);
-    cairo_arc(cr, cx - 9.0, cy, 2.2, 0, 2 * G_PI);
-    cairo_new_sub_path(cr);
-    cairo_arc(cr, cx, cy, 2.2, 0, 2 * G_PI);
-    cairo_new_sub_path(cr);
-    cairo_arc(cr, cx + 9.0, cy, 2.2, 0, 2 * G_PI);
-    cairo_fill(cr);
+    if (shadow_passes > 0) {
+        int sw = igw + SHADOW_PAD * 2;
+        int sh = igh + SHADOW_PAD * 2;
+        cairo_surface_t *ss = cairo_image_surface_create(CAIRO_FORMAT_A8, sw, sh);
+        cairo_t *scr = cairo_create(ss);
+        for (int i = shadow_passes; i >= 1; i--) {
+            double expand = (shadow_passes == 2) ? (i * 4.0) : (i * 2.5);
+            double alpha = (shadow_passes == 2) ? ((shadow_val * 0.22) / i) : ((shadow_val * 0.14) / i);
+            draw_shape_path(scr, SHADOW_PAD - expand, SHADOW_PAD - 3.5 - expand * 0.5, gw + expand * 2.0, gh + expand * 2.0, gr + expand, shape);
+            cairo_set_source_rgba(scr, 0.0, 0.0, 0.0, alpha);
+            cairo_fill(scr);
+        }
+        cairo_destroy(scr);
+        cairo_surface_flush(ss);
+        b->shadow_w = sw;
+        b->shadow_h = sh;
+        b->shadow_ox = -SHADOW_PAD;
+        b->shadow_oy = -SHADOW_PAD;
+        b->shadow_alpha = (uint8_t *)malloc((size_t)sw * sh);
+        int sstride = cairo_image_surface_get_stride(ss);
+        const uint8_t *sdata = cairo_image_surface_get_data(ss);
+        for (int y = 0; y < sh; y++) {
+            memcpy(b->shadow_alpha + y * sw, sdata + y * sstride, sw);
+        }
+        cairo_surface_destroy(ss);
+    }
+
+    return b;
+}
+
+typedef struct {
+    const BakedGlassShape *baked;
+    double gx, gy;
+    int igx, igy;
+    int32_t base_gx_fp, base_gy_fp;
+} BakedDrawItem;
+
+static inline void render_bevel_span(
+    const unsigned char *src_pixels, int src_stride, int width, int height,
+    uint32_t *dst_row, int igx, int ly, int32_t base_gx_fp, int32_t base_gy_fp,
+    const BakedBevelPixel *pixels, int n, gboolean allow_chroma) {
+    int32_t sy_base_fp = base_gy_fp + (ly << 8);
+    for (int i = 0; i < n; i++) {
+        const BakedBevelPixel *p = &pixels[i];
+        int dst_x = igx + p->lx;
+        if ((unsigned)dst_x >= (unsigned)width) continue;
+
+        int32_t sx_fp = base_gx_fp + (p->lx << 8) + p->dx_q8;
+        int32_t sy_fp = sy_base_fp + p->dy_q8;
+
+        int32_t cr_r, cr_g, cr_b;
+        if (allow_chroma && p->has_chroma) {
+            cr_g = sample_channel_q0(src_pixels, src_stride, width, height, sx_fp, sy_fp, 8);
+            cr_r = sample_channel_q0(src_pixels, src_stride, width, height, sx_fp + p->cx_q8, sy_fp + p->cy_q8, 16);
+            cr_b = sample_channel_q0(src_pixels, src_stride, width, height, sx_fp - p->cx_q8, sy_fp - p->cy_q8, 0);
+        } else {
+            sample_bilinear_q0(src_pixels, src_stride, width, height, sx_fp, sy_fp, &cr_r, &cr_g, &cr_b);
+        }
+
+        int32_t m = p->mul_q12;
+        int32_t out_r = (cr_r * m + ((int32_t)p->add_r_q4 << 8)) >> 12;
+        int32_t out_g = (cr_g * m + ((int32_t)p->add_g_q4 << 8)) >> 12;
+        int32_t out_b = (cr_b * m + ((int32_t)p->add_b_q4 << 8)) >> 12;
+
+        if (out_r < 0) out_r = 0; else if (out_r > 255) out_r = 255;
+        if (out_g < 0) out_g = 0; else if (out_g > 255) out_g = 255;
+        if (out_b < 0) out_b = 0; else if (out_b > 255) out_b = 255;
+
+        uint8_t a = p->alpha;
+        if (__builtin_expect(a == 255, 1)) {
+            dst_row[dst_x] = 0xFF000000u | ((uint32_t)out_r << 16) | ((uint32_t)out_g << 8) | (uint32_t)out_b;
+        } else if (a > 0) {
+            uint32_t bg = dst_row[dst_x];
+            int inv_a = 255 - a;
+            int32_t br = (int32_t)((bg >> 16) & 0xFF);
+            int32_t bg_c = (int32_t)((bg >> 8) & 0xFF);
+            int32_t bb = (int32_t)(bg & 0xFF);
+            int32_t fr = out_r + ((br * inv_a + 127) / 255);
+            int32_t fg = out_g + ((bg_c * inv_a + 127) / 255);
+            int32_t fb = out_b + ((bb * inv_a + 127) / 255);
+            if (fr > 255) fr = 255;
+            if (fg > 255) fg = 255;
+            if (fb > 255) fb = 255;
+            dst_row[dst_x] = 0xFF000000u | ((uint32_t)fr << 16) | ((uint32_t)fg << 8) | (uint32_t)fb;
+        }
+    }
+}
+
+/* Renders all baked glass elements intersecting strip [y0, y1) directly into dst_pixels */
+static void render_baked_strip(
+    const unsigned char *src_pixels, int src_stride,
+    unsigned char *dst_pixels, int dst_stride,
+    int width, int height, int y0, int y1,
+    const BakedDrawItem *items, int n_items, gboolean allow_chroma, gboolean copy_bg) {
+
+    if (copy_bg) {
+        for (int y = y0; y < y1; y++) {
+            memcpy(dst_pixels + y * dst_stride, src_pixels + y * src_stride, (size_t)width * 4);
+        }
+    }
+
+    for (int idx = 0; idx < n_items; idx++) {
+        const BakedDrawItem *it = &items[idx];
+        const BakedGlassShape *b = it->baked;
+        int igx = it->igx;
+        int igy = it->igy;
+
+        if (b->shadow_alpha) {
+            int sy0 = igy + b->shadow_oy;
+            int sy1 = sy0 + b->shadow_h;
+            int ry0 = (sy0 > y0) ? sy0 : y0;
+            int ry1 = (sy1 < y1) ? sy1 : y1;
+            int sx0 = igx + b->shadow_ox;
+            int lx0 = (sx0 < 0) ? -sx0 : 0;
+            int lx1 = (sx0 + b->shadow_w > width) ? (width - sx0) : b->shadow_w;
+            for (int y = ry0; y < ry1; y++) {
+                const uint8_t *sa_row = b->shadow_alpha + (y - sy0) * b->shadow_w;
+                uint32_t *drow = (uint32_t *)(dst_pixels + y * dst_stride);
+                for (int lx = lx0; lx < lx1; lx++) {
+                    uint8_t sa = sa_row[lx];
+                    if (sa) {
+                        int inv = 255 - sa;
+                        uint32_t c = drow[sx0 + lx];
+                        uint32_t r = (((c >> 16) & 0xFF) * inv + 127) / 255;
+                        uint32_t g = (((c >> 8) & 0xFF) * inv + 127) / 255;
+                        uint32_t bl = ((c & 0xFF) * inv + 127) / 255;
+                        drow[sx0 + lx] = 0xFF000000u | (r << 16) | (g << 8) | bl;
+                    }
+                }
+            }
+        }
+
+        int gy0 = igy;
+        int gy1 = igy + b->igh;
+        int ry0 = (gy0 > y0) ? gy0 : y0;
+        int ry1 = (gy1 < y1) ? gy1 : y1;
+        if (ry0 < ry1) {
+            const uint8_t *lr = b->lut_r;
+            const uint8_t *lg = b->lut_g;
+            const uint8_t *lb = b->lut_b;
+            for (int y = ry0; y < ry1; y++) {
+                int ly = y - igy;
+                const BakedBevelRow *row = &b->rows[ly];
+                uint32_t *drow = (uint32_t *)(dst_pixels + y * dst_stride);
+                const uint32_t *srow = (const uint32_t *)(src_pixels + y * src_stride);
+
+                if (row->left_count > 0) {
+                    render_bevel_span(src_pixels, src_stride, width, height,
+                        drow, igx, ly, it->base_gx_fp, it->base_gy_fp,
+                        b->bevel_pixels + row->left_offset, row->left_count, allow_chroma);
+                }
+
+                if (row->in_end > row->in_start) {
+                    int x_start = igx + row->in_start;
+                    int x_end = igx + row->in_end;
+                    if (x_start < 0) x_start = 0;
+                    if (x_end > width) x_end = width;
+                    for (int x = x_start; x < x_end; x++) {
+                        uint32_t c = srow[x];
+                        drow[x] = 0xFF000000u | ((uint32_t)lr[(c >> 16) & 0xFF] << 16) |
+                                  ((uint32_t)lg[(c >> 8) & 0xFF] << 8) | (uint32_t)lb[c & 0xFF];
+                    }
+                }
+
+                if (row->right_count > 0) {
+                    render_bevel_span(src_pixels, src_stride, width, height,
+                        drow, igx, ly, it->base_gx_fp, it->base_gy_fp,
+                        b->bevel_pixels + row->left_offset + row->left_count, row->right_count, allow_chroma);
+                }
+            }
+        }
+
+        /* Centered 3-dot sub-pixel overlay */
+        {
+            double cx = it->gx + b->dots_cx_rel;
+            double cy = it->gy + b->dots_cy_rel;
+            int qx = (int)floor(cx * 4.0 + 0.5);
+            int qy = (int)floor(cy * 4.0 + 0.5);
+            int ix = qx >> 2, sub_x = qx & 3;
+            int iy = qy >> 2, sub_y = qy & 3;
+            int dx0 = ix - 13;
+            int dy0 = iy - 3;
+            int dy1 = dy0 + SDOTS_H;
+            int dry0 = (dy0 > y0) ? dy0 : y0;
+            int dry1 = (dy1 < y1) ? dy1 : y1;
+            int lx0 = (dx0 < 0) ? -dx0 : 0;
+            int lx1 = (dx0 + SDOTS_W > width) ? (width - dx0) : SDOTS_W;
+            const uint8_t *mask = s_dots_sub_lut[sub_y][sub_x];
+            for (int y = dry0; y < dry1; y++) {
+                const uint8_t *da_row = mask + (y - dy0) * SDOTS_W;
+                uint32_t *drow = (uint32_t *)(dst_pixels + y * dst_stride);
+                for (int lx = lx0; lx < lx1; lx++) {
+                    uint8_t da = da_row[lx];
+                    if (da) {
+                        int inv = 255 - da;
+                        uint32_t c = drow[dx0 + lx];
+                        uint32_t r = (da * 255 + ((c >> 16) & 0xFF) * inv + 127) / 255;
+                        uint32_t g = (da * 255 + ((c >> 8) & 0xFF) * inv + 127) / 255;
+                        uint32_t bl = (da * 255 + (c & 0xFF) * inv + 127) / 255;
+                        drow[dx0 + lx] = 0xFF000000u | (r << 16) | (g << 8) | bl;
+                    }
+                }
+            }
+        }
+    }
+}
+
+#define MAX_GLASS_THREADS 8
+
+static struct {
+    GMutex mutex;
+    GCond start_cond;
+    GCond done_cond;
+    GThread *threads[MAX_GLASS_THREADS];
+    int n_threads;
+    int inited;
+    uint64_t job_seq;
+    int active_workers;
+
+    const unsigned char *src_pixels;
+    int src_stride;
+    unsigned char *dst_pixels;
+    int dst_stride;
+    int width, height;
+    const BakedDrawItem *items;
+    int n_items;
+    gboolean allow_chroma;
+} s_glass_pool;
+
+static gpointer glass_worker_loop(gpointer arg) {
+    int tid = GPOINTER_TO_INT(arg);
+    uint64_t local_seq = 0;
+
+    g_mutex_lock(&s_glass_pool.mutex);
+    for (;;) {
+        while (s_glass_pool.job_seq == local_seq) {
+            g_cond_wait(&s_glass_pool.start_cond, &s_glass_pool.mutex);
+        }
+        local_seq = s_glass_pool.job_seq;
+
+        int total_strips = s_glass_pool.n_threads + 1;
+        int h = s_glass_pool.height;
+        int y0 = (h * (tid + 1)) / total_strips;
+        int y1 = (h * (tid + 2)) / total_strips;
+        const unsigned char *src_p = s_glass_pool.src_pixels;
+        int src_s = s_glass_pool.src_stride;
+        unsigned char *dst_p = s_glass_pool.dst_pixels;
+        int dst_s = s_glass_pool.dst_stride;
+        int w = s_glass_pool.width;
+        const BakedDrawItem *items = s_glass_pool.items;
+        int n_items = s_glass_pool.n_items;
+        gboolean chroma = s_glass_pool.allow_chroma;
+        g_mutex_unlock(&s_glass_pool.mutex);
+
+        if (y1 > y0) {
+            render_baked_strip(src_p, src_s, dst_p, dst_s, w, h, y0, y1, items, n_items, chroma, TRUE);
+        }
+
+        g_mutex_lock(&s_glass_pool.mutex);
+        s_glass_pool.active_workers--;
+        if (s_glass_pool.active_workers == 0) {
+            g_cond_signal(&s_glass_pool.done_cond);
+        }
+    }
+    return NULL;
+}
+
+static void init_glass_pool(void) {
+    if (s_glass_pool.inited) return;
+    s_glass_pool.inited = 1;
+    g_mutex_init(&s_glass_pool.mutex);
+    g_cond_init(&s_glass_pool.start_cond);
+    g_cond_init(&s_glass_pool.done_cond);
+
+    int cpus = g_get_num_processors();
+    int workers = cpus - 1;
+    if (workers < 1) workers = 0;
+    if (workers > MAX_GLASS_THREADS) workers = MAX_GLASS_THREADS;
+    s_glass_pool.n_threads = workers;
+    for (int i = 0; i < workers; i++) {
+        s_glass_pool.threads[i] = g_thread_new("mac-glass-worker", glass_worker_loop, GINT_TO_POINTER(i));
+    }
+}
+
+static uint32_t *s_glass_frame_buf = NULL;
+static int s_glass_frame_buf_cap = 0;
+
+static void render_baked_glass_scene(
+    cairo_t *cr, cairo_surface_t *bg, int width, int height,
+    const BakedDrawItem *items, int n_items, gboolean allow_chroma) {
+
+    init_subpixel_dots_lut();
+    int need = width * height;
+    if (need > s_glass_frame_buf_cap) {
+        free(s_glass_frame_buf);
+        size_t bytes = (((size_t)need * sizeof(uint32_t)) + 63) & ~(size_t)63;
+        s_glass_frame_buf = (uint32_t *)aligned_alloc(64, bytes);
+        s_glass_frame_buf_cap = s_glass_frame_buf ? need : 0;
+    }
+    if (!s_glass_frame_buf || n_items <= 0) return;
+
+    cairo_surface_flush(bg);
+    const unsigned char *src_pixels = cairo_image_surface_get_data(bg);
+    int src_stride = cairo_image_surface_get_stride(bg);
+    int dst_stride = width * 4;
+
+    /* Fast single-element ROI path: avoids copying/painting unchanged background */
+    if (n_items == 1 && items[0].baked) {
+        const BakedGlassShape *b = items[0].baked;
+        int rx0 = items[0].igx + (b->shadow_alpha ? b->shadow_ox : 0);
+        int ry0 = items[0].igy + (b->shadow_alpha ? b->shadow_oy : 0);
+        int rx1 = items[0].igx + (b->shadow_alpha ? (b->shadow_ox + b->shadow_w) : b->igw);
+        int ry1 = items[0].igy + (b->shadow_alpha ? (b->shadow_oy + b->shadow_h) : b->igh);
+        if (rx0 < 0) rx0 = 0;
+        if (ry0 < 0) ry0 = 0;
+        if (rx1 > width) rx1 = width;
+        if (ry1 > height) ry1 = height;
+        int rw = rx1 - rx0;
+        int rh = ry1 - ry0;
+        if (rw > 0 && rh > 0) {
+            for (int y = ry0; y < ry1; y++) {
+                memcpy(s_glass_frame_buf + y * width + rx0,
+                       (const uint32_t *)(src_pixels + y * src_stride) + rx0,
+                       (size_t)rw * 4);
+            }
+            render_baked_strip(src_pixels, src_stride, (unsigned char *)s_glass_frame_buf, dst_stride,
+                               width, height, ry0, ry1, items, 1, allow_chroma, FALSE);
+            cairo_surface_t *roi_surf = cairo_image_surface_create_for_data(
+                (unsigned char *)(s_glass_frame_buf + ry0 * width + rx0), CAIRO_FORMAT_ARGB32, rw, rh, dst_stride);
+            cairo_surface_mark_dirty(roi_surf);
+            cairo_set_source_surface(cr, roi_surf, rx0, ry0);
+            cairo_paint(cr);
+            cairo_surface_destroy(roi_surf);
+            return;
+        }
+    }
+
+    if (n_items > 4) {
+        init_glass_pool();
+    }
+
+    if (n_items > 4 && s_glass_pool.n_threads > 0) {
+        g_mutex_lock(&s_glass_pool.mutex);
+        s_glass_pool.src_pixels = src_pixels;
+        s_glass_pool.src_stride = src_stride;
+        s_glass_pool.dst_pixels = (unsigned char *)s_glass_frame_buf;
+        s_glass_pool.dst_stride = dst_stride;
+        s_glass_pool.width = width;
+        s_glass_pool.height = height;
+        s_glass_pool.items = items;
+        s_glass_pool.n_items = n_items;
+        s_glass_pool.allow_chroma = allow_chroma;
+        s_glass_pool.active_workers = s_glass_pool.n_threads;
+        s_glass_pool.job_seq++;
+        g_cond_broadcast(&s_glass_pool.start_cond);
+        g_mutex_unlock(&s_glass_pool.mutex);
+
+        int total_strips = s_glass_pool.n_threads + 1;
+        int y1 = height / total_strips;
+        if (y1 > 0) {
+            render_baked_strip(src_pixels, src_stride, (unsigned char *)s_glass_frame_buf, dst_stride,
+                               width, height, 0, y1, items, n_items, allow_chroma, TRUE);
+        }
+
+        g_mutex_lock(&s_glass_pool.mutex);
+        while (s_glass_pool.active_workers > 0) {
+            g_cond_wait(&s_glass_pool.done_cond, &s_glass_pool.mutex);
+        }
+        g_mutex_unlock(&s_glass_pool.mutex);
+    } else {
+        render_baked_strip(src_pixels, src_stride, (unsigned char *)s_glass_frame_buf, dst_stride,
+                           width, height, 0, height, items, n_items, allow_chroma, TRUE);
+    }
+
+    cairo_surface_t *out_surf = cairo_image_surface_create_for_data(
+        (unsigned char *)s_glass_frame_buf, CAIRO_FORMAT_ARGB32, width, height, dst_stride);
+    cairo_surface_mark_dirty(out_surf);
+    cairo_set_source_surface(cr, out_surf, 0, 0);
+    cairo_paint(cr);
+    cairo_surface_destroy(out_surf);
 }
 
 static void init_benchmark_elements(int width, int height) {
@@ -3460,8 +3871,10 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
 
     cairo_surface_t *bg = get_cached_wallpaper_surface(width, height);
     if (bg) {
-        cairo_set_source_surface(cr, bg, 0, 0);
-        cairo_paint(cr);
+        if (!g_liquid_use_optimized || g_liquid_element_count <= 1) {
+            cairo_set_source_surface(cr, bg, 0, 0);
+            cairo_paint(cr);
+        }
     } else {
         cairo_pattern_t *fallback = cairo_pattern_create_linear(0, 0, width, height);
         cairo_pattern_add_color_stop_rgb(fallback, 0.0, 0.12, 0.15, 0.22);
@@ -3472,25 +3885,6 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     }
 
     gint64 bench_start = g_get_monotonic_time();
-
-    if (g_liquid_element_count > 1) {
-        if (!g_bench_elements_inited && width > 30 && height > 30) {
-            init_benchmark_elements(width, height);
-        }
-        for (int i = 1; i < g_liquid_element_count; i++) {
-            if (g_liquid_use_optimized) {
-                draw_repo_glass_element_optimized(cr, bg, width, height,
-                    g_bench_elements[i].x, g_bench_elements[i].y,
-                    g_bench_elements[i].w, g_bench_elements[i].h,
-                    g_bench_elements[i].r, g_bench_elements[i].shape, FALSE);
-            } else {
-                draw_repo_glass_element(cr, bg, width, height,
-                    g_bench_elements[i].x, g_bench_elements[i].y,
-                    g_bench_elements[i].w, g_bench_elements[i].h,
-                    g_bench_elements[i].r, g_bench_elements[i].shape);
-            }
-        }
-    }
 
     double gw = 150.0, gh = 110.0, gr = 24.0;
     if (state.liquid_shape == 1) {
@@ -3507,8 +3901,58 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     double gy = CLAMP(g_glass_y, 6.0, height - gh - 6.0);
 
     if (g_liquid_use_optimized) {
-        draw_repo_glass_element_optimized(cr, bg, width, height, gx, gy, gw, gh, gr, state.liquid_shape, TRUE);
+        if (bg) {
+            BakedDrawItem items[MAX_BENCHMARK_ELEMENTS];
+            int item_count = 0;
+
+            if (g_liquid_element_count > 1) {
+                if (!g_bench_elements_inited && width > 30 && height > 30) {
+                    init_benchmark_elements(width, height);
+                }
+                int bg_shadow_passes = (g_liquid_element_count > 25) ? 0 : ((g_liquid_element_count > 10) ? 2 : 4);
+                for (int i = 1; i < g_liquid_element_count && item_count < MAX_BENCHMARK_ELEMENTS - 1; i++) {
+                    const BakedGlassShape *b = get_baked_glass_shape(
+                        g_bench_elements[i].w, g_bench_elements[i].h,
+                        g_bench_elements[i].r, g_bench_elements[i].shape, bg_shadow_passes);
+                    if (b) {
+                        items[item_count].baked = b;
+                        items[item_count].gx = g_bench_elements[i].x;
+                        items[item_count].gy = g_bench_elements[i].y;
+                        items[item_count].igx = (int)round(g_bench_elements[i].x);
+                        items[item_count].igy = (int)round(g_bench_elements[i].y);
+                        items[item_count].base_gx_fp = (int32_t)llround(g_bench_elements[i].x * 256.0);
+                        items[item_count].base_gy_fp = (int32_t)llround(g_bench_elements[i].y * 256.0);
+                        item_count++;
+                    }
+                }
+            }
+
+            const BakedGlassShape *main_b = get_baked_glass_shape(gw, gh, gr, state.liquid_shape, 4);
+            if (main_b) {
+                items[item_count].baked = main_b;
+                items[item_count].gx = gx;
+                items[item_count].gy = gy;
+                items[item_count].igx = (int)round(gx);
+                items[item_count].igy = (int)round(gy);
+                items[item_count].base_gx_fp = (int32_t)llround(gx * 256.0);
+                items[item_count].base_gy_fp = (int32_t)llround(gy * 256.0);
+                item_count++;
+            }
+
+            render_baked_glass_scene(cr, bg, width, height, items, item_count, (g_liquid_element_count <= 10));
+        }
     } else {
+        if (g_liquid_element_count > 1) {
+            if (!g_bench_elements_inited && width > 30 && height > 30) {
+                init_benchmark_elements(width, height);
+            }
+            for (int i = 1; i < g_liquid_element_count; i++) {
+                draw_repo_glass_element(cr, bg, width, height,
+                    g_bench_elements[i].x, g_bench_elements[i].y,
+                    g_bench_elements[i].w, g_bench_elements[i].h,
+                    g_bench_elements[i].r, g_bench_elements[i].shape);
+            }
+        }
         draw_repo_glass_element(cr, bg, width, height, gx, gy, gw, gh, gr, state.liquid_shape);
     }
 

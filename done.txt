@@ -5407,3 +5407,25 @@ Task #938:
   * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #954: Багатопотокова та архітектурна оптимізація шейдера Liquid Glass (1000+ FPS при 50 елементах)
+  - Попереднє запікання геометрії та карти фаски (BakedGlassShape, LRU-кеш на 16 форм):
+    * Для кожної унікальної геометрії та налаштувань слайдерів запікаються точні пікселі фаски (зсув заломлення dx_q8/dy_q8, хроматична аберація cx_q8/cy_q8, комбінований множник mul_q12 та адитивні канали світла/тінта add_r_q4/add_g_q4/add_b_q4, альфа), межі плоского центру [in_start, in_end) і попередньо растеризована маска тіні Cairo A8.
+    * Повністю виключено щокадрові обчислення sqrt(), 1/len, pow()/fast_pow, SDF і DepthLUT під час анімації.
+    * Додано fixed-point білінійний семплер sample_bilinear_q0 / sample_channel_q0 (Q8, спільний fetch_2x2_pixels) та субпіксельну 4x4 маску трьох крапок (s_dots_sub_lut).
+  - Єдиний спільний буфер виводу + багатопотоковий пул (GThread):
+    * Замінено 50 окремих циклів cairo_image_surface_create_for_data/cairo_paint + 150 векторних cairo_arc на рендеринг у спільний буфер s_glass_frame_buf із єдиним cairo_paint(cr) в кінці кадру.
+    * Для 1 елемента застосовано швидкий ROI-шлях (оновлюється виключно область елемента з тінню).
+    * Для > 4 елементів додано постійний пул потоків s_glass_pool (до 8 потоків GThread / GCond), який паралельно обробляє горизонтальні смуги [y0, y1) без блокувань та перегонів даних.
+  - Продуктивність і візуальна точність:
+    * Матриця перевірки по всіх крайніх налаштуваннях (1..50 елементів, Dark/Light, tint, chroma, shadow, rim): px > 5 = 0, max_diff <= 3, mean_diff <= 0.05.
+    * Живий замір на поточному CPU: 1 елемент — ~190 мкс (5262 FPS), 10 ел. — ~442 мкс (2261 FPS), 25 ел. — ~730 мкс (1369 FPS), 50 елементів — ~982 мкс (1017.9 FPS, значно вище цільових 300 FPS).
+  - Збірка, розгортання та перевірка:
+    * Синхронізовано libmac_settings.c у control-center та gnome-control-center-overlay.
+    * Перекомпільовано libmac_settings.so та розгорнуто в усі цільові директорії (~/.local/lib, /usr/lib/x86_64-linux-gnu, control-center, lib).
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
