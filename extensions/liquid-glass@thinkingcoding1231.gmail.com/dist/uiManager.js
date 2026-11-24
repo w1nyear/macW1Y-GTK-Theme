@@ -675,7 +675,7 @@ export class UIManager {
         this._wakeUnsub = (damagedActor, reason) => {
             if (this._torndown || !this.bgActor || !this.targetActor?.mapped) return;
             if (this.menu && !this.menu.isOpen) return;
-            if (['restacked', 'fullscreen', 'overview', 'layout', 'overview-scroll', 'overview-transition', 'window-moved'].includes(reason)) {
+            if (['restacked', 'fullscreen', 'overview', 'layout', 'overview-scroll', 'overview-transition'].includes(reason)) {
                 glassForceRefresh?.(this.bgActor);
                 try { this._windowCloneManager?.rebuildClones?.(); } catch (_) {}
                 try { this._uiSampler?.rebindSelf?.(); } catch (_) {}

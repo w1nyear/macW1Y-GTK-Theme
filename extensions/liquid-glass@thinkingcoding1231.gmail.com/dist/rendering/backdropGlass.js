@@ -189,7 +189,7 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
 
         this._wakeUnsub = (damagedActor, reason) => {
             if (this._cleanedUp || !this.visible) return;
-            if (['restacked', 'fullscreen', 'overview', 'layout', 'overview-scroll', 'overview-transition', 'window-moved'].includes(reason)) {
+            if (['restacked', 'fullscreen', 'overview', 'layout', 'overview-scroll', 'overview-transition'].includes(reason)) {
                 glassForceRefresh?.(this);
                 try { this._windowClones?.rebuildClones?.(); } catch (_) {}
                 try { this._uiSampler?.rebindSelf?.(); } catch (_) {}
@@ -197,7 +197,6 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
                 try { this._effect?.markBackdropDirty?.(); } catch (_) {}
             }
             if (!damagedActor || isActorNearGlass(damagedActor, this) || Main.overview?.visible) {
-                glassForceRefresh?.(this);
                 this._effect?.markBackdropDirty?.();
                 this.wakeFrameSync?.();
             }

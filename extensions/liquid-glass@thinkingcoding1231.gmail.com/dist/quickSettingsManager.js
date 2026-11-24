@@ -583,7 +583,7 @@ export class QuickSettingsManager {
         };
         this._wakeUnsub = (damagedActor, reason) => {
             if (this._torndown || !this.bgActor || !this.targetActor?.mapped || !this.menu.isOpen) return;
-            if (['restacked', 'fullscreen', 'overview', 'layout', 'window-moved'].includes(reason)) {
+            if (['restacked', 'fullscreen', 'overview', 'layout'].includes(reason)) {
                 glassForceRefresh?.(this.bgActor);
                 try { this._windowCloneManager?.rebuildClones?.(); } catch (_) {}
                 try { this._uiSampler?.rebindSelf?.(); } catch (_) {}
@@ -909,7 +909,7 @@ export class QuickSettingsManager {
         };
         this._wakeUnsub = (damagedActor, reason) => {
             if (this._torndown || !this.bgActor || !this.targetActor?.mapped || !this.menu.isOpen) return;
-            if (['restacked', 'fullscreen', 'overview', 'layout', 'window-moved'].includes(reason)) {
+            if (['restacked', 'fullscreen', 'overview', 'layout'].includes(reason)) {
                 glassForceRefresh?.(this.bgActor);
                 try { this._windowCloneManager?.rebuildClones?.(); } catch (_) {}
                 try { this._uiSampler?.rebindSelf?.(); } catch (_) {}

@@ -254,7 +254,7 @@ export class OsdManager {
             if (this._torndown || !this._isEffectActive) return;
             for (let state of this._osdStates) {
                 if (!state.bgActor || !state.targetBox?.mapped) continue;
-                if (['restacked', 'fullscreen', 'overview', 'layout', 'window-moved'].includes(reason)) {
+                if (['restacked', 'fullscreen', 'overview', 'layout'].includes(reason)) {
                     glassForceRefresh?.(state.bgActor);
                     try { state._windowCloneManager?.rebuildClones?.(); } catch (_) {}
                     try { state._uiSampler?.rebindSelf?.(); } catch (_) {}

@@ -5441,3 +5441,26 @@ Task #938:
   * [README.md](file:///home/vitaliy/MACTHEMEFILES/README.md)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #956: Виправлено критичне просідання FPS (0.01 FPS) під час переміщення вікон при відкритих скляних меню, сповіщеннях або панелях Liquid Glass
+  - Причина фризу:
+    * Сигнали руху вікна (notify::position, position-changed) у glassGate.js генерували подію 'window-moved' на кожному пікселі переміщення.
+    * В усіх менеджерах розширення liquid-glass@thinkingcoding1231.gmail.com (uiManager.js, notificationManager.js, dockManager.js, osdManager.js, quickSettingsManager.js, rendering/backdropGlass.js) 'window-moved' помилково входив у список структурної перебудови поряд із 'restacked'/'layout'/'overview'.
+    * Це змушувало на кожен піксель руху знищувати та заново створювати bgClone, windowClonesContainer, усі Clutter.Clone вікон (rebuildClones), перезахоплювати дерево UI (rebindSelf) та примусово скидати 60 FPS тротлінг (glassForceRefresh), що призводило до колапсу головного потоку GNOME Shell.
+  - Виправлення:
+    * Вилучено 'window-moved' зі списку повної перебудови клонів (rebuildClones/rebindSelf) у uiManager.js, notificationManager.js, dockManager.js, osdManager.js, quickSettingsManager.js та rendering/backdropGlass.js (і прибрано примусовий glassForceRefresh при кожному русі в backdropGlass.js).
+    * Під час переміщення вікон Clutter.Clone автоматично відстежують позицію вікна, а перемальовування скла виконується лише якщо вікно знаходиться поруч зі скляним елементом (isActorNearGlass) і плавно обмежується до ≤60 FPS через frameSync/glassRefreshDue.
+  - Синхронізація та перевірка:
+    * Оновлено встановлене розширення у ~/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/.
+    * Оновлено хеш цілісності у config/extensions.lock.json.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/uiManager.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/uiManager.js)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/notificationManager.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/notificationManager.js)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/osdManager.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/osdManager.js)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/quickSettingsManager.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/quickSettingsManager.js)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

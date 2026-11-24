@@ -363,7 +363,7 @@ export class NotificationManager {
         };
         this._wakeUnsub = (damagedActor, reason) => {
             if (this._torndown || !this.bgActor || !this.currentBanner) return;
-            if (['restacked', 'fullscreen', 'overview', 'layout', 'window-moved'].includes(reason)) {
+            if (['restacked', 'fullscreen', 'overview', 'layout'].includes(reason)) {
                 glassForceRefresh?.(this.bgActor);
                 try { this._windowCloneManager?.rebuildClones?.(); } catch (_) {}
                 try { this._uiSampler?.rebindSelf?.(); } catch (_) {}
