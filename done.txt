@@ -5503,3 +5503,16 @@ Task #938:
   * [install.sh](file:///home/vitaliy/MACTHEMEFILES/install.sh)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #959: Зменшено висоту меню вибору інсталяції та прибрано CSS-тригери layout-loop для MacMenuPopover у mac-installer-gui
+  - Меню вибору інсталяції (bin/mac-installer-gui):
+    * Зменшено min-height .mac-card-options з 350px до 270px (та відповідний target 480x270 у _animate_card_size), прибравши зайвий порожній простір після видалення галочки low-spec.
+  - Контекстне меню меню-бару (MacMenuPopover):
+    * Прибрано проблемний CSS для arrow { min-width: 0; min-height: 0; }, transform у .mac-popover-closing та надмірну тінь (зменшено до 0 8px 24px), а також задано set_position(Gtk.PositionType.BOTTOM).
+  - Перевірка:
+    * ./bin/mac-installer-gui --open-menu=util запускається без жодних Gdk/Gtk попереджень.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [bin/mac-installer-gui](file:///home/vitaliy/MACTHEMEFILES/bin/mac-installer-gui)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

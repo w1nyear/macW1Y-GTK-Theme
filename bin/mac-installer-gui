@@ -487,31 +487,12 @@ popover.menu {
     padding: 0;
 }
 
-popover.mac-popover-menu > arrow,
-popover.menu > arrow {
-    background: transparent;
-    border: none;
-    min-width: 0;
-    min-height: 0;
-}
-
-@keyframes macMenuOpen {
-    0% {
-        opacity: 0;
-        transform: translateY(-6px) scale(0.96);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0) scale(1.0);
-    }
-}
-
 popover.mac-popover-menu > contents,
 popover.menu > contents {
-    background-color: rgba(36, 38, 44, 0.88);
+    background-color: rgba(36, 38, 44, 0.92);
     border: 1px solid rgba(255, 255, 255, 0.20);
-    border-radius: 24px;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.70);
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.60);
     padding: 5px;
     color: #ffffff;
     min-width: 220px;
@@ -519,7 +500,6 @@ popover.menu > contents {
 
 popover.mac-popover-menu.mac-popover-closing > contents {
     opacity: 0;
-    transform: translateY(-4px) scale(0.97);
 }
 
 /* Hover Sliding Pill Indicator (macW1Y / Sonoma / macW1Y authentic style) */
@@ -975,10 +955,10 @@ button.mac-link-btn:hover,
 
 /* Recovery Option Cards & Screen */
 .mac-recovery-card.mac-card-options {
-    padding: 14px 16px 14px 16px;
+    padding: 12px 16px 12px 16px;
     border-radius: 16px;
     min-width: 480px;
-    min-height: 350px;
+    min-height: 270px;
 }
 
 .mac-option-row {
@@ -1226,6 +1206,7 @@ class MacMenuPopover(Gtk.Popover):
     def __init__(self, items, parent_btn=None):
         super().__init__()
         self.set_has_arrow(False)
+        self.set_position(Gtk.PositionType.BOTTOM)
         if "--preview" in sys.argv or any(a.startswith("--open-menu=") for a in sys.argv):
             self.set_autohide(False)
         else:
@@ -2114,10 +2095,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         if curr in ["screen_user", "screen_language"] and target == "screen_options":
             self.card.add_css_class("mac-card-options")
-            self._animate_card_size(650, 490, 480, 350, duration=0.30, on_done=lambda: self.card.set_size_request(-1, -1))
+            self._animate_card_size(650, 490, 480, 270, duration=0.30, on_done=lambda: self.card.set_size_request(-1, -1))
         elif curr == "screen_options" and target in ["screen_user", "screen_language", "screen_welcome", "screen_benchmark_intro", "screen_benchmark_progress", "screen_benchmark_result"]:
             self.card.remove_css_class("mac-card-options")
-            self._animate_card_size(480, 350, 650, 490, duration=0.30, on_done=lambda: self.card.set_size_request(-1, -1))
+            self._animate_card_size(480, 270, 650, 490, duration=0.30, on_done=lambda: self.card.set_size_request(-1, -1))
         elif target == "screen_options":
             self.card.add_css_class("mac-card-options")
             self.card.set_size_request(-1, -1)
