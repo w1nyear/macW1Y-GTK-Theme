@@ -355,7 +355,11 @@ class KioskGuard:
                 self.saved_overlay = val
             res2 = subprocess.run(["gsettings", "get", "org.gnome.desktop.wm.keybindings", "switch-applications"],
                                   stdout=subprocess.PIPE, text=True, check=False)
-            self.saved_switch_apps = res2.stdout.strip()
+            val2 = res2.stdout.strip()
+            if val2 in ("[]", "@as []", "", "''"):
+                self.saved_switch_apps = "['<Super>Tab', '<Alt>Tab']"
+            else:
+                self.saved_switch_apps = val2
 
             subprocess.run(["gsettings", "set", "org.gnome.mutter", "overlay-key", "''"], check=False)
             subprocess.run(["gsettings", "set", "org.gnome.desktop.wm.keybindings", "switch-applications", "[]"], check=False)
@@ -391,7 +395,7 @@ class KioskGuard:
             else:
                 subprocess.run(["gsettings", "set", "org.gnome.mutter", "overlay-key", "'Super_L'"], check=False)
 
-            if self.saved_switch_apps and self.saved_switch_apps != "[]":
+            if self.saved_switch_apps and self.saved_switch_apps not in ("[]", "@as []", "", "''"):
                 subprocess.run(["gsettings", "set", "org.gnome.desktop.wm.keybindings", "switch-applications", self.saved_switch_apps], check=False)
             else:
                 subprocess.run(["gsettings", "set", "org.gnome.desktop.wm.keybindings", "switch-applications", "['<Super>Tab', '<Alt>Tab']"], check=False)
@@ -408,6 +412,16 @@ class KioskGuard:
 
 kiosk_guard = KioskGuard()
 atexit.register(kiosk_guard.leave)
+
+def _handle_kiosk_exit(signum, frame):
+    kiosk_guard.leave()
+    sys.exit(0)
+
+try:
+    signal.signal(signal.SIGINT, _handle_kiosk_exit)
+    signal.signal(signal.SIGTERM, _handle_kiosk_exit)
+except Exception:
+    pass
 
 # ------------------------------------------------------------------------------
 # Recovery CSS Styles

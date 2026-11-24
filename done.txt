@@ -5552,3 +5552,35 @@ Task #938:
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
 
+
+* 2026-11-24 — Task #962: Відновлення гарячої клавіші Alt+Tab, зменшення висоти меню до 82px, опущення іконок та симетричне вертикальне центрування
+  - Відновлення системної комбінації Alt+Tab:
+    * Виправлено скидання switch-applications у KioskGuard (bin/mac-installer-gui): раніше перевірка self.saved_switch_apps != "[]" пропускала формат виводу GNOME "@as []", через що комбінація залишалася вимкненою після виходу з інсталятора. Додано перевірку непустих значень ("[]", "@as []", "", "''") та автоматичне відновлення ['<Super>Tab', '<Alt>Tab'].
+    * Зареєстровано обробники сигналів SIGINT та SIGTERM для гарантованого виклику kiosk_guard.leave().
+    * Відновлено комбінацію в активній сесії GNOME: gsettings set org.gnome.desktop.wm.keybindings switch-applications "['<Super>Tab', '<Alt>Tab']".
+  - Зменшення висоти меню та вертикальне калібрування:
+    * Загальну висоту перемикача vfunc_get_preferred_height у extensions/eval-helper@mactheme/extension.js зафіксовано на компактних 82px (раніше 92px+), усунувши зайвий порожній простір знизу.
+    * Опущено іконки вниз: параметр scrollY1 змінено з 8px на 10px, що усунуло притискання іконок до верхнього краю та забезпечило симетричний відступ 13px зверху до іконки.
+    * Позицію тексту поточної програми _activeAppLabel скориговано до lBox.y1 = 64px, що дало щільний 3px зазор до нижнього краю іконки та 6-8px візуального відступу до нижнього краю капсули меню.
+    * Розмір виділення відкалібровано до 50px (boxSize = Math.max(20, Math.round(itemW * (50 / 56)))) з радіусом 14px (outlineRad = 14px) та внутрішнім масштабом іконки 1.18, що забезпечує ідеальний видимий зазор 4px навколо скругленого квадрата іконки.
+    * Радіус скруглення капсули меню оптимізовано до 28px для пропорційного силуету macOS Tahoe.
+  - Синхронізація конфігурацій та стилів:
+    * Оновлено .alt-tab-icon-bin (border-radius: 14px !important) у 5 файлах тем: gnome-shell-theme, macW1Y-Dark, macW1Y-Light, macW1Y-Dark-solid, macW1Y-Light-solid.
+    * Додано параметри alttab_icon_size (56), alttab_padding (7), alttab_spacing (10), alttab_radius (28) у config/mac-styling/styling.json та ~/.config/mac-styling/styling.json.
+    * Оновлено контрольний хеш eval-helper@mactheme (5354f80a...) у config/extensions.lock.json.
+    * Розгорнуто розширення у ~/.local/share/gnome-shell/extensions/eval-helper@mactheme/extension.js.
+  - Результати перевірки:
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+    * Замір піксельної геометрії PIL на живому знімку (live_alttab_verified.png): висота капсули = 82px [499..580], рамка виділення = 49x49px [512..560], симетричний зазор = 4px з усіх сторін.
+  * [bin/mac-installer-gui](file:///home/vitaliy/MACTHEMEFILES/bin/mac-installer-gui)
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/MACTHEMEFILES/extensions/eval-helper@mactheme/extension.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [config/mac-styling/styling.json](file:///home/vitaliy/MACTHEMEFILES/config/mac-styling/styling.json)
+  * [gnome-shell-theme/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/gnome-shell-theme/gnome-shell.css)
+  * [macW1Y-Dark/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark/gnome-shell/gnome-shell.css)
+  * [macW1Y-Light/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light/gnome-shell/gnome-shell.css)
+  * [macW1Y-Dark-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark-solid/gnome-shell/gnome-shell.css)
+  * [macW1Y-Light-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Light-solid/gnome-shell/gnome-shell.css)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
