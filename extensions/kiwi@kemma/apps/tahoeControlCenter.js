@@ -304,7 +304,40 @@ function _closeActiveSubmenu() {
     if (_activeSubmenu) {
         const sub = _activeSubmenu;
         _activeSubmenu = null;
-        try { sub.close(); sub.destroy(); } catch (_) {}
+        const mgr = sub._liquidGlassUIManager;
+        let closed = false;
+        const cleanup = () => {
+            if (closed) return;
+            closed = true;
+            try { sub.close(); sub.destroy(); } catch (_) {}
+        };
+        if (mgr?.bgActor) {
+            try {
+                mgr.bgActor.ease({
+                    opacity: 0,
+                    duration: 150,
+                    mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                    onComplete: cleanup,
+                });
+            } catch (_) {
+                cleanup();
+            }
+        }
+        try {
+            sub.actor.ease({
+                opacity: 0,
+                scale_x: 0.95,
+                scale_y: 0.95,
+                duration: 150,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                onComplete: cleanup,
+            });
+        } catch (_) {
+            cleanup();
+        }
+        if (!mgr?.bgActor && !sub.actor) {
+            cleanup();
+        }
         if (_panel?.glass?.stacks) {
             for (const s of _panel.glass.stacks) {
                 try { s.uiSampler?.rebindSelf?.(); } catch (_) {}
@@ -366,6 +399,22 @@ async function _attachSubmenuGlass(menu, owner = 'submenu') {
         const tuneGlass = () => {
             const mgr = menu._liquidGlassUIManager;
             if (mgr) {
+                if (mgr.bgActor && menu.actor.opacity === 0) {
+                    mgr.bgActor.opacity = 0;
+                    mgr.bgActor.visible = true;
+                }
+                try {
+                    mgr._syncGeometry?.();
+                } catch (_) {}
+                const mon = Main.layoutManager.findMonitorForActor(menu.actor) || Main.layoutManager.primaryMonitor;
+                if (mon && mgr._windowCloneManager) {
+                    try {
+                        mgr._windowCloneManager.setOffset(-mon.x, -mon.y);
+                        mgr._windowCloneManager.setCullRect(null);
+                        mgr._windowCloneManager.rebuildClones();
+                        mgr._windowCloneManager.sync();
+                    } catch (_) {}
+                }
                 if (mgr._uiSampler) {
                     if (_panel?.overlay) mgr._uiSampler.addExclusion(_panel.overlay);
                     if (_panel?.box) mgr._uiSampler.addExclusion(_panel.box);
@@ -421,11 +470,16 @@ async function _attachSubmenuGlass(menu, owner = 'submenu') {
                         mgr.bgActor.setTintStrength?.(p.tintStrength);
                     } catch (_) {}
                 }
+                try { mgr.wakeFrameSync?.(); } catch (_) {}
             }
         };
 
         const BoxPointer = await import('resource:///org/gnome/shell/ui/boxpointer.js');
         menu.open(BoxPointer.PopupAnimation.NONE);
+        if (menu._liquidGlassUIManager?.bgActor) {
+            menu._liquidGlassUIManager.bgActor.opacity = 0;
+            menu._liquidGlassUIManager.bgActor.visible = true;
+        }
         tuneGlass();
         GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
             tuneGlass();
@@ -539,7 +593,16 @@ async function _openWifiSubmenu(sourceActor, state) {
             wifiDevice,
             isEnabled: Boolean(nmClient?.wireless_enabled),
             onToggle: (newState) => {
-                if (nmClient) nmClient.wireless_enabled = newState;
+                try {
+                    const qs = Main.panel.statusArea.quickSettings;
+                    const wifiToggle = qs?._network?.quickSettingsItems?.find(it => it.constructor?.name === 'NMWirelessToggle');
+                    if (wifiToggle && typeof wifiToggle.activate === 'function' && wifiToggle.checked !== newState) {
+                        wifiToggle.activate();
+                    } else if (nmClient) {
+                        nmClient.wireless_enabled = newState;
+                    }
+                } catch (_) {}
+                if (_panel?.wifi) _refreshWifi(_panel.wifi);
             },
             isControlCenter: false,
             onClose: () => _closeActiveSubmenu(),
@@ -556,6 +619,16 @@ async function _openWifiSubmenu(sourceActor, state) {
         menu.actor.scale_y = 0.95;
         menu.actor.set_pivot_point(1.0, 0.2);
         await _attachSubmenuGlass(menu, 'wifi');
+        const mgr = menu._liquidGlassUIManager;
+        if (mgr?.bgActor) {
+            mgr.bgActor.opacity = 0;
+            mgr.bgActor.visible = true;
+            mgr.bgActor.ease({
+                opacity: 255,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
         menu.actor.ease({
             opacity: 255,
             scale_x: 1.0,
@@ -596,17 +669,23 @@ async function _openBluetoothSubmenu(sourceActor, state) {
         menu.box.add_style_class_name('tahoe-submenu-glass-box');
         menu.box.style = 'width: 310px !important; min-width: 310px !important; max-width: 310px !important; border-radius: 28px !important; background-color: transparent !important; background: none !important; color: #ffffff !important; box-shadow: none !important; border: none !important; padding: 10px !important;';
 
-        let btClient = state.bt;
-        if (!btClient) {
-            btClient = new GnomeBluetooth.Client();
-            state.bt = btClient;
-        }
+        const qsBt = Main.panel.statusArea.quickSettings?._bluetooth;
+        const btClient = qsBt?._client || state.bt;
+        state.bt = btClient;
+        const isPowered = Boolean(btClient?.active ?? btClient?.default_adapter_powered);
 
         sharedMod.populateUniversalBluetoothContent(menu, {
             btClient,
-            isPowered: Boolean(btClient?.default_adapter_powered),
+            isPowered,
             onToggle: (newState) => {
-                if (btClient) btClient.default_adapter_powered = newState;
+                try {
+                    if (btClient && typeof btClient.toggleActive === 'function') {
+                        if (btClient.active !== newState) btClient.toggleActive();
+                    } else if (btClient) {
+                        btClient.default_adapter_powered = newState;
+                    }
+                } catch (_) {}
+                if (_panel?.bt) _refreshBt(_panel.bt);
             },
             isControlCenter: false,
             onClose: () => _closeActiveSubmenu(),
@@ -623,6 +702,16 @@ async function _openBluetoothSubmenu(sourceActor, state) {
         menu.actor.scale_y = 0.95;
         menu.actor.set_pivot_point(1.0, 0.2);
         await _attachSubmenuGlass(menu, 'bluetooth');
+        const btmgr = menu._liquidGlassUIManager;
+        if (btmgr?.bgActor) {
+            btmgr.bgActor.opacity = 0;
+            btmgr.bgActor.visible = true;
+            btmgr.bgActor.ease({
+                opacity: 255,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
         menu.actor.ease({
             opacity: 255,
             scale_x: 1.0,
@@ -686,6 +775,15 @@ async function _openSoundSubmenu(sourceActor, state) {
             });
             sharedMod.setupMacMenuItem(item);
 
+            const check = new St.Icon({
+                icon_name: 'emblem-ok-symbolic',
+                icon_size: 14,
+                style: 'color: #ffffff !important; margin-right: 8px;',
+                opacity: isDefault ? 255 : 0,
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            item.add_child(check);
+
             const sName = (s.get_name() || '').toLowerCase();
             const iconName = (sName.includes('headphone') || sName.includes('headset') || sName.includes('buds') || sName.includes('airpods'))
                 ? 'audio-headphones-symbolic'
@@ -694,6 +792,7 @@ async function _openSoundSubmenu(sourceActor, state) {
                 icon_name: iconName,
                 icon_size: 15,
                 style: 'margin-right: 8px; color: #ffffff !important;',
+                y_align: Clutter.ActorAlign.CENTER,
             });
             item.add_child(icon);
 
@@ -705,15 +804,6 @@ async function _openSoundSubmenu(sourceActor, state) {
             });
             desc.clutter_text.ellipsize = Pango.EllipsizeMode.END;
             item.add_child(desc);
-
-            if (isDefault) {
-                const check = new St.Icon({
-                    icon_name: 'emblem-ok-symbolic',
-                    icon_size: 14,
-                    style: 'color: #ffffff !important;',
-                });
-                item.add_child(check);
-            }
 
             item.connect('activate', () => {
                 try {
@@ -750,6 +840,16 @@ async function _openSoundSubmenu(sourceActor, state) {
         menu.actor.scale_y = 0.95;
         menu.actor.set_pivot_point(1.0, 0.2);
         await _attachSubmenuGlass(menu, 'sound');
+        const sndmgr = menu._liquidGlassUIManager;
+        if (sndmgr?.bgActor) {
+            sndmgr.bgActor.opacity = 0;
+            sndmgr.bgActor.visible = true;
+            sndmgr.bgActor.ease({
+                opacity: 255,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
         menu.actor.ease({
             opacity: 255,
             scale_x: 1.0,
@@ -839,11 +939,21 @@ export async function _openDisplaySubmenu(sourceActor, state) {
             style_class: isDark ? 'mac-menu-item-row mac-menu-item-active' : 'mac-menu-item-row',
         });
         sharedMod.setupMacMenuItem(darkItem);
-        const accent = getSystemAccentColor();
+
+        const darkCheck = new St.Icon({
+            icon_name: 'emblem-ok-symbolic',
+            icon_size: 14,
+            style: 'color: #ffffff !important; margin-right: 8px;',
+            opacity: isDark ? 255 : 0,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        darkItem.add_child(darkCheck);
+
         const darkIcon = new St.Icon({
             icon_name: 'weather-clear-night-symbolic',
             icon_size: 16,
-            style: `margin-right: 8px; color: ${isDark ? `${accent} !important` : '#ffffff !important'};`,
+            style: 'margin-right: 8px; color: #ffffff !important;',
+            y_align: Clutter.ActorAlign.CENTER,
         });
         darkItem.add_child(darkIcon);
         const darkLbl = new St.Label({
@@ -853,10 +963,6 @@ export async function _openDisplaySubmenu(sourceActor, state) {
             style: 'color: #ffffff !important;',
         });
         darkItem.add_child(darkLbl);
-        if (isDark) {
-            const check = new St.Icon({ icon_name: 'emblem-ok-symbolic', icon_size: 14, style: `color: ${accent} !important;` });
-            darkItem.add_child(check);
-        }
         darkItem.connect('activate', () => {
             if (iface) {
                 iface.set_string('color-scheme', isDark ? 'prefer-light' : 'prefer-dark');
@@ -877,10 +983,21 @@ export async function _openDisplaySubmenu(sourceActor, state) {
             style_class: isNightLight ? 'mac-menu-item-row mac-menu-item-active' : 'mac-menu-item-row',
         });
         sharedMod.setupMacMenuItem(nightItem);
+
+        const nightCheck = new St.Icon({
+            icon_name: 'emblem-ok-symbolic',
+            icon_size: 14,
+            style: 'color: #ffffff !important; margin-right: 8px;',
+            opacity: isNightLight ? 255 : 0,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        nightItem.add_child(nightCheck);
+
         const nightIcon = new St.Icon({
             icon_name: 'night-light-symbolic',
             icon_size: 16,
-            style: `margin-right: 8px; color: ${isNightLight ? '#ff9500 !important' : '#ffffff !important'};`,
+            style: 'margin-right: 8px; color: #ffffff !important;',
+            y_align: Clutter.ActorAlign.CENTER,
         });
         nightItem.add_child(nightIcon);
         const nightLbl = new St.Label({
@@ -890,10 +1007,6 @@ export async function _openDisplaySubmenu(sourceActor, state) {
             style: 'color: #ffffff !important;',
         });
         nightItem.add_child(nightLbl);
-        if (isNightLight) {
-            const check = new St.Icon({ icon_name: 'emblem-ok-symbolic', icon_size: 14, style: 'color: #ff9500 !important;' });
-            nightItem.add_child(check);
-        }
         nightItem.connect('activate', () => {
             if (colorSettings) {
                 colorSettings.set_boolean('night-light-enabled', !isNightLight);
@@ -927,6 +1040,16 @@ export async function _openDisplaySubmenu(sourceActor, state) {
         menu.actor.scale_y = 0.95;
         menu.actor.set_pivot_point(1.0, 0.2);
         await _attachSubmenuGlass(menu, 'display');
+        const dispmgr = menu._liquidGlassUIManager;
+        if (dispmgr?.bgActor) {
+            dispmgr.bgActor.opacity = 0;
+            dispmgr.bgActor.visible = true;
+            dispmgr.bgActor.ease({
+                opacity: 255,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
         menu.actor.ease({
             opacity: 255,
             scale_x: 1.0,
@@ -991,10 +1114,20 @@ export async function _openFocusSubmenu(sourceActor, state) {
         });
         sharedMod.setupMacMenuItem(dndItem);
 
+        const dndCheck = new St.Icon({
+            icon_name: 'emblem-ok-symbolic',
+            icon_size: 14,
+            style: 'color: #ffffff !important; margin-right: 8px;',
+            opacity: dndActive ? 255 : 0,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        dndItem.add_child(dndCheck);
+
         const moonIcon = new St.Icon({
             icon_name: 'weather-clear-night-symbolic',
             icon_size: 16,
-            style: `margin-right: 8px; color: ${dndActive ? '#5e5ce6 !important' : '#ffffff !important'};`,
+            style: 'margin-right: 8px; color: #ffffff !important;',
+            y_align: Clutter.ActorAlign.CENTER,
         });
         dndItem.add_child(moonIcon);
 
@@ -1010,15 +1143,6 @@ export async function _openFocusSubmenu(sourceActor, state) {
         dndTextBox.add_child(dndTitle);
         dndTextBox.add_child(dndDesc);
         dndItem.add_child(dndTextBox);
-
-        if (dndActive) {
-            const check = new St.Icon({
-                icon_name: 'emblem-ok-symbolic',
-                icon_size: 14,
-                style: 'color: #5e5ce6 !important;',
-            });
-            dndItem.add_child(check);
-        }
 
         dndItem.connect('activate', () => {
             if (notifSettings) {
@@ -1056,6 +1180,16 @@ export async function _openFocusSubmenu(sourceActor, state) {
         menu.actor.scale_y = 0.95;
         menu.actor.set_pivot_point(1.0, 0.2);
         await _attachSubmenuGlass(menu, 'focus');
+        const focmgr = menu._liquidGlassUIManager;
+        if (focmgr?.bgActor) {
+            focmgr.bgActor.opacity = 0;
+            focmgr.bgActor.visible = true;
+            focmgr.bgActor.ease({
+                opacity: 255,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
         menu.actor.ease({
             opacity: 255,
             scale_x: 1.0,
@@ -1677,24 +1811,35 @@ function _buildPanel() {
 
 
     const wifi = _makePill('network-wireless-symbolic', _('Wi-Fi'), '…', true, true);
-    wifi.circle.connect('clicked', () => {
+    const _toggleWifi = () => {
         try {
-            if (state.nm)
+            const qs = Main.panel.statusArea.quickSettings;
+            const wifiToggle = qs?._network?.quickSettingsItems?.find(it => it.constructor?.name === 'NMWirelessToggle');
+            if (wifiToggle && typeof wifiToggle.activate === 'function') {
+                wifiToggle.activate();
+            } else if (state.nm) {
                 state.nm.wireless_enabled = !state.nm.wireless_enabled;
+            }
         } catch (_) {}
-    });
+        _refreshWifi(wifi);
+    };
+    wifi.circle.connect('clicked', _toggleWifi);
     wifi.circle.connect('button-press-event', (_actor, event) => {
         if (event.get_button() === 1) {
-            try {
-                if (state.nm)
-                    state.nm.wireless_enabled = !state.nm.wireless_enabled;
-            } catch (_) {}
+            _toggleWifi();
             return Clutter.EVENT_STOP;
         }
         return Clutter.EVENT_PROPAGATE;
     });
     wifi.btn.connect('clicked', () => {
-        _openWifiSubmenu(wifi.btn, state);
+        const qs = Main.panel.statusArea.quickSettings;
+        const wifiToggle = qs?._network?.quickSettingsItems?.find(it => it.constructor?.name === 'NMWirelessToggle');
+        const on = !!(wifiToggle ? wifiToggle.checked : state.nm?.wireless_enabled);
+        if (!on) {
+            _toggleWifi();
+        } else {
+            _openWifiSubmenu(wifi.btn, state);
+        }
     });
     wifi.btn.connect('button-press-event', (_actor, event) => {
         if (event.get_button() === 3) {
@@ -1712,24 +1857,35 @@ function _buildPanel() {
 
     const btPill = _makePill('bluetooth-active-symbolic', _('Bluetooth'), '…', true, true);
     btPill.btn.add_style_class_name('tahoe-qs-pill-bt');
-    btPill.circle.connect('clicked', () => {
+    const _toggleBt = () => {
         try {
-            if (state.bt)
+            const qs = Main.panel.statusArea.quickSettings;
+            const btClient = qs?._bluetooth?._client;
+            if (btClient && typeof btClient.toggleActive === 'function') {
+                btClient.toggleActive();
+            } else if (state.bt) {
                 state.bt.default_adapter_powered = !state.bt.default_adapter_powered;
+            }
         } catch (_) {}
-    });
+        _refreshBt(btPill);
+    };
+    btPill.circle.connect('clicked', _toggleBt);
     btPill.circle.connect('button-press-event', (_actor, event) => {
         if (event.get_button() === 1) {
-            try {
-                if (state.bt)
-                    state.bt.default_adapter_powered = !state.bt.default_adapter_powered;
-            } catch (_) {}
+            _toggleBt();
             return Clutter.EVENT_STOP;
         }
         return Clutter.EVENT_PROPAGATE;
     });
     btPill.btn.connect('clicked', () => {
-        _openBluetoothSubmenu(btPill.btn, state);
+        const qs = Main.panel.statusArea.quickSettings;
+        const btClient = qs?._bluetooth?._client;
+        const on = !!(btClient?.active ?? state.bt?.default_adapter_powered);
+        if (!on) {
+            _toggleBt();
+        } else {
+            _openBluetoothSubmenu(btPill.btn, state);
+        }
     });
     btPill.btn.connect('button-press-event', (_actor, event) => {
         if (event.get_button() === 3) {
@@ -2422,19 +2578,38 @@ function _buildPanel() {
 
     }
 
+    try {
+        const qs = Main.panel.statusArea.quickSettings;
+        const wifiToggle = qs?._network?.quickSettingsItems?.find(it => it.constructor?.name === 'NMWirelessToggle');
+        if (wifiToggle) {
+            wifiToggle.connectObject('notify::checked', () => _refreshWifi(wifi), wifi);
+            wifiToggle.connectObject('notify::subtitle', () => _refreshWifi(wifi), wifi);
+        }
+    } catch (_) {}
 
     try {
-        state.bt = new GnomeBluetooth.Client();
+        const qs = Main.panel.statusArea.quickSettings;
+        const qsBt = qs?._bluetooth;
+        const btClient = qsBt?._client;
+        const btItem = qsBt?.quickSettingsItems?.[0];
+        state.bt = btClient || new GnomeBluetooth.Client();
         const bsync = () => _refreshBt(btPill);
-        try {
-            state.bt.connect('notify::default-adapter-powered', bsync);
-            state.bt.connect('notify::default-adapter', bsync);
-        } catch (_) {
-
+        if (btClient) {
+            try { btClient.connectObject('notify::active', bsync, btPill); } catch (_) {}
+            try { btClient.connectObject('devices-changed', bsync, btPill); } catch (_) {}
+        }
+        if (btItem) {
+            try { btItem.connectObject('notify::checked', bsync, btPill); } catch (_) {}
+        }
+        if (state.bt && typeof state.bt.connect === 'function') {
+            try {
+                state.bt.connect('notify::default-adapter-powered', bsync);
+                state.bt.connect('notify::default-adapter', bsync);
+            } catch (_) {}
         }
         _refreshBt(btPill);
     } catch (_) {
-        btPill.btn.visible = false;
+        _refreshBt(btPill);
     }
 
 
@@ -2734,51 +2909,68 @@ function _scheduleFocusFix() {
 
 
 function _refreshWifi(wifi) {
+    if (!wifi) return;
     try {
-        const s = _panel?.state?.nm;
-        if (!s)
-            return;
-        const on = !!s.wireless_enabled;
+        const qs = Main.panel.statusArea.quickSettings;
+        const wifiToggle = qs?._network?.quickSettingsItems?.find(it => it.constructor?.name === 'NMWirelessToggle');
+        const s = _panel?.state?.nm || wifiToggle?._client;
+        const on = !!(wifiToggle ? wifiToggle.checked : s?.wireless_enabled);
         let name = t('off', 'Вимкнено');
-        try {
-            const c = on ? s.get_primary_connection() : null;
-            const id = c?.get_id?.();
-            if (id)
-                name = id;
-            else if (on)
-                name = t('on', 'Увімкнено');
-        } catch (_) {
-
+        if (on) {
+            if (wifiToggle?.subtitle) {
+                name = wifiToggle.subtitle;
+            } else {
+                const c = s?.get_primary_connection?.();
+                const id = c?.get_id?.();
+                if (id) name = id;
+                else name = t('on', 'Увімкнено');
+            }
         }
-        if (wifi.subtitle)
-            wifi.subtitle.text = name;
+        if (wifi.subtitle) wifi.subtitle.text = name;
         _setActive(wifi.btn, on);
-        wifi.icon.icon_name = on
-            ? 'network-wireless-symbolic' : 'network-wireless-disabled-symbolic';
-    } catch (_) {
-
-    }
+        if (wifi.icon) {
+            wifi.icon.icon_name = on
+                ? 'network-wireless-symbolic'
+                : 'network-wireless-disabled-symbolic';
+        }
+    } catch (_) {}
 }
 
 function _refreshBt(pill) {
+    if (!pill) return;
     try {
-        const s = _panel?.state?.bt;
-        if (!s)
-            return;
-        let on = false;
-        try {
-            on = !!s.default_adapter_powered;
-        } catch (_) {
-            on = false;
+        const qs = Main.panel.statusArea.quickSettings;
+        const btClient = qs?._bluetooth?._client;
+        const btItem = qs?._bluetooth?.quickSettingsItems?.[0];
+        const on = !!(btClient?.active ?? btItem?.checked ?? _panel?.state?.bt?.default_adapter_powered);
+        let name = t('off', 'Вимкнено');
+        if (on) {
+            let connectedName = null;
+            let connectedCount = 0;
+            if (btClient && typeof btClient.getDevices === 'function') {
+                for (const d of btClient.getDevices()) {
+                    if (d.connected) {
+                        connectedCount++;
+                        if (!connectedName) connectedName = d.alias || d.name;
+                    }
+                }
+            }
+            if (connectedCount === 1 && connectedName) {
+                name = connectedName;
+            } else if (connectedCount > 1) {
+                name = `${connectedCount} ${t('connected', 'підключено')}`;
+            } else {
+                name = t('on', 'Увімкнено');
+            }
         }
-        if (pill.subtitle)
-            pill.subtitle.text = on ? t('on', 'Увімкнено') : t('off', 'Вимкнено');
+        if (pill.subtitle) pill.subtitle.text = name;
         _setActive(pill.btn, on);
-        pill.icon.icon_name = on
-            ? 'bluetooth-active-symbolic' : 'bluetooth-disabled-symbolic';
-    } catch (_) {
-
-    }
+        if (pill.icon) {
+            pill.icon.icon_name = on
+                ? 'bluetooth-active-symbolic'
+                : 'bluetooth-disabled-symbolic';
+        }
+    } catch (_) {}
 }
 
 export function _getPowerProfile() {
@@ -2943,11 +3135,20 @@ export async function _openPowerModeSubmenu(sourceActor, state) {
             });
             sharedMod.setupMacMenuItem(item);
 
-            const accent = getSystemAccentColor();
+            const check = new St.Icon({
+                icon_name: 'emblem-ok-symbolic',
+                icon_size: 14,
+                style: 'color: #ffffff !important; margin-right: 8px;',
+                opacity: isSelected ? 255 : 0,
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            item.add_child(check);
+
             const icon = new St.Icon({
                 icon_name: m.icon,
                 icon_size: 16,
-                style: `margin-right: 8px; color: ${isSelected ? `${accent} !important` : '#ffffff !important'};`,
+                style: 'margin-right: 8px; color: #ffffff !important;',
+                y_align: Clutter.ActorAlign.CENTER,
             });
             item.add_child(icon);
 
@@ -2963,15 +3164,6 @@ export async function _openPowerModeSubmenu(sourceActor, state) {
             textBox.add_child(titleLbl);
             textBox.add_child(descLbl);
             item.add_child(textBox);
-
-            if (isSelected) {
-                const check = new St.Icon({
-                    icon_name: 'emblem-ok-symbolic',
-                    icon_size: 14,
-                    style: `color: ${accent} !important;`,
-                });
-                item.add_child(check);
-            }
 
             item.connect('activate', () => {
                 _setPowerProfile(m.id);
@@ -3006,6 +3198,16 @@ export async function _openPowerModeSubmenu(sourceActor, state) {
         menu.actor.scale_y = 0.95;
         menu.actor.set_pivot_point(1.0, 0.2);
         await _attachSubmenuGlass(menu, 'power');
+        const powermgr = menu._liquidGlassUIManager;
+        if (powermgr?.bgActor) {
+            powermgr.bgActor.opacity = 0;
+            powermgr.bgActor.visible = true;
+            powermgr.bgActor.ease({
+                opacity: 255,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
         menu.actor.ease({
             opacity: 255,
             scale_x: 1.0,
@@ -4219,6 +4421,7 @@ function _restorePanel(p) {
 
         try { _refreshPowerMode(p.mode || p.air); } catch (_) {}
         try { _refreshWifi(p.wifi); } catch (_) {}
+        try { _refreshBt(p.bt); } catch (_) {}
         try { _refreshFocus(p.focus); } catch (_) {}
         try { _refreshDarkCircle(p.dark); } catch (_) {}
     } catch (e) {

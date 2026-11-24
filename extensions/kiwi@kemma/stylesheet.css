@@ -1547,7 +1547,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 .tahoe-qs-pill {
     background-color: rgba(0, 0, 0, 0.05);
     border-radius: 999px;
-    padding: 10px 12px 10px 10px;
+    padding: 8px 10px 8px 8px;
     box-shadow: none;
     border: none !important;
     border-top: none !important;
@@ -1573,21 +1573,21 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
     background-color: rgba(255, 255, 255, 0.18);
 }
 .tahoe-qs-pill-circle {
-    width: 40px; height: 40px;
+    width: 32px; height: 32px;
     border-radius: 999px;
     background-color: rgba(255, 255, 255, 0.25);
-    margin-right: 10px;
+    margin-right: 8px;
 }
-.tahoe-qs-pill-glyph { icon-size: 20px; color: #1d1d1f; }
-/* Bluetooth rune reads small at 20px: bump it inside the same 40px circle */
-.tahoe-qs-pill-bt .tahoe-qs-pill-glyph { icon-size: 24px; }
+.tahoe-qs-pill-glyph { icon-size: 16px; color: #1d1d1f; }
+/* Bluetooth rune inside circle */
+.tahoe-qs-pill-bt .tahoe-qs-pill-glyph { icon-size: 16px; }
 /* Focus shares the exact Wi-Fi pill geometry (same circle, same padding,
    single title line, no subtitle) */
 .tahoe-qs-pill.tahoe-qs-pill-focus { }
 .tahoe-qs-pill.tahoe-qs-on .tahoe-qs-pill-circle {
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: #007aff !important;
 }
-.tahoe-qs-pill.tahoe-qs-on .tahoe-qs-pill-glyph { color: #0a84ff; }
+.tahoe-qs-pill.tahoe-qs-on .tahoe-qs-pill-glyph { color: #ffffff !important; }
 .tahoe-qs-title { font-size: 0.95em; font-weight: 700; color: #1d1d1f; }
 .tahoe-qs-subtitle { font-size: 0.8em; color: rgba(0, 0, 0, 0.6); }
 /* privacy pill dot: camera green, mic orange, share blue (macW1Y) */
@@ -2050,8 +2050,18 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 
 .tahoe-submenu-glass-box .popup-menu-item:hover,
 .tahoe-submenu-glass-box .popup-menu-item:focus,
+.tahoe-submenu-glass-box .popup-menu-item:selected,
+.tahoe-submenu-glass-box .popup-menu-item:selected:hover,
 .tahoe-submenu-glass-box .mac-menu-item-row:hover,
-.tahoe-submenu-glass-box .mac-menu-item-row:focus {
+.tahoe-submenu-glass-box .mac-menu-item-row:focus,
+.tahoe-submenu-glass-box .mac-menu-item-row:selected,
+.tahoe-submenu-glass-box .mac-menu-item-row:selected:hover {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.tahoe-submenu-glass-box .popup-menu-item.mac-menu-item-active,
+.tahoe-submenu-glass-box .mac-menu-item-active {
   background-color: transparent !important;
   background: transparent !important;
 }

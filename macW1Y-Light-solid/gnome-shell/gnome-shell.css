@@ -6131,7 +6131,7 @@ StWidget.focused .app-grid-running-dot {
 .mac-menu-item-row:selected:hover,
 .mac-menu-item-active:hover,
 .mac-menu-item-active:selected {
-  background-color: -st-accent-color !important;
+  background-color: rgba(255, 255, 255, 0.12) !important;
   color: #ffffff !important;
   border-radius: 9999px !important;
   box-shadow: none !important;

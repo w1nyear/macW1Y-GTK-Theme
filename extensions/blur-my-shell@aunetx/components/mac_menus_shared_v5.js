@@ -95,7 +95,8 @@ export function setupMacMenuItem(item) {
     }
 
     const updateVisuals = () => {
-        item.style = 'padding: 6px 10px !important; margin: 1px 2px !important; border-radius: 10px !important; background-color: transparent !important; background: transparent !important; transition-duration: 100ms !important;';
+        const bg = item.hover ? 'rgba(255, 255, 255, 0.12)' : 'transparent';
+        item.style = `padding: 6px 10px !important; margin: 1px 2px !important; border-radius: 9999px !important; background-color: ${bg} !important; background: ${bg} !important; transition-duration: 100ms !important;`;
     };
     item.connectObject('notify::hover', updateVisuals, item);
     updateVisuals();
@@ -384,6 +385,14 @@ export function populateUniversalWifiContent(container, options = {}) {
             });
             setupMacMenuItem(activeItem);
 
+            const okIcon = new St.Icon({
+                icon_name: 'emblem-ok-symbolic',
+                icon_size: 14,
+                style: 'color: #ffffff; margin-right: 8px;',
+                y_align: Clutter.ActorAlign.CENTER,
+            });
+            activeItem.add_child(okIcon);
+
             const badgeBox = createCircleBadge('network-wireless-signal-excellent-symbolic', true, 14);
             activeItem.add_child(badgeBox);
 
@@ -405,14 +414,6 @@ export function populateUniversalWifiContent(container, options = {}) {
                 });
                 activeItem.add_child(lockIcon);
             }
-
-            const okIcon = new St.Icon({
-                icon_name: 'emblem-ok-symbolic',
-                icon_size: 14,
-                style: 'color: #ffffff;',
-                y_align: Clutter.ActorAlign.CENTER,
-            });
-            activeItem.add_child(okIcon);
 
             activeItem.connect('activate', () => {
                 if (onClose) onClose();
@@ -462,6 +463,15 @@ export function populateUniversalWifiContent(container, options = {}) {
                     style_class: 'mac-menu-item-row',
                 });
                 setupMacMenuItem(apItem);
+
+                const spacer = new St.Icon({
+                    icon_name: 'emblem-ok-symbolic',
+                    icon_size: 14,
+                    style: 'margin-right: 8px;',
+                    opacity: 0,
+                    y_align: Clutter.ActorAlign.CENTER,
+                });
+                apItem.add_child(spacer);
 
                 let strengthIcon = 'network-wireless-signal-excellent-symbolic';
                 if (info.strength <= 25) strengthIcon = 'network-wireless-signal-weak-symbolic';
@@ -637,10 +647,14 @@ export function populateUniversalBluetoothContent(container, options = {}) {
         const devList = [];
         try {
             if (btClient) {
-                const model = btClient.get_devices?.();
-                if (model && model.get_n_items) {
-                    for (let i = 0; i < model.get_n_items(); i++) {
-                        devList.push(model.get_item(i));
+                if (typeof btClient.getDevices === 'function') {
+                    devList.push(...btClient.getDevices());
+                } else {
+                    const model = btClient.get_devices?.();
+                    if (model && model.get_n_items) {
+                        for (let i = 0; i < model.get_n_items(); i++) {
+                            devList.push(model.get_item(i));
+                        }
                     }
                 }
             }
@@ -665,6 +679,15 @@ export function populateUniversalBluetoothContent(container, options = {}) {
                     });
                     setupMacMenuItem(devItem);
 
+                    const okIcon = new St.Icon({
+                        icon_name: 'emblem-ok-symbolic',
+                        icon_size: 14,
+                        style: 'color: #ffffff; margin-right: 8px;',
+                        opacity: isConnected ? 255 : 0,
+                        y_align: Clutter.ActorAlign.CENTER,
+                    });
+                    devItem.add_child(okIcon);
+
                     const devName = dev.name || dev.alias || t('device', 'Пристрій');
                     const iconName = getBluetoothDeviceIcon(dev.icon, devName);
 
@@ -679,16 +702,6 @@ export function populateUniversalBluetoothContent(container, options = {}) {
                         y_align: Clutter.ActorAlign.CENTER,
                     });
                     devItem.add_child(label);
-
-                    if (isConnected) {
-                        const okIcon = new St.Icon({
-                            icon_name: 'emblem-ok-symbolic',
-                            icon_size: 14,
-                            style: 'color: #ffffff;',
-                            y_align: Clutter.ActorAlign.CENTER,
-                        });
-                        devItem.add_child(okIcon);
-                    }
 
                     const connectDevice = () => {
                         if (onClose) onClose();

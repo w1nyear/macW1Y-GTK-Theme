@@ -4917,3 +4917,35 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+- Задача #936:
+  - Перевірено та підтверджено роботу нового оптимізованого шейдера скла Liquid Glass у кнопках Центру керування:
+    * Кнопки Центру керування (Wi-Fi, Bluetooth, Режим живлення, Темне оформлення, Зосередження тощо) використовують новий оптимізований шейдер Liquid Glass (LQ-OPTIMIZED.frag / glass.frag) із повною рефракцією (displacement_scale, ior = 1.50, rim_intensity = 0.10, profile_shape_n = 5.4).
+    * Стек заломлення включає живі клони вікон (WindowCloneManager), шар віджетів робочого столу (desktop-widgets), UI шар (UILayerSampler) та шпалери (mirror), що гарантує заломлення будь-яких вікон та елементів під центром керування.
+  - Усунено мигання фону підменю шпалерою при появі:
+    * Виявлено причину: при створенні підменю (menu.open) фоновий актор скла (bgActor) додавався до сцени з непрозорістю 255 ще до створення та синхронізації клонів вікон (_windowCloneManager.sync), через що на мить відображалося дзеркало шпалер на позиції (0, 0).
+    * У _attachSubmenuGlass встановлено початкову непрозорість bgActor = 0 та додано синхронне позиціонування, встановлення зміщення монітора (setOffset(-mon.x, -mon.y)), скидання відсікання (setCullRect(null)), примусову побудову клонів (rebuildClones(), sync()) та оновлення UI-семплера ще до показу меню.
+    * Синхронізовано анімацію появи фонового актора скла (bgActor.ease opacity: 255, duration: 200) разом із контентом підменю (menu.actor.ease), а також додано плавне згасання (opacity: 0, duration: 150) при закритті _closeActiveSubmenu, усуваючи будь-яке мигання чи різкі перепади.
+  - Оновлено стиль виділення та замінено акцентний колір на сіро-прозорий hover з галочкою зліва:
+    * У підменю центру керування (Режим живлення, Аудіовихід, Дисплей, Зосередження, Wi-Fi, Bluetooth) галочку вибору (emblem-ok-symbolic) перенесено строго ЛІВОРУЧ від назви та іконки елемента.
+    * Видалено помаранчевий/акцентний фон і помаранчеве забарвлення іконок та тексту вибраного пункту: текст і піктограми тепер мають стандартний білий колір (#ffffff).
+    * У темах GNOME Shell (gnome-shell-theme, macW1Y-Dark, macW1Y-Dark-solid, macW1Y-Light, macW1Y-Light-solid) та stylesheet.css hover/focus/selected стан пунктів меню замінено з -st-accent-color на напівпрозорий сірий (rgba(255, 255, 255, 0.12) !important;), а активний/вибраний стан (mac-menu-item-active) має чистий прозорий фон.
+  - Виправлено відображення та перемикання Wi-Fi і Bluetooth:
+    * Підключено пряму інтеграцію з системними сервісами GNOME Shell (NMWirelessToggle, NM.Client та quickSettings._bluetooth._client).
+    * Кнопка Wi-Fi тепер відображає точну назву активної мережі SSID (наприклад, "HomeHub"), "Увімкнено" при увімкненому Wi-Fi без підключення або "Вимкнено".
+    * Кнопка Bluetooth підключена до живого BlueZ-проксі через quickSettings._bluetooth._client: показує назву підключеного пристрою (або кількість підключених), "Увімкнено" або "Вимкнено", а також підтримує перелік paired/connected пристроїв у підменю.
+    * Реалізовано зручне керування: клік по круглій іконці надійно перемикає живлення Wi-Fi/Bluetooth on/off; клік по самій кнопці вмикає живлення (якщо вимкнено) або відкриває підменю (якщо увімкнено); клік по стрілці (endBtn) завжди відкриває підменю.
+    * Оптимізовано габарити пігулок у stylesheet.css: коло іконки зменшено з 40px до 32px (іконка 16px), відступи скориговано, що усунуло обрізання тексту ("Bluet..." -> "Bluetooth", "Вимкн..." -> "Вимкнено").
+    * При увімкненому стані коло іконки отримує автентичне синє забарвлення (#007aff) з білою піктограмою (#ffffff).
+  - Результати валідації:
+    * bin/mac-audit-sync check: 100% PASS.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+  * [extensions/kiwi@kemma/apps/tahoeControlCenter.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeControlCenter.js)
+  * [extensions/kiwi@kemma/stylesheet.css](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/stylesheet.css)
+  * [extensions/blur-my-shell@aunetx/components/mac_menus_shared_v5.js](file:///home/vitaliy/MACTHEMEFILES/extensions/blur-my-shell@aunetx/components/mac_menus_shared_v5.js)
+  * [gnome-shell-theme/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/gnome-shell-theme/gnome-shell.css)
+  * [macW1Y-Dark/gnome-shell/gnome-shell.css](file:///home/vitaliy/MACTHEMEFILES/macW1Y-Dark/gnome-shell/gnome-shell.css)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
