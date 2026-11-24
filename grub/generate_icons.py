@@ -16,21 +16,46 @@ W, H = 1920, 1080
 S = 2  # 2x supersampling downscaled with Lanczos for 4K Retina sharpness
 SW, SH = W * S, H * S
 
-# Font configuration
-font_display = '/home/vitaliy/.local/share/fonts/SF_Pro_Display/Default-Display-Medium.otf'
-font_text = '/home/vitaliy/.local/share/fonts/SF_Pro_Text/Default-Medium.otf'
-font_regular = '/home/vitaliy/.local/share/fonts/SF_Pro_Text/Default-Regular.otf'
-font_semibold = '/home/vitaliy/.local/share/fonts/SF_Pro_Text/Default-Semibold.otf'
-font_bold = '/home/vitaliy/.local/share/fonts/SF_Pro_Display/Default-Display-Bold.otf'
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-f_label = ImageFont.truetype(font_display, int(round(15 * S)))
-f_continue = ImageFont.truetype(font_text, int(round(12.5 * S)))
-f_power = ImageFont.truetype(font_regular, int(round(12.5 * S)))
-f_time = ImageFont.truetype(font_text, int(round(13.5 * S)))
-f_abc = ImageFont.truetype(font_semibold, int(round(12.5 * S)))
+def get_font_path(font_name, fallback_names=None):
+    candidates = [
+        os.path.expanduser(f'~/.local/share/fonts/SF_Pro_Display/{font_name}'),
+        os.path.expanduser(f'~/.local/share/fonts/SF_Pro_Text/{font_name}'),
+        f'/usr/local/share/fonts/{font_name}',
+        f'/usr/share/fonts/{font_name}',
+        f'/usr/share/fonts/truetype/{font_name}',
+        f'/usr/share/fonts/opentype/{font_name}',
+    ]
+    if fallback_names:
+        for fb in fallback_names:
+            candidates.extend([
+                f'/usr/share/fonts/truetype/dejavu/{fb}',
+                f'/usr/share/fonts/truetype/liberation/{fb}',
+                f'/usr/share/fonts/{fb}',
+            ])
+    for c in candidates:
+        if os.path.isfile(c):
+            return c
+    return None
+
+def load_font(font_name, size, fallbacks=None):
+    p = get_font_path(font_name, fallbacks)
+    if p:
+        try:
+            return ImageFont.truetype(p, size)
+        except Exception:
+            pass
+    return ImageFont.load_default()
+
+f_label = load_font('Default-Display-Medium.otf', int(round(15 * S)), ['DejaVuSans-Bold.ttf', 'LiberationSans-Bold.ttf'])
+f_continue = load_font('Default-Medium.otf', int(round(12.5 * S)), ['DejaVuSans.ttf', 'LiberationSans-Regular.ttf'])
+f_power = load_font('Default-Regular.otf', int(round(12.5 * S)), ['DejaVuSans.ttf', 'LiberationSans-Regular.ttf'])
+f_time = load_font('Default-Medium.otf', int(round(13.5 * S)), ['DejaVuSans.ttf', 'LiberationSans-Regular.ttf'])
+f_abc = load_font('Default-Semibold.otf', int(round(12.5 * S)), ['DejaVuSans-Bold.ttf', 'LiberationSans-Bold.ttf'])
 
 # 1. Base clean assets from permanent directory
-assets_dir = '/home/vitaliy/MACTHEMEFILES/grub/assets'
+assets_dir = os.path.join(SCRIPT_DIR, 'assets')
 disk_raw = Image.open(f'{assets_dir}/disk.png').convert('RGBA')
 gear_raw = Image.open(f'{assets_dir}/gear.png').convert('RGBA')
 p_raw = Image.open(f'{assets_dir}/power.png').convert('RGBA')
@@ -383,15 +408,15 @@ def main():
 
     base_dirs = [
         '/boot/grub/themes/macw1y-boot',
-        '/home/vitaliy/MACTHEMEFILES/grub/macw1y-boot'
+        os.path.join(SCRIPT_DIR, 'macw1y-boot')
     ]
     usb_dirs = [
         '/boot/grub/themes/macw1y-boot-usb',
-        '/home/vitaliy/MACTHEMEFILES/grub/macw1y-boot-usb'
+        os.path.join(SCRIPT_DIR, 'macw1y-boot-usb')
     ]
     usb2_dirs = [
         '/boot/grub/themes/macw1y-boot-usb2',
-        '/home/vitaliy/MACTHEMEFILES/grub/macw1y-boot-usb2'
+        os.path.join(SCRIPT_DIR, 'macw1y-boot-usb2')
     ]
 
     for b in base_dirs:

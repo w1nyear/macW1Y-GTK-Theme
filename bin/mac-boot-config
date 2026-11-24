@@ -6,8 +6,11 @@ import glob
 import shutil
 import subprocess
 
+import pwd
+
 if os.geteuid() != 0:
-    os.execvp("sudo", ["sudo", sys.executable] + sys.argv)
+    target_bin = "/usr/local/bin/mac-boot-config" if os.path.exists("/usr/local/bin/mac-boot-config") else os.path.abspath(__file__)
+    os.execvp("sudo", ["sudo", target_bin] + sys.argv[1:])
 
 def rebuild_initramfs():
     try:
@@ -52,7 +55,13 @@ def get_target_user():
                 return parts[1]
     except Exception:
         pass
-    return os.environ.get("USER") or "vitaliy"
+    user = os.environ.get("USER")
+    if user and user != "root":
+        return user
+    try:
+        return pwd.getpwuid(1000).pw_name
+    except Exception:
+        return "root"
 
 def notify_user(title, msg):
     try:

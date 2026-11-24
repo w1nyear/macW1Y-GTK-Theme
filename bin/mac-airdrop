@@ -8,9 +8,10 @@ import subprocess
 from pathlib import Path
 
 # Ensure user site-packages are in sys.path
-sys.path.insert(0, '/home/vitaliy/.local/lib/python3.14/site-packages')
-sys.path.insert(0, '/home/vitaliy/.local/lib/python3.13/site-packages')
-sys.path.insert(0, '/home/vitaliy/.local/lib/python3.12/site-packages')
+for py_ver in ["python3.14", "python3.13", "python3.12", "python3.11", "python3.10"]:
+    sp = os.path.expanduser(f'~/.local/lib/{py_ver}/site-packages')
+    if os.path.isdir(sp):
+        sys.path.insert(0, sp)
 
 CONFIG_DIR = Path.home() / '.config' / 'mac-airdrop'
 CONFIG_FILE = CONFIG_DIR / 'config.json'
@@ -200,7 +201,9 @@ def is_daemon_running():
         return False, None
 
 def notify(title, message):
-    icon = '/home/vitaliy/.themes/macW1Y-Dark/icons/airdrop-symbolic.svg'
+    icon = os.path.expanduser('~/.themes/macW1Y-Dark/icons/airdrop-symbolic.svg')
+    if not os.path.exists(icon):
+        icon = '/usr/share/mactheme/icons/airdrop-symbolic.svg'
     try:
         subprocess.run(['notify-send', '-a', 'AirDrop', '-i', icon, title, message], check=False)
     except Exception:
@@ -231,11 +234,15 @@ def start_daemon():
     daemon_script = f"""
 import sys, os, time, subprocess
 from pathlib import Path
-sys.path.insert(0, '/home/vitaliy/.local/lib/python3.14/site-packages')
-sys.path.insert(0, '/home/vitaliy/.local/lib/python3.13/site-packages')
+for py_ver in ["python3.14", "python3.13", "python3.12", "python3.11", "python3.10"]:
+    sp = os.path.expanduser(f'~/.local/lib/{{py_ver}}/site-packages')
+    if os.path.isdir(sp):
+        sys.path.insert(0, sp)
 
 save_dir = Path(r'{save_dir}')
-icon = r'/home/vitaliy/.themes/macW1Y-Dark/icons/airdrop-symbolic.svg'
+icon = os.path.expanduser('~/.themes/macW1Y-Dark/icons/airdrop-symbolic.svg')
+if not os.path.exists(icon):
+    icon = '/usr/share/mactheme/icons/airdrop-symbolic.svg'
 sound = r'/usr/share/sounds/freedesktop/stereo/complete.oga'
 
 def alert(title, msg):
@@ -350,7 +357,10 @@ def send_file(file_path=None):
     # Run opendrop find with zenity progress / picker
     script = f"""
 import sys, os, subprocess, json, time
-sys.path.insert(0, '/home/vitaliy/.local/lib/python3.14/site-packages')
+for py_ver in ["python3.14", "python3.13", "python3.12", "python3.11", "python3.10"]:
+    sp = os.path.expanduser(f'~/.local/lib/{{py_ver}}/site-packages')
+    if os.path.isdir(sp):
+        sys.path.insert(0, sp)
 from opendrop.cli import AirDropBrowser, AirDropConfig
 
 cfg = AirDropConfig(interface='{iface}', computer_name='Nitro')

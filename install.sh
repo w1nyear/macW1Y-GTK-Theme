@@ -333,6 +333,7 @@ sync_or_update_file() {
     if [ ! -d "$dest_dir" ]; then
         if [ "$use_sudo" = "true" ]; then
             sudo mkdir -p "$dest_dir"
+            sudo chown root:root "$dest_dir" 2>/dev/null || true
         else
             mkdir -p "$dest_dir"
         fi
@@ -341,7 +342,13 @@ sync_or_update_file() {
     if [ ! -e "$dest" ] && [ ! -L "$dest" ]; then
         echo -e "   ${C_GREEN}[+] Added new file:${C_RESET} $dest"
         if [ "$use_sudo" = "true" ]; then
-            sudo cp -a "$src" "$dest"
+            sudo cp -f "$src" "$dest"
+            sudo chown root:root "$dest" 2>/dev/null || true
+            if [ -x "$src" ]; then
+                sudo chmod 755 "$dest" 2>/dev/null || true
+            else
+                sudo chmod 644 "$dest" 2>/dev/null || true
+            fi
         else
             cp -a "$src" "$dest"
         fi
@@ -354,10 +361,11 @@ sync_or_update_file() {
             echo -e "   ${C_CYAN}[~] Updated symlink:${C_RESET} $dest"
             if [ "$use_sudo" = "true" ]; then
                 sudo rm -f "$dest"
-                sudo cp -a "$src" "$dest"
+                sudo cp -P "$src" "$dest"
+                sudo chown -h root:root "$dest" 2>/dev/null || true
             else
                 rm -f "$dest"
-                cp -a "$src" "$dest"
+                cp -P "$src" "$dest"
             fi
             MODIFIED_COUNT=$((MODIFIED_COUNT + 1))
         else
@@ -367,7 +375,13 @@ sync_or_update_file() {
         if ! cmp -s "$src" "$dest"; then
             echo -e "   ${C_CYAN}[~] Updated modified file:${C_RESET} $dest"
             if [ "$use_sudo" = "true" ]; then
-                sudo cp -a "$src" "$dest"
+                sudo cp -f "$src" "$dest"
+                sudo chown root:root "$dest" 2>/dev/null || true
+                if [ -x "$src" ]; then
+                    sudo chmod 755 "$dest" 2>/dev/null || true
+                else
+                    sudo chmod 644 "$dest" 2>/dev/null || true
+                fi
             else
                 cp -a "$src" "$dest"
             fi
@@ -389,15 +403,21 @@ sync_directory_tree() {
     
     if [ "$use_sudo" = "true" ]; then
         sudo mkdir -p "$dest_dir"
+        sudo chown root:root "$dest_dir" 2>/dev/null || true
     else
         mkdir -p "$dest_dir"
     fi
     
     if command -v rsync >/dev/null 2>&1; then
-        local RSYNC_CMD=("rsync" "-a" "-c" "--itemize-changes" "$src_dir/" "$dest_dir/")
+        local RSYNC_CMD=("rsync" "-a" "-c" "--itemize-changes")
+        if [ "$use_sudo" = "true" ]; then
+            RSYNC_CMD+=("--no-owner" "--no-group" "--chown=root:root")
+        fi
+        RSYNC_CMD+=("$src_dir/" "$dest_dir/")
         local OUT
         if [ "$use_sudo" = "true" ]; then
             OUT=$(sudo "${RSYNC_CMD[@]}" 2>/dev/null || true)
+            sudo chown -R root:root "$dest_dir" 2>/dev/null || true
         else
             OUT=$("${RSYNC_CMD[@]}" 2>/dev/null || true)
         fi
@@ -422,6 +442,9 @@ sync_directory_tree() {
             local target_file="$dest_dir/$rel_path"
             sync_or_update_file "$src_file" "$target_file" "$use_sudo"
         done < <(find "$src_dir" -type f -print0)
+        if [ "$use_sudo" = "true" ]; then
+            sudo chown -R root:root "$dest_dir" 2>/dev/null || true
+        fi
     fi
 }
 
@@ -546,8 +569,8 @@ install_dependencies() {
 
     if [ ! -f "$SYS_LIB_DIR/girepository-1.0/Blur-1.0.typelib" ] && [ ! -f "/usr/lib/girepository-1.0/Blur-1.0.typelib" ]; then
         log_info "Building and installing gnome-rounded-blur library for hardware-accelerated rounded blur..."
-        local BUILD_TMP="/tmp/gnome-rounded-blur"
-        rm -rf "$BUILD_TMP"
+        local BUILD_TMP
+        BUILD_TMP="$(mktemp -d /tmp/gnome-rounded-blur.XXXXXX)"
         if git clone --depth 1 https://github.com/kancko/gnome-rounded-blur "$BUILD_TMP" 2>/dev/null; then
             (
                 cd "$BUILD_TMP"
@@ -568,7 +591,10 @@ install_dependencies() {
                 done
                 sudo ldconfig 2>/dev/null || true
             )
+            rm -rf "$BUILD_TMP"
             log_success "gnome-rounded-blur library installed successfully!"
+        else
+            rm -rf "$BUILD_TMP"
         fi
     fi
 }
@@ -1452,8 +1478,9 @@ install_gamemode() {
     # 1. Installing binary utilities and scripts
     for bin_file in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-wine-runner mac-gpu-env-selector mac-sanitize-favorites.sh mac-apply-theme mac-diagnostics mac-extension-guard mac-build-theme mac-audit-sync mac-setup-wizard mac-apply-locale mac-icon-normalizer mac-sync-applications mac-theme-sync mac-integrity-check mac-widget-picker; do
         if [ -f "$SCRIPT_DIR/bin/$bin_file" ] || [ -L "$SCRIPT_DIR/bin/$bin_file" ]; then
-            sudo cp -a "$SCRIPT_DIR/bin/$bin_file" /usr/local/bin/
-            sudo chmod +x "/usr/local/bin/$bin_file" 2>/dev/null || true
+            sudo cp -f "$SCRIPT_DIR/bin/$bin_file" "/usr/local/bin/$bin_file"
+            sudo chown root:root "/usr/local/bin/$bin_file" 2>/dev/null || true
+            sudo chmod 755 "/usr/local/bin/$bin_file" 2>/dev/null || true
         fi
     done
 
@@ -1461,25 +1488,35 @@ install_gamemode() {
     sudo mkdir -p /usr/share/mactheme/dconf
     if [ -d "$SCRIPT_DIR/dconf" ]; then
         sudo cp -f "$SCRIPT_DIR/dconf"/*.dconf /usr/share/mactheme/dconf/ 2>/dev/null || true
+        sudo chown -R root:root /usr/share/mactheme/dconf 2>/dev/null || true
         sudo chmod 644 /usr/share/mactheme/dconf/* 2>/dev/null || true
     fi
 
     # Steam wrapper: installed only if Steam is present on the system
     if [ -x "/snap/bin/steam" ] || [ -x "/usr/games/steam" ] || [ -x "/usr/bin/steam" ] || { which flatpak >/dev/null 2>&1 && flatpak list 2>/dev/null | grep -q "com.valvesoftware.Steam"; }; then
         if [ -f "$SCRIPT_DIR/bin/steam" ]; then
-            sudo cp -a "$SCRIPT_DIR/bin/steam" /usr/local/bin/steam
-            sudo chmod +x /usr/local/bin/steam
+            sudo cp -f "$SCRIPT_DIR/bin/steam" /usr/local/bin/steam
+            sudo chown root:root /usr/local/bin/steam 2>/dev/null || true
+            sudo chmod 755 /usr/local/bin/steam 2>/dev/null || true
         fi
     else
         sudo rm -f /usr/local/bin/steam
     fi
     
+    # Security hardening: purge any legacy backdoor rules and deploy validated sudoers
+    sudo rm -f /etc/sudoers.d/99-mactheme /etc/sudoers.d/99_mactheme 2>/dev/null || true
     if [ -d "$SCRIPT_DIR/etc/sudoers.d" ]; then
         for sf in "$SCRIPT_DIR/etc/sudoers.d/"*; do
             if [ -f "$sf" ]; then
                 sbase="$(basename "$sf")"
-                sudo cp "$sf" "/etc/sudoers.d/$sbase"
+                [ "$sbase" = "99-mactheme" ] && continue
+                sudo cp -f "$sf" "/etc/sudoers.d/$sbase"
+                sudo chown root:root "/etc/sudoers.d/$sbase"
                 sudo chmod 440 "/etc/sudoers.d/$sbase"
+                if ! sudo visudo -cf "/etc/sudoers.d/$sbase" >/dev/null 2>&1; then
+                    echo "WARNING: /etc/sudoers.d/$sbase failed validation, removing for safety"
+                    sudo rm -f "/etc/sudoers.d/$sbase"
+                fi
             fi
         done
     fi
@@ -1660,8 +1697,8 @@ install_gdm_transition() {
     local SRC_SH="/usr/share/themes/macW1Y-Dark/gnome-shell"
     if [ ! -f "$GRES_TARGET" ] || [ "$SRC_SH/gnome-shell.css" -nt "$GRES_TARGET" ]; then
         log_info "Compiling macW1Y system gresource for GDM..."
-        local BUILD_TMP="/tmp/macW1Y-build-installer"
-        rm -rf "$BUILD_TMP" && mkdir -p "$BUILD_TMP"
+        local BUILD_TMP
+        BUILD_TMP="$(mktemp -d /tmp/macW1Y-build-installer.XXXXXX)"
         if [ -d "$SRC_SH" ]; then
             cp "$SRC_SH/gnome-shell.css" "$BUILD_TMP/gnome-shell.css"
             cp "$SRC_SH/gnome-shell.css" "$BUILD_TMP/gnome-shell-dark.css"
@@ -1921,13 +1958,19 @@ install_grub() {
         sudo chmod 755 /etc/grub.d/40_custom
     fi
 
+    sudo mkdir -p /usr/share/mactheme/grub
     if [ -f "$SCRIPT_DIR/grub/generate_icons.py" ]; then
         log_info "Generating transparent macW1Y icons and GRUB status widgets..."
-        sudo python3 "$SCRIPT_DIR/grub/generate_icons.py" 2>/dev/null || true
+        sudo cp -f "$SCRIPT_DIR/grub/generate_icons.py" /usr/share/mactheme/grub/generate_icons.py
+        sudo chown root:root /usr/share/mactheme/grub/generate_icons.py
+        sudo chmod 755 /usr/share/mactheme/grub/generate_icons.py
+        sudo python3 /usr/share/mactheme/grub/generate_icons.py 2>/dev/null || true
     fi
 
     if [ -f "$SCRIPT_DIR/systemd/mac-grub-status.service" ]; then
-        sudo cp "$SCRIPT_DIR/systemd/mac-grub-status.service" /etc/systemd/system/
+        sudo cp -f "$SCRIPT_DIR/systemd/mac-grub-status.service" /etc/systemd/system/
+        sudo chown root:root /etc/systemd/system/mac-grub-status.service
+        sudo chmod 644 /etc/systemd/system/mac-grub-status.service
         sudo systemctl daemon-reload
         sudo systemctl enable mac-grub-status.service 2>/dev/null || true
     fi
@@ -2001,6 +2044,15 @@ EOF_EVO
             "$SCRIPT_DIR/bin/mac-lowspec-optimizer" apply || true
         fi
     fi
+
+    # Security hardening: ensure all system files are strictly owned by root:root and safe
+    log_info "Verifying system file security and root permissions..."
+    sudo rm -f /etc/sudoers.d/99-mactheme /etc/sudoers.d/99_mactheme 2>/dev/null || true
+    sudo chown root:root /usr/local/bin/* /usr/local/lib/* 2>/dev/null || true
+    sudo chmod 755 /usr/local/bin/* 2>/dev/null || true
+    sudo chmod 644 /usr/local/lib/*.so* 2>/dev/null || true
+    sudo chown -R root:root /usr/share/mactheme /etc/sudoers.d 2>/dev/null || true
+    sudo chmod 440 /etc/sudoers.d/* 2>/dev/null || true
     
     emit_progress 100 "finalizing" "Installation completed successfully"
 
@@ -2570,6 +2622,11 @@ EOF
     [ -f "$SCRIPT_DIR/grub/06_mac_theme_select" ] && sync_or_update_file "$SCRIPT_DIR/grub/06_mac_theme_select" "/etc/grub.d/06_mac_theme_select" true
     [ -f "$SCRIPT_DIR/grub/08_mac_usb_entry" ] && sync_or_update_file "$SCRIPT_DIR/grub/08_mac_usb_entry" "/etc/grub.d/08_mac_usb_entry" true
     [ -f "$SCRIPT_DIR/grub/40_custom" ] && sync_or_update_file "$SCRIPT_DIR/grub/40_custom" "/etc/grub.d/40_custom" true
+    if [ -f "$SCRIPT_DIR/grub/generate_icons.py" ]; then
+        sudo mkdir -p /usr/share/mactheme/grub
+        sync_or_update_file "$SCRIPT_DIR/grub/generate_icons.py" "/usr/share/mactheme/grub/generate_icons.py" true
+        sudo chmod 755 /usr/share/mactheme/grub/generate_icons.py 2>/dev/null || true
+    fi
     [ -f "$SCRIPT_DIR/systemd/mac-grub-status.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-grub-status.service" "/etc/systemd/system/mac-grub-status.service" true
     sudo chmod 755 /etc/grub.d/06_mac_theme_select /etc/grub.d/08_mac_usb_entry /etc/grub.d/40_custom 2>/dev/null || true
     if command -v update-grub >/dev/null 2>&1; then
@@ -2636,6 +2693,15 @@ EOF_EVO
             "$SCRIPT_DIR/bin/mac-lowspec-optimizer" apply || true
         fi
     fi
+
+    # Security hardening: ensure all system files are strictly owned by root:root and safe
+    log_info "Verifying system file security and root permissions..."
+    sudo rm -f /etc/sudoers.d/99-mactheme /etc/sudoers.d/99_mactheme 2>/dev/null || true
+    sudo chown root:root /usr/local/bin/* /usr/local/lib/* 2>/dev/null || true
+    sudo chmod 755 /usr/local/bin/* 2>/dev/null || true
+    sudo chmod 644 /usr/local/lib/*.so* 2>/dev/null || true
+    sudo chown -R root:root /usr/share/mactheme /etc/sudoers.d 2>/dev/null || true
+    sudo chmod 440 /etc/sudoers.d/* 2>/dev/null || true
     
     sudo systemctl daemon-reload 2>/dev/null || true
     sudo systemctl restart mac-touchpad-daemon.service 2>/dev/null || true
@@ -2786,6 +2852,7 @@ run_debug_install() {
         cp -f "$SCRIPT_DIR/bin/macW1Y" "$LOCAL_BIN/macW1Y" 2>/dev/null || true
         chmod 755 "$LOCAL_BIN/macW1Y" 2>/dev/null || true
         sudo cp -f "$SCRIPT_DIR/bin/macW1Y" /usr/local/bin/macW1Y
+        sudo chown root:root /usr/local/bin/macW1Y 2>/dev/null || true
         sudo chmod 755 /usr/local/bin/macW1Y
         sudo ln -sf /usr/local/bin/macW1Y /usr/local/bin/macw1y
         sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macW1Y
@@ -2804,7 +2871,8 @@ run_debug_install() {
             b_name="$(basename "$bin_file")"
             cp -f "$bin_file" "$LOCAL_BIN/$b_name" 2>/dev/null || true
             chmod 755 "$LOCAL_BIN/$b_name" 2>/dev/null || true
-            sudo cp -af "$bin_file" "/usr/local/bin/$b_name" 2>/dev/null || true
+            sudo cp -f "$bin_file" "/usr/local/bin/$b_name" 2>/dev/null || true
+            sudo chown root:root "/usr/local/bin/$b_name" 2>/dev/null || true
             sudo chmod 755 "/usr/local/bin/$b_name" 2>/dev/null || true
         fi
     done

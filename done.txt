@@ -5004,3 +5004,48 @@ Task #938:
   * [gtk-4.0/gtk.css](file:///home/vitaliy/MACTHEMEFILES/gtk-4.0/gtk.css)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+
+* 2026-11-24 — Task #939: Усунення критичних вразливостей безпеки та ескалації привілеїв після встановлення install.sh, очищення правил sudoers, виправлення володіння системними файлами та створення SECURITY.md (відповідь на Issue #5 від Kanyandula)
+  - Повне усунення загрози ескалації привілеїв через sudoers:
+    * Видалено небезпечний файл etc/sudoers.d/99-mactheme з репозиторію та додано обов'язкове очищення /etc/sudoers.d/99-mactheme у скриптах install.sh та apply_plymouth.sh, що назавжди ліквідувало бекдор із неконтрольованим рут-доступом vitaliy ALL=(ALL) NOPASSWD: ALL.
+    * Оновлено etc/sudoers.d/99-mac-boot-config: замінено небезпечний глобальний запис ALL ALL=(ALL) NOPASSWD на суворе обмеження виключно для адміністративних груп (%sudo на Debian/Ubuntu та %wheel на Fedora/Arch).
+    * Утиліту bin/mac-boot-config оптимізовано: усунено небезпечний перезапуск через sudo python3 (який вимагав би прав на інтерпретатор) на прямий виклик /usr/local/bin/mac-boot-config із валідацією прав, а також замінено захардкоджений фолбек користувача vitaliy на динамічне визначення через pwd.getpwuid(1000).pw_name.
+  - Усунення витоку прав володіння системними файлами (Insecure File Ownership Leak):
+    * У функціях sync_or_update_file та sync_directory_tree скрипту install.sh замінено sudo cp -a та rsync -a (які переносили права локального користувача vitaliy:vitaliy на файли в /usr/local/bin, /usr/local/lib та /etc/sysctl.d) на безпечне копіювання із прапорцями --no-owner --no-group --chown=root:root та явним викликом sudo chown root:root та chmod 755/644.
+    * Додано завершальний крок санітизації прав: install.sh примусово нормалізує володіння root:root для /usr/local/bin/*, /usr/local/lib/*, /usr/share/mactheme та /etc/sudoers.d/*.
+  - Усунення вразливостей передбачуваних тимчасових каталогів у /tmp (Symlink/Race attack vector):
+    * Замінено статичні тимчасові шляхи /tmp/gnome-rounded-blur та /tmp/macW1Y-build-installer на безпечні рандомізовані каталоги через mktemp -d із гарантованим очищенням після збірки.
+  - Ліквідація виконання користувацького коду від імені root через systemd:
+    * У службі systemd/mac-grub-status.service замінено виконання скрипту з домашнього каталогу /home/vitaliy/MACTHEMEFILES/grub/generate_icons.py на захищений системний шлях /usr/share/mactheme/grub/generate_icons.py, який встановлюється з правами root:root (0755).
+    * Скрипт grub/generate_icons.py переведено на динамічний пошук системних шрифтів (DejaVu, Liberation, SF Pro) без зашитих шляхів /home/vitaliy/.
+  - Динамізація та безпека системних утиліт:
+    * bin/mac-styling-settings: заміна фіксованого /home/vitaliy/.local/bin/ на пошук через shutil.which("update-bms-menubar-blur") та ~/.local/bin/.
+    * bin/mac-widget-picker: динамічний пошук розширення через GLib.get_user_data_dir() та системні шляхи.
+    * bin/mac-theme-sync: динамічне визначення кореня проєкту через MACW1Y_REPO_DIR, поточний каталог, ~/macW1Y, ~/MACTHEMEFILES та /usr/share/mactheme.
+    * bin/mac-airdrop: універсальний пошук pip site-packages для Python 3.10–3.14 та системних іконок через os.path.expanduser.
+    * bin/mac-gdm-bypass: коректне визначення $TARGET_USER та $TARGET_HOME при запуску через sudo для уникнення спроб запису в /home/vitaliy.
+    * bin/mac-audit-sync: підтримка валідації актуальних відновлювальних скриптів без хибного спрацьовування розбіжностей версій.
+  - Створення політики безпеки SECURITY.md:
+    * Додано офіційний файл SECURITY.md із правилами приватного повідомлення про вразливості через GitHub Private Vulnerability Reporting та контактну пошту vitaliyvinarskij6@gmail.com, списком підтримуваних версій та принципами системної безпеки modpack.
+  - Результати перевірки та тестування:
+    * bin/mac-audit-sync check: 100% PASS (0 розбіжностей).
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+    * Модульні тести: 39/39 PASS (OK).
+    * install.sh: 0 кириличних символів.
+  * [install.sh](file:///home/vitaliy/MACTHEMEFILES/install.sh)
+  * [apply_plymouth.sh](file:///home/vitaliy/MACTHEMEFILES/apply_plymouth.sh)
+  * [etc/sudoers.d/99-mac-boot-config](file:///home/vitaliy/MACTHEMEFILES/etc/sudoers.d/99-mac-boot-config)
+  * [SECURITY.md](file:///home/vitaliy/MACTHEMEFILES/SECURITY.md)
+  * [bin/mac-boot-config](file:///home/vitaliy/MACTHEMEFILES/bin/mac-boot-config)
+  * [bin/mac-audit-sync](file:///home/vitaliy/MACTHEMEFILES/bin/mac-audit-sync)
+  * [bin/mac-gdm-bypass](file:///home/vitaliy/MACTHEMEFILES/bin/mac-gdm-bypass)
+  * [bin/mac-styling-settings](file:///home/vitaliy/MACTHEMEFILES/bin/mac-styling-settings)
+  * [bin/mac-widget-picker](file:///home/vitaliy/MACTHEMEFILES/bin/mac-widget-picker)
+  * [bin/mac-theme-sync](file:///home/vitaliy/MACTHEMEFILES/bin/mac-theme-sync)
+  * [bin/mac-airdrop](file:///home/vitaliy/MACTHEMEFILES/bin/mac-airdrop)
+  * [grub/generate_icons.py](file:///home/vitaliy/MACTHEMEFILES/grub/generate_icons.py)
+  * [systemd/mac-grub-status.service](file:///home/vitaliy/MACTHEMEFILES/systemd/mac-grub-status.service)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

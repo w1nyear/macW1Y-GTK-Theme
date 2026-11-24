@@ -56,12 +56,15 @@ if [ -f "$GRUB_DEFAULT" ]; then
 fi
 
 # 5. Встановлення правил sudoers для mac-налаштувань
+rm -f /etc/sudoers.d/99-mactheme /etc/sudoers.d/99_mactheme 2>/dev/null || true
 if [ -d "$SCRIPT_DIR/etc/sudoers.d" ]; then
     echo "🔐 Оновлення правил безпеки у /etc/sudoers.d/..."
     for sf in "$SCRIPT_DIR/etc/sudoers.d/"*; do
         if [ -f "$sf" ]; then
             sbase="$(basename "$sf")"
-            cp "$sf" "/etc/sudoers.d/$sbase"
+            [ "$sbase" = "99-mactheme" ] && continue
+            cp -f "$sf" "/etc/sudoers.d/$sbase"
+            chown root:root "/etc/sudoers.d/$sbase"
             chmod 440 "/etc/sudoers.d/$sbase"
         fi
     done

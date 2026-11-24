@@ -4,7 +4,10 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Adw from 'gi://Adw?version=1';
 import Gettext from 'gettext';
-import { WidgetPickerDialog } from 'file:///home/vitaliy/MACTHEMEFILES/extensions/desktop-widgets@r3nhick/prefs/widgetPickerDialog.js';
+let userExt = `${GLib.get_user_data_dir()}/gnome-shell/extensions/desktop-widgets@r3nhick`;
+let sysExt = '/usr/share/gnome-shell/extensions/desktop-widgets@r3nhick';
+let extPath = GLib.file_test(userExt, GLib.FileTest.IS_DIR) ? userExt : sysExt;
+const { WidgetPickerDialog } = await import(`file://${extPath}/prefs/widgetPickerDialog.js`);
 
 let userLocale = 'en';
 const locFile = `${GLib.get_home_dir()}/.config/mac-styling/locale`;
@@ -73,11 +76,6 @@ const app = new Adw.Application({
 });
 
 app.connect('activate', () => {
-    let extPath = '/home/vitaliy/.local/share/gnome-shell/extensions/desktop-widgets@r3nhick';
-    const testFile = Gio.File.new_for_path(extPath);
-    if (!testFile.query_exists(null)) {
-        extPath = '/usr/share/gnome-shell/extensions/desktop-widgets@r3nhick';
-    }
     try {
         const localeDir = extPath + '/locale';
         Gettext.bindtextdomain('desktop-widgets@r3nhick', localeDir);

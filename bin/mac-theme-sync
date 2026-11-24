@@ -12,7 +12,12 @@ import json
 import subprocess
 import shutil
 
-REPO_DIR = "/home/vitaliy/MACTHEMEFILES"
+REPO_DIR = os.environ.get("MACW1Y_REPO_DIR") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if not os.path.exists(os.path.join(REPO_DIR, "info.json")):
+    for cand in [os.path.expanduser("~/MACTHEMEFILES"), os.path.expanduser("~/macW1Y"), "/usr/share/mactheme"]:
+        if os.path.exists(os.path.join(cand, "info.json")):
+            REPO_DIR = cand
+            break
 MANIFEST_PATH = os.path.join(REPO_DIR, "config/macw1y-manifest.json")
 HOME = os.path.expanduser("~")
 

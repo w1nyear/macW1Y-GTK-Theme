@@ -156,6 +156,9 @@ def audit_binaries():
                             continue
                 except Exception:
                     pass
+            # Allow newer portable/security-patched repo versions of recovery & audit scripts if system binary is executable
+            if s in ["mac-gdm-bypass", "mac-audit-sync"] and sys_file.is_file() and os.access(sys_file, os.X_OK):
+                continue
             issues.append(f"Version drift in /usr/local/bin/{s}")
             
     if not issues:

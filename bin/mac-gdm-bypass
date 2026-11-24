@@ -68,12 +68,21 @@ for arg in "$@"; do
     esac
 done
 
+# Detect user context
+if [ -n "$SUDO_USER" ]; then
+    TARGET_USER="$SUDO_USER"
+    TARGET_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+else
+    TARGET_USER="$USER"
+    TARGET_HOME="$HOME"
+fi
+
 show_banner
 
 # Locate Repository Root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR=""
-for candidate in "$SCRIPT_DIR/.." "/home/vitaliy/macW1Y" "/home/vitaliy/MACTHEMEFILES"; do
+for candidate in "$SCRIPT_DIR/.." "$TARGET_HOME/macW1Y" "$TARGET_HOME/MACTHEMEFILES" "/usr/share/mactheme"; do
     if [ -d "$candidate/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com" ]; then
         REPO_DIR="$(cd "$candidate" && pwd)"
         break
@@ -141,7 +150,7 @@ fi
 echo -e "\n${C_BOLD}${C_BLUE}▶ [1/6] Deploying cleansed static-wallpaper extension to system & user...${C_RESET}"
 EXT_SRC="$REPO_DIR/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com"
 SYS_EXT="/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com"
-USER_EXT="/home/vitaliy/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com"
+USER_EXT="$TARGET_HOME/.local/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com"
 
 if [ -d "$EXT_SRC" ]; then
     mkdir -p "$SYS_EXT"
@@ -152,7 +161,7 @@ if [ -d "$EXT_SRC" ]; then
 
     mkdir -p "$USER_EXT"
     cp -rf "$EXT_SRC/"* "$USER_EXT/"
-    chown -R vitaliy:vitaliy "$USER_EXT" 2>/dev/null || true
+    chown -R "${TARGET_USER}:${TARGET_USER}" "$USER_EXT" 2>/dev/null || true
     chmod -R a+rX "$USER_EXT"
     glib-compile-schemas "$USER_EXT/schemas" 2>/dev/null || true
     echo -e "   ${C_GREEN}✓${C_RESET} Synchronized $USER_EXT"

@@ -1,1 +1,4 @@
-ALL ALL=(ALL) NOPASSWD: /usr/local/bin/mac-boot-config
+# Sudoers privilege restriction for mac-boot-config (macOS Settings boot toggles)
+# Only allow administrative users in sudo or wheel group to execute mac-boot-config without password
+%sudo ALL=(ALL) NOPASSWD: /usr/local/bin/mac-boot-config
+%wheel ALL=(ALL) NOPASSWD: /usr/local/bin/mac-boot-config
