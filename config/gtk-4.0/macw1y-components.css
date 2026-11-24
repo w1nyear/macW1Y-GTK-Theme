@@ -546,8 +546,8 @@ preferencespage list.boxed-list:not(.nested),
   border-radius: 14px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   padding: 16px 18px 14px 18px;
-  margin-left: 0px !important;
-  margin-right: 0px !important;
+  margin-left: 0px;
+  margin-right: 0px;
   margin-top: 10px;
   margin-bottom: 8px;
 }
@@ -2908,3 +2908,136 @@ window.nautilus-window gridview > child:selected label.caption,
 gridview > child:selected label.caption {
   color: rgba(255, 255, 255, 0.70);
 }
+
+/* Nautilus & Global Floating Capsule Banners & Rounded Buttons (e.g. Trash Bar) */
+window.nautilus-window banner,
+window.nautilus-window adwbanner,
+window.nautilus-window infobar,
+.nautilus-window banner,
+.nautilus-window adwbanner,
+.nautilus-window infobar,
+window.nautilus-window banner > revealer,
+window.nautilus-window adwbanner > revealer,
+window.nautilus-window infobar > revealer,
+.nautilus-window banner > revealer,
+.nautilus-window adwbanner > revealer,
+.nautilus-window infobar > revealer {
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  margin: 0px;
+  padding: 0px;
+}
+
+window.nautilus-window banner > revealer > widget,
+window.nautilus-window banner > revealer > box,
+window.nautilus-window adwbanner > revealer > widget,
+window.nautilus-window adwbanner > revealer > box,
+window.nautilus-window infobar > revealer > widget,
+window.nautilus-window infobar > revealer > box,
+.nautilus-window banner > revealer > widget,
+.nautilus-window banner > revealer > box,
+.nautilus-window adwbanner > revealer > widget,
+.nautilus-window adwbanner > revealer > box,
+.nautilus-window infobar > revealer > widget,
+.nautilus-window infobar > revealer > box {
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  padding: 4px 16px;
+  margin: 6px 16px 8px 16px;
+}
+
+window.nautilus-window.mac-theme-light banner > revealer > widget,
+window.nautilus-window.mac-theme-light banner > revealer > box,
+window.nautilus-window.mac-theme-light adwbanner > revealer > widget,
+window.nautilus-window.mac-theme-light adwbanner > revealer > box,
+window.nautilus-window.mac-theme-light infobar > revealer > widget,
+window.nautilus-window.mac-theme-light infobar > revealer > box,
+.mac-theme-light .nautilus-window banner > revealer > widget,
+.mac-theme-light .nautilus-window banner > revealer > box,
+.mac-theme-light .nautilus-window adwbanner > revealer > widget,
+.mac-theme-light .nautilus-window adwbanner > revealer > box,
+.mac-theme-light .nautilus-window infobar > revealer > widget,
+.mac-theme-light .nautilus-window infobar > revealer > box {
+  background-color: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+window.nautilus-window banner button,
+window.nautilus-window adwbanner button,
+window.nautilus-window infobar button,
+.nautilus-window banner button,
+.nautilus-window adwbanner button,
+.nautilus-window infobar button {
+  border-radius: 9999px;
+  min-height: 24px;
+  padding: 2px 14px;
+  background-color: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  margin-right: -8px;
+}
+
+window.nautilus-window banner button:hover,
+window.nautilus-window adwbanner button:hover,
+window.nautilus-window infobar button:hover,
+.nautilus-window banner button:hover,
+.nautilus-window adwbanner button:hover,
+.nautilus-window infobar button:hover {
+  background-color: rgba(255, 255, 255, 0.20);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+window.nautilus-window banner button:active,
+window.nautilus-window adwbanner button:active,
+window.nautilus-window infobar button:active,
+.nautilus-window banner button:active,
+.nautilus-window adwbanner button:active,
+.nautilus-window infobar button:active {
+  background-color: rgba(255, 255, 255, 0.28);
+}
+
+window.nautilus-window.mac-theme-light banner button,
+window.nautilus-window.mac-theme-light adwbanner button,
+window.nautilus-window.mac-theme-light infobar button,
+.mac-theme-light .nautilus-window banner button,
+.mac-theme-light .nautilus-window adwbanner button,
+.mac-theme-light .nautilus-window infobar button {
+  background-color: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: rgba(0, 0, 0, 0.88);
+}
+
+window.nautilus-window.mac-theme-light banner button:hover,
+window.nautilus-window.mac-theme-light adwbanner button:hover,
+window.nautilus-window.mac-theme-light infobar button:hover,
+.mac-theme-light .nautilus-window banner button:hover,
+.mac-theme-light .nautilus-window adwbanner button:hover,
+.mac-theme-light .nautilus-window infobar button:hover {
+  background-color: rgba(0, 0, 0, 0.10);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+window.nautilus-window banner button:dir(rtl),
+window.nautilus-window adwbanner button:dir(rtl),
+window.nautilus-window infobar button:dir(rtl),
+.nautilus-window banner button:dir(rtl),
+.nautilus-window adwbanner button:dir(rtl),
+.nautilus-window infobar button:dir(rtl) {
+  margin-left: -8px;
+  margin-right: 0px;
+}
+
+window.nautilus-window banner button label,
+window.nautilus-window adwbanner button label,
+window.nautilus-window infobar button label,
+.nautilus-window banner button label,
+.nautilus-window adwbanner button label,
+.nautilus-window infobar button label {
+  border-radius: 9999px;
+}
+

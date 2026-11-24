@@ -4832,3 +4832,26 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/gtk-4.0/macw1y-components.css](file:///home/vitaliy/MACTHEMEFILES/config/gtk-4.0/macw1y-components.css)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+- Task 932: Округлення смуги кошика та кнопки очищення в Nautilus під стиль Параметрів (AdwBanner pill capsule)
+  - Реалізація:
+    * src/mac_nautilus.c:
+      - У вбудований провайдер стилів custom_css (GTK_STYLE_PROVIDER_PRIORITY_USER + 500) додано правила оформлення для банерів Nautilus (window.nautilus-window banner, adwbanner, infobar та їх revealer):
+        - Зовнішній контейнер банера скинуто в transparent (background: transparent; border: none; box-shadow: none; margin: 0; padding: 0);
+        - Внутрішній контейнер revealer > widget/box оформлено у вигляді плаваючої заокругленої капсули (border-radius: 9999px), напівпрозорого карткового фону rgba(255, 255, 255, 0.09) для темної теми та rgba(0, 0, 0, 0.06) для світлої теми, тонкої рамки 1px solid rgba(255, 255, 255, 0.10), тіні 0 2px 8px rgba(0, 0, 0, 0.25) та бічних відступів margin: 6px 16px 8px 16px;
+        - Кнопка очищення кошика ("Спорожнити смітник…", banner button) отримала повне капсульне заокруглення border-radius: 9999px, min-height: 24px, padding: 2px 14px, напівпрозорий фон rgba(255, 255, 255, 0.12) із hover/active станами та заокруглений label.
+      - Скомпільовано lib/libmac_nautilus.so та синхронізовано до /usr/lib/x86_64-linux-gnu/, /usr/local/lib/, ~/.local/lib/.
+    * config/gtk-4.0/macw1y-components.css та ~/.config/gtk-4.0/macw1y-components.css:
+      - Додано глобальні стилі для плаваючих капсульних банерів та кнопок Nautilus.
+      - Виправлено синтаксис margin-left/margin-right у .mac-benchmark-card (прибрано некоректний !important всередині значення).
+      - Синхронізовано у встановлені системні теми macW1Y.
+  - Результати валідації:
+    * bin/mac-audit-sync check: 100% PASS.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+    * Zero Cyrillic у install.sh: Strict ASCII OK.
+  * [src/mac_nautilus.c](file:///home/vitaliy/MACTHEMEFILES/src/mac_nautilus.c)
+  * [lib/libmac_nautilus.so](file:///home/vitaliy/MACTHEMEFILES/lib/libmac_nautilus.so)
+  * [config/gtk-4.0/macw1y-components.css](file:///home/vitaliy/MACTHEMEFILES/config/gtk-4.0/macw1y-components.css)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
