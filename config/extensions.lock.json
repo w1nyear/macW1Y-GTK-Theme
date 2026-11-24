@@ -46,7 +46,7 @@
         "50",
         "51"
       ],
-      "sha256": "7a07b049736d83f94ee5c21247c973245d8ffc52cb63b88d7bf5547932f461a0",
+      "sha256": "86d3838f31b35dcdb55f3926386b4512266bda3193c519cd10f6d1e950f55f3e",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -59,7 +59,7 @@
       "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macW1Y horizontal Cairo battery indicator",
       "last_verified": "2026-11-08",
       "pinned_sha256": "7a07b049736d83f94ee5c21247c973245d8ffc52cb63b88d7bf5547932f461a0",
-      "dir_hash": "7a07b049736d83f94ee5c21247c973245d8ffc52cb63b88d7bf5547932f461a0"
+      "dir_hash": "86d3838f"
     },
     "compiz-alike-magic-lamp-effect@hermes83.github.com": {
       "uuid": "compiz-alike-magic-lamp-effect@hermes83.github.com",
@@ -274,7 +274,7 @@
         "50",
         "51"
       ],
-      "sha256": "0e6812927cfdcd756b709b33ca54cfed86d38589fd39e559ac9a801b7805f21d",
+      "sha256": "a60ab2066cf74a480a8f0e876494590f7235ed9fa580324a05e7b9930bbc589c",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -290,7 +290,7 @@
       "integrity_hash": "0e6812927cfdcd756b709b33ca54cfed86d38589fd39e559ac9a801b7805f21d",
       "pinned_sha256": "0e6812927cfdcd756b709b33ca54cfed86d38589fd39e559ac9a801b7805f21d",
       "expected_hash": "0e6812927cfdcd756b709b33ca54cfed86d38589fd39e559ac9a801b7805f21d",
-      "dir_hash": "0e6812927cfdcd756b709b33ca54cfed86d38589fd39e559ac9a801b7805f21d",
+      "dir_hash": "a60ab206",
       "integrity": "0e6812927cfdcd756b709b33ca54cfed86d38589fd39e559ac9a801b7805f21d"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {

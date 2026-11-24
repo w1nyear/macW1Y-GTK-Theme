@@ -1433,13 +1433,12 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 
 .mac-notification-count-badge {
   font-family: "Default", Cantarell, sans-serif !important;
-  background-color: rgba(255, 255, 255, 0.20) !important;
-  color: rgba(255, 255, 255, 0.90) !important;
-  font-size: 10px !important;
-  font-weight: 600 !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
   border-radius: 9999px !important;
-  padding: 1px 6px !important;
-  margin-left: 6px !important;
+  text-align: center !important;
 }
 
 .mac-notification-title {

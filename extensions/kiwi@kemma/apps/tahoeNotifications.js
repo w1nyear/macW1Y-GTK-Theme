@@ -2150,21 +2150,32 @@ function _buildGroupStack(g, p) {
                 try { iconTile.set_clip_to_allocation(false); } catch (_) {}
                 try { mainBox.set_clip_to_allocation(false); } catch (_) {}
                 try { newest.set_clip_to_allocation(false); } catch (_) {}
+                const applyBadgeStyle = (b, cnt) => {
+                    const str = `${cnt}`;
+                    b.text = str;
+                    b.visible = (cnt > 1);
+                    const base = 'background-color: #ffffff !important; color: #000000 !important; font-size: 11px !important; font-weight: 700 !important; border-radius: 9999px !important; text-align: center; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.40) !important; margin: 0 !important; line-height: 18px !important;';
+                    if (str.length <= 1) {
+                        b.set_style(`${base} width: 18px !important; min-width: 18px !important; max-width: 18px !important; height: 18px !important; min-height: 18px !important; max-height: 18px !important; padding: 0 !important;`);
+                        try { b.set_size(18, 18); } catch (_) {}
+                    } else {
+                        b.set_style(`${base} width: auto !important; min-width: 18px !important; max-width: none !important; height: 18px !important; min-height: 18px !important; max-height: 18px !important; padding: 0px 5px !important;`);
+                        try { b.set_size(-1, 18); } catch (_) {}
+                    }
+                };
                 if (!newest._macBadgeAdded) {
                     const badge = new St.Label({
-                        text: `${g.cards.length}`,
-                        style: 'background-color: #ffffff !important; color: #000000 !important; font-size: 11px !important; font-weight: 700 !important; border-radius: 9999px !important; padding: 1px 5px !important; min-width: 17px !important; height: 17px !important; text-align: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45) !important; border: 1.5px solid rgba(0, 0, 0, 0.12) !important;',
                         x_align: Clutter.ActorAlign.END,
                         y_align: Clutter.ActorAlign.START,
                         translation_x: 6,
                         translation_y: -6,
                     });
+                    applyBadgeStyle(badge, g.cards.length);
                     newest._macStackBadge = badge;
                     newest._macBadgeAdded = true;
                     iconTile.add_child(badge);
                 } else if (newest._macStackBadge) {
-                    newest._macStackBadge.text = `${g.cards.length}`;
-                    newest._macStackBadge.visible = true;
+                    applyBadgeStyle(newest._macStackBadge, g.cards.length);
                 }
             }
         } catch (_) {}

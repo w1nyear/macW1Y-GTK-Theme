@@ -207,11 +207,11 @@ export function buildNotificationCard(source, notification, options = {}) {
 
     const CARD_BASE_STYLE = (typeof globalThis._macGetNotifCardStyle === 'function')
         ? globalThis._macGetNotifCardStyle()
-        : 'background-color: transparent !important; border: none !important; border-radius: 24px !important; box-shadow: none !important; padding: 0 !important;';
+        : 'background-color: transparent !important; border: none !important; border-radius: 18px !important; box-shadow: none !important; padding: 0 !important;';
     const CARD_HOVER_STYLE = CARD_BASE_STYLE;
 
     const CARD_PILL_STYLE = CARD_BASE_STYLE.replace(/border-radius:\s*[^;]+;/, 'border-radius: 9999px !important;');
-    const CARD_MID_STYLE = CARD_BASE_STYLE.replace(/border-radius:\s*[^;]+;/, 'border-radius: 22px !important;');
+    const CARD_MID_STYLE = CARD_BASE_STYLE.replace(/border-radius:\s*[^;]+;/, 'border-radius: 18px !important;');
     const CLOSE_BASE = 'width: 22px !important; height: 22px !important; border-radius: 11px !important; background-color: rgba(255, 255, 255, 0.18) !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important; padding: 0 !important; margin: 0px !important;';
     const CLOSE_HOVER = CLOSE_BASE.replace('0.18', '0.28');
 
@@ -258,8 +258,8 @@ export function buildNotificationCard(source, notification, options = {}) {
         y_expand: true,
         clip_to_allocation: true,
         style: isScreenshot
-            ? 'padding: 10px 10px !important; border-radius: 20px !important;'
-            : 'padding: 14px 10px 16px 14px !important; border-radius: 24px !important;',
+            ? 'padding: 10px 10px !important; border-radius: 18px !important;'
+            : 'padding: 14px 10px 16px 14px !important; border-radius: 18px !important;',
     });
     banner.set_child(mainBox);
 

@@ -4855,3 +4855,30 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [config/gtk-4.0/macw1y-components.css](file:///home/vitaliy/MACTHEMEFILES/config/gtk-4.0/macw1y-components.css)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+- Task 933: Уніфікація радіуса заокруглення 18px карток сповіщень та геометрії круглого бейджа стосу
+  - Реалізація:
+    * extensions/blur-my-shell@aunetx/components/notifications_v4.js:
+      - Уніфіковано радіус заокруглення під notif_radius (18px) зі styling.json: CARD_BASE_STYLE, CARD_HOVER_STYLE, CARD_MID_STYLE та BlurEffect.corner_radius тепер синхронно використовують 18px (раніше було 16px/22px).
+      - Усунено конфлікт непрозорості шарів стосу (layer1 та layer2): знижено фонову непрозорість з 0.94/0.96 до напівпрозорого скла (0.45/0.55), встановлено ідентичний радіус 18px і corner_radius 18 для BlurEffect, завдяки чому заломлення та розмиття фону не перекриваються і збігаються з формою картки.
+      - Реалізовано функцію updateMacNotificationBadge(badge, count): для одиничної цифри (1–9) задається симетричний ідеальний круг 18×18px (width: 18px !important; min-width: 18px; max-width: 18px; height: 18px; padding: 0 !important; border-radius: 9999px), а для чисел >=10 ширина динамічно збільшується зі збереженням симетричного відступу 5px від цифр до країв.
+    * extensions/blur-my-shell@aunetx/components/menubar_v29.js:
+      - У _initNotifGlass та _syncNotifGlassRegions встановлено setIsDock(false) (раніше помилково виставлялось setIsDock(true)), corner_radius оновлено до 18.0px, додано виключення _notifCenterActor у _uiSampler для усунення рекурсії захоплення.
+    * extensions/kiwi@kemma/stylesheet.css:
+      - Прибрано старі статичні margin-left: 6px та padding: 1px 6px у .mac-notification-count-badge, що деформували бейдж в овал; встановлено чисті правила для капсули/круга.
+    * extensions/kiwi@kemma/apps/tahoeNotificationCard.js & tahoeNotifications.js:
+      - Синхронізовано радіус 18px у всіх резервних білдерах карток та оновлено логіку бейджа стосу під круглий розмір 18×18px для однієї цифри.
+    * config/extensions.lock.json:
+      - Оновлено контрольні хеші sha256 для blur-my-shell@aunetx та kiwi@kemma.
+  - Результати валідації:
+    * bin/mac-audit-sync check: 100% PASS.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+  * [extensions/blur-my-shell@aunetx/components/notifications_v4.js](file:///home/vitaliy/MACTHEMEFILES/extensions/blur-my-shell@aunetx/components/notifications_v4.js)
+  * [extensions/blur-my-shell@aunetx/components/menubar_v29.js](file:///home/vitaliy/MACTHEMEFILES/extensions/blur-my-shell@aunetx/components/menubar_v29.js)
+  * [extensions/kiwi@kemma/stylesheet.css](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/stylesheet.css)
+  * [extensions/kiwi@kemma/apps/tahoeNotificationCard.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotificationCard.js)
+  * [extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/MACTHEMEFILES/extensions/kiwi@kemma/apps/tahoeNotifications.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

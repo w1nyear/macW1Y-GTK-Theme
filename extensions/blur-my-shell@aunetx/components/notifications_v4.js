@@ -175,6 +175,29 @@ export function formatRelativeNotifAge(datetime) {
     return formatNotificationTimestamp(dt);
 }
 
+export function updateMacNotificationBadge(badge, count) {
+    if (!badge) return;
+    const n = Number(count) || 0;
+    if (n <= 1) {
+        badge.visible = false;
+        return;
+    }
+    const str = `${n}`;
+    badge.text = str;
+    badge.visible = true;
+
+    const baseStyle = 'background-color: #ffffff !important; color: #000000 !important; font-size: 11px !important; font-weight: 700 !important; border-radius: 9999px !important; text-align: center; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.40) !important; margin: 0 !important; line-height: 18px !important;';
+
+    if (str.length <= 1) {
+        badge.set_style(`${baseStyle} width: 18px !important; min-width: 18px !important; max-width: 18px !important; height: 18px !important; min-height: 18px !important; max-height: 18px !important; padding: 0 !important;`);
+        try { badge.set_size(18, 18); } catch (_) {}
+    } else {
+        badge.set_style(`${baseStyle} width: auto !important; min-width: 18px !important; max-width: none !important; height: 18px !important; min-height: 18px !important; max-height: 18px !important; padding: 0px 5px !important;`);
+        try { badge.set_size(-1, 18); } catch (_) {}
+    }
+}
+globalThis._macUpdateNotificationBadge = updateMacNotificationBadge;
+
 export function buildNotificationCard(source, notification, options = {}) {
     const {
         width = 440,
@@ -225,15 +248,27 @@ export function buildNotificationCard(source, notification, options = {}) {
         shadowHoverCss = `box-shadow: 0 ${hY}px ${hBlur}px rgba(0, 0, 0, ${hAlpha}) !important;`;
     }
 
-    const CARD_BASE_STYLE = isDark
-        ? `background-color: rgba(30, 30, 32, 0.40) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 16px !important; ${shadowCss}`
-        : `background-color: rgba(255, 255, 255, 0.40) !important; border: 1px solid rgba(255, 255, 255, 0.35) !important; border-radius: 16px !important; ${shadowCss}`;
-    const CARD_HOVER_STYLE = isDark
-        ? `background-color: rgba(45, 45, 48, 0.50) !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; border-radius: 16px !important; ${shadowHoverCss}`
-        : `background-color: rgba(255, 255, 255, 0.52) !important; border: 1px solid rgba(255, 255, 255, 0.45) !important; border-radius: 16px !important; ${shadowHoverCss}`;
+    let notifRadius = 18;
+    try {
+        const f = Gio.File.new_for_path(GLib.get_home_dir() + '/.config/mac-styling/styling.json');
+        if (f.query_exists(null)) {
+            const [ok, b] = f.load_contents(null);
+            if (ok) {
+                const d = JSON.parse(new TextDecoder().decode(b));
+                if (typeof d.notif_radius === 'number') notifRadius = Math.max(0, Math.min(48, d.notif_radius));
+            }
+        }
+    } catch (_) {}
 
-    const CARD_PILL_STYLE = CARD_BASE_STYLE.replace('border-radius: 16px !important;', 'border-radius: 9999px !important;');
-    const CARD_MID_STYLE = CARD_BASE_STYLE.replace('border-radius: 16px !important;', 'border-radius: 22px !important;');
+    const CARD_BASE_STYLE = isDark
+        ? `background-color: rgba(30, 30, 32, 0.40) !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: ${notifRadius}px !important; ${shadowCss}`
+        : `background-color: rgba(255, 255, 255, 0.40) !important; border: 1px solid rgba(255, 255, 255, 0.35) !important; border-radius: ${notifRadius}px !important; ${shadowCss}`;
+    const CARD_HOVER_STYLE = isDark
+        ? `background-color: rgba(45, 45, 48, 0.50) !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; border-radius: ${notifRadius}px !important; ${shadowHoverCss}`
+        : `background-color: rgba(255, 255, 255, 0.52) !important; border: 1px solid rgba(255, 255, 255, 0.45) !important; border-radius: ${notifRadius}px !important; ${shadowHoverCss}`;
+
+    const CARD_PILL_STYLE = CARD_BASE_STYLE.replace(`border-radius: ${notifRadius}px !important;`, 'border-radius: 9999px !important;');
+    const CARD_MID_STYLE = CARD_BASE_STYLE;
 
     const banner = new St.Button({
         style_class: 'mac-notification-banner',
@@ -273,7 +308,7 @@ export function buildNotificationCard(source, notification, options = {}) {
                     ?.some?.(p => p.name === 'corner-radius')
             );
             if (supportsCorner) {
-                blurParams.corner_radius = 16;
+                blurParams.corner_radius = notifRadius;
             }
             const blurEffect = new BlurOrShell.BlurEffect(blurParams);
             banner.add_effect(blurEffect);
@@ -329,7 +364,7 @@ export function buildNotificationCard(source, notification, options = {}) {
     const countBadge = new St.Label({
         text: '',
         style_class: 'mac-notification-count-badge',
-        style: 'background-color: #ffffff !important; color: #000000 !important; font-size: 11px !important; font-weight: 700 !important; border-radius: 9999px !important; padding: 0px 5px !important; min-width: 16px !important; height: 16px !important; text-align: center; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.40) !important;',
+        style: 'background-color: #ffffff !important; color: #000000 !important; font-size: 11px !important; font-weight: 700 !important; border-radius: 9999px !important; width: 18px !important; min-width: 18px !important; max-width: 18px !important; height: 18px !important; min-height: 18px !important; max-height: 18px !important; padding: 0 !important; margin: 0 !important; text-align: center; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.40) !important; line-height: 18px !important;',
         x_align: Clutter.ActorAlign.END,
         y_align: Clutter.ActorAlign.START,
         translation_x: 5,
@@ -706,6 +741,18 @@ export class MacNotificationGroup {
         }
 
 
+        let notifRadius = 18;
+        try {
+            const f = Gio.File.new_for_path(GLib.get_home_dir() + '/.config/mac-styling/styling.json');
+            if (f.query_exists(null)) {
+                const [ok, b] = f.load_contents(null);
+                if (ok) {
+                    const d = JSON.parse(new TextDecoder().decode(b));
+                    if (typeof d.notif_radius === 'number') notifRadius = Math.max(0, Math.min(48, d.notif_radius));
+                }
+            }
+        } catch (_) {}
+
         this.layer2 = new St.Widget({
             x_expand: true,
             x_align: Clutter.ActorAlign.FILL,
@@ -714,12 +761,11 @@ export class MacNotificationGroup {
             visible: false,
             reactive: true,
             style: isDark
-                ? 'background-color: rgba(30, 32, 38, 0.94) !important; border: 1px solid rgba(255, 255, 255, 0.10) !important; border-top: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: 18px !important; margin-left: 20px !important; margin-right: 20px !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.30) !important;'
-                : 'background-color: rgba(230, 230, 236, 0.94) !important; border: 1px solid rgba(0, 0, 0, 0.08) !important; border-radius: 18px !important; margin-left: 20px !important; margin-right: 20px !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;',
+                ? `background-color: rgba(30, 32, 38, 0.45) !important; border: 1px solid rgba(255, 255, 255, 0.10) !important; border-top: 1px solid rgba(255, 255, 255, 0.16) !important; border-radius: ${notifRadius}px !important; margin-left: 20px !important; margin-right: 20px !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.30) !important;`
+                : `background-color: rgba(230, 230, 236, 0.45) !important; border: 1px solid rgba(0, 0, 0, 0.08) !important; border-radius: ${notifRadius}px !important; margin-left: 20px !important; margin-right: 20px !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;`,
         });
         this.layer2.connect('button-press-event', handleExpandClick);
         this.collapsedContainer.add_child(this.layer2);
-
 
         this.layer1 = new St.Widget({
             x_expand: true,
@@ -729,8 +775,8 @@ export class MacNotificationGroup {
             visible: false,
             reactive: true,
             style: isDark
-                ? 'background-color: rgba(36, 38, 44, 0.96) !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-top: 1px solid rgba(255, 255, 255, 0.20) !important; border-radius: 18px !important; margin-left: 10px !important; margin-right: 10px !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.30) !important;'
-                : 'background-color: rgba(240, 240, 244, 0.96) !important; border: 1px solid rgba(0, 0, 0, 0.12) !important; border-radius: 18px !important; margin-left: 10px !important; margin-right: 10px !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;',
+                ? `background-color: rgba(36, 38, 44, 0.55) !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; border-top: 1px solid rgba(255, 255, 255, 0.20) !important; border-radius: ${notifRadius}px !important; margin-left: 10px !important; margin-right: 10px !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.30) !important;`
+                : `background-color: rgba(240, 240, 244, 0.55) !important; border: 1px solid rgba(0, 0, 0, 0.12) !important; border-radius: ${notifRadius}px !important; margin-left: 10px !important; margin-right: 10px !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;`,
         });
         this.layer1.connect('button-press-event', handleExpandClick);
         this.collapsedContainer.add_child(this.layer1);
@@ -740,8 +786,8 @@ export class MacNotificationGroup {
                 const p1 = { name: 'layer1-blur', mode: BlurOrShell.BlurMode?.BACKGROUND ?? 1, radius: 20 };
                 const p2 = { name: 'layer2-blur', mode: BlurOrShell.BlurMode?.BACKGROUND ?? 1, radius: 18 };
                 if (BlurOrShell.BlurEffect.list_properties?.()?.some?.(p => p.name === 'corner-radius')) {
-                    p1.corner_radius = 18;
-                    p2.corner_radius = 18;
+                    p1.corner_radius = notifRadius;
+                    p2.corner_radius = notifRadius;
                 }
                 this.layer1.add_effect(new BlurOrShell.BlurEffect(p1));
                 this.layer2.add_effect(new BlurOrShell.BlurEffect(p2));
@@ -904,8 +950,7 @@ export class MacNotificationGroup {
         this.topCardBox.add_child(newBanner);
 
         if (newItem.cardData?.countBadge) {
-            newItem.cardData.countBadge.text = `${this.items.length}`;
-            newItem.cardData.countBadge.visible = true;
+            updateMacNotificationBadge(newItem.cardData.countBadge, this.items.length);
         }
 
         const actualH = newBanner.height;
@@ -1037,12 +1082,7 @@ export class MacNotificationGroup {
         topItem.banner.scale_y = 1.0;
 
         if (topItem.cardData?.countBadge) {
-            if (this.items.length > 1) {
-                topItem.cardData.countBadge.text = `${this.items.length}`;
-                topItem.cardData.countBadge.visible = true;
-            } else {
-                topItem.cardData.countBadge.visible = false;
-            }
+            updateMacNotificationBadge(topItem.cardData.countBadge, this.items.length);
         }
 
         const actualH = topItem.banner.height;

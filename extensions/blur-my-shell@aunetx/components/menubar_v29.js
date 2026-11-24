@@ -2606,7 +2606,7 @@ export const MenuBarController = class MenuBarController {
 
 
             const nTint = (typeof data.notif_tint === 'number') ? data.notif_tint : 0.15;
-            const nRad = (typeof data.notif_radius === 'number') ? data.notif_radius : 24;
+            const nRad = (typeof data.notif_radius === 'number') ? data.notif_radius : 18;
             this._updateNotifRealtime(nTint, nRad);
 
 
@@ -2773,7 +2773,7 @@ export const MenuBarController = class MenuBarController {
                 this._notifGlass.setTintStrength(tintStrength);
                 this._notifGlass.setTintColor(tintVal, tintVal, tintVal);
                 this._notifGlass.setBrightness(1.0);
-                this._notifGlass.setIsDock(true);
+                this._notifGlass.setIsDock(false);
                 this._notifGlass.setCornerRadius(radius);
                 if (blurRadius) this._notifGlass.setBlurRadius(blurRadius);
             }
@@ -4292,11 +4292,12 @@ export const MenuBarController = class MenuBarController {
                 settings: ext?.stateObj?._settings || null,
                 logger: null,
                 owner: 'notification-center',
+                excludeActors: this._notifCenterActor ? [this._notifCenterActor] : [],
             });
             const { tintVal, tintStrength } = this._getNotifThemeParams();
             this._notifGlass.setIsDock(false);
             this._notifGlass.setMultiRegionMode(true);
-            this._notifGlass.setCornerRadius(16.0);
+            this._notifGlass.setCornerRadius(18.0);
             this._notifGlass.setBlurRadius(24.0);
             this._notifGlass.setTintStrength(tintStrength);
             this._notifGlass.setTintColor(tintVal, tintVal, tintVal);
@@ -4312,6 +4313,10 @@ export const MenuBarController = class MenuBarController {
             this._notifGlass.hide();
 
             if (this._notifCenterActor) {
+                try {
+                    this._notifGlass.addExclusion?.(this._notifCenterActor);
+                    this._notifGlass._uiSampler?.addExclusion?.(this._notifCenterActor);
+                } catch (_) {}
                 Main.layoutManager.uiGroup.insert_child_below(this._notifGlass, this._notifCenterActor);
             }
         } catch (e) {
@@ -4394,11 +4399,29 @@ export const MenuBarController = class MenuBarController {
         }
 
         if (regions.length > 0) {
+            let nRad = 18.0;
+            try {
+                const f = Gio.File.new_for_path(GLib.get_home_dir() + '/.config/mac-styling/styling.json');
+                if (f.query_exists(null)) {
+                    const [ok, b] = f.load_contents(null);
+                    if (ok) {
+                        const d = JSON.parse(new TextDecoder().decode(b));
+                        if (typeof d.notif_radius === 'number') nRad = Number(d.notif_radius);
+                    }
+                }
+            } catch (_) {}
+            this._notifGlass.setCornerRadius(nRad);
             this._notifGlass.setTintColor(tintVal, tintVal, tintVal);
             this._notifGlass.setTintStrength(tintStrength);
             this._notifGlass.setBrightness(1.0);
-            this._notifGlass.setIsDock(true);
+            this._notifGlass.setIsDock(false);
             this._notifGlass.setGlassRegions(regions);
+            if (this._notifCenterActor) {
+                try {
+                    this._notifGlass.addExclusion?.(this._notifCenterActor);
+                    this._notifGlass._uiSampler?.addExclusion?.(this._notifCenterActor);
+                } catch (_) {}
+            }
             if (this._notifGlass) {
                 this._notifGlass.syncSources();
             }
