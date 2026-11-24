@@ -5365,3 +5365,45 @@ Task #938:
   * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #953: Виправлення напрямку рефракції шейдера Liquid Glass (заломлення назовні як в оригінальному склі)
+  - Причина зворотної рефракції:
+    * У функції попереднього розрахунку таблиці глибини get_depth_lut горизонтальне зміщення променя ray_x обчислювалося як -factor * sinA (зі знаком мінус).
+    * У функції draw_repo_glass_element_optimized координати вибірки розраховувалися через віднімання вектора нормалі: sx = gx + lx - n2d_x * disp_factor.
+    * Оскільки disp_factor був від'ємним, операція - n2d_x * disp_factor призводила до додавання зсуву у напрямку краю, тобто точка вибірки текстури зміщувалася назовні, а видиме зображення (наприклад, колона мосту) викривлялося всередину до центру.
+    * Крім того, перевірка дисперсії disp_factor > 0.1 для хроматичної аберації ніколи не спрацьовувала через від'ємний знак.
+  - Виправлення:
+    * Змінено знак вектора променя на додатний: double ray_x = factor * sinA, як у вихідному еталоні mac_liquid_benchmark.c.
+    * Тепер disp_factor є строго додатним, а вираз sx = gx + lx - n2d_x * disp_factor коректно зміщує вибірку до центру на краях фаски.
+    * Завдяки цьому об'єкти позаду скла заломлюються назовні (ефект опуклої лінзи фаски), що візуально та математично повністю відповідає "Оригінальному склу" (Mean diff: 3.24, усунено інверсію колони моста).
+    * Відновлено коректну роботу хроматичної аберації (умова disp_factor > 0.1 тепер виконується).
+  - Збірка, розгортання та перевірка:
+    * Синхронізовано libmac_settings.c у control-center, gnome-control-center-overlay та macW1Y.
+    * Перекомпільовано та розгорнуто libmac_settings.so в усі цільові директорії (~/.local/lib, /usr/lib/x86_64-linux-gnu, control-center, macW1Y).
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #953: Виправлення напрямку рефракції шейдера Liquid Glass (заломлення назовні як в оригінальному склі)
+  - Причина зворотної рефракції:
+    * У функції попереднього розрахунку таблиці глибини get_depth_lut горизонтальне зміщення променя ray_x обчислювалося як -factor * sinA (зі знаком мінус).
+    * У функції draw_repo_glass_element_optimized координати вибірки розраховувалися через віднімання вектора нормалі: sx = gx + lx - n2d_x * disp_factor.
+    * Оскільки disp_factor був від'ємним, операція - n2d_x * disp_factor призводила до додавання зсуву у напрямку краю, тобто точка вибірки текстури зміщувалася назовні, а видиме зображення (наприклад, колона мосту) викривлялося всередину до центру.
+    * Крім того, перевірка дисперсії disp_factor > 0.1 для хроматичної аберації ніколи не спрацьовувала через від'ємний знак.
+  - Виправлення:
+    * Змінено знак вектора променя на додатний: double ray_x = factor * sinA, як у вихідному еталоні mac_liquid_benchmark.c.
+    * Тепер disp_factor є строго додатним, а вираз sx = gx + lx - n2d_x * disp_factor коректно зміщує вибірку до центру на краях фаски.
+    * Завдяки цьому об'єкти позаду скла заломлюються назовні (ефект опуклої лінзи фаски), що візуально та математично повністю відповідає "Оригінальному склу" (Mean diff: 3.24, усунено інверсію колони моста).
+    * Відновлено коректну роботу хроматичної аберації (умова disp_factor > 0.1 тепер виконується).
+  - Збірка, розгортання та перевірка:
+    * Синхронізовано libmac_settings.c у control-center, gnome-control-center-overlay та macW1Y.
+    * Перекомпільовано та розгорнуто libmac_settings.so в усі цільові директорії (~/.local/lib, /usr/lib/x86_64-linux-gnu, control-center, macW1Y).
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

@@ -2806,7 +2806,7 @@ static const DepthLUT* get_depth_lut(double ior, double disp_scale, double rim_i
         double disp_factor = 0.0;
         if (k >= 0.0 && d <= 0.0) {
             double factor = eta * dot_NI + sqrt(k);
-            double ray_x = -factor * sinA;
+            double ray_x = factor * sinA;
             double ray_z = -eta - factor * cosA;
             double safe_z = fmax(-ray_z, 0.15);
             disp_factor = (ray_x / safe_z) * disp_scale;
