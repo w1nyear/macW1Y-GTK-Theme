@@ -11,7 +11,7 @@
 
 #define CLAMP(x, l, u) ((x) < (l) ? (l) : ((x) > (u) ? (u) : (x)))
 #define MAX_BENCHMARK_ELEMENTS 60
-#define DEFAULT_BENCH_FPS_THRESHOLD 20.0
+#define DEFAULT_BENCH_FPS_THRESHOLD 60.0
 #define DEFAULT_DURATION 10.0
 
 typedef struct {

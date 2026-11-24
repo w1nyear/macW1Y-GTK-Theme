@@ -1,11 +1,11 @@
-// shaders/LQ-OPTIMIZED.frag
-// High-Performance Physical Liquid Glass Shader for Intel HD Graphics & Low-End GPUs
-// macW1Y Project - Optimized Pipeline:
-// 1. Single/triple texture fetch instead of 16-20 multi-tap fetches
-// 2. Analytical 2D/3D normal derivation (eliminates expensive finite-difference SDF loops)
-// 3. Early bounds clipping (discards 70-90% of screen fragments instantly)
-// 4. Smooth Snell-approximation refraction and chromatic fringing
-// 5. Preserves all macOS Tahoe liquid-glass aesthetics: glossy bevel, rim glint, ambient occlusion, drop shadow.
+// shaders/glass.frag & LQ-OPTIMIZED.frag
+// High-Performance Physical Liquid Glass Shader
+// macW1Y Project - Optimized Physical Pipeline:
+// 1. Hardware-interpolated Cogl UV & analytical SDF geometry
+// 2. High-speed interior flat-glass fast-path (depth >= 0.999) with single-tap sampling
+// 3. Physical Snell's law refraction & directional rim lighting on bevel borders
+// 4. Safe sub-rectangle blur buffer coordinate mapping (blurUV)
+// 5. Native support for rounded rectangles, circles, capsules, popovers with arrows, and multi-region tiles.
 
 uniform sampler2D cogl_sampler0;
 uniform sampler2D cogl_sampler1;
@@ -93,38 +93,179 @@ uniform float arrow_rise;
 uniform float arrow_radius;
 uniform float arrow_fillet;
 
-// Fast analytical 2D signed distance and gradient for rounded rectangles & capsules
-float fastSdShape(vec2 p, vec2 b, float r, float shape, out vec2 normal2D) {
-    if (shape > 1.5) {
-        // Capsule / Stadium shape
-        r = min(b.x, b.y);
-    } else if (shape > 0.5) {
-        // Circle shape
-        float len = length(p);
-        normal2D = (len > 1e-4) ? (p / len) : vec2(0.0, 1.0);
-        return len - min(b.x, b.y);
+// Safe sub-rectangle blur texture UV coordinate mapper
+vec2 blurUV(vec2 fullUV, vec2 resolution) {
+    if (blur_rect_w < 1.0 || blur_rect_h < 1.0) {
+        vec2 mFull = vec2(1.2) / max(resolution, vec2(1.0));
+        return clamp(fullUV, mFull, vec2(1.0) - mFull);
     }
-
-    vec2 q = abs(p) - b + vec2(r);
-    float outsideDist = length(max(q, 0.0));
-    float insideDist = min(max(q.x, q.y), 0.0);
-    float d = outsideDist + insideDist - r;
-
-    // Direct analytical gradient direction
-    if (outsideDist > 1e-5) {
-        normal2D = sign(p) * (max(q, 0.0) / outsideDist);
-    } else {
-        normal2D = (q.x > q.y) ? vec2(sign(p.x), 0.0) : vec2(0.0, sign(p.y));
-    }
-    return d;
+    vec2 size = vec2(blur_rect_w, blur_rect_h);
+    vec2 m = vec2(1.2) / size;
+    return clamp((fullUV * resolution - vec2(blur_rect_x, blur_rect_y)) / size,
+                 m, vec2(1.0) - m);
 }
 
-// Color adjustments (Brightness, Contrast, Saturation) in a single fast pass
-vec3 applyAdjustments(vec3 color, float b, float c, float s) {
+#define SAFE(u) blurUV(u, resolution)
+
+vec2 stabilizedUV(vec2 candidate, vec2 fallback) {
+    vec2 clamped = clamp(candidate, vec2(0.001), vec2(0.999));
+    float edgeDist = min(min(candidate.x, candidate.y), min(1.0 - candidate.x, 1.0 - candidate.y));
+    float keep = smoothstep(-0.04, 0.03, edgeDist);
+    return mix(fallback, clamped, keep);
+}
+
+float sdRoundRect(vec2 p, vec2 b, float r) {
+    vec2 d = abs(p) - b + vec2(r);
+    return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - r;
+}
+
+vec2 sdRoundRectDir(vec2 p, vec2 b, float r) {
+    vec2 q = abs(p) - b + vec2(r);
+    if (max(q.x, q.y) < 0.0) {
+        return (q.x > q.y) ? vec2(sign(p.x), 0.0) : vec2(0.0, sign(p.y));
+    }
+    return sign(p) * normalize(max(q, 0.0) + vec2(1e-6));
+}
+
+float sdShape(vec2 p, vec2 b, float r, float shape) {
+    if (isDock > 0.5) {
+        return sdRoundRect(p, b, r);
+    }
+    if (shape > 1.5) {
+        return sdRoundRect(p, b, min(b.x, b.y));
+    } else if (shape > 0.5) {
+        return length(p) - min(b.x, b.y);
+    }
+    return sdRoundRect(p, b, r);
+}
+
+vec2 sdShapeDir(vec2 p, vec2 b, float r, float shape) {
+    if (isDock > 0.5) {
+        return sdRoundRectDir(p, b, r);
+    }
+    if (shape > 1.5) {
+        return sdRoundRectDir(p, b, min(b.x, b.y));
+    } else if (shape > 0.5) {
+        return (length(p) > 1e-4) ? normalize(p) : vec2(0.0, 1.0);
+    }
+    return sdRoundRectDir(p, b, r);
+}
+
+float sdTriangle(vec2 p, vec2 p0, vec2 p1, vec2 p2) {
+    vec2 e0 = p1 - p0, e1 = p2 - p1, e2 = p0 - p2;
+    vec2 v0 = p - p0,  v1 = p - p1,  v2 = p - p2;
+    vec2 pq0 = v0 - e0 * clamp(dot(v0, e0) / dot(e0, e0), 0.0, 1.0);
+    vec2 pq1 = v1 - e1 * clamp(dot(v1, e1) / dot(e1, e1), 0.0, 1.0);
+    vec2 pq2 = v2 - e2 * clamp(dot(v2, e2) / dot(e2, e2), 0.0, 1.0);
+    float s = sign(e0.x * e2.y - e0.y * e2.x);
+    vec2 d = min(min(vec2(dot(pq0, pq0), s * (v0.x * e0.y - v0.y * e0.x)),
+                     vec2(dot(pq1, pq1), s * (v1.x * e1.y - v1.y * e1.x))),
+                     vec2(dot(pq2, pq2), s * (v2.x * e2.y - v2.y * e2.x)));
+    return -sqrt(d.x) * sign(d.y);
+}
+
+float smin(float a, float b, float k) {
+    float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+    return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+float sdPopover(vec2 p, vec2 b, float r, float side, float origin, float baseW, float rise, float tipR, float fillet) {
+    float d_box = sdRoundRect(p, b, r);
+    if (side < 0.5 || rise <= 0.0) {
+        return d_box;
+    }
+
+    vec2 pt;
+    vec2 ob;
+    if (side < 1.5) {
+        pt = vec2(p.x, -p.y);
+        ob = b;
+    } else if (side < 2.5) {
+        pt = vec2(p.y, p.x);
+        ob = vec2(b.y, b.x);
+    } else if (side < 3.5) {
+        pt = p;
+        ob = b;
+    } else {
+        pt = vec2(p.y, -p.x);
+        ob = vec2(b.y, b.x);
+    }
+
+    vec2 q = vec2(pt.x - origin, pt.y - ob.y);
+    float half_w = max(baseW * 0.5, 1.0);
+    float safeFillet = max(fillet, 1.0);
+    float sunken = max(safeFillet * 1.5, 8.0);
+    float safeTip = clamp(tipR, 0.1, rise * 0.5);
+
+    float d_tri = sdTriangle(q, vec2(-half_w, -sunken), vec2(0.0, rise - safeTip), vec2(half_w, -sunken)) - safeTip;
+    return smin(d_box, d_tri, safeFillet);
+}
+
+vec2 sdPopoverDir(vec2 p, vec2 b, float r, float side, float origin, float baseW, float rise, float tipR, float fillet) {
+    if (side < 0.5 || rise <= 0.0) {
+        return sdRoundRectDir(p, b, r);
+    }
+    float eps = 1.0;
+    float dx = sdPopover(p + vec2(eps, 0.0), b, r, side, origin, baseW, rise, tipR, fillet) -
+               sdPopover(p - vec2(eps, 0.0), b, r, side, origin, baseW, rise, tipR, fillet);
+    float dy = sdPopover(p + vec2(0.0, eps), b, r, side, origin, baseW, rise, tipR, fillet) -
+               sdPopover(p - vec2(0.0, eps), b, r, side, origin, baseW, rise, tipR, fillet);
+    vec2 grad = vec2(dx, dy);
+    float len = length(grad);
+    return (len > 1e-4) ? (grad / len) : sdRoundRectDir(p, b, r);
+}
+
+float findActiveRegion(vec2 pixel_coord, float pad, out vec2 outLocalPos, out vec2 outBoxSize, out vec3 outTint, out float outBaseStrength) {
+    float bestD = 1.0e6;
+    outLocalPos = vec2(1.0e6);
+    outBoxSize = vec2(1.0);
+    outTint = vec3(1.0);
+    outBaseStrength = 0.0;
+
+    int count = int(min(region_count, float(MAX_GLASS_REGIONS)));
+
+    for (int i = 0; i < MAX_GLASS_REGIONS; i++) {
+        if (i >= count) break;
+
+        vec2 rPos = vec2(region_x[i], region_y[i]);
+        vec2 rSize = vec2(region_w[i], region_h[i]);
+        vec2 rCenter = rPos + rSize * 0.5;
+        vec2 rLocal = pixel_coord - rCenter;
+
+        vec2 actual_size = rSize - vec2(pad * 2.0);
+        vec2 rBox = max(actual_size * 0.5, vec2(1.0));
+
+        float d = sdShape(rLocal, rBox, corner_radius, shape_type);
+        if (d < bestD) {
+            bestD = d;
+            outLocalPos = rLocal;
+            outBoxSize = rBox;
+            outTint = vec3(region_tint_r[i], region_tint_g[i], region_tint_b[i]);
+            outBaseStrength = region_base_strength[i];
+        }
+    }
+
+    return bestD;
+}
+
+vec4 panelFallback(vec2 pixel_coord, float coveredAlpha) {
+    if (panel_bg_a <= 0.001) return vec4(0.0);
+    vec2 panelCenter = vec2(panel_rect_x, panel_rect_y) + vec2(panel_rect_w, panel_rect_h) * 0.5;
+    vec2 panelLocal = pixel_coord - panelCenter;
+    vec2 panelBox = max(vec2(panel_rect_w, panel_rect_h) * 0.5, vec2(1.0));
+    float panelDist = sdShape(panelLocal, panelBox, corner_radius, shape_type);
+    float panelMask = 1.0 - smoothstep(-1.0, 1.0, panelDist);
+
+    float contribution = panel_bg_a * (1.0 - coveredAlpha) * panelMask;
+    return vec4(vec3(panel_bg_r, panel_bg_g, panel_bg_b) * contribution, contribution);
+}
+
+vec3 applySCB(vec3 color, float b, float c, float s) {
     color *= b;
-    color = (color - 0.5) * c + 0.5;
-    float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
-    return mix(vec3(luma), color, s);
+    color = mix(vec3(0.5), color, c);
+    float luma = dot(color, vec3(0.299, 0.587, 0.114));
+    color = mix(vec3(luma), color, s);
+    return max(color, 0.0);
 }
 
 void main() {
@@ -137,176 +278,185 @@ void main() {
     vec2 pixel_coord = uv * resolution;
     vec2 screenUv = uv;
 
-    // Element bounds setup
-    vec2 dock_center = vec2(dock_x + dock_w * 0.5, dock_y + dock_h * 0.5);
-    vec2 local_pos = pixel_coord - dock_center;
-    vec2 actual_size = vec2(dock_w, dock_h) - vec2(padding * 2.0);
-    vec2 box_size = max(actual_size * 0.5, vec2(1.0));
-    float r = corner_radius;
+    float edgeFeather = max(edge_smoothing, 0.75);
 
-    // Multi-region support
-    vec3 activeTint = vec3(tint_r, tint_g, tint_b);
+    vec2 local_pos;
+    vec2 box_size;
+    vec3 activeTint;
     float activeBaseStrength = 0.0;
+    float d;
 
     if (multi_region_mode > 0.5 && region_count > 0.5) {
-        float bestDist = 1e6;
-        int count = int(min(region_count, float(MAX_GLASS_REGIONS)));
-        for (int i = 0; i < MAX_GLASS_REGIONS; i++) {
-            if (i >= count) break;
-            vec2 rCenter = vec2(region_x[i] + region_w[i] * 0.5, region_y[i] + region_h[i] * 0.5);
-            vec2 rPos = pixel_coord - rCenter;
-            vec2 rBox = max((vec2(region_w[i], region_h[i]) - vec2(padding * 2.0)) * 0.5, vec2(1.0));
-            vec2 tempNorm;
-            float td = fastSdShape(rPos, rBox, r, shape_type, tempNorm);
-            if (td < bestDist) {
-                bestDist = td;
-                local_pos = rPos;
-                box_size = rBox;
-                activeTint = vec3(region_tint_r[i], region_tint_g[i], region_tint_b[i]);
-                activeBaseStrength = region_base_strength[i];
-            }
-        }
-    }
+        d = findActiveRegion(pixel_coord, padding, local_pos, box_size, activeTint, activeBaseStrength);
+    } else {
+        vec2 dock_center = vec2(dock_x + dock_w * 0.5, dock_y + dock_h * 0.5);
+        local_pos = pixel_coord - dock_center;
 
-    // Fast distance and analytical normal calculation
-    vec2 normal2D;
-    float d = fastSdShape(local_pos, box_size, r, shape_type, normal2D);
+        if (isDock > 0.5) {
+            vec2 actual_size = vec2(dock_w, dock_h) - vec2(padding * 2.0) - vec2(edgeFeather * 2.0);
+            box_size = max(actual_size * 0.5, vec2(1.0));
+        } else {
+            vec2 actual_size = vec2(dock_w, dock_h) - vec2(padding * 2.0);
+            box_size = max(actual_size * 0.5, vec2(1.0));
+        }
+
+        d = sdPopover(local_pos, box_size, corner_radius, arrow_side, arrow_origin, arrow_base, arrow_rise, arrow_radius, arrow_fillet);
+        activeTint = vec3(tint_r, tint_g, tint_b);
+    }
 
     // 1. FAST EARLY EXIT: outside shape and outer drop shadow bounds
-    float effShadowRad = max(min(shadow_radius, shadow_max_radius), 2.0);
-    if (d > effShadowRad + 2.0) {
-        // Panel fallback if needed
-        if (panel_bg_a > 0.001) {
-            vec2 pMin = vec2(panel_rect_x, panel_rect_y);
-            vec2 pMax = pMin + vec2(panel_rect_w, panel_rect_h);
-            if (pixel_coord.x >= pMin.x && pixel_coord.x <= pMax.x &&
-                pixel_coord.y >= pMin.y && pixel_coord.y <= pMax.y) {
-                cogl_color_out = vec4(vec3(panel_bg_r, panel_bg_g, panel_bg_b) * panel_bg_a, panel_bg_a) * cogl_color_in;
-                return;
-            }
+    float effShadowRad = (multi_region_mode > 0.5) ? 0.0 : max(min(shadow_radius, shadow_max_radius), 2.0);
+    float exitReach = max(effShadowRad + 2.0, edgeFeather);
+
+    if (early_exit_enabled > 0.5 && debug_view < 0.5 && d >= exitReach) {
+        vec4 pFb = panelFallback(pixel_coord, 0.0);
+        if (pFb.a > 0.001) {
+            cogl_color_out = pFb * cogl_color_in;
+        } else {
+            discard;
         }
-        discard;
+        return;
     }
 
-    // Geometry anti-aliasing
-    float edgeFeather = max(edge_smoothing, 0.75);
     float insideMask = 1.0 - smoothstep(-edgeFeather, edgeFeather, d);
 
     // 2. FAST SHADOW (Outside the glass body)
     float shadowContribution = 0.0;
-    if (d > -edgeFeather && shadow_intensity > 0.001) {
+    if (d > -edgeFeather && shadow_intensity > 0.001 && multi_region_mode < 0.5) {
         float st = clamp(d / effShadowRad, 0.0, 1.0);
         float sEase = (1.0 - st) * (1.0 - st);
         shadowContribution = sEase * shadow_intensity * 0.75 * (1.0 - insideMask);
     }
 
-    // Outside fragments with shadow only
     if (insideMask <= 0.001) {
-        if (shadowContribution <= 0.001) {
+        vec4 pFb = panelFallback(pixel_coord, 0.0);
+        if (shadowContribution > 0.001) {
+            vec3 sColor = mix(pFb.rgb, vec3(0.0), shadowContribution);
+            float sAlpha = max(pFb.a, shadowContribution);
+            cogl_color_out = vec4(sColor, sAlpha) * cogl_color_in;
+        } else if (pFb.a > 0.001) {
+            cogl_color_out = pFb * cogl_color_in;
+        } else {
             discard;
         }
-        cogl_color_out = vec4(vec3(0.0), shadowContribution) * cogl_color_in;
         return;
     }
 
-    // 3. OPTICAL BEVEL & REFRACTION (Inside the glass body)
-    // Bevel width along the edge
-    float bevelWidth = clamp(max_z * 0.75 + r * 0.2, 4.0, 28.0);
-    float depth = clamp(-d / bevelWidth, 0.0, 1.0);
+    // 3. FAST-PATH: Interior flat glass surface (depth >= 0.999)
+    float depthReach = (shape_type > 0.5 && isDock < 0.5) ? min(box_size.x, box_size.y) : corner_radius;
+    float bevelWidth = clamp(max_z * 0.75 + depthReach * 0.2, 4.0, 28.0);
+    float interiorThreshold = max(bevelWidth + edgeFeather, max(ao_radius, rim_width));
 
-    vec4 refrColor;
-    float finalRim = 0.0;
-    float sheen = 0.0;
-    float ao = 1.0;
-
-    if (depth < 0.999) {
-        // Smooth physical dome profile & analytical 3D normal
-        float u = 1.0 - depth;
-        float nPower = clamp(profile_shape_n * 0.45, 2.0, 5.0);
-        float slope = pow(u, nPower) * 0.85;
-        float sinA = sin(slope);
-        float cosA = cos(slope);
-        vec3 normal = vec3(-normal2D * sinA, cosA);
-
-        // Dynamic Snell refraction using uniform ior and displacement_scale
-        float effIor = max(ior, 1.001);
-        float eta = 1.0 / effIor;
-        float k = 1.0 - eta * eta * sinA * sinA;
-        float factor = (k >= 0.0) ? (sqrt(k) - eta * cosA) : 0.0;
-        float ray_xy = factor * sinA;
-        float ray_z = -eta - factor * cosA;
-        float safe_z = max(-ray_z, 0.15);
-
-        // Smooth edge dampening: zero displacement at glass perimeter
-        float edgeDampen = smoothstep(0.0, edgeFeather * 3.0, -d);
-
-        float minRes = max(min(resolution.x, resolution.y), 1.0);
-        float thicknessNorm = displacement_scale / minRes;
-        float dispFactor = (ray_xy / safe_z) * thicknessNorm * edgeDampen;
-        vec2 dispVec = -normal2D * dispFactor;
-
-        // 4. HIGH-PERFORMANCE TEXTURE SAMPLING
-        // Single tap without chroma; 3 taps when chromatic aberration is enabled
-        vec2 refrUv = screenUv + dispVec;
-
-        if (chroma_strength > 0.0001 && dispFactor > 0.00001) {
-            vec2 chromaOffset = -normal2D * (chroma_strength / minRes) * edgeDampen;
-            float rCol = texture2D(cogl_sampler1, refrUv + chromaOffset).r;
-            vec4 gCol  = texture2D(cogl_sampler1, refrUv);
-            float bCol = texture2D(cogl_sampler1, refrUv - chromaOffset).b;
-            refrColor = vec4(rCol, gCol.g, bCol, gCol.a);
-        } else {
-            refrColor = texture2D(cogl_sampler1, refrUv);
+    if (early_exit_enabled > 0.5 && debug_view < 0.5 && -d >= interiorThreshold) {
+        vec4 fTap = texture2D(cogl_sampler1, SAFE(screenUv));
+        vec3 flatRgb = fTap.rgb;
+        float fAlpha = fTap.a;
+        if (fAlpha < 0.20) {
+            vec3 fallbackBg = mix(vec3(0.12, 0.12, 0.14), activeTint, activeBaseStrength);
+            flatRgb = mix(fallbackBg, flatRgb, clamp(fAlpha / 0.20, 0.0, 1.0));
         }
 
-        // Ambient occlusion darkening near the rim
-        float aoRadius = max(ao_radius, 4.0);
-        float aoBand = 1.0 - smoothstep(0.0, aoRadius, -d);
-        ao = 1.0 - aoBand * (ao_intensity * 0.45);
+        flatRgb = applySCB(flatRgb, brightness, contrast, saturation);
+        flatRgb = mix(flatRgb, activeTint, activeBaseStrength);
+        flatRgb = mix(flatRgb, vec3(tint_r, tint_g, tint_b), tint_strength);
 
-        // 6. PHYSICAL RIM LIGHT & SPECULAR GLINT
-        float lightRad = light_angle_deg * 0.01745329;
-        vec3 lightDir = normalize(vec3(cos(lightRad), sin(lightRad), 0.38));
+        vec3 lightDirFlat = normalize(vec3(cos(radians(light_angle_deg)),
+                                           sin(radians(light_angle_deg)), 0.38));
+        float facing = max(lightDirFlat.z, 0.0);
+        float specFlat = pow(facing, max(shininess, 1.0)) * specular_intensity * 0.65;
+        float sheenFlat = pow(facing, 1.65) * sheen_intensity;
+        vec3 addedFlat = vec3(specFlat + sheenFlat) * surface_light_enabled;
 
-        float rimDot = 1.0 - max(normal.z, 0.0);
-        float rimFresnel = pow(rimDot, max(rim_power, 1.0));
-        float nDotL = max(dot(normal, lightDir), 0.0);
-        float lightMask = pow(nDotL, max(rim_directional_power, 1.0));
+        vec3 litFlat = flatRgb + addedFlat - (flatRgb * addedFlat);
+        float maxChannelFlat = max(litFlat.r, max(litFlat.g, litFlat.b));
+        if (maxChannelFlat > 1.0) {
+            litFlat /= maxChannelFlat;
+        }
+        litFlat = max(litFlat, 0.0);
 
-        float edgeBand = 1.0 - depth;
-        finalRim = rimFresnel * lightMask * (rim_intensity * 1.5) * edgeBand * surface_light_enabled;
-        sheen = pow(nDotL, 2.0) * sheen_intensity * 0.4 * surface_light_enabled;
-    } else {
-        // Interior flat glass fast path (zero refraction distortion, single direct tap)
-        refrColor = texture2D(cogl_sampler1, screenUv);
-        sheen = 0.1261 * sheen_intensity * 0.4 * surface_light_enabled;
+        cogl_color_out = vec4(litFlat, 1.0) * cogl_color_in;
+        return;
     }
 
-    // Dark/Neutral fallback if sampled area has low alpha
+    // 4. BEVEL & PHYSICAL SNELL REFRACTION
+    vec2 normal2D = (multi_region_mode > 0.5)
+        ? sdShapeDir(local_pos, box_size, corner_radius, shape_type)
+        : sdPopoverDir(local_pos, box_size, corner_radius, arrow_side, arrow_origin, arrow_base, arrow_rise, arrow_radius, arrow_fillet);
+
+    float depth = clamp(-d / bevelWidth, 0.0, 1.0);
+    float u = 1.0 - depth;
+    float nPower = clamp(profile_shape_n * 0.45, 2.0, 5.0);
+    float slope = pow(u, nPower) * 0.85;
+    float sinA = sin(slope);
+    float cosA = cos(slope);
+    vec3 normal = vec3(normal2D * sinA, cosA);
+
+    vec3 viewDir = vec3(0.0, 0.0, -1.0);
+    float effIor = max(ior, 1.001);
+    vec3 refractedRay = refract(viewDir, normal, 1.0 / effIor);
+
+    float minRes = max(min(resolution.x, resolution.y), 1.0);
+    float thicknessNorm = displacement_scale / minRes;
+    float safe_z = max(-refractedRay.z, 0.15);
+    float edgeDampen = smoothstep(0.0, edgeFeather * 2.5, -d);
+    vec2 dispVec = (refractedRay.xy / safe_z) * thicknessNorm * edgeDampen;
+
+    vec2 refrUv = (displacement_scale > 0.001) ? stabilizedUV(screenUv + dispVec, screenUv) : screenUv;
+
+    vec4 refrColor;
+    if (chroma_strength > 0.0001 && length(dispVec) > 0.00001) {
+        vec2 chromaOffset = normal2D * (chroma_strength / minRes) * edgeDampen;
+        float rCol = texture2D(cogl_sampler1, SAFE(stabilizedUV(refrUv + chromaOffset, refrUv))).r;
+        vec4 gCol  = texture2D(cogl_sampler1, SAFE(refrUv));
+        float bCol = texture2D(cogl_sampler1, SAFE(stabilizedUV(refrUv - chromaOffset, refrUv))).b;
+        refrColor = vec4(rCol, gCol.g, bCol, gCol.a);
+    } else {
+        refrColor = texture2D(cogl_sampler1, SAFE(refrUv));
+    }
+
     if (refrColor.a < 0.20) {
         vec3 fallbackBg = mix(vec3(0.12, 0.12, 0.14), activeTint, activeBaseStrength);
         refrColor.rgb = mix(fallbackBg, refrColor.rgb, clamp(refrColor.a / 0.20, 0.0, 1.0));
     }
 
     // 5. COLOR CORRECTIONS & TINT
-    vec3 baseColor = applyAdjustments(refrColor.rgb, brightness, contrast, saturation);
+    vec3 baseColor = applySCB(refrColor.rgb, brightness, contrast, saturation);
     baseColor = mix(baseColor, activeTint, activeBaseStrength);
     baseColor = mix(baseColor, vec3(tint_r, tint_g, tint_b), tint_strength);
 
+    float aoRadius = max(ao_radius, 4.0);
+    float aoBand = 1.0 - smoothstep(0.0, aoRadius, -d);
+    float ao = 1.0 - aoBand * (ao_intensity * 0.45);
     baseColor *= ao;
 
-    // Subtle touch brightening highlight
+    // 6. PHYSICAL RIM LIGHT & SPECULAR GLINT
+    float lightRad = radians(light_angle_deg);
+    vec3 lightDir = normalize(vec3(cos(lightRad), sin(lightRad), 0.38));
+
+    float rimDot = 1.0 - max(normal.z, 0.0);
+    float rimFresnel = pow(rimDot, max(rim_power, 1.0));
+    float nDotL = max(dot(normal, lightDir), 0.0);
+    float lightMask = pow(nDotL, max(rim_directional_power, 1.0));
+
+    float edgeBand = 1.0 - depth;
+    float finalRim = rimFresnel * lightMask * (rim_intensity * 1.5) * edgeBand * surface_light_enabled;
+    float sheen = pow(nDotL, 2.0) * sheen_intensity * 0.4 * surface_light_enabled;
+
     float touchGlow = 0.0;
     if (pointer_x >= 0.0 && pointer_y >= 0.0 && intensity > 0.0) {
         float touchDist = length(pixel_coord - vec2(pointer_x, pointer_y));
         touchGlow = exp(-0.5 * (touchDist * touchDist) / (mouse_radius * mouse_radius * 4.0)) * intensity * 0.35;
     }
 
-    // Screen blend mode (Base + Light - Base * Light) avoids overexposure
     vec3 addedLight = vec3(finalRim + sheen + touchGlow);
     vec3 litColor = baseColor + addedLight - (baseColor * addedLight);
 
-    // Final composition
+    float maxChannel = max(litColor.r, max(litColor.g, litColor.b));
+    if (maxChannel > 1.0) {
+        litColor /= maxChannel;
+    }
+    litColor = max(litColor, 0.0);
+
     vec3 finalRgb = litColor * insideMask;
     float finalAlpha = insideMask + shadowContribution * (1.0 - insideMask);
 

@@ -3281,7 +3281,7 @@ static GtkWidget *create_liquid_benchmark_panel(void) {
     gtk_label_set_xalign(GTK_LABEL(title_lbl), 0.0);
     gtk_box_append(GTK_BOX(header_box), title_lbl);
 
-    GtkWidget *btn_opt = gtk_check_button_new_with_label("LQ-OPTIMIZED");
+    GtkWidget *btn_opt = gtk_check_button_new_with_label("Liquid Glass");
     GtkWidget *btn_orig = gtk_check_button_new_with_label(mac_tr("bench_original_glass", "Оригінальне скло"));
     gtk_check_button_set_group(GTK_CHECK_BUTTON(btn_orig), GTK_CHECK_BUTTON(btn_opt));
     gtk_check_button_set_active(GTK_CHECK_BUTTON(btn_opt), g_liquid_use_optimized);
@@ -3441,7 +3441,7 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     int shape_idx = CLAMP(state.liquid_shape, 0, 2);
     char badge_text[128];
     g_snprintf(badge_text, sizeof(badge_text), "%s • %s",
-               g_liquid_use_optimized ? "Liquid Glass (LQ-OPTIMIZED)" : "Liquid Glass",
+               g_liquid_use_optimized ? "Liquid Glass" : mac_tr("bench_original_glass", "Оригінальне скло"),
                shape_names[shape_idx]);
 
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
@@ -3468,19 +3468,20 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     const char *orig_str = mac_tr("original", "Оригінал");
     const char *pause_str = mac_tr("pause", "Пауза");
     const char *elem_str = mac_tr("elements_short", "ел.");
+    const char *opt_name = "Liquid Glass";
     if (g_liquid_target_fps <= 0) {
         g_snprintf(fps_badge, sizeof(fps_badge), "0.0 FPS (%s) • %s",
                    pause_str,
-                   g_liquid_use_optimized ? "LQ-OPTIMIZED" : orig_str);
+                   g_liquid_use_optimized ? opt_name : orig_str);
     } else {
         if (g_liquid_element_count > 1) {
             g_snprintf(fps_badge, sizeof(fps_badge), "%.1f FPS (%d %s) • %s",
                        g_liquid_measured_fps, g_liquid_element_count, elem_str,
-                       g_liquid_use_optimized ? "LQ-OPTIMIZED" : orig_str);
+                       g_liquid_use_optimized ? opt_name : orig_str);
         } else {
             g_snprintf(fps_badge, sizeof(fps_badge), "%.1f FPS • %s",
                        g_liquid_measured_fps,
-                       g_liquid_use_optimized ? "LQ-OPTIMIZED" : orig_str);
+                       g_liquid_use_optimized ? opt_name : orig_str);
         }
     }
 

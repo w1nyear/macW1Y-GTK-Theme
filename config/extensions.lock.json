@@ -305,7 +305,7 @@
         "50",
         "51"
       ],
-      "sha256": "a80a46eff6d6843024e03e75786878646b40ce5edc41a327c2996513d2195a39",
+      "sha256": "5f0d593457237df630a66548952b41d1c718a9c23d3fab5c8bb16fd41c05946c",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -370,7 +370,8 @@
         "icons/audio-volume-medium-symbolic.svg": "8447a2300f7d0fda2c3be92ca17736079661de4cc6942571468220bb2a25ee82",
         "icons/shapes-large-symbolic.svg": "713fe56bf2d550a9c99600a1ce8cd87b993b40101f9d5fa7b007907efc9cdd11"
       },
-      "pinned_sha256": "5f3ec0ed2f1085744d10bf569f1d6aa033e02a2773f7131f8f940ff82c83e8b9"
+      "pinned_sha256": "5f3ec0ed2f1085744d10bf569f1d6aa033e02a2773f7131f8f940ff82c83e8b9",
+      "dir_hash": "5f0d5934"
     },
     "macw1y-touchpad-gestures@mactheme": {
       "uuid": "macw1y-touchpad-gestures@mactheme",

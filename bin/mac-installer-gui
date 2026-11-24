@@ -3810,15 +3810,15 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         self.bench_res_fps.set_text(f"Мінімальний FPS: {min_fps:.1f} • Середній FPS: {avg_fps:.1f}")
         if recommendation == "shader":
-            self.bench_res_rec.set_text("Рекомендовано: Ефект Liquid Glass (шейдер скла)")
+            self.bench_res_rec.set_text(self.tr("benchmark_rec_shader", "Рекомендовано: Ефект Liquid Glass (шейдер скла)"))
             self.bench_res_desc.set_text(
-                "Ваша система успішно витримала стрес-тест (50 елементів). "
+                f"Ваша система набрала {min_fps:.1f} FPS (середній: {avg_fps:.1f} FPS при 50 елементах, поріг: 60.0 FPS) та успішно витримала стрес-тест. "
                 "Продуктивність графічного процесора достатня для повноцінних фізичних відблисків та рефракції Liquid Glass."
             )
         else:
-            self.bench_res_rec.set_text("Рекомендовано: Легке розмиття (Blur mode)")
+            self.bench_res_rec.set_text(self.tr("benchmark_rec_blur", "Рекомендовано: Легке розмиття (Blur mode)"))
             self.bench_res_desc.set_text(
-                "Під час стрес-тестування зафіксовано падіння швидкості нижче 20 FPS (характерно для інтегрованої графіки Intel HD). "
+                f"Під час стрес-тестування зафіксовано {min_fps:.1f} FPS (середній: {avg_fps:.1f} FPS при 50 елементах, поріг: 60.0 FPS). "
                 "Рекомендовано режим розмиття для плавної роботи без перегріву та затримок."
             )
 
