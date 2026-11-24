@@ -3076,7 +3076,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .alt-tab-icon-bin {
   padding: 0px !important;
   margin: 0px !important;
-  border-radius: 14px !important;
+  border-radius: 16px !important;
   border: 2.5px solid transparent !important;
   background-color: transparent !important;
   background: transparent !important;
@@ -3098,7 +3098,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .switcher-list .item-box.selected .alt-tab-icon-bin {
   background-color: transparent !important;
   background: transparent !important;
-  border: 2.5px solid rgba(255, 149, 0, 0.80) !important;
+  border: 2.5px solid rgba(255, 149, 0, 0.85) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
 }
 
@@ -3108,7 +3108,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .alt-tab-app .label,
 .switcher-list .item-box StLabel,
 .switcher-list .item-box .label {
-  font-family: 'Default Display', 'Default', default, system-ui, sans-serif, BlinkMacSystemFont, sans-serif !important;
+  font-family: 'Default Display', 'Default', 'SF Pro Display', 'SF Pro Text', Cantarell, sans-serif !important;
   font-size: 11px !important;
   font-weight: 500 !important;
   color: #1d1d1f !important;

@@ -1409,9 +1409,9 @@ export default class EvalHelper extends Extension {
                     const label = child?.label || item.label_actor;
                     const isSelected = (i === this._highlighted) || item.hover;
 
-                    const iconBoxSize = Math.max(20, Math.round(baseIconSize * (52 / 64)));
-                    const outlineRad = Math.max(10, Math.round(iconBoxSize * 0.27));
-                    const accentColor = _macGetAccentColorRgba(0.80);
+                    const iconBoxSize = Math.max(20, Math.round(baseIconSize * (56 / 64)));
+                    const outlineRad = Math.max(10, Math.round(iconBoxSize * 0.285));
+                    const accentColor = _macGetAccentColorRgba(0.85);
 
                     if (iconActor) {
                         iconActor.set_size(iconBoxSize, iconBoxSize);
@@ -1420,7 +1420,7 @@ export default class EvalHelper extends Extension {
                         const iconChild = iconActor.child || (iconActor.get_children ? iconActor.get_children()[0] : null);
                         if (iconChild) {
                             iconChild.set_pivot_point(0.5, 0.5);
-                            iconChild.set_scale(1.25, 1.25);
+                            iconChild.set_scale(1.15, 1.15);
                         }
                         if (isSelected) {
                             iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid ${accentColor} !important; background-color: transparent !important; background: transparent !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important; transition-duration: 150ms !important;`;
@@ -1468,7 +1468,7 @@ export default class EvalHelper extends Extension {
                         const H = box.y2 - box.y1;
 
                         const tileH = cfg.iconSize;
-                        const scrollY1 = 15;
+                        const scrollY1 = 8;
 
                         const scrollBox = new Clutter.ActorBox();
                         scrollBox.x1 = 0;
@@ -1503,8 +1503,8 @@ export default class EvalHelper extends Extension {
                                 }
                                 lBox.x1 = Math.max(6, lx1);
                                 lBox.x2 = Math.min(W - 6, lx2);
-                                lBox.y1 = 76;
-                                lBox.y2 = Math.min(H - 3, 76 + Math.max(natH, 13));
+                                lBox.y1 = 71;
+                                lBox.y2 = Math.min(H - 2, 71 + Math.max(natH, 12));
                                 this._activeAppLabel.allocate(lBox);
                             }
                         }
@@ -1525,7 +1525,7 @@ export default class EvalHelper extends Extension {
                             this._activeAppLabel = new St.Label({
                                 style_class: 'alt-tab-app-label',
                             });
-                            this._activeAppLabel.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", "Helvetica Neue", Cantarell, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin: 0px !important; padding: 0px !important;';
+                            this._activeAppLabel.style = 'font-family: "Default Display", "Default", "SF Pro Display", "SF Pro Text", Cantarell, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin: 0px !important; padding: 0px !important;';
                             if (this._activeAppLabel.clutter_text) {
                                 this._activeAppLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this._activeAppLabel.clutter_text.line_wrap = false;
@@ -1567,8 +1567,8 @@ export default class EvalHelper extends Extension {
                         const bbox = origAddItem.call(this, item, label);
                         const cfg = _macGetAltTabConfig();
                         const tileW = this._itemTileSize || cfg.iconSize;
-                        const boxSize = Math.max(20, Math.round(tileW * (52 / 64)));
-                        const outlineRad = Math.max(10, Math.round(boxSize * 0.27));
+                        const boxSize = Math.max(20, Math.round(tileW * (56 / 64)));
+                        const outlineRad = Math.max(10, Math.round(boxSize * 0.285));
 
                         bbox._square = false;
                         bbox.x_align = Clutter.ActorAlign.CENTER;
@@ -1593,7 +1593,7 @@ export default class EvalHelper extends Extension {
                             const iconChild = iconActor.child || (iconActor.get_children ? iconActor.get_children()[0] : null);
                             if (iconChild) {
                                 iconChild.set_pivot_point(0.5, 0.5);
-                                iconChild.set_scale(1.25, 1.25);
+                                iconChild.set_scale(1.15, 1.15);
                             }
                             iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                         }
@@ -1630,8 +1630,8 @@ export default class EvalHelper extends Extension {
                         origAppIconInit.call(this, app);
                         const cfg = _macGetAltTabConfig();
                         const tileW = cfg.iconSize;
-                        const boxSize = Math.max(20, Math.round(tileW * (52 / 64)));
-                        const outlineRad = Math.max(10, Math.round(boxSize * 0.27));
+                        const boxSize = Math.max(20, Math.round(tileW * (56 / 64)));
+                        const outlineRad = Math.max(10, Math.round(boxSize * 0.285));
                         if (this._iconBin) {
                             this._iconBin.add_style_class_name('alt-tab-icon-bin');
                             this._iconBin.x_align = Clutter.ActorAlign.CENTER;
@@ -1640,7 +1640,7 @@ export default class EvalHelper extends Extension {
                             const iconChild = this._iconBin.child || (this._iconBin.get_children ? this._iconBin.get_children()[0] : null);
                             if (iconChild) {
                                 iconChild.set_pivot_point(0.5, 0.5);
-                                iconChild.set_scale(1.25, 1.25);
+                                iconChild.set_scale(1.15, 1.15);
                             }
                             this._iconBin.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
                         }
@@ -1649,7 +1649,7 @@ export default class EvalHelper extends Extension {
                             this.label.opacity = 0;
                             if (typeof this.label.set_height === 'function') this.label.set_height(0);
                             this.label.x_align = Clutter.ActorAlign.CENTER;
-                            this.label.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", default, system-ui, sans-serif, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 0px !important;';
+                            this.label.style = 'font-family: "Default Display", "Default", "SF Pro Display", "SF Pro Text", Cantarell, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 0px !important;';
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this.label.clutter_text.line_wrap = false;
@@ -1674,8 +1674,8 @@ export default class EvalHelper extends Extension {
                         origWindowIconInit.call(this, window, 2);
                         const cfg = _macGetAltTabConfig();
                         const baseIconSize = cfg.iconSize;
-                        const boxSize = Math.max(20, Math.round(baseIconSize * (52 / 64)));
-                        const outlineRad = Math.max(10, Math.round(boxSize * 0.27));
+                        const boxSize = Math.max(20, Math.round(baseIconSize * (56 / 64)));
+                        const outlineRad = Math.max(10, Math.round(boxSize * 0.285));
 
                         if (this._icon) {
                             this._icon.destroy_all_children();
@@ -1688,7 +1688,7 @@ export default class EvalHelper extends Extension {
                             appIcon.x_align = Clutter.ActorAlign.CENTER;
                             appIcon.y_align = Clutter.ActorAlign.CENTER;
                             appIcon.set_pivot_point(0.5, 0.5);
-                            appIcon.set_scale(1.25, 1.25);
+                            appIcon.set_scale(1.15, 1.15);
                             this._icon.add_child(appIcon);
                             this._icon.x_align = Clutter.ActorAlign.CENTER;
                             this._icon.y_align = Clutter.ActorAlign.CENTER;
@@ -1708,7 +1708,7 @@ export default class EvalHelper extends Extension {
                             this.label.x_align = Clutter.ActorAlign.CENTER;
                             this.label.opacity = 0;
                             if (typeof this.label.set_height === 'function') this.label.set_height(0);
-                            this.label.style = 'font-family: default, system-ui, sans-serif, BlinkMacSystemFont, "Default Display", "Default", default, system-ui, sans-serif, BlinkMacSystemFont, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 0px !important;';
+                            this.label.style = 'font-family: "Default Display", "Default", "SF Pro Display", "SF Pro Text", Cantarell, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 0px !important;';
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this.label.clutter_text.line_wrap = false;
@@ -1773,9 +1773,9 @@ export default class EvalHelper extends Extension {
                                 itemW = baseIconSize;
                             }
 
-                            const boxSize = Math.max(20, Math.round(itemW * (52 / 64)));
-                            const outlineRad = Math.max(10, Math.round(boxSize * 0.27));
-                            const accentColor = _macGetAccentColorRgba(0.80);
+                            const boxSize = Math.max(20, Math.round(itemW * (56 / 64)));
+                            const outlineRad = Math.max(10, Math.round(boxSize * 0.285));
+                            const accentColor = _macGetAccentColorRgba(0.85);
                             this._iconSize = baseIconSize;
                             this._squareItems = false;
                             this._itemTileSize = itemW;
@@ -1811,7 +1811,7 @@ export default class EvalHelper extends Extension {
                                         const iconChild = iconActor.child || (iconActor.get_children ? iconActor.get_children()[0] : null);
                                         if (iconChild) {
                                             iconChild.set_pivot_point(0.5, 0.5);
-                                            iconChild.set_scale(1.25, 1.25);
+                                            iconChild.set_scale(1.15, 1.15);
                                         }
                                         const isSelected = (i === this._highlighted);
                                         if (isSelected) {
@@ -1867,9 +1867,9 @@ export default class EvalHelper extends Extension {
                                 itemW = baseIconSize;
                             }
 
-                            const boxSize = Math.max(20, Math.round(itemW * (52 / 64)));
-                            const outlineRad = Math.max(10, Math.round(boxSize * 0.27));
-                            const accentColor = _macGetAccentColorRgba(0.80);
+                            const boxSize = Math.max(20, Math.round(itemW * (56 / 64)));
+                            const outlineRad = Math.max(10, Math.round(boxSize * 0.285));
+                            const accentColor = _macGetAccentColorRgba(0.85);
                             this._iconSize = baseIconSize;
                             this._squareItems = false;
                             this._itemTileSize = itemW;
@@ -1903,7 +1903,7 @@ export default class EvalHelper extends Extension {
                                         const iconChild = iconActor.child || (iconActor.get_children ? iconActor.get_children()[0] : null);
                                         if (iconChild) {
                                             iconChild.set_pivot_point(0.5, 0.5);
-                                            iconChild.set_scale(1.25, 1.25);
+                                            iconChild.set_scale(1.15, 1.15);
                                         }
                                         const isSelected = (i === this._highlighted);
                                         if (isSelected) {
@@ -2004,40 +2004,75 @@ export default class EvalHelper extends Extension {
                         const res = origShow.call(this, backward, binding, mask);
                         if (!res) return res;
 
+                        let destroyed = false;
+                        let stageSignalId = 0;
+                        let switcherGlass = null;
+                        const disconnectStage = () => {
+                            if (stageSignalId) {
+                                try { global.stage.disconnect(stageSignalId); } catch (_) {}
+                                stageSignalId = 0;
+                            }
+                        };
+
+                        try {
+                            this.connect('destroy', () => {
+                                destroyed = true;
+                                disconnectStage();
+                                if (switcherGlass) {
+                                    try {
+                                        switcherGlass.hide();
+                                        switcherGlass.opacity = 0;
+                                    } catch (_) {}
+                                }
+                            });
+                        } catch (_) {
+                            destroyed = true;
+                        }
+
                         (async () => {
                             try {
-                                if (!this.visible || this._destroyed || (typeof this.is_finalized === 'function' && this.is_finalized())) return;
-                                const switcherGlass = await getSwitcherGlass();
-                                if (!switcherGlass || !this.visible || this._destroyed || (typeof this.is_finalized === 'function' && this.is_finalized())) return;
+                                if (destroyed) return;
+                                switcherGlass = await getSwitcherGlass();
+                                if (!switcherGlass || destroyed) return;
 
-                                Main.layoutManager.uiGroup.set_child_below_sibling(switcherGlass, this);
-                                try { switcherGlass.addExclusion(this); } catch (_) {}
-                                if (this._switcherList) {
-                                    try { switcherGlass.addExclusion(this._switcherList); } catch (_) {}
-                                }
-
-                                let stageSignalId = 0;
-                                const disconnectStage = () => {
-                                    if (stageSignalId) {
-                                        try { global.stage.disconnect(stageSignalId); } catch (_) {}
-                                        stageSignalId = 0;
+                                try {
+                                    switcherGlass.addExclusion(this);
+                                    if (this._switcherList) {
+                                        switcherGlass.addExclusion(this._switcherList);
                                     }
-                                };
+                                } catch (_) {}
 
                                 const syncGlass = () => {
-                                    if (!this || !this.visible || this._destroyed || (typeof this.is_finalized === 'function' && this.is_finalized())) {
+                                    if (destroyed) {
                                         disconnectStage();
                                         if (switcherGlass?.visible) switcherGlass.hide();
                                         return;
                                     }
-                                    if (!this._switcherList || (typeof this._switcherList.is_finalized === 'function' && this._switcherList.is_finalized())) {
+                                    let isDisposed = false;
+                                    try {
+                                        if (!this || !this.visible || this._destroyed || !this._switcherList) {
+                                            isDisposed = true;
+                                        }
+                                    } catch (_) {
+                                        isDisposed = true;
+                                    }
+                                    if (isDisposed) {
+                                        destroyed = true;
                                         disconnectStage();
                                         if (switcherGlass?.visible) switcherGlass.hide();
                                         return;
                                     }
 
-                                    const [slX, slY] = this._switcherList.get_transformed_position();
-                                    const [slW, slH] = this._switcherList.get_transformed_size();
+                                    let slX, slY, slW, slH;
+                                    try {
+                                        [slX, slY] = this._switcherList.get_transformed_position();
+                                        [slW, slH] = this._switcherList.get_transformed_size();
+                                    } catch (_) {
+                                        destroyed = true;
+                                        disconnectStage();
+                                        if (switcherGlass?.visible) switcherGlass.hide();
+                                        return;
+                                    }
                                     if (slX == null || slY == null || Number.isNaN(slX) || Number.isNaN(slY) || slW <= 1 || slH <= 1) return;
 
                                     const primary = Main.layoutManager.primaryMonitor;
@@ -2047,7 +2082,6 @@ export default class EvalHelper extends Extension {
                                     const localY = Math.round(slY - primary.y);
                                     const bgW = Math.round(slW);
                                     const bgH = Math.round(slH);
-
 
                                     const cfg = _macGetAltTabConfig();
                                     const blurRad = Math.max(0.0, Number(cfg.blur));
@@ -2090,17 +2124,10 @@ export default class EvalHelper extends Extension {
                                     }
                                 } catch (_) {}
 
-                                stageSignalId = global.stage.connect('before-update', syncGlass);
-
-                                this.connect('destroy', () => {
-                                    disconnectStage();
-                                    if (switcherGlass) {
-                                        switcherGlass.hide();
-                                        switcherGlass.opacity = 0;
-                                    }
-                                });
-
-                                syncGlass();
+                                if (!destroyed) {
+                                    stageSignalId = global.stage.connect('before-update', syncGlass);
+                                    syncGlass();
+                                }
                             } catch (err) {
                                 console.error('[macW1Y] Switcher glass sync error:', err);
                             }
