@@ -671,10 +671,11 @@ button.mac-btn-pill-primary:active,
     min-height: 490px;
 }
 
-/* Modal Sheet (LiquidGlass with 5px blur, 5% tint, 28px radius) */
+/* Modal Sheet (LiquidGlass with 20px blur, 72% dark tint, 22px radius) */
 .mac-modal-dim {
-    background-color: transparent;
+    background-color: rgba(0, 0, 0, 0.50);
     border-radius: 20px;
+    transition: background-color 0.2s ease;
 }
 
 .mac-blurred-backdrop {
@@ -684,12 +685,13 @@ button.mac-btn-pill-primary:active,
 
 .mac-modal-sheet,
 .mac-alert-sheet {
-    background-color: rgba(255, 255, 255, 0.05);
-    border-radius: 28px;
-    border: 1px solid rgba(255, 255, 255, 0.20);
-    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.28);
-    padding: 14px 16px;
-    min-width: 260px;
+    background-color: rgba(40, 42, 50, 0.72);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.05) 40%, rgba(255, 255, 255, 0.02) 100%);
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.26);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.70), 0 2px 8px rgba(0, 0, 0, 0.40), inset 0 1px 1px rgba(255, 255, 255, 0.40);
+    padding: 16px 20px 14px 20px;
+    min-width: 270px;
 }
 
 .mac-loading-pill {
@@ -1511,11 +1513,11 @@ class MacModalSheetHost(Gtk.Box):
             if not ok or bounds.size.width <= 2 or bounds.size.height <= 2:
                 return
 
-            # LiquidGlass 5px Gaussian backdrop blur
-            blur_node = Gsk.BlurNode.new(self.backdrop_node, 5.0)
+            # LiquidGlass 20px Gaussian backdrop blur
+            blur_node = Gsk.BlurNode.new(self.backdrop_node, 20.0)
 
             is_pill = child.has_css_class("mac-loading-pill")
-            corner_radius = (bounds.size.height / 2.0) if is_pill else 28.0
+            corner_radius = (bounds.size.height / 2.0) if is_pill else 22.0
             rrect = Gsk.RoundedRect()
             rrect.init_from_rect(bounds, corner_radius)
 
@@ -3536,39 +3538,43 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         sheet = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         sheet.add_css_class("mac-modal-sheet")
         sheet.add_css_class("mac-alert-sheet")
+        sheet.set_halign(Gtk.Align.CENTER)
+        sheet.set_valign(Gtk.Align.CENTER)
+        sheet.set_size_request(310, -1)
 
-        lbl_t = Gtk.Label(label=self.tr("benchmark_warn_title", "Попередження тестування продуктивності"))
+        lbl_t = Gtk.Label(label=self.tr("benchmark_warn_title", "Тестування Liquid Glass"))
         lbl_t.add_css_class("mac-modal-title")
         lbl_t.set_halign(Gtk.Align.START)
         lbl_t.set_xalign(0.0)
         lbl_t.set_wrap(True)
+        lbl_t.set_max_width_chars(28)
         sheet.append(lbl_t)
 
         lbl_s = Gtk.Label(label=self.tr("benchmark_warn_desc",
-            "Під час випробування (тривалістю рівно 10 секунд) комп'ютер може короткочасно "
-            "підгальмовувати або затримувати реакцію через інтенсивне навантаження шейдера скла Liquid Glass.\n\n"
-            "Тестування виконується у фоновому режимі поза вікном користувача. Бажаєте розпочати тест?"
+            "Стрес-тест триває 10 секунд. Комп'ютер може короткочасно сповільнитись.\n\n"
+            "Розпочати тестування?"
         ))
         lbl_s.add_css_class("mac-modal-desc")
         lbl_s.set_halign(Gtk.Align.START)
         lbl_s.set_xalign(0.0)
         lbl_s.set_wrap(True)
-        lbl_s.set_margin_top(4)
+        lbl_s.set_max_width_chars(32)
+        lbl_s.set_margin_top(2)
         sheet.append(lbl_s)
 
-        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         btn_row.set_homogeneous(True)
         btn_row.set_hexpand(True)
         btn_row.set_halign(Gtk.Align.FILL)
-        btn_row.set_margin_top(12)
+        btn_row.set_margin_top(10)
 
         btn_cancel = Gtk.Button(label=self.tr("modal_btn_cancel", "Скасувати"))
-        btn_cancel.add_css_class("mac-btn-secondary")
+        btn_cancel.add_css_class("mac-modal-btn-secondary")
         btn_cancel.connect("clicked", lambda b: self.hide_modal())
         btn_row.append(btn_cancel)
 
         btn_cont = Gtk.Button(label=self.tr("modal_btn_continue", "Продовжити"))
-        btn_cont.add_css_class("mac-btn-primary")
+        btn_cont.add_css_class("mac-modal-btn-primary")
         btn_cont.connect("clicked", lambda b: self._on_confirm_start_benchmark())
         btn_row.append(btn_cont)
 

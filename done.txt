@@ -5134,3 +5134,21 @@ Task #938:
   * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #944: Інсталятор macW1Y: точкове затемнення тільки меню, Liquid Glass шейдер скла для модального вікна, компактна ширина, лаконічний текст та компактні кнопки
+  - Реалізація точкового затемнення картки меню:
+    * У класі .mac-modal-dim встановлено напівпрозорий темний оверлей rgba(0, 0, 0, 0.50) з радіусом 20px, що затемнює виключно картку меню інсталятора (self.card) без затемнення робочого столу та панелей навколо.
+  - Повноцінний Liquid Glass ефект для модального аркуша попередження:
+    * Оновлено стилізацію .mac-modal-sheet та .mac-alert-sheet: застосовано фізичний градієнт контурного відблиску, bevel-ефект (inset 0 1px 1px rgba(255, 255, 255, 0.40)), напівпрозору скляну підкладку rgba(40, 42, 50, 0.72) та посилено Gaussian backdrop blur до 20px (Gsk.BlurNode).
+  - Компактна геометрія та лаконічний нативний текст:
+    * Встановлено компактну ширину аркуша (set_size_request 310px, max_width_chars 28 для заголовка та 32 для опису).
+    * Текст скорочено до лаконічного нативного вигляду macOS: «Тестування Liquid Glass» та «Стрес-тест триває 10 секунд. Комп'ютер може короткочасно сповільнитись. Розпочати тестування?».
+  - Зменшення розміру кнопок удвічі (нативні системні pill-кнопки):
+    * Кнопки переведено на класи mac-modal-btn-secondary та mac-modal-btn-primary з висотою 22-23px замість великих 44px кнопок майстра встановлення.
+  - Результати перевірки:
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 bin/mac-audit-sync check: 100% PASS.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [bin/mac-installer-gui](file:///home/vitaliy/MACTHEMEFILES/bin/mac-installer-gui)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
