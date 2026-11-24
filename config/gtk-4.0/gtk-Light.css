@@ -10676,32 +10676,44 @@ window.mac-settings-window .mac-settings-account-row .account-subtitle {
     color: rgba(255, 255, 255, 0.55);
 }
 
-window.mac-settings-window .mac-settings-sidebar searchbar {
+window.mac-settings-window .mac-settings-sidebar searchbar,
+window.mac-settings-window .sidebar-pane searchbar {
     background: transparent;
     border: none;
     box-shadow: none;
-    padding: 4px 12px 4px 2px;
+    padding: 4px 0px 6px 0px;
+    margin: 0px;
 }
 
-window.mac-settings-window .mac-settings-sidebar searchbar > revealer > box {
+window.mac-settings-window .mac-settings-sidebar searchbar > revealer > box,
+window.mac-settings-window .sidebar-pane searchbar > revealer > box {
     background: transparent;
     border: none;
-    padding: 0;
+    padding: 0px;
+    margin: 0px;
 }
 
-window.mac-settings-window .mac-settings-sidebar searchbar entry {
-    min-height: 28px;
+window.mac-settings-window .mac-settings-sidebar searchbar entry,
+window.mac-settings-window .sidebar-pane searchbar entry {
+    min-height: 24px;
+    margin: 0px 26px 0px 10px;
     border-radius: 9999px;
-    background-color: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #ffffff;
-    font-size: 13px;
-    padding: 2px 12px;
+    background-color: rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    color: rgba(0, 0, 0, 0.85);
+    font-size: 12.5px;
+    padding: 1px 10px;
 }
 
-window.mac-settings-window .mac-settings-sidebar searchbar entry:focus-within {
-    background-color: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.20);
+:dir(rtl) window.mac-settings-window .mac-settings-sidebar searchbar entry,
+:dir(rtl) window.mac-settings-window .sidebar-pane searchbar entry {
+    margin: 0px 10px 0px 26px;
+}
+
+window.mac-settings-window .mac-settings-sidebar searchbar entry:focus-within,
+window.mac-settings-window .sidebar-pane searchbar entry:focus-within {
+    background-color: rgba(0, 0, 0, 0.09);
+    border-color: rgba(0, 0, 0, 0.18);
 }
 
 .mac-panel-header-banner,
@@ -11723,6 +11735,8 @@ popover.menu modelbutton check + label,
 popover.menu modelbutton radio + label {
   margin-left: 6px;
 }
+
+
 
 
 

@@ -4976,3 +4976,31 @@ TASK 828: ADVANCED ANIMATION PRELOADING, RENDERING CACHE & STARTUP OPTIMIZATION
   * [gtk-4.0/gtk.css](file:///home/vitaliy/MACTHEMEFILES/gtk-4.0/gtk.css)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+Task #938:
+- Зміна кольору активної кнопки на сірий у Nautilus та на акцентний у Параметрах (Settings), а також адаптація поля пошуку в Параметрах:
+  - Nautilus (еталонний стиль macOS Finder):
+    * Колір активного (виділеного) рядка у лівій панелі (sidebar-pane placessidebar row:selected) змінено з акцентного (помаранчевого) на нативний нейтральний сірий напівпрозорий відтінок macOS Finder: rgba(255, 255, 255, 0.15) для темної теми та rgba(0, 0, 0, 0.10) для світлої теми (hover: rgba(255, 255, 255, 0.20) / rgba(0, 0, 0, 0.14)).
+    * Текст (label) та піктограми (image, icon) активного рядка зафіксовано білими (#ffffff для темної теми, #000000 для світлої), без забарвлення акцентним кольором, що повністю відповідає надісланому фото-референсу Finder.
+  - Параметри (еталонний стиль macOS System Settings):
+    * Колір активного пункту лівої панелі (window.mac-settings-window list.mac-settings-sidebar-list row:selected тощо) зафіксовано на системний акцентний колір (@accent_bg_color) з білим текстом (#ffffff) та білими піктограмами (#ffffff), у повній відповідності до наданого фото-референсу вікна Параметрів.
+  - Поле введення пошуку в Параметрах:
+    * Зменшено висоту: встановлено min-height: 24px; padding: 1px 10px; font-size: 12.5px; (замість попередніх 28px/13px), що забезпечує компактний і акуратний вигляд.
+    * Розширено ширину: скинуто зайві внутрішні відступи контейнера пошуку (searchbar padding: 4px 0px 6px 0px; box padding: 0px;) та налаштовано точний бічний відступ поля вводу (margin: 0px 26px 0px 10px; для LTR і margin: 0px 10px 0px 26px; для RTL), завдяки чому поле пошуку ідеально збігається по ширині з кнопками лівої панелі нижче.
+  - Компіляція та синхронізація:
+    * Оновлено правила у майстер-компіляторі bin/mac-build-theme, файлах компонентів gtk-4.0/macw1y-components.css, config/gtk-4.0/macw1y-components.css та у всіх файлах тем gtk-Dark.css, gtk-Light.css, gtk.css.
+    * Здійснено успішну компіляцію тем та синхронізацію в ~/.config/gtk-4.0/, ~/.themes/ та /usr/share/themes/.
+  - Результати перевірки:
+    * bin/mac-audit-sync check: 100% PASS.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+    * Валідація Gtk.CssProvider: OK (0 помилок, 0 попереджень для всіх 13 тем).
+    * install.sh: 0 кириличних символів.
+  * [bin/mac-build-theme](file:///home/vitaliy/MACTHEMEFILES/bin/mac-build-theme)
+  * [gtk-4.0/macw1y-components.css](file:///home/vitaliy/MACTHEMEFILES/gtk-4.0/macw1y-components.css)
+  * [config/gtk-4.0/macw1y-components.css](file:///home/vitaliy/MACTHEMEFILES/config/gtk-4.0/macw1y-components.css)
+  * [gtk-4.0/gtk-Dark.css](file:///home/vitaliy/MACTHEMEFILES/gtk-4.0/gtk-Dark.css)
+  * [gtk-4.0/gtk-Light.css](file:///home/vitaliy/MACTHEMEFILES/gtk-4.0/gtk-Light.css)
+  * [gtk-4.0/gtk.css](file:///home/vitaliy/MACTHEMEFILES/gtk-4.0/gtk.css)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

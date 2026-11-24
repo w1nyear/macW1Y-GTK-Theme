@@ -296,17 +296,68 @@ placessidebar row:selected:focus-within,
 placessidebar .navigation-sidebar row:selected,
 placessidebar .navigation-sidebar row:selected:backdrop,
 navigation-split-view list.navigation-sidebar row:selected,
-navigation-split-view list.navigation-sidebar row:selected:backdrop,
+navigation-split-view list.navigation-sidebar row:selected:backdrop {
+  border-radius: 7px;
+  background-color: rgba(0, 0, 0, 0.08);
+  color: @accent_bg_color;
+  outline: none;
+}
+
+/* Nautilus Finder sidebar selected state - authentic macOS neutral grey highlight */
 .nautilus-window .sidebar-pane placessidebar row:selected,
 .nautilus-window .sidebar-pane placessidebar row:selected:backdrop,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:backdrop,
 window.nautilus-window .sidebar-pane placessidebar row:selected,
-window.nautilus-window .sidebar-pane placessidebar row:selected:backdrop {
+window.nautilus-window .sidebar-pane placessidebar row:selected:backdrop,
+window.nautilus-window placessidebar row:selected,
+window.nautilus-window placessidebar row:selected:backdrop {
   border-radius: 7px;
-  background-color: rgba(0, 0, 0, 0.08);
-  color: @accent_bg_color;
+  background-color: rgba(0, 0, 0, 0.10);
+  color: #000000;
   outline: none;
+}
+
+.nautilus-window .sidebar-pane placessidebar row:selected:hover,
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:hover,
+window.nautilus-window .sidebar-pane placessidebar row:selected:hover,
+window.nautilus-window placessidebar row:selected:hover {
+  border-radius: 7px;
+  background-color: rgba(0, 0, 0, 0.14);
+  color: #000000;
+  outline: none;
+}
+
+window.nautilus-window .sidebar-pane placessidebar row:selected label,
+window.nautilus-window .sidebar-pane list.navigation-sidebar row:selected label,
+window.nautilus-window .sidebar-pane row:selected label,
+window.nautilus-window .navigation-sidebar row:selected label,
+window.nautilus-window placessidebar row:selected label,
+window.nautilus-window row.sidebar-row:selected label,
+.nautilus-window .sidebar-pane placessidebar row:selected label,
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected label,
+.nautilus-window .sidebar-pane list.navigation-sidebar row:selected label,
+.nautilus-window .sidebar-pane row:selected label,
+.nautilus-window .navigation-sidebar row:selected label,
+.nautilus-window placessidebar row:selected label,
+.nautilus-window row.sidebar-row:selected label {
+  color: #000000;
+}
+
+window.nautilus-window .sidebar-pane placessidebar row:selected image,
+window.nautilus-window .sidebar-pane list.navigation-sidebar row:selected image,
+window.nautilus-window .sidebar-pane row:selected image,
+window.nautilus-window .navigation-sidebar row:selected image,
+window.nautilus-window placessidebar row:selected image,
+window.nautilus-window row.sidebar-row:selected image,
+.nautilus-window .sidebar-pane placessidebar row:selected image,
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected image,
+.nautilus-window .sidebar-pane list.navigation-sidebar row:selected image,
+.nautilus-window .sidebar-pane row:selected image,
+.nautilus-window .navigation-sidebar row:selected image,
+.nautilus-window placessidebar row:selected image,
+.nautilus-window row.sidebar-row:selected image {
+  color: #000000;
 }
 
 navigation-split-view list row:selected:hover,
@@ -314,10 +365,7 @@ overlay-split-view list row:selected:hover,
 .navigation-sidebar row:selected:hover,
 list.navigation-sidebar row:selected:hover,
 placessidebar row:selected:hover,
-placessidebar .navigation-sidebar row:selected:hover,
-.nautilus-window .sidebar-pane placessidebar row:selected:hover,
-.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:hover,
-window.nautilus-window .sidebar-pane placessidebar row:selected:hover {
+placessidebar .navigation-sidebar row:selected:hover {
   border-radius: 7px;
   background-color: rgba(0, 0, 0, 0.11);
   color: @accent_bg_color;
@@ -2602,14 +2650,30 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:hov
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:selected,
-window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected {
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected,
+window.mac-settings-window .sidebar-pane list.navigation-sidebar row:selected {
   border-radius: 7px;
-  background-color: rgba(0, 0, 0, 0.08);
-  color: @accent_bg_color;
+  background-color: @accent_bg_color;
+  color: #ffffff;
+}
+
+window.mac-settings-window list.mac-settings-sidebar-list row:selected:hover,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:hover,
+window.mac-settings-window .sidebar-pane list.navigation-sidebar row:selected:hover {
+  border-radius: 7px;
+  background-color: color-mix(in srgb, @accent_bg_color 88%, white);
+  color: #ffffff;
+}
+
+window.mac-settings-window list.mac-settings-sidebar-list row:selected label,
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected label,
+window.mac-settings-window .sidebar-pane list.navigation-sidebar row:selected label {
+  color: #ffffff;
 }
 
 window.mac-settings-window list.mac-settings-sidebar-list row:selected *,
-window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected * {
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected *,
+window.mac-settings-window .sidebar-pane list.navigation-sidebar row:selected * {
   background-color: transparent;
   background: transparent;
   border: none;
@@ -2619,7 +2683,9 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:sel
 window.mac-settings-window list.mac-settings-sidebar-list row:not(.mac-settings-account-row) image,
 window.mac-settings-window list.mac-settings-sidebar-list row:not(.mac-settings-account-row) icon,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not(.mac-settings-account-row) image,
-window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not(.mac-settings-account-row) icon {
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not(.mac-settings-account-row) icon,
+window.mac-settings-window .sidebar-pane list.navigation-sidebar row:not(.mac-settings-account-row) image,
+window.mac-settings-window .sidebar-pane list.navigation-sidebar row:not(.mac-settings-account-row) icon {
   min-width: 18px;
   min-height: 18px;
   -gtk-icon-size: 18px;
@@ -2637,8 +2703,10 @@ window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:not
 window.mac-settings-window list.mac-settings-sidebar-list row:selected:not(.mac-settings-account-row) image,
 window.mac-settings-window list.mac-settings-sidebar-list row:selected:not(.mac-settings-account-row) icon,
 window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:not(.mac-settings-account-row) image,
-window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:not(.mac-settings-account-row) icon {
-  color: @accent_bg_color;
+window.mac-settings-window .mac-settings-sidebar list.navigation-sidebar row:selected:not(.mac-settings-account-row) icon,
+window.mac-settings-window .sidebar-pane list.navigation-sidebar row:selected:not(.mac-settings-account-row) image,
+window.mac-settings-window .sidebar-pane list.navigation-sidebar row:selected:not(.mac-settings-account-row) icon {
+  color: #ffffff;
   background-color: transparent;
   background: transparent;
   border: none;
@@ -2656,24 +2724,42 @@ window.mac-settings-window .mac-settings-account-row {
   outline-width: 0;
 }
 
-window.mac-settings-window .mac-settings-sidebar searchbar {
+window.mac-settings-window .mac-settings-sidebar searchbar,
+window.mac-settings-window .sidebar-pane searchbar {
   background: transparent;
   border: none;
   box-shadow: none;
-  padding: 4px 26px 4px 10px;
+  padding: 4px 0px 6px 0px;
+  margin: 0px;
 }
 
-window.mac-settings-window .mac-settings-sidebar searchbar entry {
-  min-height: 28px;
+window.mac-settings-window .mac-settings-sidebar searchbar > revealer > box,
+window.mac-settings-window .sidebar-pane searchbar > revealer > box {
+  background: transparent;
+  border: none;
+  padding: 0px;
+  margin: 0px;
+}
+
+window.mac-settings-window .mac-settings-sidebar searchbar entry,
+window.mac-settings-window .sidebar-pane searchbar entry {
+  min-height: 24px;
+  margin: 0px 26px 0px 10px;
   border-radius: 9999px;
   background-color: rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(0, 0, 0, 0.08);
   color: rgba(0, 0, 0, 0.85);
-  font-size: 13px;
-  padding: 2px 12px;
+  font-size: 12.5px;
+  padding: 1px 10px;
 }
 
-window.mac-settings-window .mac-settings-sidebar searchbar entry:focus-within {
+:dir(rtl) window.mac-settings-window .mac-settings-sidebar searchbar entry,
+:dir(rtl) window.mac-settings-window .sidebar-pane searchbar entry {
+  margin: 0px 10px 0px 26px;
+}
+
+window.mac-settings-window .mac-settings-sidebar searchbar entry:focus-within,
+window.mac-settings-window .sidebar-pane searchbar entry:focus-within {
   background-color: rgba(0, 0, 0, 0.09);
   border-color: rgba(0, 0, 0, 0.18);
 }
