@@ -5152,3 +5152,28 @@ Task #938:
   * [bin/mac-installer-gui](file:///home/vitaliy/MACTHEMEFILES/bin/mac-installer-gui)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #945: Уніфікація відступів кнопок керування вікном (traffic lights) за еталоном DAMX для Nautilus та Параметрів (16px зліва, 12-13px зверху) та розширення поля пошуку в Параметрах за шириною кнопок лефтбару
+  - Аналіз та вимірювання еталона DAMX (/opt/damx/gui/DivAcerManagerMax):
+    * Відступ від лівого краю вікна до червоної кнопки закриття: 16px.
+    * Відступ від верхнього краю вікна до кнопок: 12px.
+  - Налаштування Nautilus (libmac_nautilus.c):
+    * У src/mac_nautilus.c скориговано правила для windowcontrols: `margin-left: 5px; margin-top: -15px; margin-bottom: 0px;`.
+    * Зібрано бібліотеку lib/libmac_nautilus.so та синхронізовано з ~/.local/lib/libmac_nautilus.so.
+    * Live-замір у вікні Nautilus: відступ зліва = 16px, відступ зверху = 13px (ідеальна відповідність DAMX).
+  - Налаштування Параметрів (libmac_settings.c та bin/mac-build-theme):
+    * У gnome-control-center-overlay/libmac_settings.c, control-center/libmac_settings.c та bin/mac-build-theme скориговано відступи кнопок трафіку: `margin-left: -1px; margin-top: 6px; padding-left: 0px;`.
+    * Live-замір у вікні gnome-control-center: відступ зліва = 16px, відступ зверху = 13px (ідеальна відповідність DAMX).
+  - Розширення поля пошуку в Параметрах:
+    * У libmac_settings.c увімкнено горизонтальне розширення поля пошуку (`gtk_widget_set_hexpand(se, TRUE); gtk_widget_set_halign(se, GTK_ALIGN_FILL);`) включно з батьківськими контейнерами.
+    * Скориговано CSS пошуку: обнулено зайві внутрішні padding searchbar та встановлено `margin: 1.5px 19px 1.5px 3px;` для `searchbar entry`.
+    * Live-замір: кнопки лефтбару x=[359, 590] (ширина 232px), поле пошуку x=[359, 590] (ширина 232px) — 100% піксельний збіг лівої та правої межі.
+  - Результати перевірки:
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [src/mac_nautilus.c](file:///home/vitaliy/MACTHEMEFILES/src/mac_nautilus.c)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [bin/mac-build-theme](file:///home/vitaliy/MACTHEMEFILES/bin/mac-build-theme)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

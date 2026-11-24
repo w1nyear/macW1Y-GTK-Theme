@@ -9983,8 +9983,8 @@ window.nautilus-window .nautilus-sidebar-headerbar {
 window.nautilus-window .sidebar-pane headerbar windowcontrols.start:dir(ltr),
 window.nautilus-window .nautilus-sidebar-headerbar windowcontrols,
 window.nautilus-window windowcontrols.start {
-    margin-left: 0px;
-    margin-top: 0px;
+    margin-left: 5px;
+    margin-top: -15px;
     margin-bottom: 0px;
 }
 
@@ -10135,9 +10135,11 @@ window.mac-settings-window .mac-settings-sidebar-headerbar {
 }
 
 window.mac-settings-window navigation-split-view headerbar windowcontrols.start:dir(ltr),
-window.mac-settings-window .mac-settings-sidebar-headerbar windowcontrols.start:dir(ltr) {
-    margin-top: 0px;
+window.mac-settings-window .mac-settings-sidebar-headerbar windowcontrols.start:dir(ltr),
+window.mac-settings-window windowcontrols.start:dir(ltr) {
+    padding-left: 6px;
     margin-left: 0px;
+    margin-top: -1px;
 }
 
 window.nautilus-window .sidebar-pane toolbarview,
@@ -10993,7 +10995,8 @@ window.mac-settings-window .sidebar-pane searchbar > revealer > box {
 window.mac-settings-window .mac-settings-sidebar searchbar entry,
 window.mac-settings-window .sidebar-pane searchbar entry {
     min-height: 24px;
-    margin: 0px 26px 0px 10px;
+    min-width: 264px;
+    margin: 0px 18px 0px 8px;
     border-radius: 9999px;
     background-color: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.10);
@@ -11004,7 +11007,7 @@ window.mac-settings-window .sidebar-pane searchbar entry {
 
 :dir(rtl) window.mac-settings-window .mac-settings-sidebar searchbar entry,
 :dir(rtl) window.mac-settings-window .sidebar-pane searchbar entry {
-    margin: 0px 10px 0px 26px;
+    margin: 0px 8px 0px 18px;
 }
 
 window.mac-settings-window .mac-settings-sidebar searchbar entry:focus-within,

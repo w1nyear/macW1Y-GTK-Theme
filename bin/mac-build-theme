@@ -2868,12 +2868,23 @@ window.mac-settings-window .sidebar-pane searchbar > revealer > box {{
   border: none;
   padding: 0px;
   margin: 0px;
+  padding: 0px;
+}}
+
+window.mac-settings-window .mac-settings-sidebar searchbar > revealer,
+window.mac-settings-window .sidebar-pane searchbar > revealer,
+window.mac-settings-window .mac-settings-sidebar searchbar > revealer > box,
+window.mac-settings-window .sidebar-pane searchbar > revealer > box {{
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
 }}
 
 window.mac-settings-window .mac-settings-sidebar searchbar entry,
 window.mac-settings-window .sidebar-pane searchbar entry {{
   min-height: 24px;
-  margin: 0px 26px 0px 10px;
+  margin: 1.5px 19px 1.5px 3px;
   border-radius: 9999px;
   background-color: {"rgba(255, 255, 255, 0.08)" if is_dark else "rgba(0, 0, 0, 0.06)"};
   border: 1px solid {"rgba(255, 255, 255, 0.10)" if is_dark else "rgba(0, 0, 0, 0.08)"};
@@ -2884,7 +2895,23 @@ window.mac-settings-window .sidebar-pane searchbar entry {{
 
 :dir(rtl) window.mac-settings-window .mac-settings-sidebar searchbar entry,
 :dir(rtl) window.mac-settings-window .sidebar-pane searchbar entry {{
-  margin: 0px 10px 0px 26px;
+  margin: 1.5px 3px 1.5px 19px;
+}}
+
+window.mac-settings-window navigation-split-view headerbar windowcontrols.start:dir(ltr),
+window.mac-settings-window .mac-settings-sidebar-headerbar windowcontrols.start:dir(ltr),
+window.mac-settings-window windowcontrols.start:dir(ltr) {{
+  padding-left: 0px;
+  margin-left: -1px;
+  margin-top: 6px;
+}}
+
+window.nautilus-window .sidebar-pane headerbar windowcontrols.start:dir(ltr),
+window.nautilus-window .nautilus-sidebar-headerbar windowcontrols,
+window.nautilus-window windowcontrols.start {{
+  margin-left: 5px;
+  margin-top: -15px;
+  margin-bottom: 0px;
 }}
 
 window.mac-settings-window .mac-settings-sidebar searchbar entry:focus-within,
@@ -3986,12 +4013,12 @@ def build_all():
                 place_master_imports(os.path.join(sys_theme, "gtk-4.0/gtk.css"))
                 place_master_imports(os.path.join(sys_theme, "gtk-3.0/gtk.css"))
             except PermissionError:
-                subprocess.run(["sudo", "cp", "-f", os.path.join(REPO_DIR, "gtk-4.0/macw1y-tokens.css"), os.path.join(sys_theme, "gtk-4.0/")], check=False)
-                subprocess.run(["sudo", "cp", "-f", os.path.join(REPO_DIR, "gtk-4.0/macw1y-components.css"), os.path.join(sys_theme, "gtk-4.0/")], check=False)
+                subprocess.run(["sudo", "-n", "cp", "-f", os.path.join(REPO_DIR, "gtk-4.0/macw1y-tokens.css"), os.path.join(sys_theme, "gtk-4.0/")], check=False, stderr=subprocess.DEVNULL)
+                subprocess.run(["sudo", "-n", "cp", "-f", os.path.join(REPO_DIR, "gtk-4.0/macw1y-components.css"), os.path.join(sys_theme, "gtk-4.0/")], check=False, stderr=subprocess.DEVNULL)
                 if os.path.exists(os.path.join(repo_t_path, "gtk-4.0/gtk.css")):
-                    subprocess.run(["sudo", "cp", "-f", os.path.join(repo_t_path, "gtk-4.0/gtk.css"), os.path.join(sys_theme, "gtk-4.0/gtk.css")], check=False)
+                    subprocess.run(["sudo", "-n", "cp", "-f", os.path.join(repo_t_path, "gtk-4.0/gtk.css"), os.path.join(sys_theme, "gtk-4.0/gtk.css")], check=False, stderr=subprocess.DEVNULL)
                 if os.path.exists(os.path.join(repo_t_path, "gtk-3.0/gtk.css")):
-                    subprocess.run(["sudo", "cp", "-f", os.path.join(repo_t_path, "gtk-3.0/gtk.css"), os.path.join(sys_theme, "gtk-3.0/gtk.css")], check=False)
+                    subprocess.run(["sudo", "-n", "cp", "-f", os.path.join(repo_t_path, "gtk-3.0/gtk.css"), os.path.join(sys_theme, "gtk-3.0/gtk.css")], check=False, stderr=subprocess.DEVNULL)
 
     print("\n🎉 Master Theme Compilation 100% Successful!")
     print("===================================================================")

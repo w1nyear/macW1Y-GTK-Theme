@@ -10355,16 +10355,20 @@ static void init_mac_settings_css(void) {
         "  background: transparent; "
         "  border: none; "
         "  box-shadow: none; "
-        "  padding: 4px 26px 4px 10px; "
+        "  padding: 0px; "
+        "  margin: 0px; "
         "} "
+        "window.mac-settings-window .mac-settings-sidebar searchbar > revealer, "
         "window.mac-settings-window .mac-settings-sidebar searchbar > revealer > box { "
         "  background: transparent; "
         "  border: none; "
         "  padding: 0; "
+        "  margin: 0; "
         "} "
         "window.mac-settings-window .mac-settings-sidebar searchbar entry { "
-        "  min-height: 28px; "
+        "  min-height: 24px; "
         "  border-radius: 9999px; "
+        "  margin: 1.5px 19px 1.5px 3px; "
         "  background-color: var(--mac-input-bg, color-mix(in srgb, @window_fg_color 8%, transparent)); "
         "  border: 1px solid var(--mac-input-border, color-mix(in srgb, @window_fg_color 8%, transparent)); "
         "  color: var(--mac-text-primary, @window_fg_color); "
@@ -11480,8 +11484,9 @@ static void init_mac_settings_css(void) {
         "window.mac-settings-window navigation-split-view headerbar windowcontrols.start:dir(ltr), "
         "window.mac-settings-window .mac-settings-sidebar-headerbar windowcontrols.start:dir(ltr) { "
         "  margin-top: 6px; "
-        "  margin-left: 5px; "
+        "  margin-left: -1px; "
         "  margin-bottom: 0px; "
+        "  padding-left: 0px; "
         "} "
         "window.mac-settings-window viewswitcher, "
         "window.mac-settings-window .mac-view-switcher, "
@@ -13808,6 +13813,18 @@ static gboolean mac_fix_settings_window(gpointer user_data)
         if (!g_object_get_data(G_OBJECT(se), "mac_search_configured")) {
             g_object_set(se, "placeholder-text", mac_tr("search", "Пошук"), NULL);
             g_object_set_data(G_OBJECT(se), "mac_search_configured", GINT_TO_POINTER(1));
+        }
+        gtk_widget_set_hexpand(se, TRUE);
+        gtk_widget_set_halign(se, GTK_ALIGN_FILL);
+        GtkWidget *parent = gtk_widget_get_parent(se);
+        if (parent) {
+            gtk_widget_set_hexpand(parent, TRUE);
+            gtk_widget_set_halign(parent, GTK_ALIGN_FILL);
+            GtkWidget *gparent = gtk_widget_get_parent(parent);
+            if (gparent) {
+                gtk_widget_set_hexpand(gparent, TRUE);
+                gtk_widget_set_halign(gparent, GTK_ALIGN_FILL);
+            }
         }
     }
     g_list_free(searches);
