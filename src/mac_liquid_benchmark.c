@@ -649,6 +649,7 @@ int main(int argc, char **argv) {
     setbuf(stdout, NULL);
     bool cli_mode = false;
     bool json_mode = false;
+    bool unlimited_mode = false;
     double threshold_fps = DEFAULT_BENCH_FPS_THRESHOLD;
     double duration = DEFAULT_DURATION;
 
@@ -657,6 +658,8 @@ int main(int argc, char **argv) {
             cli_mode = true;
         } else if (strcmp(argv[i], "--json") == 0 || strcmp(argv[i], "-j") == 0) {
             json_mode = true;
+        } else if (strcmp(argv[i], "--unlimited") == 0 || strcmp(argv[i], "-u") == 0) {
+            unlimited_mode = true;
         } else if (strcmp(argv[i], "--threshold") == 0 && i + 1 < argc) {
             threshold_fps = atof(argv[++i]);
         } else if (strcmp(argv[i], "--duration") == 0 && i + 1 < argc) {
@@ -684,7 +687,8 @@ int main(int argc, char **argv) {
         printf("\033[1;36m============================================================\033[0m\n");
         printf("\033[1;37m        macW1Y Liquid Glass Performance Benchmark           \033[0m\n");
         printf("\033[1;36m============================================================\033[0m\n");
-        printf("Running 10s stress test (up to 50 glass elements, limit 120 FPS)...\n\n");
+        printf("Running 10s stress test (up to 50 glass elements, %s)...\n\n",
+               unlimited_mode ? "unlimited FPS" : "limit 120 FPS");
     }
 
     double start_time = get_time_sec();
@@ -712,7 +716,7 @@ int main(int argc, char **argv) {
         else if (elapsed >= 1.0) n_elems = 5;
 
         double dt = now - last_frame_time;
-        if (dt < 0.00833) {
+        if (!unlimited_mode && dt < 0.00833) {
             /* 120 FPS limit target interval */
             usleep((useconds_t)((0.00833 - dt) * 1000000));
             now = get_time_sec();
@@ -764,7 +768,7 @@ int main(int argc, char **argv) {
         double rf_t1 = get_time_sec();
         double render_sec = rf_t1 - rf_t0;
         double frame_fps = (render_sec > 0.0001) ? (1.0 / render_sec) : 120.0;
-        if (frame_fps > 120.0) frame_fps = 120.0;
+        if (!unlimited_mode && frame_fps > 120.0) frame_fps = 120.0;
 
         /* During the second half (5s-10s), sample minimum sustained FPS under full stress */
         if (elapsed >= 5.0) {

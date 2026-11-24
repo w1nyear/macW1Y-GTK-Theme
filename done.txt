@@ -5302,3 +5302,26 @@ Task #938:
   * [bin/mac-liquid-benchmark](file:///home/vitaliy/MACTHEMEFILES/bin/mac-liquid-benchmark)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #951: Підтримка необмеженої кількості FPS (120+ і вище) у лічильнику попереднього перегляду скла в Параметрах при максимальному значенні повзунка 120
+  - Лічильник FPS у бейджі передперегляду скла (Параметри -> Мак стилізація -> Liquid Glass):
+    * Раніше frame_fps обмежувався викликом fmin(target, capacity_fps), що не дозволяло лічильнику підніматися вище 120.0 FPS навіть за надвисокої продуктивності шейдера.
+    * Знято штучне обмеження при максимальному значенні повзунка (g_liquid_target_fps >= 120): тепер frame_fps дорівнює повній пропускній здатності шейдера capacity_fps (1000000.0 / render_time_us).
+    * Лічильник плавно та точно відображає реальні необмежені 120+ FPS (наприклад, 350+ FPS для 50 елементів або 1000+ FPS для 1 елемента). При значеннях < 120 FPS збережено обмеження за вибором користувача (60, 30, 0).
+  - Інтерфейс повзунка частоти оновлення в Параметрах:
+    * Додано форматування значення повзунка format_liquid_fps_value: при значенні 120 відображається "120+", а проміжні значення показуються цілими числами без зайвих десяткових знаків.
+    * Позначку праворуч під шкалою замінено на "120+".
+    * Заголовок при 120 FPS відображає: "Швидкість оновлення: 120+ FPS (Необмежено)".
+  - Додатково в mac-liquid-benchmark:
+    * Додано підтримку прапорця --unlimited (-u) для CLI-бенчмарку без штучної затримки 120 FPS для тестування максимального апаратного FPS.
+  - Збірка, розгортання та перевірка:
+    * Синхронізовано libmac_settings.c у control-center, gnome-control-center-overlay та macW1Y.
+    * Перекомпільовано та розгорнуто libmac_settings.so в усі цільові каталоги (~/.local/lib, /usr/lib/x86_64-linux-gnu, control-center, macW1Y).
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [src/mac_liquid_benchmark.c](file:///home/vitaliy/MACTHEMEFILES/src/mac_liquid_benchmark.c)
+  * [bin/mac-liquid-benchmark](file:///home/vitaliy/MACTHEMEFILES/bin/mac-liquid-benchmark)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

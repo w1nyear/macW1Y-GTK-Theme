@@ -3361,14 +3361,24 @@ static gboolean on_liquid_preview_tick(GtkWidget *widget, GdkFrameClock *frame_c
     return G_SOURCE_CONTINUE;
 }
 
+static char *format_liquid_fps_value(GtkScale *scale, double value, gpointer user_data) {
+    (void)scale; (void)user_data;
+    if (value >= 119.5) {
+        return g_strdup("120+");
+    }
+    return g_strdup_printf("%.0f", value);
+}
+
 static void on_liquid_fps_changed(GtkRange *range, gpointer user_data) {
     (void)user_data;
     g_liquid_target_fps = (int)round(gtk_range_get_value(range));
-    g_liquid_measured_fps = (double)g_liquid_target_fps;
+    g_liquid_measured_fps = 0.0;
     if (g_liquid_fps_label) {
         char buf[128];
         if (g_liquid_target_fps <= 0) {
             g_snprintf(buf, sizeof(buf), "%s: 0 FPS (%s)", mac_tr("bench_refresh_rate", "Швидкість оновлення"), mac_tr("pause", "Пауза"));
+        } else if (g_liquid_target_fps >= 120) {
+            g_snprintf(buf, sizeof(buf), "%s: 120+ FPS (%s)", mac_tr("bench_refresh_rate", "Швидкість оновлення"), mac_tr("unlimited", "Необмежено"));
         } else {
             g_snprintf(buf, sizeof(buf), "%s: %d FPS", mac_tr("bench_refresh_rate", "Швидкість оновлення"), g_liquid_target_fps);
         }
@@ -3477,7 +3487,8 @@ static GtkWidget *create_liquid_benchmark_panel(void) {
     gtk_scale_add_mark(GTK_SCALE(g_liquid_fps_scale), 0.0, GTK_POS_BOTTOM, pause_mark);
     gtk_scale_add_mark(GTK_SCALE(g_liquid_fps_scale), 30.0, GTK_POS_BOTTOM, "30");
     gtk_scale_add_mark(GTK_SCALE(g_liquid_fps_scale), 60.0, GTK_POS_BOTTOM, "60");
-    gtk_scale_add_mark(GTK_SCALE(g_liquid_fps_scale), 120.0, GTK_POS_BOTTOM, "120");
+    gtk_scale_add_mark(GTK_SCALE(g_liquid_fps_scale), 120.0, GTK_POS_BOTTOM, "120+");
+    gtk_scale_set_format_value_func(GTK_SCALE(g_liquid_fps_scale), format_liquid_fps_value, NULL, NULL);
     gtk_widget_set_hexpand(g_liquid_fps_scale, TRUE);
     g_signal_connect(g_liquid_fps_scale, "value-changed", G_CALLBACK(on_liquid_fps_changed), NULL);
 
@@ -3590,7 +3601,7 @@ static void liquid_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     } else {
         double capacity_fps = (render_time_us > 0) ? (1000000.0 / (double)render_time_us) : (double)g_liquid_target_fps;
         double target = (double)g_liquid_target_fps;
-        double frame_fps = fmin(target, capacity_fps);
+        double frame_fps = (g_liquid_target_fps >= 120) ? capacity_fps : fmin(target, capacity_fps);
         if (g_liquid_measured_fps <= 0.1) {
             g_liquid_measured_fps = frame_fps;
         } else {
