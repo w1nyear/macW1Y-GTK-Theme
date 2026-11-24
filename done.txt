@@ -5257,3 +5257,20 @@ Task #938:
   * [bin/gnome-control-center](file:///home/vitaliy/MACTHEMEFILES/bin/gnome-control-center)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+* 2026-11-24 — Task #949: Виправлення положення тіні скла: перенесення тіні нагору елемента (gy - 3.5), усунення темного півмісяця знизу та вирівнювання напрямку світла/відблиску (n2d_y * sinA * ly_dir)
+  - Позиціонування тіні навколо скляного елемента:
+    * Замінено вертикальне зміщення дроп-тіні з gy + 3.5 (яке висувало тінь під нижній край елемента) на gy - 3.5 - expand * 0.5 у control-center/libmac_settings.c, gnome-control-center-overlay/libmac_settings.c та src/mac_liquid_benchmark.c.
+    * Тепер м'яке затінення елемента розташоване строго зверху (як і в оригінальному склі), а знизу під склом усунено темний виступ тіні.
+  - Калібрування спрямованого освітлення та відблиску (dotNL):
+    * Відкалібровано формулу освітлення країв dotNL = n2d_y * item->sinA * ly_dir + item->cosA * lz_dir (знято некоректний мінус з n2d_y), що забезпечило природний градієнт: затінення зверху та чисте крайове світло знизу, усунувши надлишкове затемнення нижнього краю.
+  - Збірка, розгортання та перевірка:
+    * Перекомпільовано lib/libmac_settings.so та bin/mac-liquid-benchmark через build-native.sh.
+    * Синхронізовано бінарні файли до системних та користувацьких бібліотек.
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK.
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+  * [control-center/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/control-center/libmac_settings.c)
+  * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/libmac_settings.c)
+  * [src/mac_liquid_benchmark.c](file:///home/vitaliy/MACTHEMEFILES/src/mac_liquid_benchmark.c)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

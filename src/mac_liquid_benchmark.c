@@ -260,7 +260,7 @@ static void draw_benchmark_glass_element(cairo_t *cr, cairo_surface_t *bg, int w
         for (int i = passes; i >= 1; i--) {
             double expand = (passes == 2) ? (i * 4.0) : (i * 2.5);
             double alpha = (passes == 2) ? ((shadow_val * 0.22) / i) : ((shadow_val * 0.14) / i);
-            draw_shape_path(cr, gx - expand, gy + 3.5 - expand * 0.5, gw + expand * 2.0, gh + expand * 2.0, gr + expand, shape);
+            draw_shape_path(cr, gx - expand, gy - 3.5 - expand * 0.5, gw + expand * 2.0, gh + expand * 2.0, gr + expand, shape);
             cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, alpha);
             cairo_fill(cr);
         }
@@ -417,7 +417,7 @@ static void draw_benchmark_glass_element(cairo_t *cr, cairo_surface_t *bg, int w
             double base_g = (cr_g * one_minus_tint + tint_g_str) * item->ao;
             double base_b = (cr_b * one_minus_tint + tint_b_str) * item->ao;
 
-            double dotNL = -n2d_y * item->sinA * ly_dir + item->cosA * lz_dir;
+            double dotNL = n2d_y * item->sinA * ly_dir + item->cosA * lz_dir;
             double lightMask = pow(fabs(dotNL), 2.7);
             double finalRimLight = item->rimEdge * lightMask;
             double sheenFacing = fmax(dotNL, 0.0);
