@@ -3,9 +3,9 @@ set -euo pipefail
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 . /etc/os-release
 case " ${ID:-} ${ID_LIKE:-} " in
-    *' debian '*|*' ubuntu '*) manager=apt ;;
+    *' debian '*|*' ubuntu '*|*' linuxmint '*|*' mint '*) manager=apt ;;
     *' fedora '*|*' rhel '*) manager=dnf ;;
-    *' arch '*|*' cachyos '*) manager=pacman ;;
+    *' arch '*|*' cachyos '*|*' manjaro '*|*' endeavouros '*) manager=pacman ;;
     *) echo "Непідтримуваний дистрибутив: ${ID:-невідомий}" >&2; exit 1 ;;
 esac
 list=$manager

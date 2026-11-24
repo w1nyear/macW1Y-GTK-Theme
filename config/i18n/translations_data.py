@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: GPL-3.0-or-later
-RTL_LANGUAGES = {'ug', 'fa', 'he', 'skr', 'ps', 'ar', 'sd', 'ur'}
+#!/usr/bin/env python3
+# Central Translations Data for macW1Y
 
 TRANSLATIONS = {
     "ace": {
@@ -529,7 +529,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Edit",
         "window": "Window",
-        "shutdown_short": "Shut Down"
+        "shutdown_short": "Shut Down",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "af": {
         "about": "Oor hierdie stelsel",
@@ -1058,7 +1059,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Bewerken",
         "window": "Venster",
-        "shutdown_short": "Uitschakelen"
+        "shutdown_short": "Uitschakelen",
+        "installer_stage0": "Berei GNOME-werkoppervlakomgewing voor…"
     },
     "ak": {
         "about": "Fa Efa Eyi Ho",
@@ -1587,7 +1589,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Edit",
         "window": "Window",
-        "shutdown_short": "Shut Down"
+        "shutdown_short": "Shut Down",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "am": {
         "about": "ስለዚህ ሲስተም",
@@ -2116,7 +2119,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Edit",
         "window": "Window",
-        "shutdown_short": "Shut Down"
+        "shutdown_short": "Shut Down",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "ar": {
         "about": "حول هذا النظام",
@@ -2645,7 +2649,8 @@ TRANSLATIONS = {
         "terminal": "الطرفية",
         "edit": "تحرير",
         "window": "نافذة",
-        "shutdown_short": "إيقاف التشغيل"
+        "shutdown_short": "إيقاف التشغيل",
+        "installer_stage0": "جارٍ إعداد بيئة سطح المكتب GNOME…"
     },
     "as": {
         "about": "এই ব্যৱস্থাৰ বিষয়ে",
@@ -3174,7 +3179,8 @@ TRANSLATIONS = {
         "terminal": "টার্মিনাল",
         "edit": "সম্পাদনা",
         "window": "উইন্ডো",
-        "shutdown_short": "বন্ধ করুন"
+        "shutdown_short": "বন্ধ করুন",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "ast": {
         "about": "Tocante a esti sistema",
@@ -3703,7 +3709,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Edición",
         "window": "Ventana",
-        "shutdown_short": "Apagar"
+        "shutdown_short": "Apagar",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "awa": {
         "about": "इ सिस्टम के बारे मा",
@@ -4232,7 +4239,8 @@ TRANSLATIONS = {
         "terminal": "टर्मिनल",
         "edit": "संपादित करें",
         "window": "विंडो",
-        "shutdown_short": "बंद करें"
+        "shutdown_short": "बंद करें",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "ay": {
         "about": "Aka sistema tuqita",
@@ -4761,7 +4769,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Edición",
         "window": "Ventana",
-        "shutdown_short": "Apagar"
+        "shutdown_short": "Apagar",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "az": {
         "about": "Bu sistem haqqında",
@@ -5290,7 +5299,8 @@ TRANSLATIONS = {
         "terminal": "Uçbirim",
         "edit": "Düzen",
         "window": "Pencere",
-        "shutdown_short": "Sistemi Kapat"
+        "shutdown_short": "Sistemi Kapat",
+        "installer_stage0": "GNOME iş masası mühiti hazırlanır…"
     },
     "ba": {
         "about": "Был система тураһында",
@@ -5819,7 +5829,8 @@ TRANSLATIONS = {
         "terminal": "Терминал",
         "edit": "Правка",
         "window": "Окно",
-        "shutdown_short": "Выключить"
+        "shutdown_short": "Выключить",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "be": {
         "about": "Пра гэтую сістэму",
@@ -6348,7 +6359,8 @@ TRANSLATIONS = {
         "terminal": "Тэрмінал",
         "edit": "Праўка",
         "window": "Акно",
-        "shutdown_short": "Выключыць"
+        "shutdown_short": "Выключыць",
+        "installer_stage0": "Падрыхтоўка і міграцыя на асяроддзе GNOME…"
     },
     "bg": {
         "about": "Относно тази система",
@@ -6877,7 +6889,8 @@ TRANSLATIONS = {
         "terminal": "Терминал",
         "edit": "Редактиране",
         "window": "Прозорец",
-        "shutdown_short": "Изключване"
+        "shutdown_short": "Изключване",
+        "installer_stage0": "Подготовка на работната среда GNOME…"
     },
     "bho": {
         "about": "एह सिस्टम के बारे में",
@@ -7406,7 +7419,8 @@ TRANSLATIONS = {
         "terminal": "टर्मिनल",
         "edit": "संपादित करें",
         "window": "विंडो",
-        "shutdown_short": "बंद करें"
+        "shutdown_short": "बंद करें",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "bn": {
         "about": "এই সিস্টেম সম্পর্কে",
@@ -7935,7 +7949,8 @@ TRANSLATIONS = {
         "terminal": "টার্মিনাল",
         "edit": "সম্পাদনা",
         "window": "উইন্ডো",
-        "shutdown_short": "বন্ধ করুন"
+        "shutdown_short": "বন্ধ করুন",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "cjy": {
         "about": "关于这台电脑",
@@ -8464,7 +8479,8 @@ TRANSLATIONS = {
         "terminal": "终端",
         "edit": "编辑",
         "window": "窗口",
-        "shutdown_short": "关机"
+        "shutdown_short": "关机",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "cs": {
         "about": "O tomto systému",
@@ -8993,7 +9009,8 @@ TRANSLATIONS = {
         "terminal": "Terminál",
         "edit": "Úpravy",
         "window": "Okno",
-        "shutdown_short": "Vypnout"
+        "shutdown_short": "Vypnout",
+        "installer_stage0": "Příprava desktopového prostředí GNOME…"
     },
     "de": {
         "about": "Über dieses System",
@@ -9522,7 +9539,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Bearbeiten",
         "window": "Fenster",
-        "shutdown_short": "Ausschalten"
+        "shutdown_short": "Ausschalten",
+        "installer_stage0": "GNOME-Desktop-Umgebung vorbereiten…"
     },
     "en": {
         "about": "About",
@@ -10051,7 +10069,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Edit",
         "window": "Window",
-        "shutdown_short": "Shut Down"
+        "shutdown_short": "Shut Down",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "es": {
         "about": "Acerca de este sistema",
@@ -10580,7 +10599,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Edición",
         "window": "Ventana",
-        "shutdown_short": "Apagar"
+        "shutdown_short": "Apagar",
+        "installer_stage0": "Preparando el entorno de escritorio GNOME…"
     },
     "et": {
         "about": "Teave süsteemi kohta",
@@ -11109,7 +11129,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Redigeeri",
         "window": "Aken",
-        "shutdown_short": "Lülita välja"
+        "shutdown_short": "Lülita välja",
+        "installer_stage0": "GNOME töölauakeskkonna ettevalmistamine…"
     },
     "fa": {
         "about": "درباره این سیستم",
@@ -11638,7 +11659,8 @@ TRANSLATIONS = {
         "terminal": "ترمینال",
         "edit": "ویرایش",
         "window": "پنجره",
-        "shutdown_short": "خاموش کردن"
+        "shutdown_short": "خاموش کردن",
+        "installer_stage0": "در حال آماده‌سازی محیط دسکتاپ GNOME…"
     },
     "fr": {
         "about": "À propos de ce système",
@@ -12167,7 +12189,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Édition",
         "window": "Fenêtre",
-        "shutdown_short": "Éteindre"
+        "shutdown_short": "Éteindre",
+        "installer_stage0": "Préparation de l'environnement de bureau GNOME…"
     },
     "gan": {
         "about": "关于箇台电脑",
@@ -12696,7 +12719,8 @@ TRANSLATIONS = {
         "terminal": "终端",
         "edit": "编辑",
         "window": "窗口",
-        "shutdown_short": "关机"
+        "shutdown_short": "关机",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "hak": {
         "about": "關於這台 Mac",
@@ -13225,7 +13249,8 @@ TRANSLATIONS = {
         "terminal": "终端",
         "edit": "编辑",
         "window": "窗口",
-        "shutdown_short": "关机"
+        "shutdown_short": "关机",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "he": {
         "about": "אודות מערכת זו",
@@ -13754,7 +13779,8 @@ TRANSLATIONS = {
         "terminal": "מסוף",
         "edit": "עריכה",
         "window": "חלון",
-        "shutdown_short": "כיבוי"
+        "shutdown_short": "כיבוי",
+        "installer_stage0": "מכין את סביבת שולחן העבודה של GNOME…"
     },
     "hi": {
         "about": "इस सिस्टम के बारे में",
@@ -14283,7 +14309,8 @@ TRANSLATIONS = {
         "terminal": "टर्मिनल",
         "edit": "संपादित करें",
         "window": "विंडो",
-        "shutdown_short": "बंद करें"
+        "shutdown_short": "बंद करें",
+        "installer_stage0": "GNOME डेस्कटॉप वातावरण तैयार किया जा रहा है…"
     },
     "hne": {
         "about": "ये सिस्टम के बारे में",
@@ -14812,7 +14839,8 @@ TRANSLATIONS = {
         "terminal": "टर्मिनल",
         "edit": "संपादित करें",
         "window": "विंडो",
-        "shutdown_short": "बंद करें"
+        "shutdown_short": "बंद करें",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "hr": {
         "about": "O ovom sustavu",
@@ -15341,7 +15369,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Uređivanje",
         "window": "Prozor",
-        "shutdown_short": "Isključi"
+        "shutdown_short": "Isključi",
+        "installer_stage0": "Priprema grafičkog sučelja GNOME…"
     },
     "hsn": {
         "about": "关于这台电脑",
@@ -15870,7 +15899,8 @@ TRANSLATIONS = {
         "terminal": "终端",
         "edit": "编辑",
         "window": "窗口",
-        "shutdown_short": "关机"
+        "shutdown_short": "关机",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "hu": {
         "about": "Névjegy",
@@ -16399,7 +16429,8 @@ TRANSLATIONS = {
         "terminal": "Terminál",
         "edit": "Szerkesztés",
         "window": "Ablak",
-        "shutdown_short": "Kikapcsolás"
+        "shutdown_short": "Kikapcsolás",
+        "installer_stage0": "GNOME asztali környezet előkészítése…"
     },
     "it": {
         "about": "Informazioni su questo sistema",
@@ -16928,7 +16959,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Composizione",
         "window": "Finestra",
-        "shutdown_short": "Spegni"
+        "shutdown_short": "Spegni",
+        "installer_stage0": "Preparazione dell'ambiente desktop GNOME…"
     },
     "ja": {
         "about": "このMacについて",
@@ -17457,7 +17489,8 @@ TRANSLATIONS = {
         "terminal": "ターミナル",
         "edit": "編集",
         "window": "ウィンドウ",
-        "shutdown_short": "システム終了"
+        "shutdown_short": "システム終了",
+        "installer_stage0": "GNOMEデスクトップ環境を準備中…"
     },
     "ko": {
         "about": "이 Mac에 관하여",
@@ -17986,7 +18019,8 @@ TRANSLATIONS = {
         "terminal": "터미널",
         "edit": "편집",
         "window": "윈도우",
-        "shutdown_short": "시스템 종료"
+        "shutdown_short": "시스템 종료",
+        "installer_stage0": "GNOME 데스크톱 환경 준비 중…"
     },
     "lt": {
         "about": "Apie sistemą",
@@ -18515,7 +18549,8 @@ TRANSLATIONS = {
         "terminal": "Terminalas",
         "edit": "Taisa",
         "window": "Langas",
-        "shutdown_short": "Išjungti"
+        "shutdown_short": "Išjungti",
+        "installer_stage0": "Ruošiama GNOME darbalaukio aplinka…"
     },
     "lv": {
         "about": "Par sistēmu",
@@ -19044,7 +19079,8 @@ TRANSLATIONS = {
         "terminal": "Terminālis",
         "edit": "Rediģēt",
         "window": "Logs",
-        "shutdown_short": "Izslēgt"
+        "shutdown_short": "Izslēgt",
+        "installer_stage0": "Tiek sagatavota GNOME darbvirsmas vide…"
     },
     "mag": {
         "about": "एह सिस्टम के बारे में",
@@ -19573,7 +19609,8 @@ TRANSLATIONS = {
         "terminal": "टर्मिनल",
         "edit": "संपादित करें",
         "window": "विंडो",
-        "shutdown_short": "बंद करें"
+        "shutdown_short": "बंद करें",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "mwr": {
         "about": "इण सिस्टम रै बारै में",
@@ -20102,7 +20139,8 @@ TRANSLATIONS = {
         "terminal": "टर्मिनल",
         "edit": "संपादित करें",
         "window": "विंडो",
-        "shutdown_short": "बंद करें"
+        "shutdown_short": "बंद करें",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "nan": {
         "about": "關於這台 Mac",
@@ -20631,7 +20669,8 @@ TRANSLATIONS = {
         "terminal": "終端機",
         "edit": "編輯",
         "window": "視窗",
-        "shutdown_short": "關機"
+        "shutdown_short": "關機",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "nl": {
         "about": "Over dit systeem",
@@ -21160,7 +21199,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Bewerken",
         "window": "Venster",
-        "shutdown_short": "Uitschakelen"
+        "shutdown_short": "Uitschakelen",
+        "installer_stage0": "GNOME-bureaubladomgeving voorbereiden…"
     },
     "om": {
         "about": "Waa'ee Sirna Kanaa",
@@ -21689,7 +21729,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Edit",
         "window": "Window",
-        "shutdown_short": "Shut Down"
+        "shutdown_short": "Shut Down",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "pcm": {
         "about": "About Dis System",
@@ -22218,7 +22259,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Edit",
         "window": "Window",
-        "shutdown_short": "Shut Down"
+        "shutdown_short": "Shut Down",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "pl": {
         "about": "O tym systemie",
@@ -22747,7 +22789,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Edycja",
         "window": "Okno",
-        "shutdown_short": "Wyłącz"
+        "shutdown_short": "Wyłącz",
+        "installer_stage0": "Przygotowywanie środowiska graficznego GNOME…"
     },
     "pt": {
         "about": "Acerca deste sistema",
@@ -23276,7 +23319,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Editar",
         "window": "Janela",
-        "shutdown_short": "Desligar"
+        "shutdown_short": "Desligar",
+        "installer_stage0": "Preparando o ambiente de desktop GNOME…"
     },
     "ro": {
         "about": "Despre acest sistem",
@@ -23805,7 +23849,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Editare",
         "window": "Fereastră",
-        "shutdown_short": "Oprire"
+        "shutdown_short": "Oprire",
+        "installer_stage0": "Se pregătește mediul desktop GNOME…"
     },
     "ru": {
         "about": "Об этой системе",
@@ -24334,7 +24379,8 @@ TRANSLATIONS = {
         "terminal": "Терминал",
         "edit": "Правка",
         "window": "Окно",
-        "shutdown_short": "Выключить"
+        "shutdown_short": "Выключить",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "sk": {
         "about": "O tomto systéme",
@@ -24863,7 +24909,8 @@ TRANSLATIONS = {
         "terminal": "Terminál",
         "edit": "Upraviť",
         "window": "Okno",
-        "shutdown_short": "Vypnúť"
+        "shutdown_short": "Vypnúť",
+        "installer_stage0": "Príprava pracovného prostredia GNOME…"
     },
     "skr": {
         "about": "سسٹم بارے",
@@ -25392,7 +25439,8 @@ TRANSLATIONS = {
         "terminal": "टर्मिनल",
         "edit": "संपादित करें",
         "window": "विंडो",
-        "shutdown_short": "बंद करें"
+        "shutdown_short": "बंद करें",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "sl": {
         "about": "O tem sistemu",
@@ -25921,7 +25969,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Uredi",
         "window": "Okno",
-        "shutdown_short": "Zaustavi"
+        "shutdown_short": "Zaustavi",
+        "installer_stage0": "Priprava namiznega okolja GNOME…"
     },
     "sr": {
         "about": "О овом систему",
@@ -26450,7 +26499,8 @@ TRANSLATIONS = {
         "terminal": "Терминал",
         "edit": "Уређивање",
         "window": "Прозор",
-        "shutdown_short": "Искључи"
+        "shutdown_short": "Искључи",
+        "installer_stage0": "Priprema grafičkog okruženja GNOME…"
     },
     "th": {
         "about": "เกี่ยวกับระบบนี้",
@@ -26979,7 +27029,8 @@ TRANSLATIONS = {
         "terminal": "เทอร์มินัล",
         "edit": "แก้ไข",
         "window": "หน้าต่าง",
-        "shutdown_short": "ปิดเครื่อง"
+        "shutdown_short": "ปิดเครื่อง",
+        "installer_stage0": "กำลังเตรียมสภาพแวดล้อมเดสก์ท็อป GNOME…"
     },
     "tr": {
         "about": "Bu Sistem Hakkında",
@@ -27508,7 +27559,8 @@ TRANSLATIONS = {
         "terminal": "Uçbirim",
         "edit": "Düzen",
         "window": "Pencere",
-        "shutdown_short": "Sistemi Kapat"
+        "shutdown_short": "Sistemi Kapat",
+        "installer_stage0": "GNOME Masaüstü Ortamı hazırlanıyor…"
     },
     "uk": {
         "about": "Про систему",
@@ -28037,7 +28089,8 @@ TRANSLATIONS = {
         "terminal": "Термінал",
         "edit": "Правка",
         "window": "Вікно",
-        "shutdown_short": "Вимкнути"
+        "shutdown_short": "Вимкнути",
+        "installer_stage0": "Підготовка та міграція на середовище GNOME…"
     },
     "vi": {
         "about": "Giới thiệu về hệ thống",
@@ -28566,7 +28619,8 @@ TRANSLATIONS = {
         "terminal": "Terminal",
         "edit": "Chỉnh sửa",
         "window": "Cửa sổ",
-        "shutdown_short": "Tắt máy"
+        "shutdown_short": "Tắt máy",
+        "installer_stage0": "Đang chuẩn bị môi trường máy tính GNOME…"
     },
     "wuu": {
         "about": "关于本台电脑",
@@ -29095,7 +29149,8 @@ TRANSLATIONS = {
         "terminal": "终端",
         "edit": "编辑",
         "window": "窗口",
-        "shutdown_short": "关机"
+        "shutdown_short": "关机",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "yue": {
         "about": "關於呢部 Mac",
@@ -29624,7 +29679,8 @@ TRANSLATIONS = {
         "terminal": "终端",
         "edit": "编辑",
         "window": "窗口",
-        "shutdown_short": "关机"
+        "shutdown_short": "关机",
+        "installer_stage0": "Preparing GNOME Desktop Environment…"
     },
     "zh": {
         "about": "关于本机",
@@ -30153,7 +30209,8 @@ TRANSLATIONS = {
         "terminal": "终端",
         "edit": "编辑",
         "window": "窗口",
-        "shutdown_short": "关机"
+        "shutdown_short": "关机",
+        "installer_stage0": "正在准备 GNOME 桌面环境…"
     },
     "zh_tw": {
         "about": "關於這台 Mac",
@@ -30682,6 +30739,9 @@ TRANSLATIONS = {
         "terminal": "終端機",
         "edit": "編輯",
         "window": "視窗",
-        "shutdown_short": "關機"
+        "shutdown_short": "關機",
+        "installer_stage0": "正在准备 GNOME 桌面环境…"
     }
 }
+
+RTL_LANGUAGES = {"ar", "he", "fa", "ur", "ps", "sd", "ug", "skr"}

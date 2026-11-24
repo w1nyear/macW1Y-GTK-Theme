@@ -45,3 +45,6 @@ libdbusmenu
 gjs
 gtk3
 gnome-desktop3
+gnome-shell
+gnome-session
+gdm

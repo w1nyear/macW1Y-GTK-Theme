@@ -3815,6 +3815,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
     def _update_progress(self, pct, msg):
         stage_names = {
+            "stage0": self.tr("installer_stage0", "Preparing GNOME Desktop Environment…"),
             "stage1": self.tr("installer_stage1", "Installing system dependencies…"),
             "stage2": self.tr("installer_stage2", "Installing default fonts…"),
             "stage3": self.tr("installer_stage3", "Installing macW1Y themes (GTK3, GTK4, Shell)…"),
@@ -3839,6 +3840,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
     def _parse_stage_line(self, line):
         stage_map = {
+            "Desktop Environment Migration": (0.05, "stage0"),
+            "Stage 0/": (0.05, "stage0"),
             "Stage 1/": (0.10, "stage1"),
             "Stage 2/": (0.20, "stage2"),
             "Stage 3/": (0.35, "stage3"),
@@ -3868,6 +3871,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self._start_progress_animation()
 
         steps = [
+            (0.04, "stage0"),
             (0.08, "stage1"),
             (0.18, "stage2"),
             (0.32, "stage3"),

@@ -134,20 +134,22 @@ elif [ -z "$MAC_INSTALLER_CLI" ]; then
                 local empty=$(( 24 - fill ))
                 printf "\r  [%-24s] %3d%%  %s" "$(printf '%*s' "$fill" '' | tr ' ' '#')" "$pct" "$msg"
             }
-            _dis_exts=("ubuntu-dock@ubuntu.com" "tiling-assistant@ubuntu.com" "ding@rastersoft.com" "dash-to-dock@micxgx.gmail.com" "snapd-prompting@canonical.com" "web-search-provider@ubuntu.com")
-            _ena_exts=("user-theme@gnome-shell-extensions.gcampax.github.com" "eval-helper@mactheme" "blur-my-shell@aunetx" "dash2dock-motion@unmade.space" "appmenu@ChathurangaBW.github.io" "kiwi@kemma" "desktop-widgets@r3nhick" "macw1y-touchpad-gestures@mactheme" "compiz-alike-magic-lamp-effect@hermes83.github.com" "cupertino-dock-lite@rinzler69-wastaken.github.com" "custom-command-toggle@storageb.github.com" "liquid-glass@thinkingcoding1231.gmail.com" "quick-settings-scroll@diskmth.fr" "Rounded_Corners@lennart-k" "volume-percentage-quick-settings@imdarktom" "wack-lockscreen-clock@rinzler69-wastaken.github.com" "wifi-hotspot-quick-settings@aryan10.github.io")
+            _dis_exts=("ubuntu-dock@ubuntu.com" "tiling-assistant@ubuntu.com" "dash-to-dock@micxgx.gmail.com" "snapd-prompting@canonical.com" "web-search-provider@ubuntu.com")
+            _ena_exts=("user-theme@gnome-shell-extensions.gcampax.github.com" "eval-helper@mactheme" "blur-my-shell@aunetx" "dash2dock-motion@unmade.space" "appmenu@ChathurangaBW.github.io" "kiwi@kemma" "desktop-widgets@r3nhick" "macw1y-touchpad-gestures@mactheme" "compiz-alike-magic-lamp-effect@hermes83.github.com" "cupertino-dock-lite@rinzler69-wastaken.github.com" "custom-command-toggle@storageb.github.com" "liquid-glass@thinkingcoding1231.gmail.com" "quick-settings-scroll@diskmth.fr" "Rounded_Corners@lennart-k" "volume-percentage-quick-settings@imdarktom" "wack-lockscreen-clock@rinzler69-wastaken.github.com" "wifi-hotspot-quick-settings@aryan10.github.io" "ding@rastersoft.com")
             _prep_tot=$(( ${#_dis_exts[@]} + ${#_ena_exts[@]} + 4 ))
             _prep_cur=0
-            for ext in "${_dis_exts[@]}"; do
-                gnome-extensions disable "$ext" 2>/dev/null || true
-                _prep_cur=$(( _prep_cur + 1 ))
-                _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
-            done
-            for ext in "${_ena_exts[@]}"; do
-                gnome-extensions enable "$ext" 2>/dev/null || true
-                _prep_cur=$(( _prep_cur + 1 ))
-                _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
-            done
+            if command -v gnome-extensions >/dev/null 2>&1; then
+                for ext in "${_dis_exts[@]}"; do
+                    gnome-extensions disable "$ext" 2>/dev/null || true
+                    _prep_cur=$(( _prep_cur + 1 ))
+                    _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
+                done
+                for ext in "${_ena_exts[@]}"; do
+                    gnome-extensions enable "$ext" 2>/dev/null || true
+                    _prep_cur=$(( _prep_cur + 1 ))
+                    _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
+                done
+            fi
             gsettings set org.gnome.shell.extensions.user-theme name "macW1Y-Dark" 2>/dev/null || true; _prep_cur=$(( _prep_cur + 1 )); _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
             gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark" 2>/dev/null || true; _prep_cur=$(( _prep_cur + 1 )); _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
             gsettings set org.gnome.desktop.interface icon-theme "macW1Y-dark" 2>/dev/null || true; _prep_cur=$(( _prep_cur + 1 )); _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
@@ -477,7 +479,7 @@ detect_distro_and_paths() {
         DISTRO_ID="${ID:-unknown}"
         DISTRO_NAME="${PRETTY_NAME:-$NAME}"
 
-        if [[ "$ID" =~ ^(ubuntu|debian|pop|linuxmint|elementary|neon|zorin)$ ]] || [[ "$ID_LIKE" =~ (ubuntu|debian) ]]; then
+        if [[ "$ID" =~ ^(ubuntu|debian|pop|linuxmint|mint|elementary|neon|zorin)$ ]] || [[ "$ID_LIKE" =~ (ubuntu|debian|linuxmint) ]]; then
             DISTRO_FAMILY="debian"
         elif [[ "$ID" =~ ^(fedora|rhel|centos|rocky|almalinux|nobara)$ ]] || [[ "$ID_LIKE" =~ (fedora|rhel) ]]; then
             DISTRO_FAMILY="fedora"
@@ -563,6 +565,254 @@ install_nautilus_extension() {
         sync_or_update_file "$src" "/usr/lib/nautilus/extensions-4/$filename" true
         sudo chmod 755 "/usr/lib/nautilus/extensions-4/$filename" 2>/dev/null || true
     fi
+}
+
+# ------------------------------------------------------------------------------
+# 0. Desktop Environment (DE) Detection & GNOME Migration
+# ------------------------------------------------------------------------------
+detect_current_desktop_environment() {
+    local desktop="${XDG_CURRENT_DESKTOP:-}"
+    local session="${DESKTOP_SESSION:-}"
+    local de="unknown"
+
+    local d_lower
+    d_lower=$(echo "$desktop $session" | tr '[:upper:]' '[:lower:]')
+
+    if [[ "$d_lower" =~ gnome ]]; then
+        de="gnome"
+    elif [[ "$d_lower" =~ cinnamon ]]; then
+        de="cinnamon"
+    elif [[ "$d_lower" =~ mate ]]; then
+        de="mate"
+    elif [[ "$d_lower" =~ xfce ]]; then
+        de="xfce"
+    elif [[ "$d_lower" =~ (kde|plasma) ]]; then
+        de="kde"
+    elif [[ "$d_lower" =~ lxqt ]]; then
+        de="lxqt"
+    elif [[ "$d_lower" =~ lxde ]]; then
+        de="lxde"
+    elif command -v cinnamon-session >/dev/null 2>&1 || [ -f /usr/bin/cinnamon ]; then
+        de="cinnamon"
+    elif command -v mate-session >/dev/null 2>&1 || [ -f /usr/bin/mate-session ]; then
+        de="mate"
+    elif command -v xfce4-session >/dev/null 2>&1 || [ -f /usr/bin/xfce4-session ]; then
+        de="xfce"
+    elif command -v startplasma-wayland >/dev/null 2>&1 || command -v startplasma-x11 >/dev/null 2>&1 || [ -f /usr/bin/plasmashell ]; then
+        de="kde"
+    elif command -v lxqt-session >/dev/null 2>&1; then
+        de="lxqt"
+    elif command -v gnome-shell >/dev/null 2>&1; then
+        de="gnome"
+    fi
+
+    echo "$de"
+}
+
+ensure_gnome_desktop_environment() {
+    local current_de
+    current_de="$(detect_current_desktop_environment)"
+
+    # If GNOME is already installed and detected as active/available
+    if [ "$current_de" = "gnome" ] && command -v gnome-shell >/dev/null 2>&1; then
+        log_info "Desktop Environment: GNOME detected. No desktop environment migration needed."
+        return 0
+    fi
+
+    log_step "Desktop Environment Migration: Detected '$current_de'. Migrating to GNOME Desktop Environment and removing '$current_de'"
+
+    if [ "$MOCK_MODE" = "true" ]; then
+        log_info "[Mock Mode] Simulating GNOME installation and removal of '$current_de'..."
+        return 0
+    fi
+
+    require_root
+    detect_distro_and_paths
+
+    log_info "Step 1/3: Downloading and installing GNOME Desktop Environment (GNOME Shell, GDM, Mutter)..."
+    case "$DISTRO_FAMILY" in
+        debian)
+            sudo apt-get update -y
+            local gnome_pkgs=(
+                gnome-shell
+                gnome-session
+                gdm3
+                nautilus
+                gnome-terminal
+                gnome-control-center
+                gnome-tweaks
+                gnome-shell-extensions
+                xdg-desktop-portal-gnome
+                network-manager
+            )
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${gnome_pkgs[@]}"
+            sudo apt-mark manual "${gnome_pkgs[@]}" 2>/dev/null || true
+
+            if [ -f /usr/sbin/gdm3 ]; then
+                echo "/usr/sbin/gdm3" | sudo tee /etc/X11/default-display-manager >/dev/null 2>&1 || true
+                echo "gdm3 shared/default-x-display-manager select gdm3" | sudo debconf-set-selections 2>/dev/null || true
+            fi
+            ;;
+        fedora)
+            sudo dnf groupinstall -y "GNOME Desktop" 2>/dev/null || \
+                sudo dnf install -y gnome-shell gnome-session gdm nautilus gnome-terminal gnome-control-center gnome-tweaks
+            ;;
+        arch)
+            sudo pacman -Syu --needed --noconfirm gnome gnome-shell gdm gnome-control-center gnome-terminal nautilus
+            ;;
+        *)
+            log_error "Unsupported distribution family for automatic DE migration: $DISTRO_FAMILY"
+            return 1
+            ;;
+    esac
+
+    if command -v systemctl >/dev/null 2>&1; then
+        sudo systemctl disable lightdm.service 2>/dev/null || true
+        sudo systemctl disable sddm.service 2>/dev/null || true
+        sudo systemctl disable lxdm.service 2>/dev/null || true
+        sudo systemctl enable gdm3.service 2>/dev/null || sudo systemctl enable gdm.service 2>/dev/null || true
+        sudo systemctl set-default graphical.target 2>/dev/null || true
+    fi
+
+    if [ -n "$TARGET_USER" ] && [ -d "/var/lib/AccountsService/users" ]; then
+        local user_acc="/var/lib/AccountsService/users/$TARGET_USER"
+        if [ -f "$user_acc" ]; then
+            sudo sed -i 's/^XSession=.*/XSession=ubuntu/' "$user_acc" 2>/dev/null || true
+            sudo sed -i 's/^Session=.*/Session=ubuntu/' "$user_acc" 2>/dev/null || true
+            if [ ! -f /usr/share/xsessions/ubuntu.desktop ] && [ ! -f /usr/share/wayland-sessions/ubuntu.desktop ]; then
+                sudo sed -i 's/^XSession=.*/XSession=gnome/' "$user_acc" 2>/dev/null || true
+                sudo sed -i 's/^Session=.*/Session=gnome/' "$user_acc" 2>/dev/null || true
+            fi
+        fi
+    fi
+
+    log_info "Step 2/3: Removing old desktop environment ('$current_de')..."
+    case "$current_de" in
+        cinnamon)
+            case "$DISTRO_FAMILY" in
+                debian)
+                    local cin_pkgs=(
+                        mint-meta-cinnamon
+                        cinnamon
+                        cinnamon-core
+                        cinnamon-session
+                        muffin
+                        nemo
+                        nemo-data
+                        cinnamon-control-center
+                        cinnamon-settings-daemon
+                        cinnamon-screensaver
+                        mint-artwork-cinnamon
+                    )
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get remove --purge -y "${cin_pkgs[@]}" 2>/dev/null || true
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get autoremove -y 2>/dev/null || true
+                    ;;
+                fedora)
+                    sudo dnf remove -y @cinnamon-desktop cinnamon muffin nemo 2>/dev/null || true
+                    ;;
+                arch)
+                    sudo pacman -Rns --noconfirm cinnamon muffin nemo 2>/dev/null || true
+                    ;;
+            esac
+            sudo rm -f /usr/share/xsessions/cinnamon*.desktop /usr/share/wayland-sessions/cinnamon*.desktop 2>/dev/null || true
+            ;;
+        mate)
+            case "$DISTRO_FAMILY" in
+                debian)
+                    local mate_pkgs=(
+                        mate-desktop-environment
+                        ubuntu-mate-desktop
+                        mate-session-manager
+                        marco
+                        caja
+                        mate-panel
+                        mate-control-center
+                    )
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get remove --purge -y "${mate_pkgs[@]}" 2>/dev/null || true
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get autoremove -y 2>/dev/null || true
+                    ;;
+                fedora)
+                    sudo dnf remove -y @mate-desktop mate-desktop marco caja 2>/dev/null || true
+                    ;;
+                arch)
+                    sudo pacman -Rns --noconfirm mate mate-extra 2>/dev/null || true
+                    ;;
+            esac
+            sudo rm -f /usr/share/xsessions/mate*.desktop /usr/share/wayland-sessions/mate*.desktop 2>/dev/null || true
+            ;;
+        xfce)
+            case "$DISTRO_FAMILY" in
+                debian)
+                    local xfce_pkgs=(
+                        xfce4
+                        xfce4-session
+                        xfwm4
+                        thunar
+                        xfce4-panel
+                        xubuntu-desktop
+                    )
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get remove --purge -y "${xfce_pkgs[@]}" 2>/dev/null || true
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get autoremove -y 2>/dev/null || true
+                    ;;
+                fedora)
+                    sudo dnf remove -y @xfce-desktop xfce4-session xfwm4 thunar 2>/dev/null || true
+                    ;;
+                arch)
+                    sudo pacman -Rns --noconfirm xfce4 xfce4-goodies 2>/dev/null || true
+                    ;;
+            esac
+            sudo rm -f /usr/share/xsessions/xfce*.desktop /usr/share/wayland-sessions/xfce*.desktop 2>/dev/null || true
+            ;;
+        kde)
+            case "$DISTRO_FAMILY" in
+                debian)
+                    local kde_pkgs=(
+                        kubuntu-desktop
+                        plasma-desktop
+                        plasma-workspace
+                        kwin-x11
+                        kwin-wayland
+                        kde-standard
+                    )
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get remove --purge -y "${kde_pkgs[@]}" 2>/dev/null || true
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get autoremove -y 2>/dev/null || true
+                    ;;
+                fedora)
+                    sudo dnf remove -y @kde-desktop plasma-desktop kwin 2>/dev/null || true
+                    ;;
+                arch)
+                    sudo pacman -Rns --noconfirm plasma-desktop plasma-meta kwin 2>/dev/null || true
+                    ;;
+            esac
+            sudo rm -f /usr/share/xsessions/plasma*.desktop /usr/share/wayland-sessions/plasma*.desktop 2>/dev/null || true
+            ;;
+        lxqt|lxde)
+            case "$DISTRO_FAMILY" in
+                debian)
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get remove --purge -y lxqt* lubuntu-desktop lxde* 2>/dev/null || true
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get autoremove -y 2>/dev/null || true
+                    ;;
+                fedora)
+                    sudo dnf remove -y @lxqt-desktop 2>/dev/null || true
+                    ;;
+                arch)
+                    sudo pacman -Rns --noconfirm lxqt 2>/dev/null || true
+                    ;;
+            esac
+            sudo rm -f /usr/share/xsessions/lxqt*.desktop /usr/share/xsessions/lxde*.desktop 2>/dev/null || true
+            ;;
+        *)
+            log_info "No specific removal profile for '$current_de'. GNOME has been configured as primary DE."
+            ;;
+    esac
+
+    log_info "Step 3/3: Validating GNOME Shell environment..."
+    if ! command -v gnome-shell >/dev/null 2>&1; then
+        log_error "GNOME Shell installation failed or binary not found in PATH!"
+        return 1
+    fi
+
+    log_success "Desktop Environment successfully migrated from '$current_de' to GNOME Shell!"
 }
 
 # ------------------------------------------------------------------------------
@@ -685,6 +935,9 @@ backup_original_user_themes() {
         if [ "$DISTRO_ID" = "ubuntu" ]; then
             fallback_theme="Yaru"
             fallback_cursor="Yaru"
+        elif [ "$DISTRO_ID" = "linuxmint" ] || [ "$DISTRO_ID" = "mint" ]; then
+            fallback_theme="Mint-Y"
+            fallback_cursor="Bibata-Modern-Classic"
         fi
 
         [ -z "$orig_gtk" ] || [[ "$orig_gtk" =~ macW1Y ]] && orig_gtk="$fallback_theme"
@@ -1685,6 +1938,13 @@ install_gdm_transition() {
         sudo sed -i 's|cursor-theme = "Yaru"|cursor-theme = "macW1Y"|g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
         sudo sed -i -E 's/(warty-final-ubuntu\.png|mendhak-Bluebells_Suspended_In_Time\.jpg)/GoldenGate_Day.jpg/g' /usr/share/glib-2.0/schemas/10_ubuntu-settings.gschema.override
     fi
+    for mint_override in /usr/share/glib-2.0/schemas/*mint*.override /usr/share/glib-2.0/schemas/*cinnamon*.override; do
+        if [ -f "$mint_override" ]; then
+            sudo sed -i -E 's/gtk-theme = "Mint-[^"]*"/gtk-theme = "macW1Y-Dark"/g' "$mint_override" 2>/dev/null || true
+            sudo sed -i -E 's/icon-theme = "Mint-[^"]*"/icon-theme = "macW1Y-dark"/g' "$mint_override" 2>/dev/null || true
+            sudo sed -i -E 's/cursor-theme = "[^"]*"/cursor-theme = "macW1Y"/g' "$mint_override" 2>/dev/null || true
+        fi
+    done
     if [ -f "$SCRIPT_DIR/extensions/desktop-widgets@r3nhick/schemas/org.gnome.shell.extensions.desktop-widgets-r3nhick.gschema.xml" ]; then
         sudo cp "$SCRIPT_DIR/extensions/desktop-widgets@r3nhick/schemas/org.gnome.shell.extensions.desktop-widgets-r3nhick.gschema.xml" /usr/share/glib-2.0/schemas/
         sudo chmod 644 /usr/share/glib-2.0/schemas/org.gnome.shell.extensions.desktop-widgets-r3nhick.gschema.xml
@@ -2093,6 +2353,7 @@ EOF_EVO
 
 # 1. Full Installation
 run_full_install() {
+    ensure_gnome_desktop_environment
     python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || return 1
     install_dependencies
     python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || return 1
@@ -2118,6 +2379,7 @@ run_full_install() {
 # 2. Incremental Update [installed version] -> [new version]
 # Verifies every file, replaces modified, and adds missing
 run_incremental_update() {
+    ensure_gnome_desktop_environment
     python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || return 1
     local cur_ver="$1"
     local new_ver="$2"

@@ -38,3 +38,5 @@ libdbusmenu-glib
 gjs
 gtk3
 gnome-desktop
+gnome-shell
+gdm

@@ -5655,3 +5655,37 @@ Task #938:
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
 
+
+- Task #965: Додано підтримку Linux Mint та автоматичну міграцію робочого середовища (DE) на GNOME з видаленням старого DE
+  - Підтримка дистрибутиву Linux Mint (install.sh & dependencies/):
+    * У dependencies/install-deps.sh додано явну підтримку linuxmint та mint для пакетного менеджера apt.
+    * У dependencies/apt-packages.txt, dnf-packages.txt, pacman-packages.txt додано пакети gnome-shell, gnome-session, gdm3/gdm.
+    * У dependencies/check-platform.py реалізовано helper is_supported_distribution(), що розпізнає Linux Mint, Ubuntu, Debian, Fedora, Arch тощо, та дозволяє виконання інсталятора при відсутності GNOME Shell для його подальшого автоматичного встановлення.
+    * У install.sh розширено визначення сімейства Debian для linuxmint і mint, додано резервні теми Mint-Y та Bibata-Modern-Classic для збереження стану бекапу, а також нейтралізацію Mint/Cinnamon gschema overrides.
+  - Виявлення та автоматична міграція робочого середовища (DE):
+    * Реалізовано функцію detect_current_desktop_environment() в install.sh: аналізує XDG_CURRENT_DESKTOP, DESKTOP_SESSION та бінарники сесій для точного визначення поточного середовища (cinnamon, mate, xfce, kde, lxqt/lxde, gnome).
+    * Реалізовано функцію ensure_gnome_desktop_environment():
+      1) Якщо поточне DE є GNOME — міграція безпечно пропускається.
+      2) Якщо поточне DE не є GNOME — завантажується та встановлюється повноцінне середовище GNOME (gnome-shell, gnome-session, gdm3/gdm, mutter, nautilus, gnome-control-center, gnome-terminal, gnome-tweaks), дисплей-менеджер перемикається на GDM3/GDM, сесія за замовчуванням фіксується на GNOME.
+      3) Старе середовище (пакети Cinnamon, MATE, XFCE, KDE, LXQt відповідно) автоматично видаляється разом із непотрібними залишками через пакетний менеджер (apt-get remove --purge, dnf remove, pacman -Rns) та очищаються сесійні .desktop файли.
+    * Інтегровано ensure_gnome_desktop_environment у run_full_install() та run_incremental_update().
+  - Графічний інсталятор та локалізація:
+    * Додано ключ installer_stage0 (Підготовка та міграція на середовище GNOME…) до translations_data.py та translations.json для всіх 58 мов інтерфейсу.
+    * Оновлено bin/mac-installer-gui: додано обробку етапу міграції DE в індикатор прогресу.
+  - Тестування та верифікація:
+    * Створено tests/test_de_migration.py (6 тестів, перевірка розпізнавання DE, підтримки Mint, перевірки пакетів та mock-режиму).
+    * Усі 45 тестів набору unittest пройдено успішно (45/45 PASS).
+    * Повна перевірка mac-i18n-verify, mac-extension-guard (21/21 LOCKED OK), mac-audit-sync (100% PASS), mac-integrity-check (System is green).
+  * [install.sh](file:///home/vitaliy/macW1Y/install.sh)
+  * [dependencies/check-platform.py](file:///home/vitaliy/macW1Y/dependencies/check-platform.py)
+  * [dependencies/install-deps.sh](file:///home/vitaliy/macW1Y/dependencies/install-deps.sh)
+  * [dependencies/apt-packages.txt](file:///home/vitaliy/macW1Y/dependencies/apt-packages.txt)
+  * [dependencies/dnf-packages.txt](file:///home/vitaliy/macW1Y/dependencies/dnf-packages.txt)
+  * [dependencies/pacman-packages.txt](file:///home/vitaliy/macW1Y/dependencies/pacman-packages.txt)
+  * [bin/mac-installer-gui](file:///home/vitaliy/macW1Y/bin/mac-installer-gui)
+  * [config/i18n/translations_data.py](file:///home/vitaliy/macW1Y/config/i18n/translations_data.py)
+  * [config/i18n/translations.json](file:///home/vitaliy/macW1Y/config/i18n/translations.json)
+  * [tests/test_de_migration.py](file:///home/vitaliy/macW1Y/tests/test_de_migration.py)
+  * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
