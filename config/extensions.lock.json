@@ -305,7 +305,7 @@
         "50",
         "51"
       ],
-      "sha256": "5f0d593457237df630a66548952b41d1c718a9c23d3fab5c8bb16fd41c05946c",
+      "sha256": "892748a92afbb384cc9f38d00f959aff8df1d77864b34ec1136287ae5b88581a",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -332,7 +332,7 @@
         "shaders/gaussian_v.frag": "604b318b9750f807b3ad52b08cba8181638a16f73d12cf3bb2c46733d1937c55",
         "shaders/downsample.frag": "35d971052c1730e7da0e5edf15c57c04300573a0c2fdd9de197739b9aa1c9b4c",
         "shaders/gaussian_h.frag": "1375ac86287fce5a2a1878bfebb4cb39d90eccd3e3128381bc0611e8feaa734d",
-        "shaders/glass.frag": "b50b2c1799640381bdb51a187ff5a331154d101a65aa32198a62432724be114f",
+        "shaders/glass.frag": "08578eb12fb00ad03e61ec7becbffe3e71f7cfdeb4b60583e68e9be5936062e6",
         "shaders/upsample.frag": "5b499e75ee05a69429948049ba130b6b160a8cf35e63bdc709aec754688e0b03",
         "schemas/gschemas.compiled": "61af4893ac7b5510f13e548a81c72f4cb707dfd24239788a2944fe785caeacd9",
         "schemas/org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com.gschema.xml": "8069d7797fd064f2583643d1b54cf94b61bfdb14d11854a706ff328258078d13",
@@ -551,7 +551,7 @@
         "50",
         "51"
       ],
-      "sha256": "2a9075d428332800107552c7a95901391ce2013c4249b908a81d112131375928",
+      "sha256": "ba80ea41f87785759981aa65fa7e23258f84acb7965e5678bdd19230154c51bb",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [

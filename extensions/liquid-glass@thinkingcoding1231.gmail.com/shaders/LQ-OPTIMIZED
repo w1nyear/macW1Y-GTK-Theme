@@ -55,6 +55,19 @@ uniform float blur_rect_h;
 uniform float early_exit_enabled;
 uniform float debug_view;
 
+uniform float outline_width;
+uniform float outline_r;
+uniform float outline_g;
+uniform float outline_b;
+uniform float highlight_backdrop_color;
+uniform float corner_smoothing;
+uniform float corner_smoothing_enabled;
+uniform float blur_tex_w;
+uniform float blur_tex_h;
+uniform float edge_taps_enabled;
+uniform float shape_range;
+uniform float shape_band;
+
 uniform float brightness;
 uniform float contrast;
 uniform float saturation;
@@ -456,6 +469,11 @@ void main() {
         litColor /= maxChannel;
     }
     litColor = max(litColor, 0.0);
+
+    if (outline_width > 0.0) {
+        float outlineMask = smoothstep(-outline_width - 0.5, -outline_width + 0.5, d);
+        litColor = mix(litColor, vec3(outline_r, outline_g, outline_b), outlineMask);
+    }
 
     vec3 finalRgb = litColor * insideMask;
     float finalAlpha = insideMask + shadowContribution * (1.0 - insideMask);

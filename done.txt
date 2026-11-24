@@ -5074,3 +5074,29 @@ Task #938:
   * [SECURITY.md](file:///home/vitaliy/MACTHEMEFILES/SECURITY.md)
   * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+
+* 2026-11-24 — Task #941: Глобальна ревізія та повна уніфікація шейдерів скла Liquid Glass: видалення старих версій (1245 та 987 рядків) та розгортання єдиного оптимізованого фізичного шейдера заломлення в усіх компонентах
+  - Повна ліквідація застарілих та важких версій шейдера:
+    * Виявлено та замінено стару неоптимізовану версію (1245 рядків) у системному каталозі /usr/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag.
+    * Виявлено та замінено стару важку версію (987 рядків) у розширенні wack-lockscreen-clock@rinzler69-wastaken.github.com (у репозиторії extensions/wack-lockscreen-clock.../src/glass/shaders/glass.frag, користувацькій копії ~/.local/share/... та системній копії /usr/share/...).
+    * Оновлено копії у вторинному каталозі /home/vitaliy/macW1YF/ (liquid-glass та wack-lockscreen-clock).
+  - Уніфікація шейдера Liquid Glass (482 рядки) на базі високопродуктивного фізичного конвеєра:
+    * Єдиний еталонний файл shaders/glass.frag інтегрує повну фізичну модель заломлення Снеліуса (Snell's law), хроматичну аберацію, спрямоване контурне освітлення (rim light), захист координат blurUV для суб-текстур розмиття та підтримку всіх типів геометрії: заокруглені прямокутники, капсули, кола, поповери зі стрілками (sdPopover) та тайлові мульти-регіони (findActiveRegion).
+    * Збережено надшвидкий внутрішній fast-path (-d >= interiorThreshold), що забезпечує 85% площі скла за один такт вибірки без тригонометричних обчислень (стабільні 120 FPS).
+    * Додано уніфіковані uniform-змінні (outline_width, outline_r, outline_g, outline_b, highlight_backdrop_color) для 100% сумісності з backdropGlass та компонентами годинника/екрана блокування.
+  - Синхронізація контрольних сум та хешів цілісності:
+    * Звірено MD5-геш усіх 9 екземплярів glass.frag у системі та репозиторії — 100% бітова ідентичність (c784a049b37ec1e7049fbf3cf683232b).
+    * Оновлено config/extensions.lock.json: перераховано sha256 для liquid-glass@thinkingcoding1231.gmail.com (892748a9...) та wack-lockscreen-clock@rinzler69-wastaken.github.com (ba80ea41...).
+  - Результати тестування та валідації:
+    * python3 bin/mac-extension-guard verify: 21/21 LOCKED OK (100% збіг хешів).
+    * python3 bin/mac-audit-sync check: 100% PASS (0 розбіжностей).
+    * python3 -m unittest discover -s tests -p 'test_*.py': 39/39 PASS.
+    * python3 bin/test-macw1y-animations.py: 12/12 PASS (100.0%).
+    * perl -ne 'print if /[\x{0400}-\x{04FF}]/' install.sh: 0 збігів (чисто).
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag)
+  * [extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/glass/shaders/glass.frag](file:///home/vitaliy/MACTHEMEFILES/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/glass/shaders/glass.frag)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED.frag](file:///home/vitaliy/MACTHEMEFILES/extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED.frag)
+  * [config/extensions.lock.json](file:///home/vitaliy/MACTHEMEFILES/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/MACTHEMEFILES/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
