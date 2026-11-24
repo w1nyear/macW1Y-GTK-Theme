@@ -3808,7 +3808,9 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self._benchmark_avg_fps = avg_fps
         self._benchmark_recommendation = recommendation
 
-        self.bench_res_fps.set_text(f"Мінімальний FPS: {min_fps:.1f} • Середній FPS: {avg_fps:.1f}")
+        min_lbl = self.tr("benchmark_min_fps", "Мінімальний FPS")
+        avg_lbl = self.tr("benchmark_avg_fps", "Середній FPS")
+        self.bench_res_fps.set_text(f"{min_lbl}: {min_fps:.1f} • {avg_lbl}: {avg_fps:.1f}")
         if recommendation == "shader":
             self.bench_res_rec.set_text(self.tr("benchmark_rec_shader", "Рекомендовано: Ефект Liquid Glass (шейдер скла)"))
             self.bench_res_desc.set_text(
