@@ -145,6 +145,8 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         menubar_js = (ROOT / "extensions" / "blur-my-shell@aunetx" / "components" / "menubar_v29.js").read_text(encoding="utf-8")
         self.assertIn("mac-privacy-cam.svg", menubar_js)
         self.assertIn("_pollCameraDevices", menubar_js)
+        self.assertIn("margin: 0 9px 0 0 !important;", menubar_js)
+        self.assertIn("this._fadeGen", menubar_js)
         tbo_js = (ROOT / "extensions" / "top-bar-organizer@julian.gse.jsts.xyz" / "extension.js").read_text(encoding="utf-8")
         self.assertIn('Main.panel.statusArea["macPrivacy"]', tbo_js)
 

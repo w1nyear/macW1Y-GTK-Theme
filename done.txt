@@ -6082,3 +6082,14 @@ Task #938:
   - Перевірка та синхронізація:
     * Синхронізовано `~/.local/share/gnome-shell/extensions/{blur-my-shell@aunetx,top-bar-organizer@julian.gse.jsts.xyz}`, теми `~/.themes/macW1Y-*`, `/usr/share/themes/macW1Y-*`, `~/.config/macw1y/extensions.lock.json`, `/usr/share/mactheme/config/extensions.lock.json` та live `gsettings right-box-order`.
     * `unittest`: 55/55 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в install.sh.
+985. 2026-11-25 — Вирівнювання відступу індикатора приватності та плавна анімація появи/зникнення непрозорістю:
+  - Змінені файли:
+    * [extensions/blur-my-shell@aunetx/components/menubar_v29.js](file:///home/vitaliy/macW1Y/extensions/blur-my-shell@aunetx/components/menubar_v29.js) (`PrivacyIndicator._init`, `PrivacyIndicator._sync`)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Причина та виправлення:
+    * Інші іконки програм у правому меню-барі мають `margin: 3px` + `padding: 7px` (`~19–20 px` між іконками), тоді як `PrivacyIndicator` мав `margin-right: 2px` (`~12 px` до сусідньої іконки); змінено правий відступ на `margin: 0 9px 0 0 !important;` для однакового візуального інтервалу (`~19 px`).
+    * Додано плавну анімацію непрозорістю (`opacity: 0 → 255` через `EASE_OUT_CUBIC`, `220 ms` при появі та `255 → 0` через `EASE_IN_OUT_CUBIC`, `220 ms` перед приховуванням/згортанням контейнера) із захистом `_fadeGen` від повторних швидких перемикань.
+  - Перевірка та синхронізація:
+    * Синхронізовано `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx`, `~/.config/macw1y/extensions.lock.json` та `/usr/share/mactheme/config/extensions.lock.json`.
+    * `unittest`: 55/55 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в install.sh.

@@ -1358,6 +1358,9 @@ const PrivacyIndicator = GObject.registerClass({
         this._camPollId = 0;
         this._camPollInFlight = false;
         this._destroyed = false;
+        this._isShown = false;
+        this._fadeGen = 0;
+        this.opacity = 0;
 
         this.set_y_align(Clutter.ActorAlign.CENTER);
 
@@ -1514,14 +1517,23 @@ const PrivacyIndicator = GObject.registerClass({
         this._micPill.visible = !isCamActive && isMicRecording;
 
         const hasAny = isMicRecording || isCamActive;
-        this.visible = hasAny;
-        if (this.container) {
-            this.container.visible = hasAny;
-            if (!hasAny) {
-                this.style = 'margin: 0 !important; padding: 0 !important; width: 0 !important; min-width: 0 !important; -natural-hpadding: 0 !important; -minimum-hpadding: 0 !important;';
+        const _collapseHidden = () => {
+            this.visible = false;
+            this.style = 'margin: 0 !important; padding: 0 !important; width: 0 !important; min-width: 0 !important; -natural-hpadding: 0 !important; -minimum-hpadding: 0 !important;';
+            if (this.container) {
+                this.container.visible = false;
                 this.container.style = 'margin: 0 !important; padding: 0 !important; width: 0 !important; min-width: 0 !important; -natural-hpadding: 0 !important; -minimum-hpadding: 0 !important;';
-            } else {
-                this.style = 'margin: 0 2px 0 0 !important; padding: 0 !important; height: 28px !important; min-height: 28px !important; min-width: 0 !important; width: auto !important; -natural-hpadding: 0 !important; -minimum-hpadding: 0 !important; background: transparent !important;';
+            }
+        };
+
+        if (hasAny) {
+            const wasShown = this._isShown;
+            this._isShown = true;
+            this._fadeGen++;
+            this.visible = true;
+            this.style = 'margin: 0 9px 0 0 !important; padding: 0 !important; height: 28px !important; min-height: 28px !important; min-width: 0 !important; width: auto !important; -natural-hpadding: 0 !important; -minimum-hpadding: 0 !important; background: transparent !important;';
+            if (this.container) {
+                this.container.visible = true;
                 this.container.style = 'margin: 0 !important; padding: 0 !important; height: 28px !important; min-height: 28px !important; width: auto !important;';
                 this.container.set_y_align?.(Clutter.ActorAlign.CENTER);
                 if (Main.panel?._rightBox) {
@@ -1529,6 +1541,48 @@ const PrivacyIndicator = GObject.registerClass({
                         Main.panel._rightBox.set_child_at_index(this.container, 0);
                     } catch (_) {}
                 }
+            }
+            if (!wasShown || this.opacity < 255) {
+                try {
+                    this.remove_transition?.('opacity');
+                    if (!wasShown && this.opacity >= 255)
+                        this.opacity = 0;
+                    this.ease({
+                        opacity: 255,
+                        duration: 220,
+                        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+                        onComplete: () => {
+                            if (!this._destroyed && this._isShown)
+                                this.opacity = 255;
+                        },
+                    });
+                } catch (_) {
+                    this.opacity = 255;
+                }
+            }
+        } else {
+            if (this._isShown) {
+                this._isShown = false;
+                const gen = ++this._fadeGen;
+                try {
+                    this.remove_transition?.('opacity');
+                    this.ease({
+                        opacity: 0,
+                        duration: 220,
+                        mode: Clutter.AnimationMode.EASE_IN_OUT_CUBIC,
+                        onComplete: () => {
+                            if (this._destroyed || this._fadeGen !== gen || this._isShown)
+                                return;
+                            _collapseHidden();
+                        },
+                    });
+                } catch (_) {
+                    this.opacity = 0;
+                    _collapseHidden();
+                }
+            } else if (!this.get_transition?.('opacity')) {
+                this.opacity = 0;
+                _collapseHidden();
             }
         }
     }
