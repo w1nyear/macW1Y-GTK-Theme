@@ -19,6 +19,8 @@ import {
     isFrameSyncFrozen,
     glassRefreshDue,
     glassRefreshDone,
+    glassMarkDirty,
+    glassNeedsStructureSync,
     glassForceRefresh,
     addGlassWakeListener,
     removeGlassWakeListener,
@@ -193,17 +195,27 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
             }
         } catch (_) {}
 
+        this._structureDirty = true;
+        const SCENE_REASONS = new Set([
+            'background', 'restacked', 'fullscreen', 'overview', 'layout',
+            'overview-scroll', 'overview-transition', 'window-moved',
+            'switch-workspace', 'size-change', 'minimize', 'unminimize',
+            'destroy', 'active-workspace-changed', 'showing-desktop-changed',
+        ]);
         this._wakeUnsub = (damagedActor, reason) => {
             if (this._cleanedUp || !this.visible) return;
-            if (['restacked', 'fullscreen', 'overview', 'layout', 'overview-scroll', 'overview-transition'].includes(reason)) {
-                glassForceRefresh?.(this);
-                try { this._windowClones?.rebuildClones?.(); } catch (_) {}
-                try { this._uiSampler?.rebindSelf?.(); } catch (_) {}
-                try { this._uiSampler?.refresh?.(); } catch (_) {}
-                try { this._effect?.markBackdropDirty?.(); } catch (_) {}
+            if (SCENE_REASONS.has(reason)) {
+                this._structureDirty = true;
+                glassForceRefresh?.(this, 250);
+                if (reason !== 'window-moved' && reason !== 'size-change') {
+                    try { this._windowClones?.rebuildClones?.(); } catch (_) {}
+                    try { this._uiSampler?.rebindSelf?.(); } catch (_) {}
+                }
+                this.wakeFrameSync?.();
+                return;
             }
             if (!damagedActor || isActorNearGlass(damagedActor, this) || Main.overview?.visible) {
-                this._effect?.markBackdropDirty?.();
+                glassMarkDirty?.(this);
                 this.wakeFrameSync?.();
             }
         };
@@ -264,6 +276,7 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
     }
 
     setGlassRegions(regions) {
+        this._structureDirty = true;
         try {
             this._effect?.setGlassRegions(regions);
             if (Array.isArray(regions) && regions.length > 0) {
@@ -301,6 +314,7 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
     }
 
     setGlassGeometry(x, y, w, h) {
+        this._structureDirty = true;
         try {
             this._effect?.setGlassGeometry(x, y, w, h);
             if (Number.isFinite(x) && Number.isFinite(y) && w > 0 && h > 0) {
@@ -325,19 +339,21 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
     }
 
     syncSources() {
+        this._structureDirty = true;
         try {
             this._uiSampler?.refresh?.();
             this._windowClones?.rebuildClones?.();
-            glassForceRefresh?.(this);
+            glassForceRefresh?.(this, 250);
             this.wakeFrameSync();
         } catch (_) {}
     }
 
     forceRefresh(n) {
+        this._structureDirty = true;
         try {
             this._uiSampler?.refresh?.();
             this._windowClones?.rebuildClones?.();
-            glassForceRefresh?.(this);
+            glassForceRefresh?.(this, 250);
             this.wakeFrameSync();
         } catch (_) {}
     }
@@ -404,23 +420,29 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
             try {
                 ensureGlassAllocated?.(this);
                 if (doHeavy) {
-                    this._uiSampler?.refresh?.();
-                    const mon = Main.layoutManager.primaryMonitor;
-                    const monX = mon?.x ?? 0;
-                    const monY = mon?.y ?? 0;
-                    const monW = Math.max(1, mon?.width ?? 1);
-                    const monH = Math.max(1, mon?.height ?? 1);
-                    this._windowClones?.setOffset?.(-monX, -monY);
-                    syncGlassCaptureClip?.({
-                        cloneContainer: this._cloneContainer,
-                        effect: this._effect,
-                        originX: monX,
-                        originY: monY,
-                        uiSampler: this._uiSampler,
-                        windowCloneManager: this._windowClones,
-                    });
-                    this._uiSampler?.sync?.(monX, monY, monW, monH);
-                    this._windowClones?.sync?.();
+                    const needStruct = !this._syncedOnce || this._structureDirty ||
+                        (glassNeedsStructureSync?.(this) ?? true);
+                    this._structureDirty = false;
+                    this._syncedOnce = true;
+                    if (needStruct) {
+                        this._uiSampler?.refresh?.();
+                        const mon = Main.layoutManager.primaryMonitor;
+                        const monX = mon?.x ?? 0;
+                        const monY = mon?.y ?? 0;
+                        const monW = Math.max(1, mon?.width ?? 1);
+                        const monH = Math.max(1, mon?.height ?? 1);
+                        this._windowClones?.setOffset?.(-monX, -monY);
+                        syncGlassCaptureClip?.({
+                            cloneContainer: this._cloneContainer,
+                            effect: this._effect,
+                            originX: monX,
+                            originY: monY,
+                            uiSampler: this._uiSampler,
+                            windowCloneManager: this._windowClones,
+                        });
+                        this._uiSampler?.sync?.(monX, monY, monW, monH);
+                        this._windowClones?.sync?.();
+                    }
                     this._effect?.markBackdropDirty?.();
                     glassRefreshDone?.(this);
                 }
@@ -461,10 +483,11 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
         this.setResolution(monW, monH);
         super.show();
         try {
+            this._structureDirty = true;
             this._effect?.markBackdropDirty?.();
             this._windowClones?.rebuildClones?.();
             this._uiSampler?.refresh?.();
-            glassForceRefresh?.(this);
+            glassForceRefresh?.(this, 300);
             this.wakeFrameSync();
         } catch (_) {}
     }

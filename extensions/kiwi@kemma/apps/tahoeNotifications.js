@@ -50,6 +50,8 @@ let syncGlassCaptureClip = () => {};
 let ensureGlassAllocated = () => {};
 let glassRefreshDue = null;
 let glassRefreshDone = null;
+let glassMarkDirty = null;
+let glassNeedsStructureSync = null;
 let glassForceRefresh = null;
 let addGlassWakeListener = null;
 let removeGlassWakeListener = null;
@@ -192,6 +194,10 @@ import(_LG_BASE + '/utils.js').then(m => {
         glassRefreshDue = m.glassRefreshDue;
     if (m.glassRefreshDone)
         glassRefreshDone = m.glassRefreshDone;
+    if (m.glassMarkDirty)
+        glassMarkDirty = m.glassMarkDirty;
+    if (m.glassNeedsStructureSync)
+        glassNeedsStructureSync = m.glassNeedsStructureSync;
     if (m.glassForceRefresh)
         glassForceRefresh = m.glassForceRefresh;
     if (m.addGlassWakeListener)
@@ -1306,20 +1312,22 @@ function _hookToastWake() {
         if (!_toastBox || _toastBox.get_children().length === 0 || !_toastStack)
             return;
         if (_SCENE_WAKE_REASONS.has(reason)) {
-            glassForceRefresh?.(_toastStack.bgActor);
-            try { _toastStack.wcm?.rebuildClones?.(); } catch (_) {}
-            try { _toastStack.uiSampler?.rebindSelf?.(); } catch (_) {}
-            try { _toastStack.uiSampler?.refresh?.(); } catch (_) {}
+            _toastStack._structureDirty = true;
+            glassForceRefresh?.(_toastStack.bgActor, 250);
+            if (reason !== 'window-moved' && reason !== 'size-change') {
+                try { _toastStack.wcm?.rebuildClones?.(); } catch (_) {}
+                try { _toastStack.uiSampler?.rebindSelf?.(); } catch (_) {}
+                try { _toastStack.uiSampler?.refresh?.(); } catch (_) {}
+            }
             try { _toastStack.effect?.markBackdropDirty?.(); } catch (_) {}
-            try { _toastStack.bgActor?.queue_redraw?.(); } catch (_) {}
             _toastTickStart();
             return;
         }
         if (!damagedActor || isActorNearGlass?.(damagedActor, _toastBox) || isActorNearGlass?.(damagedActor, _toastStack.bgActor)) {
-            glassForceRefresh?.(_toastStack.bgActor);
-            try { _toastStack.uiSampler?.refresh?.(); } catch (_) {}
-            try { _toastStack.effect?.markBackdropDirty?.(); } catch (_) {}
-            try { _toastStack.bgActor?.queue_redraw?.(); } catch (_) {}
+            if (glassMarkDirty)
+                glassMarkDirty(_toastStack.bgActor);
+            else
+                glassForceRefresh?.(_toastStack.bgActor, 0);
             _toastTickStart();
         }
     };
@@ -1471,11 +1479,24 @@ function _syncToastGlass(monitor, s) {
             extraH = (extraH ^ dxh ^ dyh ^
                 (Math.round(r.w * 4) * 83492791) ^ (Math.round(r.h * 4) * 2654435761)) | 0;
         }
-        try { s.effect.setCornerRadius(maxR); } catch (_) {}
-        s.effect.setGlassRegions(regions);
-        s.effect.setResolution(monitor.width, monitor.height);
-        s.liquidBox.set_position(0, 0);
-        s.liquidBox.set_size(monitor.width, monitor.height);
+        if (s._lastCornerRadius !== maxR) {
+            s._lastCornerRadius = maxR;
+            try { s.effect.setCornerRadius(maxR); } catch (_) {}
+        }
+        if (s._lastExtraH !== extraH || s._lastRegionCount !== regions.length) {
+            s._lastExtraH = extraH;
+            s._lastRegionCount = regions.length;
+            s._structureDirty = true;
+            s.effect.setGlassRegions(regions);
+        }
+        if (s._lastResW !== monitor.width || s._lastResH !== monitor.height) {
+            s._lastResW = monitor.width;
+            s._lastResH = monitor.height;
+            s._structureDirty = true;
+            s.effect.setResolution(monitor.width, monitor.height);
+            s.liquidBox.set_position(0, 0);
+            s.liquidBox.set_size(monitor.width, monitor.height);
+        }
         if (alpha > 0 && !s.bgActor.visible)
             s.bgActor.show();
         else if (alpha === 0 && s.bgActor.visible)
@@ -1492,21 +1513,27 @@ function _syncToastGlass(monitor, s) {
         }
         if (!doHeavy)
             return;
-        if (s.wcm)
-            s.wcm.setOffset(-monitor.x, -monitor.y);
-        syncGlassCaptureClip({
-            cloneContainer: s.cloneContainer,
-            effect: s.effect,
-            originX: monitor.x,
-            originY: monitor.y,
-            uiSampler: s.uiSampler,
-            windowCloneManager: s.wcm,
-        });
-        ensureGlassAllocated(s.bgActor);
-        s.uiSampler?.refresh();
-        s.uiSampler?.sync(monitor.x, monitor.y, monitor.width, monitor.height);
-        if (s.wcm)
-            s.wcm.sync();
+        const needStruct = !s._syncedOnce || s._structureDirty ||
+            (glassNeedsStructureSync ? glassNeedsStructureSync(s.bgActor) : true);
+        s._structureDirty = false;
+        s._syncedOnce = true;
+        if (needStruct) {
+            if (s.wcm)
+                s.wcm.setOffset(-monitor.x, -monitor.y);
+            syncGlassCaptureClip({
+                cloneContainer: s.cloneContainer,
+                effect: s.effect,
+                originX: monitor.x,
+                originY: monitor.y,
+                uiSampler: s.uiSampler,
+                windowCloneManager: s.wcm,
+            });
+            ensureGlassAllocated(s.bgActor);
+            s.uiSampler?.refresh();
+            s.uiSampler?.sync(monitor.x, monitor.y, monitor.width, monitor.height);
+            if (s.wcm)
+                s.wcm.sync();
+        }
         try {
             s.effect?.markBackdropDirty?.();
             glassRefreshDone(s.bgActor, extraH);
@@ -1799,23 +1826,41 @@ function _startStackFade(s, ms = 240) {
 
 
 
-const _NC_PIXEL_PULSE_US = 350000;
+const _NC_IDLE_PULSE_US = 1200000;
 
 function _invalidateNcStacks(p, rebuild = false) {
     const stacks = p?.stacks;
     if (!stacks?.length)
         return;
     for (const s of stacks) {
-        try { glassForceRefresh?.(s.bgActor); } catch (_) {}
+        s._structureDirty = true;
+        try { glassForceRefresh?.(s.bgActor, 250); } catch (_) {}
         if (rebuild) {
             try { s.wcm?.rebuildClones?.(); } catch (_) {}
             try { s.uiSampler?.rebindSelf?.(); } catch (_) {}
+            try { s.uiSampler?.refresh?.(); } catch (_) {}
         }
-        try { s.uiSampler?.refresh?.(); } catch (_) {}
         try { s.effect?.markBackdropDirty?.(); } catch (_) {}
-        try { s.bgActor?.queue_redraw?.(); } catch (_) {}
     }
-    p._nextPixelPulseUs = GLib.get_monotonic_time() + _NC_PIXEL_PULSE_US;
+    p._nextPixelPulseUs = GLib.get_monotonic_time() + _NC_IDLE_PULSE_US;
+}
+
+function _markNcStacksPixelDirty(p, damagedActor = null) {
+    const stacks = p?.stacks;
+    if (!stacks?.length)
+        return;
+    for (const s of stacks) {
+        if (!s.bgActor?.visible)
+            continue;
+        if (damagedActor && isActorNearGlass && !isActorNearGlass(damagedActor, s.bgActor))
+            continue;
+        try {
+            if (glassMarkDirty)
+                glassMarkDirty(s.bgActor);
+            else
+                glassForceRefresh?.(s.bgActor, 0);
+        } catch (_) {}
+    }
 }
 
 function _hookNcWake(p) {
@@ -1825,15 +1870,15 @@ function _hookNcWake(p) {
         if (!_nc || _nc !== p || p._closing || !p.overlay?.mapped)
             return;
         if (_SCENE_WAKE_REASONS.has(reason)) {
-            _invalidateNcStacks(p, true);
+            const structuralRebuild = reason !== 'window-moved' && reason !== 'size-change';
+            _invalidateNcStacks(p, structuralRebuild);
             return;
         }
         const nearPanel = !damagedActor ||
             isActorNearGlass?.(damagedActor, p.box) ||
-            isActorNearGlass?.(damagedActor, p.panelBg) ||
-            (p.stacks || []).some(s => isActorNearGlass?.(damagedActor, s.bgActor));
+            isActorNearGlass?.(damagedActor, p.panelBg);
         if (nearPanel)
-            _invalidateNcStacks(p, false);
+            _markNcStacksPixelDirty(p, damagedActor);
     };
     try {
         addGlassWakeListener(p.wakeUnsub);
@@ -2693,7 +2738,10 @@ function _syncCards(p, monitor, s) {
             r.tintB = fill.c[2];
             r.baseStrength = fill.a;
         }
-        try { s.effect.setCornerRadius(maxR); } catch (_) {}
+        if (s._lastCornerRadius !== maxR) {
+            s._lastCornerRadius = maxR;
+            try { s.effect.setCornerRadius(maxR); } catch (_) {}
+        }
 
 
 
@@ -2708,10 +2756,20 @@ function _syncCards(p, monitor, s) {
         }
 
 
-        s.effect.setGlassRegions(regions);
-        s.effect.setResolution(monitor.width, monitor.height);
-        s.liquidBox.set_position(0, 0);
-        s.liquidBox.set_size(monitor.width, monitor.height);
+        if (s._lastExtraH !== extraH || s._lastRegionCount !== regions.length) {
+            s._lastExtraH = extraH;
+            s._lastRegionCount = regions.length;
+            s._structureDirty = true;
+            s.effect.setGlassRegions(regions);
+        }
+        if (s._lastResW !== monitor.width || s._lastResH !== monitor.height) {
+            s._lastResW = monitor.width;
+            s._lastResH = monitor.height;
+            s._structureDirty = true;
+            s.effect.setResolution(monitor.width, monitor.height);
+            s.liquidBox.set_position(0, 0);
+            s.liquidBox.set_size(monitor.width, monitor.height);
+        }
         if (isFinite(bx) && isFinite(by) && bw > 0 && bh > 0) {
             if (isFinite(scrollY) && isFinite(scrollH) && !isSliding) {
                 setClipIfChanged(s.bgActor, bx - monitor.x - 200, scrollY - monitor.y, bw + 400, scrollH);
@@ -2735,21 +2793,26 @@ function _syncCards(p, monitor, s) {
         }
         if (!doHeavy)
             return;
-        s.wcm?.setOffset(-monitor.x, -monitor.y);
-        syncGlassCaptureClip({
-            cloneContainer: s.cloneContainer,
-            effect: s.effect,
-            originX: monitor.x,
-            originY: monitor.y,
-            uiSampler: s.uiSampler,
-            windowCloneManager: s.wcm,
-        });
-        s.uiSampler?.refresh();
-        s.uiSampler?.sync(monitor.x, monitor.y, monitor.width, monitor.height);
-        s.wcm?.sync();
+        const needStruct = !s._syncedOnce || s._structureDirty ||
+            (glassNeedsStructureSync ? glassNeedsStructureSync(s.bgActor) : true);
+        s._structureDirty = false;
+        s._syncedOnce = true;
+        if (needStruct) {
+            s.wcm?.setOffset(-monitor.x, -monitor.y);
+            syncGlassCaptureClip({
+                cloneContainer: s.cloneContainer,
+                effect: s.effect,
+                originX: monitor.x,
+                originY: monitor.y,
+                uiSampler: s.uiSampler,
+                windowCloneManager: s.wcm,
+            });
+            s.uiSampler?.refresh();
+            s.uiSampler?.sync(monitor.x, monitor.y, monitor.width, monitor.height);
+            s.wcm?.sync();
+        }
         try {
             s.effect?.markBackdropDirty?.();
-            s.bgActor?.queue_redraw?.();
             glassRefreshDone(s.bgActor, extraH);
         } catch (_) {}
     } catch (_) {}
@@ -2768,16 +2831,22 @@ function _syncGlass(p, monitor, s) {
         }
         const m = BACKDROP_PAD;
         const [ovX, ovY] = p.overlay.get_transformed_position();
-        s.bgActor.set_position(monitor.x - ovX, monitor.y - ovY);
+        const bgPosX = monitor.x - ovX;
+        const bgPosY = monitor.y - ovY;
+        if (s.bgActor.x !== bgPosX || s.bgActor.y !== bgPosY)
+            s.bgActor.set_position(bgPosX, bgPosY);
 
-        const alpha = p.box.opacity * _stackFadeK(s);
+        const alpha = Math.round(Math.min(255, Math.max(0, p.box.opacity * _stackFadeK(s))));
         if (alpha > 0 && !s.bgActor.visible)
             s.bgActor.show();
         else if (alpha === 0 && s.bgActor.visible)
             s.bgActor.hide();
-        s.bgActor.opacity = Math.round(Math.min(255, Math.max(0, alpha)));
-        s.liquidBox.set_position(0, 0);
-        s.liquidBox.set_size(monitor.width, monitor.height);
+        if (s.bgActor.opacity !== alpha)
+            s.bgActor.opacity = alpha;
+        if (s._lastResW !== monitor.width || s._lastResH !== monitor.height) {
+            s.liquidBox.set_position(0, 0);
+            s.liquidBox.set_size(monitor.width, monitor.height);
+        }
 
 
 
@@ -2796,12 +2865,23 @@ function _syncGlass(p, monitor, s) {
             ry = topEdge;
             rh -= cut;
         }
-        s.effect.setGlassRegions([{
-            x: rx, y: ry,
-            w: rw, h: rh,
-            tintR: 0, tintG: 0, tintB: 0, baseStrength: (s.kind === 'backdrop' ? 0 : (_notifStyling.tint / 100.0)),
-        }]);
-        s.effect.setResolution(monitor.width, monitor.height);
+        const extraH = (((bw || 0) * 73856093) ^ ((bh || 0) * 19349663) ^
+            (Math.round(rx) * 83492791) ^ (Math.round(ry) * 2654435761)) | 0;
+        if (s._lastExtraH !== extraH) {
+            s._lastExtraH = extraH;
+            s._structureDirty = true;
+            s.effect.setGlassRegions([{
+                x: rx, y: ry,
+                w: rw, h: rh,
+                tintR: 0, tintG: 0, tintB: 0, baseStrength: (s.kind === 'backdrop' ? 0 : (_notifStyling.tint / 100.0)),
+            }]);
+        }
+        if (s._lastResW !== monitor.width || s._lastResH !== monitor.height) {
+            s._lastResW = monitor.width;
+            s._lastResH = monitor.height;
+            s._structureDirty = true;
+            s.effect.setResolution(monitor.width, monitor.height);
+        }
 
         const isSliding = !p._settleDone || (p.box?.translation_x !== 0 && Math.abs(p.box?.translation_x ?? 0) > 0.5);
         if (isSliding) {
@@ -2820,7 +2900,6 @@ function _syncGlass(p, monitor, s) {
 
 
 
-        const extraH = (((bw || 0) * 73856093) ^ ((bh || 0) * 19349663)) | 0;
         let doHeavy = true;
         try {
             doHeavy = glassRefreshDue ? glassRefreshDue(s.bgActor, extraH) : true;
@@ -2829,21 +2908,26 @@ function _syncGlass(p, monitor, s) {
         }
         if (!doHeavy)
             return;
-        s.wcm?.setOffset(-monitor.x, -monitor.y);
-        syncGlassCaptureClip({
-            cloneContainer: s.cloneContainer,
-            effect: s.effect,
-            originX: monitor.x,
-            originY: monitor.y,
-            uiSampler: s.uiSampler,
-            windowCloneManager: s.wcm,
-        });
-        s.uiSampler?.refresh();
-        s.uiSampler?.sync(monitor.x, monitor.y, monitor.width, monitor.height);
-        s.wcm?.sync();
+        const needStruct = !s._syncedOnce || s._structureDirty ||
+            (glassNeedsStructureSync ? glassNeedsStructureSync(s.bgActor) : true);
+        s._structureDirty = false;
+        s._syncedOnce = true;
+        if (needStruct) {
+            s.wcm?.setOffset(-monitor.x, -monitor.y);
+            syncGlassCaptureClip({
+                cloneContainer: s.cloneContainer,
+                effect: s.effect,
+                originX: monitor.x,
+                originY: monitor.y,
+                uiSampler: s.uiSampler,
+                windowCloneManager: s.wcm,
+            });
+            s.uiSampler?.refresh();
+            s.uiSampler?.sync(monitor.x, monitor.y, monitor.width, monitor.height);
+            s.wcm?.sync();
+        }
         try {
             s.effect?.markBackdropDirty?.();
-            s.bgActor?.queue_redraw?.();
             glassRefreshDone(s.bgActor, extraH);
         } catch (_) {}
     } catch (_) {}
@@ -3089,8 +3173,10 @@ function _buildPanel(merges = null) {
             if (!p.overlay.mapped)
                 return GLib.SOURCE_REMOVE;
             try {
-                p.panelBg.opacity = p.box.opacity;
-                p.panelBg.translation_x = p.box.translation_x;
+                if (p.panelBg.opacity !== p.box.opacity)
+                    p.panelBg.opacity = p.box.opacity;
+                if (p.panelBg.translation_x !== p.box.translation_x)
+                    p.panelBg.translation_x = p.box.translation_x;
             } catch (_) {}
             try {
 
@@ -3103,9 +3189,12 @@ function _buildPanel(merges = null) {
             if (p._settleDone && !p._closing) {
                 const nowUs = GLib.get_monotonic_time();
                 if (!p._nextPixelPulseUs || nowUs >= p._nextPixelPulseUs) {
-                    p._nextPixelPulseUs = nowUs + _NC_PIXEL_PULSE_US;
+                    p._nextPixelPulseUs = nowUs + _NC_IDLE_PULSE_US;
                     for (const s of p.stacks) {
-                        try { glassForceRefresh?.(s.bgActor); } catch (_) {}
+                        try {
+                            if (glassMarkDirty)
+                                glassMarkDirty(s.bgActor);
+                        } catch (_) {}
                     }
                 }
             }

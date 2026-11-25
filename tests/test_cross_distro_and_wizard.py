@@ -203,13 +203,13 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("addGlassWakeListener(glass.wakeUnsub)", cc_js)
         self.assertIn("removeGlassWakeListener?.(g.wakeUnsub)", cc_js)
         self.assertIn("_finishCCPanelOpen", cc_js)
-        self.assertIn("_CC_PIXEL_PULSE_US", cc_js)
+        self.assertIn("_CC_IDLE_PULSE_US", cc_js)
 
         nc_js = (ROOT / "extensions" / "kiwi@kemma" / "apps" / "tahoeNotifications.js").read_text(encoding="utf-8")
         self.assertIn("_invalidateNcStacks", nc_js)
         self.assertIn("_hookNcWake", nc_js)
         self.assertIn("_unhookNcWake(p)", nc_js)
-        self.assertIn("_NC_PIXEL_PULSE_US", nc_js)
+        self.assertIn("_NC_IDLE_PULSE_US", nc_js)
         self.assertIn("'background'", nc_js)
 
     def test_three_plus_line_smooth_fillet_selection_pill(self):
@@ -254,6 +254,35 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("_fullscreenAnimWrapper.set_position(targetX, targetY)", wm_js)
         self.assertNotIn("_fsDragState.win._fullscreenAnimClone.remove_all_transitions()", wm_js)
         self.assertIn("if (win._macExitingFullscreen)", wm_js)
+
+    def test_glass_damage_avoids_forced_settle_loop_and_ui_rescan(self):
+        glass_gate = (ROOT / "extensions" / "liquid-glass@thinkingcoding1231.gmail.com" / "dist" / "glassGate.js").read_text(encoding="utf-8")
+        self.assertIn("export const GLASS_REFRESH_PIXEL_INTERVAL_US", glass_gate)
+        self.assertIn("export function glassMarkDirty", glass_gate)
+        self.assertIn("export function glassNeedsStructureSync", glass_gate)
+        self.assertIn("lastRefreshStructural", glass_gate)
+        self.assertIn("lastDamageCheckUs", glass_gate)
+
+        utils_js = (ROOT / "extensions" / "liquid-glass@thinkingcoding1231.gmail.com" / "dist" / "utils.js").read_text(encoding="utf-8")
+        self.assertIn("_matchesUiSnapshot", utils_js)
+        self.assertIn("_refreshDirty", utils_js)
+        self.assertIn("glassMarkDirty", utils_js)
+        self.assertIn("glassNeedsStructureSync", utils_js)
+
+        bg_js = (ROOT / "extensions" / "liquid-glass@thinkingcoding1231.gmail.com" / "dist" / "rendering" / "backdropGlass.js").read_text(encoding="utf-8")
+        self.assertIn("glassMarkDirty?.(this);", bg_js)
+        self.assertIn("glassNeedsStructureSync?.(this)", bg_js)
+        self.assertNotIn("this._effect?.markBackdropDirty?.();\n                this.wakeFrameSync?.();", bg_js)
+
+        cc_js = (ROOT / "extensions" / "kiwi@kemma" / "apps" / "tahoeControlCenter.js").read_text(encoding="utf-8")
+        self.assertIn("_markCCGlassPixelDirty", cc_js)
+        self.assertIn("glassNeedsStructureSync(s.bgActor)", cc_js)
+        self.assertNotIn("_CC_PIXEL_PULSE_US = 350000", cc_js)
+
+        nc_js = (ROOT / "extensions" / "kiwi@kemma" / "apps" / "tahoeNotifications.js").read_text(encoding="utf-8")
+        self.assertIn("_markNcStacksPixelDirty", nc_js)
+        self.assertIn("glassNeedsStructureSync(s.bgActor)", nc_js)
+        self.assertNotIn("_NC_PIXEL_PULSE_US = 350000", nc_js)
 
 
 if __name__ == "__main__":

@@ -2293,6 +2293,10 @@ export class UILayerSampler {
 
 
     _bmsScreenRects = [];
+    _refreshDirty = true;
+    _lastUiSnapshot = null;
+    _uiGroupAddedId = 0;
+    _uiGroupRemovedId = 0;
     constructor(selfActor, container, extraExclusions = [], cloneContainer = null, label = '?',
 
 
@@ -2327,6 +2331,13 @@ export class UILayerSampler {
         else {
             this._container.add_child(this._uiClonesContainer);
         }
+        try {
+            const uiGroup = Main.layoutManager?.uiGroup;
+            if (uiGroup) {
+                this._uiGroupAddedId = uiGroup.connect('child-added', () => { this._refreshDirty = true; });
+                this._uiGroupRemovedId = uiGroup.connect('child-removed', () => { this._refreshDirty = true; });
+            }
+        } catch (_) {}
     }
 
 
@@ -2369,6 +2380,7 @@ export class UILayerSampler {
         if (!actor)
             return;
         this._extraExclusions.add(actor);
+        this._refreshDirty = true;
     }
 
 
@@ -2813,6 +2825,7 @@ export class UILayerSampler {
     }
     rebindSelf() {
         this._selfRoot = this._findUiGroupAncestor(this._selfActor);
+        this._refreshDirty = true;
     }
 
 
@@ -2901,15 +2914,32 @@ export class UILayerSampler {
 
 
 
-    refresh() {
+    _matchesUiSnapshot(children) {
+        const prev = this._lastUiSnapshot;
+        if (!prev || prev.length !== children.length)
+            return false;
+        for (let i = 0; i < children.length; i++) {
+            const c = children[i];
+            const entry = prev[i];
+            if (entry.actor !== c || entry.vis !== (!!c.visible && !!c.mapped))
+                return false;
+        }
+        return true;
+    }
+
+    refresh(force = false) {
         if (!this._selfRoot)
             this._selfRoot = this._findUiGroupAncestor(this._selfActor);
         const uiGroup = Main.layoutManager.uiGroup;
         const children = uiGroup.get_children();
+        const bmsTarget = this._resolveBmsTargetActor();
+        if (!force && !this._refreshDirty && this._lastBmsTarget === bmsTarget &&
+            this._matchesUiSnapshot(children)) {
+            return;
+        }
         const seen = new Set();
 
 
-        const bmsTarget = this._resolveBmsTargetActor();
         if (this._lastBmsTarget !== bmsTarget) {
             const first = this._lastBmsTarget === undefined;
             this._lastBmsTarget = bmsTarget;
@@ -3051,6 +3081,7 @@ export class UILayerSampler {
                     sourceClone.set_name(`${child.name}-sourceClone`);
                     sourceClone.connect('destroy', () => {
                         this._clones.delete(child);
+                        this._refreshDirty = true;
                     });
                     this._uiClonesContainer?.add_child(sourceClone);
                     this._clones.set(child, sourceClone);
@@ -3070,6 +3101,8 @@ export class UILayerSampler {
                 this._clones.delete(actor);
             }
         }
+        this._lastUiSnapshot = children.map(c => ({ actor: c, vis: !!(c.visible && c.mapped) }));
+        this._refreshDirty = false;
         this._reportClonedSet();
         this._reportClonedWindowGroups();
     }
@@ -3411,6 +3444,18 @@ export class UILayerSampler {
     }
     destroy() {
         _liveSamplers.delete(this);
+        const uiGroup = Main.layoutManager?.uiGroup;
+        if (uiGroup) {
+            if (this._uiGroupAddedId) {
+                try { uiGroup.disconnect(this._uiGroupAddedId); } catch (_) {}
+                this._uiGroupAddedId = 0;
+            }
+            if (this._uiGroupRemovedId) {
+                try { uiGroup.disconnect(this._uiGroupRemovedId); } catch (_) {}
+                this._uiGroupRemovedId = 0;
+            }
+        }
+        this._lastUiSnapshot = null;
         releaseClonedWindowActors(this);
         this._bmsStateAtClone.clear();
         if (this._uiClonesContainer) {
@@ -3747,40 +3792,15 @@ export class WindowCloneManager {
             const tY = wY;
             const pX = w.pivot_point ? w.pivot_point.x : 0;
             const pY = w.pivot_point ? w.pivot_point.y : 0;
-            clone.remove_transition('position');
-            clone.remove_transition('size');
-            clone.remove_transition('translation-x');
-            clone.remove_transition('translation-y');
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            for (const tr of ['position', 'size', 'translation-x', 'translation-y', 'scale-x', 'scale-y']) {
+                if (clone.get_transition?.(tr))
+                    clone.remove_transition(tr);
+            }
 
             if (clone.x !== 0 || clone.y !== 0)
                 clone.set_position(0, 0);
             setTranslationIfChanged(clone, tX, tY);
             setSizeIfChanged(clone, width, height);
-            clone.remove_transition('scale-x');
-            clone.remove_transition('scale-y');
             setScaleIfChanged(clone, w.scale_x, w.scale_y);
             setPivotIfChanged(clone, pX, pY);
 
@@ -4380,6 +4400,7 @@ export {
     GLASS_REFRESH_ACTIVE_INTERVAL_US,
     GLASS_REFRESH_BACKGROUND_INTERVAL_US,
     GLASS_REFRESH_60FPS_INTERVAL_US,
+    GLASS_REFRESH_PIXEL_INTERVAL_US,
     GLASS_REFRESH_HEARTBEAT_US,
     addGlassWakeListener,
     removeGlassWakeListener,
@@ -4393,6 +4414,8 @@ export {
     isActorNearGlass,
     glassRefreshDue,
     glassRefreshDone,
+    glassMarkDirty,
+    glassNeedsStructureSync,
     glassForceRefresh,
     glassPollStats,
     isBackdropDirtyOrChanged,

@@ -6246,3 +6246,21 @@ Task #938:
   - Перевірка та синхронізація:
     * Оновлено `config/extensions.lock.json` (`eval-helper@mactheme`), синхронізовано `~/.local/share/gnome-shell/extensions/eval-helper@mactheme/extension.js`, `~/.local/bin/mac-styling-settings`, `/usr/local/bin/mac-styling-settings`, `~/.config/mac-styling/styling.json`, `~/.themes/macW1Y*`, `/usr/share/themes/macW1Y*` та копії lock-файлу.
     * `gjs -m` та `py_compile`: OK; `unittest`: 61/61 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `bash -n install.sh`: OK.
+
+996. 2026-11-25 — Усунуто падіння FPS і підвисання системи (до 1 FPS) при відкритому Центрі керування, Центрі сповіщень або діалогах попередження поверх відео чи рухомого вікна:
+  - Змінені файли:
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/utils.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/utils.js)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js)
+    * [extensions/kiwi@kemma/apps/tahoeControlCenter.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeControlCenter.js)
+    * [extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeNotifications.js)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Причина та виправлення:
+    * Прибрано нескінченний цикл `isSettling` і обхід ліміту FPS у [tahoeControlCenter.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeControlCenter.js) та [tahoeNotifications.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeNotifications.js): раніше пульс `350 мс` викликав `glassForceRefresh()` (який ставив `lastFull = 0` і `settleUntilUs = +800 мс`), через що `isSettling` був постійно `true`, а кожен сигнал `window-damaged` запускав синхронні `uiSampler.refresh()`, `markBackdropDirty()` і `queue_redraw()` по всіх 7/2 шарах скла на кожному кадрі відео.
+    * У [glassGate.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js) додано легкі `glassMarkDirty()` (позначає `dirty` без скидання `lastFull` та `settleUntilUs`) і `glassNeedsStructureSync()`, обмежено чисто піксельні оновлення фону (`GLASS_REFRESH_PIXEL_INTERVAL_US = 33333`, ~30 FPS) при збереженні повного 60 FPS для переміщення вікон і геометрії, а перевірку `isActorNearGlass()` обмежено реально пошкодженими вікнами (`_lastDamageUs >= st.lastDamageCheckUs`).
+    * У [utils.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/utils.js) додано кешування топології та видимості дітей `uiGroup` у `UILayerSampler.refresh()` (`_matchesUiSnapshot` + сигнали `child-added`/`child-removed`), а також прибрано безумовні 6× `remove_transition()` виклики в `WindowCloneManager.sync()` для незмінних клонів.
+    * У [backdropGlass.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js), [tahoeControlCenter.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeControlCenter.js) і [tahoeNotifications.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeNotifications.js) розділено структурні перебудови й суто піксельне перерозмиття (`glassNeedsStructureSync`), закешовано незмінні uniform-регіони (`_lastExtraH`) та прибрано надлишкові мутації `opacity`/`queue_redraw()` на кожному кадрі.
+  - Перевірка та синхронізація:
+    * Оновлено `config/extensions.lock.json` (`liquid-glass@thinkingcoding1231.gmail.com`, `kiwi@kemma`) та синхронізовано користувацькі й системні копії розширень і lock-файлів.
+    * Усі перевірки (`unittest`, `mac-extension-guard verify`, `mac-i18n-verify`, `mac-audit-sync check`, `bash -n install.sh`) успішно пройдені.

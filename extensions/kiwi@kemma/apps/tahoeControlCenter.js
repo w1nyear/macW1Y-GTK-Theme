@@ -121,6 +121,8 @@ let getTransformedRect = a => {
 let ensureGlassAllocated = () => {};
 let glassRefreshDue = null;
 let glassRefreshDone = null;
+let glassMarkDirty = null;
+let glassNeedsStructureSync = null;
 let glassForceRefresh = null;
 let addGlassWakeListener = null;
 let removeGlassWakeListener = null;
@@ -153,6 +155,10 @@ import(_LG_BASE + '/utils.js').then(m => {
         glassRefreshDue = m.glassRefreshDue;
     if (m.glassRefreshDone)
         glassRefreshDone = m.glassRefreshDone;
+    if (m.glassMarkDirty)
+        glassMarkDirty = m.glassMarkDirty;
+    if (m.glassNeedsStructureSync)
+        glassNeedsStructureSync = m.glassNeedsStructureSync;
     if (m.glassForceRefresh)
         glassForceRefresh = m.glassForceRefresh;
     if (m.addGlassWakeListener)
@@ -185,6 +191,8 @@ export async function ensureLgReady() {
         if (m2?.reportFrameLoopError) reportFrameLoopError = m2.reportFrameLoopError;
         if (m2?.glassRefreshDue) glassRefreshDue = m2.glassRefreshDue;
         if (m2?.glassRefreshDone) glassRefreshDone = m2.glassRefreshDone;
+        if (m2?.glassMarkDirty) glassMarkDirty = m2.glassMarkDirty;
+        if (m2?.glassNeedsStructureSync) glassNeedsStructureSync = m2.glassNeedsStructureSync;
         if (m2?.glassForceRefresh) glassForceRefresh = m2.glassForceRefresh;
         if (m2?.addGlassWakeListener) addGlassWakeListener = m2.addGlassWakeListener;
         if (m2?.removeGlassWakeListener) removeGlassWakeListener = m2.removeGlassWakeListener;
@@ -3967,24 +3975,42 @@ const _CC_SCENE_WAKE_REASONS = new Set([
     'switch-workspace', 'size-change', 'minimize', 'unminimize',
     'destroy', 'active-workspace-changed', 'showing-desktop-changed',
 ]);
-const _CC_PIXEL_PULSE_US = 350000;
+const _CC_IDLE_PULSE_US = 1200000;
 
 function _invalidateCCGlass(p, rebuild = false) {
     const stacks = p?.glass?.stacks;
     if (!stacks?.length)
         return;
     for (const s of stacks) {
-        try { glassForceRefresh?.(s.bgActor); } catch (_) {}
+        s._structureDirty = true;
+        try { glassForceRefresh?.(s.bgActor, 250); } catch (_) {}
         if (rebuild) {
             try { s.wcm?.rebuildClones?.(); } catch (_) {}
             try { s.uiSampler?.rebindSelf?.(); } catch (_) {}
+            try { s.uiSampler?.refresh?.(); } catch (_) {}
         }
-        try { s.uiSampler?.refresh?.(); } catch (_) {}
         try { s.effect?.markBackdropDirty?.(); } catch (_) {}
-        try { s.bgActor?.queue_redraw?.(); } catch (_) {}
     }
     if (p.glass)
-        p.glass._nextPixelPulseUs = GLib.get_monotonic_time() + _CC_PIXEL_PULSE_US;
+        p.glass._nextPixelPulseUs = GLib.get_monotonic_time() + _CC_IDLE_PULSE_US;
+}
+
+function _markCCGlassPixelDirty(p, damagedActor = null) {
+    const stacks = p?.glass?.stacks;
+    if (!stacks?.length)
+        return;
+    for (const s of stacks) {
+        if (!s.bgActor?.visible)
+            continue;
+        if (damagedActor && isActorNearGlass && !isActorNearGlass(damagedActor, s.bgActor))
+            continue;
+        try {
+            if (glassMarkDirty)
+                glassMarkDirty(s.bgActor);
+            else
+                glassForceRefresh?.(s.bgActor, 0);
+        } catch (_) {}
+    }
 }
 
 function _startGlass(slideOffset = 0) {
@@ -4048,15 +4074,15 @@ function _startGlass(slideOffset = 0) {
                 if (glass.torndown || !_panel || _panel.glass !== glass || _closing || !_panel.overlay?.mapped)
                     return;
                 if (_CC_SCENE_WAKE_REASONS.has(reason)) {
-                    _invalidateCCGlass(_panel, true);
+                    const structuralRebuild = reason !== 'window-moved' && reason !== 'size-change';
+                    _invalidateCCGlass(_panel, structuralRebuild);
                     return;
                 }
                 const nearPanel = !damagedActor ||
                     isActorNearGlass?.(damagedActor, _panel.box) ||
-                    isActorNearGlass?.(damagedActor, _panel.panelBg) ||
-                    glass.stacks.some(s => isActorNearGlass?.(damagedActor, s.bgActor));
+                    isActorNearGlass?.(damagedActor, _panel.panelBg);
                 if (nearPanel)
-                    _invalidateCCGlass(_panel, false);
+                    _markCCGlassPixelDirty(_panel, damagedActor);
             };
             try {
                 addGlassWakeListener(glass.wakeUnsub);
@@ -4090,7 +4116,7 @@ function _startGlass(slideOffset = 0) {
                 }
                 return GLib.SOURCE_REMOVE;
             }
-            if (!_closing) {
+            if (!_closing && _panel.panelBg.opacity !== _panel.box.opacity) {
                 try {
                     _panel.panelBg.opacity = _panel.box.opacity;
                 } catch (_) {}
@@ -4106,16 +4132,21 @@ function _startGlass(slideOffset = 0) {
             }
             const nowUs = GLib.get_monotonic_time();
             if (!glass._nextPixelPulseUs || nowUs >= glass._nextPixelPulseUs) {
-                glass._nextPixelPulseUs = nowUs + _CC_PIXEL_PULSE_US;
+                glass._nextPixelPulseUs = nowUs + _CC_IDLE_PULSE_US;
                 for (const s of glass.stacks) {
-                    try { glassForceRefresh?.(s.bgActor); } catch (_) {}
+                    try {
+                        if (glassMarkDirty)
+                            glassMarkDirty(s.bgActor);
+                    } catch (_) {}
                 }
             }
             for (const s of glass.stacks) {
                 try {
-                    s.bgActor.opacity = _panel.box.opacity;
                     if (_panel.box) {
-                        s.bgActor.set_scale(1.0, 1.0);
+                        if (s.bgActor.opacity !== _panel.box.opacity)
+                            s.bgActor.opacity = _panel.box.opacity;
+                        if (s.bgActor.scale_x !== 1.0 || s.bgActor.scale_y !== 1.0)
+                            s.bgActor.set_scale(1.0, 1.0);
                     }
                     _syncStack(s, monitor);
                 } catch (e) {
@@ -4149,10 +4180,15 @@ function _syncStack(s, monitor) {
     const screenH = monitor.height;
 
     const [ovX, ovY] = p.overlay.get_transformed_position();
-    s.bgActor.set_position(monitorX - ovX, monitorY - ovY);
+    const bgPosX = monitorX - ovX;
+    const bgPosY = monitorY - ovY;
+    if (s.bgActor.x !== bgPosX || s.bgActor.y !== bgPosY)
+        s.bgActor.set_position(bgPosX, bgPosY);
     if (s.mirror && typeof s.mirror.set_position === 'function') {
-        s.mirror.set_position(-monitorX, -monitorY);
-        s.mirror.set_size(global.stage.width, global.stage.height);
+        if (s.mirror.x !== -monitorX || s.mirror.y !== -monitorY)
+            s.mirror.set_position(-monitorX, -monitorY);
+        if (s.mirror.width !== global.stage.width || s.mirror.height !== global.stage.height)
+            s.mirror.set_size(global.stage.width, global.stage.height);
     }
 
     const regions = [];
@@ -4235,7 +4271,7 @@ function _syncStack(s, monitor) {
 
     if (!s.bgActor.visible)
         s.bgActor.show();
-    if (!_panelOpening && !_closing) {
+    if (!_panelOpening && !_closing && s.bgActor.opacity !== p.box.opacity) {
         s.bgActor.opacity = p.box.opacity;
     }
     if (s.group !== 'backdrop') {
@@ -4248,34 +4284,40 @@ function _syncStack(s, monitor) {
             s._appliedCcTint = _ccStyling.tint;
         }
     }
-    if (s.group === 'card') {
-        if (typeof s.effect.setShapeType === 'function')
-            s.effect.setShapeType(0.0);
-        else if (typeof s.effect._setFloat === 'function')
-            s.effect._setFloat('shape_type', 0.0);
-        s.effect.setCornerRadius(22);
-    } else if (s.group === 'backdrop') {
-        s.effect.setCornerRadius(28);
-        try {
-            s.effect._setFloat('edge_smoothing', BACKDROP_PAD);
-            s.effect._setFloat('displacement_scale', 0);
-            s.effect._setFloat('surface_light_enabled', 0.0);
-            s.effect.setBlurRadius(24.0);
-        } catch (_) {}
+    if (!s._groupUniformsInit) {
+        s._groupUniformsInit = true;
+        if (s.group === 'card') {
+            if (typeof s.effect.setShapeType === 'function')
+                s.effect.setShapeType(0.0);
+            else if (typeof s.effect._setFloat === 'function')
+                s.effect._setFloat('shape_type', 0.0);
+            s.effect.setCornerRadius(22);
+        } else if (s.group === 'backdrop') {
+            s.effect.setCornerRadius(28);
+            try {
+                s.effect._setFloat('edge_smoothing', BACKDROP_PAD);
+                s.effect._setFloat('displacement_scale', 0);
+                s.effect._setFloat('surface_light_enabled', 0.0);
+                s.effect.setBlurRadius(24.0);
+            } catch (_) {}
+        }
     }
-    s.effect.setGlassRegions(regions);
+    const extraH = (((clip[0] || 0) * 73856093) ^ ((clip[1] || 0) * 19349663) ^
+        ((clip[2] || 0) * 83492791) ^ ((clip[3] || 0) * 2654435761) ^ (regions.length * 49979687)) | 0;
+    if (s._lastExtraH !== extraH || s._lastRegionCount !== regions.length) {
+        s._lastExtraH = extraH;
+        s._lastRegionCount = regions.length;
+        s._structureDirty = true;
+        s.effect.setGlassRegions(regions);
+    }
     if (!s.screen || s.screen[0] !== screenW || s.screen[1] !== screenH) {
         s.screen = [screenW, screenH];
+        s._structureDirty = true;
         s.effect.setResolution(screenW, screenH);
         s.liquidBox.set_position(0, 0);
         s.liquidBox.set_size(screenW, screenH);
     }
     ensureGlassAllocated(s.bgActor);
-
-
-
-    const extraH = (((clip[0] || 0) * 73856093) ^ ((clip[1] || 0) * 19349663) ^
-        ((clip[2] || 0) * 83492791) ^ ((clip[3] || 0) * 2654435761)) | 0;
 
 
 
@@ -4294,21 +4336,26 @@ function _syncStack(s, monitor) {
     }
     if (!doHeavy)
         return;
-    s.wcm.setOffset(-monitorX, -monitorY);
-    syncGlassCaptureClip({
-        cloneContainer: s.cloneContainer,
-        effect: s.effect,
-        originX: monitorX,
-        originY: monitorY,
-        uiSampler: s.uiSampler,
-        windowCloneManager: s.wcm,
-    });
-    s.uiSampler.refresh();
-    s.uiSampler.sync(monitorX, monitorY, screenW, screenH);
-    s.wcm.sync();
+    const needStruct = !s._syncedOnce || s._structureDirty ||
+        (glassNeedsStructureSync ? glassNeedsStructureSync(s.bgActor) : true);
+    s._structureDirty = false;
+    s._syncedOnce = true;
+    if (needStruct) {
+        s.wcm.setOffset(-monitorX, -monitorY);
+        syncGlassCaptureClip({
+            cloneContainer: s.cloneContainer,
+            effect: s.effect,
+            originX: monitorX,
+            originY: monitorY,
+            uiSampler: s.uiSampler,
+            windowCloneManager: s.wcm,
+        });
+        s.uiSampler.refresh();
+        s.uiSampler.sync(monitorX, monitorY, screenW, screenH);
+        s.wcm.sync();
+    }
     try {
         s.effect?.markBackdropDirty?.();
-        s.bgActor?.queue_redraw?.();
         glassRefreshDone(s.bgActor, extraH);
     } catch (_) {}
 }

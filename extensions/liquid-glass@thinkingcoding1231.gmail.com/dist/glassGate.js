@@ -31,6 +31,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 export const GLASS_REFRESH_ACTIVE_INTERVAL_US = 8333;
 export const GLASS_REFRESH_BACKGROUND_INTERVAL_US = 16666;
 export const GLASS_REFRESH_60FPS_INTERVAL_US = 16666;
+export const GLASS_REFRESH_PIXEL_INTERVAL_US = 33333;
 export const GLASS_REFRESH_HEARTBEAT_US = 1500000;
 
 let _systemGlassFps = 60;
@@ -393,6 +394,7 @@ function _hookWindowDamage(actor) {
         if (!actor || !_isActorValid(actor) || _backdropDamageHooked.has(actor))
             return;
         _backdropDamageHooked.add(actor);
+        actor._lastDamageUs = actor._lastDamageUs || 0;
 
         const onMotionOrDamage = (reason) => {
             actor._lastDamageUs = GLib.get_monotonic_time();
@@ -530,6 +532,9 @@ function _newPollState() {
         lastOwnH: -1,
         dirty: true,
         lastFull: 0,
+        lastDamageCheckUs: 0,
+        forceStructural: true,
+        lastRefreshStructural: true,
         lastSceneVersion: _backdropSceneVersion,
         settleUntilUs: nowUs + 800000
     };
@@ -550,6 +555,8 @@ export function glassRefreshDue(glassActor, extraHash) {
         }
         const nowUs = GLib.get_monotonic_time();
         if (!st.lastFull) {
+            st.forceStructural = true;
+            st.lastRefreshStructural = true;
             st.settleUntilUs = nowUs + 800000;
             return true;
         }
@@ -573,9 +580,12 @@ export function glassRefreshDue(glassActor, extraHash) {
         if (dmgChanged && !isNearDamaged) {
             try {
                 const actors = global.get_window_actors?.() ?? [];
+                const minDmgUs = st.lastDamageCheckUs || 0;
                 for (let i = 0; i < actors.length; i++) {
                     const a = actors[i];
                     if (a && a.visible && a.mapped) {
+                        if (minDmgUs > 0 && a._lastDamageUs !== undefined && a._lastDamageUs < minDmgUs)
+                            continue;
                         if (isActorNearGlass(a, glassActor)) {
                             isNearDamaged = true;
                             break;
@@ -587,25 +597,35 @@ export function glassRefreshDue(glassActor, extraHash) {
             }
         }
 
-        if (scanChanged || ownChanged || isNearDamaged || isSettling || sceneChanged || Main.overview?.visible) {
+        const structuralChange = scanChanged || ownChanged || isSettling || sceneChanged || nonWinDmgChanged || st.forceStructural || !!Main.overview?.visible;
+        if (structuralChange || isNearDamaged) {
             st.lastScanH = scanH;
             st.lastDamage = dmg;
             st.lastNonWindowDamage = nonWinDmg;
             st.lastOwnH = ownH;
             st.lastSceneVersion = _backdropSceneVersion;
             st.dirty = true;
+            if (structuralChange)
+                st.lastRefreshStructural = true;
         }
 
         const sinceFull = nowUs - st.lastFull;
 
         if (st.dirty || Main.overview?.visible) {
             const targetUs = _glassFpsIntervalUs;
-            const dueInterval = ownChanged ? Math.min(GLASS_REFRESH_ACTIVE_INTERVAL_US, targetUs) : targetUs;
+            let dueInterval;
+            if (ownChanged)
+                dueInterval = Math.min(GLASS_REFRESH_ACTIVE_INTERVAL_US, targetUs);
+            else if (scanChanged || sceneChanged || isSettling || st.forceStructural || Main.overview?.visible)
+                dueInterval = targetUs;
+            else
+                dueInterval = Math.max(targetUs, GLASS_REFRESH_PIXEL_INTERVAL_US);
             return sinceFull >= dueInterval;
         }
 
 
         if (sinceFull >= GLASS_REFRESH_HEARTBEAT_US) {
+            st.lastRefreshStructural = true;
             return true;
         }
 
@@ -629,7 +649,10 @@ export function glassRefreshDone(glassActor, extraHash) {
         }
         const nowUs = GLib.get_monotonic_time();
         st.lastFull = nowUs;
+        st.lastDamageCheckUs = nowUs;
         st.dirty = false;
+        st.forceStructural = false;
+        st.lastRefreshStructural = false;
         st.lastScanH = _stageBackdropHash(nowUs);
         st.lastDamage = _backdropDamageVersion;
         st.lastNonWindowDamage = _nonWindowDamageVersion;
@@ -639,7 +662,7 @@ export function glassRefreshDone(glassActor, extraHash) {
 }
 
 
-export function glassForceRefresh(glassActor) {
+export function glassMarkDirty(glassActor) {
     try {
         let st = _backdropPolls.get(glassActor);
         if (!st) {
@@ -647,8 +670,34 @@ export function glassForceRefresh(glassActor) {
             _backdropPolls.set(glassActor, st);
         }
         st.dirty = true;
+    } catch (_) {}
+}
+
+
+export function glassNeedsStructureSync(glassActor) {
+    try {
+        const st = _backdropPolls.get(glassActor);
+        if (!st)
+            return true;
+        return !!(st.lastRefreshStructural || st.forceStructural || !st.lastFull);
+    } catch (_) {
+        return true;
+    }
+}
+
+
+export function glassForceRefresh(glassActor, settleMs = 800) {
+    try {
+        let st = _backdropPolls.get(glassActor);
+        if (!st) {
+            st = _newPollState();
+            _backdropPolls.set(glassActor, st);
+        }
+        st.dirty = true;
+        st.forceStructural = true;
+        st.lastRefreshStructural = true;
         st.lastFull = 0;
-        st.settleUntilUs = GLib.get_monotonic_time() + 800000;
+        st.settleUntilUs = GLib.get_monotonic_time() + (Math.max(0, Number(settleMs) || 0) * 1000);
     } catch (_) {}
 }
 
