@@ -981,6 +981,8 @@ export class DashManager {
         }
 
 
+        const tx = (d2d?.dash && Number.isFinite(d2d.dash.translation_x)) ? d2d.dash.translation_x : 0;
+        const ty = (d2d?.dash && Number.isFinite(d2d.dash.translation_y)) ? d2d.dash.translation_y : 0;
         if (isSlideAnimating && this._lastRestingAbsY !== undefined) {
             absX = this._lastRestingAbsX;
             absY = this._lastRestingAbsY;
@@ -996,6 +998,9 @@ export class DashManager {
                 else if (pos === 1) absX -= delta;
                 else if (pos === 3) absX += delta;
                 else absY += delta;
+            } else if (Math.abs(tx) > 0.5 || Math.abs(ty) > 0.5) {
+                absX += tx;
+                absY += ty;
             }
             hasSlabBounds = true;
         } else if (!isSlideAnimating && (hasSlabBounds || hasIconBounds)) {

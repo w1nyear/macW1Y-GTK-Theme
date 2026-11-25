@@ -2442,6 +2442,7 @@ export class DockManager {
             }
 
             dash.remove_all_transitions();
+            try { globalThis._liquidGlassDockSync?.(); } catch (_e) {}
             dash.ease({
                 opacity: 255,
                 translation_x: 0,
@@ -2450,26 +2451,9 @@ export class DockManager {
                 mode: MODE,
                 onComplete: () => {
                     dock._dockState = State.SHOWN;
+                    try { globalThis._liquidGlassDockSync?.(); } catch (_e) {}
                 },
             });
-
-
-            const glassBg = dock._getGlassBg ? dock._getGlassBg() : null;
-            if (glassBg) {
-                glassBg.remove_all_transitions();
-                const offset = dock._getSlideOffset(dist);
-                glassBg.translation_x = offset.translation_x;
-                glassBg.translation_y = offset.translation_y;
-                glassBg.opacity = 0;
-                glassBg.show();
-                glassBg.ease({
-                    translation_x: 0,
-                    translation_y: 0,
-                    opacity: 255,
-                    duration: DURATION,
-                    mode: MODE,
-                });
-            }
         });
 
         const panelBox = Main.layoutManager.panelBox || Main.panel;
