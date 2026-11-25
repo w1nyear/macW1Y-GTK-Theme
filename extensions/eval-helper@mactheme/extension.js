@@ -4707,7 +4707,7 @@ void main() {
                         const checkDock = async () => {
                             const isDockReady = () => {
                                 const dc = lm.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
-                                const dash = dc?._dock?.dash;
+                                const dash = dc?.dash || dc?._dock?.dash;
                                 return Boolean(dc && dash && dash._macHasItems && dash._macTrashReady);
                             };
                             if (isDockReady()) return;
@@ -4829,7 +4829,7 @@ void main() {
                             lm._macBgChildAddedId = null;
                         }
 
-                        const DURATION = 480;
+                        const DURATION = 560;
                         const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
 
                         if (lm.panelBox) {
@@ -4838,9 +4838,6 @@ void main() {
                             lm.panelBox.translation_y = -panelH;
                             lm.panelBox.opacity = 0;
                             lm.panelBox.show();
-                            if (lm._coverPane) {
-                                lm.uiGroup.set_child_above_sibling(lm.panelBox, lm._coverPane);
-                            }
                             lm.panelBox.ease({
                                 translation_y: 0,
                                 opacity: 255,
@@ -4855,25 +4852,23 @@ void main() {
                             });
                         }
 
-                        if (lm._coverPane) {
-                            const cover = lm._coverPane;
-                            lm._coverPane = null;
-                            cover.remove_all_transitions();
-                            cover.ease({
-                                opacity: 0,
-                                duration: DURATION,
-                                mode: MODE,
-                                onComplete: () => cover.destroy(),
-                            });
-                        }
-
                         const dockContainers = lm.uiGroup.get_children().filter(c => c.name === 'dashtodockContainer');
                         const glassActors = lm.uiGroup.get_children().filter(c => c.name === 'liquid-glass-bg-actor');
 
+                        let dockSlideOffset = { translation_x: 0, translation_y: 124 };
                         for (const dc of dockContainers) {
+                            const dock = dc._dock || dc;
+                            if (typeof dock._trackDock === 'function' && !dock.get_stage()) {
+                                try { dock._trackDock(); } catch (_) {}
+                            }
+                            if (typeof dock._initialize === 'function' && dock._dockState === 0) {
+                                try { dock._initialize(); } catch (_) {}
+                            }
                             const dockH = dc.height > 0 ? dc.height : 92;
                             dc.remove_all_transitions();
-                            dc.translation_y = -dockH;
+                            if (dock.position === undefined || dock.position === St.Side.BOTTOM) {
+                                dc.translation_y = -dockH;
+                            }
                             dc.opacity = 255;
                             dc.show();
                             for (const child of dc.get_children()) {
@@ -4882,40 +4877,39 @@ void main() {
                                 child.show();
                             }
 
-                            const dock = dc._dock;
-                            if (dock) {
-                                dock.translation_y = -dockH;
-                                dock._dockState = 2;
-                                dock._startupAnimationRan = true;
-                                if (dock._slider) dock._slider.slide_x = 1;
-                                const slideDist = dockH + 28;
-                                const slideOffset = typeof dock._getSlideOffset === 'function'
-                                    ? dock._getSlideOffset(slideDist)
-                                    : { translation_x: 0, translation_y: slideDist };
-                                if (dock.dash) {
-                                    dock.dash.remove_all_transitions();
-                                    dock.dash.visible = true;
-                                    dock.dash.opacity = 0;
-                                    dock.dash.translation_x = slideOffset.translation_x;
-                                    dock.dash.translation_y = slideOffset.translation_y;
-                                    dock.dash.ease({
-                                        opacity: 255,
-                                        translation_x: 0,
-                                        translation_y: 0,
-                                        duration: DURATION,
-                                        mode: MODE,
-                                        onComplete: () => {
-                                            Main.layoutManager._macDockRevealActive = false;
-                                            try { global._liquidGlassDockSync?.(); } catch (_) {}
-                                        },
-                                    });
-                                }
-                            } else {
-                                dc.opacity = 0;
-                                dc.ease({
+                            if (dock._slider) {
+                                dock._slider.remove_all_transitions?.();
+                                dock._slider.visible = true;
+                                dock._slider.opacity = 255;
+                                dock._slider.slide_x = 1;
+                            }
+                            if (dock._box) {
+                                dock._box.remove_all_transitions?.();
+                                dock._box.visible = true;
+                                dock._box.opacity = 255;
+                            }
+                            dock._dockState = 2;
+                            dock._startupAnimationRan = true;
+                            const slideDist = dockH + 32;
+                            dockSlideOffset = typeof dock._getSlideOffset === 'function'
+                                ? dock._getSlideOffset(slideDist)
+                                : { translation_x: 0, translation_y: slideDist };
+                            if (dock.dash) {
+                                dock.dash.remove_all_transitions();
+                                dock.dash.visible = true;
+                                dock.dash.opacity = 0;
+                                dock.dash.translation_x = dockSlideOffset.translation_x;
+                                dock.dash.translation_y = dockSlideOffset.translation_y;
+                                dock.dash.ease({
                                     opacity: 255,
+                                    translation_x: 0,
+                                    translation_y: 0,
                                     duration: DURATION,
                                     mode: MODE,
+                                    onComplete: () => {
+                                        Main.layoutManager._macDockRevealActive = false;
+                                        try { global._liquidGlassDockSync?.(); } catch (_) {}
+                                    },
                                 });
                             }
                         }
@@ -4924,10 +4918,14 @@ void main() {
 
                         for (const ga of glassActors) {
                             ga.remove_all_transitions();
+                            ga.translation_x = dockSlideOffset.translation_x;
+                            ga.translation_y = dockSlideOffset.translation_y;
                             ga.opacity = 0;
                             ga.show();
                             ga.ease({
                                 opacity: 255,
+                                translation_x: 0,
+                                translation_y: 0,
                                 duration: DURATION,
                                 mode: MODE,
                                 onComplete: () => {
@@ -4963,6 +4961,13 @@ void main() {
                                 duration: DURATION,
                                 mode: MODE,
                             });
+                        }
+
+                        if (lm._coverPane) {
+                            const cover = lm._coverPane;
+                            lm._coverPane = null;
+                            cover.remove_all_transitions();
+                            cover.destroy();
                         }
 
                         if (lm._systemBackground) {

@@ -5965,3 +5965,26 @@ Task #938:
     * `unittest`: 55/55 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в install.sh.
   * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+978. 2026-11-25 — Виправлення видимих іконок доку, 2-етапного згасання Plymouth → GDM, видалення Смітника/дисків з робочого стола та реальні синхронні анімації:
+  - Змінені файли:
+    * [AI_INSTRUCTIONS.md](file:///home/vitaliy/macW1Y/AI_INSTRUCTIONS.md) (Розділ 2: обов’язкове синхронне оновлення живої системи включно з root-файлами + проект + усі дистрибутиви)
+    * [gnome-shell-overlay/ui/layout.js](file:///home/vitaliy/macW1Y/gnome-shell-overlay/ui/layout.js) (_prepareStartupAnimation, _startupAnimationGreeter, _startupAnimationSession)
+    * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js) (checkDock, runMacStartupSession)
+    * [extensions/dash2dock-motion@unmade.space/docking.js](file:///home/vitaliy/macW1Y/extensions/dash2dock-motion@unmade.space/docking.js) (DashToDock._init, _prepareStartupAnimation)
+    * [extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/pro/pro.js](file:///home/vitaliy/macW1Y/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/pro/pro.js) (_ensureBootCover, _scheduleBootReveal)
+    * [extensions/ding@rastersoft.com/schemas/org.gnome.shell.extensions.ding.gschema.xml](file:///home/vitaliy/macW1Y/extensions/ding@rastersoft.com/schemas/org.gnome.shell.extensions.ding.gschema.xml) (дефолт false для show-home, show-trash, show-volumes)
+    * [dconf/gnome-all.dconf](file:///home/vitaliy/macW1Y/dconf/gnome-all.dconf) (show-trash=false, show-volumes=false, show-network-volumes=false)
+    * [install.sh](file:///home/vitaliy/macW1Y/install.sh) (gsettings set false для show-home/show-trash/show-volumes/show-network-volumes)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Опис виправлень:
+    * Виявлено й виправлено баг невидимих іконок доку (`dc._dock` замість самого `dc` у `layout.js`/`eval-helper`, через що `checkDock()` завжди чекав таймауту, а `dock.dash` лишався з `opacity = 0` і `_slider.slide_x = 0` та відкладеним `_trackDock()`). Тепер `const dock = dc._dock || dc`, `_slider.slide_x = 1`, `_box.opacity = 255`, а док і Liquid Glass (`liquid-glass-bg-actor`) виїжджають знизу синхронно.
+    * 2-етапне розчинення Plymouth → GDM (`macBootLogoOverlay`): спершу за `280ms` (`EASE_OUT_QUAD`) зникають лише яблучко та прогрес-бар на суцільно чорному тлі `#000000`, і лише потім за `680ms` (`EASE_IN_OUT_CUBIC`) згасає сам чорний фон у GDM без просвічування обох екранів.
+    * Для видимих синхронних анімацій (`560ms EASE_OUT_CUBIC`) `_coverPane` знімається одразу після виставлення початкових позицій усіх елементів наживо поверх шпалер: меню-бар виїжджає зверху, док зі склом та іконками виїжджає знизу, віджети й DING-іконки плавно проявляються прозорістю.
+    * Повністю прибрано Смітник і диски з робочого стола DING (`show-trash=false`, `show-volumes=false`, `show-home=false`, `show-network-volumes=false` у схемі DING, dconf, install.sh та живій системі).
+  - Перевірка та синхронізація:
+    * Синхронізовано всі user- і root-файли на поточній Ubuntu (включно з `/usr/share/mactheme/gnome-shell-overlay/ui/layout.js`, `/usr/share/gnome-shell/extensions/ding@rastersoft.com`, `/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com`, `/usr/share/mactheme/config/extensions.lock.json`).
+    * `unittest`: 55/55 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в install.sh; `diff` із root-файлами Ubuntu — 0 розбіжностей.
+  * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

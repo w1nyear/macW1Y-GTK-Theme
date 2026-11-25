@@ -18,8 +18,9 @@
 
 ## 2. Синхронізація системи та проекту
 
-Будь-які зміни в проекті мають негайно та повністю синхронізуватися з поточною живою системою:
-- **Утиліти та скрипти**: файли з `bin/` синхронізуються до `/usr/local/bin/` з правами `755`.
+**ОБОВ’ЯЗКОВЕ ПРАВИЛО ПІД ЧАС БУДЬ-ЯКОЇ ЗМІНИ ФАЙЛУ**: завжди, коли ти змінюєш або створюєш будь-який файл, ти зобов’язаний **синхронно й одночасно оновлювати і поточну живу систему (користувацькі та `root`-файли через `sudo`), і файли проекту в репозиторії, а також одразу адаптувати та перевіряти ці зміни під інші підтримувані дистрибутиви (`Ubuntu, Debian, Linux Mint, Fedora, Arch Linux, CachyOS`)**.
+- **Утиліти та скрипти**: файли з `bin/` синхронізуються до `/usr/local/bin/` з правами `755` (та `root:root`).
+- **Системні оверлеї та розширення**: `gnome-shell-overlay/ui/layout.js` синхронізується до `/usr/share/mactheme/gnome-shell-overlay/ui/layout.js`; `config/extensions.lock.json` — до `/usr/share/mactheme/config/extensions.lock.json` і `~/.config/macw1y/extensions.lock.json`; системні розширення GDM та Ubuntu (`wack-lockscreen-clock@rinzler69-wastaken.github.com`, `ding@rastersoft.com`) — до `/usr/share/gnome-shell/extensions/`, а користувацькі — до `~/.local/share/gnome-shell/extensions/`.
 - **Спільні C-бібліотеки**: після редагування компілюються локально через `dependencies/build-native.sh` і розгортаються на всі системні шляхи (`/usr/lib/x86_64-linux-gnu`, `/usr/lib64`, `/usr/lib`, `/usr/local/lib`, `~/.local/lib`, `/usr/share/mactheme/...`).
 - **Теми та ресурси**: синхронізуються між репозиторієм та каталогами `~/.themes/`, `~/.icons/`, `/usr/share/themes/`, `/usr/share/icons/`, `/usr/share/backgrounds/`.
 - **Контроль розбіжностей**: команда `python3 bin/mac-audit-sync check` обов'язково повинна повертати **100% PASS** (0 розбіжностей).

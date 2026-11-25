@@ -26,12 +26,12 @@
         <description>Set the size for the desktop icons.</description>
     </key>
     <key type="b" name="show-home">
-        <default>true</default>
+        <default>false</default>
         <summary>Show personal folder</summary>
         <description>Show the personal folder in the desktop.</description>
     </key>
     <key type="b" name="show-trash">
-        <default>true</default>
+        <default>false</default>
         <summary>Show trash icon</summary>
         <description>Show the trash icon in the desktop.</description>
     </key>
@@ -41,7 +41,7 @@
         <description>Set the corner from where the icons will start to be placed.</description>
     </key>
     <key type="b" name="show-volumes">
-        <default>true</default>
+        <default>false</default>
         <summary>Show external drives in the desktop</summary>
         <description>Show the disk drives connected to the computer.</description>
     </key>

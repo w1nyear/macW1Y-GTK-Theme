@@ -1374,6 +1374,11 @@ install_extensions() {
             sudo chmod +x /usr/local/bin/mac-sanitize-favorites.sh
             run_as_user /usr/local/bin/mac-sanitize-favorites.sh "$PREV_FAVS" 2>/dev/null || true
         fi
+
+        # macW1Y desktop never shows Trash or mounted drive icons (Trash belongs only in the Dock)
+        for ding_key in show-home show-trash show-volumes show-network-volumes; do
+            run_as_user gsettings set org.gnome.shell.extensions.ding "$ding_key" false 2>/dev/null || true
+        done
     fi
     
     # Enabling extensions

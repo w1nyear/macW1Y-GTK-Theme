@@ -330,10 +330,11 @@ const DockedDash = GObject.registerClass({
 
 
 
+        const macStartupControlled = Boolean(Main.layoutManager?._isMacLayoutOverlay || Main.layoutManager?._macStartupManaged);
         this._slider = new DashSlideContainer({
             monitor_index: this._monitor.index,
             side: this._position,
-            slide_x: Main.layoutManager._startingUp ? 0 : 1,
+            slide_x: (macStartupControlled || !Main.layoutManager._startingUp) ? 1 : 0,
             ...this._isHorizontal ? {
                 x_align: Clutter.ActorAlign.CENTER,
             } : {
@@ -460,13 +461,25 @@ const DockedDash = GObject.registerClass({
 
 
 
-        if (Main.layoutManager._startingUp) {
+        if (Main.layoutManager._startingUp && !macStartupControlled) {
             this._signalsHandler.addWithLabel(Labels.STARTUP_ANIMATION,
                 Main.layoutManager, 'startup-complete', () => {
                     this._signalsHandler.removeWithLabel(Labels.STARTUP_ANIMATION);
                     this._trackDock();
                     this._initialize();
                 });
+        } else if (Main.layoutManager._startingUp && macStartupControlled) {
+            this._trackDock();
+            this._initialize();
+            this._dockState = State.SHOWN;
+            if (this._slider) {
+                this._slider.slide_x = 1;
+                this._slider.opacity = 255;
+            }
+            if (this._box)
+                this._box.opacity = 255;
+            if (this.dash)
+                this.dash.opacity = 0;
         } else {
             this._trackDock();
 
@@ -2369,10 +2382,19 @@ export class DockManager {
     }
 
     _prepareStartupAnimation() {
+        const macStartupControlled = Boolean(Main.layoutManager?._isMacLayoutOverlay || Main.layoutManager?._macStartupManaged);
         DockManager.allDocks.forEach(dock => {
             const {dash} = dock;
 
             dock.opacity = 255;
+            if (macStartupControlled) {
+                if (dock._slider) {
+                    dock._slider.slide_x = 1;
+                    dock._slider.opacity = 255;
+                }
+                if (dock._box)
+                    dock._box.opacity = 255;
+            }
             if (dash) {
                 dash.set({
                     opacity: 0,

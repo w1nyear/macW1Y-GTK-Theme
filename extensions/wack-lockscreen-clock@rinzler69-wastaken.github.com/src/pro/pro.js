@@ -206,6 +206,15 @@ export class GdmManager {
                     ];
                     const foundLogo = logoPaths.find(p => GLib.file_test(p, GLib.FileTest.EXISTS));
                     if (foundLogo) {
+                        const logoOverlay = new St.Widget({
+                            name: 'macBootLogoOverlay',
+                            layout_manager: new Clutter.FixedLayout(),
+                            x: 0,
+                            y: 0,
+                            width: screenW,
+                            height: screenH,
+                            opacity: 255,
+                        });
                         const logoH = Math.max(50, Math.round(screenH * 0.092));
                         const logoW = Math.round(logoH * 0.8125);
                         const logoActor = new St.Widget({
@@ -215,7 +224,7 @@ export class GdmManager {
                             width: logoW,
                             height: logoH,
                         });
-                        this._gdmBootCover.add_child(logoActor);
+                        logoOverlay.add_child(logoActor);
 
                         const barW = Math.min(400, Math.max(180, Math.round(screenW * 0.14)));
                         const barH = Math.min(10, Math.max(4, Math.round(screenH * 0.0056)));
@@ -226,7 +235,8 @@ export class GdmManager {
                             width: barW,
                             height: barH,
                         });
-                        this._gdmBootCover.add_child(barActor);
+                        logoOverlay.add_child(barActor);
+                        this._gdmBootCover.add_child(logoOverlay);
                     }
                 } catch (_) {}
 
@@ -312,16 +322,38 @@ export class GdmManager {
                     Main.layoutManager?.uiGroup?.set_child_above_sibling(cover, null);
                 } catch (_) {}
                 cover.remove_all_transitions();
-                cover.ease({
-                    opacity: 0,
-                    duration: 950,
-                    mode: Clutter.AnimationMode.EASE_IN_OUT_CUBIC,
-                    onComplete: () => {
+                const fadeBlackBackdrop = () => {
+                    if (!cover.get_stage?.()) {
                         if (this._gdmBootCover === cover)
                             this._gdmBootCover = null;
-                        try { cover.destroy(); } catch (_) {}
-                    },
-                });
+                        return;
+                    }
+                    cover.ease({
+                        opacity: 0,
+                        duration: 680,
+                        mode: Clutter.AnimationMode.EASE_IN_OUT_CUBIC,
+                        onComplete: () => {
+                            if (this._gdmBootCover === cover)
+                                this._gdmBootCover = null;
+                            try { cover.destroy(); } catch (_) {}
+                        },
+                    });
+                };
+                const logoOverlay = cover.get_children?.().find(c => c.name === 'macBootLogoOverlay');
+                if (logoOverlay) {
+                    logoOverlay.remove_all_transitions();
+                    logoOverlay.ease({
+                        opacity: 0,
+                        duration: 280,
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                        onComplete: () => {
+                            try { logoOverlay.destroy(); } catch (_) {}
+                            fadeBlackBackdrop();
+                        },
+                    });
+                } else {
+                    fadeBlackBackdrop();
+                }
             }
             return GLib.SOURCE_REMOVE;
         };
