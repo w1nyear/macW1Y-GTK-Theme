@@ -160,6 +160,8 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("about-laptop.png", mac_about)
         self.assertIn("about-desktop.png", mac_about)
         self.assertIn("open_system_about", mac_about)
+        self.assertIn("make_traffic_dot", mac_about)
+        self.assertIn("STYLE_PROVIDER_PRIORITY_USER", mac_about)
         mac_hwinfo = (ROOT / "bin" / "mac-hwinfo").read_text(encoding="utf-8")
         self.assertIn("/run/macw1y", mac_hwinfo)
         self.assertIn("product_serial", mac_hwinfo)

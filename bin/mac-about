@@ -589,87 +589,15 @@ def run_gui(info: dict) -> int:
         border: none;
         box-shadow: none;
     }
-    button.traffic-dot {
-        min-width: 12px;
-        min-height: 12px;
-        padding: 0;
-        margin: 0;
-        border-radius: 9999px;
-        box-shadow: none;
-        outline: none;
-    }
-    button.traffic-close {
-        background-color: #ff5f57;
-        border: 0.75px solid #e0443e;
-    }
-    button.traffic-close:hover {
-        background-color: #ff4b42;
-    }
-    button.traffic-close label {
-        font-size: 9px;
-        font-weight: 800;
-        color: rgba(77, 0, 0, 0);
-        margin-top: -1px;
-    }
-    button.traffic-close:hover label {
-        color: rgba(77, 0, 0, 0.75);
-    }
-    .mac-about-light button.traffic-muted {
-        background-color: #e2e2e4;
-        border: 0.75px solid #cbccce;
-    }
-    .mac-about-dark button.traffic-muted {
-        background-color: #3f3f42;
-        border: 0.75px solid #4e4e52;
-    }
-    .about-title {
-        font-size: 22px;
-        font-weight: 700;
-        letter-spacing: -0.35px;
-    }
-    .mac-about-light .about-title {
-        color: #3a3a3c;
-    }
-    .mac-about-dark .about-title {
-        color: #f5f5f7;
-    }
-    .about-subtitle {
-        font-size: 11px;
-        font-weight: 400;
-    }
-    .mac-about-light .about-subtitle {
-        color: #939398;
-    }
-    .mac-about-dark .about-subtitle {
-        color: #8e8e93;
-    }
-    .about-spec-key {
-        font-size: 11px;
-        font-weight: 500;
-    }
-    .mac-about-light .about-spec-key {
-        color: #2c2c2e;
-    }
-    .mac-about-dark .about-spec-key {
-        color: #e5e5e7;
-    }
-    .about-spec-val {
-        font-size: 11px;
-        font-weight: 400;
-    }
-    .mac-about-light .about-spec-val {
-        color: #7c7c80;
-    }
-    .mac-about-dark .about-spec-val {
-        color: #98989d;
-    }
     button.about-more-btn {
         border-radius: 6px;
-        padding: 4px 14px;
-        min-height: 24px;
+        padding: 4px 16px;
+        min-height: 26px;
+        min-width: 96px;
         font-size: 12px;
         font-weight: 500;
         box-shadow: none;
+        background-image: none;
         border: none;
     }
     .mac-about-light button.about-more-btn {
@@ -698,24 +626,82 @@ def run_gui(info: dict) -> int:
         font-weight: 400;
     }
     .mac-about-light .about-footer-link,
-    .mac-about-light .about-footer-link link,
     .mac-about-light .about-footer-text {
         color: #9a9aa0;
     }
-    .mac-about-light .about-footer-link:hover,
-    .mac-about-light .about-footer-link link:hover {
-        color: #636368;
+    .mac-about-light .about-footer-link.hovered {
+        color: #5c5c62;
     }
     .mac-about-dark .about-footer-link,
-    .mac-about-dark .about-footer-link link,
     .mac-about-dark .about-footer-text {
         color: #78787d;
     }
-    .mac-about-dark .about-footer-link:hover,
-    .mac-about-dark .about-footer-link link:hover {
-        color: #aeaeb2;
+    .mac-about-dark .about-footer-link.hovered {
+        color: #b5b5ba;
+    }
+    box.traffic-dot {
+        min-width: 12px;
+        min-height: 12px;
+        border-radius: 9999px;
+        padding: 0;
+        margin: 0;
+    }
+    box.traffic-close {
+        background-color: #ff5f57;
+        border: 0.75px solid #e0443e;
+    }
+    box.traffic-close.hovered {
+        background-color: #ff4b42;
+    }
+    box.traffic-close label.traffic-x {
+        font-size: 9px;
+        font-weight: 800;
+        color: rgba(77, 0, 0, 0);
+        margin-top: -1px;
+    }
+    box.traffic-close.hovered label.traffic-x {
+        color: rgba(77, 0, 0, 0.80);
+    }
+    .mac-about-light box.traffic-muted {
+        background-color: #e2e2e4;
+        border: 0.75px solid #cbccce;
+    }
+    .mac-about-dark box.traffic-muted {
+        background-color: #3f3f42;
+        border: 0.75px solid #4e4e52;
     }
     """
+
+    def make_traffic_dot(kind: str, on_click=None):
+        dot = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        dot.set_size_request(12, 12)
+        dot.set_hexpand(False)
+        dot.set_vexpand(False)
+        dot.set_halign(Gtk.Align.CENTER)
+        dot.set_valign(Gtk.Align.CENTER)
+        dot.add_css_class("traffic-dot")
+        if kind == "close":
+            dot.add_css_class("traffic-close")
+            lbl = Gtk.Label(label="×")
+            lbl.add_css_class("traffic-x")
+            lbl.set_hexpand(True)
+            lbl.set_vexpand(True)
+            lbl.set_halign(Gtk.Align.CENTER)
+            lbl.set_valign(Gtk.Align.CENTER)
+            dot.append(lbl)
+            if on_click:
+                dot.set_cursor_from_name("pointer")
+                motion = Gtk.EventControllerMotion()
+                motion.connect("enter", lambda *_: dot.add_css_class("hovered"))
+                motion.connect("leave", lambda *_: dot.remove_css_class("hovered"))
+                dot.add_controller(motion)
+                click = Gtk.GestureClick()
+                click.set_button(1)
+                click.connect("released", lambda _g, _n, _x, _y: on_click())
+                dot.add_controller(click)
+        else:
+            dot.add_css_class("traffic-muted")
+        return dot
 
     class MacAboutApp(Adw.Application):
         def __init__(self):
@@ -735,7 +721,7 @@ def run_gui(info: dict) -> int:
             Gtk.StyleContext.add_provider_for_display(
                 Gdk.Display.get_default(),
                 provider,
-                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+                Gtk.STYLE_PROVIDER_PRIORITY_USER + 10,
             )
 
             win = Gtk.ApplicationWindow(application=self)
@@ -781,29 +767,17 @@ def run_gui(info: dict) -> int:
             # Top macOS traffic lights bar
             top_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
             top_bar.add_css_class("mac-about-header")
-            top_bar.set_margin_start(13)
-            top_bar.set_margin_top(12)
+            top_bar.set_margin_start(14)
+            top_bar.set_margin_top(13)
             top_bar.set_margin_bottom(8)
             top_bar.set_halign(Gtk.Align.START)
 
-            close_btn = Gtk.Button()
-            close_btn.add_css_class("traffic-dot")
-            close_btn.add_css_class("traffic-close")
-            close_btn.set_valign(Gtk.Align.CENTER)
-            close_btn.set_can_focus(False)
-            close_lbl = Gtk.Label(label="×")
-            close_btn.set_child(close_lbl)
-            close_btn.connect("clicked", lambda *_: win.close())
-            top_bar.append(close_btn)
-
-            for _ in range(2):
-                dot = Gtk.Button()
-                dot.add_css_class("traffic-dot")
-                dot.add_css_class("traffic-muted")
-                dot.set_sensitive(False)
-                dot.set_can_focus(False)
-                dot.set_valign(Gtk.Align.CENTER)
-                top_bar.append(dot)
+            close_dot = make_traffic_dot("close", on_click=win.close)
+            min_dot = make_traffic_dot("muted")
+            max_dot = make_traffic_dot("muted")
+            top_bar.append(close_dot)
+            top_bar.append(min_dot)
+            top_bar.append(max_dot)
 
             root.append(top_bar)
 
@@ -907,15 +881,23 @@ def run_gui(info: dict) -> int:
             spacer.set_vexpand(True)
             body.append(spacer)
 
-            # Clickable grey GitHub hyperlink
+            # Clickable grey GitHub hyperlink (custom gesture avoids Adwaita blue link tint)
             link_lbl = Gtk.Label()
             link_lbl.add_css_class("about-footer-link")
             link_lbl.set_halign(Gtk.Align.CENTER)
             link_lbl.set_justify(Gtk.Justification.CENTER)
             link_lbl.set_cursor_from_name("pointer")
+            link_lbl.set_tooltip_text(REPO_URL)
             escaped_text = GLib.markup_escape_text(st["github_link"])
-            link_lbl.set_markup(f'<a href="{REPO_URL}"><u>{escaped_text}</u></a>')
-            link_lbl.connect("activate-link", lambda _lbl, _uri: (open_github_link(), True)[1])
+            link_lbl.set_markup(f'<u>{escaped_text}</u>')
+            link_motion = Gtk.EventControllerMotion()
+            link_motion.connect("enter", lambda *_: link_lbl.add_css_class("hovered"))
+            link_motion.connect("leave", lambda *_: link_lbl.remove_css_class("hovered"))
+            link_lbl.add_controller(link_motion)
+            link_click = Gtk.GestureClick()
+            link_click.set_button(1)
+            link_click.connect("released", lambda _g, _n, _x, _y: open_github_link())
+            link_lbl.add_controller(link_click)
             body.append(link_lbl)
 
             # GPL v3 footer text
