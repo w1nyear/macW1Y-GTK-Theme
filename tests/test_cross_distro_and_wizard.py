@@ -161,6 +161,8 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("about-desktop.png", mac_about)
         self.assertIn("open_system_about", mac_about)
         self.assertIn("make_traffic_dot", mac_about)
+        self.assertIn("find_windows_assets_dir", mac_about)
+        self.assertIn("mac-wc-btn", mac_about)
         self.assertIn("STYLE_PROVIDER_PRIORITY_USER", mac_about)
         mac_hwinfo = (ROOT / "bin" / "mac-hwinfo").read_text(encoding="utf-8")
         self.assertIn("/run/macw1y", mac_hwinfo)

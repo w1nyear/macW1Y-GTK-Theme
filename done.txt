@@ -6125,3 +6125,14 @@ Task #938:
   - Перевірка та синхронізація:
     * Синхронізовано `~/.local/bin/mac-about` і `/usr/local/bin/mac-about`; візуальний рендер через `Gtk.WidgetPaintable` + `Gsk.CairoRenderer` підтвердив суцільний контур по всіх 4 кутах, `More btn alloc: 96 x 22`, `Title preferred: 229 x 27`, `Window: 355 x 540`.
     * `unittest`: 56/56 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS.
+
+988. 2026-11-25 — Переведено кнопки керування вікном «Про цей комп’ютер» на глобальні асети світлофорів теми macW1Y:
+  - Змінені файли:
+    * [bin/mac-about](file:///home/vitaliy/macW1Y/bin/mac-about) (`find_windows_assets_dir`, `mac-wc-group`, `mac-wc-btn`, стани normal / `:backdrop` / group-hover / `:active` через `windows-assets/button-{close,minimize,maximize}*.png` і `@2.png`)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+  - Причина та виправлення:
+    * У Nautilus, Параметрах та інших GTK4-програмах глобальний вигляд віконних кнопок керування (`~/.config/gtk-4.0/titlebuttons4.css`) використовує графічні асети `windows-assets/button-*.png` (`16×16` та `@2.png` `32×32`) замість текстового символу `×`.
+    * Додано `find_windows_assets_dir()` (шукає `~/.config/gtk-4.0/windows-assets`, `config/gtk-4.0/windows-assets`, `/usr/share/mactheme/gtk-4.0/windows-assets`, `~/.themes/macW1Y-Dark/gtk-4.0/windows-assets`) та застосовано глобальні PNG-іконки й групову поведінку наведення (`button-close-hover@2.png`, `button-minimize-hover@2.png`, `button-maximize-hover@2.png`, `:backdrop`, `:active`).
+  - Перевірка та синхронізація:
+    * Синхронізовано `~/.local/bin/mac-about` і `/usr/local/bin/mac-about`; візуальні рендери normal та group-hover підтвердили точний збіг з кнопками Nautilus/Параметрів.
+    * `unittest`: 56/56 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS.
