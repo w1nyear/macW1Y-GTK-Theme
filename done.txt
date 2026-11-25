@@ -5735,3 +5735,22 @@ Task #938:
   * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
 
+967. Відновлення роботи меню вікна/програм у меню-барі (виправлення SyntaxError у appmenu/i18n.js та відновлення цілісності розширень):
+  - Діагностика першопричини:
+    * Причина зникнення меню програм/вікна у верхньому меню-барі (поруч зі значком Apple): розширення appmenu@ChathurangaBW.github.io переходило у стан ERROR при старті GNOME Shell через синтаксичну помилку у extensions/appmenu@ChathurangaBW.github.io/i18n.js:1125:1 ("SyntaxError: export declarations may only appear at top level of a module").
+    * У функції getLocale() (рядки 1115-1123) залишались незакриті блоки for та try перед export function updateLocale(lang).
+    * Також у ~/.local/share/gnome-shell/extensions/wifi-hotspot-quick-settings@aryan10.github.io виявлено невідповідність версії (5 замість зафіксованої 4).
+  - Виправлення та синхронізація:
+    * Відновлено коректне завершення циклу for і блоку try/catch у getLocale() в extensions/appmenu@ChathurangaBW.github.io/i18n.js.
+    * Перевірено синтаксис усіх .js модулів appmenu@ChathurangaBW.github.io через gjs -m — без помилок.
+    * Синхронізовано виправлений i18n.js у ~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/i18n.js.
+    * Оновлено контрольні суми у config/extensions.lock.json та ~/.config/macw1y/extensions.lock.json.
+    * Відновлено wifi-hotspot-quick-settings@aryan10.github.io до зафіксованої версії через mac-extension-guard restore.
+  - Перевірка:
+    * mac-extension-guard verify: 21/21 розширень LOCKED OK.
+    * mac-i18n-verify: PASS; mac-audit-sync check: 100% PASS; mac-integrity-check --check: System is green; unittest: 45/45 PASS.
+  * [extensions/appmenu@ChathurangaBW.github.io/i18n.js](file:///home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/i18n.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+

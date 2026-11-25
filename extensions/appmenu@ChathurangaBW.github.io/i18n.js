@@ -1116,6 +1116,12 @@ export function getLocale() {
         const langs = GLib.get_language_names();
         for (const l of langs) {
             if (!l || l === 'C' || l === 'POSIX') continue;
+            const code = l.split('.')[0].split('_')[0].split('-')[0].toLowerCase();
+            if (code && TRANSLATIONS[code]) {
+                return code;
+            }
+        }
+    } catch (_) {}
     try {
         return mac_getLocale();
     } catch (_) {}
