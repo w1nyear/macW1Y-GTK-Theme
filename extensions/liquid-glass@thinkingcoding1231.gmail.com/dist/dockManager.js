@@ -756,17 +756,21 @@ export class DashManager {
         }
         if (d2dInit) {
             try {
-                this._signals.push(d2dInit.connect('showing', () => this.wakeFrameSync()));
-                this._signals.push(d2dInit.connect('hiding', () => this.wakeFrameSync()));
-                this._signals.push(d2dInit.connect('notify::translation-y', () => this.wakeFrameSync()));
-                this._signals.push(d2dInit.connect('notify::visible', () => this.wakeFrameSync()));
+                const syncSlide = () => {
+                    this.wakeFrameSync();
+                    this._syncGeometry();
+                };
+                this._signals.push(d2dInit.connect('showing', syncSlide));
+                this._signals.push(d2dInit.connect('hiding', syncSlide));
+                this._signals.push(d2dInit.connect('notify::translation-y', syncSlide));
+                this._signals.push(d2dInit.connect('notify::visible', syncSlide));
                 if (d2dInit.dash) {
-                    this._signals.push(d2dInit.dash.connect('notify::translation-y', () => this.wakeFrameSync()));
-                    this._signals.push(d2dInit.dash.connect('notify::opacity', () => this.wakeFrameSync()));
+                    this._signals.push(d2dInit.dash.connect('notify::translation-y', syncSlide));
+                    this._signals.push(d2dInit.dash.connect('notify::opacity', syncSlide));
                 }
                 if (d2dInit._slider) {
-                    this._signals.push(d2dInit._slider.connect('notify::slide-x', () => this.wakeFrameSync()));
-                    this._signals.push(d2dInit._slider.connect('notify::y', () => this.wakeFrameSync()));
+                    this._signals.push(d2dInit._slider.connect('notify::slide-x', syncSlide));
+                    this._signals.push(d2dInit._slider.connect('notify::y', syncSlide));
                 }
             } catch (_) {}
         }
@@ -807,31 +811,33 @@ export class DashManager {
         }
 
         const isD2DTransitioning = Boolean(d2d && (
-            d2d._dockState === 1   ||
+            d2d._dockState === 1 ||
             d2d._dockState === 3
         ));
+        const slideX = (d2d && d2d._slider && Number.isFinite(d2d._slider.slide_x))
+            ? Math.max(0, Math.min(1, d2d._slider.slide_x))
+            : 1;
+        const isSlideAnimating = Boolean(d2d && (isD2DTransitioning || slideX < 0.999));
 
 
         if (isFullscreen) {
             const isD2DShowing = d2d && d2d.visible && d2d.mapped &&
-                                 (d2d._dockState === 2   || d2d._dockState === 3  ) &&
-                                 (d2d._dockState === 3 || !d2d._slider || d2d._slider.slide_x > 0.05);
+                                 (d2d._dockState === 2 || d2d._dockState === 3 || d2d._dockState === 1) &&
+                                 (!d2d._slider || slideX > 0.001);
             if (!isD2DShowing) {
                 this.bgActor.hide();
                 this.bgActor.opacity = 0;
+                this.bgActor.translation_x = 0;
+                this.bgActor.translation_y = 0;
                 return false;
             }
         }
 
 
-        if (d2d && d2d._dockState === 1  ) {
-            return false;
-        }
-
-
-        if (d2d && (!d2d.visible || !d2d.mapped || d2d._dockState === 0   || (d2d._slider && d2d._slider.slide_x <= 0.001))) {
+        if (d2d && (!d2d.visible || !d2d.mapped || d2d._dockState === 0 || (d2d._slider && slideX <= 0.001))) {
             this.bgActor.hide();
             this.bgActor.opacity = 0;
+            this.bgActor.translation_x = 0;
             this.bgActor.translation_y = 0;
             return false;
         }
@@ -975,13 +981,24 @@ export class DashManager {
         }
 
 
-        if (isD2DTransitioning && this._lastRestingAbsY !== undefined) {
+        if (isSlideAnimating && this._lastRestingAbsY !== undefined) {
             absX = this._lastRestingAbsX;
             absY = this._lastRestingAbsY;
             baseW = this._lastRestingBaseW;
             baseH = this._lastRestingBaseH;
+            if (slideX < 1.0) {
+                const pos = d2d?._position;
+                const slideDist = (pos === 1 || pos === 3)
+                    ? (baseW + Math.max(8, marginBottom))
+                    : (baseH + Math.max(8, marginBottom));
+                const delta = (1.0 - slideX) * slideDist;
+                if (pos === 0) absY -= delta;
+                else if (pos === 1) absX -= delta;
+                else if (pos === 3) absX += delta;
+                else absY += delta;
+            }
             hasSlabBounds = true;
-        } else if (hasSlabBounds || hasIconBounds) {
+        } else if (!isSlideAnimating && (hasSlabBounds || hasIconBounds)) {
             const screenBottom = monitor ? (monitor.y + monitor.height) : 1080;
             if (absY < screenBottom && (!monitor || absY >= monitor.y)) {
                 this._lastRestingAbsX = absX;
@@ -1046,10 +1063,12 @@ export class DashManager {
                 this.wakeFrameSync();
             }
             this.bgActor.show();
-            if (!isD2DTransitioning) {
-                this.bgActor.opacity = this.targetActor.opacity;
-                this.bgActor.translation_y = 0;
-            }
+            const baseOpacity = Number.isFinite(this.targetActor.opacity) ? this.targetActor.opacity : 255;
+            this.bgActor.opacity = isSlideAnimating
+                ? Math.max(0, Math.min(255, Math.round(baseOpacity * slideX)))
+                : baseOpacity;
+            this.bgActor.translation_x = 0;
+            this.bgActor.translation_y = 0;
         }
         let bgW = Math.max(1.0, w + (SHADER_PADDING * 2) + (this._glassExpand * 2));
         let bgH = Math.max(1.0, h + (SHADER_PADDING * 2) + (this._glassExpand * 2));
@@ -1068,9 +1087,9 @@ export class DashManager {
         let localBgX = bgX - monitor.x;
         let localBgY = bgY - monitor.y;
 
-        if (!isD2DTransitioning && (this._lastBgW !== bgW || this._lastBgH !== bgH ||
+        if (this._lastBgW !== bgW || this._lastBgH !== bgH ||
             this._lastBgX !== bgX || this._lastBgY !== bgY ||
-            this._lastScreenW !== screenW || this._lastScreenH !== screenH)) {
+            this._lastScreenW !== screenW || this._lastScreenH !== screenH) {
             this.bgActor.remove_transition('size');
             this.bgActor.remove_transition('position');
             this.bgActor.set_position(monitor.x, monitor.y);

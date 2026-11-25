@@ -1003,31 +1003,11 @@ const DockedDash = GObject.registerClass({
     _animateIn(time, delay) {
         if (this._intellihideIsEnabled)
             this._disableUnredirect();
-        const wasHidden = (this._dockState === State.HIDDEN);
         this._dockState = State.SHOWING;
         this.dash.iconAnimator.start();
         this._delayedHide = false;
 
-        const glassBg = this._getGlassBg();
-        if (glassBg) {
-            glassBg.remove_all_transitions();
-            const dist = this._isHorizontal ? (this.height > 0 ? this.height : 92) : (this.width > 0 ? this.width : 92);
-            const offset = this._getSlideOffset(dist);
-            if (wasHidden || !glassBg.visible || glassBg.opacity === 0) {
-                glassBg.translation_x = offset.translation_x;
-                glassBg.translation_y = offset.translation_y;
-                glassBg.opacity = 0;
-            }
-            glassBg.show();
-            glassBg.ease({
-                translation_x: 0,
-                translation_y: 0,
-                opacity: 255,
-                duration: time * 1000,
-                delay: delay * 1000,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            });
-        }
+        try { globalThis._liquidGlassDockSync?.(); } catch (_e) {}
 
         this._slider.ease_property('slide-x', 1, {
             duration: time * 1000,
@@ -1036,10 +1016,7 @@ const DockedDash = GObject.registerClass({
             onComplete: () => {
                 this._dockState = State.SHOWN;
                 this._slider?.child?.remove_clip?.();
-
-
-
-
+                try { globalThis._liquidGlassDockSync?.(); } catch (_e) {}
 
                 if (this._removeBarrierTimeoutId > 0)
                     GLib.source_remove(this._removeBarrierTimeoutId);
@@ -1057,26 +1034,7 @@ const DockedDash = GObject.registerClass({
     _animateOut(time, delay) {
         this._dockState = State.HIDING;
 
-        const glassBg = this._getGlassBg();
-        if (glassBg) {
-            glassBg.remove_all_transitions();
-            const dist = this._isHorizontal ? (this.height > 0 ? this.height : 92) : (this.width > 0 ? this.width : 92);
-            const offset = this._getSlideOffset(dist);
-            glassBg.ease({
-                translation_x: offset.translation_x,
-                translation_y: offset.translation_y,
-                opacity: 0,
-                duration: time * 1000,
-                delay: delay * 1000,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                onComplete: () => {
-                    glassBg.hide();
-                    glassBg.translation_x = 0;
-                    glassBg.translation_y = 0;
-                    glassBg.opacity = 0;
-                },
-            });
-        }
+        try { globalThis._liquidGlassDockSync?.(); } catch (_e) {}
 
         this._slider.ease_property('slide-x', 0, {
             duration: time * 1000,
@@ -1084,6 +1042,7 @@ const DockedDash = GObject.registerClass({
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             onComplete: () => {
                 this._dockState = State.HIDDEN;
+                try { globalThis._liquidGlassDockSync?.(); } catch (_e) {}
                 if (this._intellihideIsEnabled)
                     this._restoreUnredirect();
 
@@ -1499,10 +1458,6 @@ const DockedDash = GObject.registerClass({
 
     _removeAnimations() {
         this._slider.remove_all_transitions();
-        const glassBg = this._getGlassBg();
-        if (glassBg) {
-            glassBg.remove_all_transitions();
-        }
     }
 
     _onDragStart() {

@@ -165,6 +165,17 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("mac-wc-muted", mac_about)
         self.assertIn('make_traffic_dot("minimize")', mac_about)
         self.assertIn("STYLE_PROVIDER_PRIORITY_USER", mac_about)
+
+    def test_dock_glass_slides_and_fades_in_sync_during_hide(self):
+        dock_mgr_js = (ROOT / "extensions" / "liquid-glass@thinkingcoding1231.gmail.com" / "dist" / "dockManager.js").read_text(encoding="utf-8")
+        self.assertIn("const isSlideAnimating = Boolean(d2d && (isD2DTransitioning || slideX < 0.999));", dock_mgr_js)
+        self.assertIn("Math.round(baseOpacity * slideX)", dock_mgr_js)
+        self.assertNotIn("if (d2d && d2d._dockState === 1  ) {\n            return false;\n        }", dock_mgr_js)
+        dock_mgr_ts = (ROOT / "extensions" / "liquid-glass@thinkingcoding1231.gmail.com" / "src" / "dockManager.ts").read_text(encoding="utf-8")
+        self.assertIn("const isSlideAnimating = Boolean(d2d && (isD2DTransitioning || slideX < 0.999));", dock_mgr_ts)
+        docking_js = (ROOT / "extensions" / "dash2dock-motion@unmade.space" / "docking.js").read_text(encoding="utf-8")
+        self.assertIn("globalThis._liquidGlassDockSync?.()", docking_js)
+        self.assertNotIn("glassBg.ease({", docking_js)
         mac_hwinfo = (ROOT / "bin" / "mac-hwinfo").read_text(encoding="utf-8")
         self.assertIn("/run/macw1y", mac_hwinfo)
         self.assertIn("product_serial", mac_hwinfo)
