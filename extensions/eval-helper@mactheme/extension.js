@@ -1951,16 +1951,6 @@ export default class EvalHelper extends Extension {
                         glass.setPadding(0);
                         try {
                             glass._effect?.setSurfaceLightEnabled?.(true);
-                            glass._effect?._setFloat?.('displacement_scale', 20.0);
-                            glass._effect?._setFloat?.('ior', 1.40);
-                            glass._effect?._setFloat?.('rim_intensity', 0.25);
-                            glass._effect?._setFloat?.('rim_width', 3.5);
-                            glass._effect?._setFloat?.('rim_power', 4.0);
-                            glass._effect?._setFloat?.('rim_directional_power', 2.5);
-                            glass._effect?._setFloat?.('rim_light_color_intensity', 1.2);
-                            glass._effect?._setFloat?.('specular_intensity', 0.12);
-                            glass._effect?._setFloat?.('sheen_intensity', 0.10);
-                            glass._effect?._setFloat?.('chroma_strength', 0.005);
                             glass._effect?._setFloat?.('shadow_intensity', cfg.shadow / 100.0);
                             glass._effect?._setFloat?.('ao_intensity', 0.0);
                         } catch (_) {}

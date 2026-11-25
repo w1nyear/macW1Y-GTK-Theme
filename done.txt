@@ -5788,3 +5788,24 @@ Task #938:
   * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
 
+970. 2026-11-25 — Стартова синхронізація рефракції Liquid Glass із styling.json та адаптація шейдера скла для малих елементів:
+  - Змінені файли:
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/extension.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/extension.js) (рядки 83-112)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED.frag](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED.frag) (рядки 358-445)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag) (рядки 358-445)
+    * [extensions/kiwi@kemma/apps/tahoeControlCenter.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeControlCenter.js) (рядки 3935-3945)
+    * [extensions/kiwi@kemma/apps/tahoeQuickSettings.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeQuickSettings.js) (рядки 2617-2625)
+    * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js) (рядки 1952-1958)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Опис змін:
+    * У liquid-glass/extension.js при старті (_enableInner) додано автоматичне завантаження та синхронізацію параметрів з ~/.config/mac-styling/styling.json (liquid_shape, liquid_refraction -> glass-displacement-scale і glass-ior, liquid_chroma, liquid_rim, glass-specular-intensity) у GSettings до ініціалізації менеджерів.
+    * Прибрано жорстке перезатирання глобальних параметрів оптики (displacement_scale, ior, rim_intensity, chroma_strength тощо) в tahoeControlCenter.js, tahoeQuickSettings.js та eval-helper/extension.js, щоб усі елементи одразу після запуску ПК використовували значення з Mac стилізації без потреби рухати слайдер.
+    * У LQ-OPTIMIZED.frag та glass.frag додано масштабування для малих елементів (minBoxDim = min(box_size.x, box_size.y), elemScale = clamp(minBoxDim / 110.0, 0.20, 1.0)):
+      - bevelWidth обмежено maxSafeBevel = max(minBoxDim * 0.36, 3.0), щоб фаски не перетиналися в центрі малих кнопок, OSD чи перемикача мови.
+      - effDispScale = displacement_scale * elemScale і жорстке обмеження довжини вектора рефракції maxDispUV = (minBoxDim * 0.32) / minRes при safe_z = max(-refractedRay.z, 0.25), що виключає виліт UV за межі елемента.
+      - При refrColor.a < 0.20 замість чорної заливки fallbackBg використовується незсунутий піксель centerTap, що повністю усуває темні внутрішні кільця на OSD і перемикачі розкладки.
+  - Перевірка:
+    * mac-extension-guard verify: 21/21 LOCKED OK; mac-audit-sync check: 100% PASS; mac-integrity-check --check: System is green; unittest: 45/45 PASS; 0 кирилиці в install.sh.
+  * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+

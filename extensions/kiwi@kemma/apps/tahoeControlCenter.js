@@ -3937,21 +3937,6 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
         } else {
             effect.setSurfaceLightEnabled(true);
             effect._setFloat('surface_light_enabled', 1.0);
-            effect._setFloat('sheen_intensity', 0.12);
-            effect._setFloat('rim_intensity', 0.28);
-            effect._setFloat('rim_width', 4.0);
-            effect._setFloat('rim_power', 4.5);
-            effect._setFloat('rim_directional_power', 2.5);
-            effect._setFloat('rim_light_color_intensity', 1.35);
-            effect._setFloat('specular_intensity', 0.14);
-            effect._setFloat('displacement_scale', Math.max(22.0, Math.min(34.0, _qsGlassRefraction())));
-            effect._setFloat('ior', 1.45);
-            effect._setFloat('chroma_strength', 0.003);
-            effect._setFloat('edge_smoothing', 1.5);
-            effect._setFloat('profile_shape_n', 5.4);
-            effect._setFloat('max_z', 8.0);
-            effect._setFloat('ao_intensity', 0.04);
-            effect._setFloat('ao_radius', 2.0);
         }
     } catch (_) {
 

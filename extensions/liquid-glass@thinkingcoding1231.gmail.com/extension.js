@@ -83,6 +83,33 @@ export default class LiquidGlassExtension extends Extension {
     this._dashDocks = [];
     this._settings = this.getSettings("org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com");
 
+    try {
+      const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+      if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+        const [ok, bytes] = GLib.file_get_contents(confPath);
+        if (ok) {
+          const st = JSON.parse(new TextDecoder().decode(bytes));
+          const schema = this._settings.settings_schema;
+          const setIntIf = (k, v) => {
+            if (schema?.has_key(k) && this._settings.get_int(k) !== v) this._settings.set_int(k, v);
+          };
+          const setDblIf = (k, v) => {
+            if (schema?.has_key(k) && Math.abs(this._settings.get_double(k) - v) > 1e-6) this._settings.set_double(k, v);
+          };
+          if (typeof st.liquid_shape === 'number') setIntIf('glass-shape-type', st.liquid_shape);
+          if (typeof st.liquid_refraction === 'number') {
+            setDblIf('glass-displacement-scale', st.liquid_refraction * 1.5);
+            setDblIf('glass-ior', 1.0 + (st.liquid_refraction / 100.0) * 1.0);
+          }
+          if (typeof st.liquid_chroma === 'number') setDblIf('glass-chroma-strength', (st.liquid_chroma / 100.0) * 0.04);
+          if (typeof st.liquid_rim === 'number') setDblIf('glass-rim-intensity', st.liquid_rim / 100.0);
+          setDblIf('glass-specular-intensity', 0.0);
+        }
+      }
+    } catch (e) {
+      console.warn(`[Liquid Glass] Failed to sync styling.json on startup: ${e}`);
+    }
+
 
     this._logger = new Logger(this._settings);
 

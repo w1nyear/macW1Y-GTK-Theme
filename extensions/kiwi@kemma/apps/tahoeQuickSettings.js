@@ -2617,19 +2617,6 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
         } else {
             effect.setSurfaceLightEnabled(true);
             effect._setFloat('surface_light_enabled', 1.0);
-            effect._setFloat('sheen_intensity', _qsGlassGlare() * 0.6);
-            effect._setFloat('rim_intensity', _qsInt('tahoe-qs-rim-intensity', 8) / 100);
-            effect._setFloat('rim_width', _qsInt('tahoe-qs-rim-width', 50) / 10);
-            effect._setFloat('rim_power', _qsInt('tahoe-qs-rim-power', 60) / 10);
-            effect._setFloat('rim_directional_power', _qsInt('tahoe-qs-rim-direction', 27) / 10);
-            effect._setFloat('rim_light_color_intensity', _qsInt('tahoe-qs-rim-light', 140) / 100);
-            effect._setFloat('specular_intensity', _qsInt('tahoe-qs-specular', 0) / 100);
-            effect._setFloat('displacement_scale', _qsGlassRefraction());
-            effect._setFloat('ior', _qsInt('tahoe-qs-ior', 240) / 100);
-            effect._setFloat('chroma_strength', _qsInt('tahoe-qs-chroma', 60) / 10000);
-            effect._setFloat('edge_smoothing', _qsInt('tahoe-qs-edge', 20) / 10);
-            effect._setFloat('profile_shape_n', _qsInt('tahoe-qs-profile', 700) / 100);
-            effect._setFloat('max_z', _qsInt('tahoe-qs-depth', 25));
         }
     } catch (_) {
 

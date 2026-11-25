@@ -356,8 +356,11 @@ void main() {
     }
 
     // 3. FAST-PATH: Interior flat glass surface (depth >= 0.999)
-    float depthReach = (shape_type > 0.5 && isDock < 0.5) ? min(box_size.x, box_size.y) : corner_radius;
-    float bevelWidth = clamp(max_z * 0.75 + depthReach * 0.2, 4.0, 28.0);
+    float minBoxDim = max(min(box_size.x, box_size.y), 1.0);
+    float elemScale = clamp(minBoxDim / 110.0, 0.20, 1.0);
+    float depthReach = (shape_type > 0.5 && isDock < 0.5) ? minBoxDim : corner_radius;
+    float maxSafeBevel = max(minBoxDim * 0.36, 3.0);
+    float bevelWidth = clamp(max_z * 0.75 + depthReach * 0.2, 4.0, min(28.0, maxSafeBevel));
     float interiorThreshold = max(bevelWidth + edgeFeather, max(ao_radius, rim_width));
 
     if (early_exit_enabled > 0.5 && debug_view < 0.5 && -d >= interiorThreshold) {
@@ -409,16 +412,23 @@ void main() {
     vec3 refractedRay = refract(viewDir, normal, 1.0 / effIor);
 
     float minRes = max(min(resolution.x, resolution.y), 1.0);
-    float thicknessNorm = displacement_scale / minRes;
-    float safe_z = max(-refractedRay.z, 0.15);
+    float effDispScale = displacement_scale * elemScale;
+    float thicknessNorm = effDispScale / minRes;
+    float safe_z = max(-refractedRay.z, 0.25);
     float edgeDampen = smoothstep(0.0, edgeFeather * 2.5, -d);
     vec2 dispVec = (refractedRay.xy / safe_z) * thicknessNorm * edgeDampen;
 
-    vec2 refrUv = (displacement_scale > 0.001) ? stabilizedUV(screenUv + dispVec, screenUv) : screenUv;
+    float maxDispUV = (minBoxDim * 0.32) / minRes;
+    float dispLen = length(dispVec);
+    if (dispLen > maxDispUV && dispLen > 0.00001) {
+        dispVec *= (maxDispUV / dispLen);
+    }
+
+    vec2 refrUv = (effDispScale > 0.001) ? stabilizedUV(screenUv + dispVec, screenUv) : screenUv;
 
     vec4 refrColor;
     if (chroma_strength > 0.0001 && length(dispVec) > 0.00001) {
-        vec2 chromaOffset = normal2D * (chroma_strength / minRes) * edgeDampen;
+        vec2 chromaOffset = normal2D * ((chroma_strength * elemScale) / minRes) * edgeDampen;
         float rCol = texture2D(cogl_sampler1, SAFE(stabilizedUV(refrUv + chromaOffset, refrUv))).r;
         vec4 gCol  = texture2D(cogl_sampler1, SAFE(refrUv));
         float bCol = texture2D(cogl_sampler1, SAFE(stabilizedUV(refrUv - chromaOffset, refrUv))).b;
@@ -428,7 +438,10 @@ void main() {
     }
 
     if (refrColor.a < 0.20) {
-        vec3 fallbackBg = mix(vec3(0.12, 0.12, 0.14), activeTint, activeBaseStrength);
+        vec4 centerTap = texture2D(cogl_sampler1, SAFE(screenUv));
+        vec3 fallbackBg = (centerTap.a > 0.20)
+            ? centerTap.rgb
+            : mix(vec3(0.12, 0.12, 0.14), activeTint, activeBaseStrength);
         refrColor.rgb = mix(fallbackBg, refrColor.rgb, clamp(refrColor.a / 0.20, 0.0, 1.0));
     }
 
