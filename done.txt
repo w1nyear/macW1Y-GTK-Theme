@@ -5910,3 +5910,13 @@ Task #938:
     * unittest: 54/54 PASS; mac-extension-guard verify: 21/21 LOCKED OK; mac-i18n-verify: PASS; mac-audit-sync check: 100% PASS; mac-integrity-check --check: System is green; 0 кирилиці в install.sh.
   * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+975. 2026-11-25 — Посилення правила обов’язкової кросплатформної адаптації кожного файлу в AI_INSTRUCTIONS.md:
+  - Змінені файли:
+    * [AI_INSTRUCTIONS.md](file:///home/vitaliy/macW1Y/AI_INSTRUCTIONS.md) (рядки 29-42)
+    * [AI_INSTRUCTIONS.md](file:///home/vitaliy/MACTHEMEFILES/AI_INSTRUCTIONS.md) (рядки 29-42)
+  - Опис змін:
+    * У Розділ 3 додано Linux Mint до переліку підтримуваних дистрибутивів (Ubuntu, Debian, Linux Mint, Fedora, Arch Linux, CachyOS).
+    * Явно зафіксовано вимогу адаптувати та перевіряти кожен змінений або новий файл (інсталятор, утиліти з bin/, C-бібліотеки, JS-розширення, GDM/GSettings, systemd/autostart, залежності) під усі підтримувані дистрибутиви: GNOME 46–51 (`Clutter.Orientation`, fallback `Clutter.OffscreenEffect` + `Cogl.Pipeline` + `Clutter.PipelineNode`, захист від автооновлень EGO), GDM-профілі та `greeter-dconf-defaults`, SELinux `Enforcing`, генерація локалей (`/etc/locale.gen`, `update-locale`, `localectl`) та тести.
+  * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

@@ -26,16 +26,19 @@
 
 ---
 
-## 3. Кросплатформна синхронізація (Ubuntu, Debian, Fedora, Arch Linux, CachyOS)
+## 3. Кросплатформна синхронізація (Ubuntu, Debian, Linux Mint, Fedora, Arch Linux, CachyOS)
 
-Усі модулі проекту розробляються та оновлюються синхронно для всіх підтримуваних систем:
-- **Пакетні менеджери**: оновлення залежностей синхронно вноситься до `apt-packages.txt` (Debian/Ubuntu), `dnf-packages.txt` (Fedora) та `pacman-packages.txt` (Arch/CachyOS).
-- **Бібліотечні шляхи**: враховувати відмінності `SYS_LIB_DIR` — multiarch (`/usr/lib/x86_64-linux-gnu` у Debian/Ubuntu), `/usr/lib64` (Fedora), `/usr/lib` (Arch/CachyOS).
+**Кожен змінений або новий файл** (`install.sh`, скрипти та утиліти з `bin/`, C-бібліотеки, JS-розширення, GDM/GSettings-конфіги, systemd/autostart-сервіси, списки залежностей) під час будь-якого редагування має обов’язково адаптуватися та перевірятися на сумісність з **усіма підтримуваними дистрибутивами**: **Ubuntu, Debian, Linux Mint, Fedora, Arch Linux та CachyOS**:
+- **Обов’язкова перевірка при кожній правці файлу**: не припускати поведінку лише Ubuntu — при зміні будь-якого компонента одразу враховувати відмінності дистрибутивів (GNOME 46–51, Nautilus/GTK версії, SELinux Enforcing у Fedora, GDM-профілі, `systemd`/D-Bus середовище, локалізацію) і синхронно оновлювати відповідні гілки коду та тести.
+- **Пакетні менеджери та встановлення**: оновлення залежностей синхронно вноситься до `apt-packages.txt` (Debian/Ubuntu/Linux Mint), `dnf-packages.txt` (Fedora) та `pacman-packages.txt` (Arch/CachyOS).
+- **Бібліотечні шляхи**: враховувати відмінності `SYS_LIB_DIR` — multiarch (`/usr/lib/x86_64-linux-gnu` у Debian/Ubuntu/Linux Mint), `/usr/lib64` (Fedora), `/usr/lib` (Arch/CachyOS).
 - **Безпечні обгортки (Wrappers)**: обгортки Nautilus, GNOME Control Center та Ptyxis встановлюються виключно в `/usr/local/bin`, використовують динамічне визначення системного оригінального бінарника (`orig`) із захистом від рекурсії і не модифікують файли пакунків (`dpkg`, `rpm`, `pacman`).
+- **GDM, теми та автозапуск**: формування `/etc/dconf/profile/gdm` має зберігати дистрибутивний `greeter-dconf-defaults` (`/var/lib/gdm3/greeter-dconf-defaults` у Debian/Ubuntu/Mint або `/usr/share/gdm/greeter-dconf-defaults` у Fedora/Arch), перевіряти `update-alternatives --query gdm-theme.gresource` перед симлінком `/usr/share/gnome-shell/gnome-shell-theme.gresource`, а також забезпечувати `dbus-run-session` fallback та `/etc/xdg/autostart/mac-ensure-extensions.desktop`.
+- **Локалізація та SELinux**: генерація локалей має підтримувати `/etc/locale.gen` + `locale-gen` (Arch/CachyOS, Debian/Mint), `update-locale` і `localectl`; системні сервіси, бібліотеки та файли конфігурацій мають коректно працювати за увімкненого SELinux (`Enforcing` у Fedora).
 - **Завантажувачі**: автоматичне розпізнавання GRUB 2 (`update-grub`, `grub2-mkconfig -o /boot/grub2/grub.cfg`, `grub-mkconfig -o /boot/grub/grub.cfg`) та безпечний пропуск без помилок для `systemd-boot` (CachyOS/Arch).
 - **Initramfs**: підтримка генераторів через `macw1y_rebuild_initramfs` (`initramfs-tools`, `dracut`, `mkinitcpio`).
 - **Схеми GSettings**: ізоляція специфічних для Ubuntu схем (`org.gnome.shell.ubuntu`) у `macw1y-gdm/99_ubuntu.gschema.override`. Усі виклики `gsettings set` захищаються суфіксом `2>/dev/null || true`.
-- **Матриця версій GNOME**: суворе дотримання діапазону GNOME 46–51 у `metadata.json` усіх 21 керованих розширень та синхронізація хешів у `config/extensions.lock.json`.
+- **Матриця версій GNOME (46–51) та захист розширень**: суворе дотримання діапазону GNOME 46–51 у `metadata.json` і коді всіх 21 керованих розширень (включно з `Clutter.Orientation`, fallback на `Clutter.OffscreenEffect` + `Cogl.Pipeline` + `Clutter.PipelineNode` замість видаленого у GNOME 51 `ShaderEffect.set_shader_source`, без `Clutter.get_default_backend()`, безпечним розблокуванням екрана та захистом від автооновлень із EGO) і синхронізація хешів у `config/extensions.lock.json`.
 
 ---
 
