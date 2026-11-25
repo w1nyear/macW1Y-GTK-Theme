@@ -693,10 +693,13 @@ export class UIManager {
         };
 
         let startFrameSync = () => {
-            glassForceRefresh?.(this.bgActor);
+            try {
+                buildClones();
+                this._syncGeometry();
+                glassForceRefresh?.(this.bgActor);
+            } catch (_) {}
             this.wakeFrameSync();
             if (this._frameSyncId === 0) {
-                buildClones();
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
         };
@@ -746,11 +749,18 @@ export class UIManager {
                         this.animActor.set_scale(1.0, 1.0);
                     }
                     if (this.bgActor) {
+                        this.bgActor._isClosingAnimation = false;
                         this.bgActor.opacity = 255;
                         this.bgActor.visible = true;
+                        this.bgActor.show();
                     }
                     this._stableBaseW = undefined;
                     this._stableBaseH = undefined;
+                    try {
+                        buildClones();
+                        this._syncGeometry();
+                        glassForceRefresh?.(this.bgActor);
+                    } catch (_) {}
                     startFrameSync();
                     this._startAdaptiveColorSampling(true);
                 }

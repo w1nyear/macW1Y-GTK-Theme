@@ -455,6 +455,7 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
         this.setResolution(monW, monH);
         super.show();
         try {
+            this._effect?.markBackdropDirty?.();
             this._windowClones?.rebuildClones?.();
             this._uiSampler?.refresh?.();
             glassForceRefresh?.(this);

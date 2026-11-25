@@ -98,6 +98,15 @@ export class PanelMenuManager {
                                 this._liquidGlassUIManager = mgr;
                                 self._menus.set(this, { name: 'popup-menu', manager: mgr });
                                 mgr.setup();
+                                if (mgr.bgActor) {
+                                    mgr.bgActor.visible = true;
+                                    mgr.bgActor.opacity = (this.actor ? this.actor.opacity : 255);
+                                }
+                                try {
+                                    mgr._syncGeometry?.();
+                                    glassForceRefresh?.(mgr.bgActor);
+                                    mgr.wakeFrameSync?.();
+                                } catch (_) {}
                                 this.actor.connect('destroy', () => {
                                     try {
                                         this._liquidGlassUIManager?.cleanup();
@@ -127,6 +136,7 @@ export class PanelMenuManager {
         watch(Main.extensionManager, 'extension-state-changed');
         for (const key of ['enable-extra-menu-glass', 'disabled-extra-menus', ...Object.values(LEGACY_KEYS)])
             watch(this._settings, `changed::${key}`);
+        try { this._scan(); } catch (_) {}
         this._scheduleScan();
     }
     _scheduleScan() {

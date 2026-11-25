@@ -5689,3 +5689,49 @@ Task #938:
   * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
 
+966. Усунення затримки промальовування скла (ліквідація лагу та моментальний рендеринг при раптовому відкритті Spotlight, Меню, Dock, Control Center та Alt+Tab):
+  - Діагностика першопричини:
+    * LiquidEffect: шейдери (glass.frag, downsample.frag, upsample.frag) зчитувалися з диска асинхронно через _readFileAsync при створенні кожного нового екземпляра скла, а Cogl-конвеєри компілювалися ліниво лише на першому виклику vfunc_paint_target. Це спричиняло затримку у 50-100мс перед першим малюванням ефекту скла.
+    * Меню та Quick Settings (uiManager, quickSettingsManager, panelMenuManager): у startFrameSync виклик buildClones() блокувався умовою (this._frameSyncId === 0) одразу після wakeFrameSync(), яка встановлювала _frameSyncId у ненульове значення. Геометрія скла не синхронізувалася на нульовому кадрі, а спливаючі меню ініціалізувалися ліниво.
+    * Dock (dockManager): док анімував translation-y/translation-x та opacity при появі/приховуванні, проте dockManager не відстежував ці властивості реактивно в один такт.
+    * Spotlight та діалоги (searchDialog.js, applications_menu.js, clipboardDialog.js): при відкритті this._glass.opacity скидався у 0, а анімація easing запускалася лише для this._box, залишаючи скло відставати або зʼявлятися із запізненням.
+    * Alt+Tab SwitcherPopup (eval-helper): виклик getSwitcherGlass() відбувався через асинхронний IIFE всередині show(), що додавало затримку мікротасків перед появою фонового скла.
+  - LiquidEffect (dist/liquidEffect.js):
+    * Додано глобальне кешування коду шейдерів (_cachedDownsampleSource, _cachedUpsampleSource, _cachedGlassSources).
+    * Реалізовано синхронне завантаження шейдерів (_loadAllShadersSync) через GLib.file_get_contents.
+    * Реалізовано завчасну компіляцію Cogl-конвеєрів (_initPipelines) у конструкторі, що забезпечує 100% готовність до композитингу на нульовому кадрі без відкатів чи затримок.
+  - BackdropGlass (dist/rendering/backdropGlass.js):
+    * У методі show() додано миттєве маркування _effect.markBackdropDirty() та синхронне оновлення текстур.
+  - UIManager & QuickSettingsManager & PanelMenuManager:
+    * Виправлено startFrameSync: тепер buildClones(), _syncGeometry() та glassForceRefresh() виконуються негайно та синхронно.
+    * В open-state-changed геометрія та видимість скла застосовуються синхронно на кадрі відкриття.
+    * У panelMenuManager.js додано синхронне сканування на старті та миттєве налаштування для динамічних PopupMenu.
+  - DockManager (dist/dockManager.js):
+    * Додано обробники notify::translation-y, notify::translation-x, notify::opacity та notify::visible на targetActor, що синхронізує скло з анімацією дока в режимі реального часу.
+  - Spotlight, Applications Menu & Clipboard (searchDialog.js, applications_menu.js, applications_menu_v5b.js, clipboardDialog.js, extension.js):
+    * Усунено розсинхронізацію прозорості: тепер при відкритті this._glass.ease() запускається одночасно з this._box.ease() у повному локстепі.
+    * На закритті додано парну анімацію this._glass.ease({ opacity: 0 }).
+    * В _syncGlass() додано перевірку відсутності активного переходу прозорості (get_transition("opacity")), щоб виключити колізії кадрів.
+    * В extension.js додано виклик prewarmSpotlight() на старті оболонки.
+  - Alt+Tab SwitcherPopup (extensions/eval-helper@mactheme/extension.js):
+    * Реалізовано синхронне миттєве прикріплення та оновлення геометрії скла (attachGlass(syncGlassInst)) без очікування асинхронного циклу.
+  - Контроль цілісності та синхронізація:
+    * Усі 12 змінених файлів синхронізовано до ~/.local/share/gnome-shell/extensions/.
+    * Оновлено контрольні суми у config/extensions.lock.json та ~/.config/macw1y/extensions.lock.json.
+    * Усі тести та перевірки пройдено: 21/21 locked extensions OK, mac-i18n-verify OK, mac-audit-sync 100% PASS, mac-integrity-check Green, 45/45 unit-тестів PASS.
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/uiManager.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/uiManager.js)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/panelMenuManager.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/panelMenuManager.js)
+  * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/quickSettingsManager.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/quickSettingsManager.js)
+  * [extensions/appmenu@ChathurangaBW.github.io/searchDialog.js](file:///home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/searchDialog.js)
+  * [extensions/appmenu@ChathurangaBW.github.io/applications_menu.js](file:///home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/applications_menu.js)
+  * [extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js](file:///home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/applications_menu_v5b.js)
+  * [extensions/appmenu@ChathurangaBW.github.io/clipboardDialog.js](file:///home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/clipboardDialog.js)
+  * [extensions/appmenu@ChathurangaBW.github.io/extension.js](file:///home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/extension.js)
+  * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js)
+  * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+

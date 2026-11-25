@@ -110,7 +110,10 @@ export default class AppMenuExtension extends Extension {
             globalThis.toggleMacApplications = () => m.toggleSearchDialog('apps');
             globalThis.toggleApplicationsMenu = () => m.toggleSearchDialog('apps');
             globalThis.toggleMacClipboard = () => m.toggleSearchDialog('clipboard');
-            try { m.ensureSearchDialog?.(); } catch (_) {}
+            try {
+                m.ensureSearchDialog?.();
+                m.prewarmSpotlight?.();
+            } catch (_) {}
         } catch (_) {
             globalThis._macSpotlightToggle = (mode = 'search') => toggleSearchDialog(typeof mode === 'string' ? mode : 'search');
             globalThis.toggleMacSpotlight = (mode = 'search') => toggleSearchDialog(typeof mode === 'string' ? mode : 'search');

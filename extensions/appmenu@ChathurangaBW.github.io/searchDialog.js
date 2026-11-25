@@ -2462,8 +2462,10 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             const rawH = box.height > 0 ? box.height : PILL_HEIGHT;
 
             const targetOpacity = (typeof box.opacity === 'number') ? Math.max(0, Math.min(255, Math.round(box.opacity))) : 255;
-            if (this._glass.opacity !== targetOpacity) {
-                this._glass.opacity = targetOpacity;
+            if (!this._glass.get_transition('opacity')) {
+                if (this._glass.opacity !== targetOpacity) {
+                    this._glass.opacity = targetOpacity;
+                }
             }
             if (targetOpacity > 0 && !this._glass.visible) {
                 this._glass.show();
@@ -2921,6 +2923,10 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 this._lastGeometryKey = null;
                 this._syncGlass();
                 this._glass._backdropLocked = false;
+                try {
+                    this._glass.forceRefresh?.(1);
+                    this._glass.wakeFrameSync?.();
+                } catch (_) {}
             } catch (err) {
                 this._glass = null;
                 this._glassResolutionKey = null;
@@ -2997,6 +3003,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                     this._glass.translation_y = 0;
                     this._glass.scale_x = 1.0;
                     this._glass.scale_y = 1.0;
+                    this._glass.opacity = 255;
                     this._glass._backdropLocked = false;
                     try { this._glass.forceRefresh?.(1); } catch (_) {}
                 }
@@ -3004,6 +3011,14 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 this._syncGlass();
             },
         });
+
+        if (_isGlassAlive(this._glass)) {
+            this._glass.ease({
+                opacity: 255,
+                duration: ANIM_DURATION,
+                mode: ANIM_MODE,
+            });
+        }
     }
 
     close(immediate = false) {
@@ -3210,6 +3225,14 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 }
             },
         });
+
+        if (_isGlassAlive(this._glass)) {
+            this._glass.ease({
+                opacity: 0,
+                duration: CLOSE_DURATION,
+                mode: CLOSE_MODE,
+            });
+        }
     }
 
     toggle() {

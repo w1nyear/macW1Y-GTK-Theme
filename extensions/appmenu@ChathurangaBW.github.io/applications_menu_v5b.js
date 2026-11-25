@@ -1057,8 +1057,10 @@ export const MacApplicationsDialog = GObject.registerClass({
             const bgH = Math.round(rawH * scaleY);
 
             const targetOpacity = (typeof box.opacity === 'number') ? Math.max(0, Math.min(255, Math.round(box.opacity))) : 255;
-            if (this._glass.opacity !== targetOpacity) {
-                this._glass.opacity = targetOpacity;
+            if (!this._glass.get_transition('opacity')) {
+                if (this._glass.opacity !== targetOpacity) {
+                    this._glass.opacity = targetOpacity;
+                }
             }
             if (targetOpacity > 0 && !this._glass.visible) {
                 this._glass.show();
@@ -1653,9 +1655,22 @@ export const MacApplicationsDialog = GObject.registerClass({
                 this._box.translation_y = 0;
                 this._box.scale_x = 1.0;
                 this._box.scale_y = 1.0;
+                if (_isGlassAlive(this._glass)) {
+                    this._glass.opacity = 255;
+                    this._glass._backdropLocked = false;
+                    try { this._glass.forceRefresh?.(1); } catch (_) {}
+                }
                 this._syncGlass();
             },
         });
+
+        if (_isGlassAlive(this._glass)) {
+            this._glass.ease({
+                opacity: 255,
+                duration: 220,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
+        }
     }
 
     close(immediate = false) {

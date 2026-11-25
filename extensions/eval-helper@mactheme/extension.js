@@ -2024,109 +2024,123 @@ export default class EvalHelper extends Extension {
                             destroyed = true;
                         }
 
-                        (async () => {
+                        const attachGlass = (glass) => {
+                            if (!glass || destroyed) return;
+                            switcherGlass = glass;
                             try {
-                                if (destroyed) return;
-                                switcherGlass = await getSwitcherGlass();
-                                if (!switcherGlass || destroyed) return;
+                                switcherGlass.addExclusion(this);
+                                if (this._switcherList) {
+                                    switcherGlass.addExclusion(this._switcherList);
+                                }
+                            } catch (_) {}
 
+                            const syncGlass = () => {
+                                if (destroyed) {
+                                    disconnectStage();
+                                    if (switcherGlass?.visible) switcherGlass.hide();
+                                    return;
+                                }
+                                let isDisposed = false;
                                 try {
-                                    switcherGlass.addExclusion(this);
-                                    if (this._switcherList) {
-                                        switcherGlass.addExclusion(this._switcherList);
-                                    }
-                                } catch (_) {}
-
-                                const syncGlass = () => {
-                                    if (destroyed) {
-                                        disconnectStage();
-                                        if (switcherGlass?.visible) switcherGlass.hide();
-                                        return;
-                                    }
-                                    let isDisposed = false;
-                                    try {
-                                        if (!this || !this.visible || this._destroyed || !this._switcherList) {
-                                            isDisposed = true;
-                                        }
-                                    } catch (_) {
+                                    if (!this || !this.visible || this._destroyed || !this._switcherList) {
                                         isDisposed = true;
                                     }
-                                    if (isDisposed) {
-                                        destroyed = true;
-                                        disconnectStage();
-                                        if (switcherGlass?.visible) switcherGlass.hide();
-                                        return;
-                                    }
-
-                                    let slX, slY, slW, slH;
-                                    try {
-                                        [slX, slY] = this._switcherList.get_transformed_position();
-                                        [slW, slH] = this._switcherList.get_transformed_size();
-                                    } catch (_) {
-                                        destroyed = true;
-                                        disconnectStage();
-                                        if (switcherGlass?.visible) switcherGlass.hide();
-                                        return;
-                                    }
-                                    if (slX == null || slY == null || Number.isNaN(slX) || Number.isNaN(slY) || slW <= 1 || slH <= 1) return;
-
-                                    const primary = Main.layoutManager.primaryMonitor;
-                                    if (!primary) return;
-
-                                    const localX = Math.round(slX - primary.x);
-                                    const localY = Math.round(slY - primary.y);
-                                    const bgW = Math.round(slW);
-                                    const bgH = Math.round(slH);
-
-                                    const cfg = _macGetAltTabConfig();
-                                    const blurRad = Math.max(0.0, Number(cfg.blur));
-                                    const tintStr = Math.max(0.0, Math.min(1.0, cfg.tint / 100.0));
-                                    const shadowStr = Math.max(0.0, Math.min(1.0, cfg.shadow / 100.0));
-
-                                    switcherGlass.opacity = this.opacity;
-                                    if (this.opacity > 0) {
-                                        if (!switcherGlass.visible) switcherGlass.show();
-                                    } else {
-                                        if (switcherGlass.visible) switcherGlass.hide();
-                                    }
-
-                                    switcherGlass.set_position(primary.x, primary.y);
-                                    switcherGlass.set_size(primary.width, primary.height);
-                                    switcherGlass.setResolution(primary.width, primary.height);
-                                    switcherGlass.setCornerRadius(cfg.radius);
-                                    switcherGlass.setPadding(0);
-                                    switcherGlass.setBlurRadius(blurRad);
-                                    switcherGlass.setTintStrength(tintStr);
-                                    switcherGlass.setTintColor(0.0, 0.0, 0.0);
-                                    try {
-                                        switcherGlass._effect?._setFloat?.('padding', 0.0);
-                                        switcherGlass._effect?._setFloat?.('corner_radius', cfg.radius);
-                                        switcherGlass._effect?._setFloat?.('shadow_intensity', shadowStr);
-                                    } catch (_) {}
-                                    switcherGlass.setGlassGeometry(localX, localY, bgW, bgH);
-
-                                    const CLIP_PAD = 160;
-                                    switcherGlass.set_clip(localX - CLIP_PAD, localY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
-
-                                    if (typeof switcherGlass.syncSources === 'function') {
-                                        switcherGlass.syncSources();
-                                    }
-                                };
-
-                                try {
-                                    if (typeof switcherGlass.forceRefresh === 'function') {
-                                        switcherGlass.forceRefresh(1);
-                                    }
-                                } catch (_) {}
-
-                                if (!destroyed) {
-                                    stageSignalId = global.stage.connect('before-update', syncGlass);
-                                    syncGlass();
+                                } catch (_) {
+                                    isDisposed = true;
                                 }
-                            } catch (err) {
-                                console.error('[macW1Y] Switcher glass sync error:', err);
+                                if (isDisposed) {
+                                    destroyed = true;
+                                    disconnectStage();
+                                    if (switcherGlass?.visible) switcherGlass.hide();
+                                    return;
+                                }
+
+                                let slX, slY, slW, slH;
+                                try {
+                                    [slX, slY] = this._switcherList.get_transformed_position();
+                                    [slW, slH] = this._switcherList.get_transformed_size();
+                                } catch (_) {
+                                    destroyed = true;
+                                    disconnectStage();
+                                    if (switcherGlass?.visible) switcherGlass.hide();
+                                    return;
+                                }
+                                if (slX == null || slY == null || Number.isNaN(slX) || Number.isNaN(slY) || slW <= 1 || slH <= 1) return;
+
+                                const primary = Main.layoutManager.primaryMonitor;
+                                if (!primary) return;
+
+                                const localX = Math.round(slX - primary.x);
+                                const localY = Math.round(slY - primary.y);
+                                const bgW = Math.round(slW);
+                                const bgH = Math.round(slH);
+
+                                const cfg = _macGetAltTabConfig();
+                                const blurRad = Math.max(0.0, Number(cfg.blur));
+                                const tintStr = Math.max(0.0, Math.min(1.0, cfg.tint / 100.0));
+                                const shadowStr = Math.max(0.0, Math.min(1.0, cfg.shadow / 100.0));
+
+                                switcherGlass.opacity = this.opacity;
+                                if (this.opacity > 0) {
+                                    if (!switcherGlass.visible) switcherGlass.show();
+                                } else {
+                                    if (switcherGlass.visible) switcherGlass.hide();
+                                }
+
+                                switcherGlass.set_position(primary.x, primary.y);
+                                switcherGlass.set_size(primary.width, primary.height);
+                                switcherGlass.setResolution(primary.width, primary.height);
+                                switcherGlass.setCornerRadius(cfg.radius);
+                                switcherGlass.setPadding(0);
+                                switcherGlass.setBlurRadius(blurRad);
+                                switcherGlass.setTintStrength(tintStr);
+                                switcherGlass.setTintColor(0.0, 0.0, 0.0);
+                                try {
+                                    switcherGlass._effect?._setFloat?.('padding', 0.0);
+                                    switcherGlass._effect?._setFloat?.('corner_radius', cfg.radius);
+                                    switcherGlass._effect?._setFloat?.('shadow_intensity', shadowStr);
+                                } catch (_) {}
+                                switcherGlass.setGlassGeometry(localX, localY, bgW, bgH);
+
+                                const CLIP_PAD = 160;
+                                switcherGlass.set_clip(localX - CLIP_PAD, localY - CLIP_PAD, bgW + CLIP_PAD * 2, bgH + CLIP_PAD * 2);
+
+                                if (typeof switcherGlass.syncSources === 'function') {
+                                    switcherGlass.syncSources();
+                                }
+                            };
+
+                            try {
+                                if (typeof switcherGlass.forceRefresh === 'function') {
+                                    switcherGlass.forceRefresh(1);
+                                }
+                            } catch (_) {}
+
+                            if (!destroyed) {
+                                if (!stageSignalId) {
+                                    stageSignalId = global.stage.connect('before-update', syncGlass);
+                                }
+                                syncGlass();
                             }
-                        })();
+                        };
+
+                        const syncGlassInst = (globalThis._macSwitcherGlass && globalThis._macSwitcherGlass.get_parent() && !globalThis._macSwitcherGlass.is_finalized?.())
+                            ? globalThis._macSwitcherGlass
+                            : null;
+                        if (syncGlassInst) {
+                            attachGlass(syncGlassInst);
+                        } else {
+                            (async () => {
+                                try {
+                                    if (destroyed) return;
+                                    const g = await getSwitcherGlass();
+                                    if (!g || destroyed) return;
+                                    attachGlass(g);
+                                } catch (err) {
+                                    console.error('[macW1Y] Switcher glass sync error:', err);
+                                }
+                            })();
+                        }
 
                         return res;
                     };

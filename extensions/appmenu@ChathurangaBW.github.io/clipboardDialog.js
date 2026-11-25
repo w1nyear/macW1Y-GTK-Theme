@@ -966,8 +966,10 @@ export const MacClipboardDialog = GObject.registerClass({
         const bgH = Math.round(rawH * scaleY);
 
         const targetOpacity = (typeof box.opacity === 'number') ? Math.max(0, Math.min(255, Math.round(box.opacity))) : 255;
-        if (this._glass.opacity !== targetOpacity) {
-            this._glass.opacity = targetOpacity;
+        if (!this._glass.get_transition('opacity')) {
+            if (this._glass.opacity !== targetOpacity) {
+                this._glass.opacity = targetOpacity;
+            }
         }
         if (targetOpacity > 0 && !this._glass.visible) this._glass.show();
 
@@ -1108,6 +1110,11 @@ export const MacClipboardDialog = GObject.registerClass({
         if (_isGlassAlive(this._glass)) {
             this._glass.opacity = 0;
             this._glass.show();
+            this._glass.ease({
+                opacity: 255,
+                duration: 220,
+                mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+            });
         }
 
         this._startSyncLoop(240);
@@ -1125,6 +1132,11 @@ export const MacClipboardDialog = GObject.registerClass({
                 this._box.translation_y = 0;
                 this._box.scale_x = 1.0;
                 this._box.scale_y = 1.0;
+                if (_isGlassAlive(this._glass)) {
+                    this._glass.opacity = 255;
+                    this._glass.backdropLocked = false;
+                    try { this._glass.forceRefresh?.(1); } catch (_) {}
+                }
                 this._syncGlass();
             },
         });
@@ -1176,6 +1188,13 @@ export const MacClipboardDialog = GObject.registerClass({
 
         this._isClosing = true;
         this._startSyncLoop(200);
+        if (_isGlassAlive(this._glass)) {
+            this._glass.ease({
+                opacity: 0,
+                duration: 180,
+                mode: Clutter.AnimationMode.EASE_IN_QUAD,
+            });
+        }
         this._box.ease({
             opacity: 0,
             scale_x: 1.12,

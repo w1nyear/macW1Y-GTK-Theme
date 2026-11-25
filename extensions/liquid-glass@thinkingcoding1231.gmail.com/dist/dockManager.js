@@ -570,15 +570,24 @@ export class DashManager {
             }
         };
         let startFrameSync = () => {
+            try {
+                buildClones();
+                this._syncWindowSignals?.();
+                this._syncGeometry();
+                glassForceRefresh?.(this.bgActor);
+            } catch (_) {}
             this.wakeFrameSync();
             if (this._frameSyncId === 0 && !this._torndown && this.bgActor && this.targetActor?.mapped) {
-                buildClones();
-                this._syncWindowSignals();
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
         };
         let mapSignalId = this.targetActor.connect('notify::mapped', () => {
             if (this.targetActor.mapped) {
+                try {
+                    buildClones();
+                    this._syncGeometry();
+                    glassForceRefresh?.(this.bgActor);
+                } catch (_) {}
                 startFrameSync();
             }
             else {
@@ -599,6 +608,22 @@ export class DashManager {
             } catch (e) {
 
             }
+        }));
+        this._signals.push(this.targetActor.connect('notify::translation-y', () => {
+            this.wakeFrameSync();
+            this._syncGeometry();
+        }));
+        this._signals.push(this.targetActor.connect('notify::translation-x', () => {
+            this.wakeFrameSync();
+            this._syncGeometry();
+        }));
+        this._signals.push(this.targetActor.connect('notify::opacity', () => {
+            this.wakeFrameSync();
+            this._syncGeometry();
+        }));
+        this._signals.push(this.targetActor.connect('notify::visible', () => {
+            this.wakeFrameSync();
+            this._syncGeometry();
         }));
         this._signals.push(this.targetActor.connect('enter-event', () => {
             this.wakeFrameSync();

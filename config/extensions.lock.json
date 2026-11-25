@@ -20,7 +20,7 @@
         "50",
         "51"
       ],
-      "sha256": "1c0401d31001af55ff3ec97c313bf884e5b7e8ee13923d592c42155c7cbd6308",
+      "sha256": "4b7302c5e032a192fa6da1823a60a6a9aec0d0a05ed71f10ed51f1cd55d68547",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -32,7 +32,7 @@
       "has_custom_patches": true,
       "patch_description": "macW1Y Monterey style spotlight, main menu, finder naming, wine exclusions; clipboard dialog copy-and-close & click-to-paste injection",
       "last_verified": "2026-11-04",
-      "pinned_sha256": "dac8b224545ba635b2f739b6f69b532bc66572a4909627be9b83087ec02248f3"
+      "pinned_sha256": "4b7302c5e032a192fa6da1823a60a6a9aec0d0a05ed71f10ed51f1cd55d68547"
     },
     "blur-my-shell@aunetx": {
       "uuid": "blur-my-shell@aunetx",
@@ -247,7 +247,7 @@
         "50",
         "51"
       ],
-      "sha256": "0160fbb646293502e6981d7744935c46dc0e00becfd255a810e1b02de3b9b206",
+      "sha256": "05c024362941bc6ed3064febd372ea64e280cc4190b4311298170311246578fd",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -258,9 +258,9 @@
       "has_custom_patches": true,
       "patch_description": "Local D-Bus EvalHelper service and macW1Y Alt+Tab switcher enhancements",
       "last_verified": "2026-11-21",
-      "pinned_sha256": "bfda330ae2e23af34694b88d65fd440a66f5aef89da17ded70614d7c2cd4c29e",
-      "integrity_hash": "bfda330ae2e23af34694b88d65fd440a66f5aef89da17ded70614d7c2cd4c29e",
-      "integrity": "bfda330ae2e23af34694b88d65fd440a66f5aef89da17ded70614d7c2cd4c29e"
+      "pinned_sha256": "05c024362941bc6ed3064febd372ea64e280cc4190b4311298170311246578fd",
+      "integrity_hash": "05c024362941bc6ed3064febd372ea64e280cc4190b4311298170311246578fd",
+      "integrity": "05c024362941bc6ed3064febd372ea64e280cc4190b4311298170311246578fd"
     },
     "kiwi@kemma": {
       "uuid": "kiwi@kemma",
@@ -305,7 +305,7 @@
         "50",
         "51"
       ],
-      "sha256": "3194ccb42c219fbec18309f22d1079e7008a1ba017e90b3d5178327da6553ace",
+      "sha256": "8b52521eb8d89e90bf3e938f653084a2d24c35997107f1464f9b0a115730d886",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -317,7 +317,7 @@
       "has_custom_patches": true,
       "patch_description": "Local custom Liquid Glass GLSL refraction & border shader; UI container owner check for strict rounded rectangle radius enforcement and setShapeType API",
       "last_verified": "2026-11-22",
-      "integrity_hash": "0955216d9a47b243ccf6d1624dc12459522816f71aa605ccb8c92bef58325f88",
+      "integrity_hash": "8b52521eb8d89e90bf3e938f653084a2d24c35997107f1464f9b0a115730d886",
       "files": {
         "global.d.ts": "02492c5b3b37afc11cb19dee9ae1e9ae8f4e6f8502920b57ae6d0b6f8175c41a",
         "package-lock.json": "2610757c38df98269142accd24a1e84a464bbd02e884569ae6d4c9bec586f5db",
@@ -334,26 +334,26 @@
         "shaders/gaussian_h.frag": "1375ac86287fce5a2a1878bfebb4cb39d90eccd3e3128381bc0611e8feaa734d",
         "shaders/glass.frag": "08578eb12fb00ad03e61ec7becbffe3e71f7cfdeb4b60583e68e9be5936062e6",
         "shaders/upsample.frag": "5b499e75ee05a69429948049ba130b6b160a8cf35e63bdc709aec754688e0b03",
-        "schemas/gschemas.compiled": "61af4893ac7b5510f13e548a81c72f4cb707dfd24239788a2944fe785caeacd9",
-        "schemas/org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com.gschema.xml": "8069d7797fd064f2583643d1b54cf94b61bfdb14d11854a706ff328258078d13",
-        "dist/panelMenuManager.js": "8abc38ce13f4e8a8cbb0e3b935773da6461999d3b3bb73dfec5755c91f7735ff",
-        "dist/uiManager.js": "a8e4c2716981e830fc8db84f2ffca629621f603da169276e88307be43411b244",
+        "schemas/gschemas.compiled": "4c89aa3edb1a8d2a45ac351883317b4bc344dfeb810561f60be6822bc1df0446",
+        "schemas/org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com.gschema.xml": "e676686f84cc03ebf922c6eea6b41dead57ebee697440e926617ad7284420794",
+        "dist/panelMenuManager.js": "fb022e30f6e28f4a73ae0447a887f0fe0895a97f422fb70aa6f3a50bb9228796",
+        "dist/uiManager.js": "1197bb04c7edc902c1d766b9d0922ab7247015bd1464e02ede33187aa90a2cb4",
         "dist/windowListService.js": "d3269524445c9faf0f5688d3188885c792fd18ff691219fd48eda9531c8bb2a5",
-        "dist/glassGate.js": "9f34096be924290ac942bfac0d95a683f6357b276dcec85fa1f2d3adc8b9b648",
-        "dist/osdManager.js": "43dc81dde3df9077ff7f36189d5cfa45cd2a987205f54d5da4f024b6ea527978",
+        "dist/glassGate.js": "abc9d6273fb3b4e6b0a211f6e6e1127475032054126ad060d3ef3733570a1941",
+        "dist/osdManager.js": "2f96a1f5acd3dbf9dd9932a5716c50053dca8f936468d0f911d0ed44e8f5aac9",
         "dist/applicationManager_v2.js": "15f84a22c7995625d6c98b251cde13abebe9827f34d91b7ce66cecea0b21f454",
         "dist/liquidEffect_v2.js": "1c6eaef2b3ae0dfc03f6d7403073037cb9c79abea3afc680e2b9325241f92833",
         "dist/applicationManager.js": "95ee1e8613e9f49258b3a6009c3d9a67c229e9177235a48e38552d8394735c64",
-        "dist/dockManager.js": "4da4f583f3ea7e79b51b163ab5e0f9ec88af10c753d1651725364e6ba415a21d",
-        "dist/notificationManager.js": "96d0a89ca404388b19599704108dfc69013583eedd9f3b796ad987c7d3eeca0c",
+        "dist/dockManager.js": "521f4ba76e903684436f00c2baa41d9f42d17ec51a0e74767e2b3670af4b28f4",
+        "dist/notificationManager.js": "31f1b6926e169384468a39b57a15f809cbd9a489cec9db539f2615e9841b1de0",
         "dist/logger.js": "8481ce8b27fa284d9f151ef625067adad971cf34f8912d4165c64a90e30bc7d3",
-        "dist/quickSettingsManager.js": "575f3a04bc2abf3725ccacd1eba8fcb80e811ceb4daebf4773daf189ab237561",
+        "dist/quickSettingsManager.js": "8ddbaa87a1b003e8f5bba3b70750783725c45135f1a3d0167348296517f9b892",
         "dist/contrastSampler.js": "95afa45e3be640c342cdc967faca8d42e31ea6bea7cb31ea34d00adcfb9b61e9",
         "dist/gpuSaveLiveApply.js": "ffe8a7c6e803914d4afeb8770b9a9d3752a8580e531c99dc5f75ef212d5136ca",
-        "dist/liquidEffect.js": "5666e44e35d6e82e4ee6abb7b76b7bca0dac6c0e85e592986e0927c09b0314b1",
+        "dist/liquidEffect.js": "7f9c7bbe7c6063e8ad6ab8576adb0db51c53ddb2161fe0b243db8ca8e7967bca",
         "dist/utils.js": "24370900c20d4ed3d1fd00ce2ca6b16b6190f4a9a2b0507b75de0c81f6d817ee",
-        "dist/rendering/backdropGlass.js": "aafc752ecbbb1d6cddf5cea79af39ffe711a10632c44e21278200f2fe7292318",
-        "src/liquidEffect.ts": "fcf5bf9e8c37de775fac4f1789783c5c30ffc59bab528b40981a204f1935e00f",
+        "dist/rendering/backdropGlass.js": "2f9e017153f81b2375072d5abd5ce06b5a2f12fce8c8da49ef4c079dd3ec7c20",
+        "src/liquidEffect.ts": "47277e33bba9eceb264b15df5b685fc41c300b82a9796b0fe5adaa887f59bc75",
         "src/contrastSampler.ts": "e8089ccd15d1058e8c876e18f1b00cb314cfb90ae2a86c7539f82d9728cda4d1",
         "src/dockManager.ts": "5711cdd97623549cd1205dcab91b2faed1ce8f5eff7b0ea32101e1c2ba633a2e",
         "src/utils.ts": "6efe743fcaf87c563fd44efd334c4577ff99202273b609a4b5a9b4572be06622",
@@ -361,7 +361,7 @@
         "src/windowListService.ts": "0bae95a7bd69b932b7c314f8f47de9305633f4ceefbaafb24f8c2d89d6811838",
         "src/notificationManager.ts": "97f13cc8df5a5f231d5412c9d804372aba2bc752862465a785ef8fb6f8a01a52",
         "src/panelMenuManager.ts": "873c0495997ee409b03a1c70010b11f439013138ba3125b41cd6be12819fb2cb",
-        "src/uiManager.ts": "7717bc5c4c967b901318395c90d71b9dc9c5518852086f81b52bbf64bea9b790",
+        "src/uiManager.ts": "e8c0474ebbd4ffcc237a824633b49955f7183d8bb69b5fc9364e67f2d97aa481",
         "src/applicationManager.ts": "3cf276bcc5fde06d96e1bcba1e27a68cd4e7e2b248812fc588d5a5a500284300",
         "src/osdManager.ts": "9c618a83deecd190b86aa1b60398762c8ee7feff6159f5377b0c19ac71063202",
         "src/logger.ts": "6ba0a6c6216513488a8fd136136e17156c7e3fb3b278d48c5cbe0fe97040ca9e",
@@ -370,8 +370,8 @@
         "icons/audio-volume-medium-symbolic.svg": "8447a2300f7d0fda2c3be92ca17736079661de4cc6942571468220bb2a25ee82",
         "icons/shapes-large-symbolic.svg": "713fe56bf2d550a9c99600a1ce8cd87b993b40101f9d5fa7b007907efc9cdd11"
       },
-      "pinned_sha256": "5f3ec0ed2f1085744d10bf569f1d6aa033e02a2773f7131f8f940ff82c83e8b9",
-      "dir_hash": "5f0d5934"
+      "pinned_sha256": "8b52521eb8d89e90bf3e938f653084a2d24c35997107f1464f9b0a115730d886",
+      "dir_hash": "8b52521e"
     },
     "macw1y-touchpad-gestures@mactheme": {
       "uuid": "macw1y-touchpad-gestures@mactheme",

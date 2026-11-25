@@ -879,6 +879,10 @@ function _registerLiquidEffect(cls) {
     }
 }
 
+let _cachedDownsampleSource = null;
+let _cachedUpsampleSource = null;
+const _cachedGlassSources = new Map();
+
 export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clutter.OffscreenEffect {
 
     static MAX_GLASS_REGIONS = 16;
@@ -1069,24 +1073,47 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
             this._setFloat('tint_g', 1.0);
             this._setFloat('tint_b', 1.0);
         }
-        this._loadAllShadersAsync();
+        const loadedSync = this._loadAllShadersSync();
+        if (loadedSync) {
+            try {
+                const ctx = this._getCoglContext();
+                if (ctx) {
+                    this._initPipelines(ctx);
+                }
+            } catch (e) {
+                this._logger?.error(`[Liquid Glass] Pipeline eager init failed: ${e}`);
+            }
+        } else {
+            this._loadAllShadersAsync();
+        }
     }
 
-
-
-    async _loadAllShadersAsync() {
-
-
-
-
-
-
-        const diagStart = GLib.get_monotonic_time();
-        this._logger?.log(`[Liquid Glass][diag] LiquidEffect: starting async shader load at t=${diagStart}us ` +
-            `(extensionPath=${this._extensionPath})`);
+    _loadShaderSourceSync(path) {
         try {
-            this._downsampleSource = await this._readFileAsync(`${this._extensionPath}/shaders/downsample.frag`);
-            this._upsampleSource = await this._readFileAsync(`${this._extensionPath}/shaders/upsample.frag`);
+            if (GLib.file_test(path, GLib.FileTest.EXISTS)) {
+                const [ok, contents] = GLib.file_get_contents(path);
+                if (ok && contents) {
+                    return new TextDecoder('utf-8').decode(contents);
+                }
+            }
+        } catch (e) {
+            this._logger?.error(`[Liquid Glass] Failed to read shader file synchronously: ${path}: ${e}`);
+        }
+        return null;
+    }
+
+    _loadAllShadersSync() {
+        if (this._shadersLoaded) return true;
+        try {
+            if (!_cachedDownsampleSource) {
+                _cachedDownsampleSource = this._loadShaderSourceSync(`${this._extensionPath}/shaders/downsample.frag`);
+            }
+            if (!_cachedUpsampleSource) {
+                _cachedUpsampleSource = this._loadShaderSourceSync(`${this._extensionPath}/shaders/upsample.frag`);
+            }
+            this._downsampleSource = _cachedDownsampleSource;
+            this._upsampleSource = _cachedUpsampleSource;
+
             let shaderFile = 'glass.frag';
             const optShaderPath = `${this._extensionPath}/shaders/LQ-OPTIMIZED.frag`;
             const optMarkerUser = `${GLib.get_home_dir()}/.config/macW1Y/optimized-glass`;
@@ -1096,8 +1123,51 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
                     shaderFile = 'LQ-OPTIMIZED.frag';
                 }
             }
-            this._glassSource = await this._readFileAsync(`${this._extensionPath}/shaders/${shaderFile}`);
+            const fullGlassPath = `${this._extensionPath}/shaders/${shaderFile}`;
+            if (!_cachedGlassSources.has(fullGlassPath)) {
+                const src = this._loadShaderSourceSync(fullGlassPath);
+                if (src) _cachedGlassSources.set(fullGlassPath, src);
+            }
+            this._glassSource = _cachedGlassSources.get(fullGlassPath) || null;
+
+            if (this._downsampleSource && this._upsampleSource && this._glassSource) {
+                this._shadersLoaded = true;
+                return true;
+            }
+        } catch (e) {
+            this._logger?.error(`[Liquid Glass] _loadAllShadersSync failed: ${e}`);
+        }
+        return false;
+    }
+
+    async _loadAllShadersAsync() {
+        const diagStart = GLib.get_monotonic_time();
+        this._logger?.log(`[Liquid Glass][diag] LiquidEffect: starting async shader load at t=${diagStart}us ` +
+            `(extensionPath=${this._extensionPath})`);
+        try {
+            this._downsampleSource = await this._readFileAsync(`${this._extensionPath}/shaders/downsample.frag`);
+            this._upsampleSource = await this._readFileAsync(`${this._extensionPath}/shaders/upsample.frag`);
+            _cachedDownsampleSource = this._downsampleSource;
+            _cachedUpsampleSource = this._upsampleSource;
+            let shaderFile = 'glass.frag';
+            const optShaderPath = `${this._extensionPath}/shaders/LQ-OPTIMIZED.frag`;
+            const optMarkerUser = `${GLib.get_home_dir()}/.config/macW1Y/optimized-glass`;
+            const optMarkerSys = '/etc/macW1Y/optimized-glass';
+            if (GLib.file_test(optShaderPath, GLib.FileTest.EXISTS)) {
+                if (GLib.file_test(optMarkerUser, GLib.FileTest.EXISTS) || GLib.file_test(optMarkerSys, GLib.FileTest.EXISTS)) {
+                    shaderFile = 'LQ-OPTIMIZED.frag';
+                }
+            }
+            const fullGlassPath = `${this._extensionPath}/shaders/${shaderFile}`;
+            this._glassSource = await this._readFileAsync(fullGlassPath);
+            _cachedGlassSources.set(fullGlassPath, this._glassSource);
             this._shadersLoaded = true;
+            try {
+                const ctx = this._getCoglContext();
+                if (ctx && !this._compositePipeline) {
+                    this._initPipelines(ctx);
+                }
+            } catch (_) {}
             const elapsedMs = (GLib.get_monotonic_time() - diagStart) / 1000;
             this._logger?.log(`[Liquid Glass][diag] LiquidEffect: async shader load finished in ${elapsedMs.toFixed(1)}ms, ` +
                 `calling queue_repaint() now. If the on-screen black-background bug is still visible ` +

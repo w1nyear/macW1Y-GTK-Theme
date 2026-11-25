@@ -601,9 +601,13 @@ export class QuickSettingsManager {
         };
 
         let startFrameSync = () => {
+            try {
+                buildClones();
+                this._syncGeometry();
+                glassForceRefresh?.(this.bgActor);
+            } catch (_) {}
             this.wakeFrameSync();
             if (this._frameSyncId === 0) {
-                buildClones();
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
         };
@@ -630,6 +634,16 @@ export class QuickSettingsManager {
                 this._applyMenuOffsets();
                 this._stableBaseW = undefined;
                 this._stableBaseH = undefined;
+                if (this.bgActor) {
+                    this.bgActor.opacity = 255;
+                    this.bgActor.visible = true;
+                    this.bgActor.show();
+                }
+                try {
+                    buildClones();
+                    this._syncGeometry();
+                    glassForceRefresh?.(this.bgActor);
+                } catch (_) {}
                 startFrameSync();
 
                 this._startAdaptiveColorSampling(true);
@@ -926,9 +940,13 @@ export class QuickSettingsManager {
 
         };
         let startFrameSync = () => {
+            try {
+                buildClones();
+                this._syncGeometry();
+                glassForceRefresh?.(this.bgActor);
+            } catch (_) {}
             this.wakeFrameSync();
             if (this._frameSyncId === 0) {
-                buildClones();
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
         };
@@ -951,6 +969,16 @@ export class QuickSettingsManager {
         this._animSignalId = this.menu.connect('open-state-changed', (menu, isOpen) => {
             if (isOpen) {
                 this._cachedSubmenus = null;
+                if (this.bgActor) {
+                    this.bgActor.opacity = 255;
+                    this.bgActor.visible = true;
+                    this.bgActor.show();
+                }
+                try {
+                    buildClones();
+                    this._syncGeometry();
+                    glassForceRefresh?.(this.bgActor);
+                } catch (_) {}
                 startFrameSync();
                 this._startAdaptiveColorSampling(true);
                 this._startToggleColorSampling();
