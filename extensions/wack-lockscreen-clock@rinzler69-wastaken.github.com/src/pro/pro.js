@@ -21,6 +21,53 @@ import { LockscreenMenuBarManager } from '../main/lockscreenMenuBar.js';
 
 const MESSAGE_PROMPT_GAP = 48;
 
+function _getMacBootId() {
+    try {
+        const [ok, bytes] = GLib.file_get_contents('/proc/sys/kernel/random/boot_id');
+        if (ok && bytes)
+            return new TextDecoder().decode(bytes).trim() || 'boot';
+    } catch (_) {}
+    return 'boot';
+}
+
+function _hasCompletedColdBootSplash() {
+    const bootId = _getMacBootId();
+    try {
+        const dir = Gio.File.new_for_path('/dev/shm');
+        const iter = dir.enumerate_children('standard::name', Gio.FileQueryInfoFlags.NONE, null);
+        let info;
+        while ((info = iter.next_file(null)) !== null) {
+            const name = info.get_name();
+            if (!name.startsWith('.macw1y_gdm_boot_') && !name.startsWith('.macw1y_session_'))
+                continue;
+            try {
+                const [ok, bytes] = GLib.file_get_contents(`/dev/shm/${name}`);
+                if (ok && bytes && new TextDecoder().decode(bytes).trim() === bootId)
+                    return true;
+            } catch (_) {}
+        }
+    } catch (_) {}
+    return false;
+}
+
+function _markBootSplashState(prefix) {
+    const bootId = _getMacBootId();
+    try {
+        let uid = null;
+        try {
+            uid = new Gio.Credentials().get_unix_user();
+        } catch (_) {}
+        if (uid === null || uid === undefined)
+            uid = (GLib.get_user_name() || 'user').replace(/[^a-zA-Z0-9_-]/g, '_');
+        const path = `/dev/shm/${prefix}${uid}`;
+        GLib.file_set_contents(path, `${bootId}\n`);
+        try {
+            Gio.File.new_for_path(path).set_attribute_uint32(
+                'unix::mode', 0o644, Gio.FileQueryInfoFlags.NONE, null);
+        } catch (_) {}
+    } catch (_) {}
+}
+
 export class GdmManager {
     constructor(extension) {
         this._extension = extension;
@@ -87,9 +134,24 @@ export class GdmManager {
         if (Main.sessionMode.currentMode !== 'gdm') return;
 
         this._active = true;
-        this._bootRevealed = false;
+        const isColdBootSplash = !_hasCompletedColdBootSplash();
+        this._bootRevealed = !isColdBootSplash;
         globalThis._wackHandlesBootCover = true;
-        this._ensureBootCover();
+        if (isColdBootSplash) {
+            this._ensureBootCover();
+        } else {
+            this._destroyBootCover();
+            try {
+                const leftover = Main.layoutManager?._gdmBootCover || globalThis._wackGdmBootCover;
+                if (leftover) {
+                    leftover.remove_all_transitions?.();
+                    leftover.destroy();
+                }
+                if (Main.layoutManager?._gdmBootCover)
+                    Main.layoutManager._gdmBootCover = null;
+                globalThis._wackGdmBootCover = null;
+            } catch (_) {}
+        }
 
         const themeContext = St.ThemeContext.get_for_stage(global.stage);
         themeContext.connectObject('notify::theme', () => this._ensureStylesheetLoaded(), this);
@@ -168,8 +230,8 @@ export class GdmManager {
     }
 
     _ensureBootCover() {
-        if (this._bootRevealed)
-            return this._gdmBootCover;
+        if (this._bootRevealed || _hasCompletedColdBootSplash())
+            return null;
         const uiGroup = Main.layoutManager?.uiGroup;
         if (!uiGroup)
             return null;
@@ -284,6 +346,7 @@ export class GdmManager {
             if (this._bootRevealed || !this._active)
                 return GLib.SOURCE_REMOVE;
             this._bootRevealed = true;
+            _markBootSplashState('.macw1y_gdm_boot_');
             if (this._bootRevealTimeoutId) {
                 GLib.source_remove(this._bootRevealTimeoutId);
                 this._bootRevealTimeoutId = 0;

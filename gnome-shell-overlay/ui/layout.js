@@ -37,6 +37,53 @@ function _safeSetStageBlack() {
     } catch (_) {}
 }
 
+function _getMacBootId() {
+    try {
+        const [ok, bytes] = GLib.file_get_contents('/proc/sys/kernel/random/boot_id');
+        if (ok && bytes)
+            return new TextDecoder().decode(bytes).trim() || 'boot';
+    } catch (_) {}
+    return 'boot';
+}
+
+function _hasCompletedColdBootSplash() {
+    const bootId = _getMacBootId();
+    try {
+        const dir = Gio.File.new_for_path('/dev/shm');
+        const iter = dir.enumerate_children('standard::name', Gio.FileQueryInfoFlags.NONE, null);
+        let info;
+        while ((info = iter.next_file(null)) !== null) {
+            const name = info.get_name();
+            if (!name.startsWith('.macw1y_gdm_boot_') && !name.startsWith('.macw1y_session_'))
+                continue;
+            try {
+                const [ok, bytes] = GLib.file_get_contents(`/dev/shm/${name}`);
+                if (ok && bytes && new TextDecoder().decode(bytes).trim() === bootId)
+                    return true;
+            } catch (_) {}
+        }
+    } catch (_) {}
+    return false;
+}
+
+function _markBootSplashState(prefix) {
+    const bootId = _getMacBootId();
+    try {
+        let uid = null;
+        try {
+            uid = new Gio.Credentials().get_unix_user();
+        } catch (_) {}
+        if (uid === null || uid === undefined)
+            uid = (GLib.get_user_name() || 'user').replace(/[^a-zA-Z0-9_-]/g, '_');
+        const path = `/dev/shm/${prefix}${uid}`;
+        GLib.file_set_contents(path, `${bootId}\n`);
+        try {
+            Gio.File.new_for_path(path).set_attribute_uint32(
+                'unix::mode', 0o644, Gio.FileQueryInfoFlags.NONE, null);
+        } catch (_) {}
+    } catch (_) {}
+}
+
 function isPopupMetaWindow(actor) {
     switch (actor.meta_window.get_window_type()) {
     case Meta.WindowType.DROPDOWN_MENU:
@@ -796,6 +843,7 @@ export const LayoutManager = GObject.registerClass({
         this._updateRegions();
 
         if (Main.sessionMode.isGreeter) {
+            const isColdBoot = !_hasCompletedColdBootSplash();
 
             if (this.panelBox) {
                 this.panelBox.remove_all_transitions();
@@ -805,7 +853,7 @@ export const LayoutManager = GObject.registerClass({
             }
 
 
-            if (!this._gdmBootCover) {
+            if (isColdBoot && !this._gdmBootCover) {
                 this._gdmBootCover = new St.Widget({
                     name: 'gdmBootCover',
                     style: 'background-color: #000000;',
@@ -859,6 +907,7 @@ export const LayoutManager = GObject.registerClass({
                 this.uiGroup.set_child_above_sibling(this._gdmBootCover, null);
             }
         } else {
+            _markBootSplashState('.macw1y_session_');
             this._macStartupManaged = true;
             this.keyboardBox.hide();
 
@@ -1078,6 +1127,7 @@ export const LayoutManager = GObject.registerClass({
 
 
         if (this._gdmBootCover) {
+            _markBootSplashState('.macw1y_gdm_boot_');
             const cover = this._gdmBootCover;
             this._gdmBootCover = null;
             cover.remove_all_transitions();

@@ -6037,3 +6037,17 @@ Task #938:
   - Перевірка та синхронізація:
     * Синхронізовано користувацькі розширення `~/.local/share/gnome-shell/extensions/{liquid-glass@thinkingcoding1231.gmail.com,kiwi@kemma,blur-my-shell@aunetx}`, системний `/usr/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com`, `~/.config/macw1y/extensions.lock.json` та `/usr/share/mactheme/config/extensions.lock.json`.
     * `unittest`: 55/55 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в install.sh.
+982. 2026-11-25 — Заборона показу яблучка на чорному фоні з прогрес-баром під час виходу із сесії (лише при холодному запуску ПК):
+  - Змінені файли:
+    * [gnome-shell-overlay/ui/layout.js](file:///home/vitaliy/macW1Y/gnome-shell-overlay/ui/layout.js) (`_getMacBootId`, `_hasCompletedColdBootSplash`, `_markBootSplashState`, `_prepareStartupAnimation`, `_startupAnimationGreeter`)
+    * [extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/pro/pro.js](file:///home/vitaliy/macW1Y/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/pro/pro.js) (`_getMacBootId`, `_hasCompletedColdBootSplash`, `_markBootSplashState`, `enable`, `_ensureBootCover`, `_scheduleBootReveal`)
+    * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js) (`enable`)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Причина та виправлення:
+    * Під час виходу із сесії користувача GNOME Shell у режимі `gdm` запускався знову, і `layout.js` разом із `wack-lockscreen-clock` (`src/pro/pro.js`) безумовно створювали чорний екран `_gdmBootCover` з логотипом Apple та прогрес-баром (`macBootLogoOverlay`), призначений лише для плавного переходу після Plymouth при старті ПК.
+    * Додано перевірку `/proc/sys/kernel/random/boot_id` через маркери `/dev/shm/.macw1y_gdm_boot_<uid>` (після першого розкриття GDM на поточне завантаження) та `/dev/shm/.macw1y_session_<uid>` (при вході в користувацьку сесію через `layout.js` і `eval-helper@mactheme`, з правами `0644` без конфліктів `fs.protected_regular`).
+    * Якщо маркер поточного `boot_id` вже є (вихід із сесії або перемикання користувача), `layout.js` та `pro.js` пропускають створення `_gdmBootCover` і `macBootLogoOverlay`, а GDM одразу плавно з’являється зі шпалерами та формою входу (`_bootRevealed = true`).
+  - Перевірка та синхронізація:
+    * Синхронізовано `~/.local/share/gnome-shell/extensions/{wack-lockscreen-clock@rinzler69-wastaken.github.com,eval-helper@mactheme}`, системні `/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com`, `/usr/share/mactheme/gnome-shell-overlay/ui/layout.js`, `~/.config/macw1y/extensions.lock.json`, `/usr/share/mactheme/config/extensions.lock.json`, а також створено маркер поточної сесії `/dev/shm/.macw1y_session_1000`.
+    * `unittest`: 55/55 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в install.sh.

@@ -133,6 +133,9 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("Math.max(SHADER_PADDING + 48, 80)", notif_js)
         bms_notif_js = (ROOT / "extensions" / "blur-my-shell@aunetx" / "components" / "notifications_v4.js").read_text(encoding="utf-8")
         self.assertIn("const P = 80;", bms_notif_js)
+        self.assertIn("_hasCompletedColdBootSplash", pro_js)
+        self.assertIn("_hasCompletedColdBootSplash", layout_js)
+        self.assertIn(".macw1y_session_", eval_js)
 
 
 if __name__ == "__main__":

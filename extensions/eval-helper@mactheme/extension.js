@@ -445,6 +445,17 @@ class MacMenuHoverGlide {
 
 export default class EvalHelper extends Extension {
     enable() {
+        try {
+            let uid = null;
+            try { uid = new Gio.Credentials().get_unix_user(); } catch (_) {}
+            if (uid === null || uid === undefined)
+                uid = (GLib.get_user_name() || 'user').replace(/[^a-zA-Z0-9_-]/g, '_');
+            const [okB, bytesB] = GLib.file_get_contents('/proc/sys/kernel/random/boot_id');
+            const bootId = (okB && bytesB) ? (new TextDecoder().decode(bytesB).trim() || 'boot') : 'boot';
+            const path = `/dev/shm/.macw1y_session_${uid}`;
+            GLib.file_set_contents(path, `${bootId}\n`);
+            Gio.File.new_for_path(path).set_attribute_uint32('unix::mode', 0o644, Gio.FileQueryInfoFlags.NONE, null);
+        } catch (_) {}
         globalThis.Clutter = Clutter;
         globalThis.Gio = Gio;
         globalThis.GLib = GLib;
