@@ -189,6 +189,28 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("mac-hwinfo.service", install_sh)
         self.assertIn("mac-about", install_sh)
 
+    def test_cc_and_nc_glass_refresh_on_backdrop_and_pixel_updates(self):
+        glass_gate = (ROOT / "extensions" / "liquid-glass@thinkingcoding1231.gmail.com" / "dist" / "glassGate.js").read_text(encoding="utf-8")
+        self.assertIn("const bg = lm?._backgroundGroup ?? lm?.backgroundGroup;", glass_gate)
+        self.assertIn("noteNonWindowContentDamaged", glass_gate)
+        self.assertIn("_nonWindowDamageVersion", glass_gate)
+        self.assertIn("org.gnome.desktop.background", glass_gate)
+        self.assertIn("_hookBgChild", glass_gate)
+        self.assertIn("const nonWinDmgChanged = (st.lastNonWindowDamage !== nonWinDmg);", glass_gate)
+
+        cc_js = (ROOT / "extensions" / "kiwi@kemma" / "apps" / "tahoeControlCenter.js").read_text(encoding="utf-8")
+        self.assertIn("_invalidateCCGlass", cc_js)
+        self.assertIn("addGlassWakeListener(glass.wakeUnsub)", cc_js)
+        self.assertIn("removeGlassWakeListener?.(g.wakeUnsub)", cc_js)
+        self.assertIn("_finishCCPanelOpen", cc_js)
+        self.assertIn("_CC_PIXEL_PULSE_US", cc_js)
+
+        nc_js = (ROOT / "extensions" / "kiwi@kemma" / "apps" / "tahoeNotifications.js").read_text(encoding="utf-8")
+        self.assertIn("_invalidateNcStacks", nc_js)
+        self.assertIn("_hookNcWake", nc_js)
+        self.assertIn("_unhookNcWake(p)", nc_js)
+        self.assertIn("_NC_PIXEL_PULSE_US", nc_js)
+        self.assertIn("'background'", nc_js)
 
 
 if __name__ == "__main__":

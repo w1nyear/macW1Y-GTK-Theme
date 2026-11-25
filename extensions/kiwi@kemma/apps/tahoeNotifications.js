@@ -1291,6 +1291,13 @@ function _readIntSetting(s, key, dflt) {
 
 
 
+const _SCENE_WAKE_REASONS = new Set([
+    'background', 'restacked', 'fullscreen', 'overview', 'layout',
+    'overview-scroll', 'overview-transition', 'window-moved',
+    'switch-workspace', 'size-change', 'minimize', 'unminimize',
+    'destroy', 'active-workspace-changed', 'showing-desktop-changed',
+]);
+
 let _toastWakeUnsub = null;
 function _hookToastWake() {
     if (_toastWakeUnsub || !addGlassWakeListener)
@@ -1298,17 +1305,21 @@ function _hookToastWake() {
     _toastWakeUnsub = (damagedActor, reason) => {
         if (!_toastBox || _toastBox.get_children().length === 0 || !_toastStack)
             return;
-        if (['restacked', 'fullscreen', 'overview', 'layout', 'overview-scroll', 'overview-transition', 'window-moved'].includes(reason)) {
+        if (_SCENE_WAKE_REASONS.has(reason)) {
             glassForceRefresh?.(_toastStack.bgActor);
             try { _toastStack.wcm?.rebuildClones?.(); } catch (_) {}
             try { _toastStack.uiSampler?.rebindSelf?.(); } catch (_) {}
+            try { _toastStack.uiSampler?.refresh?.(); } catch (_) {}
             try { _toastStack.effect?.markBackdropDirty?.(); } catch (_) {}
+            try { _toastStack.bgActor?.queue_redraw?.(); } catch (_) {}
             _toastTickStart();
             return;
         }
         if (!damagedActor || isActorNearGlass?.(damagedActor, _toastBox) || isActorNearGlass?.(damagedActor, _toastStack.bgActor)) {
             glassForceRefresh?.(_toastStack.bgActor);
+            try { _toastStack.uiSampler?.refresh?.(); } catch (_) {}
             try { _toastStack.effect?.markBackdropDirty?.(); } catch (_) {}
+            try { _toastStack.bgActor?.queue_redraw?.(); } catch (_) {}
             _toastTickStart();
         }
     };
@@ -1788,6 +1799,58 @@ function _startStackFade(s, ms = 240) {
 
 
 
+const _NC_PIXEL_PULSE_US = 350000;
+
+function _invalidateNcStacks(p, rebuild = false) {
+    const stacks = p?.stacks;
+    if (!stacks?.length)
+        return;
+    for (const s of stacks) {
+        try { glassForceRefresh?.(s.bgActor); } catch (_) {}
+        if (rebuild) {
+            try { s.wcm?.rebuildClones?.(); } catch (_) {}
+            try { s.uiSampler?.rebindSelf?.(); } catch (_) {}
+        }
+        try { s.uiSampler?.refresh?.(); } catch (_) {}
+        try { s.effect?.markBackdropDirty?.(); } catch (_) {}
+        try { s.bgActor?.queue_redraw?.(); } catch (_) {}
+    }
+    p._nextPixelPulseUs = GLib.get_monotonic_time() + _NC_PIXEL_PULSE_US;
+}
+
+function _hookNcWake(p) {
+    if (!p || p.wakeUnsub || !addGlassWakeListener)
+        return;
+    p.wakeUnsub = (damagedActor, reason) => {
+        if (!_nc || _nc !== p || p._closing || !p.overlay?.mapped)
+            return;
+        if (_SCENE_WAKE_REASONS.has(reason)) {
+            _invalidateNcStacks(p, true);
+            return;
+        }
+        const nearPanel = !damagedActor ||
+            isActorNearGlass?.(damagedActor, p.box) ||
+            isActorNearGlass?.(damagedActor, p.panelBg) ||
+            (p.stacks || []).some(s => isActorNearGlass?.(damagedActor, s.bgActor));
+        if (nearPanel)
+            _invalidateNcStacks(p, false);
+    };
+    try {
+        addGlassWakeListener(p.wakeUnsub);
+    } catch (_) {
+        p.wakeUnsub = null;
+    }
+}
+
+function _unhookNcWake(p) {
+    if (!p?.wakeUnsub)
+        return;
+    try {
+        removeGlassWakeListener?.(p.wakeUnsub);
+    } catch (_) {}
+    p.wakeUnsub = null;
+}
+
 function _setupNcStack(p, s, monitor = null) {
     try {
         try { s.uiSampler?.addExclusion?.(p.box); } catch (_) {}
@@ -1803,6 +1866,9 @@ function _setupNcStack(p, s, monitor = null) {
             }
         }
         s.uiSampler?.rebindSelf?.();
+        try { s.wcm?.rebuildClones?.(); } catch (_) {}
+        try { glassForceRefresh?.(s.bgActor); } catch (_) {}
+        try { s.effect?.markBackdropDirty?.(); } catch (_) {}
 
         if (monitor) {
             s.wcm?.setOffset(-monitor.x, -monitor.y);
@@ -1816,6 +1882,8 @@ function _setupNcStack(p, s, monitor = null) {
                     s.uiSampler?.sync(monitor.x, monitor.y, monitor.width, monitor.height);
                     s.uiSampler?.refresh?.();
                     s.wcm?.sync?.();
+                    s.effect?.markBackdropDirty?.();
+                    s.bgActor?.queue_redraw?.();
                 } catch (_) {}
                 return GLib.SOURCE_REMOVE;
             });
@@ -1908,6 +1976,7 @@ function _ncSettle(p) {
             p.panelBg.min_height = 0;
             p.panelBg.width = NC_W;
         } catch (_) {}
+        _invalidateNcStacks(p, true);
         _ncRideTick(p);
     } catch (_) {}
 }
@@ -2680,6 +2749,7 @@ function _syncCards(p, monitor, s) {
         s.wcm?.sync();
         try {
             s.effect?.markBackdropDirty?.();
+            s.bgActor?.queue_redraw?.();
             glassRefreshDone(s.bgActor, extraH);
         } catch (_) {}
     } catch (_) {}
@@ -2773,6 +2843,7 @@ function _syncGlass(p, monitor, s) {
         s.wcm?.sync();
         try {
             s.effect?.markBackdropDirty?.();
+            s.bgActor?.queue_redraw?.();
             glassRefreshDone(s.bgActor, extraH);
         } catch (_) {}
     } catch (_) {}
@@ -3008,6 +3079,8 @@ function _buildPanel(merges = null) {
         cards.bgActor.translation_y = 0;
 
         p.stacks = [bd, cards];
+        _invalidateNcStacks(p, true);
+        _hookNcWake(p);
 
         const tick = () => {
             p.tickId = 0;
@@ -3027,6 +3100,15 @@ function _buildPanel(merges = null) {
                     (p.box.translation_x ?? 0) <= 0.5 && (p.box.opacity ?? 0) >= 254)
                     _ncSettle(p);
             } catch (_) {}
+            if (p._settleDone && !p._closing) {
+                const nowUs = GLib.get_monotonic_time();
+                if (!p._nextPixelPulseUs || nowUs >= p._nextPixelPulseUs) {
+                    p._nextPixelPulseUs = nowUs + _NC_PIXEL_PULSE_US;
+                    for (const s of p.stacks) {
+                        try { glassForceRefresh?.(s.bgActor); } catch (_) {}
+                    }
+                }
+            }
             try {
                 for (const s of p.stacks) {
                     if (s.kind === 'cards')
@@ -3119,6 +3201,7 @@ function _destroyNC(p) {
         return;
     _nc = null;
 
+    _unhookNcWake(p);
     try { _killMergingSlots(); } catch (_) {}
     try {
         if (p.inkUnwatch)

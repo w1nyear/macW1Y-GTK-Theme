@@ -81,6 +81,7 @@ export function getGlassRefreshIntervalUs() {
 }
 
 let _backdropDamageVersion = 0;
+let _nonWindowDamageVersion = 0;
 let _backdropSceneVersion = 1;
 let _backdropFailCounter = 0;
 let _backdropSurfaceCount = 0;
@@ -88,6 +89,7 @@ let _backdropRefreshCount = 0;
 let _backdropSkipCount = 0;
 let _eventDrivenDefault = true;
 const _backdropDamageHooked = new WeakSet();
+const _bgChildSignals = new Map();
 const _backdropPolls = new WeakMap();
 const _wakeListeners = new Set();
 let _sceneSignalIds = [];
@@ -114,8 +116,52 @@ export function notifyGlassWake(actor, reason = null) {
 function _invalidateBackdropScene(reason) {
     _backdropSceneVersion++;
     _backdropDamageVersion++;
+    if (reason === 'background' || reason === 'layout')
+        _nonWindowDamageVersion++;
     _stageScan = { at: -1e12, h: 0 };
     notifyGlassWake(null, reason);
+}
+
+function _noteNonWindowDamage(reason = 'background') {
+    _backdropDamageVersion++;
+    _nonWindowDamageVersion++;
+    notifyGlassWake(null, reason);
+}
+
+function _hookBgChild(actor) {
+    try {
+        if (!actor || !_isActorValid(actor) || _bgChildSignals.has(actor))
+            return;
+        const ids = [];
+        for (const sig of ['damaged', 'notify::content', 'notify::visible', 'notify::opacity']) {
+            try {
+                const id = actor.connect(sig, () => {
+                    if (sig === 'damaged' || sig === 'notify::content')
+                        _noteNonWindowDamage('background');
+                    else
+                        _invalidateBackdropScene('background');
+                });
+                if (id)
+                    ids.push(id);
+            } catch (_) {}
+        }
+        try {
+            const did = actor.connect('destroy', () => _unhookBgChild(actor));
+            if (did)
+                ids.push(did);
+        } catch (_) {}
+        _bgChildSignals.set(actor, ids);
+    } catch (_) {}
+}
+
+function _unhookBgChild(actor) {
+    const ids = _bgChildSignals.get(actor);
+    if (!ids)
+        return;
+    _bgChildSignals.delete(actor);
+    for (const id of ids) {
+        try { actor.disconnect(id); } catch (_) {}
+    }
 }
 
 function _scheduleSceneInvalidation(reason) {
@@ -181,7 +227,44 @@ export function installGlassSceneListeners() {
         }
     } catch (_) {}
 
+    try {
+        const bgGroup = Main.layoutManager?._backgroundGroup ?? Main.layoutManager?.backgroundGroup;
+        if (bgGroup) {
+            for (const child of bgGroup.get_children?.() ?? [])
+                _hookBgChild(child);
+            const addId = bgGroup.connect('child-added', (_g, child) => {
+                _hookBgChild(child);
+                _invalidateBackdropScene('background');
+            });
+            const remId = bgGroup.connect('child-removed', (_g, child) => {
+                _unhookBgChild(child);
+                _invalidateBackdropScene('background');
+            });
+            _sceneSignalIds.push([bgGroup, addId], [bgGroup, remId]);
+        }
+    } catch (_) {}
 
+    try {
+        const src = Gio.SettingsSchemaSource.get_default();
+        if (src?.lookup('org.gnome.desktop.background', true)) {
+            const bgSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.background' });
+            for (const key of ['picture-uri', 'picture-uri-dark', 'primary-color', 'secondary-color', 'color-options', 'picture-options']) {
+                const id = bgSettings.connect(`changed::${key}`, () => {
+                    _nonWindowDamageVersion++;
+                    _scheduleSceneInvalidation('background');
+                });
+                _sceneSignalIds.push([bgSettings, id]);
+            }
+        }
+        if (src?.lookup('org.gnome.desktop.interface', true)) {
+            const ifaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            const id = ifaceSettings.connect('changed::color-scheme', () => {
+                _nonWindowDamageVersion++;
+                _scheduleSceneInvalidation('background');
+            });
+            _sceneSignalIds.push([ifaceSettings, id]);
+        }
+    } catch (_) {}
 }
 
 export function removeGlassSceneListeners() {
@@ -190,6 +273,8 @@ export function removeGlassSceneListeners() {
         _sceneInvalidationId = 0;
     }
     _pendingSceneReason = null;
+    for (const actor of Array.from(_bgChildSignals.keys()))
+        _unhookBgChild(actor);
     for (const [object, id] of _sceneSignalIds) {
         try { object.disconnect(id); } catch (_) {}
     }
@@ -207,6 +292,10 @@ function _isActorValid(actor) {
 
 export function noteWindowContentDamaged() {
     _backdropDamageVersion++;
+}
+
+export function noteNonWindowContentDamaged(reason = 'background') {
+    _noteNonWindowDamage(reason);
 }
 
 
@@ -289,8 +378,9 @@ function _stageBackdropHash(nowUs) {
             h = _hmix(h, m.width); h = _hmix(h, m.height);
         }
 
-        const bg = lm?.backgroundGroup;
+        const bg = lm?._backgroundGroup ?? lm?.backgroundGroup;
         h = _hmix(h, bg && _isActorValid(bg) ? bg.get_n_children() : 0);
+        h = _hmix(h, _nonWindowDamageVersion);
     } catch (_) {
         return _hmix(_stageScan.h, ++_backdropFailCounter);
     }
@@ -436,6 +526,7 @@ function _newPollState() {
     return {
         lastScanH: 0,
         lastDamage: -1,
+        lastNonWindowDamage: -1,
         lastOwnH: -1,
         dirty: true,
         lastFull: 0,
@@ -465,19 +556,21 @@ export function glassRefreshDue(glassActor, extraHash) {
 
         const scanH = _stageBackdropHash(nowUs);
         const dmg = _backdropDamageVersion;
+        const nonWinDmg = _nonWindowDamageVersion;
         const ownH = _hmix(_ownGlassHash(glassActor), extraHash);
 
         const scanChanged = (st.lastScanH !== scanH);
         const ownChanged = (st.lastOwnH !== ownH);
         const dmgChanged = (st.lastDamage !== dmg);
+        const nonWinDmgChanged = (st.lastNonWindowDamage !== nonWinDmg);
         const sceneChanged = st.lastSceneVersion !== _backdropSceneVersion;
 
 
         const isSettling = (nowUs < (st.settleUntilUs || 0));
 
 
-        let isNearDamaged = false;
-        if (dmgChanged) {
+        let isNearDamaged = nonWinDmgChanged;
+        if (dmgChanged && !isNearDamaged) {
             try {
                 const actors = global.get_window_actors?.() ?? [];
                 for (let i = 0; i < actors.length; i++) {
@@ -497,6 +590,7 @@ export function glassRefreshDue(glassActor, extraHash) {
         if (scanChanged || ownChanged || isNearDamaged || isSettling || sceneChanged || Main.overview?.visible) {
             st.lastScanH = scanH;
             st.lastDamage = dmg;
+            st.lastNonWindowDamage = nonWinDmg;
             st.lastOwnH = ownH;
             st.lastSceneVersion = _backdropSceneVersion;
             st.dirty = true;
@@ -538,6 +632,7 @@ export function glassRefreshDone(glassActor, extraHash) {
         st.dirty = false;
         st.lastScanH = _stageBackdropHash(nowUs);
         st.lastDamage = _backdropDamageVersion;
+        st.lastNonWindowDamage = _nonWindowDamageVersion;
         st.lastOwnH = _hmix(_ownGlassHash(glassActor), extraHash);
         st.lastSceneVersion = _backdropSceneVersion;
     } catch (_) {}

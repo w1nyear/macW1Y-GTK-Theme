@@ -121,6 +121,10 @@ let getTransformedRect = a => {
 let ensureGlassAllocated = () => {};
 let glassRefreshDue = null;
 let glassRefreshDone = null;
+let glassForceRefresh = null;
+let addGlassWakeListener = null;
+let removeGlassWakeListener = null;
+let isActorNearGlass = null;
 let syncGlassCaptureClip = () => {};
 let reportFrameLoopError = (ctx, e) => console.error(`[${ctx}] ${e}`);
 const _LG_BASE = 'file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist';
@@ -149,6 +153,14 @@ import(_LG_BASE + '/utils.js').then(m => {
         glassRefreshDue = m.glassRefreshDue;
     if (m.glassRefreshDone)
         glassRefreshDone = m.glassRefreshDone;
+    if (m.glassForceRefresh)
+        glassForceRefresh = m.glassForceRefresh;
+    if (m.addGlassWakeListener)
+        addGlassWakeListener = m.addGlassWakeListener;
+    if (m.removeGlassWakeListener)
+        removeGlassWakeListener = m.removeGlassWakeListener;
+    if (m.isActorNearGlass)
+        isActorNearGlass = m.isActorNearGlass;
 }).catch(e => console.warn(`[tahoe-qs] liquid-glass utils unavailable: ${e}`));
 function _lgReady() {
     return !!(LiquidEffect && UnpickableActor && UILayerSampler && WindowCloneManager);
@@ -173,6 +185,10 @@ export async function ensureLgReady() {
         if (m2?.reportFrameLoopError) reportFrameLoopError = m2.reportFrameLoopError;
         if (m2?.glassRefreshDue) glassRefreshDue = m2.glassRefreshDue;
         if (m2?.glassRefreshDone) glassRefreshDone = m2.glassRefreshDone;
+        if (m2?.glassForceRefresh) glassForceRefresh = m2.glassForceRefresh;
+        if (m2?.addGlassWakeListener) addGlassWakeListener = m2.addGlassWakeListener;
+        if (m2?.removeGlassWakeListener) removeGlassWakeListener = m2.removeGlassWakeListener;
+        if (m2?.isActorNearGlass) isActorNearGlass = m2.isActorNearGlass;
     } catch (e) {
         console.warn(`[tahoe-qs] ensureLgReady error: ${e}`);
     }
@@ -2765,27 +2781,7 @@ function _buildPanel() {
         opacity: 255,
         duration: 230,
         mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-        onComplete: () => {
-            _panelOpening = false;
-            if (_panel?.box) {
-                _panel.box.translation_x = 0;
-                _panel.box.opacity = 255;
-            }
-            if (_panel?.panelBg) {
-                _panel.panelBg.translation_x = 0;
-                _panel.panelBg.opacity = 255;
-            }
-            if (_panel?.glass?.stacks) {
-                const mon = Main.layoutManager.primaryMonitor;
-                for (const s of _panel.glass.stacks) {
-                    try {
-                        s.bgActor.translation_x = 0;
-                        s.bgActor.opacity = 255;
-                        if (mon) _syncStack(s, mon);
-                    } catch (_) {}
-                }
-            }
-        }
+        onComplete: () => _finishCCPanelOpen(_panel),
     });
     panelBg.ease({
         translation_x: 0,
@@ -3965,6 +3961,32 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
         lastRegions: null, lastBounds: null, grace: 0, clip: null, screen: null};
 }
 
+const _CC_SCENE_WAKE_REASONS = new Set([
+    'background', 'restacked', 'fullscreen', 'overview', 'layout',
+    'overview-scroll', 'overview-transition', 'window-moved',
+    'switch-workspace', 'size-change', 'minimize', 'unminimize',
+    'destroy', 'active-workspace-changed', 'showing-desktop-changed',
+]);
+const _CC_PIXEL_PULSE_US = 350000;
+
+function _invalidateCCGlass(p, rebuild = false) {
+    const stacks = p?.glass?.stacks;
+    if (!stacks?.length)
+        return;
+    for (const s of stacks) {
+        try { glassForceRefresh?.(s.bgActor); } catch (_) {}
+        if (rebuild) {
+            try { s.wcm?.rebuildClones?.(); } catch (_) {}
+            try { s.uiSampler?.rebindSelf?.(); } catch (_) {}
+        }
+        try { s.uiSampler?.refresh?.(); } catch (_) {}
+        try { s.effect?.markBackdropDirty?.(); } catch (_) {}
+        try { s.bgActor?.queue_redraw?.(); } catch (_) {}
+    }
+    if (p.glass)
+        p.glass._nextPixelPulseUs = GLib.get_monotonic_time() + _CC_PIXEL_PULSE_US;
+}
+
 function _startGlass(slideOffset = 0) {
     if (!_panel || _panel.glass)
         return;
@@ -4010,8 +4032,38 @@ function _startGlass(slideOffset = 0) {
             } catch (_) {}
         }
 
-        const glass = {stacks, frameId: 0, torndown: false, tickN: 0};
+        const glass = {
+            stacks,
+            frameId: 0,
+            torndown: false,
+            tickN: 0,
+            wakeUnsub: null,
+            _nextPixelPulseUs: 0,
+        };
         _panel.glass = glass;
+        _invalidateCCGlass(_panel, true);
+
+        if (addGlassWakeListener) {
+            glass.wakeUnsub = (damagedActor, reason) => {
+                if (glass.torndown || !_panel || _panel.glass !== glass || _closing || !_panel.overlay?.mapped)
+                    return;
+                if (_CC_SCENE_WAKE_REASONS.has(reason)) {
+                    _invalidateCCGlass(_panel, true);
+                    return;
+                }
+                const nearPanel = !damagedActor ||
+                    isActorNearGlass?.(damagedActor, _panel.box) ||
+                    isActorNearGlass?.(damagedActor, _panel.panelBg) ||
+                    glass.stacks.some(s => isActorNearGlass?.(damagedActor, s.bgActor));
+                if (nearPanel)
+                    _invalidateCCGlass(_panel, false);
+            };
+            try {
+                addGlassWakeListener(glass.wakeUnsub);
+            } catch (_) {
+                glass.wakeUnsub = null;
+            }
+        }
 
         for (const s of stacks) {
             s.bgActor.translation_x = slideOffset;
@@ -4051,6 +4103,13 @@ function _startGlass(slideOffset = 0) {
                     glass.frameId = 0;
                 }
                 return GLib.SOURCE_REMOVE;
+            }
+            const nowUs = GLib.get_monotonic_time();
+            if (!glass._nextPixelPulseUs || nowUs >= glass._nextPixelPulseUs) {
+                glass._nextPixelPulseUs = nowUs + _CC_PIXEL_PULSE_US;
+                for (const s of glass.stacks) {
+                    try { glassForceRefresh?.(s.bgActor); } catch (_) {}
+                }
             }
             for (const s of glass.stacks) {
                 try {
@@ -4249,6 +4308,7 @@ function _syncStack(s, monitor) {
     s.wcm.sync();
     try {
         s.effect?.markBackdropDirty?.();
+        s.bgActor?.queue_redraw?.();
         glassRefreshDone(s.bgActor, extraH);
     } catch (_) {}
 }
@@ -4260,6 +4320,12 @@ function _destroyGlass() {
     if (!g)
         return;
     g.torndown = true;
+    if (g.wakeUnsub) {
+        try {
+            removeGlassWakeListener?.(g.wakeUnsub);
+        } catch (_) {}
+        g.wakeUnsub = null;
+    }
     if (g.frameId) {
         try {
             global.compositor.get_laters().remove(g.frameId);
@@ -4389,6 +4455,31 @@ function _hidePanel(p) {
     } catch (_) {}
 }
 
+function _finishCCPanelOpen(p) {
+    _panelOpening = false;
+    if (!p)
+        return;
+    if (p.box) {
+        p.box.translation_x = 0;
+        p.box.opacity = 255;
+    }
+    if (p.panelBg) {
+        p.panelBg.translation_x = 0;
+        p.panelBg.opacity = 255;
+    }
+    if (p.glass?.stacks) {
+        _invalidateCCGlass(p, true);
+        const mon = Main.layoutManager.primaryMonitor;
+        for (const s of p.glass.stacks) {
+            try {
+                s.bgActor.translation_x = 0;
+                s.bgActor.opacity = 255;
+                if (mon) _syncStack(s, mon);
+            } catch (_) {}
+        }
+    }
+}
+
 function _restorePanel(p) {
     _panel = p;
     globalThis._tahoeQSPanel = _panel;
@@ -4427,6 +4518,26 @@ function _restorePanel(p) {
 
         p.box.remove_all_transitions();
         p.panelBg.remove_all_transitions();
+
+        // Refresh all cached glass stacks at settled coordinates before sliding in so
+        // buttons and backdrop never flash stale blur from an earlier desktop state.
+        if (p.glass?.stacks) {
+            _panelOpening = false;
+            p.box.translation_x = 0;
+            p.panelBg.translation_x = 0;
+            _invalidateCCGlass(p, true);
+            for (const s of p.glass.stacks) {
+                try {
+                    s.bgActor.show();
+                    s.bgActor.remove_all_transitions();
+                    s.bgActor.translation_x = 0;
+                    s.bgActor.opacity = 0;
+                    if (monitor) _syncStack(s, monitor);
+                } catch (_) {}
+            }
+            _panelOpening = true;
+        }
+
         p.box.translation_x = slideOffset;
         p.box.opacity = 0;
         p.panelBg.translation_x = slideOffset;
@@ -4435,8 +4546,6 @@ function _restorePanel(p) {
         if (p.glass?.stacks) {
             for (const s of p.glass.stacks) {
                 try {
-                    s.bgActor.show();
-                    s.bgActor.remove_all_transitions();
                     s.bgActor.translation_x = slideOffset;
                     s.bgActor.opacity = 0;
                     s.bgActor.ease({
@@ -4454,19 +4563,7 @@ function _restorePanel(p) {
             opacity: 255,
             duration: 180,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            onComplete: () => {
-                _panelOpening = false;
-                if (p.glass?.stacks) {
-                    const mon = Main.layoutManager.primaryMonitor;
-                    for (const s of p.glass.stacks) {
-                        try {
-                            s.bgActor.translation_x = 0;
-                            s.bgActor.opacity = 255;
-                            if (mon) _syncStack(s, mon);
-                        } catch (_) {}
-                    }
-                }
-            },
+            onComplete: () => _finishCCPanelOpen(p),
         });
         p.panelBg.ease({
             translation_x: 0,

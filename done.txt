@@ -6162,3 +6162,18 @@ Task #938:
   - Перевірка та синхронізація:
     * Оновлено `config/extensions.lock.json`, синхронізовано `~/.local/share/gnome-shell/extensions/{liquid-glass@thinkingcoding1231.gmail.com,dash2dock-motion@unmade.space}`, системні `/usr/share/gnome-shell/extensions/{liquid-glass@thinkingcoding1231.gmail.com,dash2dock-motion@unmade.space}`, `/usr/share/mactheme/config/extensions.lock.json`, `~/.config/macw1y/extensions.lock.json`, `~/.config/mac-styling/extensions.lock.json`.
     * `unittest`: 57/57 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS.
+
+991. 2026-11-25 — Забезпечено синхронне оновлення розмиття фону та скла кнопок/карток у Центрі керування та Центрі сповіщень при зміні фону чи оновленні пікселів:
+  - Змінені файли:
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js)
+    * [extensions/kiwi@kemma/apps/tahoeControlCenter.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeControlCenter.js)
+    * [extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeNotifications.js)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Причина та виправлення:
+    * У `glassGate.js` `_stageBackdropHash` звертався до `lm?.backgroundGroup` (який у GNOME Shell є `undefined`, замість `_backgroundGroup`), `installGlassSceneListeners()` не відстежував зміни шпалер (`org.gnome.desktop.background`, `org.gnome.desktop.interface::color-scheme`) та пошкодження дочірніх акторів `_backgroundGroup` (`_hookBgChild`), а `glassRefreshDue()` ігнорував невіконне оновлення пікселів (`_nonWindowDamageVersion`), якщо поруч не було пошкодженого `MetaWindowActor`.
+    * У `tahoeControlCenter.js` та `tahoeNotifications.js` кешовані стеки скла (`_cachedPanel` у `_restorePanel`, `_cachedGlassStacks` у `_buildPanel`) не примусово оновлювали клони й текстури перед показом та після завершення анімації, а самі панелі ЦК (`_panel`) і ЦС (`_nc`) не були підписані на `addGlassWakeListener`, через що `backdrop` і окремі кнопки/картки розсинхронізовувалися та залишалися із застарілим розмиттям.
+    * Додано спільні інвалідатори `_invalidateCCGlass`, `_finishCCPanelOpen`, `_invalidateNcStacks`, `_hookNcWake`/`_unhookNcWake`, підписку ЦК/ЦС на `addGlassWakeListener` (включаючи `'background'` та пошкодження сусідніх вікон для всіх стеків одночасно), `queue_redraw()` після `markBackdropDirty()`, та легкий періодичний імпульс (`350 ms` `_CC_PIXEL_PULSE_US`/`_NC_PIXEL_PULSE_US`) під час відкритого стану.
+  - Перевірка та синхронізація:
+    * Оновлено `config/extensions.lock.json`, синхронізовано `~/.local/share/gnome-shell/extensions/{liquid-glass@thinkingcoding1231.gmail.com,kiwi@kemma}`, системні `/usr/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com`, `/usr/share/mactheme/config/extensions.lock.json`, `~/.config/macw1y/extensions.lock.json` та `~/.config/mac-styling/extensions.lock.json`.
+    * `gjs -m` синтаксична перевірка: OK; `unittest`: 58/58 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `bash -n install.sh`: OK.
