@@ -2035,11 +2035,16 @@ install_gdm_transition() {
         fi
     fi
 
-    # 8. update-alternatives for GDM theme and icons
+    # 8. update-alternatives (Debian/Ubuntu/Mint) or direct gresource (Arch/CachyOS/Fedora) for GDM theme
     if [ -f "$GRES_TARGET" ]; then
-        if command -v update-alternatives >/dev/null 2>&1; then
+        if command -v update-alternatives >/dev/null 2>&1 && [ "$DISTRO_FAMILY" = "debian" ]; then
             sudo update-alternatives --install /usr/share/gnome-shell/gdm-theme.gresource gdm-theme.gresource "$GRES_TARGET" 100 2>/dev/null || true
             sudo update-alternatives --set gdm-theme.gresource "$GRES_TARGET" 2>/dev/null || true
+        else
+            if [ -f /usr/share/gnome-shell/gnome-shell-theme.gresource ] && [ ! -L /usr/share/gnome-shell/gnome-shell-theme.gresource ] && [ ! -f /usr/share/gnome-shell/gnome-shell-theme.gresource.orig ]; then
+                sudo cp -f /usr/share/gnome-shell/gnome-shell-theme.gresource /usr/share/gnome-shell/gnome-shell-theme.gresource.orig 2>/dev/null || true
+            fi
+            sudo ln -sfn "$GRES_TARGET" /usr/share/gnome-shell/gnome-shell-theme.gresource 2>/dev/null || sudo cp -f "$GRES_TARGET" /usr/share/gnome-shell/gnome-shell-theme.gresource 2>/dev/null || true
         fi
     fi
     if [ -f /usr/share/gnome-shell/gnome-shell-icons.gresource ]; then
