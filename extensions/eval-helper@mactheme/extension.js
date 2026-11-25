@@ -1295,10 +1295,10 @@ export default class EvalHelper extends Extension {
                 };
 
                 const _MAC_ALTTAB_DEFAULTS = {
-                    iconSize: 84,
-                    padding: 11,
-                    spacing: 15,
-                    radius: 42,
+                    iconSize: 67,
+                    padding: 9,
+                    spacing: 12,
+                    radius: 34,
                     blur: 20,
                     tint: 15,
                     shadow: 25,
@@ -2856,10 +2856,10 @@ export default class EvalHelper extends Extension {
                         const [ok, bytes] = GLib.file_get_contents(confPath);
                         if (ok) conf = JSON.parse(new TextDecoder().decode(bytes));
                     }
-                    iconSize = (typeof conf.alttab_icon_size === 'number') ? conf.alttab_icon_size : 84;
-                    padding = (typeof conf.alttab_padding === 'number') ? conf.alttab_padding : 11;
-                    spacing = (typeof conf.alttab_spacing === 'number') ? conf.alttab_spacing : 15;
-                    radius = (typeof conf.alttab_radius === 'number') ? conf.alttab_radius : 42;
+                    iconSize = (typeof conf.alttab_icon_size === 'number') ? conf.alttab_icon_size : 67;
+                    padding = (typeof conf.alttab_padding === 'number') ? conf.alttab_padding : 9;
+                    spacing = (typeof conf.alttab_spacing === 'number') ? conf.alttab_spacing : 12;
+                    radius = (typeof conf.alttab_radius === 'number') ? conf.alttab_radius : 34;
                     blur = (typeof conf.alttab_blur === 'number') ? conf.alttab_blur : 20;
                     tint = (typeof conf.alttab_tint === 'number') ? conf.alttab_tint : 15;
                     shadow = (typeof conf.alttab_shadow === 'number') ? conf.alttab_shadow : 25;

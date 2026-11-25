@@ -3049,10 +3049,10 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .switcher-list {
   background-color: rgba(240, 240, 240, 0.05) !important;
   background: rgba(240, 240, 240, 0.05) !important;
-  border-radius: 42px !important;
+  border-radius: 34px !important;
   border: 1px solid rgba(255, 255, 255, 0.50) !important;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15) !important;
-  padding: 11px 21px 11px 21px !important;
+  padding: 9px 18px 9px 18px !important;
 }
 
 .switcher-list .item-box,
@@ -3078,8 +3078,8 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .alt-tab-icon-bin {
   padding: 0px !important;
   margin: 0px !important;
-  border-radius: 21px !important;
-  border: 3.5px solid transparent !important;
+  border-radius: 17px !important;
+  border: 3.0px solid transparent !important;
   background-color: transparent !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -3090,7 +3090,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .switcher-list .item-box:hover .alt-tab-icon-bin {
   background-color: transparent !important;
   background: transparent !important;
-  border: 3.5px solid transparent !important;
+  border: 3.0px solid transparent !important;
   box-shadow: none !important;
 }
 
@@ -3100,7 +3100,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .switcher-list .item-box.selected .alt-tab-icon-bin {
   background-color: transparent !important;
   background: transparent !important;
-  border: 3.5px solid rgba(255, 149, 0, 0.85) !important;
+  border: 3.0px solid rgba(255, 149, 0, 0.85) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
 }
 
@@ -3111,7 +3111,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 .switcher-list .item-box StLabel,
 .switcher-list .item-box .label {
   font-family: 'Default Display', 'Default', 'SF Pro Display', 'SF Pro Text', Cantarell, sans-serif !important;
-  font-size: 16px !important;
+  font-size: 13px !important;
   font-weight: 500 !important;
   color: #1d1d1f !important;
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
@@ -3145,7 +3145,7 @@ StScrollBar StButton#vhandle:active, StScrollBar StButton#hhandle:active {
 }
 
 .switcher-list .switcher-list-item-container {
-  spacing: 15px !important;
+  spacing: 12px !important;
 }
 
 .switcher-arrow {

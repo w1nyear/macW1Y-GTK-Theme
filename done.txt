@@ -6227,3 +6227,22 @@ Task #938:
   - Перевірка та синхронізація:
     * Оновлено `config/extensions.lock.json` (`kiwi@kemma`), синхронізовано `~/.local/share/gnome-shell/extensions/kiwi@kemma/apps/macWindowManagement.js`, `~/.config/macw1y/extensions.lock.json`, `~/.config/mac-styling/extensions.lock.json` та `/usr/share/mactheme/config/extensions.lock.json`.
     * `gjs -m`: OK; `unittest`: 61/61 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `bash -n install.sh`: OK.
+
+995. 2026-11-25 — Зменшено меню Alt+Tab, іконки, виділення, відступи та текст у 1.25 разів:
+  - Змінені файли:
+    * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js)
+    * [bin/mac-styling-settings](file:///home/vitaliy/macW1Y/bin/mac-styling-settings)
+    * [config/mac-styling/styling.json](file:///home/vitaliy/macW1Y/config/mac-styling/styling.json)
+    * [gnome-shell-theme/gnome-shell.css](file:///home/vitaliy/macW1Y/gnome-shell-theme/gnome-shell.css)
+    * [macW1Y-Dark/gnome-shell/gnome-shell.css](file:///home/vitaliy/macW1Y/macW1Y-Dark/gnome-shell/gnome-shell.css)
+    * [macW1Y-Dark-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/macW1Y/macW1Y-Dark-solid/gnome-shell/gnome-shell.css)
+    * [macW1Y-Light/gnome-shell/gnome-shell.css](file:///home/vitaliy/macW1Y/macW1Y-Light/gnome-shell/gnome-shell.css)
+    * [macW1Y-Light-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/macW1Y/macW1Y-Light-solid/gnome-shell/gnome-shell.css)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Причина та виправлення:
+    * Пропорційно зменшено типові метрики `_MAC_ALTTAB_DEFAULTS` і тем у 1.25 рази відносно попереднього 1.5x масштабу: `iconSize: 84 -> 67 px`, `padding: 11 -> 9 px` (горизонтально `21 -> 18 px`), `spacing: 15 -> 12 px`, `radius: 42 -> 34 px`.
+    * За формулою `_macCalcAltTabMetrics()` при `67 px`: рамка виділення становить `60×60 px` (`border-radius: 17 px`, `border: 3.0 px`), шрифт підпису — `13 px`, `scrollY1 = 8 px`, загальна висота контенту — `97 px` (плашка ~`115 px`).
+  - Перевірка та синхронізація:
+    * Оновлено `config/extensions.lock.json` (`eval-helper@mactheme`), синхронізовано `~/.local/share/gnome-shell/extensions/eval-helper@mactheme/extension.js`, `~/.local/bin/mac-styling-settings`, `/usr/local/bin/mac-styling-settings`, `~/.config/mac-styling/styling.json`, `~/.themes/macW1Y*`, `/usr/share/themes/macW1Y*` та копії lock-файлу.
+    * `gjs -m` та `py_compile`: OK; `unittest`: 61/61 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `bash -n install.sh`: OK.

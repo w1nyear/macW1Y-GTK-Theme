@@ -231,20 +231,20 @@ class TestCrossDistroAndWizard(unittest.TestCase):
 
     def test_alttab_switcher_scaled_1_5x_proportional(self):
         eval_js = (ROOT / "extensions" / "eval-helper@mactheme" / "extension.js").read_text(encoding="utf-8")
-        self.assertIn("iconSize: 84", eval_js)
-        self.assertIn("padding: 11", eval_js)
-        self.assertIn("spacing: 15", eval_js)
-        self.assertIn("radius: 42", eval_js)
+        self.assertIn("iconSize: 67", eval_js)
+        self.assertIn("padding: 9", eval_js)
+        self.assertIn("spacing: 12", eval_js)
+        self.assertIn("radius: 34", eval_js)
         self.assertIn("_macCalcAltTabMetrics", eval_js)
         self.assertIn("return [m.totalH, m.totalH];", eval_js)
         self.assertNotIn("const totalH = 82;", eval_js)
 
         styling_json = (ROOT / "config" / "mac-styling" / "styling.json").read_text(encoding="utf-8")
-        self.assertIn('"alttab_icon_size": 84', styling_json)
-        self.assertIn('"alttab_radius": 42', styling_json)
+        self.assertIn('"alttab_icon_size": 67', styling_json)
+        self.assertIn('"alttab_radius": 34', styling_json)
 
         styling_ui = (ROOT / "bin" / "mac-styling-settings").read_text(encoding="utf-8")
-        self.assertIn("self.alttab_icon_size = 84", styling_ui)
+        self.assertIn("self.alttab_icon_size = 67", styling_ui)
         self.assertIn("32, 120", styling_ui)
 
     def test_fullscreen_exit_drag_preserves_shrink_animation(self):
