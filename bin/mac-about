@@ -758,11 +758,11 @@ def run_gui(info: dict) -> int:
             padding: 0;
             margin: 0;
         }}
-        box.mac-wc-btn {{
+        box.mac-wc-btn.close {{
             min-width: 16px;
             min-height: 16px;
             padding: 0;
-            margin: 0 3px;
+            margin: 0;
             border-radius: 9999px;
             background-color: transparent;
             background-repeat: no-repeat;
@@ -770,52 +770,33 @@ def run_gui(info: dict) -> int:
             background-position: center;
             border: none;
             box-shadow: none;
-            transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 160ms ease;
-        }}
-        box.mac-wc-btn.close {{
             background-image: {scaled_url("button-close")};
-        }}
-        box.mac-wc-btn.minimize {{
-            background-image: {scaled_url("button-minimize")};
-        }}
-        box.mac-wc-btn.maximize {{
-            background-image: {scaled_url("button-maximize")};
+            transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 160ms ease;
         }}
         window.mac-about-window:backdrop box.mac-wc-btn.close {{
             background-image: {scaled_url("button-close-backdrop")};
         }}
-        window.mac-about-window:backdrop box.mac-wc-btn.minimize {{
-            background-image: {scaled_url("button-minimize-backdrop")};
-        }}
-        window.mac-about-window:backdrop box.mac-wc-btn.maximize {{
-            background-image: {scaled_url("button-maximize-backdrop")};
-        }}
-        box.mac-wc-group.group-hover box.mac-wc-btn.close,
-        box.mac-wc-group:hover box.mac-wc-btn.close,
-        box.mac-wc-btn.close:hover {{
+        box.mac-wc-btn.close:hover,
+        box.mac-wc-btn.close.hovered {{
             background-image: {scaled_url("button-close-hover")};
         }}
-        box.mac-wc-group.group-hover box.mac-wc-btn.minimize,
-        box.mac-wc-group:hover box.mac-wc-btn.minimize,
-        box.mac-wc-btn.minimize:hover {{
-            background-image: {scaled_url("button-minimize-hover")};
-        }}
-        box.mac-wc-group.group-hover box.mac-wc-btn.maximize,
-        box.mac-wc-group:hover box.mac-wc-btn.maximize,
-        box.mac-wc-btn.maximize:hover {{
-            background-image: {scaled_url("button-maximize-hover")};
-        }}
-        box.mac-wc-btn.close:active,
-        box.mac-wc-group.group-hover box.mac-wc-btn.close:active {{
+        box.mac-wc-btn.close:active {{
             background-image: {scaled_url("button-close-active")};
         }}
-        box.mac-wc-btn.minimize:active,
-        box.mac-wc-group.group-hover box.mac-wc-btn.minimize:active {{
-            background-image: {scaled_url("button-minimize-active")};
+        box.mac-wc-muted {{
+            min-width: 16px;
+            min-height: 16px;
+            padding: 0;
+            margin: 0;
+            border-radius: 9999px;
         }}
-        box.mac-wc-btn.maximize:active,
-        box.mac-wc-group.group-hover box.mac-wc-btn.maximize:active {{
-            background-image: {scaled_url("button-maximize-active")};
+        window.mac-about-window.mac-about-light box.mac-wc-muted {{
+            background-color: #e2e2e4;
+            border: 0.75px solid #cbccce;
+        }}
+        window.mac-about-window.mac-about-dark box.mac-wc-muted {{
+            background-color: #3f3f42;
+            border: 0.75px solid #4e4e52;
         }}
         """
 
@@ -829,16 +810,23 @@ def run_gui(info: dict) -> int:
         dot.set_valign(Gtk.Align.CENTER)
         if assets_dir:
             dot.set_size_request(16, 16)
-            dot.add_css_class("mac-wc-btn")
-            dot.add_css_class(kind)
-            if on_click:
-                dot.set_cursor_from_name("pointer")
-                click = Gtk.GestureClick()
-                click.set_button(1)
-                click.connect("released", lambda _g, _n, _x, _y: on_click())
-                dot.add_controller(click)
+            if kind == "close":
+                dot.add_css_class("mac-wc-btn")
+                dot.add_css_class("close")
+                motion = Gtk.EventControllerMotion()
+                motion.connect("enter", lambda *_: dot.add_css_class("hovered"))
+                motion.connect("leave", lambda *_: dot.remove_css_class("hovered"))
+                dot.add_controller(motion)
+                if on_click:
+                    dot.set_cursor_from_name("pointer")
+                    click = Gtk.GestureClick()
+                    click.set_button(1)
+                    click.connect("released", lambda _g, _n, _x, _y: on_click())
+                    dot.add_controller(click)
+            else:
+                dot.add_css_class("mac-wc-muted")
         else:
-            dot.set_size_request(12, 12)
+            dot.set_size_request(14, 14)
             dot.add_css_class("traffic-dot")
             if kind == "close":
                 dot.add_css_class("traffic-close")
@@ -927,23 +915,17 @@ def run_gui(info: dict) -> int:
             root.set_hexpand(True)
             root.set_vexpand(True)
 
-            # Top macOS traffic lights bar matching global GTK4 titlebuttons style
-            top_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0 if assets_dir else 8)
+            # Top macOS traffic lights bar (only red close button active; min/max muted grey)
+            top_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
             top_bar.add_css_class("mac-about-header")
             top_bar.add_css_class("mac-wc-group")
-            top_bar.set_margin_start(11 if assets_dir else 14)
-            top_bar.set_margin_top(12 if assets_dir else 14)
+            top_bar.set_margin_start(14)
+            top_bar.set_margin_top(14)
             top_bar.set_margin_bottom(0)
             top_bar.set_halign(Gtk.Align.START)
 
-            if assets_dir:
-                grp_motion = Gtk.EventControllerMotion()
-                grp_motion.connect("enter", lambda *_: top_bar.add_css_class("group-hover"))
-                grp_motion.connect("leave", lambda *_: top_bar.remove_css_class("group-hover"))
-                top_bar.add_controller(grp_motion)
-
             close_dot = make_traffic_dot("close", on_click=win.close)
-            min_dot = make_traffic_dot("minimize", on_click=win.minimize)
+            min_dot = make_traffic_dot("minimize")
             max_dot = make_traffic_dot("maximize")
             top_bar.append(close_dot)
             top_bar.append(min_dot)
