@@ -247,6 +247,14 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("self.alttab_icon_size = 84", styling_ui)
         self.assertIn("32, 120", styling_ui)
 
+    def test_fullscreen_exit_drag_preserves_shrink_animation(self):
+        wm_js = (ROOT / "extensions" / "kiwi@kemma" / "apps" / "macWindowManagement.js").read_text(encoding="utf-8")
+        self.assertIn("_fullscreenAnimWrapper", wm_js)
+        self.assertIn("_destroyFullscreenAnimClone", wm_js)
+        self.assertIn("_fullscreenAnimWrapper.set_position(targetX, targetY)", wm_js)
+        self.assertNotIn("_fsDragState.win._fullscreenAnimClone.remove_all_transitions()", wm_js)
+        self.assertIn("if (win._macExitingFullscreen)", wm_js)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -324,14 +324,25 @@ function _startMenubarDockUnfullscreenAnim() {
     }
 }
 
-function _finishUnfullscreenTransition(win, onComplete = null, targetRect = null) {
+function _destroyFullscreenAnimClone(win) {
+    if (!win) return;
+    if (win._fullscreenAnimClone) {
+        try { win._fullscreenAnimClone.destroy(); } catch (_) {}
+        win._fullscreenAnimClone = null;
+    }
+    if (win._fullscreenAnimWrapper) {
+        try { win._fullscreenAnimWrapper.destroy(); } catch (_) {}
+        win._fullscreenAnimWrapper = null;
+    }
+}
+
+function _finishUnfullscreenTransition(win, onComplete = null, targetRect = null, animGen = null) {
+    if (win && animGen !== null && win._macFsAnimGen !== animGen)
+        return;
     _isUnfullscreenAnimating = false;
     if (win) {
         win._macExitingFullscreen = false;
-        if (win._fullscreenAnimClone) {
-            try { win._fullscreenAnimClone.destroy(); } catch (_) {}
-            win._fullscreenAnimClone = null;
-        }
+        _destroyFullscreenAnimClone(win);
         const actor = win.get_compositor_private();
         if (actor && !actor.is_finalized?.()) {
             actor.opacity = 255;
@@ -363,35 +374,54 @@ function _finishUnfullscreenTransition(win, onComplete = null, targetRect = null
 
 function _executeUnfullscreenShrinkAnimation(win, actor, fsRect, targetRect, callUnmakeFullscreen, onComplete = null) {
     _startMenubarDockUnfullscreenAnim();
+    const animGen = (win._macFsAnimGen = (win._macFsAnimGen || 0) + 1);
 
     const panelBox = _getPanelBox();
+    let wrapper = null;
     let clone = null;
     try {
         const content = actor.paint_to_content(null);
         if (content) {
-            clone = new Clutter.Actor({
-                name: 'mac-unfullscreen-shrink-clone',
-                content,
-                x: fsRect.x,
-                y: fsRect.y,
-                width: fsRect.width,
-                height: fsRect.height,
+            const safeW = Math.max(1, targetRect.width);
+            const safeH = Math.max(1, targetRect.height);
+            wrapper = new Clutter.Actor({
+                name: 'mac-unfullscreen-shrink-wrapper',
+                x: targetRect.x,
+                y: targetRect.y,
                 opacity: 255,
                 reactive: false,
             });
+            clone = new Clutter.Actor({
+                name: 'mac-unfullscreen-shrink-clone',
+                content,
+                x: 0,
+                y: 0,
+                width: safeW,
+                height: safeH,
+                opacity: 255,
+                reactive: false,
+            });
+            clone.set_pivot_point(0, 0);
+            clone.scale_x = fsRect.width / safeW;
+            clone.scale_y = fsRect.height / safeH;
+            clone.translation_x = fsRect.x - targetRect.x;
+            clone.translation_y = fsRect.y - targetRect.y;
+            wrapper.add_child(clone);
+
             if (panelBox && panelBox.get_parent() === Main.uiGroup) {
-                Main.uiGroup.insert_child_below(clone, panelBox);
+                Main.uiGroup.insert_child_below(wrapper, panelBox);
             } else {
-                Main.uiGroup.add_child(clone);
+                Main.uiGroup.add_child(wrapper);
             }
         }
     } catch (e) {
         console.warn(`[macWindowManagement] unfullscreen snapshot error: ${e}`);
+        wrapper = null;
+        clone = null;
     }
 
-    if (win._fullscreenAnimClone) {
-        try { win._fullscreenAnimClone.destroy(); } catch (_) {}
-    }
+    _destroyFullscreenAnimClone(win);
+    win._fullscreenAnimWrapper = wrapper;
     win._fullscreenAnimClone = clone;
 
     if (clone) {
@@ -408,27 +438,31 @@ function _executeUnfullscreenShrinkAnimation(win, actor, fsRect, targetRect, cal
         } catch (_) {}
     }
 
-    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 380, () => {
+    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 420, () => {
+        if (win._macFsAnimGen !== animGen)
+            return GLib.SOURCE_REMOVE;
         try {
             if (actor && !actor.is_finalized?.() && actor.opacity === 0) {
                 actor.opacity = 255;
             }
         } catch (_) {}
         if (_isUnfullscreenAnimating) {
-            _finishUnfullscreenTransition(win, onComplete, targetRect);
+            _finishUnfullscreenTransition(win, onComplete, targetRect, animGen);
         }
         return GLib.SOURCE_REMOVE;
     });
 
-    if (clone) {
+    if (clone && wrapper) {
         clone.ease({
-            x: targetRect.x,
-            y: targetRect.y,
-            width: targetRect.width,
-            height: targetRect.height,
+            scale_x: 1.0,
+            scale_y: 1.0,
+            translation_x: 0,
+            translation_y: 0,
             duration: 280,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
             onComplete: () => {
+                if (win._macFsAnimGen !== animGen)
+                    return;
                 try {
                     if (actor && !actor.is_finalized?.()) {
                         actor.opacity = 255;
@@ -439,11 +473,7 @@ function _executeUnfullscreenShrinkAnimation(win, actor, fsRect, targetRect, cal
                     duration: 40,
                     mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                     onComplete: () => {
-                        try { clone.destroy(); } catch (_) {}
-                        if (win._fullscreenAnimClone === clone) {
-                            win._fullscreenAnimClone = null;
-                        }
-                        _finishUnfullscreenTransition(win, onComplete, targetRect);
+                        _finishUnfullscreenTransition(win, onComplete, targetRect, animGen);
                     },
                 });
             },
@@ -473,7 +503,7 @@ function _executeUnfullscreenShrinkAnimation(win, actor, fsRect, targetRect, cal
                     actor.translation_x = 0;
                     actor.translation_y = 0;
                 } catch (_) {}
-                _finishUnfullscreenTransition(win, onComplete, targetRect);
+                _finishUnfullscreenTransition(win, onComplete, targetRect, animGen);
             },
         });
     }
@@ -481,6 +511,8 @@ function _executeUnfullscreenShrinkAnimation(win, actor, fsRect, targetRect, cal
 
 export function animateExitFullscreen(win, onComplete = null, targetRectOverride = null) {
     if (!win || win.window_type !== Meta.WindowType.NORMAL)
+        return;
+    if (win._macExitingFullscreen)
         return;
 
     const actor = win.get_compositor_private();
@@ -502,7 +534,8 @@ export function animateExitFullscreen(win, onComplete = null, targetRectOverride
     const wa = Main.layoutManager.getWorkAreaForMonitor(monIndex);
 
     let targetRect = targetRectOverride || win._macFullscreenFromRect;
-    if (!targetRect || targetRect.width < 200 || targetRect.height < 150) {
+    const isTooLarge = targetRect && targetRect.width >= wa.width - 8 && targetRect.height >= wa.height - 8;
+    if (!targetRect || targetRect.width < 200 || targetRect.height < 150 || (!targetRectOverride && isTooLarge)) {
         const defaultW = Math.min(1280, Math.round(mon.width * 0.75));
         const defaultH = Math.min(800, Math.round(mon.height * 0.75));
         targetRect = {
@@ -562,7 +595,7 @@ function _onGrabOpBegin(_display, window, op) {
     _setPanelSolidDarkStyle(false);
 
 
-    if (window.is_fullscreen()) {
+    if (window.is_fullscreen() && !window._macExitingFullscreen) {
         try {
             animateExitFullscreen(window);
         } catch (_) {}
@@ -585,12 +618,17 @@ function _onGrabOpBegin(_display, window, op) {
         try {
             const [px, py] = global.get_pointer();
             const frame = _draggingWindow.get_frame_rect();
+            if (_draggingWindow._fullscreenAnimWrapper) {
+                try {
+                    _draggingWindow._fullscreenAnimWrapper.set_position(frame.x, frame.y);
+                } catch (_) {}
+            }
             const monitor = _draggingWindow.get_monitor();
             const wa = Main.layoutManager.getWorkAreaForMonitor(monitor);
             const menubarBottom = wa.y;
 
 
-            const isNearMenubar = (frame.y <= menubarBottom + 14 || py <= menubarBottom + 16) && py >= 0;
+            const isNearMenubar = !_draggingWindow._macExitingFullscreen && (frame.y <= menubarBottom + 14 || py <= menubarBottom + 16) && py >= 0;
 
             if (isNearMenubar) {
                 if (!_showingTilePreview) {
@@ -666,6 +704,10 @@ function _onSizeChange(_wm, actor, whichChange, oldFrameRect) {
             return;
         }
         _animateUnfullscreenFromSizeChange(win, actor, oldFrameRect);
+        return;
+    }
+
+    if (win._macExitingFullscreen) {
         return;
     }
 
@@ -754,7 +796,7 @@ function _startFullscreenWatcher() {
                         if (!win || !win.is_fullscreen() || win.window_type !== Meta.WindowType.NORMAL) {
                             win = ws?.list_windows?.().find(w => !w.minimized && w.is_fullscreen() && w.window_type === Meta.WindowType.NORMAL);
                         }
-                        if (win && win.is_fullscreen()) {
+                        if (win && win.is_fullscreen() && !win._macExitingFullscreen) {
                             _fsDragState.isDragging = true;
                             _fsDragState.win = win;
 
@@ -766,8 +808,10 @@ function _startFullscreenWatcher() {
                             const mon = Main.layoutManager.monitors[win.get_monitor()] || primaryMonitor;
                             const wa = Main.layoutManager.getWorkAreaForMonitor(mon.index);
                             const saved = win._macFullscreenFromRect;
-                            const targetW = (saved && saved.width >= 300) ? saved.width : Math.min(1280, Math.round(mon.width * 0.75));
-                            const targetH = (saved && saved.height >= 200) ? saved.height : Math.min(800, Math.round(mon.height * 0.75));
+                            const hasWindowedSaved = saved && saved.width >= 300 && saved.height >= 200 &&
+                                (saved.width < wa.width - 8 || saved.height < wa.height - 8);
+                            const targetW = hasWindowedSaved ? saved.width : Math.min(1280, Math.round(mon.width * 0.75));
+                            const targetH = hasWindowedSaved ? saved.height : Math.min(800, Math.round(mon.height * 0.75));
                             const targetX = Math.max(mon.x, Math.min(px - Math.round(targetW / 2), mon.x + mon.width - targetW));
                             const targetY = Math.max(wa.y + 8, py - 24);
                             const dragTargetRect = { x: targetX, y: targetY, width: targetW, height: targetH };
@@ -791,10 +835,9 @@ function _startFullscreenWatcher() {
                     const targetX = px - _fsDragState.offsetX;
                     const targetY = py - _fsDragState.offsetY;
                     try { _fsDragState.win.move_frame(true, targetX, targetY); } catch (_) {}
-                    if (_fsDragState.win._fullscreenAnimClone) {
+                    if (_fsDragState.win._fullscreenAnimWrapper) {
                         try {
-                            _fsDragState.win._fullscreenAnimClone.remove_all_transitions();
-                            _fsDragState.win._fullscreenAnimClone.set_position(targetX, targetY);
+                            _fsDragState.win._fullscreenAnimWrapper.set_position(targetX, targetY);
                         } catch (_) {}
                     }
                 }
@@ -804,9 +847,11 @@ function _startFullscreenWatcher() {
                         const win = _fsDragState.win;
                         const wa = Main.layoutManager.getWorkAreaForMonitor(primaryMonitor.index);
                         const menubarBottom = wa.y;
+                        const snapY = (_fsDragState.startY <= panelHeight)
+                            ? Math.max(16, Math.round(menubarBottom * 0.6))
+                            : menubarBottom + 16;
 
-
-                        if (py <= menubarBottom + 16 && py >= 0) {
+                        if (py <= snapY && py >= 0) {
                             animateEnterFullscreen(win, win.get_frame_rect());
                         }
                         _queueRecomputeFullscreen();
