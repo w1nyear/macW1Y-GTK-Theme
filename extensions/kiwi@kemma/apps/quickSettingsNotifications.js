@@ -499,7 +499,7 @@ if (HAS_MESSAGE_LIST_SECTION) {
     }, class NotificationList extends St.BoxLayout {
         constructor() {
             super({
-                vertical: true,
+                orientation: Clutter.Orientation.VERTICAL,
                 x_expand: true,
                 y_expand: true,
             });
@@ -571,7 +571,7 @@ GObject.registerClass(NotificationHeader);
 class NotificationWidget extends St.BoxLayout {
     constructor() {
         super({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             style_class: 'kiwi-notifications',
             y_expand: true,
             y_align: Clutter.ActorAlign.FILL,

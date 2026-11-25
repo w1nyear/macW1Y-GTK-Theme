@@ -432,7 +432,7 @@ export function enable() {
         _batteryButton = new PanelMenu.Button(0.0, 'Battery', true);
         _batteryBox = new St.BoxLayout({
             style_class: 'kiwi-battery-box',
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
         });

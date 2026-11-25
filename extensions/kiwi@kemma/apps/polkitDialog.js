@@ -35,7 +35,7 @@ function _styleDialog(dialog) {
     try {
         const header = new St.BoxLayout({
             style_class: 'tahoe-polkit-header',
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
         });
         const icon = new St.Icon({
             style_class: 'tahoe-polkit-lock',

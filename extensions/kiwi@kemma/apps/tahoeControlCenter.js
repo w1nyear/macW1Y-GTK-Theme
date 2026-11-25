@@ -1187,7 +1187,7 @@ export async function _openFocusSubmenu(sourceActor, state) {
         });
         dndItem.add_child(moonIcon);
 
-        const dndTextBox = new St.BoxLayout({ vertical: true, x_expand: true, y_align: Clutter.ActorAlign.CENTER });
+        const dndTextBox = new St.BoxLayout({ orientation: Clutter.Orientation.VERTICAL, x_expand: true, y_align: Clutter.ActorAlign.CENTER });
         const dndTitle = new St.Label({
             text: t('dnd_title', 'Не турбувати'),
             style: `font-size: 13px !important; font-weight: ${dndActive ? '700' : '500'} !important; color: #ffffff !important;`,
@@ -1362,7 +1362,7 @@ function _makePill(iconName, title, subtitle, expandTexts = true, withEndBtn = f
         y_align: Clutter.ActorAlign.CENTER,
     });
     box.add_child(circle);
-    const texts = new St.BoxLayout({vertical: true, x_expand: expandTexts});
+    const texts = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: expandTexts});
 
     const spTop = new St.BoxLayout({y_expand: true});
     texts.add_child(spTop);
@@ -1683,7 +1683,7 @@ const TahoeSlider = GObject.registerClass({
 
 
 function _makeSliderCard(title, leftIcon, rightIcon, withEndBtn) {
-    const outer = new St.BoxLayout({style_class: 'tahoe-qs-card', vertical: true});
+    const outer = new St.BoxLayout({style_class: 'tahoe-qs-card', orientation: Clutter.Orientation.VERTICAL});
     outer.set_height(CARD_H);
 
     const headRow = new St.BoxLayout({
@@ -1814,7 +1814,7 @@ function _buildPanel() {
     panelBg.opacity = 0;
     overlay.add_child(panelBg);
 
-    const box = new St.BoxLayout({style_class: `tahoe-qs-panel${darkCls}`, vertical: true});
+    const box = new St.BoxLayout({style_class: `tahoe-qs-panel${darkCls}`, orientation: Clutter.Orientation.VERTICAL});
 
     try {
         if (getPanelInk() === 'light')
@@ -1858,8 +1858,8 @@ function _buildPanel() {
 
     const cols = new St.BoxLayout({style_class: 'tahoe-qs-cols'});
     box.add_child(cols);
-    const leftCol = new St.BoxLayout({vertical: true, style_class: 'tahoe-qs-col', x_expand: true});
-    const rightCol = new St.BoxLayout({vertical: true, style_class: 'tahoe-qs-col', x_expand: true});
+    const leftCol = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, style_class: 'tahoe-qs-col', x_expand: true});
+    const rightCol = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, style_class: 'tahoe-qs-col', x_expand: true});
     leftCol.set_width(COL_W);
     rightCol.set_width(COL_W);
     cols.add_child(leftCol);
@@ -1988,7 +1988,7 @@ function _buildPanel() {
 
     const music = new St.Button({style_class: 'tahoe-qs-music', reactive: true, x_expand: true});
     music.set_height(MUSIC_H);
-    const mbox = new St.BoxLayout({vertical: true, style_class: 'tahoe-qs-music-box'});
+    const mbox = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, style_class: 'tahoe-qs-music-box'});
     music.set_child(mbox);
 
     const artWrap = new St.BoxLayout({x_expand: true});
@@ -3208,7 +3208,7 @@ export async function _openPowerModeSubmenu(sourceActor, state) {
             });
             item.add_child(icon);
 
-            const textBox = new St.BoxLayout({ vertical: true, x_expand: true, y_align: Clutter.ActorAlign.CENTER });
+            const textBox = new St.BoxLayout({ orientation: Clutter.Orientation.VERTICAL, x_expand: true, y_align: Clutter.ActorAlign.CENTER });
             const titleLbl = new St.Label({
                 text: m.title,
                 style: `font-family: "Default Display", "Default", default, system-ui, sans-serif, sans-serif !important; font-size: 13px !important; font-weight: ${isSelected ? '700' : '500'} !important; color: #ffffff !important;`,

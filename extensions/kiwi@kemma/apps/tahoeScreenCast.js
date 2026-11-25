@@ -163,7 +163,7 @@ const MacScreenCastButton = GObject.registerClass({
             style_class: 'mac-screencast-header-item',
         });
         const headBox = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             style_class: 'mac-screencast-header',
             x_expand: true,
         });
@@ -208,7 +208,7 @@ const MacScreenCastButton = GObject.registerClass({
             style_class: 'mac-screencast-card-item',
         });
         const card = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             style_class: 'mac-screencast-card',
             x_expand: true,
         });

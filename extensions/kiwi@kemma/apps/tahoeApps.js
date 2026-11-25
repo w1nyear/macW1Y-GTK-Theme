@@ -628,7 +628,7 @@ class TahoeApps {
 
         const win = new St.BoxLayout({
             style_class: 'tahoe-window',
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             reactive: true,
         });
         win.set_size(winW, winH);
@@ -775,7 +775,7 @@ class TahoeApps {
 
         const content = new St.BoxLayout({
             style_class: 'tahoe-content',
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
         });
         const pad22 = Math.round(CONTENT_PAD * S);
@@ -1075,7 +1075,7 @@ class TahoeApps {
         for (const group of groups) {
             const section = new St.BoxLayout({
                 style_class: 'tahoe-section',
-                vertical: true,
+                orientation: Clutter.Orientation.VERTICAL,
                 x_expand: true,
             });
             const secRec = {title: group.title, actor: section, rows: []};
@@ -1138,7 +1138,7 @@ class TahoeApps {
 
         const box = new St.BoxLayout({
             style_class: 'tahoe-app-box',
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
         });
@@ -1383,7 +1383,7 @@ class TahoeApps {
 
         const menu = new St.BoxLayout({
             style_class: 'tahoe-drop',
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
         });
         this._menu = menu;
 

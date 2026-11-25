@@ -67,7 +67,7 @@ function _gicon(name) {
 
 function _makeTile(ctrl) {
 
-    const wrap = new St.BoxLayout({vertical: true, x_expand: false,
+    const wrap = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: false,
         y_expand: false, style_class: 'tahoe-qse-tile-wrap'});
     const circle = new St.Bin({
         style_class: 'tahoe-qse-tile-circle',
@@ -103,7 +103,7 @@ function _makeTile(ctrl) {
 }
 
 function _makeSection(title, controls) {
-    const sect = new St.BoxLayout({vertical: true, x_expand: true,
+    const sect = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: true,
         style_class: 'tahoe-qse-section'});
     if (title) {
         const h = new St.Label({text: title, style_class: 'tahoe-qse-sect-title'});
@@ -131,7 +131,7 @@ function _makeSection(title, controls) {
 
 
 function _buildSidebar() {
-    const sb = new St.BoxLayout({vertical: true, x_expand: false, y_expand: true,
+    const sb = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: false, y_expand: true,
         style_class: 'tahoe-qse-sidebar', width: SIDEBAR_W});
 
 
@@ -176,7 +176,7 @@ function _buildContent() {
     const scroll = new St.ScrollView({style_class: 'tahoe-qse-scroll',
         style: '-st-vfade-offset: 36px;',
         x_expand: true, y_expand: true, overlay_scrollbars: true});
-    const content = new St.BoxLayout({vertical: true, x_expand: true,
+    const content = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: true,
         style_class: 'tahoe-qse-content'});
     scroll.set_child(content);
 
@@ -254,7 +254,7 @@ export function openEditMenu(catalog, onDone) {
     });
 
 
-    const win = new St.BoxLayout({vertical: true, x_expand: false, y_expand: false,
+    const win = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: false, y_expand: false,
         style_class: 'tahoe-qse-win', width: MENU_W, height: MENU_H});
     win.set_position(x - monitor.x, y - monitor.y);
 
