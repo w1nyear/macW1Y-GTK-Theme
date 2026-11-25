@@ -319,7 +319,7 @@ void main() {
 
     // 1. FAST EARLY EXIT: outside shape and outer drop shadow bounds
     float rawShadowRad = max(min(shadow_radius, shadow_max_radius), 2.0);
-    float effShadowRad = (multi_region_mode > 0.5) ? min(rawShadowRad, max(padding - 1.5, 12.0)) : rawShadowRad;
+    float effShadowRad = (multi_region_mode > 0.5) ? min(rawShadowRad, 22.0) : rawShadowRad;
     float exitReach = max(effShadowRad + 2.0, edgeFeather);
 
     if (early_exit_enabled > 0.5 && debug_view < 0.5 && d >= exitReach) {
@@ -359,11 +359,11 @@ void main() {
 
     // 3. FAST-PATH: Interior flat glass surface (depth >= 0.999)
     float minBoxDim = max(min(box_size.x, box_size.y), 1.0);
-    float elemScale = clamp(minBoxDim / 110.0, 0.20, 1.0);
+    float elemScale = clamp(minBoxDim / 65.0, 0.48, 1.0);
     float depthReach = (shape_type > 0.5 && isDock < 0.5) ? minBoxDim : corner_radius;
-    float maxSafeBevel = max(minBoxDim * 0.36, 3.0);
+    float maxSafeBevel = max(minBoxDim * 0.44, 4.0);
     float bevelWidth = clamp(max_z * 0.75 + depthReach * 0.2, 4.0, min(28.0, maxSafeBevel));
-    float interiorThreshold = max(bevelWidth + edgeFeather, max(ao_radius, rim_width));
+    float interiorThreshold = max(bevelWidth + edgeFeather, max(ao_radius, rim_width)) + 1.0;
 
     if (early_exit_enabled > 0.5 && debug_view < 0.5 && -d >= interiorThreshold) {
         vec4 fTap = texture2D(cogl_sampler1, SAFE(screenUv));
@@ -381,8 +381,8 @@ void main() {
         vec3 lightDirFlat = normalize(vec3(cos(radians(light_angle_deg)),
                                            sin(radians(light_angle_deg)), 0.38));
         float facing = max(lightDirFlat.z, 0.0);
-        float specFlat = pow(facing, max(shininess, 1.0)) * specular_intensity * 0.65;
-        float sheenFlat = pow(facing, 1.65) * sheen_intensity;
+        float specFlat = pow(facing, max(shininess * 0.25, 4.0)) * specular_intensity * 0.75 * 0.35;
+        float sheenFlat = pow(facing, 1.65) * sheen_intensity * 0.45;
         vec3 addedFlat = vec3(specFlat + sheenFlat) * surface_light_enabled;
 
         vec3 litFlat = flatRgb + addedFlat - (flatRgb * addedFlat);
@@ -416,11 +416,11 @@ void main() {
     float minRes = max(min(resolution.x, resolution.y), 1.0);
     float effDispScale = displacement_scale * elemScale;
     float thicknessNorm = effDispScale / minRes;
-    float safe_z = max(-refractedRay.z, 0.25);
+    float safe_z = max(-refractedRay.z, 0.16);
     float edgeDampen = smoothstep(0.0, edgeFeather * 2.5, -d);
     vec2 dispVec = (refractedRay.xy / safe_z) * thicknessNorm * edgeDampen;
 
-    float maxDispUV = (minBoxDim * 0.32) / minRes;
+    float maxDispUV = (minBoxDim * 0.45) / minRes;
     float dispLen = length(dispVec);
     if (dispLen > maxDispUV && dispLen > 0.00001) {
         dispVec *= (maxDispUV / dispLen);

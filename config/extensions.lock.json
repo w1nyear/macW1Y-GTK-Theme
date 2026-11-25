@@ -274,7 +274,7 @@
         "50",
         "51"
       ],
-      "sha256": "c29ad38c817de2e5f7b43728775a9fe22843b844bd4f3735d69dab874019ac4c",
+      "sha256": "ec7c44ad7fa2c4fd48b21576722dd4c6bee2391fa0884ec33a6288af17545501",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -287,11 +287,11 @@
       "has_custom_patches": true,
       "patch_description": "macW1Y Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macW1Y Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macW1Y Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macW1Y horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; authentic unfullscreen window shrink animation and menubar slide-down with solid dark dimming backdrop; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
       "last_verified": "2026-11-24",
-      "integrity_hash": "c29ad38c817de2e5f7b43728775a9fe22843b844bd4f3735d69dab874019ac4c",
-      "pinned_sha256": "c29ad38c817de2e5f7b43728775a9fe22843b844bd4f3735d69dab874019ac4c",
+      "integrity_hash": "ec7c44ad7fa2c4fd48b21576722dd4c6bee2391fa0884ec33a6288af17545501",
+      "pinned_sha256": "ec7c44ad7fa2c4fd48b21576722dd4c6bee2391fa0884ec33a6288af17545501",
       "expected_hash": "d7d391f17d291fe98b899ee1af85d1bb9c11017ff2e7be5f6b5ab4a555211bcf",
-      "dir_hash": "c29ad38c",
-      "integrity": "c29ad38c817de2e5f7b43728775a9fe22843b844bd4f3735d69dab874019ac4c"
+      "dir_hash": "ec7c44ad",
+      "integrity": "ec7c44ad7fa2c4fd48b21576722dd4c6bee2391fa0884ec33a6288af17545501"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {
       "uuid": "liquid-glass@thinkingcoding1231.gmail.com",
@@ -305,7 +305,7 @@
         "50",
         "51"
       ],
-      "sha256": "1644ed15708b3ca8e9a81c2e841530d61b38433a687b90d15a0303dfe3f7fefc",
+      "sha256": "a9de965c1b2f53b8cce257b3bd436995a26767d9eb9f0754fcc82d32e5498b73",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -317,7 +317,7 @@
       "has_custom_patches": true,
       "patch_description": "Local custom Liquid Glass GLSL refraction & border shader; UI container owner check for strict rounded rectangle radius enforcement and setShapeType API",
       "last_verified": "2026-11-22",
-      "integrity_hash": "1644ed15708b3ca8e9a81c2e841530d61b38433a687b90d15a0303dfe3f7fefc",
+      "integrity_hash": "a9de965c1b2f53b8cce257b3bd436995a26767d9eb9f0754fcc82d32e5498b73",
       "files": {
         "global.d.ts": "02492c5b3b37afc11cb19dee9ae1e9ae8f4e6f8502920b57ae6d0b6f8175c41a",
         "package-lock.json": "2610757c38df98269142accd24a1e84a464bbd02e884569ae6d4c9bec586f5db",
@@ -332,7 +332,7 @@
         "shaders/gaussian_v.frag": "604b318b9750f807b3ad52b08cba8181638a16f73d12cf3bb2c46733d1937c55",
         "shaders/downsample.frag": "35d971052c1730e7da0e5edf15c57c04300573a0c2fdd9de197739b9aa1c9b4c",
         "shaders/gaussian_h.frag": "1375ac86287fce5a2a1878bfebb4cb39d90eccd3e3128381bc0611e8feaa734d",
-        "shaders/glass.frag": "0c8834fe552beda04ebd784326d5eb1e1b51ac0756da755615f393e50cce5b32",
+        "shaders/glass.frag": "e1bfe5178d5a3d83b175225b873d39e58d345b2b058ec1268c4c3fdc329af0aa",
         "shaders/upsample.frag": "5b499e75ee05a69429948049ba130b6b160a8cf35e63bdc709aec754688e0b03",
         "schemas/gschemas.compiled": "4c89aa3edb1a8d2a45ac351883317b4bc344dfeb810561f60be6822bc1df0446",
         "schemas/org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com.gschema.xml": "e676686f84cc03ebf922c6eea6b41dead57ebee697440e926617ad7284420794",
@@ -370,8 +370,8 @@
         "icons/audio-volume-medium-symbolic.svg": "8447a2300f7d0fda2c3be92ca17736079661de4cc6942571468220bb2a25ee82",
         "icons/shapes-large-symbolic.svg": "713fe56bf2d550a9c99600a1ce8cd87b993b40101f9d5fa7b007907efc9cdd11"
       },
-      "pinned_sha256": "1644ed15708b3ca8e9a81c2e841530d61b38433a687b90d15a0303dfe3f7fefc",
-      "dir_hash": "1644ed15"
+      "pinned_sha256": "a9de965c1b2f53b8cce257b3bd436995a26767d9eb9f0754fcc82d32e5498b73",
+      "dir_hash": "a9de965c"
     },
     "macw1y-touchpad-gestures@mactheme": {
       "uuid": "macw1y-touchpad-gestures@mactheme",

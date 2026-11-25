@@ -5830,3 +5830,19 @@ Task #938:
   * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
 
+972. 2026-11-25 — Усунення світлого прямокутника всередині Liquid Glass, посилення рефракції малих елементів та виправлення обрізання тіні Control Center:
+  - Змінені файли:
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED.frag](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED.frag) (рядки 320-324, 360-388, 416-426)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag) (рядки 320-324, 360-388, 416-426)
+    * [extensions/kiwi@kemma/apps/tahoeControlCenter.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeControlCenter.js) (рядки 194-196, 3934-3938)
+    * [extensions/kiwi@kemma/apps/tahoeQuickSettings.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeQuickSettings.js) (рядки 2614-2618)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Опис змін:
+    * У LQ-OPTIMIZED.frag та glass.frag вирівняно формули specFlat та sheenFlat у гілці FAST-PATH з межею гілки BEVEL (множник 0.45 для sheenFlat і 0.35 для specFlat, interiorThreshold + 1.0), що повністю усунуло видимий світлий прямокутник всередині меню та вікон зі склом.
+    * Для малих елементів (OSD, перемикач розкладки, кнопки Control Center) посилено рефракцію без ламання геометрії: elemScale = clamp(minBoxDim / 65.0, 0.48, 1.0), maxSafeBevel = max(minBoxDim * 0.44, 4.0), safe_z >= 0.16, maxDispUV = (minBoxDim * 0.45) / minRes.
+    * У tahoeControlCenter.js та tahoeQuickSettings.js обнулено shadow_intensity та shadow_radius для фонового шару backdrop (pure = true), а також збільшено CLIP_PADDING до 64 та обмежено effShadowRad у multi_region_mode до 22.0, що усунуло обрізання тіні по краю центру керування.
+  - Перевірка:
+    * mac-extension-guard verify: 21/21 LOCKED OK; mac-audit-sync check: 100% PASS; mac-integrity-check --check: System is green; unittest: 45/45 PASS; 0 кирилиці в install.sh.
+  * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+

@@ -193,7 +193,7 @@ const EDIT_H = 28;
 const LG_SCHEMA = 'org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com';
 const SHADER_PADDING = 20;
 const GLASS_EXPAND = 2;
-const CLIP_PADDING = 36;
+const CLIP_PADDING = 64;
 
 
 
@@ -3933,6 +3933,8 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
             effect._setFloat('specular_intensity', 0);
             effect._setFloat('displacement_scale', 0);
             effect._setFloat('chroma_strength', 0);
+            effect._setFloat('shadow_intensity', 0);
+            effect._setFloat('shadow_radius', 0);
             effect._setFloat('edge_smoothing', edgePx > 0 ? edgePx : BACKDROP_PAD);
         } else {
             effect.setSurfaceLightEnabled(true);
