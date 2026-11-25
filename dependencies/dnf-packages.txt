@@ -48,3 +48,8 @@ gnome-desktop3
 gnome-shell
 gnome-session
 gdm
+gettext
+dbus-daemon
+xdg-utils
+libnotify
+zenity

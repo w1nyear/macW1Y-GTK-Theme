@@ -70,23 +70,35 @@ name = 'macW1Y-Dark'
 [org.gnome.desktop.background]
 picture-uri = 'file:///usr/share/backgrounds/GoldenGate_Day.jpg'
 picture-uri-dark = 'file:///usr/share/backgrounds/GoldenGate_Day.jpg'
+picture-options = 'zoom'
+color-shading-type = 'solid'
+primary-color = '#1e1e1e'
 
 [org.gnome.desktop.background:ubuntu]
 picture-uri = 'file:///usr/share/backgrounds/GoldenGate_Day.jpg'
 picture-uri-dark = 'file:///usr/share/backgrounds/GoldenGate_Day.jpg'
+picture-options = 'zoom'
+color-shading-type = 'solid'
+primary-color = '#1e1e1e'
 
 [org.gnome.desktop.background:GNOME-Greeter]
 picture-uri = 'file:///usr/share/backgrounds/GoldenGate_Day.jpg'
 picture-uri-dark = 'file:///usr/share/backgrounds/GoldenGate_Day.jpg'
+picture-options = 'zoom'
+color-shading-type = 'solid'
+primary-color = '#1e1e1e'
 
 [org.gnome.desktop.screensaver]
 picture-uri = 'file:///usr/share/backgrounds/GoldenGate_Day.jpg'
+picture-options = 'zoom'
 
 [org.gnome.desktop.screensaver:ubuntu]
 picture-uri = 'file:///usr/share/backgrounds/GoldenGate_Day.jpg'
+picture-options = 'zoom'
 
 [org.gnome.desktop.screensaver:GNOME-Greeter]
 picture-uri = 'file:///usr/share/backgrounds/GoldenGate_Day.jpg'
+picture-options = 'zoom'
 
 [org.gnome.shell.extensions.wack-lockscreen-clock]
 lockscreen-mode = 'cupertino'

@@ -40,3 +40,8 @@ gtk3
 gnome-desktop
 gnome-shell
 gdm
+gettext
+dbus
+xdg-utils
+libnotify
+zenity

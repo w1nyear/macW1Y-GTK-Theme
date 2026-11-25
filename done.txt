@@ -5846,3 +5846,33 @@ Task #938:
   * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
 
+
+973. 2026-11-25 — Кросплатформні виправлення (Debian, Linux Mint, Fedora, Arch/CachyOS), шпалери/док/віджети та пілюля зміни мови в macW1Y Setup Wizard:
+  - Змінені та додані файли:
+    * [install.sh](file:///home/vitaliy/macW1Y/install.sh) (рядки 235-260, 1255-1265, 1510-1522)
+    * [macw1y-gdm/99_mactheme.gschema.override](file:///home/vitaliy/macW1Y/macw1y-gdm/99_mactheme.gschema.override) (рядки 70-105)
+    * [dependencies/apt-packages.txt](file:///home/vitaliy/macW1Y/dependencies/apt-packages.txt)
+    * [dependencies/dnf-packages.txt](file:///home/vitaliy/macW1Y/dependencies/dnf-packages.txt)
+    * [dependencies/pacman-packages.txt](file:///home/vitaliy/macW1Y/dependencies/pacman-packages.txt)
+    * [bin/mac-ensure-extensions.sh](file:///home/vitaliy/macW1Y/bin/mac-ensure-extensions.sh)
+    * [bin/mac-apply-locale](file:///home/vitaliy/macW1Y/bin/mac-apply-locale)
+    * [bin/update-bms-menubar-blur](file:///home/vitaliy/macW1Y/bin/update-bms-menubar-blur)
+    * [bin/mac-gdm-bypass](file:///home/vitaliy/macW1Y/bin/mac-gdm-bypass)
+    * [extensions/desktop-widgets@r3nhick/lib/modpackLocale.js](file:///home/vitaliy/macW1Y/extensions/desktop-widgets@r3nhick/lib/modpackLocale.js)
+    * [extensions/desktop-widgets@r3nhick/extension.js](file:///home/vitaliy/macW1Y/extensions/desktop-widgets@r3nhick/extension.js)
+    * [extensions/desktop-widgets@r3nhick/widgets/calendar/widget.js](file:///home/vitaliy/macW1Y/extensions/desktop-widgets@r3nhick/widgets/calendar/widget.js)
+    * [extensions/desktop-widgets@r3nhick/widgets/weather/widget.js](file:///home/vitaliy/macW1Y/extensions/desktop-widgets@r3nhick/widgets/weather/widget.js)
+    * [extensions/eval-helper@mactheme/macSetupWizard.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/macSetupWizard.js)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Опис змін:
+    * У install.sh додано dbus-run-session fallback в run_as_user(), встановлення picture-options 'zoom' для шпалер та інсталяцію /usr/local/bin/mac-ensure-extensions.sh і /etc/xdg/autostart/mac-ensure-extensions.desktop у run_full_install() (що усуває проблему відсутніх шпалер, дока та розширень на Arch/CachyOS, Fedora, Debian і Linux Mint).
+    * У 99_mactheme.gschema.override та mac-ensure-extensions.sh додано гарантоване встановлення шпалер GoldenGate_Day.jpg і picture-options 'zoom' для всіх дистрибутивів.
+    * У dependencies/*-packages.txt додано обов'язкові утиліти (gettext, dbus/dbus-daemon/dbus-x11, xdg-utils, libnotify/libnotify-bin, zenity).
+    * Прибрано хардкод /home/vitaliy та 'vitaliy' у mac-apply-locale, update-bms-menubar-blur, mac-gdm-bypass.
+    * Додано динамічну локалізацію віджетів (modpackLocale.js, updateLocale, hideForWizard, showFromWizardAnimated) у desktop-widgets@r3nhick та виклик з mac-apply-locale.
+    * У macSetupWizard.js після вибору мови і натискання «Продовжити» додано центральну пілюлю «Зміна мови» з попередженням (у стилі інсталятора) та асинхронним оновленням мови системи, віджетів, меню-бара і розширень, а при завершенні майстра — плавне зникнення всіх меню й синхронний виїзд панелі, дока, віджетів та іконок як після старту ПК.
+  - Перевірка:
+    * unittest: 51/51 PASS; mac-extension-guard verify: 21/21 LOCKED OK; mac-i18n-verify: OK; mac-audit-sync check: 100% PASS; mac-integrity-check --check: System is green; 0 кирилиці в install.sh.
+  * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

@@ -101,7 +101,10 @@ TARGET_USER="$SUDO_USER"
 if [ -z "$TARGET_USER" ] || [ "$TARGET_USER" = "root" ]; then
     TARGET_USER=$(loginctl list-users --no-legend 2>/dev/null | awk '$1 >= 1000 {print $2; exit}' || true)
 fi
-[ -n "$TARGET_USER" ] || TARGET_USER="vitaliy"
+if [ -z "$TARGET_USER" ] || [ "$TARGET_USER" = "root" ]; then
+    TARGET_USER=$(awk -F: '$3 >= 1000 && $3 < 65534 {print $1; exit}' /etc/passwd 2>/dev/null || true)
+fi
+[ -n "$TARGET_USER" ] || { echo -e "${C_RED}❌ Error: Could not determine target non-root user.${C_RESET}" >&2; exit 1; }
 
 # Determine GDM custom.conf dynamically
 GDM_CONF="/etc/gdm/custom.conf"

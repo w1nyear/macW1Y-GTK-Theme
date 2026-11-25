@@ -299,8 +299,59 @@ export function saveModpackLocale(langCode) {
     setDebugLocale(langCode);
 }
 
+const CHANGING_LANGUAGE_LABELS = {
+    uk: 'Зміна мови',
+    en: 'Changing language',
+    pl: 'Zmiana języka',
+    de: 'Sprache wird geändert',
+    fr: 'Changement de langue',
+    es: 'Cambiando idioma',
+    it: 'Cambio lingua',
+    pt: 'A alterar idioma',
+    cs: 'Změna jazyka',
+    sk: 'Zmena jazyka',
+    nl: 'Taal wijzigen',
+    ro: 'Se schimbă limba',
+    hu: 'Nyelv módosítása',
+    bg: 'Смяна на езика',
+    ru: 'Смена языка',
+    tr: 'Dil değiştiriliyor',
+    ja: '言語を変更中',
+    ko: '언어 변경 중',
+    zh: '正在更改语言',
+    zh_tw: '正在變更語言',
+};
+
+const CHANGING_LANGUAGE_SUBLABELS = {
+    uk: 'Оновлення мови системи, віджетів, меню-бара та розширень…',
+    en: 'Updating system, widgets, menu bar and extensions language…',
+    pl: 'Aktualizowanie języka systemu, widżetów, paska menu i rozszerzeń…',
+    de: 'Sprache für System, Widgets, Menüleiste und Erweiterungen wird aktualisiert…',
+    fr: 'Mise à jour de la langue du système, des widgets et des extensions…',
+    es: 'Actualizando idioma del sistema, widgets, barra de menú y extensiones…',
+    ru: 'Обновление языка системы, виджетов, строки меню и расширений…',
+};
+
+function _syncLiveShellLocale(langCode) {
+    setDebugLocale(langCode);
+    globalThis._macModpackLocale = langCode;
+    try {
+        Main.panel?.statusArea?.dateMenu?._clock?.notify?.('clock');
+    } catch (_) {}
+    try {
+        globalThis._macMenuBarController?.updateLocale?.(langCode);
+    } catch (_) {}
+    try {
+        globalThis._macAppMenuExtension?.updateLocale?.(langCode);
+    } catch (_) {}
+    try {
+        globalThis._macDesktopWidgetsController?.updateLocale?.(langCode);
+    } catch (_) {}
+}
+
 export function applyModpackSystemLocale(langCode, isFinal = false) {
     saveModpackLocale(langCode);
+    _syncLiveShellLocale(langCode);
     try {
         const bin = '/usr/local/bin/mac-apply-locale';
         if (GLib.file_test(bin, GLib.FileTest.EXISTS)) {
@@ -309,6 +360,43 @@ export function applyModpackSystemLocale(langCode, isFinal = false) {
         }
     } catch (e) {
         console.error(`[macSetupWizard] Error applying system locale: ${e}`);
+    }
+}
+
+export function applyModpackSystemLocaleAsync(langCode, isFinal = false, onDone = null) {
+    saveModpackLocale(langCode);
+    _syncLiveShellLocale(langCode);
+
+    let doneCalled = false;
+    const finishOnce = () => {
+        if (doneCalled) return;
+        doneCalled = true;
+        _syncLiveShellLocale(langCode);
+        if (typeof onDone === 'function') {
+            try { onDone(); } catch (_) {}
+        }
+    };
+
+    try {
+        const bin = '/usr/local/bin/mac-apply-locale';
+        if (!GLib.file_test(bin, GLib.FileTest.EXISTS)) {
+            finishOnce();
+            return;
+        }
+        const argv = isFinal ? [bin, langCode] : [bin, langCode, '-q'];
+        const proc = Gio.Subprocess.new(argv, Gio.SubprocessFlags.NONE);
+        const timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 8000, () => {
+            finishOnce();
+            return GLib.SOURCE_REMOVE;
+        });
+        proc.wait_async(null, (_p, res) => {
+            try { proc.wait_finish(res); } catch (_) {}
+            try { GLib.source_remove(timeoutId); } catch (_) {}
+            finishOnce();
+        });
+    } catch (e) {
+        console.error(`[macSetupWizard] Error applying system locale async: ${e}`);
+        finishOnce();
     }
 }
 
@@ -390,6 +478,9 @@ export class MacSetupWizard {
         this._selectedLocale = getLocale();
         this._sortedLanguages = getSortedLanguageList(this._selectedLocale);
         this._langRowButtons = new Map();
+        this._isApplyingLanguage = false;
+        this._langPillBox = null;
+        this._desktopRestored = false;
     }
 
     start({ force = false } = {}) {
@@ -436,18 +527,47 @@ export class MacSetupWizard {
 
     _isolateDesktop() {
         this._hiddenElements = [];
+        this._desktopRestored = false;
 
-
-        if (Main.panel) {
+        const panelBox = Main.layoutManager?.panelBox || Main.panel;
+        if (panelBox) {
             this._hiddenElements.push({
-                actor: Main.panel,
+                actor: panelBox,
                 origOpacity: 255,
-                origReactive: true
+                origReactive: true,
+                kind: 'panel'
             });
+            panelBox.remove_all_transitions?.();
+            panelBox.opacity = 0;
+            panelBox.reactive = false;
+        }
+        if (Main.panel && Main.panel !== panelBox) {
             Main.panel.opacity = 0;
             Main.panel.reactive = false;
         }
 
+        try {
+            for (const child of Main.layoutManager.uiGroup.get_children()) {
+                const name = child.name || '';
+                const cname = child.constructor.name || '';
+                if (name === 'dashtodockContainer' || cname === 'DashToDock' || name === 'dock-container' ||
+                    name.includes('liquid-glass')) {
+                    this._hiddenElements.push({
+                        actor: child,
+                        origOpacity: 255,
+                        origReactive: true,
+                        kind: name.includes('liquid-glass') ? 'glass' : 'dock'
+                    });
+                    child.remove_all_transitions?.();
+                    child.opacity = 0;
+                    child.reactive = false;
+                }
+            }
+        } catch (_) {}
+
+        try {
+            globalThis._macDesktopWidgetsController?.hideForWizard?.();
+        } catch (_) {}
 
         try {
             const dingActors = (global.window_group?.get_children() || []).filter(c => {
@@ -459,51 +579,78 @@ export class MacSetupWizard {
                 this._hiddenElements.push({
                     actor,
                     origOpacity: 255,
-                    origReactive: true
+                    origReactive: true,
+                    kind: 'ding'
                 });
-                actor.ease({
-                    opacity: 0,
-                    duration: 350,
-                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                    onComplete: () => {
-                        actor.opacity = 0;
-                        actor.reactive = false;
-                    }
-                });
+                actor.remove_all_transitions?.();
+                actor.opacity = 0;
+                actor.reactive = false;
             }
         } catch (_) {}
     }
 
-    _restoreDesktop() {
+    _restoreDesktop(animated = true) {
+        if (this._desktopRestored) return;
+        this._desktopRestored = true;
+
+        const DURATION = 650;
+        const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
+
         for (const item of this._hiddenElements) {
             try {
+                const actor = item.actor;
+                if (!actor) continue;
                 const targetOpacity = item.origOpacity !== undefined ? item.origOpacity : 255;
-                if (item.actor && item.actor.ease) {
-                    item.actor.ease({
-                        opacity: targetOpacity,
-                        duration: 400,
-                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                        onComplete: () => {
-                            if (item.actor) {
-                                item.actor.opacity = targetOpacity;
-                                item.actor.reactive = true;
-                            }
-                        }
-                    });
-                } else if (item.actor) {
-                    item.actor.opacity = targetOpacity;
-                    item.actor.reactive = true;
+                actor.remove_all_transitions?.();
+                actor.visible = true;
+                actor.reactive = true;
+
+                if (animated && actor.ease) {
+                    if (item.kind === 'panel') {
+                        const ph = actor.height > 0 ? actor.height : 34;
+                        actor.translation_y = -ph;
+                        actor.opacity = 0;
+                        actor.ease({
+                            opacity: targetOpacity,
+                            translation_y: 0,
+                            duration: DURATION,
+                            mode: MODE,
+                        });
+                    } else if (item.kind === 'dock') {
+                        const dh = actor.height > 0 ? actor.height : 84;
+                        actor.translation_y = dh + 30;
+                        actor.opacity = 0;
+                        actor.ease({
+                            opacity: targetOpacity,
+                            translation_y: 0,
+                            duration: DURATION,
+                            mode: MODE,
+                        });
+                    } else {
+                        actor.opacity = 0;
+                        actor.ease({
+                            opacity: targetOpacity,
+                            duration: 550,
+                            mode: MODE,
+                        });
+                    }
+                } else {
+                    actor.translation_y = 0;
+                    actor.opacity = targetOpacity;
+                    actor.reactive = true;
                 }
             } catch (_) {}
         }
         this._hiddenElements = [];
-
 
         if (Main.panel) {
             Main.panel.opacity = 255;
             Main.panel.reactive = true;
         }
 
+        try {
+            globalThis._macDesktopWidgetsController?.showFromWizardAnimated?.();
+        } catch (_) {}
 
         try {
             for (const child of Main.layoutManager.uiGroup.get_children()) {
@@ -512,8 +659,11 @@ export class MacSetupWizard {
                 if (name === 'dashtodockContainer' || cname === 'DashToDock' || name === 'dock-container' ||
                     name === 'iconsContainer' || cname === 'DesktopIcons' || name === 'ding-container' ||
                     name.includes('liquid-glass')) {
-                    child.opacity = 255;
                     child.reactive = true;
+                    if (!animated) {
+                        child.translation_y = 0;
+                        child.opacity = 255;
+                    }
                 }
             }
         } catch (_) {}
@@ -875,9 +1025,8 @@ export class MacSetupWizard {
     }
 
     _selectLanguage(langCode) {
+        if (this._isApplyingLanguage) return;
         this._selectedLocale = langCode;
-        applyModpackSystemLocale(langCode, false);
-
 
         this._titleLabel.text = t('select_language', 'Виберіть мову', langCode);
         this._subtitleLabel.text = t('select_language_sub', 'Виберіть основну мову для інтерфейсу системи.', langCode);
@@ -894,6 +1043,161 @@ export class MacSetupWizard {
                 ? 'font-size: 13px; font-weight: 600; color: #ffffff;'
                 : `font-size: 13px; font-weight: 400; color: ${this._isDark ? '#e0e0e0' : '#1d1d1f'};`;
         }
+    }
+
+    _showLanguageChangePill(langCode, onDone) {
+        if (this._isApplyingLanguage) return;
+        this._isApplyingLanguage = true;
+
+        if (this._dialogCard) {
+            this._dialogCard.reactive = false;
+            this._dialogCard.ease({
+                opacity: 60,
+                duration: 200,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+        }
+
+        if (this._langPillBox) {
+            try { this._langPillBox.destroy(); } catch (_) {}
+            this._langPillBox = null;
+        }
+
+        const stageW = global.stage.width;
+        const stageH = global.stage.height;
+
+        const container = new St.BoxLayout({
+            vertical: true,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+            opacity: 0,
+            style: 'spacing: 12px;'
+        });
+
+        const pill = new St.BoxLayout({
+            vertical: false,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+            style: [
+                'background-color: rgba(30, 33, 40, 0.88)',
+                'border-radius: 9999px',
+                'border: 1px solid rgba(255, 255, 255, 0.22)',
+                'box-shadow: 0 16px 45px rgba(0, 0, 0, 0.45)',
+                'padding: 12px 28px',
+                'spacing: 14px',
+                'min-width: 280px'
+            ].join('; ')
+        });
+
+        const icon = new St.Icon({
+            icon_name: 'preferences-desktop-locale-symbolic',
+            icon_size: 22,
+            style: `color: ${this._accentColor || '#007aff'};`
+        });
+        icon.set_pivot_point(0.5, 0.5);
+
+        const titleText = CHANGING_LANGUAGE_LABELS[langCode] || t('changing_language', 'Зміна мови', langCode);
+        const titleLbl = new St.Label({
+            text: `${titleText}…`,
+            y_align: Clutter.ActorAlign.CENTER,
+            style: 'color: #ffffff; font-size: 14px; font-weight: 700;'
+        });
+
+        pill.add_child(icon);
+        pill.add_child(titleLbl);
+
+        const warnText = CHANGING_LANGUAGE_SUBLABELS[langCode]
+            || t('changing_language_sub', 'Оновлення мови системи, віджетів, меню-бара та розширень…', langCode);
+        const warnBox = new St.BoxLayout({
+            vertical: false,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+            style: [
+                'background-color: rgba(255, 159, 10, 0.16)',
+                'border: 1px solid rgba(255, 159, 10, 0.38)',
+                'border-radius: 12px',
+                'padding: 8px 16px',
+                'spacing: 8px'
+            ].join('; ')
+        });
+        const warnIcon = new St.Icon({
+            icon_name: 'dialog-warning-symbolic',
+            icon_size: 16,
+            style: 'color: #ff9f0a;'
+        });
+        const warnLbl = new St.Label({
+            text: warnText,
+            y_align: Clutter.ActorAlign.CENTER,
+            style: 'color: rgba(255, 255, 255, 0.90); font-size: 11.5px; font-weight: 500;'
+        });
+        warnBox.add_child(warnIcon);
+        warnBox.add_child(warnLbl);
+
+        container.add_child(pill);
+        container.add_child(warnBox);
+
+        this._overlay.add_child(container);
+        this._langPillBox = container;
+
+        // Center after allocation
+        const placeCentered = () => {
+            const [, natW] = container.get_preferred_width(-1);
+            const [, natH] = container.get_preferred_height(-1);
+            container.x = Math.round((stageW - Math.max(natW, 340)) / 2);
+            container.y = Math.round((stageH - Math.max(natH, 96)) / 2);
+        };
+        placeCentered();
+
+        container.ease({
+            opacity: 255,
+            duration: 220,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+        });
+
+        let minDelayPassed = false;
+        let localeDone = false;
+        const tryFinishPill = () => {
+            if (!minDelayPassed || !localeDone) return;
+            const box = this._langPillBox;
+            this._langPillBox = null;
+            const completeTransition = () => {
+                if (box) {
+                    try { box.destroy(); } catch (_) {}
+                }
+                if (this._dialogCard) {
+                    this._dialogCard.reactive = true;
+                    this._dialogCard.ease({
+                        opacity: 255,
+                        duration: 220,
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                    });
+                }
+                this._isApplyingLanguage = false;
+                if (typeof onDone === 'function') onDone();
+            };
+
+            if (box) {
+                box.ease({
+                    opacity: 0,
+                    duration: 200,
+                    mode: Clutter.AnimationMode.EASE_IN_QUAD,
+                    onComplete: completeTransition
+                });
+            } else {
+                completeTransition();
+            }
+        };
+
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 700, () => {
+            minDelayPassed = true;
+            tryFinishPill();
+            return GLib.SOURCE_REMOVE;
+        });
+
+        applyModpackSystemLocaleAsync(langCode, false, () => {
+            localeDone = true;
+            tryFinishPill();
+        });
     }
 
     _renderCurrentPage() {
@@ -1343,9 +1647,12 @@ export class MacSetupWizard {
 
     _nextPage() {
         try {
+            if (this._isApplyingLanguage) return;
             if (this._currentPage === 1) {
-                this._currentPage = 2;
-                this._renderCurrentPage();
+                this._showLanguageChangePill(this._selectedLocale, () => {
+                    this._currentPage = 2;
+                    this._renderCurrentPage();
+                });
             } else if (this._currentPage === 2) {
                 if (hasTouchpadGestures()) {
                     this._currentPage = 3;
@@ -1408,7 +1715,7 @@ export class MacSetupWizard {
         if (this._dialogCard) {
             this._dialogCard.ease({
                 opacity: 0,
-                duration: 350,
+                duration: 320,
                 mode: Clutter.AnimationMode.EASE_IN_QUAD
             });
         }
@@ -1416,25 +1723,30 @@ export class MacSetupWizard {
         if (this._overlay) {
             this._overlay.ease({
                 opacity: 0,
-                duration: 450,
+                duration: 380,
                 mode: Clutter.AnimationMode.EASE_IN_QUAD,
                 onComplete: () => {
-                    this.destroy();
+                    this._restoreDesktop(true);
+                    this.destroy(true);
                 }
             });
         } else {
-            this.destroy();
+            this._restoreDesktop(true);
+            this.destroy(true);
         }
-
-
-        this._restoreDesktop();
     }
 
-    destroy() {
+    destroy(keepAnimatedRestore = false) {
         globalThis.macSetupWizardActive = false;
         globalThis.macSetupWizardGestureHook = null;
-        this._restoreDesktop();
+        if (!keepAnimatedRestore) {
+            this._restoreDesktop(false);
+        }
 
+        if (this._langPillBox) {
+            try { this._langPillBox.destroy(); } catch (_) {}
+            this._langPillBox = null;
+        }
         if (this._overlay) {
             this._overlay.destroy();
             this._overlay = null;

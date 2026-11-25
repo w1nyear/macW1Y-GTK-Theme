@@ -16,6 +16,25 @@ if [ -z "$CURRENT" ] || [ "$CURRENT" = "''" ]; then
     gsettings set org.gnome.shell.extensions.user-theme name 'macW1Y-Dark'
 fi
 
+# Ensure wallpaper is applied across all distros (Arch/CachyOS, Fedora, Debian, Mint)
+DEFAULT_WP="/usr/share/backgrounds/GoldenGate_Day.jpg"
+if [ -f "$DEFAULT_WP" ]; then
+    CUR_URI=$(gsettings get org.gnome.desktop.background picture-uri 2>/dev/null | tr -d "'")
+    CUR_URI_DARK=$(gsettings get org.gnome.desktop.background picture-uri-dark 2>/dev/null | tr -d "'")
+    CUR_OPTS=$(gsettings get org.gnome.desktop.background picture-options 2>/dev/null | tr -d "'")
+    CUR_PATH="${CUR_URI#file://}"
+    CUR_DARK_PATH="${CUR_URI_DARK#file://}"
+    if [ -z "$CUR_URI" ] || [ ! -f "$CUR_PATH" ]; then
+        gsettings set org.gnome.desktop.background picture-uri "file://$DEFAULT_WP" 2>/dev/null || true
+    fi
+    if [ -z "$CUR_URI_DARK" ] || [ ! -f "$CUR_DARK_PATH" ]; then
+        gsettings set org.gnome.desktop.background picture-uri-dark "file://$DEFAULT_WP" 2>/dev/null || true
+    fi
+    if [ -z "$CUR_OPTS" ] || [ "$CUR_OPTS" = "none" ]; then
+        gsettings set org.gnome.desktop.background picture-options 'zoom' 2>/dev/null || true
+    fi
+fi
+
 REQUIRED_EXTENSIONS=(
     "user-theme@gnome-shell-extensions.gcampax.github.com"
     "ubuntu-appindicators@ubuntu.com"

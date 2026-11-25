@@ -492,6 +492,13 @@ def notify_gnome_shell(lang_code, posix, lang_env):
             }}
         }} catch (_) {{}}
 
+        // Notify Desktop Widgets if present
+        try {{
+            if (globalThis._macDesktopWidgetsController && typeof globalThis._macDesktopWidgetsController.updateLocale === 'function') {{
+                globalThis._macDesktopWidgetsController.updateLocale('{lang_code}');
+            }}
+        }} catch (_) {{}}
+
         return true;
     }})()"""
 
@@ -506,7 +513,9 @@ def notify_gnome_shell(lang_code, posix, lang_env):
 def show_notification(info):
     title = info.get("notif_title", "macW1Y: System Language")
     body = info.get("notif_body", "System language updated successfully!")
-    icon = "/home/vitaliy/.themes/macW1Y-Dark/icons/preferences-desktop-locale-symbolic.svg"
+    icon = os.path.expanduser("~/.themes/macW1Y-Dark/icons/preferences-desktop-locale-symbolic.svg")
+    if not os.path.exists(icon):
+        icon = "/usr/share/themes/macW1Y-Dark/icons/preferences-desktop-locale-symbolic.svg"
     if not os.path.exists(icon):
         icon = "preferences-desktop-locale"
     try:

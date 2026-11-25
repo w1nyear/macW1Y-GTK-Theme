@@ -279,12 +279,14 @@ export class CalendarEventsClient {
   };
 };
 
+import { getModpackIntlLocale, trWidget } from '../../lib/modpackLocale.js';
+
 function uppercaseMonth(date) {
-	return date.toLocaleDateString(undefined, {month: 'long'}).toUpperCase();
+	return date.toLocaleDateString(getModpackIntlLocale(), {month: 'long'}).toUpperCase();
 };
 
 function uppercaseWeekday(date) {
-	return date.toLocaleDateString(undefined, {weekday: 'long'}).toUpperCase();
+	return date.toLocaleDateString(getModpackIntlLocale(), {weekday: 'long'}).toUpperCase();
 };
 
 function weekdayLabels(format, firstDay = 1) {
@@ -299,7 +301,7 @@ function weekdayLabels(format, firstDay = 1) {
 	];
 
 	return Array.from({length: 7}, (_unused, column) => {
-		const label = referenceDates[(firstDay + column) % 7].toLocaleDateString(undefined, {weekday: format === 'narrow' ? 'narrow' : 'short'});
+		const label = referenceDates[(firstDay + column) % 7].toLocaleDateString(getModpackIntlLocale(), {weekday: format === 'narrow' ? 'narrow' : 'short'});
 
 		if (format === 'narrow') {
 			return label.charAt(0).toUpperCase();
@@ -316,7 +318,8 @@ function weekdayLabels(format, firstDay = 1) {
 // "first day of week" setting as a fallback. Mirror of the reference
 // calendar widget.
 function localeCalendarInfo() {
-	const localeName = Intl.DateTimeFormat().resolvedOptions().locale;
+	const activeLoc = getModpackIntlLocale();
+	const localeName = activeLoc || Intl.DateTimeFormat().resolvedOptions().locale;
 	let weekend = new Set([0, 6]);
 
 	try {
@@ -488,7 +491,7 @@ function isUpcomingEvent(event, now) {
 // "Wed, Oct 24" / "ср, 24 жовт." — locale-driven day label for the
 // upcoming-events lookahead rows.
 function formatEventDay(date) {
-	return date.toLocaleDateString(undefined, {weekday: 'short', month: 'short', day: 'numeric'});
+	return date.toLocaleDateString(getModpackIntlLocale(), {weekday: 'short', month: 'short', day: 'numeric'});
 };
 
 function calendarCell(text, labelStyle, cellStyle, createLabel, cellWidth, cellHeight, interactive = false, boost = 0, labelModifier = null) {

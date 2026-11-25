@@ -43,3 +43,8 @@ gir1.2-gnomedesktop-3.0
 gnome-shell
 gnome-session
 gdm3
+gettext
+dbus-x11
+xdg-utils
+libnotify-bin
+zenity

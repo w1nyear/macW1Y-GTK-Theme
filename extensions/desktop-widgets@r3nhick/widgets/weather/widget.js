@@ -7,6 +7,7 @@ import St from 'gi://St';
 
 import { warn } from '../../logger.js';
 import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { getModpackIntlLocale, trWidget } from '../../lib/modpackLocale.js';
 import { boxLayoutProps } from '../../utils/gnomeCompat.js';
 import { createPageIndicator, indicatorBandHeight } from '../../lib/pageIndicator.js';
 import { createHoldWatch, BUTTON3_MASK } from '../../lib/pager.js';
@@ -205,7 +206,7 @@ function forecastSeries(info, nowMs) {
 
 			dayMap.set(dayKey, {
 				time: dayStart,
-				day: isToday ? _('Today') : date.toLocaleDateString(undefined, {weekday: 'short'}),
+				day: isToday ? trWidget('Today', _) : date.toLocaleDateString(getModpackIntlLocale(), {weekday: 'short'}),
 				icon: forecastSymbolicIcon(forecast),
 				maxN: null,
 				minN: null,
@@ -231,7 +232,7 @@ function forecastSeries(info, nowMs) {
 		if (timeMs >= nowMs && timeMs <= horizon && tempN !== null) {
 			hourly.push({
 				time: timeMs,
-				label: date.toLocaleTimeString(undefined, {hour: '2-digit', minute: '2-digit'}),
+				label: date.toLocaleTimeString(getModpackIntlLocale(), {hour: '2-digit', minute: '2-digit'}),
 				icon: forecastSymbolicIcon(forecast),
 				temp: formatTemperature(tempN),
 			});

@@ -5663,6 +5663,48 @@ sizeButton.connectObject('destroy', () => {
     return changed;
   };
 
+  updateLocale(langCode) {
+    if (langCode) {
+      globalThis._macModpackLocale = String(langCode).trim().toLowerCase();
+    }
+    try {
+      this._rebuildWidgets();
+    } catch (e) {
+      warn(`updateLocale failed: ${e?.message ?? e}`);
+    }
+  };
+
+  hideForWizard() {
+    for (const widget of this._widgets ?? []) {
+      const actor = widget.actor;
+      if (!actor || isActorDestroyed(actor)) continue;
+      actor.remove_all_transitions?.();
+      actor.opacity = 0;
+      actor.reactive = false;
+    }
+  };
+
+  showFromWizardAnimated() {
+    for (const widget of this._widgets ?? []) {
+      const actor = widget.actor;
+      if (!actor || isActorDestroyed(actor)) continue;
+      actor.remove_all_transitions?.();
+      actor.set_pivot_point?.(0.5, 0.5);
+      actor.scale_x = 0.92;
+      actor.scale_y = 0.92;
+      actor.opacity = 0;
+      actor.reactive = true;
+      actor.visible = true;
+      actor.ease({
+        opacity: 255,
+        scale_x: 1.0,
+        scale_y: 1.0,
+        duration: 550,
+        mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
+      });
+    }
+  };
+
   
 };
 
@@ -5707,11 +5749,15 @@ export default class DesktopWidgetsExtension extends Extension {
     this._loadWidgetStylesheets();
     this._controller = new WidgetController(this);
     this._controller.enable();
+    globalThis._macDesktopWidgetsController = this._controller;
     // Opt-in daily "is a newer version out?" check (Settings → About).
     this._updateChecker = new UpdateChecker(this, this.getSettings());
   };
 
   disable() {
+    if (globalThis._macDesktopWidgetsController === this._controller) {
+      delete globalThis._macDesktopWidgetsController;
+    }
     this._updateChecker?.destroy();
     this._updateChecker = null;
     this._controller?.destroy();

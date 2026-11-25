@@ -233,11 +233,24 @@ emit_progress() {
 }
 
 run_as_user() {
+    local bus_addr="unix:path=/run/user/${TARGET_UID}/bus"
     if [ "$TARGET_USER" != "$USER" ]; then
-        sudo -u "$TARGET_USER" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${TARGET_UID}/bus" "$@"
+        if [ -S "/run/user/${TARGET_UID}/bus" ]; then
+            sudo -u "$TARGET_USER" DBUS_SESSION_BUS_ADDRESS="$bus_addr" "$@"
+        elif command -v dbus-run-session >/dev/null 2>&1; then
+            sudo -u "$TARGET_USER" dbus-run-session -- "$@"
+        else
+            sudo -u "$TARGET_USER" "$@"
+        fi
     else
-        if [ -z "$DBUS_SESSION_BUS_ADDRESS" ] && [ -S "/run/user/${TARGET_UID}/bus" ]; then
-            DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${TARGET_UID}/bus" "$@"
+        if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+            if [ -S "/run/user/${TARGET_UID}/bus" ]; then
+                DBUS_SESSION_BUS_ADDRESS="$bus_addr" "$@"
+            elif command -v dbus-run-session >/dev/null 2>&1; then
+                dbus-run-session -- "$@"
+            else
+                "$@"
+            fi
         else
             "$@"
         fi
@@ -1243,7 +1256,9 @@ install_wallpaper() {
         
         run_as_user gsettings set org.gnome.desktop.background picture-uri "file://$WALLPAPER_DEST" 2>/dev/null || true
         run_as_user gsettings set org.gnome.desktop.background picture-uri-dark "file://$WALLPAPER_DEST" 2>/dev/null || true
+        run_as_user gsettings set org.gnome.desktop.background picture-options 'zoom' 2>/dev/null || true
         run_as_user gsettings set org.gnome.desktop.screensaver picture-uri "file://$WALLPAPER_DEST" 2>/dev/null || true
+        run_as_user gsettings set org.gnome.desktop.screensaver picture-options 'zoom' 2>/dev/null || true
         log_success "Wallpaper installed and activated successfully!"
     else
         log_warning "Wallpaper file not found, skipping."
@@ -1493,6 +1508,14 @@ install_extensions() {
         run_as_user touch "$TARGET_HOME/.config/macW1Y/pure-blur" 2>/dev/null || true
         mkdir -p "/etc/macW1Y" 2>/dev/null || true
         touch "/etc/macW1Y/pure-blur" 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/bin/mac-ensure-extensions.sh" ]; then
+        sync_or_update_file "$SCRIPT_DIR/bin/mac-ensure-extensions.sh" "/usr/local/bin/mac-ensure-extensions.sh" true
+        sudo chmod +x /usr/local/bin/mac-ensure-extensions.sh
+        if [ -f "$SCRIPT_DIR/autostart/mac-ensure-extensions.desktop" ]; then
+            sudo mkdir -p /etc/xdg/autostart
+            sync_or_update_file "$SCRIPT_DIR/autostart/mac-ensure-extensions.desktop" "/etc/xdg/autostart/mac-ensure-extensions.desktop" true
+        fi
     fi
     log_success "GNOME Shell extensions configured successfully!"
 }

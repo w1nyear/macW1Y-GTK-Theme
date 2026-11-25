@@ -247,7 +247,7 @@
         "50",
         "51"
       ],
-      "sha256": "f5219cbdadcf16d4e5f75d8d3754abe7d184d9ea3fef62fcf5fb2ec510cd91b7",
+      "sha256": "8ff1f9ad2758531e120f72a21f64cd09aba7029c1dffa8db5ee27445c1482646",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -621,7 +621,7 @@
         "50",
         "51"
       ],
-      "sha256": "2572e5021bdb552580bd71c6817df30e48794f3eb9f2f82fc1b4196fb4487ea7",
+      "sha256": "9c22d96777b313dbf4c9abd953bef84ed7a7a861aaa692ddc08a8abb831543c2",
       "status": "locked",
       "source": "github",
       "macw1y_components": [
