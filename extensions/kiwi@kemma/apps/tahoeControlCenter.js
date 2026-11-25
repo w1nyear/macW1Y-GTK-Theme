@@ -53,6 +53,60 @@ function getSystemAccentColor() {
 
 
 
+let _ccStyling = { blur: 14, tint: 18 };
+let _ccStylingLoaded = false;
+let _ccStylingMonitor = null;
+
+function _loadCCStyling() {
+    try {
+        const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+        if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+            const [ok, bytes] = GLib.file_get_contents(confPath);
+            if (ok) {
+                const data = JSON.parse(new TextDecoder().decode(bytes));
+                if (typeof data.cc_blur === 'number')
+                    _ccStyling.blur = Math.max(0, Math.min(50, data.cc_blur));
+                if (typeof data.cc_tint === 'number')
+                    _ccStyling.tint = Math.max(0, Math.min(100, data.cc_tint));
+            }
+        }
+        _ccStylingLoaded = true;
+    } catch (_) {}
+}
+
+function _applyCCStylingToActiveStacks() {
+    _loadCCStyling();
+    try {
+        if (_panel?.glass?.stacks) {
+            for (const s of _panel.glass.stacks) {
+                if (s && s.group === 'card' && s.effect) {
+                    s.effect.setBlurRadius?.(_ccStyling.blur);
+                    s.effect.setTintColor?.(0.0, 0.0, 0.0);
+                    s.effect.setTintStrength?.(_ccStyling.tint / 100.0);
+                    s.effect.queue_repaint?.();
+                    s.bgActor?.queue_redraw?.();
+                }
+            }
+        }
+    } catch (_) {}
+}
+
+function _ensureCCStylingMonitor() {
+    if (_ccStylingMonitor) return;
+    try {
+        const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+        const file = Gio.File.new_for_path(confPath);
+        _ccStylingMonitor = file.monitor_file(Gio.FileMonitorFlags.NONE, null);
+        _ccStylingMonitor.connect('changed', (_mon, _f, _other, eventType) => {
+            if (eventType === Gio.FileMonitorEvent.CHANGED ||
+                eventType === Gio.FileMonitorEvent.CREATED ||
+                eventType === Gio.FileMonitorEvent.CHANGES_DONE_HINT) {
+                _applyCCStylingToActiveStacks();
+            }
+        });
+    } catch (_) {}
+}
+
 let LiquidEffect = null;
 let UnpickableActor = null;
 let UILayerSampler = null;
@@ -3844,7 +3898,9 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
     if (pure) {
         effect.setBlurRadius(24.0);
     } else {
-        effect.setBlurRadius(0.0);
+        if (!_ccStylingLoaded) _loadCCStyling();
+        _ensureCCStylingMonitor();
+        effect.setBlurRadius(_ccStyling.blur);
     }
 
     if (pure) {
@@ -3854,10 +3910,8 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
         effect.setContrast(1.0);
         effect.setSaturation(1.0);
     } else {
-        effect.setTintColor(1.0, 1.0, 1.0);
-    }
-    if (!pure) {
-        effect.setTintStrength(0.06);
+        effect.setTintColor(0.0, 0.0, 0.0);
+        effect.setTintStrength(_ccStyling.tint / 100.0);
         effect.setBrightness(1.03);
         effect.setContrast(1.02);
         effect.setSaturation(1.04);
@@ -4142,6 +4196,10 @@ function _syncStack(s, monitor) {
         else if (typeof s.effect._setFloat === 'function')
             s.effect._setFloat('shape_type', 0.0);
         s.effect.setCornerRadius(22);
+        if (!_ccStylingLoaded) _loadCCStyling();
+        s.effect.setBlurRadius?.(_ccStyling.blur);
+        s.effect.setTintColor?.(0.0, 0.0, 0.0);
+        s.effect.setTintStrength?.(_ccStyling.tint / 100.0);
     } else if (s.group === 'backdrop') {
         s.effect.setCornerRadius(28);
         try {

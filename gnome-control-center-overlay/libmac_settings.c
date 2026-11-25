@@ -33,6 +33,9 @@ typedef struct {
     int liquid_shadow;
     int liquid_fps;
 
+    int cc_blur;
+    int cc_tint;
+
     int spotlight_blur;
     int spotlight_tint;
     int spotlight_shadow;
@@ -111,6 +114,7 @@ static void apply_alttab_settings(void);
 static void schedule_alttab_apply(void);
 static void apply_spotlight_settings(void);
 
+static void redraw_cc_preview(void);
 static void redraw_menubar_preview(void);
 static void redraw_dock_preview(void);
 static void redraw_labels_preview(void);
@@ -165,6 +169,9 @@ static MacStylingData state = {
     .notification_blur = 15,
     .notification_tint = 20,
     .notification_shadow = 35,
+
+    .cc_blur = 14,
+    .cc_tint = 18,
 
     .spotlight_blur = 25,
     .spotlight_tint = 15,
@@ -299,6 +306,16 @@ static void load_config(void) {
             else
                 state.liquid_fps = 60;
 
+
+            if (json_object_has_member(obj, "cc_blur"))
+                state.cc_blur = CLAMP((int)json_object_get_int_member(obj, "cc_blur"), 0, 50);
+            else
+                state.cc_blur = 14;
+
+            if (json_object_has_member(obj, "cc_tint"))
+                state.cc_tint = CLAMP((int)json_object_get_int_member(obj, "cc_tint"), 0, 100);
+            else
+                state.cc_tint = 18;
 
             if (json_object_has_member(obj, "spotlight_blur")) {
                 int val = (int)json_object_get_int_member(obj, "spotlight_blur");
@@ -585,6 +602,8 @@ static void save_styling_json(void) {
         "  \"notification_blur\": %d,\n"
         "  \"notification_tint\": %d,\n"
         "  \"notification_shadow\": %d,\n"
+        "  \"cc_blur\": %d,\n"
+        "  \"cc_tint\": %d,\n"
         "  \"spotlight_blur\": %d,\n"
         "  \"spotlight_tint\": %d,\n"
         "  \"spotlight_shadow\": %d,\n"
@@ -643,6 +662,8 @@ static void save_styling_json(void) {
         state.notification_blur,
         state.notification_tint,
         state.notification_shadow,
+        state.cc_blur,
+        state.cc_tint,
         state.spotlight_blur,
         state.spotlight_tint,
         state.spotlight_shadow,
@@ -1574,6 +1595,42 @@ void on_menubar_blur_changed(void *widget, gpointer data) {
     schedule_json_save();
 }
 
+void init_cc_blur(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.cc_blur);
+    in_init = 0;
+}
+
+void on_cc_blur_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.cc_blur = (int)lround(gtk_range_get_value(widget));
+    redraw_cc_preview();
+    schedule_json_save();
+}
+
+void init_cc_tint(void *widget, gpointer data) {
+    (void)data;
+    load_config();
+    in_init = 1;
+    gtk_scale_set_digits(GTK_SCALE(widget), 0);
+    gtk_range_set_round_digits(GTK_RANGE(widget), 0);
+    gtk_range_set_value(widget, (double)state.cc_tint);
+    in_init = 0;
+}
+
+void on_cc_tint_changed(void *widget, gpointer data) {
+    (void)data;
+    if (in_init) return;
+    state.cc_tint = (int)lround(gtk_range_get_value(widget));
+    redraw_cc_preview();
+    schedule_json_save();
+}
+
 
 
 
@@ -2175,6 +2232,7 @@ typedef struct {
 
 static const TintRowInfo s_tint_rows[] = {
     { "liquid_tint_row", "Затемнення (тінт)", "Засвітлення (тінт)", "Oscurecido (tinte)", "Aclarado (tinte)", "Darkening (tint)", "Lightening (tint)" },
+    { "cc_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
     { "menubar_tint_row", "Затемнення градієнтне", "Затемнення градієнтне", "Oscurecido degradado", "Oscurecido degradado", "Gradient darkening", "Gradient darkening" },
     { "dock_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
     { "label_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
@@ -2201,6 +2259,7 @@ typedef struct {
 
 static const TintGroupInfo s_tint_groups[] = {
     { "liquid_group", "Налаштування параметрів Liquid Glass (розмиття, затінення, насиченість)", "Налаштування параметрів Liquid Glass (розмиття, засвітлення, насиченість)", "Ajustes de Liquid Glass (desenfoque, oscurecido, saturación)", "Ajustes de Liquid Glass (desenfoque, aclarado, saturación)", "Settings for Liquid Glass (blur, darkening, saturation)", "Settings for Liquid Glass (blur, lightening, saturation)" },
+    { "control_center_group", "Параметри розмиття та затемнення елементів центру керування", "Параметри розмиття та засвітлення елементів центру керування", "Ajustes de desenfoque y oscurecido de los botones del Centro de control", "Ajustes de desenfoque y aclarado de los botones del Centro de control", "Control Center button glass blur and darkening settings", "Control Center button glass blur and lightening settings" },
     { "menubar_group", "Налаштування затемнення та розмиття верхньої панелі", "Налаштування затемнення та розмиття верхньої панелі", "Ajustes de oscurecido y desenfoque de la barra de menús superior", "Ajustes de oscurecido y desenfoque de la barra de menús superior", "Upper menubar darkening and blur settings", "Upper menubar darkening and blur settings" },
     { "dock_group", "Параметри затемнення, розмиття та тіні нижньої панелі Док", "Параметри засвітлення, розмиття та тіні нижньої панелі Док", "Ajustes de oscurecido, desenfoque y sombra del Dock", "Ajustes de aclarado, desenfoque y sombra del Dock", "Dock darkening, blur and shadow settings", "Dock lightening, blur and shadow settings" },
     { "label_group", "Параметри розмиття, затемнення та тіні бірок програм док-панелі", "Параметри розмиття, засвітлення та тіні бірок програм док-панелі", "Ajustes de desenfoque, oscurecido y sombra de las etiquetas del Dock", "Ajustes de desenfoque, aclarado y sombra de las etiquetas del Dock", "Dock label blur, darkening and shadow settings", "Dock label blur, lightening and shadow settings" },
@@ -2217,6 +2276,7 @@ static const TintGroupInfo s_tint_groups[] = {
 
 static void redraw_all_mac_styling_previews(void) {
     redraw_liquid_preview();
+    redraw_cc_preview();
     redraw_menubar_preview();
     redraw_dock_preview();
     redraw_labels_preview();
@@ -4244,6 +4304,168 @@ void init_menubar_preview(void *widget, gpointer data) {
     (void)data;
     g_menubar_preview_w = GTK_WIDGET(widget);
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), menubar_preview_draw_func, NULL, NULL);
+}
+
+static GtkWidget *g_cc_preview_w = NULL;
+static void redraw_cc_preview(void) {
+    if (g_cc_preview_w && GTK_IS_WIDGET(g_cc_preview_w)) {
+        gtk_widget_queue_draw(g_cc_preview_w);
+    }
+}
+
+static void cc_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width, int height, gpointer user_data) {
+    (void)area; (void)user_data;
+    if (width <= 0 || height <= 0) return;
+
+    cairo_save(cr);
+    draw_rounded_rect_path(cr, 0, 0, width, height, 14.0);
+    cairo_clip(cr);
+
+    cairo_surface_t *bg = get_cached_wallpaper_surface(width, height);
+    if (bg) {
+        cairo_set_source_surface(cr, bg, 0, 0);
+        cairo_paint(cr);
+    } else {
+        cairo_set_source_rgb(cr, 0.14, 0.18, 0.26);
+        cairo_paint(cr);
+    }
+
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.14);
+    cairo_paint(cr);
+
+    int blur_r = CLAMP(state.cc_blur, 0, 50);
+    cairo_surface_t *card_bg = (blur_r > 0)
+        ? get_cached_blurred_wallpaper_surface(width, height, blur_r)
+        : bg;
+    if (!card_bg) card_bg = bg;
+
+    double tint_a = ((double)CLAMP(state.cc_tint, 0, 100) / 100.0) * 0.85;
+    double ar = 0.0, ag = 0.48, ab = 1.0;
+    get_system_accent_color(&ar, &ag, &ab);
+
+    double pad = 8.0;
+    double col_w = 128.0;
+    double panel_w = col_w * 2.0 + pad * 3.0;
+    double panel_h = 152.0;
+    double px = (width - panel_w) / 2.0;
+    double py = (height - panel_h) / 2.0;
+
+    /* Subtle Control Center backdrop */
+    draw_rounded_rect_path(cr, px, py, panel_w, panel_h, 22.0);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.12);
+    cairo_fill(cr);
+
+    double x1 = px + pad;
+    double x2 = x1 + col_w + pad;
+    double y1 = py + pad;
+    double btn_h = 38.0;
+
+    /* 1. Wi-Fi card */
+    draw_frosted_glass_card(cr, card_bg, x1, y1, col_w, btn_h, 18.0, tint_a, 0.20, 0.14);
+    draw_rounded_rect_path(cr, x1 + 0.5, y1 + 0.5, col_w - 1.0, btn_h - 1.0, 18.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.26);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+
+    cairo_arc(cr, x1 + 19.0, y1 + btn_h / 2.0, 11.5, 0, 2 * G_PI);
+    cairo_set_source_rgb(cr, ar, ag, ab);
+    cairo_fill(cr);
+
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, 10.5);
+    cairo_move_to(cr, x1 + 37.0, y1 + 17.0);
+    cairo_show_text(cr, "Wi-Fi");
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.68);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_set_font_size(cr, 8.8);
+    cairo_move_to(cr, x1 + 37.0, y1 + 29.0);
+    cairo_show_text(cr, "HomeHub");
+
+    /* 2. Bluetooth card */
+    double y2 = y1 + btn_h + pad;
+    draw_frosted_glass_card(cr, card_bg, x1, y2, col_w, btn_h, 18.0, tint_a, 0.20, 0.14);
+    draw_rounded_rect_path(cr, x1 + 0.5, y2 + 0.5, col_w - 1.0, btn_h - 1.0, 18.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.26);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+
+    cairo_arc(cr, x1 + 19.0, y2 + btn_h / 2.0, 11.5, 0, 2 * G_PI);
+    cairo_set_source_rgb(cr, ar, ag, ab);
+    cairo_fill(cr);
+
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, 10.5);
+    cairo_move_to(cr, x1 + 37.0, y2 + 22.5);
+    cairo_show_text(cr, "Bluetooth");
+
+    /* 3. Media card */
+    double media_h = btn_h * 2.0 + pad;
+    draw_frosted_glass_card(cr, card_bg, x2, y1, col_w, media_h, 18.0, tint_a, 0.20, 0.14);
+    draw_rounded_rect_path(cr, x2 + 0.5, y1 + 0.5, col_w - 1.0, media_h - 1.0, 18.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.26);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+
+    draw_rounded_rect_path(cr, x2 + 12.0, y1 + 10.0, 24.0, 24.0, 6.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.18);
+    cairo_fill(cr);
+
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.90);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, 9.5);
+    cairo_move_to(cr, x2 + 12.0, y1 + 50.0);
+    cairo_show_text(cr, "Media");
+
+    /* Play triangle */
+    double pcx = x2 + col_w / 2.0;
+    double pcy = y1 + 67.0;
+    cairo_move_to(cr, pcx - 4.0, pcy - 5.5);
+    cairo_line_to(cr, pcx + 6.0, pcy);
+    cairo_line_to(cr, pcx - 4.0, pcy + 5.5);
+    cairo_close_path(cr);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.92);
+    cairo_fill(cr);
+
+    /* 4. Display slider card */
+    double y3 = y1 + media_h + pad;
+    double full_w = col_w * 2.0 + pad;
+    double slider_h = 40.0;
+    draw_frosted_glass_card(cr, card_bg, x1, y3, full_w, slider_h, 18.0, tint_a, 0.20, 0.14);
+    draw_rounded_rect_path(cr, x1 + 0.5, y3 + 0.5, full_w - 1.0, slider_h - 1.0, 18.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.26);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+
+    double bar_x = x1 + 14.0;
+    double bar_y = y3 + 24.0;
+    double bar_w = full_w - 28.0;
+    draw_rounded_rect_path(cr, bar_x, bar_y, bar_w, 5.0, 2.5);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.22);
+    cairo_fill(cr);
+    draw_rounded_rect_path(cr, bar_x, bar_y, bar_w * 0.65, 5.0, 2.5);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.92);
+    cairo_fill(cr);
+
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.90);
+    cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, 9.5);
+    cairo_move_to(cr, x1 + 14.0, y3 + 16.0);
+    cairo_show_text(cr, "Display");
+
+    cairo_restore(cr);
+
+    draw_rounded_rect_path(cr, 0.5, 0.5, width - 1.0, height - 1.0, 14.0);
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
+    cairo_set_line_width(cr, 1.0);
+    cairo_stroke(cr);
+}
+
+void init_cc_preview(void *widget, gpointer data) {
+    (void)data;
+    g_cc_preview_w = GTK_WIDGET(widget);
+    gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(widget), cc_preview_draw_func, NULL, NULL);
 }
 
 

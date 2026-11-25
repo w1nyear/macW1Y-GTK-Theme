@@ -5754,3 +5754,23 @@ Task #938:
   * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
 
+968. 2026-11-25 — Додавання пункту Control Center з передоглядом у Mac стилізацію та керування розмиттям/затемненням кнопок центру керування:
+  - Змінені файли:
+    * [extensions/kiwi@kemma/apps/tahoeControlCenter.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeControlCenter.js) (рядки 56-110, 3898-3922, 4193-4205)
+    * [control-center/libmac_settings.c](file:///home/vitaliy/macW1Y/control-center/libmac_settings.c) (рядки 33-38, 115-120, 171-176, 310-322, 604-668, 1589-1626, 2198-2245, 4303-4468)
+    * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/macW1Y/gnome-control-center-overlay/libmac_settings.c)
+    * [control-center/cc-mac-styling-panel.ui](file:///home/vitaliy/macW1Y/control-center/cc-mac-styling-panel.ui) та локалізовані [control-center/locales/*/cc-mac-styling-panel.ui](file:///home/vitaliy/macW1Y/control-center/locales)
+    * [gnome-control-center-overlay/cc-mac-styling-panel.ui](file:///home/vitaliy/macW1Y/gnome-control-center-overlay/cc-mac-styling-panel.ui) та [gnome-control-center-overlay/locales/*/cc-mac-styling-panel.ui](file:///home/vitaliy/macW1Y/gnome-control-center-overlay/locales)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Опис змін:
+    * У tahoeControlCenter.js додано динамічне зчитування cc_blur (0..50, за замовчуванням 14) і cc_tint (0..100, за замовчуванням 18) з ~/.config/mac-styling/styling.json та файловий монітор Gio.FileMonitor для миттєвого оновлення шейдера скла карток/кнопок центру керування (group === "card").
+    * У libmac_settings.c додано поля cc_blur та cc_tint, читання/запис у styling.json, обробники init_cc_blur/on_cc_blur_changed і init_cc_tint/on_cc_tint_changed, а також живий Cairo-передогляд cc_preview_draw_func із картками Wi-Fi, Bluetooth, Медіа та Дисплей на тлі розмитих шпалер.
+    * У cc-mac-styling-panel.ui (і всіх 7 локалях: uk, en, pl, de, fr, es, it) одразу під пунктом Liquid Glass додано секцію Control Center (control_center_group) з передоглядом і повзунками «Розмиття» та «Затемнення».
+    * Перекомпільовано libmac_settings.so та синхронізовано з репозиторієм, ~/.local/lib/, ~/.local/share/gnome-control-center-overlay/ та ~/.local/share/gnome-shell/extensions/kiwi@kemma/.
+  - Тестування:
+    * mac-extension-guard verify: 21/21 розширень LOCKED OK.
+    * mac-i18n-verify: PASS; unittest: 45/45 PASS; перевірка кирилиці в install.sh: 0 збігів.
+    * mac-audit-sync check: потребує разового копіювання libmac_settings.so та .ui у системні каталоги під sudo.
+  * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
