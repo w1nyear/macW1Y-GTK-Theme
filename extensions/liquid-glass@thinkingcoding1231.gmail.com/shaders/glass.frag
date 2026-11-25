@@ -318,7 +318,8 @@ void main() {
     }
 
     // 1. FAST EARLY EXIT: outside shape and outer drop shadow bounds
-    float effShadowRad = (multi_region_mode > 0.5) ? 0.0 : max(min(shadow_radius, shadow_max_radius), 2.0);
+    float rawShadowRad = max(min(shadow_radius, shadow_max_radius), 2.0);
+    float effShadowRad = (multi_region_mode > 0.5) ? min(rawShadowRad, max(padding - 1.5, 12.0)) : rawShadowRad;
     float exitReach = max(effShadowRad + 2.0, edgeFeather);
 
     if (early_exit_enabled > 0.5 && debug_view < 0.5 && d >= exitReach) {
@@ -335,10 +336,11 @@ void main() {
 
     // 2. FAST SHADOW (Outside the glass body)
     float shadowContribution = 0.0;
-    if (d > -edgeFeather && shadow_intensity > 0.001 && multi_region_mode < 0.5) {
+    if (d > -edgeFeather && shadow_intensity > 0.001) {
         float st = clamp(d / effShadowRad, 0.0, 1.0);
         float sEase = (1.0 - st) * (1.0 - st);
-        shadowContribution = sEase * shadow_intensity * 0.75 * (1.0 - insideMask);
+        float mrScale = (multi_region_mode > 0.5) ? 0.55 : 0.75;
+        shadowContribution = sEase * shadow_intensity * mrScale * (1.0 - insideMask);
     }
 
     if (insideMask <= 0.001) {
@@ -460,13 +462,14 @@ void main() {
     vec3 lightDir = normalize(vec3(cos(lightRad), sin(lightRad), 0.38));
 
     float rimDot = 1.0 - max(normal.z, 0.0);
-    float rimFresnel = pow(rimDot, max(rim_power, 1.0));
+    float rimFresnel = pow(clamp(rimDot * 2.4, 0.0, 1.0), clamp(rim_power * 0.40, 1.4, 2.8));
     float nDotL = max(dot(normal, lightDir), 0.0);
-    float lightMask = pow(nDotL, max(rim_directional_power, 1.0));
+    float lightMask = 0.28 + 0.72 * pow(nDotL, clamp(rim_directional_power * 0.65, 1.0, 2.5));
 
-    float edgeBand = 1.0 - depth;
-    float finalRim = rimFresnel * lightMask * (rim_intensity * 1.5) * edgeBand * surface_light_enabled;
-    float sheen = pow(nDotL, 2.0) * sheen_intensity * 0.4 * surface_light_enabled;
+    float edgeBand = smoothstep(1.0, 0.0, depth * 0.88);
+    float finalRim = rimFresnel * lightMask * (rim_intensity * 0.85) * rim_light_color_intensity * edgeBand * surface_light_enabled;
+    float specBevel = pow(nDotL, max(shininess * 0.25, 4.0)) * specular_intensity * 0.75 * (0.35 + 0.65 * edgeBand) * surface_light_enabled;
+    float sheen = pow(nDotL, 1.65) * sheen_intensity * 0.45 * surface_light_enabled;
 
     float touchGlow = 0.0;
     if (pointer_x >= 0.0 && pointer_y >= 0.0 && intensity > 0.0) {
@@ -474,7 +477,7 @@ void main() {
         touchGlow = exp(-0.5 * (touchDist * touchDist) / (mouse_radius * mouse_radius * 4.0)) * intensity * 0.35;
     }
 
-    vec3 addedLight = vec3(finalRim + sheen + touchGlow);
+    vec3 addedLight = vec3(finalRim + specBevel + sheen + touchGlow);
     vec3 litColor = baseColor + addedLight - (baseColor * addedLight);
 
     float maxChannel = max(litColor.r, max(litColor.g, litColor.b));

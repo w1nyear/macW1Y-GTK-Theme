@@ -5809,3 +5809,24 @@ Task #938:
   * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
 
+971. 2026-11-25 — Відновлення відблиску, крайового світла та тіней шейдера Liquid Glass у всіх елементах системи:
+  - Змінені файли:
+    * [control-center/libmac_settings.c](file:///home/vitaliy/macW1Y/control-center/libmac_settings.c) (рядки 294-298, 833-845, 889-893)
+    * [gnome-control-center-overlay/libmac_settings.c](file:///home/vitaliy/macW1Y/gnome-control-center-overlay/libmac_settings.c)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/extension.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/extension.js) (рядки 104-112)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED.frag](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/LQ-OPTIMIZED.frag) (рядки 320-346, 460-480)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/shaders/glass.frag) (рядки 320-346, 460-480)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Опис змін:
+    * У libmac_settings.c видалено примусове обнулення liquid_specular = 0; тепер у GSettings передаються реальні значення glass-specular-intensity (liquid_specular / 100.0), glass-sheen-intensity (0.16 + rim * 0.24) та глобальний shadow-intensity (liquid_shadow / 100.0 замість dock_shadow = 0).
+    * У liquid-glass/extension.js додано стартову синхронізацію glass-specular-intensity, glass-sheen-intensity та shadow-intensity зі styling.json.
+    * У LQ-OPTIMIZED.frag та glass.frag:
+      - Увімкнено зовнішні тіні (effShadowRad / shadowContribution) також у multi_region_mode (Control Center, Spotlight).
+      - Виправлено згасання крайового світла (rimFresnel замість pow(0.34, 6.0) = 0.0015 тепер використовує збалансовану криву з всебічним контуром + направленим бліком).
+      - Додано спекулярний відблиск specBevel у крайовій зоні BEVEL (раніше враховувався лише у flat fast-path).
+    * Перекомпільовано libmac_settings.so та синхронізовано з усіма системними шляхами під root:root.
+  - Перевірка:
+    * mac-extension-guard verify: 21/21 LOCKED OK; mac-audit-sync check: 100% PASS; mac-integrity-check --check: System is green; unittest: 45/45 PASS; 0 кирилиці в install.sh.
+  * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+

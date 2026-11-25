@@ -305,7 +305,7 @@
         "50",
         "51"
       ],
-      "sha256": "4445b5ec8e8dbef200d1fe0e05e5fb752822cfaa3d763782c41889ca1dc80e7e",
+      "sha256": "1644ed15708b3ca8e9a81c2e841530d61b38433a687b90d15a0303dfe3f7fefc",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -317,12 +317,12 @@
       "has_custom_patches": true,
       "patch_description": "Local custom Liquid Glass GLSL refraction & border shader; UI container owner check for strict rounded rectangle radius enforcement and setShapeType API",
       "last_verified": "2026-11-22",
-      "integrity_hash": "4445b5ec8e8dbef200d1fe0e05e5fb752822cfaa3d763782c41889ca1dc80e7e",
+      "integrity_hash": "1644ed15708b3ca8e9a81c2e841530d61b38433a687b90d15a0303dfe3f7fefc",
       "files": {
         "global.d.ts": "02492c5b3b37afc11cb19dee9ae1e9ae8f4e6f8502920b57ae6d0b6f8175c41a",
         "package-lock.json": "2610757c38df98269142accd24a1e84a464bbd02e884569ae6d4c9bec586f5db",
         "stylesheet.css": "c2b39a7032cc770616cfceb967149a11edd796480fa74284946337755082e44a",
-        "extension.js": "91004881353947602d8906fc10ee4e7fff6a80a0081fcdbddbdee37e7e485685",
+        "extension.js": "4e9a40039568e533bcd5cbfc4948e88c1b6700947fce3eda73a828deadcec2b7",
         "package.json": "bedde7d0176d01a34ba1e6512bfc48b17db8f547f5cfe1ab1adc51d6515396b3",
         "prefs.js": "6bfeecdf6aead9c2da88d0eaea8cd5fa75d91d2fd4552b8534586d401adfad4b",
         "resources.gresource": "0b27aab3330db160302da89ad14ceb38731c5b954c699e70820a9fb1466efbbb",
@@ -332,7 +332,7 @@
         "shaders/gaussian_v.frag": "604b318b9750f807b3ad52b08cba8181638a16f73d12cf3bb2c46733d1937c55",
         "shaders/downsample.frag": "35d971052c1730e7da0e5edf15c57c04300573a0c2fdd9de197739b9aa1c9b4c",
         "shaders/gaussian_h.frag": "1375ac86287fce5a2a1878bfebb4cb39d90eccd3e3128381bc0611e8feaa734d",
-        "shaders/glass.frag": "8b78474106fec4a96cc371835fbff3748d4001a26537273eb2b9712fb3fb2db8",
+        "shaders/glass.frag": "0c8834fe552beda04ebd784326d5eb1e1b51ac0756da755615f393e50cce5b32",
         "shaders/upsample.frag": "5b499e75ee05a69429948049ba130b6b160a8cf35e63bdc709aec754688e0b03",
         "schemas/gschemas.compiled": "4c89aa3edb1a8d2a45ac351883317b4bc344dfeb810561f60be6822bc1df0446",
         "schemas/org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com.gschema.xml": "e676686f84cc03ebf922c6eea6b41dead57ebee697440e926617ad7284420794",
@@ -370,8 +370,8 @@
         "icons/audio-volume-medium-symbolic.svg": "8447a2300f7d0fda2c3be92ca17736079661de4cc6942571468220bb2a25ee82",
         "icons/shapes-large-symbolic.svg": "713fe56bf2d550a9c99600a1ce8cd87b993b40101f9d5fa7b007907efc9cdd11"
       },
-      "pinned_sha256": "4445b5ec8e8dbef200d1fe0e05e5fb752822cfaa3d763782c41889ca1dc80e7e",
-      "dir_hash": "4445b5ec"
+      "pinned_sha256": "1644ed15708b3ca8e9a81c2e841530d61b38433a687b90d15a0303dfe3f7fefc",
+      "dir_hash": "1644ed15"
     },
     "macw1y-touchpad-gestures@mactheme": {
       "uuid": "macw1y-touchpad-gestures@mactheme",

@@ -292,9 +292,9 @@ static void load_config(void) {
                 state.liquid_rim = 40;
 
             if (json_object_has_member(obj, "liquid_specular"))
-                state.liquid_specular = 0;
+                state.liquid_specular = CLAMP((int)json_object_get_int_member(obj, "liquid_specular"), 0, 100);
             else
-                state.liquid_specular = 0;
+                state.liquid_specular = 30;
 
             if (json_object_has_member(obj, "liquid_shadow"))
                 state.liquid_shadow = (int)json_object_get_int_member(obj, "liquid_shadow");
@@ -831,7 +831,8 @@ static void apply_liquid_glass(void) {
     double ior = 1.0 + ((double)state.liquid_refraction / 100.0) * 1.0;
     double chroma = ((double)state.liquid_chroma / 100.0) * 0.04;
     double rim = (double)state.liquid_rim / 100.0;
-    double specular = 0.0; /* Specular is permanently removed */
+    double specular = (double)state.liquid_specular / 100.0;
+    double sheen = 0.16 + rim * 0.24;
 
     /* Global Liquid Glass physical shader optics */
     safe_set_int(lg, schema, "glass-shape-type", state.liquid_shape);
@@ -839,7 +840,8 @@ static void apply_liquid_glass(void) {
     safe_set_double(lg, schema, "glass-ior", ior);
     safe_set_double(lg, schema, "glass-chroma-strength", chroma);
     safe_set_double(lg, schema, "glass-rim-intensity", rim);
-    safe_set_double(lg, schema, "glass-specular-intensity", 0.0);
+    safe_set_double(lg, schema, "glass-specular-intensity", specular);
+    safe_set_double(lg, schema, "glass-sheen-intensity", sheen);
     safe_set_int(lg, schema, "glass-blur-downscale", 2);
     safe_set_boolean(lg, schema, "output-logs", FALSE);
 
@@ -884,10 +886,10 @@ static void apply_liquid_glass(void) {
     double menu_shadow_rad = (double)state.menu_shadow_blur;
     safe_set_double(lg, schema, "shadow-radius", menu_shadow_rad);
 
-    double dock_shadow_int = (double)state.dock_shadow / 100.0;
-    if (dock_shadow_int < 0.0) dock_shadow_int = 0.0;
-    if (dock_shadow_int > 1.0) dock_shadow_int = 1.0;
-    safe_set_double(lg, schema, "shadow-intensity", dock_shadow_int);
+    double global_shadow_int = (double)state.liquid_shadow / 100.0;
+    if (global_shadow_int < 0.0) global_shadow_int = 0.0;
+    if (global_shadow_int > 1.0) global_shadow_int = 1.0;
+    safe_set_double(lg, schema, "shadow-intensity", global_shadow_int);
 
     if (schema) g_settings_schema_unref(schema);
     g_object_unref(lg);

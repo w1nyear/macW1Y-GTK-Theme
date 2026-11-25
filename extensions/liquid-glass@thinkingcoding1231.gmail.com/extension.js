@@ -102,8 +102,13 @@ export default class LiquidGlassExtension extends Extension {
             setDblIf('glass-ior', 1.0 + (st.liquid_refraction / 100.0) * 1.0);
           }
           if (typeof st.liquid_chroma === 'number') setDblIf('glass-chroma-strength', (st.liquid_chroma / 100.0) * 0.04);
-          if (typeof st.liquid_rim === 'number') setDblIf('glass-rim-intensity', st.liquid_rim / 100.0);
-          setDblIf('glass-specular-intensity', 0.0);
+          if (typeof st.liquid_rim === 'number') {
+            const rim = st.liquid_rim / 100.0;
+            setDblIf('glass-rim-intensity', rim);
+            setDblIf('glass-sheen-intensity', 0.16 + rim * 0.24);
+          }
+          if (typeof st.liquid_specular === 'number') setDblIf('glass-specular-intensity', st.liquid_specular / 100.0);
+          if (typeof st.liquid_shadow === 'number') setDblIf('shadow-intensity', Math.max(0.0, Math.min(1.0, st.liquid_shadow / 100.0)));
         }
       }
     } catch (e) {
