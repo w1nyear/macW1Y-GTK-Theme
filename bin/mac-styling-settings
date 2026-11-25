@@ -380,19 +380,19 @@ class MacStylingWindow(Adw.ApplicationWindow):
         )
         self.alttab_radius_scale = self._create_slider_row(
             alttab_group, t("alttab_radius", "Радіус заокруглення"), t("alttab_radius_desc", "Радіус заокруглення кутів плашки перемикача (px)"),
-            12, 72, int(getattr(self, "alttab_radius", 50))
+            12, 72, int(getattr(self, "alttab_radius", 42))
         )
         self.alttab_icon_size_scale = self._create_slider_row(
             alttab_group, t("alttab_icon_size", "Розмір іконок"), t("alttab_icon_size_desc", "Розмір значків програм у перемикачі (px)"),
-            32, 96, int(getattr(self, "alttab_icon_size", 64))
+            32, 120, int(getattr(self, "alttab_icon_size", 84))
         )
         self.alttab_padding_scale = self._create_slider_row(
             alttab_group, t("alttab_padding", "Розмір меню / відступ"), t("alttab_padding_desc", "Вертикальний відступ та висота скляної плашки (px)"),
-            8, 40, int(getattr(self, "alttab_padding", 10))
+            8, 40, int(getattr(self, "alttab_padding", 11))
         )
         self.alttab_spacing_scale = self._create_slider_row(
             alttab_group, t("alttab_spacing", "Відстань між іконками"), t("alttab_spacing_desc", "Відстань між сусідніми значками у списку (px)"),
-            0, 36, int(getattr(self, "alttab_spacing", 12))
+            0, 48, int(getattr(self, "alttab_spacing", 15))
         )
 
         # 7. Boot Group (Завантажувач)
@@ -628,10 +628,10 @@ class MacStylingWindow(Adw.ApplicationWindow):
         self.alttab_blur = 1
         self.alttab_tint = 5
         self.alttab_shadow = 25
-        self.alttab_radius = 50
-        self.alttab_icon_size = 64
-        self.alttab_padding = 10
-        self.alttab_spacing = 12
+        self.alttab_radius = 42
+        self.alttab_icon_size = 84
+        self.alttab_padding = 11
+        self.alttab_spacing = 15
 
         self.dock_size = 12
         self.dock_icon_size = 54
@@ -779,12 +779,12 @@ class MacStylingWindow(Adw.ApplicationWindow):
             blur = int(self.alttab_blur_scale.get_value()) if hasattr(self, 'alttab_blur_scale') else 1
             tint = int(self.alttab_tint_scale.get_value()) if hasattr(self, 'alttab_tint_scale') else 5
             shadow = int(self.alttab_shadow_scale.get_value()) if hasattr(self, 'alttab_shadow_scale') else 25
-            radius = int(self.alttab_radius_scale.get_value()) if hasattr(self, 'alttab_radius_scale') else 50
-            icon_size = int(self.alttab_icon_size_scale.get_value()) if hasattr(self, 'alttab_icon_size_scale') else 64
-            padding = int(self.alttab_padding_scale.get_value()) if hasattr(self, 'alttab_padding_scale') else 10
-            spacing = int(self.alttab_spacing_scale.get_value()) if hasattr(self, 'alttab_spacing_scale') else 12
+            radius = int(self.alttab_radius_scale.get_value()) if hasattr(self, 'alttab_radius_scale') else 42
+            icon_size = int(self.alttab_icon_size_scale.get_value()) if hasattr(self, 'alttab_icon_size_scale') else 84
+            padding = int(self.alttab_padding_scale.get_value()) if hasattr(self, 'alttab_padding_scale') else 11
+            spacing = int(self.alttab_spacing_scale.get_value()) if hasattr(self, 'alttab_spacing_scale') else 15
 
-            display_icon_size = max(24, min(48, int(icon_size * 0.65)))
+            display_icon_size = max(24, min(64, int(icon_size * 0.65)))
             display_radius = max(8, int(radius * 0.65))
             display_padding = max(6, int(padding * 0.65))
             display_h_padding = max(display_padding + 2, int(padding * 0.9))

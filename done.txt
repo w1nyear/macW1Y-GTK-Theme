@@ -6194,3 +6194,23 @@ Task #938:
     * Оновлено `config/extensions.lock.json` (`ding@rastersoft.com`), синхронізовано `~/.local/share/gnome-shell/extensions/ding@rastersoft.com/app/desktopIconItem.js`, `/usr/share/mactheme/config/extensions.lock.json`, `~/.config/macw1y/extensions.lock.json`, `~/.config/mac-styling/extensions.lock.json`.
     * Візуально перевірено Cairo-рендер (`pill_verify.png`) для всіх 3-рядкових і 2-рядкових конфігурацій.
     * `unittest`: 59/59 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `bash -n install.sh`: OK.
+
+993. 2026-11-25 — Пропорційно збільшено меню Alt+Tab, іконки, виділення та підпис тексту в 1.5 рази (відповідно до референсу macOS 26 Tahoe):
+  - Змінені файли:
+    * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js)
+    * [bin/mac-styling-settings](file:///home/vitaliy/macW1Y/bin/mac-styling-settings)
+    * [config/mac-styling/styling.json](file:///home/vitaliy/macW1Y/config/mac-styling/styling.json)
+    * [gnome-shell-theme/gnome-shell.css](file:///home/vitaliy/macW1Y/gnome-shell-theme/gnome-shell.css)
+    * [macW1Y-Dark/gnome-shell/gnome-shell.css](file:///home/vitaliy/macW1Y/macW1Y-Dark/gnome-shell/gnome-shell.css)
+    * [macW1Y-Dark-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/macW1Y/macW1Y-Dark-solid/gnome-shell/gnome-shell.css)
+    * [macW1Y-Light/gnome-shell/gnome-shell.css](file:///home/vitaliy/macW1Y/macW1Y-Light/gnome-shell/gnome-shell.css)
+    * [macW1Y-Light-solid/gnome-shell/gnome-shell.css](file:///home/vitaliy/macW1Y/macW1Y-Light-solid/gnome-shell/gnome-shell.css)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Причина та виправлення:
+    * У `eval-helper@mactheme/extension.js` висота `SwitcherList.vfunc_get_preferred_height` була жорстко зафіксована на `82 px`, позиція тексту в `vfunc_allocate` — на `y1 = 64` із обмеженням `13 px`, шрифт — `11 px`, горизонтальний відступ у `SwitcherPopup.prototype.show` — `14 px`, а типові значення становили `iconSize = 56, padding = 7, spacing = 10, radius = 28`.
+    * Додано спільний розрахунок метрик `_macCalcAltTabMetrics()` та `_macApplyIconActorBox()` від `_MAC_ALTTAB_DEFAULTS`: типові значення збільшено у 1.5 рази (`iconSize = 84`, `padding = 11`, `spacing = 15`, `radius = 42`), квадрат виділення `75×75 px` (`border-radius: 21px`, `border: 3.5px`), шрифт підпису `16 px` (`lblMaxH ~23px`), динамічні `scrollY1`, `lblY1`, `hPad = 21px` і `totalH` (~119 px контенту / ~141 px загальної висоти скляної плашки) із збереженням пропорційного зменшення при переповненні екрана.
+    * Оновлено типові значення, діапазон слайдера іконок (`32–120 px`) та прев'ю у `bin/mac-styling-settings`, конфіг `config/mac-styling/styling.json`, `~/.config/mac-styling/styling.json` та CSS-теми GNOME Shell.
+  - Перевірка та синхронізація:
+    * Оновлено `config/extensions.lock.json` (`eval-helper@mactheme`), синхронізовано `~/.local/share/gnome-shell/extensions/eval-helper@mactheme/extension.js`, `~/.local/bin/mac-styling-settings`, `/usr/local/bin/mac-styling-settings`, `~/.themes/macW1Y*`, `/usr/share/themes/macW1Y*`, `~/.config/macw1y/extensions.lock.json`, `~/.config/mac-styling/extensions.lock.json` та `/usr/share/mactheme/config/extensions.lock.json`.
+    * `gjs -m` та `py_compile`: OK; `unittest`: 60/60 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `bash -n install.sh`: OK.

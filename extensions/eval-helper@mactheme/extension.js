@@ -1294,8 +1294,18 @@ export default class EvalHelper extends Extension {
                     }
                 };
 
+                const _MAC_ALTTAB_DEFAULTS = {
+                    iconSize: 84,
+                    padding: 11,
+                    spacing: 15,
+                    radius: 42,
+                    blur: 20,
+                    tint: 15,
+                    shadow: 25,
+                };
+
                 const _macGetAltTabConfig = () => {
-                    let iconSize = 56, padding = 7, spacing = 10, radius = 28, blur = 20, tint = 15, shadow = 25;
+                    let { iconSize, padding, spacing, radius, blur, tint, shadow } = _MAC_ALTTAB_DEFAULTS;
                     try {
                         const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
                         if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
@@ -1315,49 +1325,72 @@ export default class EvalHelper extends Extension {
                     globalThis._macAltTabConfig = { iconSize, padding, spacing, radius, blur, tint, shadow };
                     return globalThis._macAltTabConfig;
                 };
+                globalThis._macGetAltTabConfigFn = _macGetAltTabConfig;
+
+                /** Computes proportional Alt+Tab tile, squircle, font, and container metrics from iconSize & padding. */
+                const _macCalcAltTabMetrics = (cfg, tileOverride = null) => {
+                    const tileSize = Math.max(24, Math.round(tileOverride || cfg.iconSize || _MAC_ALTTAB_DEFAULTS.iconSize));
+                    const boxSize = Math.max(20, Math.round(tileSize * (50 / 56)));
+                    const outlineRad = Math.max(10, Math.round(boxSize * 0.28));
+                    const borderW = (Math.max(2.0, Math.round((tileSize / 56) * 2.5 * 2) / 2)).toFixed(1);
+                    const fontPx = Math.max(10, Math.round(tileSize * (16 / 84)));
+                    const scrollY1 = Math.max(6, Math.round(tileSize * (10 / 84)));
+                    const lblGap = Math.max(2, Math.round(tileSize * 0.04));
+                    const lblY1 = scrollY1 + Math.round((tileSize + boxSize) / 2) + lblGap;
+                    const lblMaxH = Math.max(14, Math.round(fontPx * 1.45));
+                    const botMargin = Math.max(2, Math.round(tileSize * 0.04));
+                    const totalH = lblY1 + lblMaxH + botMargin;
+                    const vPad = Math.max(4, Math.round(cfg.padding ?? _MAC_ALTTAB_DEFAULTS.padding));
+                    const hPad = Math.max(14, Math.round(vPad * 2));
+                    return { tileSize, boxSize, outlineRad, borderW, fontPx, scrollY1, lblY1, lblMaxH, totalH, vPad, hPad };
+                };
+
+                const _macApplyIconActorBox = (iconActor, m, selected) => {
+                    if (!iconActor) return;
+                    if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('alt-tab-icon-bin');
+                    iconActor.x_align = Clutter.ActorAlign.CENTER;
+                    iconActor.y_align = Clutter.ActorAlign.CENTER;
+                    if (typeof iconActor.set_size === 'function') iconActor.set_size(m.boxSize, m.boxSize);
+                    const iconChild = iconActor.child || (iconActor.get_children ? iconActor.get_children()[0] : null);
+                    if (iconChild) {
+                        iconChild.set_pivot_point(0.5, 0.5);
+                        iconChild.set_scale(1.18, 1.18);
+                    }
+                    const borderColor = selected ? _macGetAccentColorRgba(0.85) : 'transparent';
+                    const shadowCss = selected ? '0 4px 14px rgba(0, 0, 0, 0.35)' : 'none';
+                    iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${m.outlineRad}px !important; border: ${m.borderW}px solid ${borderColor} !important; background-color: transparent !important; background: transparent !important; box-shadow: ${shadowCss} !important; transition-duration: 150ms !important;`;
+                    if (selected) {
+                        if (typeof iconActor.add_style_pseudo_class === 'function') iconActor.add_style_pseudo_class('selected');
+                        if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('selected');
+                    } else {
+                        if (typeof iconActor.remove_style_pseudo_class === 'function') iconActor.remove_style_pseudo_class('selected');
+                        if (typeof iconActor.remove_style_class_name === 'function') iconActor.remove_style_class_name('selected');
+                    }
+                };
+
+                const _macLabelStyleForFont = (fontPx) =>
+                    `font-family: "Default Display", "Default", "SF Pro Display", "SF Pro Text", Cantarell, sans-serif !important; font-size: ${fontPx}px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin: 0px !important; padding: 0px !important;`;
 
                 SwitcherList.prototype._macUpdateItemVisual = function(i) {
                     if (!Array.isArray(this._items) || i < 0 || i >= this._items.length) return;
                     const item = this._items[i];
                     if (!item) return;
                     const cfg = _macGetAltTabConfig();
-                    const baseIconSize = cfg.iconSize || 56;
+                    const m = _macCalcAltTabMetrics(cfg, this._itemTileSize);
 
-                    item.set_size(baseIconSize, baseIconSize);
+                    item.set_size(m.tileSize, m.tileSize);
                     item.style = 'padding: 0px !important; margin: 0px !important; background-color: transparent !important; background: transparent !important; border: none !important; box-shadow: none !important; outline: none !important;';
 
                     const child = item.get_child ? item.get_child() : null;
                     if (child) {
-                        child.set_size(baseIconSize, baseIconSize);
+                        child.set_size(m.tileSize, m.tileSize);
                         child.style = 'padding: 0px !important; margin: 0px !important; spacing: 0px !important; background-color: transparent !important; background: transparent !important;';
                     }
                     const iconActor = child?._iconBin || child?._icon || (child?.get_children ? child.get_children()[0] : null);
                     const label = child?.label || item.label_actor;
                     const isSelected = (i === this._highlighted) || item.hover;
 
-                    const iconBoxSize = Math.max(20, Math.round(baseIconSize * (50 / 56)));
-                    const outlineRad = Math.max(10, Math.round(iconBoxSize * 0.28));
-                    const accentColor = _macGetAccentColorRgba(0.85);
-
-                    if (iconActor) {
-                        iconActor.set_size(iconBoxSize, iconBoxSize);
-                        iconActor.x_align = Clutter.ActorAlign.CENTER;
-                        iconActor.y_align = Clutter.ActorAlign.CENTER;
-                        const iconChild = iconActor.child || (iconActor.get_children ? iconActor.get_children()[0] : null);
-                        if (iconChild) {
-                            iconChild.set_pivot_point(0.5, 0.5);
-                            iconChild.set_scale(1.18, 1.18);
-                        }
-                        if (isSelected) {
-                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid ${accentColor} !important; background-color: transparent !important; background: transparent !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important; transition-duration: 150ms !important;`;
-                            if (typeof iconActor.add_style_pseudo_class === 'function') iconActor.add_style_pseudo_class('selected');
-                            if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('selected');
-                        } else {
-                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid transparent !important; background-color: transparent !important; background: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
-                            if (typeof iconActor.remove_style_pseudo_class === 'function') iconActor.remove_style_pseudo_class('selected');
-                            if (typeof iconActor.remove_style_class_name === 'function') iconActor.remove_style_class_name('selected');
-                        }
-                    }
+                    _macApplyIconActorBox(iconActor, m, isSelected);
 
                     if (label) {
                         label.opacity = 0;
@@ -1372,8 +1405,8 @@ export default class EvalHelper extends Extension {
                         if (!this._iconSize && typeof this._setIconSize === 'function') {
                             this._setIconSize();
                         }
-                        const totalH = 82;
-                        return [totalH, totalH];
+                        const m = _macCalcAltTabMetrics(cfg, this._itemTileSize);
+                        return [m.totalH, m.totalH];
                     };
                 }
 
@@ -1384,17 +1417,15 @@ export default class EvalHelper extends Extension {
                     SwitcherList.prototype.vfunc_allocate = function(box) {
                         this.set_allocation(box);
                         const cfg = _macGetAltTabConfig();
+                        const m = _macCalcAltTabMetrics(cfg, this._itemTileSize);
                         const W = box.x2 - box.x1;
                         const H = box.y2 - box.y1;
-
-                        const tileH = cfg.iconSize || 56;
-                        const scrollY1 = 10;
 
                         const scrollBox = new Clutter.ActorBox();
                         scrollBox.x1 = 0;
                         scrollBox.x2 = W;
-                        scrollBox.y1 = scrollY1;
-                        scrollBox.y2 = scrollY1 + tileH;
+                        scrollBox.y1 = m.scrollY1;
+                        scrollBox.y2 = m.scrollY1 + m.tileSize;
                         this._scrollView.allocate(scrollBox);
 
                         if (this._leftArrow) this._leftArrow.opacity = 0;
@@ -1413,19 +1444,20 @@ export default class EvalHelper extends Extension {
                                 const lBox = new Clutter.ActorBox();
                                 let lx1 = Math.round(relX + (item.width - natW) / 2);
                                 let lx2 = lx1 + natW;
-                                if (lx1 < 12) {
-                                    lx2 += (12 - lx1);
-                                    lx1 = 12;
+                                const sidePad = Math.max(8, m.hPad - 4);
+                                if (lx1 < sidePad) {
+                                    lx2 += (sidePad - lx1);
+                                    lx1 = sidePad;
                                 }
-                                if (lx2 > W - 12) {
-                                    lx1 -= (lx2 - (W - 12));
-                                    lx2 = W - 12;
+                                if (lx2 > W - sidePad) {
+                                    lx1 -= (lx2 - (W - sidePad));
+                                    lx2 = W - sidePad;
                                 }
                                 lBox.x1 = Math.max(6, lx1);
                                 lBox.x2 = Math.min(W - 6, lx2);
-                                const lblH = Math.min(13, Math.max(natH, 11));
-                                lBox.y1 = 64;
-                                lBox.y2 = Math.min(H - 2, 64 + lblH);
+                                const lblH = Math.min(m.lblMaxH, Math.max(natH, m.fontPx + 2));
+                                lBox.y1 = m.lblY1;
+                                lBox.y2 = Math.min(H, m.lblY1 + lblH);
                                 this._activeAppLabel.allocate(lBox);
                             }
                         }
@@ -1441,12 +1473,13 @@ export default class EvalHelper extends Extension {
                         origHighlight.call(this, index, justOutline);
                         if (!Array.isArray(this._items)) return;
                         this._highlighted = index;
+                        const cfg = _macGetAltTabConfig();
+                        const m = _macCalcAltTabMetrics(cfg, this._itemTileSize);
 
                         if (!this._activeAppLabel) {
                             this._activeAppLabel = new St.Label({
                                 style_class: 'alt-tab-app-label',
                             });
-                            this._activeAppLabel.style = 'font-family: "Default Display", "Default", "SF Pro Display", "SF Pro Text", Cantarell, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin: 0px !important; padding: 0px !important;';
                             if (this._activeAppLabel.clutter_text) {
                                 this._activeAppLabel.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this._activeAppLabel.clutter_text.line_wrap = false;
@@ -1454,6 +1487,7 @@ export default class EvalHelper extends Extension {
                             }
                             this.add_child(this._activeAppLabel);
                         }
+                        this._activeAppLabel.style = _macLabelStyleForFont(m.fontPx);
 
                         if (index >= 0 && index < this._items.length) {
                             const item = this._items[index];
@@ -1487,14 +1521,12 @@ export default class EvalHelper extends Extension {
                     SwitcherList.prototype.addItem = function(item, label) {
                         const bbox = origAddItem.call(this, item, label);
                         const cfg = _macGetAltTabConfig();
-                        const tileW = this._itemTileSize || cfg.iconSize;
-                        const boxSize = Math.max(20, Math.round(tileW * (50 / 56)));
-                        const outlineRad = Math.max(10, Math.round(boxSize * 0.28));
+                        const m = _macCalcAltTabMetrics(cfg, this._itemTileSize);
 
                         bbox._square = false;
                         bbox.x_align = Clutter.ActorAlign.CENTER;
                         bbox.y_align = Clutter.ActorAlign.CENTER;
-                        if (typeof bbox.set_width === 'function') bbox.set_width(tileW);
+                        if (typeof bbox.set_width === 'function') bbox.set_width(m.tileSize);
                         bbox.style = 'padding: 0px !important; margin: 0px !important; background-color: transparent !important; border: none !important; box-shadow: none !important;';
                         if (label) {
                             label.opacity = 0;
@@ -1506,18 +1538,7 @@ export default class EvalHelper extends Extension {
                             if (typeof child.label.set_height === 'function') child.label.set_height(0);
                         }
                         const iconActor = child?._iconBin || child?._icon || (child?.get_children ? child.get_children()[0] : null);
-                        if (iconActor) {
-                            if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('alt-tab-icon-bin');
-                            iconActor.x_align = Clutter.ActorAlign.CENTER;
-                            iconActor.y_align = Clutter.ActorAlign.CENTER;
-                            if (typeof iconActor.set_size === 'function') iconActor.set_size(boxSize, boxSize);
-                            const iconChild = iconActor.child || (iconActor.get_children ? iconActor.get_children()[0] : null);
-                            if (iconChild) {
-                                iconChild.set_pivot_point(0.5, 0.5);
-                                iconChild.set_scale(1.18, 1.18);
-                            }
-                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
-                        }
+                        _macApplyIconActorBox(iconActor, m, false);
                         if (this._leftArrow) this._leftArrow.opacity = 0;
                         if (this._rightArrow) this._rightArrow.opacity = 0;
 
@@ -1550,27 +1571,14 @@ export default class EvalHelper extends Extension {
                     AltTabMod.AppIcon.prototype._init = function(app) {
                         origAppIconInit.call(this, app);
                         const cfg = _macGetAltTabConfig();
-                        const tileW = cfg.iconSize;
-                        const boxSize = Math.max(20, Math.round(tileW * (56 / 64)));
-                        const outlineRad = Math.max(10, Math.round(boxSize * 0.285));
-                        if (this._iconBin) {
-                            this._iconBin.add_style_class_name('alt-tab-icon-bin');
-                            this._iconBin.x_align = Clutter.ActorAlign.CENTER;
-                            this._iconBin.y_align = Clutter.ActorAlign.CENTER;
-                            if (typeof this._iconBin.set_size === 'function') this._iconBin.set_size(boxSize, boxSize);
-                            const iconChild = this._iconBin.child || (this._iconBin.get_children ? this._iconBin.get_children()[0] : null);
-                            if (iconChild) {
-                                iconChild.set_pivot_point(0.5, 0.5);
-                                iconChild.set_scale(1.15, 1.15);
-                            }
-                            this._iconBin.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
-                        }
+                        const m = _macCalcAltTabMetrics(cfg);
+                        _macApplyIconActorBox(this._iconBin, m, false);
                         if (this.label) {
                             this.label.add_style_class_name('alt-tab-app-label');
                             this.label.opacity = 0;
                             if (typeof this.label.set_height === 'function') this.label.set_height(0);
                             this.label.x_align = Clutter.ActorAlign.CENTER;
-                            this.label.style = 'font-family: "Default Display", "Default", "SF Pro Display", "SF Pro Text", Cantarell, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 0px !important;';
+                            this.label.style = _macLabelStyleForFont(m.fontPx);
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this.label.clutter_text.line_wrap = false;
@@ -1594,9 +1602,7 @@ export default class EvalHelper extends Extension {
                     AltTabMod.WindowIcon.prototype._init = function(window, mode) {
                         origWindowIconInit.call(this, window, 2);
                         const cfg = _macGetAltTabConfig();
-                        const baseIconSize = cfg.iconSize;
-                        const boxSize = Math.max(20, Math.round(baseIconSize * (56 / 64)));
-                        const outlineRad = Math.max(10, Math.round(boxSize * 0.285));
+                        const m = _macCalcAltTabMetrics(cfg);
 
                         if (this._icon) {
                             this._icon.destroy_all_children();
@@ -1604,18 +1610,12 @@ export default class EvalHelper extends Extension {
                             const app = tracker.get_window_app(window);
                             this.app = app;
                             const appIcon = app
-                                ? app.create_icon_texture(baseIconSize)
-                                : new St.Icon({ icon_name: 'application-x-executable', icon_size: baseIconSize });
+                                ? app.create_icon_texture(m.tileSize)
+                                : new St.Icon({ icon_name: 'application-x-executable', icon_size: m.tileSize });
                             appIcon.x_align = Clutter.ActorAlign.CENTER;
                             appIcon.y_align = Clutter.ActorAlign.CENTER;
-                            appIcon.set_pivot_point(0.5, 0.5);
-                            appIcon.set_scale(1.15, 1.15);
                             this._icon.add_child(appIcon);
-                            this._icon.x_align = Clutter.ActorAlign.CENTER;
-                            this._icon.y_align = Clutter.ActorAlign.CENTER;
-                            this._icon.set_size(boxSize, boxSize);
-                            this._icon.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid transparent !important; background-color: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
-                            if (typeof this._icon.add_style_class_name === 'function') this._icon.add_style_class_name('alt-tab-icon-bin');
+                            _macApplyIconActorBox(this._icon, m, false);
                         }
 
                         if (this.label) {
@@ -1629,7 +1629,7 @@ export default class EvalHelper extends Extension {
                             this.label.x_align = Clutter.ActorAlign.CENTER;
                             this.label.opacity = 0;
                             if (typeof this.label.set_height === 'function') this.label.set_height(0);
-                            this.label.style = 'font-family: "Default Display", "Default", "SF Pro Display", "SF Pro Text", Cantarell, sans-serif !important; font-size: 11px !important; font-weight: 500 !important; color: #ffffff !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important; text-align: center !important; margin-top: 0px !important;';
+                            this.label.style = _macLabelStyleForFont(m.fontPx);
                             if (this.label.clutter_text) {
                                 this.label.clutter_text.ellipsize = Pango.EllipsizeMode.NONE;
                                 this.label.clutter_text.line_wrap = false;
@@ -1694,9 +1694,7 @@ export default class EvalHelper extends Extension {
                                 itemW = baseIconSize;
                             }
 
-                            const boxSize = Math.max(20, Math.round(itemW * (50 / 56)));
-                            const outlineRad = Math.max(10, Math.round(boxSize * 0.28));
-                            const accentColor = _macGetAccentColorRgba(0.85);
+                            const m = _macCalcAltTabMetrics(cfg, itemW);
                             this._iconSize = baseIconSize;
                             this._squareItems = false;
                             this._itemTileSize = itemW;
@@ -1714,8 +1712,8 @@ export default class EvalHelper extends Extension {
                                     this._items[i]._square = false;
                                     this._items[i].x_align = Clutter.ActorAlign.CENTER;
                                     this._items[i].y_align = Clutter.ActorAlign.CENTER;
-                                    this._items[i].set_size(itemW, itemW);
-                                    if (typeof this._items[i].set_width === 'function') this._items[i].set_width(itemW);
+                                    this._items[i].set_size(m.tileSize, m.tileSize);
+                                    if (typeof this._items[i].set_width === 'function') this._items[i].set_width(m.tileSize);
                                     this._items[i].style = 'padding: 0px !important; margin: 0px !important; background-color: transparent !important; background: transparent !important; border: none !important; box-shadow: none !important;';
                                 }
                                 if (this.icons[i]) {
@@ -1724,23 +1722,7 @@ export default class EvalHelper extends Extension {
                                     this.icons[i].y_align = Clutter.ActorAlign.CENTER;
                                     this.icons[i].style = 'padding: 0px !important; margin: 0px !important; spacing: 0px !important; background-color: transparent !important; background: transparent !important;';
                                     const iconActor = this.icons[i]._iconBin || this.icons[i]._icon || (this.icons[i].get_children ? this.icons[i].get_children()[0] : null);
-                                    if (iconActor) {
-                                        if (typeof iconActor.add_style_class_name === 'function') iconActor.add_style_class_name('alt-tab-icon-bin');
-                                        iconActor.x_align = Clutter.ActorAlign.CENTER;
-                                        iconActor.y_align = Clutter.ActorAlign.CENTER;
-                                        iconActor.set_size(boxSize, boxSize);
-                                        const iconChild = iconActor.child || (iconActor.get_children ? iconActor.get_children()[0] : null);
-                                        if (iconChild) {
-                                            iconChild.set_pivot_point(0.5, 0.5);
-                                            iconChild.set_scale(1.18, 1.18);
-                                        }
-                                        const isSelected = (i === this._highlighted);
-                                        if (isSelected) {
-                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid ${accentColor} !important; background-color: transparent !important; background: transparent !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important; transition-duration: 150ms !important;`;
-                                        } else {
-                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid transparent !important; background-color: transparent !important; background: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
-                                        }
-                                    }
+                                    _macApplyIconActorBox(iconActor, m, i === this._highlighted);
                                     if (this.icons[i].label) {
                                         this.icons[i].label.add_style_class_name('alt-tab-app-label');
                                         this.icons[i].label.opacity = 0;
@@ -1788,9 +1770,7 @@ export default class EvalHelper extends Extension {
                                 itemW = baseIconSize;
                             }
 
-                            const boxSize = Math.max(20, Math.round(itemW * (50 / 56)));
-                            const outlineRad = Math.max(10, Math.round(boxSize * 0.28));
-                            const accentColor = _macGetAccentColorRgba(0.85);
+                            const m = _macCalcAltTabMetrics(cfg, itemW);
                             this._iconSize = baseIconSize;
                             this._squareItems = false;
                             this._itemTileSize = itemW;
@@ -1809,8 +1789,8 @@ export default class EvalHelper extends Extension {
                                     item._square = false;
                                     item.x_align = Clutter.ActorAlign.CENTER;
                                     item.y_align = Clutter.ActorAlign.CENTER;
-                                    item.set_size(itemW, itemW);
-                                    if (typeof item.set_width === 'function') item.set_width(itemW);
+                                    item.set_size(m.tileSize, m.tileSize);
+                                    if (typeof item.set_width === 'function') item.set_width(m.tileSize);
                                     item.style = 'padding: 0px !important; margin: 0px !important; background-color: transparent !important; background: transparent !important; border: none !important; box-shadow: none !important;';
                                 }
                                 const iconObj = this.icons && this.icons[i];
@@ -1819,20 +1799,7 @@ export default class EvalHelper extends Extension {
                                     iconObj.y_align = Clutter.ActorAlign.CENTER;
                                     iconObj.style = 'padding: 0px !important; margin: 0px !important; spacing: 0px !important;';
                                     const iconActor = iconObj._icon || iconObj._iconBin || (iconObj.get_children ? iconObj.get_children()[0] : null);
-                                    if (iconActor) {
-                                        iconActor.set_size(boxSize, boxSize);
-                                        const iconChild = iconActor.child || (iconActor.get_children ? iconActor.get_children()[0] : null);
-                                        if (iconChild) {
-                                            iconChild.set_pivot_point(0.5, 0.5);
-                                            iconChild.set_scale(1.18, 1.18);
-                                        }
-                                        const isSelected = (i === this._highlighted);
-                                        if (isSelected) {
-                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid ${accentColor} !important; background-color: transparent !important; background: transparent !important; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important; transition-duration: 150ms !important;`;
-                                        } else {
-                                            iconActor.style = `padding: 0px !important; margin: 0px !important; border-radius: ${outlineRad}px !important; border: 2.5px solid transparent !important; background-color: transparent !important; background: transparent !important; box-shadow: none !important; transition-duration: 150ms !important;`;
-                                        }
-                                    }
+                                    _macApplyIconActorBox(iconActor, m, i === this._highlighted);
                                 }
                             }
                         };
@@ -1896,9 +1863,10 @@ export default class EvalHelper extends Extension {
                     SwitcherPopup.prototype._macOrigShow = origShow;
                     SwitcherPopup.prototype.show = function(backward, binding, mask) {
                         const cfg = _macGetAltTabConfig();
+                        const m = _macCalcAltTabMetrics(cfg, this._switcherList?._itemTileSize);
                         const radius = cfg.radius;
-                        const vPad = cfg.padding;
-                        const hPad = 14;
+                        const vPad = m.vPad;
+                        const hPad = m.hPad;
                         const tintA = (cfg.tint / 100.0).toFixed(2);
                         const shadowA = (cfg.shadow / 100.0).toFixed(2);
 
@@ -2878,21 +2846,25 @@ export default class EvalHelper extends Extension {
 
         const syncAltTabStyling = () => {
             try {
-                const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
-                let conf = {};
-                if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
-                    const [ok, bytes] = GLib.file_get_contents(confPath);
-                    if (ok) conf = JSON.parse(new TextDecoder().decode(bytes));
+                let iconSize, padding, spacing, radius, blur, tint, shadow;
+                if (typeof globalThis._macGetAltTabConfigFn === 'function') {
+                    ({ iconSize, padding, spacing, radius, blur, tint, shadow } = globalThis._macGetAltTabConfigFn());
+                } else {
+                    const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'styling.json']);
+                    let conf = {};
+                    if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+                        const [ok, bytes] = GLib.file_get_contents(confPath);
+                        if (ok) conf = JSON.parse(new TextDecoder().decode(bytes));
+                    }
+                    iconSize = (typeof conf.alttab_icon_size === 'number') ? conf.alttab_icon_size : 84;
+                    padding = (typeof conf.alttab_padding === 'number') ? conf.alttab_padding : 11;
+                    spacing = (typeof conf.alttab_spacing === 'number') ? conf.alttab_spacing : 15;
+                    radius = (typeof conf.alttab_radius === 'number') ? conf.alttab_radius : 42;
+                    blur = (typeof conf.alttab_blur === 'number') ? conf.alttab_blur : 20;
+                    tint = (typeof conf.alttab_tint === 'number') ? conf.alttab_tint : 15;
+                    shadow = (typeof conf.alttab_shadow === 'number') ? conf.alttab_shadow : 25;
+                    globalThis._macAltTabConfig = { iconSize, padding, spacing, radius, blur, tint, shadow };
                 }
-                const iconSize = (typeof conf.alttab_icon_size === 'number') ? conf.alttab_icon_size : 56;
-                const padding = (typeof conf.alttab_padding === 'number') ? conf.alttab_padding : 7;
-                const spacing = (typeof conf.alttab_spacing === 'number') ? conf.alttab_spacing : 10;
-                const radius = (typeof conf.alttab_radius === 'number') ? conf.alttab_radius : 28;
-                const blur = (typeof conf.alttab_blur === 'number') ? conf.alttab_blur : 20;
-                const tint = (typeof conf.alttab_tint === 'number') ? conf.alttab_tint : 15;
-                const shadow = (typeof conf.alttab_shadow === 'number') ? conf.alttab_shadow : 25;
-
-                globalThis._macAltTabConfig = { iconSize, padding, spacing, radius, blur, tint, shadow };
                 if (globalThis._macSwitcherGlass) {
                     if (typeof globalThis._macSwitcherGlass.setCornerRadius === 'function') {
                         globalThis._macSwitcherGlass.setCornerRadius(radius);
