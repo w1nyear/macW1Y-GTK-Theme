@@ -342,16 +342,120 @@ typedef struct {
     double x, y, w, h;
 } MacLineBox;
 
-static void mac_draw_rounded_rect(cairo_t *cr, double x, double y, double w, double h, double r) {
+/** Snaps contiguous nearly-aligned line edges so <min_step diffs form flat vertical walls. */
+static void mac_snap_edge_runs(double *vals, int n, gboolean take_min, double min_step) {
+    int start = 0;
+    while (start < n) {
+        double run_min = vals[start];
+        double run_max = vals[start];
+        int end = start + 1;
+        while (end < n) {
+            double next_min = (vals[end] < run_min) ? vals[end] : run_min;
+            double next_max = (vals[end] > run_max) ? vals[end] : run_max;
+            if ((next_max - next_min) < min_step) {
+                run_min = next_min;
+                run_max = next_max;
+                end++;
+            } else {
+                break;
+            }
+        }
+        double snapped = take_min ? run_min : run_max;
+        for (int k = start; k < end; k++)
+            vals[k] = snapped;
+        start = end;
+    }
+}
+
+static double mac_clamp_fillet(double r_fillet, double abs_dx, double h_a, double h_b, double w_a, double w_b) {
+    double r = r_fillet;
+    double cands[5] = { abs_dx / 2.0, h_a / 2.0, h_b / 2.0, w_a / 2.0, w_b / 2.0 };
+    for (int i = 0; i < 5; i++) {
+        if (cands[i] < r) r = cands[i];
+    }
+    return (r < 0.5) ? 0.5 : r;
+}
+
+static double mac_clamp_corner(double r_corner, double w, double h) {
+    double r = r_corner;
     if (r > w / 2.0) r = w / 2.0;
     if (r > h / 2.0) r = h / 2.0;
-    if (r < 0.5) r = 0.5;
-    cairo_new_sub_path(cr);
-    cairo_arc(cr, x + w - r, y + r, r, -G_PI_2, 0);
-    cairo_arc(cr, x + w - r, y + h - r, r, 0, G_PI_2);
-    cairo_arc(cr, x + r, y + h - r, r, G_PI_2, G_PI);
-    cairo_arc(cr, x + r, y + r, r, G_PI, 3.0 * G_PI_2);
+    return (r < 0.5) ? 0.5 : r;
+}
+
+/** Draws a single smooth unified pill/stepped-fillet contour across 1..N wrapped lines. */
+static void mac_draw_smooth_multiline_pill(cairo_t *cr, const MacLineBox *raw_lines, int n_lines,
+                                           double px, double py, double r_corner, double r_fillet, double min_step) {
+    if (n_lines <= 0 || n_lines > 8) return;
+
+    double y_seam[9];
+    double xL[8], xR[8], row_h[8], row_w[8];
+
+    y_seam[0] = raw_lines[0].y - py;
+    for (int i = 1; i < n_lines; i++) {
+        double min_y = y_seam[i - 1] + 2.0;
+        y_seam[i] = (raw_lines[i].y > min_y) ? raw_lines[i].y : min_y;
+    }
+    double bot_y = raw_lines[n_lines - 1].y + raw_lines[n_lines - 1].h + py;
+    double min_bot = y_seam[n_lines - 1] + 2.0;
+    y_seam[n_lines] = (bot_y > min_bot) ? bot_y : min_bot;
+
+    for (int i = 0; i < n_lines; i++) {
+        xL[i] = raw_lines[i].x - px;
+        xR[i] = raw_lines[i].x + raw_lines[i].w + px;
+    }
+    mac_snap_edge_runs(xL, n_lines, TRUE, min_step);
+    mac_snap_edge_runs(xR, n_lines, FALSE, min_step);
+
+    for (int i = 0; i < n_lines; i++) {
+        row_h[i] = y_seam[i + 1] - y_seam[i];
+        row_w[i] = xR[i] - xL[i];
+    }
+
+    double rtl = mac_clamp_corner(r_corner, row_w[0], row_h[0]);
+    double rtr = mac_clamp_corner(r_corner, row_w[0], row_h[0]);
+    double rbl = mac_clamp_corner(r_corner, row_w[n_lines - 1], row_h[n_lines - 1]);
+    double rbr = mac_clamp_corner(r_corner, row_w[n_lines - 1], row_h[n_lines - 1]);
+
+    cairo_new_path(cr);
+    cairo_arc(cr, xR[0] - rtr, y_seam[0] + rtr, rtr, 1.5 * G_PI, 2.0 * G_PI);
+
+    for (int i = 0; i < n_lines - 1; i++) {
+        double sy = y_seam[i + 1];
+        double dx = xR[i] - xR[i + 1];
+        double abs_dx = fabs(dx);
+        if (abs_dx < 2.0) continue;
+        double rf = mac_clamp_fillet(r_fillet, abs_dx, row_h[i], row_h[i + 1], row_w[i], row_w[i + 1]);
+        if (dx > 0) {
+            cairo_arc(cr, xR[i] - rf, sy - rf, rf, 0, 0.5 * G_PI);
+            cairo_arc_negative(cr, xR[i + 1] + rf, sy + rf, rf, 1.5 * G_PI, G_PI);
+        } else {
+            cairo_arc_negative(cr, xR[i] + rf, sy - rf, rf, G_PI, 0.5 * G_PI);
+            cairo_arc(cr, xR[i + 1] - rf, sy + rf, rf, 1.5 * G_PI, 2.0 * G_PI);
+        }
+    }
+
+    cairo_arc(cr, xR[n_lines - 1] - rbr, y_seam[n_lines] - rbr, rbr, 0, 0.5 * G_PI);
+    cairo_arc(cr, xL[n_lines - 1] + rbl, y_seam[n_lines] - rbl, rbl, 0.5 * G_PI, G_PI);
+
+    for (int i = n_lines - 2; i >= 0; i--) {
+        double sy = y_seam[i + 1];
+        double dwL = xL[i + 1] - xL[i];
+        double abs_dwL = fabs(dwL);
+        if (abs_dwL < 2.0) continue;
+        double rf = mac_clamp_fillet(r_fillet, abs_dwL, row_h[i], row_h[i + 1], row_w[i], row_w[i + 1]);
+        if (dwL > 0) {
+            cairo_arc_negative(cr, xL[i + 1] - rf, sy + rf, rf, 0, 1.5 * G_PI);
+            cairo_arc(cr, xL[i] + rf, sy - rf, rf, 0.5 * G_PI, G_PI);
+        } else {
+            cairo_arc(cr, xL[i + 1] + rf, sy + rf, rf, G_PI, 1.5 * G_PI);
+            cairo_arc_negative(cr, xL[i] - rf, sy - rf, rf, 0.5 * G_PI, 0);
+        }
+    }
+
+    cairo_arc(cr, xL[0] + rtl, y_seam[0] + rtl, rtl, G_PI, 1.5 * G_PI);
     cairo_close_path(cr);
+    cairo_fill(cr);
 }
 
 static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
@@ -457,27 +561,6 @@ static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
     graphene_rect_init(&bounds, -30.0f, -30.0f, (float)widget_w + 60.0f, (float)widget_h + 60.0f);
     cairo_t *cr = gtk_snapshot_append_cairo(snapshot, &bounds);
     if (cr) {
-        double px = 6.0;
-        double py = 2.5;
-        double r_corner = 7.5;
-        double r_fillet = 6.0;
-
-        MacLineBox pill_lines[8];
-        for (int i = 0; i < n_lines; i++) {
-            pill_lines[i].x = raw_lines[i].x - px;
-            pill_lines[i].w = raw_lines[i].w + 2.0 * px;
-            if (i == 0) {
-                pill_lines[i].y = raw_lines[i].y - py;
-            } else {
-                pill_lines[i].y = raw_lines[i].y;
-            }
-            if (i == n_lines - 1) {
-                pill_lines[i].h = (raw_lines[i].y + raw_lines[i].h + py) - pill_lines[i].y;
-            } else {
-                pill_lines[i].h = (raw_lines[i + 1].y - pill_lines[i].y) + 0.5;
-            }
-        }
-
         if (state == MAC_GRID_STATE_SELECTED) {
             double ar, ag, ab;
             get_system_accent_color(&ar, &ag, &ab);
@@ -498,138 +581,7 @@ static void mac_grid_label_snapshot(GtkWidget *widget, GtkSnapshot *snapshot) {
             }
         }
 
-        if (n_lines == 1) {
-            cairo_new_path(cr);
-            mac_draw_rounded_rect(cr, pill_lines[0].x, pill_lines[0].y, pill_lines[0].w, pill_lines[0].h, r_corner);
-            cairo_fill(cr);
-        } else if (n_lines == 2) {
-            double x0L = pill_lines[0].x, x0R = pill_lines[0].x + pill_lines[0].w;
-            double y0T = pill_lines[0].y, y0B = pill_lines[0].y + pill_lines[0].h;
-            double x1L = pill_lines[1].x, x1R = pill_lines[1].x + pill_lines[1].w;
-            double y1T = y0B, y1B = pill_lines[1].y + pill_lines[1].h;
-
-            double dwL = x1L - x0L;
-            double dwR = x0R - x1R;
-            double min_step = 8.5;
-
-            if (dwL >= min_step && dwR >= min_step) {
-
-                double rf_R = r_fillet;
-                if (rf_R > dwR / 2.0) rf_R = dwR / 2.0;
-                if (rf_R > pill_lines[0].h / 2.0) rf_R = pill_lines[0].h / 2.0;
-                if (rf_R > pill_lines[1].h / 2.0) rf_R = pill_lines[1].h / 2.0;
-                if (rf_R < 1.0) rf_R = 1.0;
-
-                double rf_L = r_fillet;
-                if (rf_L > dwL / 2.0) rf_L = dwL / 2.0;
-                if (rf_L > pill_lines[0].h / 2.0) rf_L = pill_lines[0].h / 2.0;
-                if (rf_L > pill_lines[1].h / 2.0) rf_L = pill_lines[1].h / 2.0;
-                if (rf_L < 1.0) rf_L = 1.0;
-
-                double rtl = r_corner;
-                if (rtl > pill_lines[0].w / 2.0) rtl = pill_lines[0].w / 2.0;
-                if (rtl > pill_lines[0].h / 2.0) rtl = pill_lines[0].h / 2.0;
-
-                double rtr = r_corner;
-                if (rtr > pill_lines[0].w / 2.0) rtr = pill_lines[0].w / 2.0;
-                if (rtr > pill_lines[0].h / 2.0) rtr = pill_lines[0].h / 2.0;
-
-                double rbl = r_corner;
-                if (rbl > pill_lines[1].w / 2.0) rbl = pill_lines[1].w / 2.0;
-                if (rbl > pill_lines[1].h / 2.0) rbl = pill_lines[1].h / 2.0;
-
-                double rbr = r_corner;
-                if (rbr > pill_lines[1].w / 2.0) rbr = pill_lines[1].w / 2.0;
-                if (rbr > pill_lines[1].h / 2.0) rbr = pill_lines[1].h / 2.0;
-
-                cairo_new_path(cr);
-                cairo_arc(cr, x0R - rtr, y0T + rtr, rtr, 1.5 * G_PI, 2.0 * G_PI);
-                cairo_arc(cr, x0R - rf_R, y0B - rf_R, rf_R, 0, 0.5 * G_PI);
-                cairo_arc_negative(cr, x1R + rf_R, y0B + rf_R, rf_R, 1.5 * G_PI, G_PI);
-                cairo_arc(cr, x1R - rbr, y1B - rbr, rbr, 0, 0.5 * G_PI);
-                cairo_arc(cr, x1L + rbl, y1B - rbl, rbl, 0.5 * G_PI, G_PI);
-                cairo_arc_negative(cr, x1L - rf_L, y0B + rf_L, rf_L, 0, 1.5 * G_PI);
-                cairo_arc(cr, x0L + rf_L, y0B - rf_L, rf_L, 0.5 * G_PI, G_PI);
-                cairo_arc(cr, x0L + rtl, y0T + rtl, rtl, G_PI, 1.5 * G_PI);
-                cairo_close_path(cr);
-                cairo_fill(cr);
-            } else if (dwL <= -min_step && dwR <= -min_step) {
-
-                double rf_R = r_fillet;
-                if (rf_R > -dwR / 2.0) rf_R = -dwR / 2.0;
-                if (rf_R > pill_lines[0].h / 2.0) rf_R = pill_lines[0].h / 2.0;
-                if (rf_R > pill_lines[1].h / 2.0) rf_R = pill_lines[1].h / 2.0;
-                if (rf_R < 1.0) rf_R = 1.0;
-
-                double rf_L = r_fillet;
-                if (rf_L > -dwL / 2.0) rf_L = -dwL / 2.0;
-                if (rf_L > pill_lines[0].h / 2.0) rf_L = pill_lines[0].h / 2.0;
-                if (rf_L > pill_lines[1].h / 2.0) rf_L = pill_lines[1].h / 2.0;
-                if (rf_L < 1.0) rf_L = 1.0;
-
-                double rtl = r_corner;
-                if (rtl > pill_lines[0].w / 2.0) rtl = pill_lines[0].w / 2.0;
-                if (rtl > pill_lines[0].h / 2.0) rtl = pill_lines[0].h / 2.0;
-
-                double rtr = r_corner;
-                if (rtr > pill_lines[0].w / 2.0) rtr = pill_lines[0].w / 2.0;
-                if (rtr > pill_lines[0].h / 2.0) rtr = pill_lines[0].h / 2.0;
-
-                double rbl = r_corner;
-                if (rbl > pill_lines[1].w / 2.0) rbl = pill_lines[1].w / 2.0;
-                if (rbl > pill_lines[1].h / 2.0) rbl = pill_lines[1].h / 2.0;
-
-                double rbr = r_corner;
-                if (rbr > pill_lines[1].w / 2.0) rbr = pill_lines[1].w / 2.0;
-                if (rbr > pill_lines[1].h / 2.0) rbr = pill_lines[1].h / 2.0;
-
-                cairo_new_path(cr);
-                cairo_arc(cr, x0R - rtr, y0T + rtr, rtr, 1.5 * G_PI, 2.0 * G_PI);
-                cairo_arc_negative(cr, x0R + rf_R, y0B - rf_R, rf_R, G_PI, 0.5 * G_PI);
-                cairo_arc(cr, x1R - rf_R, y0B + rf_R, rf_R, 1.5 * G_PI, 2.0 * G_PI);
-                cairo_arc(cr, x1R - rbr, y1B - rbr, rbr, 0, 0.5 * G_PI);
-                cairo_arc(cr, x1L + rbl, y1B - rbl, rbl, 0.5 * G_PI, G_PI);
-                cairo_arc(cr, x1L + rf_L, y0B + rf_L, rf_L, G_PI, 1.5 * G_PI);
-                cairo_arc_negative(cr, x0L - rf_L, y0B - rf_L, rf_L, 0.5 * G_PI, 0);
-                cairo_arc(cr, x0L + rtl, y0T + rtl, rtl, G_PI, 1.5 * G_PI);
-                cairo_close_path(cr);
-                cairo_fill(cr);
-            } else {
-
-                double ux_min = (x0L < x1L) ? x0L : x1L;
-                double ux_max = (x0R > x1R) ? x0R : x1R;
-                double uy_min = y0T;
-                double uy_max = y1B;
-                cairo_new_path(cr);
-                mac_draw_rounded_rect(cr, ux_min, uy_min, ux_max - ux_min, uy_max - uy_min, r_corner);
-                cairo_fill(cr);
-            }
-        } else {
-
-            double ux_min = pill_lines[0].x;
-            double ux_max = pill_lines[0].x + pill_lines[0].w;
-            double uy_min = pill_lines[0].y;
-            double uy_max = pill_lines[n_lines - 1].y + pill_lines[n_lines - 1].h;
-            double min_w = pill_lines[0].w;
-            double max_w = pill_lines[0].w;
-            for (int i = 0; i < n_lines; i++) {
-                if (pill_lines[i].x < ux_min) ux_min = pill_lines[i].x;
-                if (pill_lines[i].x + pill_lines[i].w > ux_max) ux_max = pill_lines[i].x + pill_lines[i].w;
-                if (pill_lines[i].w < min_w) min_w = pill_lines[i].w;
-                if (pill_lines[i].w > max_w) max_w = pill_lines[i].w;
-            }
-            if ((max_w - min_w) < 17.0) {
-                cairo_new_path(cr);
-                mac_draw_rounded_rect(cr, ux_min, uy_min, ux_max - ux_min, uy_max - uy_min, r_corner);
-                cairo_fill(cr);
-            } else {
-                cairo_new_path(cr);
-                for (int i = 0; i < n_lines; i++) {
-                    mac_draw_rounded_rect(cr, pill_lines[i].x, pill_lines[i].y, pill_lines[i].w, pill_lines[i].h, r_corner);
-                }
-                cairo_fill(cr);
-            }
-        }
+        mac_draw_smooth_multiline_pill(cr, raw_lines, n_lines, 6.0, 2.5, 7.5, 6.0, 8.5);
         cairo_destroy(cr);
     }
 

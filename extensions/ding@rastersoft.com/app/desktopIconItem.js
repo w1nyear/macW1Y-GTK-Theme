@@ -182,27 +182,12 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
 
             if (rawLines.length === 0) return false;
 
+            let n = rawLines.length;
             let px = 6.0;
             let py = 2.5;
             let rCorner = 7.5;
             let rFillet = 6.0;
-
-            let pillLines = [];
-            for (let i = 0; i < rawLines.length; i++) {
-                let y = (i === 0) ? rawLines[i].y - py : rawLines[i].y;
-                let h;
-                if (i === rawLines.length - 1) {
-                    h = (rawLines[i].y + rawLines[i].h + py) - y;
-                } else {
-                    h = (rawLines[i + 1].y - y) + 0.5;
-                }
-                pillLines.push({
-                    x: rawLines[i].x - px,
-                    y: y,
-                    w: rawLines[i].w + (2.0 * px),
-                    h: h
-                });
-            }
+            let minStep = 8.5;
 
             if (isSelected) {
                 let col = this._desktopManager ? this._desktopManager.selectColor : null;
@@ -220,104 +205,100 @@ var desktopIconItem = class desktopIconItem extends SignalManager.SignalManager 
                 }
             }
 
-            function drawRoundedRect(c, x, y, w, h, r) {
-                if (r > w / 2.0) r = w / 2.0;
-                if (r > h / 2.0) r = h / 2.0;
-                c.newSubPath();
-                c.arc(x + r, y + r, r, Math.PI, 1.5 * Math.PI);
-                c.arc(x + w - r, y + r, r, 1.5 * Math.PI, 2.0 * Math.PI);
-                c.arc(x + w - r, y + h - r, r, 0, 0.5 * Math.PI);
-                c.arc(x + r, y + h - r, r, 0.5 * Math.PI, Math.PI);
-                c.closePath();
-            }
-
-            let minStep = 8.5;
-
-            if (pillLines.length === 1) {
-                cr.newPath();
-                drawRoundedRect(cr, pillLines[0].x, pillLines[0].y, pillLines[0].w, pillLines[0].h, rCorner);
-                cr.fill();
-            } else if (pillLines.length === 2) {
-                let x0L = pillLines[0].x, x0R = pillLines[0].x + pillLines[0].w;
-                let y0T = pillLines[0].y, y0B = pillLines[0].y + pillLines[0].h;
-                let x1L = pillLines[1].x, x1R = pillLines[1].x + pillLines[1].w;
-                let y1T = y0B, y1B = pillLines[1].y + pillLines[1].h;
-
-                let dwL = x1L - x0L;
-                let dwR = x0R - x1R;
-
-                if (dwL >= minStep && dwR >= minStep) {
-                    let rfR = Math.max(1.0, Math.min(rFillet, dwR / 2.0, pillLines[0].h / 2.0, pillLines[1].h / 2.0));
-                    let rfL = Math.max(1.0, Math.min(rFillet, dwL / 2.0, pillLines[0].h / 2.0, pillLines[1].h / 2.0));
-                    let rtl = Math.min(rCorner, pillLines[0].w / 2.0, pillLines[0].h / 2.0);
-                    let rtr = Math.min(rCorner, pillLines[0].w / 2.0, pillLines[0].h / 2.0);
-                    let rbl = Math.min(rCorner, pillLines[1].w / 2.0, pillLines[1].h / 2.0);
-                    let rbr = Math.min(rCorner, pillLines[1].w / 2.0, pillLines[1].h / 2.0);
-
-                    cr.newPath();
-                    cr.arc(x0R - rtr, y0T + rtr, rtr, 1.5 * Math.PI, 2.0 * Math.PI);
-                    cr.arc(x0R - rfR, y0B - rfR, rfR, 0, 0.5 * Math.PI);
-                    cr.arcNegative(x1R + rfR, y0B + rfR, rfR, 1.5 * Math.PI, Math.PI);
-                    cr.arc(x1R - rbr, y1B - rbr, rbr, 0, 0.5 * Math.PI);
-                    cr.arc(x1L + rbl, y1B - rbl, rbl, 0.5 * Math.PI, Math.PI);
-                    cr.arcNegative(x1L - rfL, y0B + rfL, rfL, 0, 1.5 * Math.PI);
-                    cr.arc(x0L + rfL, y0B - rfL, rfL, 0.5 * Math.PI, Math.PI);
-                    cr.arc(x0L + rtl, y0T + rtl, rtl, Math.PI, 1.5 * Math.PI);
-                    cr.closePath();
-                    cr.fill();
-                } else if (dwL <= -minStep && dwR <= -minStep) {
-                    let rfR = Math.max(1.0, Math.min(rFillet, -dwR / 2.0, pillLines[0].h / 2.0, pillLines[1].h / 2.0));
-                    let rfL = Math.max(1.0, Math.min(rFillet, -dwL / 2.0, pillLines[0].h / 2.0, pillLines[1].h / 2.0));
-                    let rtl = Math.min(rCorner, pillLines[0].w / 2.0, pillLines[0].h / 2.0);
-                    let rtr = Math.min(rCorner, pillLines[0].w / 2.0, pillLines[0].h / 2.0);
-                    let rbl = Math.min(rCorner, pillLines[1].w / 2.0, pillLines[1].h / 2.0);
-                    let rbr = Math.min(rCorner, pillLines[1].w / 2.0, pillLines[1].h / 2.0);
-
-                    cr.newPath();
-                    cr.arc(x0R - rtr, y0T + rtr, rtr, 1.5 * Math.PI, 2.0 * Math.PI);
-                    cr.arcNegative(x0R + rfR, y0B - rfR, rfR, Math.PI, 0.5 * Math.PI);
-                    cr.arc(x1R - rfR, y0B + rfR, rfR, 1.5 * Math.PI, 2.0 * Math.PI);
-                    cr.arc(x1R - rbr, y1B - rbr, rbr, 0, 0.5 * Math.PI);
-                    cr.arc(x1L + rbl, y1B - rbl, rbl, 0.5 * Math.PI, Math.PI);
-                    cr.arc(x1L + rfL, y0B + rfL, rfL, Math.PI, 1.5 * Math.PI);
-                    cr.arcNegative(x0L - rfL, y0B - rfL, rfL, 0.5 * Math.PI, 0);
-                    cr.arc(x0L + rtl, y0T + rtl, rtl, Math.PI, 1.5 * Math.PI);
-                    cr.closePath();
-                    cr.fill();
-                } else {
-
-                    let uxMin = Math.min(x0L, x1L);
-                    let uxMax = Math.max(x0R, x1R);
-                    let uyMin = y0T;
-                    let uyMax = y1B;
-                    cr.newPath();
-                    drawRoundedRect(cr, uxMin, uyMin, uxMax - uxMin, uyMax - uyMin, rCorner);
-                    cr.fill();
-                }
-            } else {
-                let uxMin = pillLines[0].x;
-                let uxMax = pillLines[0].x + pillLines[0].w;
-                let uyMin = pillLines[0].y;
-                let uyMax = pillLines[pillLines.length - 1].y + pillLines[pillLines.length - 1].h;
-                let minW = pillLines[0].w, maxW = pillLines[0].w;
-                for (let p of pillLines) {
-                    if (p.x < uxMin) uxMin = p.x;
-                    if (p.x + p.w > uxMax) uxMax = p.x + p.w;
-                    if (p.w < minW) minW = p.w;
-                    if (p.w > maxW) maxW = p.w;
-                }
-                if ((maxW - minW) < 17.0) {
-                    cr.newPath();
-                    drawRoundedRect(cr, uxMin, uyMin, uxMax - uxMin, uyMax - uyMin, rCorner);
-                    cr.fill();
-                } else {
-                    cr.newPath();
-                    for (let p of pillLines) {
-                        drawRoundedRect(cr, p.x, p.y, p.w, p.h, rCorner);
+            /** Snaps contiguous nearly-aligned left/right line edges so 1px-8px diffs form clean flat walls. */
+            function snapEdgeRuns(vals, takeMin) {
+                let out = vals.slice();
+                let start = 0;
+                while (start < out.length) {
+                    let runMin = out[start];
+                    let runMax = out[start];
+                    let end = start + 1;
+                    while (end < out.length) {
+                        let nextMin = Math.min(runMin, out[end]);
+                        let nextMax = Math.max(runMax, out[end]);
+                        if ((nextMax - nextMin) < minStep) {
+                            runMin = nextMin;
+                            runMax = nextMax;
+                            end++;
+                        } else {
+                            break;
+                        }
                     }
-                    cr.fill();
+                    let snapped = takeMin ? runMin : runMax;
+                    for (let k = start; k < end; k++)
+                        out[k] = snapped;
+                    start = end;
+                }
+                return out;
+            }
+
+            function clampFillet(absDx, hA, hB, wA, wB) {
+                return Math.max(0.5, Math.min(rFillet, absDx / 2.0, hA / 2.0, hB / 2.0, wA / 2.0, wB / 2.0));
+            }
+
+            let ySeam = [rawLines[0].y - py];
+            for (let i = 1; i < n; i++)
+                ySeam.push(Math.max(ySeam[i - 1] + 2.0, rawLines[i].y));
+            ySeam.push(Math.max(ySeam[n - 1] + 2.0, rawLines[n - 1].y + rawLines[n - 1].h + py));
+
+            let xL = snapEdgeRuns(rawLines.map(l => l.x - px), true);
+            let xR = snapEdgeRuns(rawLines.map(l => l.x + l.w + px), false);
+            let rowH = [];
+            let rowW = [];
+            for (let i = 0; i < n; i++) {
+                rowH.push(ySeam[i + 1] - ySeam[i]);
+                rowW.push(xR[i] - xL[i]);
+            }
+
+            let rtl = Math.min(rCorner, rowW[0] / 2.0, rowH[0] / 2.0);
+            let rtr = Math.min(rCorner, rowW[0] / 2.0, rowH[0] / 2.0);
+            let rbl = Math.min(rCorner, rowW[n - 1] / 2.0, rowH[n - 1] / 2.0);
+            let rbr = Math.min(rCorner, rowW[n - 1] / 2.0, rowH[n - 1] / 2.0);
+
+            cr.newPath();
+            // Top-right outer corner
+            cr.arc(xR[0] - rtr, ySeam[0] + rtr, rtr, 1.5 * Math.PI, 2.0 * Math.PI);
+
+            // Right side transitions descending from row 0 to row n-1
+            for (let i = 0; i < n - 1; i++) {
+                let sy = ySeam[i + 1];
+                let dx = xR[i] - xR[i + 1];
+                if (Math.abs(dx) < 2.0)
+                    continue;
+                let rf = clampFillet(Math.abs(dx), rowH[i], rowH[i + 1], rowW[i], rowW[i + 1]);
+                if (dx > 0) {
+                    cr.arc(xR[i] - rf, sy - rf, rf, 0, 0.5 * Math.PI);
+                    cr.arcNegative(xR[i + 1] + rf, sy + rf, rf, 1.5 * Math.PI, Math.PI);
+                } else {
+                    cr.arcNegative(xR[i] + rf, sy - rf, rf, Math.PI, 0.5 * Math.PI);
+                    cr.arc(xR[i + 1] - rf, sy + rf, rf, 1.5 * Math.PI, 2.0 * Math.PI);
                 }
             }
+
+            // Bottom-right and bottom-left outer corners
+            cr.arc(xR[n - 1] - rbr, ySeam[n] - rbr, rbr, 0, 0.5 * Math.PI);
+            cr.arc(xL[n - 1] + rbl, ySeam[n] - rbl, rbl, 0.5 * Math.PI, Math.PI);
+
+            // Left side transitions ascending from row n-1 to row 0
+            for (let i = n - 2; i >= 0; i--) {
+                let sy = ySeam[i + 1];
+                let dwL = xL[i + 1] - xL[i];
+                if (Math.abs(dwL) < 2.0)
+                    continue;
+                let rf = clampFillet(Math.abs(dwL), rowH[i], rowH[i + 1], rowW[i], rowW[i + 1]);
+                if (dwL > 0) {
+                    cr.arcNegative(xL[i + 1] - rf, sy + rf, rf, 0, 1.5 * Math.PI);
+                    cr.arc(xL[i] + rf, sy - rf, rf, 0.5 * Math.PI, Math.PI);
+                } else {
+                    cr.arc(xL[i + 1] + rf, sy + rf, rf, Math.PI, 1.5 * Math.PI);
+                    cr.arcNegative(xL[i] - rf, sy - rf, rf, 0.5 * Math.PI, 0);
+                }
+            }
+
+            // Top-left outer corner
+            cr.arc(xL[0] + rtl, ySeam[0] + rtl, rtl, Math.PI, 1.5 * Math.PI);
+            cr.closePath();
+            cr.fill();
 
             return false;
         });

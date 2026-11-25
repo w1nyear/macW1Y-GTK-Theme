@@ -6177,3 +6177,20 @@ Task #938:
   - Перевірка та синхронізація:
     * Оновлено `config/extensions.lock.json`, синхронізовано `~/.local/share/gnome-shell/extensions/{liquid-glass@thinkingcoding1231.gmail.com,kiwi@kemma}`, системні `/usr/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com`, `/usr/share/mactheme/config/extensions.lock.json`, `~/.config/macw1y/extensions.lock.json` та `~/.config/mac-styling/extensions.lock.json`.
     * `gjs -m` синтаксична перевірка: OK; `unittest`: 58/58 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `bash -n install.sh`: OK.
+
+992. 2026-11-25 — Зроблено суцільну згладжену пілюлю виділення/наведення з галтелями для 3+ рядкових імен файлів у Nautilus та на робочому столі (DING):
+  - Змінені файли:
+    * [src/mac_nautilus.c](file:///home/vitaliy/macW1Y/src/mac_nautilus.c)
+    * [lib/libmac_nautilus.so](file:///home/vitaliy/macW1Y/lib/libmac_nautilus.so)
+    * [extensions/ding@rastersoft.com/app/desktopIconItem.js](file:///home/vitaliy/macW1Y/extensions/ding@rastersoft.com/app/desktopIconItem.js)
+    * [extensions/ding-patches/desktopIconItem.js](file:///home/vitaliy/macW1Y/extensions/ding-patches/desktopIconItem.js)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Причина та виправлення:
+    * У `src/mac_nautilus.c` (`mac_grid_label_snapshot`) та `desktopIconItem.js` окрема гілка для 2 рядків будувала суцільний контур зі згладженими галтелями `r_fillet = 6.0`, тоді як для `3+` рядків (за різниці ширини >= 17 px) код просто малював `N` окремих заокруглених прямокутників без перехідних дуг.
+    * Узагальнено малювання контуру на довільну кількість рядків `1..N`: додано `mac_snap_edge_runs` / `snapEdgeRuns` (вирівнює сусідні краї, що відрізняються менше ніж на `min_step = 8.5px`, у монолітну вертикальну стінку) та `mac_draw_smooth_multiline_pill` (обхід замкненого контуру по правому та лівому краях із випукло-увігнутими галтелями `clamp_fillet` на кожному стику між рядками, включно з комбінаціями «широкий–вузький–широкий», «широкий–широкий–вузький», «вузький–широкий–вузький» і сходинками).
+  - Перевірка та синхронізація:
+    * Перекомпільовано `lib/libmac_nautilus.so` та синхронізовано `~/.local/lib/libmac_nautilus.so`, `/usr/local/lib/libmac_nautilus.so`, `/usr/lib/x86_64-linux-gnu/libmac_nautilus.so`.
+    * Оновлено `config/extensions.lock.json` (`ding@rastersoft.com`), синхронізовано `~/.local/share/gnome-shell/extensions/ding@rastersoft.com/app/desktopIconItem.js`, `/usr/share/mactheme/config/extensions.lock.json`, `~/.config/macw1y/extensions.lock.json`, `~/.config/mac-styling/extensions.lock.json`.
+    * Візуально перевірено Cairo-рендер (`pill_verify.png`) для всіх 3-рядкових і 2-рядкових конфігурацій.
+    * `unittest`: 59/59 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `bash -n install.sh`: OK.

@@ -212,6 +212,23 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("_NC_PIXEL_PULSE_US", nc_js)
         self.assertIn("'background'", nc_js)
 
+    def test_three_plus_line_smooth_fillet_selection_pill(self):
+        nautilus_c = (ROOT / "src" / "mac_nautilus.c").read_text(encoding="utf-8")
+        self.assertIn("mac_draw_smooth_multiline_pill", nautilus_c)
+        self.assertIn("mac_snap_edge_runs", nautilus_c)
+        self.assertIn("i < n_lines - 1", nautilus_c)
+        self.assertIn("i = n_lines - 2; i >= 0; i--", nautilus_c)
+
+        for rel in (
+            ROOT / "extensions" / "ding@rastersoft.com" / "app" / "desktopIconItem.js",
+            ROOT / "extensions" / "ding-patches" / "desktopIconItem.js",
+        ):
+            ding_js = rel.read_text(encoding="utf-8")
+            self.assertIn("snapEdgeRuns", ding_js)
+            self.assertIn("clampFillet", ding_js)
+            self.assertIn("i < n - 1", ding_js)
+            self.assertIn("i = n - 2; i >= 0; i--", ding_js)
+
 
 if __name__ == "__main__":
     unittest.main()
