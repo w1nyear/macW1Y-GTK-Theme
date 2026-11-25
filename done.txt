@@ -6113,3 +6113,15 @@ Task #938:
     * Синхронізовано `~/.local/bin/{mac-about,mac-hwinfo,gnome-control-center}`, `~/.local/share/macW1Y/icons/about-*.png`, `~/.local/share/applications/org.macw1y.About.desktop`, `~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/actions/fileActions.js`, системні `/usr/local/bin/`, `/usr/share/mactheme/`, `/usr/share/applications/`, `/etc/systemd/system/mac-hwinfo.service` (`enabled` і запущено), `/usr/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/actions/fileActions.js`, а також локальну та системну копії `extensions.lock.json`.
     * `mac-about --json`: коректно визначає ноутбук, `Acer Nitro ANV15-51`, `Intel Core i5, 2026`, `Intel Core i5-13420H`, `16 GB`, `OV NVME SSD 512GB P300`, `NHQNCEU00843708D357600`, `macW1Y 0.8`.
     * `unittest`: 56/56 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в `install.sh`.
+
+987. 2026-11-25 — Доведено геометрію, рамку в кутах, відступи та стилізацію кнопки у діалозі «Про цей комп’ютер»:
+  - Змінені файли:
+    * [bin/mac-about](file:///home/vitaliy/macW1Y/bin/mac-about)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+  - Причина та виправлення:
+    * Замінено `Gtk.Button` для світлофорів на `Gtk.Box` `12×12 px` (`box.traffic-dot`), щоб системна тема `~/.config/gtk-4.0/gtk.css` не розтягувала кружечки у прямокутники; переведено гіперпосилання на `Gtk.Label` з `<u>` і `Gtk.GestureClick` у сірому кольорі (`#78787d`/`#9a9aa0`).
+    * Підвищено пріоритет CSS-провайдера (`STYLE_PROVIDER_PRIORITY_USER + 10`) та перенесено `1px` `border` і `background-color` на внутрішню картку `box.mac-about-card` з `border-radius: 14px` (прозоре `window.mac-about-window` без конфлікту з `window.csd`), завдяки чому рамка суцільно й рівномірно обводить усі чотири заокруглені кути.
+    * Зафіксовано висоту вікна (`540 px`, `root.set_size_request(298, 540)`), збільшено верхній (`margin_top=48`) та нижній (`margin_bottom=30`) відступи за референсом macOS, відновлено `22px` bold заголовок та зменшено висоту кнопки `Докладніше…` (`min-height: 22px`, жирний шрифт `13px`).
+  - Перевірка та синхронізація:
+    * Синхронізовано `~/.local/bin/mac-about` і `/usr/local/bin/mac-about`; візуальний рендер через `Gtk.WidgetPaintable` + `Gsk.CairoRenderer` підтвердив суцільний контур по всіх 4 кутах, `More btn alloc: 96 x 22`, `Title preferred: 229 x 27`, `Window: 355 x 540`.
+    * `unittest`: 56/56 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS.

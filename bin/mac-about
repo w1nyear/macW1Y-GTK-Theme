@@ -570,73 +570,130 @@ def run_gui(info: dict) -> int:
     from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
     CSS = """
-    window.mac-about-window {
-        border-radius: 12px;
+    window.mac-about-window,
+    window.mac-about-window.csd,
+    window.mac-about-window.background {
+        background-color: transparent;
+        background-image: none;
+        border: none;
+        box-shadow: none;
+        outline: none;
+        border-radius: 14px;
         font-family: "SF Pro Text", "SF Pro Display", "Inter", sans-serif;
     }
-    window.mac-about-window.mac-about-light {
+    window.mac-about-window box.mac-about-card {
+        border-radius: 14px;
+        background-image: none;
+        background-clip: padding-box;
+    }
+    window.mac-about-window.mac-about-light box.mac-about-card {
         background-color: #f4f4f5;
         color: #1d1d1f;
-        border: 1px solid rgba(0, 0, 0, 0.12);
+        border: 1px solid rgba(0, 0, 0, 0.14);
     }
-    window.mac-about-window.mac-about-dark {
-        background-color: #242426;
+    window.mac-about-window.mac-about-dark box.mac-about-card {
+        background-color: #262628;
         color: #f5f5f7;
-        border: 1px solid rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.18);
     }
     .mac-about-header {
         background: transparent;
         border: none;
         box-shadow: none;
     }
-    button.about-more-btn {
-        border-radius: 6px;
-        padding: 4px 16px;
-        min-height: 26px;
-        min-width: 96px;
-        font-size: 12px;
+    window.mac-about-window label.about-title {
+        font-size: 22px;
+        font-weight: 700;
+    }
+    window.mac-about-window.mac-about-light label.about-title {
+        color: #3a3a3c;
+    }
+    window.mac-about-window.mac-about-dark label.about-title {
+        color: #f5f5f7;
+    }
+    window.mac-about-window label.about-subtitle {
+        font-size: 11.5px;
+        font-weight: 400;
+    }
+    window.mac-about-window.mac-about-light label.about-subtitle {
+        color: #939398;
+    }
+    window.mac-about-window.mac-about-dark label.about-subtitle {
+        color: #8e8e93;
+    }
+    window.mac-about-window label.about-spec-key {
+        font-size: 11.5px;
         font-weight: 500;
+    }
+    window.mac-about-window.mac-about-light label.about-spec-key {
+        color: #2c2c2e;
+    }
+    window.mac-about-window.mac-about-dark label.about-spec-key {
+        color: #e5e5e7;
+    }
+    window.mac-about-window label.about-spec-val {
+        font-size: 11.5px;
+        font-weight: 400;
+    }
+    window.mac-about-window.mac-about-light label.about-spec-val {
+        color: #7c7c80;
+    }
+    window.mac-about-window.mac-about-dark label.about-spec-val {
+        color: #98989d;
+    }
+    window.mac-about-window button.about-more-btn {
+        border-radius: 6px;
+        padding: 2px 14px;
+        min-height: 22px;
+        min-width: 96px;
+        margin: 0;
         box-shadow: none;
         background-image: none;
         border: none;
     }
-    .mac-about-light button.about-more-btn {
+    window.mac-about-window button.about-more-btn label {
+        font-size: 13px;
+        font-weight: 700;
+        padding: 0;
+        margin: 0;
+    }
+    window.mac-about-window.mac-about-light button.about-more-btn {
         background-color: #e3e3e6;
         color: #1c1c1e;
     }
-    .mac-about-light button.about-more-btn:hover {
+    window.mac-about-window.mac-about-light button.about-more-btn:hover {
         background-color: #d8d8dc;
     }
-    .mac-about-light button.about-more-btn:active {
+    window.mac-about-window.mac-about-light button.about-more-btn:active {
         background-color: #ccccd1;
     }
-    .mac-about-dark button.about-more-btn {
+    window.mac-about-window.mac-about-dark button.about-more-btn {
         background-color: #5b5b5e;
         color: #f5f5f7;
     }
-    .mac-about-dark button.about-more-btn:hover {
+    window.mac-about-window.mac-about-dark button.about-more-btn:hover {
         background-color: #6a6a6e;
     }
-    .mac-about-dark button.about-more-btn:active {
+    window.mac-about-window.mac-about-dark button.about-more-btn:active {
         background-color: #4f4f52;
     }
-    .about-footer-link,
-    .about-footer-text {
+    window.mac-about-window label.about-footer-link,
+    window.mac-about-window label.about-footer-text {
         font-size: 10px;
         font-weight: 400;
     }
-    .mac-about-light .about-footer-link,
-    .mac-about-light .about-footer-text {
+    window.mac-about-window.mac-about-light label.about-footer-link,
+    window.mac-about-window.mac-about-light label.about-footer-text {
         color: #9a9aa0;
     }
-    .mac-about-light .about-footer-link.hovered {
+    window.mac-about-window.mac-about-light label.about-footer-link.hovered {
         color: #5c5c62;
     }
-    .mac-about-dark .about-footer-link,
-    .mac-about-dark .about-footer-text {
+    window.mac-about-window.mac-about-dark label.about-footer-link,
+    window.mac-about-window.mac-about-dark label.about-footer-text {
         color: #78787d;
     }
-    .mac-about-dark .about-footer-link.hovered {
+    window.mac-about-window.mac-about-dark label.about-footer-link.hovered {
         color: #b5b5ba;
     }
     box.traffic-dot {
@@ -726,7 +783,8 @@ def run_gui(info: dict) -> int:
 
             win = Gtk.ApplicationWindow(application=self)
             win.set_title("About This Mac")
-            win.set_default_size(282, 486)
+            win.set_default_size(298, 540)
+            win.set_size_request(298, 540)
             win.set_resizable(False)
             win.set_decorated(False)
             win.add_css_class("mac-about-window")
@@ -761,6 +819,8 @@ def run_gui(info: dict) -> int:
 
             handle = Gtk.WindowHandle()
             root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+            root.add_css_class("mac-about-card")
+            root.set_size_request(298, 540)
             root.set_hexpand(True)
             root.set_vexpand(True)
 
@@ -768,8 +828,8 @@ def run_gui(info: dict) -> int:
             top_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
             top_bar.add_css_class("mac-about-header")
             top_bar.set_margin_start(14)
-            top_bar.set_margin_top(13)
-            top_bar.set_margin_bottom(8)
+            top_bar.set_margin_top(14)
+            top_bar.set_margin_bottom(0)
             top_bar.set_halign(Gtk.Align.START)
 
             close_dot = make_traffic_dot("close", on_click=win.close)
@@ -783,15 +843,15 @@ def run_gui(info: dict) -> int:
 
             # Body container
             body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-            body.set_margin_start(22)
-            body.set_margin_end(22)
-            body.set_margin_bottom(18)
+            body.set_margin_start(18)
+            body.set_margin_end(18)
+            body.set_margin_bottom(30)
             body.set_vexpand(True)
 
             # Device illustration
             img_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
             img_box.set_halign(Gtk.Align.CENTER)
-            img_box.set_margin_top(26)
+            img_box.set_margin_top(48)
             img_box.set_margin_bottom(24)
             asset_path = info.get("asset")
             if asset_path and os.path.isfile(asset_path):
@@ -799,9 +859,9 @@ def run_gui(info: dict) -> int:
                 pic.set_can_shrink(True)
                 pic.set_content_fit(Gtk.ContentFit.CONTAIN)
                 if info["is_laptop"]:
-                    pic.set_size_request(164, 100)
+                    pic.set_size_request(176, 108)
                 else:
-                    pic.set_size_request(168, 86)
+                    pic.set_size_request(176, 90)
                 img_box.append(pic)
             else:
                 icon_name = "computer-laptop" if info["is_laptop"] else "computer"
@@ -823,8 +883,8 @@ def run_gui(info: dict) -> int:
             sub_lbl = Gtk.Label(label=info["subtitle"])
             sub_lbl.add_css_class("about-subtitle")
             sub_lbl.set_justify(Gtk.Justification.CENTER)
-            sub_lbl.set_margin_top(2)
-            sub_lbl.set_margin_bottom(18)
+            sub_lbl.set_margin_top(3)
+            sub_lbl.set_margin_bottom(20)
             sub_lbl.set_halign(Gtk.Align.CENTER)
             body.append(sub_lbl)
 
@@ -853,8 +913,9 @@ def run_gui(info: dict) -> int:
                 v_lbl.set_halign(Gtk.Align.START)
                 v_lbl.set_valign(Gtk.Align.START)
                 v_lbl.set_selectable(True)
+                v_lbl.set_can_focus(False)
                 v_lbl.set_wrap(True)
-                v_lbl.set_max_width_chars(21)
+                v_lbl.set_max_width_chars(20)
 
                 grid.attach(k_lbl, 0, idx, 1, 1)
                 grid.attach(v_lbl, 1, idx, 1, 1)
@@ -865,8 +926,10 @@ def run_gui(info: dict) -> int:
             more_btn = Gtk.Button(label=st["more_info"])
             more_btn.add_css_class("about-more-btn")
             more_btn.set_halign(Gtk.Align.CENTER)
-            more_btn.set_margin_top(20)
-            more_btn.set_margin_bottom(16)
+            more_btn.set_valign(Gtk.Align.CENTER)
+            more_btn.set_size_request(-1, 22)
+            more_btn.set_margin_top(22)
+            more_btn.set_margin_bottom(14)
             more_btn.set_cursor_from_name("pointer")
 
             def on_more_clicked(*_args):
@@ -876,7 +939,7 @@ def run_gui(info: dict) -> int:
             more_btn.connect("clicked", on_more_clicked)
             body.append(more_btn)
 
-            # Spacer pushes footer cleanly to bottom edge like macOS dialog
+            # Spacer pushes footer cleanly above generous bottom margin
             spacer = Gtk.Box()
             spacer.set_vexpand(True)
             body.append(spacer)
@@ -886,6 +949,7 @@ def run_gui(info: dict) -> int:
             link_lbl.add_css_class("about-footer-link")
             link_lbl.set_halign(Gtk.Align.CENTER)
             link_lbl.set_justify(Gtk.Justification.CENTER)
+            link_lbl.set_margin_bottom(4)
             link_lbl.set_cursor_from_name("pointer")
             link_lbl.set_tooltip_text(REPO_URL)
             escaped_text = GLib.markup_escape_text(st["github_link"])
@@ -914,6 +978,7 @@ def run_gui(info: dict) -> int:
 
             self._win = win
             win.present()
+            win.set_focus(None)
 
     app = MacAboutApp()
     return app.run(sys.argv[:1])
