@@ -142,6 +142,11 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         search_dialog = (ROOT / "extensions" / "appmenu@ChathurangaBW.github.io" / "searchDialog.js").read_text(encoding="utf-8")
         self.assertNotIn("get_pointer_visible() === false", search_dialog)
         self.assertNotIn("ext.stateObj._settings.set_strv('search-shortcut', ['<Control>space', '<Primary>space']);\n                } catch (_) {}\n\n                const isSpotlightBlocked", eval_js)
+        menubar_js = (ROOT / "extensions" / "blur-my-shell@aunetx" / "components" / "menubar_v29.js").read_text(encoding="utf-8")
+        self.assertIn("mac-privacy-cam.svg", menubar_js)
+        self.assertIn("_pollCameraDevices", menubar_js)
+        tbo_js = (ROOT / "extensions" / "top-bar-organizer@julian.gse.jsts.xyz" / "extension.js").read_text(encoding="utf-8")
+        self.assertIn('Main.panel.statusArea["macPrivacy"]', tbo_js)
 
 
 if __name__ == "__main__":

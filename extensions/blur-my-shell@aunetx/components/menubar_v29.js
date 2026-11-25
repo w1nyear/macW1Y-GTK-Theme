@@ -1302,43 +1302,112 @@ const BatteryWidget = GObject.registerClass({
 
 
 
+const _MAC_PRIVACY_PILL_BASE_STYLE =
+    'border-radius: 9999px !important; width: 34px !important; height: 21px !important; ' +
+    'min-width: 34px !important; min-height: 21px !important; padding: 0 !important; margin: 0 !important;';
+
+function _resolveMacPrivacyCamGicon() {
+    const home = GLib.get_home_dir();
+    const candidates = [
+        `${home}/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/icons/hicolor/scalable/status/mac-privacy-cam.svg`,
+        '/usr/share/gnome-shell/extensions/blur-my-shell@aunetx/icons/hicolor/scalable/status/mac-privacy-cam.svg',
+    ];
+    for (const p of candidates) {
+        try {
+            if (GLib.file_test(p, GLib.FileTest.EXISTS)) {
+                return new Gio.FileIcon({ file: Gio.File.new_for_path(p) });
+            }
+        } catch (_) {}
+    }
+    return null;
+}
+
+function _parsePrivacyCamApp(out) {
+    try {
+        const SKIP = new Set(['pipewire', 'wireplumber', 'pipewire-pulse',
+            'xdg-desktop-portal', 'xdg-desktop-por', 'gnome-shell']);
+        const seen = new Set();
+        const ids = (out ?? '').match(/\d+/g) ?? [];
+        for (const id of ids) {
+            if (seen.has(id))
+                continue;
+            seen.add(id);
+            let comm = '';
+            try {
+                const f = Gio.File.new_for_path(`/proc/${id}/comm`);
+                const [, bytes] = f.load_contents(null);
+                comm = new TextDecoder().decode(bytes).trim();
+            } catch (_) {
+                continue;
+            }
+            if (!comm || SKIP.has(comm))
+                continue;
+            return comm.charAt(0).toUpperCase() + comm.slice(1);
+        }
+    } catch (_) {}
+    return '';
+}
+
 const PrivacyIndicator = GObject.registerClass({
     GTypeName: `MacPrivacyIndicator_${_UID}`,
 }, class PrivacyIndicator extends PanelMenu.Button {
     _init() {
         super._init(0.5, 'Privacy');
 
+        this._camApp = '';
+        this._camPollId = 0;
+        this._camPollInFlight = false;
+        this._destroyed = false;
+
+        this.set_y_align(Clutter.ActorAlign.CENTER);
+
         this._box = new St.BoxLayout({
             style_class: 'panel-status-indicators-box',
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.CENTER,
+            style: 'spacing: 0 !important; padding: 0 !important; margin: 0 !important;',
         });
         this.add_child(this._box);
 
-
-        this._micPill = new St.BoxLayout({
+        this._micPill = new St.Bin({
             style_class: 'mac-privacy-pill mac-privacy-pill-mic',
+            x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
             visible: false,
+            style: `${_MAC_PRIVACY_PILL_BASE_STYLE} background-color: #ff9500 !important;`,
         });
         this._micIcon = new St.Icon({
             icon_name: 'audio-input-microphone-symbolic',
-            icon_size: 12,
+            icon_size: 14,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+            style: 'color: #ffffff !important; margin: 0 !important; padding: 0 !important;',
         });
-        this._micPill.add_child(this._micIcon);
+        this._micPill.set_child(this._micIcon);
         this._box.add_child(this._micPill);
 
-
-        this._camPill = new St.BoxLayout({
+        this._camPill = new St.Bin({
             style_class: 'mac-privacy-pill mac-privacy-pill-cam',
+            x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
             visible: false,
+            style: `${_MAC_PRIVACY_PILL_BASE_STYLE} background-color: #28cd41 !important;`,
         });
-        this._camIcon = new St.Icon({
+        const camGicon = _resolveMacPrivacyCamGicon();
+        this._camIcon = new St.Icon(camGicon ? {
+            gicon: camGicon,
+            icon_size: 15,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+            style: 'color: #ffffff !important; margin: 0 !important; padding: 0 !important;',
+        } : {
             icon_name: 'camera-web-symbolic',
-            icon_size: 12,
+            icon_size: 15,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+            style: 'color: #ffffff !important; margin: 0 !important; padding: 0 !important;',
         });
-        this._camPill.add_child(this._camIcon);
+        this._camPill.set_child(this._camIcon);
         this._box.add_child(this._camPill);
 
         this._control = getMixerControl();
@@ -1350,6 +1419,15 @@ const PrivacyIndicator = GObject.registerClass({
             this
         );
 
+        try {
+            if (Shell.CameraMonitor) {
+                this._camMon = new Shell.CameraMonitor();
+                this._camMon.connectObject('notify::cameras-in-use', () => this._sync(), this);
+            }
+        } catch (_) {
+            this._camMon = null;
+        }
+
         const cam = Main.panel.statusArea.quickSettings?._camera?._cameraMonitor;
         if (cam) {
             cam.connectObject('notify::cameras-in-use', () => this._sync(), this);
@@ -1360,26 +1438,92 @@ const PrivacyIndicator = GObject.registerClass({
                 this._populateMenu();
         }, this);
 
+        this._pollCameraDevices();
+        this._camPollId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2500, () => {
+            if (this._destroyed) {
+                this._camPollId = 0;
+                return GLib.SOURCE_REMOVE;
+            }
+            this._pollCameraDevices();
+            return GLib.SOURCE_CONTINUE;
+        });
+
         this._sync();
     }
 
+    _pollCameraDevices() {
+        if (this._camPollInFlight || this._destroyed)
+            return;
+        try {
+            const devs = [];
+            for (let i = 0; i < 10; i++) {
+                const dev = `/dev/video${i}`;
+                try {
+                    if (GLib.file_test(dev, GLib.FileTest.EXISTS))
+                        devs.push(dev);
+                } catch (_) {}
+            }
+            if (!devs.length) {
+                if (this._camApp) {
+                    this._camApp = '';
+                    this._sync();
+                }
+                return;
+            }
+            this._camPollInFlight = true;
+            const proc = Gio.Subprocess.new(
+                ['fuser', ...devs],
+                Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE
+            );
+            proc.communicate_utf8_async(null, null, (proc_, res) => {
+                this._camPollInFlight = false;
+                if (this._destroyed)
+                    return;
+                let detected = '';
+                try {
+                    const [, out] = proc_.communicate_utf8_finish(res);
+                    detected = _parsePrivacyCamApp(out ?? '');
+                } catch (_) {
+                    detected = '';
+                }
+                if (detected !== this._camApp) {
+                    this._camApp = detected;
+                    this._sync();
+                }
+            });
+        } catch (_) {
+            this._camPollInFlight = false;
+        }
+    }
+
+    _isCameraInUse() {
+        const qsCam = Main.panel.statusArea.quickSettings?._camera?._cameraMonitor;
+        return Boolean(this._camMon?.cameras_in_use || qsCam?.cameras_in_use || this._camApp);
+    }
+
     _sync() {
+        if (this._destroyed)
+            return;
         const outputs = this._control?.get_source_outputs() || [];
         const isMicRecording = outputs.length > 0;
-        this._micPill.visible = isMicRecording;
+        const isCamActive = this._isCameraInUse();
 
-        const cam = Main.panel.statusArea.quickSettings?._camera?._cameraMonitor;
-        const isCamActive = Boolean(cam?.cameras_in_use);
+        // macOS Tahoe behavior: green camera pill takes priority when camera is active,
+        // orange microphone pill shows when only microphone is active; dropdown still lists both.
         this._camPill.visible = isCamActive;
+        this._micPill.visible = !isCamActive && isMicRecording;
 
         const hasAny = isMicRecording || isCamActive;
         this.visible = hasAny;
         if (this.container) {
             this.container.visible = hasAny;
             if (!hasAny) {
+                this.style = 'margin: 0 !important; padding: 0 !important; width: 0 !important; min-width: 0 !important; -natural-hpadding: 0 !important; -minimum-hpadding: 0 !important;';
                 this.container.style = 'margin: 0 !important; padding: 0 !important; width: 0 !important; min-width: 0 !important; -natural-hpadding: 0 !important; -minimum-hpadding: 0 !important;';
             } else {
-                this.container.style = 'margin: 2px 2px !important; padding: 0 4px !important; height: 26px !important;';
+                this.style = 'margin: 0 2px 0 0 !important; padding: 0 !important; height: 28px !important; min-height: 28px !important; min-width: 0 !important; width: auto !important; -natural-hpadding: 0 !important; -minimum-hpadding: 0 !important; background: transparent !important;';
+                this.container.style = 'margin: 0 !important; padding: 0 !important; height: 28px !important; min-height: 28px !important; width: auto !important;';
+                this.container.set_y_align?.(Clutter.ActorAlign.CENTER);
                 if (Main.panel?._rightBox) {
                     try {
                         Main.panel._rightBox.set_child_at_index(this.container, 0);
@@ -1391,8 +1535,18 @@ const PrivacyIndicator = GObject.registerClass({
 
     isRecordingOrCamActive() {
         const outputs = this._control?.get_source_outputs() || [];
-        const cam = Main.panel.statusArea.quickSettings?._camera?._cameraMonitor;
-        return (outputs.length > 0) || Boolean(cam?.cameras_in_use);
+        return (outputs.length > 0) || this._isCameraInUse();
+    }
+
+    destroy() {
+        this._destroyed = true;
+        if (this._camPollId) {
+            try { GLib.source_remove(this._camPollId); } catch (_) {}
+            this._camPollId = 0;
+        }
+        try { this._camMon?.disconnectObject?.(this); } catch (_) {}
+        this._camMon = null;
+        super.destroy();
     }
 
     _populateMenu() {
@@ -1419,8 +1573,7 @@ const PrivacyIndicator = GObject.registerClass({
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
         const outputs = this._control.get_source_outputs() || [];
-        const cam = Main.panel.statusArea.quickSettings?._camera?._cameraMonitor;
-        const isCamActive = Boolean(cam?.cameras_in_use);
+        const isCamActive = this._isCameraInUse();
 
         if (outputs.length > 0) {
             const micSec = createMacSectionHeader(t('mic_in_use', 'Microphone In Use'));
@@ -1459,7 +1612,7 @@ const PrivacyIndicator = GObject.registerClass({
             });
             camItem.add_child(cIcon);
             const cLbl = new St.Label({
-                text: t('app_using_webcam', 'Application Using Webcam'),
+                text: this._camApp || t('app_using_webcam', 'Application Using Webcam'),
                 x_expand: true,
                 y_align: Clutter.ActorAlign.CENTER,
             });
@@ -5645,6 +5798,10 @@ export const MenuBarController = class MenuBarController {
 
                     const ccBtn = Main.panel.statusArea?.['ydotool-trigger-button']?.container
                         || Main.panel.statusArea?.['ydotool-trigger-button'];
+                    if (child === this._privacyIndicator?.container || child === this._privacyIndicator) {
+                        this._privacyIndicator._sync?.();
+                        continue;
+                    }
                     if (child === ccBtn || (ccBtn && child.contains && child.contains(ccBtn))) {
                         child.visible = true;
                         child.show();

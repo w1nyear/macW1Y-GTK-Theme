@@ -142,6 +142,13 @@ export default class TopBarOrganizerExtension extends Extension {
             }
         }
 
+        if (box === "right") {
+            const macPrivacyContainer = Main.panel.statusArea["macPrivacy"]?.container;
+            if (macPrivacyContainer && panelBox.contains(macPrivacyContainer)) {
+                panelBox.set_child_at_index(macPrivacyContainer, 0);
+            }
+        }
+
 
 
     }
