@@ -274,7 +274,7 @@ export const UserSwitcherButton = GObject.registerClass(
                 } else {
                     const gridSection = new PopupMenu.PopupMenuSection();
                     const gridContainer = new St.BoxLayout({
-                        vertical: true,
+                        orientation: Clutter.Orientation.VERTICAL,
                         style_class: 'appmenu-user-grid',
                         x_expand: true,
                     });
@@ -282,7 +282,7 @@ export const UserSwitcherButton = GObject.registerClass(
                     let currentRow = null;
                     users.forEach((user, index) => {
                         if (index % 3 === 0) {
-                            currentRow = new St.BoxLayout({vertical: false, x_expand: true});
+                            currentRow = new St.BoxLayout({orientation: Clutter.Orientation.HORIZONTAL, x_expand: true});
                             gridContainer.add_child(currentRow);
                         }
                         const userWidget = this._createUserWidget(user, currentUserName, sessionInfo);
@@ -453,7 +453,7 @@ export const UserSwitcherButton = GObject.registerClass(
             if (isCurrent) button.add_style_class_name('current-user');
 
             const content = new St.BoxLayout({
-                vertical: true,
+                orientation: Clutter.Orientation.VERTICAL,
                 style_class: 'appmenu-user-item-content',
                 x_align: Clutter.ActorAlign.CENTER,
             });

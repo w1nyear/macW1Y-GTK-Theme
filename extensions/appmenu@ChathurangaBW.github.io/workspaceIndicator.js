@@ -96,7 +96,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.START,
         });
-        this.vertical = true;
+        this.orientation = Clutter.Orientation.VERTICAL;
 
         this._isExpanded = false;
         this._isHiding = false;
@@ -144,7 +144,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
 
 
         this._buttonsBox = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.CENTER,
             style: 'height: 34px;',
@@ -158,7 +158,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
 
 
         this._thumbnailsBox = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             y_align: Clutter.ActorAlign.START,
             x_align: Clutter.ActorAlign.CENTER,
             style: 'margin-top: 10px; margin-bottom: 6px;',
@@ -541,7 +541,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
             const isActive = (i === activeIdx);
 
             const itemCol = new St.BoxLayout({
-                vertical: true,
+                orientation: Clutter.Orientation.VERTICAL,
                 x_align: Clutter.ActorAlign.CENTER,
                 y_align: Clutter.ActorAlign.START,
                 style: `margin: 0 6px; width: ${thumbWidth + 10}px;`,
@@ -700,7 +700,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
 
 
         const plusCol = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             y_align: Clutter.ActorAlign.START,
             x_align: Clutter.ActorAlign.CENTER,
             style: `margin-left: 8px; margin-top: ${Math.round((thumbHeight - 32) / 2)}px; height: 32px;`,

@@ -617,7 +617,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         this._box = new St.BoxLayout({
             name: 'mac-spotlight-box',
             style_class: 'mac-spotlight-box',
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             reactive: true,
             can_focus: true,
             track_hover: true,
@@ -687,7 +687,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
 
         this._topRow = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
             style: 'height: 54px; min-height: 54px;',
@@ -697,7 +697,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
 
         this._searchPill = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             y_align: Clutter.ActorAlign.CENTER,
             width: COLLAPSED_PILL_WIDTH,
             style: PILL_COLLAPSED_STYLE,
@@ -872,7 +872,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
 
         this._buttonsBox = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             x_align: Clutter.ActorAlign.END,
             y_align: Clutter.ActorAlign.CENTER,
             style: 'margin-left: 16px; width: 192px; min-width: 192px; height: 54px; padding-right: 8px;',
@@ -908,7 +908,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
 
         this._resultsWrapper = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
             y_expand: true,
             clip_to_allocation: true,
@@ -919,7 +919,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
 
         this._searchView = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
             y_expand: true,
             clip_to_allocation: true,
@@ -968,7 +968,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         applyGradientBlurFade(this._scrollWrapper, 44.0, 72.0, this._scrollView);
 
         this._resultsBox = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
             style: 'padding: 0 18px 20px 10px;',
         });
@@ -985,7 +985,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
 
         this._filesView = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
             y_expand: true,
             clip_to_allocation: true,
@@ -995,7 +995,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
 
         this._filterPillsRow = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             x_expand: true,
             style: 'padding: 4px 18px 12px 18px;',
         });
@@ -1024,7 +1024,7 @@ export const MacSpotlightDialog = GObject.registerClass({
         applyGradientBlurFade(this._filesScrollWrapper, 44.0, 72.0, this._filesScrollView);
 
         this._filesContentBox = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
             style: 'padding: 0 18px 20px 18px;',
         });
@@ -1032,7 +1032,7 @@ export const MacSpotlightDialog = GObject.registerClass({
 
 
         this._appsView = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
             y_expand: true,
             clip_to_allocation: true,
@@ -1269,7 +1269,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         makeSmoothInertialScrollView(this._appsCategoryScrollView, true);
 
         this._appsCategoryRow = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             y_align: Clutter.ActorAlign.CENTER,
             style: 'height: 20px; min-height: 20px;',
         });
@@ -1310,7 +1310,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         makeSmoothInertialScrollView(this._appsScrollView, false);
 
         this._appsContentBox = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
             style: 'padding: 3px 21px 6px 21px;',
         });
@@ -1318,7 +1318,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
 
 
         this._clipboardView = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
             y_expand: true,
             clip_to_allocation: true,
@@ -1348,7 +1348,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         applyGradientBlurFade(this._clipboardScrollWrapper, 44.0, 72.0, this._clipboardScrollView);
 
         this._clipboardContentBox = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
             style: 'padding: 10px 18px 20px 18px;',
         });
@@ -3487,7 +3487,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             });
 
             const row = new St.BoxLayout({
-                vertical: false,
+                orientation: Clutter.Orientation.HORIZONTAL,
                 x_expand: true,
                 y_align: Clutter.ActorAlign.CENTER,
             });
@@ -3534,7 +3534,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
 
 
             const textBox = new St.BoxLayout({
-                vertical: true,
+                orientation: Clutter.Orientation.VERTICAL,
                 x_expand: true,
                 y_align: Clutter.ActorAlign.CENTER,
             });
@@ -3861,7 +3861,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         this._filesContentBox.add_child(suggTitle);
 
         const suggRow = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             x_expand: true,
             style: 'margin-bottom: 14px;',
         });
@@ -3886,7 +3886,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             for (let i = 0; i < recents.length; i++) {
                 if (i % 5 === 0) {
                     currentRow = new St.BoxLayout({
-                        vertical: false,
+                        orientation: Clutter.Orientation.HORIZONTAL,
                         x_expand: true,
                         style: 'margin-bottom: 10px;',
                     });
@@ -3907,7 +3907,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         });
 
         const col = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
@@ -4223,7 +4223,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
 
             if (i % APPS_COLUMNS === 0) {
                 currentRow = new St.BoxLayout({
-                    vertical: false,
+                    orientation: Clutter.Orientation.HORIZONTAL,
                     x_expand: true,
                     style: 'margin-bottom: 7px;',
                 });
@@ -4336,7 +4336,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
         item.set_style(baseStyle);
 
         const box = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
@@ -4491,7 +4491,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             });
 
             const row = new St.BoxLayout({
-                vertical: false,
+                orientation: Clutter.Orientation.HORIZONTAL,
                 x_expand: true,
                 y_align: Clutter.ActorAlign.CENTER,
             });
@@ -4535,7 +4535,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
 
 
             const textBox = new St.BoxLayout({
-                vertical: true,
+                orientation: Clutter.Orientation.VERTICAL,
                 x_expand: true,
                 y_align: Clutter.ActorAlign.CENTER,
             });
@@ -4658,7 +4658,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
     _getVirtualDevice() {
         if (!this._virtualDevice) {
             try {
-                const seat = Clutter.get_default_backend().get_default_seat();
+                const seat = (typeof Clutter.get_default_backend === 'function' ? Clutter.get_default_backend() : (global.stage?.get_context?.() || global.stage?.context)?.get_backend?.() || global.backend)?.get_default_seat?.();
                 this._virtualDevice = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
             } catch (e) {
                 console.error(`[MacSpotlight] Failed to create virtual keyboard device: ${e}`);

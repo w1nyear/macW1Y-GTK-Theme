@@ -59,7 +59,21 @@ REQUIRED_EXTENSIONS=(
     "kiwi@kemma"
 )
 
+for ext in "${REQUIRED_EXTENSIONS[@]}"; do
+    staged_update="$HOME/.local/share/gnome-shell/extension-updates/$ext"
+    if [ -e "$staged_update" ]; then
+        rm -rf "$staged_update" 2>/dev/null || true
+    fi
+done
+
 ENABLED=$(LD_PRELOAD= gnome-extensions list --enabled 2>/dev/null)
+for ext_dir in "$HOME/.local/share/gnome-shell/extensions"/*; do
+    if [ -d "$ext_dir/schemas" ]; then
+        if [ ! -f "$ext_dir/schemas/gschemas.compiled" ] || find "$ext_dir/schemas" -name '*.gschema.xml' -newer "$ext_dir/schemas/gschemas.compiled" | grep -q .; then
+            glib-compile-schemas "$ext_dir/schemas" 2>/dev/null || true
+        fi
+    fi
+done
 for ext in "${REQUIRED_EXTENSIONS[@]}"; do
     if ! echo "$ENABLED" | grep -qx "$ext"; then
         LD_PRELOAD= gnome-extensions enable "$ext" 2>/dev/null || true

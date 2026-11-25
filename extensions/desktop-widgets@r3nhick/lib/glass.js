@@ -24,6 +24,7 @@ import GObject from 'gi://GObject';
 import Shell from 'gi://Shell';
 
 import * as Background from 'resource:///org/gnome/shell/ui/background.js';
+import * as Config from 'resource:///org/gnome/shell/misc/config.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 export const BLUR_PAD = 48;
@@ -172,8 +173,14 @@ vec4 lg_glass(sampler2D tex, vec2 uv) {
 }
 `;
 
-function prepareShaderDeclarations(source) {
-    return source.replace(/uniform\s+vec([234])\s+(\w+)\s*;/g, (_m, size, name) => {
+const _GNOME_MAJOR = Number.parseInt(Config.PACKAGE_VERSION, 10) || 46;
+
+function prepareShaderDeclarations(source, stripSampler = false) {
+    let out = source;
+    if (stripSampler && _GNOME_MAJOR >= 48) {
+        out = out.replace(/uniform\s+sampler2D\s+cogl_sampler\d*\s*;[^\n]*\n?/g, '');
+    }
+    return out.replace(/uniform\s+vec([234])\s+(\w+)\s*;/g, (_m, size, name) => {
         const n = parseInt(size, 10);
         const parts = Array.from({length: n}, (_, i) => `${name}_${i}`);
         return `uniform float ${parts.join(', ')};\n#define ${name} vec${size}(${parts.join(', ')})\n`;
@@ -181,7 +188,7 @@ function prepareShaderDeclarations(source) {
 }
 
 // Full shader source, split into declarations and a fragment snippet below.
-const SHADER_SOURCE = prepareShaderDeclarations(DECLARATIONS) + `
+const SHADER_SOURCE = prepareShaderDeclarations(DECLARATIONS, false) + `
 void main() {
     cogl_color_out = lg_glass(cogl_sampler0, (cogl_tex_coord_in[0].xy - lg_frame.xy) / lg_frame.zw) *
         cogl_color_in.a;
@@ -218,7 +225,8 @@ function createFragmentShaderSnippet(source) {
     if (!Cogl || !source)
         return null;
 
-    const parts = splitFragmentShader(source);
+    const prepared = prepareShaderDeclarations(source, true);
+    const parts = splitFragmentShader(prepared);
     if (!parts) {
         console.warn('[desktop-widgets glass] could not split shader source');
         return null;
@@ -240,6 +248,151 @@ function createFragmentShaderSnippet(source) {
 
 const USES_SHADER_SNIPPET_API =
     typeof Clutter?.ShaderEffect?.new_with_snippet === 'function';
+
+const USE_OFFSCREEN_SHADER_COMPAT =
+    typeof Clutter?.ShaderEffect?.prototype?.set_shader_source !== 'function' &&
+    typeof Clutter?.OffscreenEffect === 'function' &&
+    typeof Clutter?.PipelineNode?.new === 'function';
+
+function getCoglContextCompat() {
+    try {
+        const backend = typeof Clutter.get_default_backend === 'function'
+            ? Clutter.get_default_backend()
+            : (global.stage?.get_context?.() || global.stage?.context)?.get_backend?.() || global.backend;
+        return backend?.get_cogl_context?.() ?? null;
+    } catch (_e) {
+        return null;
+    }
+}
+
+function defineOffscreenShaderEffectCompat({gtypeName, className, prefix, shaderSource, extraMethods = {}}) {
+    const klass = class extends Clutter.OffscreenEffect {
+        _init() {
+            super._init();
+            this._cachedUniforms = new Map();
+            this._uniformLocs = new Map();
+            this._pipeline = null;
+            this._uniformsDirty = true;
+            this._shaderFailed = false;
+        }
+
+        _ensurePipeline() {
+            if (this._pipeline || this._shaderFailed)
+                return this._pipeline;
+            const ctx = getCoglContextCompat();
+            if (!ctx)
+                return null;
+            const snippet = createFragmentShaderSnippet(shaderSource);
+            if (!snippet) {
+                this._shaderFailed = true;
+                return null;
+            }
+            try {
+                const pipe = Cogl.Pipeline.new(ctx);
+                pipe.set_layer_wrap_mode(0, Cogl.PipelineWrapMode.CLAMP_TO_EDGE);
+                pipe.set_layer_filters(0, Cogl.PipelineFilter.LINEAR, Cogl.PipelineFilter.LINEAR);
+                pipe.set_blend('RGBA = ADD(SRC_COLOR, DST_COLOR * (1 - SRC_COLOR[A]))');
+                pipe.add_snippet(snippet);
+                this._pipeline = pipe;
+                this._uniformLocs.clear();
+                this._uniformsDirty = true;
+                return pipe;
+            } catch (e) {
+                console.warn(`[desktop-widgets glass] OffscreenEffect pipeline setup failed (${gtypeName}): ${e}`);
+                this._shaderFailed = true;
+                this._pipeline = null;
+                return null;
+            }
+        }
+
+        _applyCachedUniforms(pipe) {
+            if (!pipe || !this._cachedUniforms)
+                return;
+            for (const [uname, val] of this._cachedUniforms) {
+                try {
+                    let loc = this._uniformLocs.get(uname);
+                    if (loc === undefined) {
+                        loc = pipe.get_uniform_location(uname);
+                        this._uniformLocs.set(uname, loc);
+                    }
+                    if (loc >= 0)
+                        pipe.set_uniform_1f(loc, val);
+                } catch (_e) {}
+            }
+        }
+
+        vfunc_paint_target(paintNode, paintContext) {
+            const srcTex = this.get_texture?.();
+            const pipe = srcTex ? this._ensurePipeline() : null;
+            if (!pipe || !srcTex) {
+                super.vfunc_paint_target(paintNode, paintContext);
+                return;
+            }
+
+            if (this._uniformsDirty) {
+                this._applyCachedUniforms(pipe);
+                this._uniformsDirty = false;
+            }
+
+            pipe.set_layer_texture(0, srcTex);
+            const actor = this.get_actor?.();
+            const alpha = (actor ? actor.get_paint_opacity() : 255) / 255;
+            const color = new Cogl.Color();
+            color.init_from_4f(alpha, alpha, alpha, alpha);
+            pipe.set_color(color);
+
+            let drawW = srcTex.get_width();
+            let drawH = srcTex.get_height();
+            try {
+                const ts = this.get_target_size?.();
+                if (Array.isArray(ts) && ts[0] && ts[1] > 0 && ts[2] > 0) {
+                    drawW = ts[1];
+                    drawH = ts[2];
+                }
+            } catch (_e) {}
+
+            const drawNode = Clutter.PipelineNode.new(pipe);
+            paintNode.add_child(drawNode);
+            drawNode.add_texture_rectangle(
+                new Clutter.ActorBox({x1: 0, y1: 0, x2: drawW, y2: drawH}),
+                0, 0, 1, 1
+            );
+        }
+
+        setUniform(name, values) {
+            const arr = Array.isArray(values) ? values : [values];
+            if (!this._cachedUniforms)
+                this._cachedUniforms = new Map();
+
+            const assign = (uname, val) => {
+                const num = Number(val);
+                this._cachedUniforms.set(uname, num);
+                if (this._pipeline) {
+                    try {
+                        let loc = this._uniformLocs.get(uname);
+                        if (loc === undefined) {
+                            loc = this._pipeline.get_uniform_location(uname);
+                            this._uniformLocs.set(uname, loc);
+                        }
+                        if (loc >= 0)
+                            this._pipeline.set_uniform_1f(loc, num);
+                    } catch (_e) {}
+                }
+            };
+
+            if (arr.length === 1) {
+                assign(`${prefix}_${name}`, arr[0]);
+            } else {
+                for (let i = 0; i < arr.length; i++)
+                    assign(`${prefix}_${name}_${i}`, arr[i]);
+            }
+            this._uniformsDirty = true;
+        }
+    };
+    Object.defineProperty(klass, 'name', {value: className});
+    Object.assign(klass.prototype, extraMethods);
+    return GObject.registerClass({GTypeName: gtypeName}, klass);
+}
 
 // Primary path: EXACTLY the original registration (vfunc declared in the
 // class body). It is what renders the rounded glass on GNOME builds that
@@ -347,6 +500,14 @@ function defineLiquidGlassEffect() {
 // vfunc; a separate GType name because the failed attempt may have
 // claimed the first one.
 function defineLiquidGlassEffectCompat() {
+    if (USE_OFFSCREEN_SHADER_COMPAT) {
+        return defineOffscreenShaderEffectCompat({
+            gtypeName: 'DesktopWidgets_LiquidGlassEffectV9Offscreen',
+            className: 'LiquidGlassEffectOffscreen',
+            prefix: 'lg',
+            shaderSource: SHADER_SOURCE,
+        });
+    }
     return GObject.registerClass(
         {GTypeName: 'DesktopWidgets_LiquidGlassEffectV9Compat'},
         class LiquidGlassEffectCompat extends Clutter.ShaderEffect {
@@ -355,14 +516,21 @@ function defineLiquidGlassEffectCompat() {
                 this._cachedUniforms = new Map();
                 this._pipelineInitialized = null;
                 this._uniformsDirty = true;
+                this._snippetAttached = false;
                 try {
                     if (typeof this.set_shader_source === 'function') {
                         this.set_shader_source(SHADER_SOURCE);
+                        this._snippetAttached = true;
                         return;
                     }
                     const snippet = createFragmentShaderSnippet(SHADER_SOURCE);
                     const pipeline = snippet ? this.get_pipeline?.() : null;
-                    pipeline?.add_snippet(snippet);
+                    if (pipeline) {
+                        pipeline.add_snippet(snippet);
+                        this._snippetAttached = true;
+                    } else if (snippet) {
+                        this._pendingSnippet = snippet;
+                    }
                 } catch (e) {
                     console.warn(`[desktop-widgets glass] could not attach the glass shader: ${e}`);
                 }
@@ -386,6 +554,15 @@ function defineLiquidGlassEffectCompat() {
 
             vfunc_paint_target(...args) {
                 const pipe = this.get_pipeline ? this.get_pipeline() : null;
+                if (pipe && !this._snippetAttached && this._pendingSnippet) {
+                    try {
+                        pipe.add_snippet(this._pendingSnippet);
+                        this._snippetAttached = true;
+                        this._pendingSnippet = null;
+                    } catch (e) {
+                        console.warn(`[desktop-widgets glass] deferred add_snippet failed: ${e}`);
+                    }
+                }
                 if (pipe && (this._pipelineInitialized !== pipe || this._uniformsDirty)) {
                     this._applyCachedUniforms(pipe);
                     this._uniformsDirty = false;
@@ -441,11 +618,15 @@ function defineLiquidGlassEffectCompat() {
 // V9: zero-check shader bypass optimizations & unified Liquid Glass parameters.
 const EFFECT_CLASS_KEY = 'DesktopWidgets_LiquidGlassEffectV9';
 if (!globalThis[EFFECT_CLASS_KEY]) {
-    try {
-        globalThis[EFFECT_CLASS_KEY] = defineLiquidGlassEffect();
-    } catch (e) {
-        console.warn(`[desktop-widgets glass] get_static_snippet vfunc unavailable, using fallback: ${e}`);
+    if (USE_OFFSCREEN_SHADER_COMPAT) {
         globalThis[EFFECT_CLASS_KEY] = defineLiquidGlassEffectCompat();
+    } else {
+        try {
+            globalThis[EFFECT_CLASS_KEY] = defineLiquidGlassEffect();
+        } catch (e) {
+            console.warn(`[desktop-widgets glass] get_static_snippet vfunc unavailable, using fallback: ${e}`);
+            globalThis[EFFECT_CLASS_KEY] = defineLiquidGlassEffectCompat();
+        }
     }
 }
 const LiquidGlassEffect = globalThis[EFFECT_CLASS_KEY];
@@ -603,6 +784,19 @@ function defineRoundedClipEffect() {
 }
 
 function defineRoundedClipEffectCompat() {
+    if (USE_OFFSCREEN_SHADER_COMPAT) {
+        return defineOffscreenShaderEffectCompat({
+            gtypeName: 'DesktopWidgets_RoundedClipEffectV4Offscreen',
+            className: 'RoundedClipEffectOffscreen',
+            prefix: 'rc',
+            shaderSource: CLIP_SHADER_SOURCE_PREPARED,
+            extraMethods: {
+                setRect(x, y, width, height, radius) {
+                    clipSetRect(this, x, y, width, height, radius);
+                },
+            },
+        });
+    }
     return GObject.registerClass(
         {GTypeName: 'DesktopWidgets_RoundedClipEffectV4Compat'},
         class RoundedClipEffectCompat extends Clutter.ShaderEffect {
@@ -699,14 +893,18 @@ function defineRoundedClipEffectCompat() {
 
 const CLIP_CLASS_KEY = 'DesktopWidgets_RoundedClipEffectV4';
 if (!globalThis[CLIP_CLASS_KEY]) {
-    try {
-        globalThis[CLIP_CLASS_KEY] = defineRoundedClipEffect();
-    } catch (_e) {
+    if (USE_OFFSCREEN_SHADER_COMPAT) {
+        globalThis[CLIP_CLASS_KEY] = defineRoundedClipEffectCompat();
+    } else {
         try {
-            globalThis[CLIP_CLASS_KEY] = defineRoundedClipEffectCompat();
-        } catch (e) {
-            console.warn(`[desktop-widgets glass] rounded clip unavailable: ${e}`);
-            globalThis[CLIP_CLASS_KEY] = null;
+            globalThis[CLIP_CLASS_KEY] = defineRoundedClipEffect();
+        } catch (_e) {
+            try {
+                globalThis[CLIP_CLASS_KEY] = defineRoundedClipEffectCompat();
+            } catch (e) {
+                console.warn(`[desktop-widgets glass] rounded clip unavailable: ${e}`);
+                globalThis[CLIP_CLASS_KEY] = null;
+            }
         }
     }
 }

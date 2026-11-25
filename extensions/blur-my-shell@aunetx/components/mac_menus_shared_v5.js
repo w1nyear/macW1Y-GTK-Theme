@@ -296,7 +296,7 @@ export function populateUniversalWifiContent(container, options = {}) {
     headerItem.x_align = Clutter.ActorAlign.FILL;
 
     const headerBox = new St.BoxLayout({
-        vertical: false,
+        orientation: Clutter.Orientation.HORIZONTAL,
         y_align: Clutter.ActorAlign.CENTER,
         x_expand: true,
     });
@@ -305,7 +305,7 @@ export function populateUniversalWifiContent(container, options = {}) {
     if (isControlCenter) {
 
         const leftSlot = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.START,
             style: 'width: 82px; min-width: 82px; max-width: 82px;',
@@ -345,7 +345,7 @@ export function populateUniversalWifiContent(container, options = {}) {
 
 
         const rightSlot = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.END,
             style: 'width: 82px; min-width: 82px; max-width: 82px;',
@@ -567,7 +567,7 @@ export function populateUniversalBluetoothContent(container, options = {}) {
     headerItem.x_align = Clutter.ActorAlign.FILL;
 
     const headerBox = new St.BoxLayout({
-        vertical: false,
+        orientation: Clutter.Orientation.HORIZONTAL,
         y_align: Clutter.ActorAlign.CENTER,
         x_expand: true,
     });
@@ -576,7 +576,7 @@ export function populateUniversalBluetoothContent(container, options = {}) {
     if (isControlCenter) {
 
         const leftSlot = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.START,
             style: 'width: 82px; min-width: 82px; max-width: 82px;',
@@ -616,7 +616,7 @@ export function populateUniversalBluetoothContent(container, options = {}) {
 
 
         const rightSlot = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.END,
             style: 'width: 82px; min-width: 82px; max-width: 82px;',

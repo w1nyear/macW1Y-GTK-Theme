@@ -3221,8 +3221,10 @@ export const LiquidEffect = GObject.registerClass({
     try {
 
 
-      const backend = Clutter.get_default_backend();
-      return backend.get_cogl_context() as Cogl.Context;
+      const backend = typeof Clutter.get_default_backend === 'function'
+        ? Clutter.get_default_backend()
+        : (global.stage?.get_context?.() || global.stage?.context)?.get_backend?.() || global.backend;
+      return backend?.get_cogl_context?.() as Cogl.Context;
     } catch (e) {
       this._logger?.error(`[Liquid Glass] Failed to obtain the Cogl context: ${e}`);
       return null;

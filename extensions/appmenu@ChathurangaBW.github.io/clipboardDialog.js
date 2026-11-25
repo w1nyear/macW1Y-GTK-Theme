@@ -493,7 +493,7 @@ export const MacClipboardDialog = GObject.registerClass({
         this._box = new St.BoxLayout({
             name: 'mac-clipboard-box',
             style_class: 'mac-clipboard-box',
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             reactive: true,
             can_focus: true,
             track_hover: true,
@@ -553,7 +553,7 @@ export const MacClipboardDialog = GObject.registerClass({
 
 
         this._headerRow = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
             style: 'height: 36px; min-height: 36px; padding: 0 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.10);',
@@ -662,7 +662,7 @@ export const MacClipboardDialog = GObject.registerClass({
         applyGradientBlurFade(this._scrollWrapper, 44.0, 72.0, this._scrollView);
 
         this._listContainer = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
             style: 'padding: 4px 8px 20px 8px;',
         });
@@ -1269,7 +1269,7 @@ export const MacClipboardDialog = GObject.registerClass({
             });
 
             const row = new St.BoxLayout({
-                vertical: false,
+                orientation: Clutter.Orientation.HORIZONTAL,
                 y_align: Clutter.ActorAlign.CENTER,
                 x_expand: true,
             });
@@ -1312,7 +1312,7 @@ export const MacClipboardDialog = GObject.registerClass({
 
 
             const textCol = new St.BoxLayout({
-                vertical: true,
+                orientation: Clutter.Orientation.VERTICAL,
                 x_expand: true,
                 y_align: Clutter.ActorAlign.CENTER,
             });
@@ -1463,7 +1463,7 @@ export const MacClipboardDialog = GObject.registerClass({
     _getVirtualDevice() {
         if (!this._virtualDevice) {
             try {
-                const seat = Clutter.get_default_backend().get_default_seat();
+                const seat = (typeof Clutter.get_default_backend === 'function' ? Clutter.get_default_backend() : (global.stage?.get_context?.() || global.stage?.context)?.get_backend?.() || global.backend)?.get_default_seat?.();
                 this._virtualDevice = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
             } catch (e) {
                 console.error(`[MacClipboard] Failed to create virtual keyboard device: ${e}`);

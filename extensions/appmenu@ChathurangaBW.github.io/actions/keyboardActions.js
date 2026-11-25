@@ -78,7 +78,7 @@ export function executeKeyboardAction(action, manager, targetWindow = null) {
     if (action === 'native-open-with') {
         try {
             const device = vd || (() => {
-                const seat = Clutter.get_default_backend().get_default_seat();
+                const seat = (typeof Clutter.get_default_backend === 'function' ? Clutter.get_default_backend() : (global.stage?.get_context?.() || global.stage?.context)?.get_backend?.() || global.backend)?.get_default_seat?.();
                 return seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
             })();
             if (device) simulateNativeOpenWith(device, manager, targetWindow);
@@ -94,7 +94,7 @@ export function executeKeyboardAction(action, manager, targetWindow = null) {
 
     try {
         const device = vd || (() => {
-            const seat = Clutter.get_default_backend().get_default_seat();
+            const seat = (typeof Clutter.get_default_backend === 'function' ? Clutter.get_default_backend() : (global.stage?.get_context?.() || global.stage?.context)?.get_backend?.() || global.backend)?.get_default_seat?.();
             return seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
         })();
         if (device) simulateShortcut(device, entry[0], entry[1], entry[2]);

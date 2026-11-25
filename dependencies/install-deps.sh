@@ -17,7 +17,15 @@ case "$manager" in
         sudo apt-get update
         sudo apt-get install -y "${packages[@]}"
         ;;
-    dnf) sudo dnf install -y "${packages[@]}" ;;
+    dnf)
+        missing=()
+        for pkg in "${packages[@]}"; do
+            rpm -q "$pkg" >/dev/null 2>&1 || missing+=("$pkg")
+        done
+        if [ ${#missing[@]} -gt 0 ]; then
+            sudo dnf install -y --setopt=install_weak_deps=False "${missing[@]}"
+        fi
+        ;;
     pacman) sudo pacman -Syu --needed --noconfirm "${packages[@]}" ;;
 esac
 printf 'Обов’язкові залежності встановлено.\n'

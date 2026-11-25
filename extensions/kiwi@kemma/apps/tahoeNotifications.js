@@ -577,7 +577,7 @@ function _ensureToastBox() {
         const panelH = Main.layoutManager.panelBox?.height ?? 32;
 
         _toastBox = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             reactive: true,
             clip_to_allocation: false,
             style: `spacing: ${TOAST_SPACING}px;`,
@@ -666,7 +666,7 @@ function _makeToastCard(item, noglass = false) {
     slot._pill = pill;
 
     const content = new St.BoxLayout({
-        vertical: false,
+        orientation: Clutter.Orientation.HORIZONTAL,
         track_hover: true,
         x_expand: true,
         y_expand: true,
@@ -742,7 +742,7 @@ function _makeToastCard(item, noglass = false) {
 
     const COL_W = TOAST_W - 24 - 44 - 12;
     const textCol = new St.BoxLayout({
-        vertical: true,
+        orientation: Clutter.Orientation.VERTICAL,
         x_expand: true,
         y_align: Clutter.ActorAlign.START,
         style: 'spacing: 4px;',
@@ -754,7 +754,7 @@ function _makeToastCard(item, noglass = false) {
     const body = String(n.body ?? '').trim();
 
     const rowA = new St.BoxLayout({
-        vertical: false,
+        orientation: Clutter.Orientation.HORIZONTAL,
         x_expand: true,
         y_align: Clutter.ActorAlign.CENTER,
     });
@@ -2840,7 +2840,7 @@ function _buildPanel(merges = null) {
 
     const box = new St.BoxLayout({
         style_class: `tahoe-nc-panel${darkCls}`,
-        vertical: true,
+        orientation: Clutter.Orientation.VERTICAL,
         x_expand: false,
         y_expand: false,
     });
@@ -2899,7 +2899,7 @@ function _buildPanel(merges = null) {
     } catch (_) {}
 
     const list = new St.BoxLayout({
-        vertical: true,
+        orientation: Clutter.Orientation.VERTICAL,
         style_class: 'tahoe-nc-list',
         x_expand: true,
         y_expand: false,

@@ -22,7 +22,7 @@ export const WackClock = GObject.registerClass(
                 style_class: 'unlock-dialog-clock',
                 y_align: Clutter.ActorAlign.CENTER,
             });
-            this.vertical = true;
+            this.orientation = Clutter.Orientation.VERTICAL;
 
 
             this._dateOutput = new St.Label({

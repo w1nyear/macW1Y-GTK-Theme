@@ -55,7 +55,7 @@ export class CupertinoPromptManager {
 
         this.restPromptContainer = new St.BoxLayout({
             style_class: 'wack-cupertino-rest',
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             reactive: false,
         });
 

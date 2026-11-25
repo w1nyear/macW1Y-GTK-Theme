@@ -1175,7 +1175,7 @@ const BatteryWidget = GObject.registerClass({
         });
 
         const headerBox = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
         });
         headerItem.add_child(headerBox);
@@ -4055,7 +4055,7 @@ export const MenuBarController = class MenuBarController {
             name: 'macNotificationCenterContentBox',
             ...('orientation' in St.BoxLayout.prototype
                 ? { orientation: Clutter.Orientation.VERTICAL }
-                : { vertical: true }),
+                : { orientation: Clutter.Orientation.VERTICAL }),
             x_expand: true,
             y_expand: false,
             reactive: true,
@@ -4068,7 +4068,7 @@ export const MenuBarController = class MenuBarController {
             name: 'macNotificationCenterHeaderBox',
             ...('orientation' in St.BoxLayout.prototype
                 ? { orientation: Clutter.Orientation.HORIZONTAL }
-                : { vertical: false }),
+                : { orientation: Clutter.Orientation.HORIZONTAL }),
             style: 'padding: 4px 8px 10px 8px; margin: 0; background: transparent !important;',
             x_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
@@ -4130,7 +4130,7 @@ export const MenuBarController = class MenuBarController {
         const cardsBox = new St.BoxLayout({
             ...('orientation' in St.BoxLayout.prototype
                 ? { orientation: Clutter.Orientation.VERTICAL }
-                : { vertical: true }),
+                : { orientation: Clutter.Orientation.VERTICAL }),
             style: 'spacing: 10px; padding: 0 16px 16px 8px; background: transparent !important;',
             x_expand: true,
             y_expand: false,
@@ -6109,9 +6109,10 @@ export const MenuBarController = class MenuBarController {
     _setupMenuHoverGlide() {
         this._cleanupMenuHoverGlide();
         this._trackedMenus = new Set();
+        this._hoverGlideDisposed = false;
 
         const attachToMenu = (menu) => {
-            if (!menu || !menu.box || menu._hasHoverTracker || menu._macHoverTracker) return;
+            if (this._hoverGlideDisposed || !menu || !menu.box || menu._hasHoverTracker || menu._macHoverTracker) return;
             const isQuickSettings = menu.constructor.name === 'QuickSettingsMenu' || !!menu._grid;
             if (isQuickSettings) return;
             menu._hasHoverTracker = true;
@@ -6134,57 +6135,73 @@ export const MenuBarController = class MenuBarController {
         }
 
         if (!this._origPopupMenuInit) {
-            this._origPopupMenuInit = PopupMenu.PopupMenu.prototype._init;
+            const origInit = PopupMenu.PopupMenu.prototype._init;
+            this._origPopupMenuInit = origInit;
             const self = this;
-            PopupMenu.PopupMenu.prototype._init = function(...args) {
-                self._origPopupMenuInit.apply(this, args);
-                try {
-                    attachToMenu(this);
-                } catch (_) {}
+            const initWrapper = function(...args) {
+                origInit.apply(this, args);
+                if (!self._hoverGlideDisposed) {
+                    try { attachToMenu(this); } catch (_) {}
+                }
             };
+            this._popupMenuInitWrapper = initWrapper;
+            PopupMenu.PopupMenu.prototype._init = initWrapper;
         }
 
         if (!this._origPopupMenuOpen) {
-            this._origPopupMenuOpen = PopupMenu.PopupMenu.prototype.open;
+            const origOpen = PopupMenu.PopupMenu.prototype.open;
+            this._origPopupMenuOpen = origOpen;
             const self = this;
-            PopupMenu.PopupMenu.prototype.open = function(animate) {
-                try {
-                    attachToMenu(this);
-                } catch (_) {}
-                return self._origPopupMenuOpen.call(this, animate);
+            const openWrapper = function(animate) {
+                if (!self._hoverGlideDisposed) {
+                    try { attachToMenu(this); } catch (_) {}
+                }
+                return origOpen.call(this, animate);
             };
+            this._popupMenuOpenWrapper = openWrapper;
+            PopupMenu.PopupMenu.prototype.open = openWrapper;
         }
 
         if (Main.panel.menuManager && !this._origMenuManagerAdd) {
-            this._origMenuManagerAdd = Main.panel.menuManager.addMenu;
+            const origMenuAdd = Main.panel.menuManager.addMenu;
+            this._origMenuManagerAdd = origMenuAdd;
             const self = this;
-            Main.panel.menuManager.addMenu = function(menu, position) {
-                try {
-                    attachToMenu(menu);
-                } catch (_) {}
-                return self._origMenuManagerAdd.call(this, menu, position);
+            const addWrapper = function(menu, position) {
+                if (!self._hoverGlideDisposed) {
+                    try { attachToMenu(menu); } catch (_) {}
+                }
+                return origMenuAdd.call(this, menu, position);
             };
+            this._menuManagerAddWrapper = addWrapper;
+            Main.panel.menuManager.addMenu = addWrapper;
         }
     }
 
     _cleanupMenuHoverGlide() {
+        this._hoverGlideDisposed = true;
         if (this._origPopupMenuInit) {
             try {
-                PopupMenu.PopupMenu.prototype._init = this._origPopupMenuInit;
+                if (PopupMenu.PopupMenu.prototype._init === this._popupMenuInitWrapper)
+                    PopupMenu.PopupMenu.prototype._init = this._origPopupMenuInit;
             } catch (_) {}
             this._origPopupMenuInit = null;
+            this._popupMenuInitWrapper = null;
         }
         if (this._origPopupMenuOpen) {
             try {
-                PopupMenu.PopupMenu.prototype.open = this._origPopupMenuOpen;
+                if (PopupMenu.PopupMenu.prototype.open === this._popupMenuOpenWrapper)
+                    PopupMenu.PopupMenu.prototype.open = this._origPopupMenuOpen;
             } catch (_) {}
             this._origPopupMenuOpen = null;
+            this._popupMenuOpenWrapper = null;
         }
         if (this._origMenuManagerAdd && Main.panel.menuManager) {
             try {
-                Main.panel.menuManager.addMenu = this._origMenuManagerAdd;
+                if (Main.panel.menuManager.addMenu === this._menuManagerAddWrapper)
+                    Main.panel.menuManager.addMenu = this._origMenuManagerAdd;
             } catch (_) {}
             this._origMenuManagerAdd = null;
+            this._menuManagerAddWrapper = null;
         }
         if (this._trackedMenus) {
             for (const t of this._trackedMenus) {

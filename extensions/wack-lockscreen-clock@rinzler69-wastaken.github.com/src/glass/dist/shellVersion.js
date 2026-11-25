@@ -94,7 +94,7 @@ export function canCloneSource(source) {
 
 
 export function verticalBoxParams() {
-    return SHELL_MAJOR >= 48 ? { orientation: Clutter.Orientation.VERTICAL } : { vertical: true };
+    return SHELL_MAJOR >= 48 ? { orientation: Clutter.Orientation.VERTICAL } : { orientation: Clutter.Orientation.VERTICAL };
 }
 
 const CLUTTER_CURSORS = {

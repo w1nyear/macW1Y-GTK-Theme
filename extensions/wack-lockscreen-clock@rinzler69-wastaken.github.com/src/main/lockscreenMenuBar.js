@@ -323,7 +323,7 @@ export class LockscreenMenuBarManager {
 
         const box = new St.BoxLayout({
             style_class: 'wack-battery-box kiwi-battery-box',
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             y_align: Clutter.ActorAlign.CENTER,
             x_align: Clutter.ActorAlign.CENTER,
             style: 'spacing: 6px;',

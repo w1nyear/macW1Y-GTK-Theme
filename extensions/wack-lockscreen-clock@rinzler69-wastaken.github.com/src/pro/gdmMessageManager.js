@@ -29,7 +29,7 @@ export class GdmMessageManager {
         this.label.x_expand = true;
 
         this.content = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
             style_class: 'wack-cupertino-lockscreen-message-content',

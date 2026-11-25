@@ -332,9 +332,16 @@ def ensure_locale_generated(posix):
     try:
         r = subprocess.run(["locale", "-a"], capture_output=True, text=True, check=True)
         installed = [x.strip().lower().replace("-", "").replace("_", "") for x in r.stdout.splitlines()]
-        needle = posix.lower().replace("-", "").replace("_", "").replace(".utf8", "").replace(".utf8", "")
+        needle = posix.lower().replace("-", "").replace("_", "").replace(".utf8", "")
         if not any(needle in x for x in installed):
             print(f"[mac-apply-locale] Generating missing system locale: {posix}...")
+            # On Arch/CachyOS, locale-gen reads /etc/locale.gen rather than CLI args
+            if os.path.exists("/etc/locale.gen"):
+                subprocess.run(
+                    ["sudo", "sed", "-i", f"s/^#[[:space:]]*\\({posix}\\)/\\1/g", "/etc/locale.gen"],
+                    check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+                subprocess.run(["sudo", "locale-gen"], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             subprocess.run(["sudo", "locale-gen", posix], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception as e:
         print(f"[mac-apply-locale] Warning: error checking/generating locale: {e}", file=sys.stderr)
@@ -372,11 +379,21 @@ def apply_systemd_env(posix, lang_env):
 
 def apply_system_locale(posix, lang_env):
     try:
-        subprocess.run(["localectl", "set-locale", f"LANG={posix}"], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["sudo", "localectl", "set-locale", f"LANG={posix}"], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception:
         pass
     try:
-        subprocess.run(["sudo", "update-locale", f"LANG={posix}", f"LANGUAGE={lang_env}"], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if os.path.exists("/etc/locale.conf"):
+            subprocess.run(
+                ["sudo", "tee", "/etc/locale.conf"],
+                input=f"LANG={posix}\n".encode("utf-8"),
+                check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+    except Exception:
+        pass
+    try:
+        if shutil.which("update-locale"):
+            subprocess.run(["sudo", "update-locale", f"LANG={posix}", f"LANGUAGE={lang_env}"], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception:
         pass
 

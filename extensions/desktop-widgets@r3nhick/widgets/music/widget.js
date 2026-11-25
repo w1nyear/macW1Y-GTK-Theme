@@ -9,6 +9,7 @@ import St from 'gi://St';
 import { warn } from '../../logger.js';
 import { widgetResourcePath } from '../../paths.js';
 import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { trWidget } from '../../lib/modpackLocale.js';
 import { boxLayoutProps } from '../../utils/gnomeCompat.js';
 import { SeekBar } from '../../lib/seekBar.js';
 import { createMarquee } from '../../lib/marquee.js';
@@ -1559,11 +1560,11 @@ function createCard(theme, createLabel, widgetWidth, widgetHeight) {
 			// The real 🐾 emoji when a color emoji font is installed; without
 			// one the shell draws a white box ("tofu"), so the emoji is then
 			// stripped and the bundled paw picture stands in for it.
-			const waiting = _("I'm waiting 🐾");
+			const waiting = trWidget("I'm waiting 🐾", _);
 			const emoji = hasColorEmojiFont();
 			card.title.text = emoji ? waiting : waiting.replace(/\s*\u{1F43E}\s*/gu, '');
 			card.titlePaw.visible = !emoji;
-			card.artist.text = _('Play something to get going');
+			card.artist.text = trWidget('Play something to get going', _);
 
 			if (gifPath) {
 				if (card._gifPath !== gifPath) {

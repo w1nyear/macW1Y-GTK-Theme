@@ -5876,3 +5876,37 @@ Task #938:
     * unittest: 51/51 PASS; mac-extension-guard verify: 21/21 LOCKED OK; mac-i18n-verify: OK; mac-audit-sync check: 100% PASS; mac-integrity-check --check: System is green; 0 кирилиці в install.sh.
   * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+
+974. 2026-11-25 — Кросплатформна сумісність GNOME 47–51 (Arch/CachyOS, Fedora 44, Debian/Mint), захист від автооновлень EGO, GDM та Liquid Glass:
+  - Змінені файли:
+    * [extensions/desktop-widgets@r3nhick/lib/glass.js](file:///home/vitaliy/macW1Y/extensions/desktop-widgets@r3nhick/lib/glass.js)
+    * [extensions/desktop-widgets@r3nhick/lib/modpackLocale.js](file:///home/vitaliy/macW1Y/extensions/desktop-widgets@r3nhick/lib/modpackLocale.js)
+    * [extensions/desktop-widgets@r3nhick/widgets/calendar/widget.js](file:///home/vitaliy/macW1Y/extensions/desktop-widgets@r3nhick/widgets/calendar/widget.js)
+    * [extensions/desktop-widgets@r3nhick/widgets/music/widget.js](file:///home/vitaliy/macW1Y/extensions/desktop-widgets@r3nhick/widgets/music/widget.js)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/utils.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/utils.js)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/src/liquidEffect.ts](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/src/liquidEffect.ts)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/src/utils.ts](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/src/utils.ts)
+    * [extensions/blur-my-shell@aunetx/components/menubar_v29.js](file:///home/vitaliy/macW1Y/extensions/blur-my-shell@aunetx/components/menubar_v29.js)
+    * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js)
+    * [extensions/eval-helper@mactheme/macSetupWizard.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/macSetupWizard.js)
+    * [extensions/appmenu@ChathurangaBW.github.io/metadata.json](file:///home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/metadata.json)
+    * [bin/mac-apply-locale](file:///home/vitaliy/macW1Y/bin/mac-apply-locale)
+    * [bin/mac-ensure-extensions.sh](file:///home/vitaliy/macW1Y/bin/mac-ensure-extensions.sh)
+    * [dependencies/install-deps.sh](file:///home/vitaliy/macW1Y/dependencies/install-deps.sh)
+    * [install.sh](file:///home/vitaliy/macW1Y/install.sh)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+  - Опис змін:
+    * У desktop-widgets@r3nhick/lib/glass.js додано OffscreenEffect + Cogl.Pipeline + Clutter.PipelineNode сумісність для GNOME 51+ (USE_OFFSCREEN_SHADER_COMPAT / defineOffscreenShaderEffectCompat) і збережено uniform sampler2D cogl_sampler0 для Clutter.ShaderEffect.set_shader_source() на GNOME 50.0/50.1 (Fedora 44 / Ubuntu).
+    * У liquid-glass (_getCoglContext) прибрано виклики видаленого в GNOME 51 Clutter.get_default_backend() та оновлено сумісні виклики Clutter.Orientation у розширеннях (appmenu, blur-my-shell, dash2dock-motion, kiwi, wack-lockscreen-clock).
+    * У menubar_v29.js та eval-helper@mactheme/extension.js виправлено перехоплення меню-менеджера при блокуванні/розблокуванні екрана (локальні замикання, перевірка враперів та _hoverGlideDisposed / _macGlideDisposed).
+    * У eval-helper@mactheme/extension.js (_setupExtensionUpdateGuard / _teardownExtensionUpdateGuard) та bin/mac-ensure-extensions.sh додано блокування автооновлень GNOME Shell з EGO (updatesSupported = false + очищення staged extension-updates), що усуває самовільне перезаписування патчених розширень (зокрема wifi-hotspot-quick-settings@aryan10.github.io) та сповіщення «Extension Updates Available».
+    * У dependencies/install-deps.sh оптимізовано dnf (rpm -q фільтр та --setopt=install_weak_deps=False), у bin/mac-apply-locale додано генерацію локалей через /etc/locale.gen для Arch/CachyOS та update-locale для Debian/Mint, у install.sh збережено дистрибутивні /var/lib/gdm3/greeter-dconf-defaults та /usr/share/gdm/greeter-dconf-defaults, замінено перевірку GDM theme gresource на update-alternatives --query gdm-theme.gresource (для сумісності з Debian і Linux Mint) та прибрано залишки кирилиці.
+    * У tests/test_cross_distro_and_wizard.py додано тести для GNOME 51 offscreen glass, unlock hooks, GDM/DNF оптимізацій та захисту від автооновлень розширень; оновлено SHA-256 у config/extensions.lock.json.
+  - Перевірка:
+    * Жива перевірка у QEMU/KVM VM Fedora 44 (GNOME Shell 50.0, SELinux Enforcing, en_US.UTF-8 після рестарту GDM): меню-бар, Control Center, віджети з Liquid Glass, Dock, Finder/Nautilus, wifi-hotspot-quick-settings (state 1.0, без помилок) — скріншоти vm_fedora_p4_gdm.png, vm_fedora_p4_desktop.png, vm_fedora_p4_cc.png, vm_fedora_p4_nautilus.png; жива перевірка у VM CachyOS (GNOME Shell 51) виконана раніше; Debian/Mint перевірені статично (ISO відсутні у ~/Завантажене).
+    * unittest: 54/54 PASS; mac-extension-guard verify: 21/21 LOCKED OK; mac-i18n-verify: PASS; mac-audit-sync check: 100% PASS; mac-integrity-check --check: System is green; 0 кирилиці в install.sh.
+  * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

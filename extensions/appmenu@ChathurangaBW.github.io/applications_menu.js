@@ -357,7 +357,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         this._box = new St.BoxLayout({
             name: 'mac-applications-box',
             style_class: 'mac-applications-box',
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             reactive: true,
             can_focus: true,
             track_hover: true,
@@ -428,7 +428,7 @@ export const MacApplicationsDialog = GObject.registerClass({
 
 
         this._headerRow = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
             style: 'height: 36px; margin-left: 18px; margin-right: 18px;',
@@ -521,7 +521,7 @@ export const MacApplicationsDialog = GObject.registerClass({
 
 
         this._categoryRow = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             x_expand: true,
             style: 'height: 32px; margin-bottom: 14px; margin-left: 18px; margin-right: 18px;',
         });
@@ -550,7 +550,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         applyGradientBlurFade(this._scrollWrapper, 48.0, 76.0, this._scrollView);
 
         this._gridContainer = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
             y_expand: true,
             style: 'padding: 0 0 20px 0;',
@@ -1198,7 +1198,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         );
 
         const box = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
@@ -1365,7 +1365,7 @@ export const MacApplicationsDialog = GObject.registerClass({
         for (let r = 0; r < numRows; r++) {
             const isLastRow = (r === numRows - 1);
             const rowBox = new St.BoxLayout({
-                vertical: false,
+                orientation: Clutter.Orientation.HORIZONTAL,
                 x_expand: true,
                 x_align: Clutter.ActorAlign.CENTER,
                 style: isLastRow ? 'margin-bottom: 0px;' : 'margin-bottom: 8px;',

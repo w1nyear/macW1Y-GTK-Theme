@@ -403,7 +403,7 @@ export const CascadingSubmenuMenuItem = GObject.registerClass(
 
         _getPointerPosition() {
             try {
-                const seat = Clutter.get_default_backend().get_default_seat();
+                const seat = (typeof Clutter.get_default_backend === 'function' ? Clutter.get_default_backend() : (global.stage?.get_context?.() || global.stage?.context)?.get_backend?.() || global.backend)?.get_default_seat?.();
                 const device = seat.get_pointer();
                 const [, x, y] = device.get_coords();
                 return [x, y];

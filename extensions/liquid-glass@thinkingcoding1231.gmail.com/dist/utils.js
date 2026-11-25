@@ -2089,8 +2089,10 @@ export const TextureBlitActor = _safeRegisterClass('LiquidGlassTextureBlitActor'
     }
     _getCoglContext() {
         try {
-            const backend = Clutter.get_default_backend();
-            return backend.get_cogl_context();
+            const backend = typeof Clutter.get_default_backend === 'function'
+                ? Clutter.get_default_backend()
+                : (global.stage?.get_context?.() || global.stage?.context)?.get_backend?.() || global.backend;
+            return backend?.get_cogl_context?.() ?? null;
         }
         catch (e) {
             return null;

@@ -51,6 +51,33 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("Зміна мови", wizard_js)
         self.assertIn("_restoreDesktop(true)", wizard_js)
 
+    def test_gnome51_offscreen_glass_and_unlock_hooks(self):
+        glass_js = (ROOT / "extensions" / "desktop-widgets@r3nhick" / "lib" / "glass.js").read_text(encoding="utf-8")
+        self.assertIn("USE_OFFSCREEN_SHADER_COMPAT", glass_js)
+        self.assertIn("defineOffscreenShaderEffectCompat", glass_js)
+        self.assertIn("Clutter.PipelineNode.new", glass_js)
+        menubar_js = (ROOT / "extensions" / "blur-my-shell@aunetx" / "components" / "menubar_v29.js").read_text(encoding="utf-8")
+        self.assertIn("_hoverGlideDisposed", menubar_js)
+        self.assertIn("_menuManagerAddWrapper", menubar_js)
+        eval_js = (ROOT / "extensions" / "eval-helper@mactheme" / "extension.js").read_text(encoding="utf-8")
+        self.assertIn("_macGlideDisposed", eval_js)
+        self.assertIn("_macGlideAddWrapper", eval_js)
+
+    def test_debian_fedora_gdm_and_dnf_optimization(self):
+        install_sh = (ROOT / "install.sh").read_text(encoding="utf-8")
+        self.assertIn("update-alternatives --query gdm-theme.gresource", install_sh)
+        self.assertIn("/usr/share/gdm/greeter-dconf-defaults", install_sh)
+        deps_sh = (ROOT / "dependencies" / "install-deps.sh").read_text(encoding="utf-8")
+        self.assertIn("install_weak_deps=False", deps_sh)
+        self.assertIn("rpm -q", deps_sh)
+
+    def test_extension_update_guard_prevents_ego_overwrites(self):
+        eval_js = (ROOT / "extensions" / "eval-helper@mactheme" / "extension.js").read_text(encoding="utf-8")
+        self.assertIn("_setupExtensionUpdateGuard", eval_js)
+        self.assertIn("updatesSupported", eval_js)
+        ensure_sh = (ROOT / "bin" / "mac-ensure-extensions.sh").read_text(encoding="utf-8")
+        self.assertIn("extension-updates/$ext", ensure_sh)
+
 
 if __name__ == "__main__":
     unittest.main()

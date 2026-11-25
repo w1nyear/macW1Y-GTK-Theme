@@ -1127,29 +1127,36 @@ export default class EvalHelper extends Extension {
                     } catch (_) {}
                 };
 
+                globalThis._macGlideDisposed = false;
                 if (!PopupMenu.PopupMenu.prototype._origMacGlideOpen) {
-                    PopupMenu.PopupMenu.prototype._origMacGlideOpen = PopupMenu.PopupMenu.prototype.open;
-                    const origOpen = PopupMenu.PopupMenu.prototype._origMacGlideOpen;
-                    PopupMenu.PopupMenu.prototype.open = function(animate) {
-                        try {
-                            suppressLeadingSeparator(this);
-                            attachToMenu(this);
-                        } catch (e) {
-                            console.error(`[EvalHelper] MacMenuHoverGlide open error: ${e}`);
+                    const origOpen = PopupMenu.PopupMenu.prototype.open;
+                    PopupMenu.PopupMenu.prototype._origMacGlideOpen = origOpen;
+                    const openWrapper = function(animate) {
+                        if (!globalThis._macGlideDisposed) {
+                            try {
+                                suppressLeadingSeparator(this);
+                                attachToMenu(this);
+                            } catch (e) {
+                                console.error(`[EvalHelper] MacMenuHoverGlide open error: ${e}`);
+                            }
                         }
                         return origOpen.call(this, animate);
                     };
+                    PopupMenu.PopupMenu.prototype._macGlideOpenWrapper = openWrapper;
+                    PopupMenu.PopupMenu.prototype.open = openWrapper;
                 }
 
                 if (PopupMenu.PopupSubMenu && !PopupMenu.PopupSubMenu.prototype._origMacGlideOpen) {
-                    PopupMenu.PopupSubMenu.prototype._origMacGlideOpen = PopupMenu.PopupSubMenu.prototype.open;
-                    const origSubOpen = PopupMenu.PopupSubMenu.prototype._origMacGlideOpen;
-                    PopupMenu.PopupSubMenu.prototype.open = function(animate) {
-                        try {
-                            attachToMenu(this);
-                        } catch (_) {}
+                    const origSubOpen = PopupMenu.PopupSubMenu.prototype.open;
+                    PopupMenu.PopupSubMenu.prototype._origMacGlideOpen = origSubOpen;
+                    const subOpenWrapper = function(animate) {
+                        if (!globalThis._macGlideDisposed) {
+                            try { attachToMenu(this); } catch (_) {}
+                        }
                         return origSubOpen.call(this, animate);
                     };
+                    PopupMenu.PopupSubMenu.prototype._macGlideSubOpenWrapper = subOpenWrapper;
+                    PopupMenu.PopupSubMenu.prototype.open = subOpenWrapper;
                 }
 
                 if (PopupMenu.PopupSwitchMenuItem && !PopupMenu.PopupSwitchMenuItem.prototype._origMacActivate) {
@@ -1171,14 +1178,16 @@ export default class EvalHelper extends Extension {
                 }
 
                 if (Main.panel.menuManager && !Main.panel.menuManager._origMacGlideAddMenu) {
-                    Main.panel.menuManager._origMacGlideAddMenu = Main.panel.menuManager.addMenu;
-                    const origAdd = Main.panel.menuManager._origMacGlideAddMenu;
-                    Main.panel.menuManager.addMenu = function(menu, position) {
-                        try {
-                            attachToMenu(menu);
-                        } catch (_) {}
+                    const origAdd = Main.panel.menuManager.addMenu;
+                    Main.panel.menuManager._origMacGlideAddMenu = origAdd;
+                    const addWrapper = function(menu, position) {
+                        if (!globalThis._macGlideDisposed) {
+                            try { attachToMenu(menu); } catch (_) {}
+                        }
                         return origAdd.call(this, menu, position);
                     };
+                    Main.panel.menuManager._macGlideAddWrapper = addWrapper;
+                    Main.panel.menuManager.addMenu = addWrapper;
                 }
             } catch (e) {
                 console.error(`[EvalHelper] setupMenuHoverGlide error: ${e}`);
@@ -2790,7 +2799,7 @@ export default class EvalHelper extends Extension {
                 }
 
                 const content = new St.BoxLayout({
-                    vertical: true,
+                    orientation: Clutter.Orientation.VERTICAL,
                     x_align: Clutter.ActorAlign.CENTER,
                     y_align: Clutter.ActorAlign.CENTER,
                     style: 'spacing: 0px; width: 224px;',
@@ -4903,7 +4912,13 @@ void main() {
                 if (!this._origBoxPointerOpen) {
                     this._origBoxPointerOpen = BoxPointer.BoxPointer.prototype.open;
                     this._origBoxPointerClose = BoxPointer.BoxPointer.prototype.close;
-                    this._origBoxPointerCapturedEvent = BoxPointer.BoxPointer.prototype.vfunc_captured_event;
+                    try {
+                        if ('vfunc_captured_event' in BoxPointer.BoxPointer.prototype) {
+                            this._origBoxPointerCapturedEvent = BoxPointer.BoxPointer.prototype.vfunc_captured_event;
+                        }
+                    } catch (_) {
+                        this._origBoxPointerCapturedEvent = null;
+                    }
                     this._origBoxPointerDrawBorder = BoxPointer.BoxPointer.prototype._drawBorder;
                 }
                 BoxPointer.BoxPointer.prototype.open = function(animate, onComplete) {
@@ -5089,27 +5104,29 @@ void main() {
                     });
                 };
 
-                BoxPointer.BoxPointer.prototype.vfunc_captured_event = function(event) {
-                    if (event.type() === Clutter.EventType.ENTER ||
-                        event.type() === Clutter.EventType.LEAVE)
-                        return Clutter.EVENT_PROPAGATE;
-
-
-                    if (this.visible && !this._isClosingAnimation) {
-                        const type = event.type();
-                        if (type !== Clutter.EventType.KEY_PRESS && type !== Clutter.EventType.KEY_RELEASE)
+                if (this._origBoxPointerCapturedEvent) {
+                    BoxPointer.BoxPointer.prototype.vfunc_captured_event = function(event) {
+                        if (event.type() === Clutter.EventType.ENTER ||
+                            event.type() === Clutter.EventType.LEAVE)
                             return Clutter.EVENT_PROPAGATE;
-                    }
 
-                    const mute = event.type() === Clutter.EventType.KEY_PRESS ||
-                        event.type() === Clutter.EventType.KEY_RELEASE
-                        ? this._muteKeys : this._muteInput;
 
-                    if (mute)
-                        return Clutter.EVENT_STOP;
+                        if (this.visible && !this._isClosingAnimation) {
+                            const type = event.type();
+                            if (type !== Clutter.EventType.KEY_PRESS && type !== Clutter.EventType.KEY_RELEASE)
+                                return Clutter.EVENT_PROPAGATE;
+                        }
 
-                    return Clutter.EVENT_PROPAGATE;
-                };
+                        const mute = event.type() === Clutter.EventType.KEY_PRESS ||
+                            event.type() === Clutter.EventType.KEY_RELEASE
+                            ? this._muteKeys : this._muteInput;
+
+                        if (mute)
+                            return Clutter.EVENT_STOP;
+
+                        return Clutter.EVENT_PROPAGATE;
+                    };
+                }
 
                 BoxPointer.BoxPointer.prototype._drawBorder = function(area) {
                     const themeNode = this.get_theme_node();
@@ -5411,6 +5428,92 @@ void main() {
         this._setupMemoryOptimizer();
         this._setupForcedWindowCorners();
         this._setupDynamicMenuAlignment();
+        this._setupExtensionUpdateGuard();
+    }
+
+    _cleanStagedExtensionUpdates() {
+        try {
+            const updatesRoot = GLib.build_filenamev([
+                GLib.get_user_data_dir(),
+                'gnome-shell',
+                'extension-updates',
+            ]);
+            const updatesDir = Gio.File.new_for_path(updatesRoot);
+            if (!updatesDir.query_exists(null)) return;
+
+            const userExtRoot = GLib.build_filenamev([
+                GLib.get_user_data_dir(),
+                'gnome-shell',
+                'extensions',
+            ]);
+            const enumerator = updatesDir.enumerate_children(
+                'standard::name,standard::type',
+                Gio.FileQueryInfoFlags.NONE,
+                null
+            );
+            let info;
+            while ((info = enumerator.next_file(null)) !== null) {
+                const uuid = info.get_name();
+                const extPath = GLib.build_filenamev([userExtRoot, uuid]);
+                if (!GLib.file_test(extPath, GLib.FileTest.IS_DIR)) continue;
+                const stagedDir = updatesDir.get_child(uuid);
+                try {
+                    const rmDirRec = (dirFile) => {
+                        const childEnum = dirFile.enumerate_children(
+                            'standard::name,standard::type',
+                            Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS,
+                            null
+                        );
+                        let childInfo;
+                        while ((childInfo = childEnum.next_file(null)) !== null) {
+                            const childFile = dirFile.get_child(childInfo.get_name());
+                            if (childInfo.get_file_type() === Gio.FileType.DIRECTORY)
+                                rmDirRec(childFile);
+                            else
+                                childFile.delete(null);
+                        }
+                        childEnum.close(null);
+                        dirFile.delete(null);
+                    };
+                    rmDirRec(stagedDir);
+                } catch (_) {}
+            }
+            enumerator.close(null);
+        } catch (_) {}
+    }
+
+    _setupExtensionUpdateGuard() {
+        this._cleanStagedExtensionUpdates();
+        try {
+            if (!Main.extensionManager) return;
+            if (!this._updatesGuardInstalled) {
+                this._origUpdatesDesc = Object.getOwnPropertyDescriptor(
+                    Main.extensionManager,
+                    'updatesSupported'
+                ) || null;
+                Object.defineProperty(Main.extensionManager, 'updatesSupported', {
+                    get: () => false,
+                    configurable: true,
+                });
+                this._updatesGuardInstalled = true;
+            }
+        } catch (e) {
+            console.error(`[EvalHelper] Extension update guard error: ${e}`);
+        }
+    }
+
+    _teardownExtensionUpdateGuard() {
+        this._cleanStagedExtensionUpdates();
+        try {
+            if (this._updatesGuardInstalled && Main.extensionManager) {
+                if (this._origUpdatesDesc)
+                    Object.defineProperty(Main.extensionManager, 'updatesSupported', this._origUpdatesDesc);
+                else
+                    delete Main.extensionManager.updatesSupported;
+            }
+        } catch (_) {}
+        this._origUpdatesDesc = null;
+        this._updatesGuardInstalled = false;
     }
 
     _setupDynamicMenuAlignment() {
@@ -5479,6 +5582,7 @@ void main() {
     }
 
     disable() {
+        this._teardownExtensionUpdateGuard();
         try {
             if (PopupMenu.PopupMenu.prototype._origMacAutoAlignOpen) {
                 PopupMenu.PopupMenu.prototype.open = PopupMenu.PopupMenu.prototype._origMacAutoAlignOpen;
@@ -5794,17 +5898,28 @@ void main() {
             }
         }
 
+        globalThis._macGlideDisposed = true;
         if (PopupMenu.PopupMenu.prototype._origMacGlideOpen) {
-            PopupMenu.PopupMenu.prototype.open = PopupMenu.PopupMenu.prototype._origMacGlideOpen;
+            if (PopupMenu.PopupMenu.prototype.open === PopupMenu.PopupMenu.prototype._macGlideOpenWrapper)
+                PopupMenu.PopupMenu.prototype.open = PopupMenu.PopupMenu.prototype._origMacGlideOpen;
             PopupMenu.PopupMenu.prototype._origMacGlideOpen = null;
+            PopupMenu.PopupMenu.prototype._macGlideOpenWrapper = null;
+        }
+        if (PopupMenu.PopupSubMenu?.prototype?._origMacGlideOpen) {
+            if (PopupMenu.PopupSubMenu.prototype.open === PopupMenu.PopupSubMenu.prototype._macGlideSubOpenWrapper)
+                PopupMenu.PopupSubMenu.prototype.open = PopupMenu.PopupSubMenu.prototype._origMacGlideOpen;
+            PopupMenu.PopupSubMenu.prototype._origMacGlideOpen = null;
+            PopupMenu.PopupSubMenu.prototype._macGlideSubOpenWrapper = null;
         }
         if (PopupMenu.PopupSwitchMenuItem?.prototype?._origMacActivate) {
             PopupMenu.PopupSwitchMenuItem.prototype.activate = PopupMenu.PopupSwitchMenuItem.prototype._origMacActivate;
             PopupMenu.PopupSwitchMenuItem.prototype._origMacActivate = null;
         }
         if (Main.panel.menuManager?._origMacGlideAddMenu) {
-            Main.panel.menuManager.addMenu = Main.panel.menuManager._origMacGlideAddMenu;
+            if (Main.panel.menuManager.addMenu === Main.panel.menuManager._macGlideAddWrapper)
+                Main.panel.menuManager.addMenu = Main.panel.menuManager._origMacGlideAddMenu;
             Main.panel.menuManager._origMacGlideAddMenu = null;
+            Main.panel.menuManager._macGlideAddWrapper = null;
         }
 
         if (this._wineWindowCreatedId) {

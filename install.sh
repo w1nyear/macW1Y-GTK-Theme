@@ -142,18 +142,18 @@ elif [ -z "$MAC_INSTALLER_CLI" ]; then
                 for ext in "${_dis_exts[@]}"; do
                     gnome-extensions disable "$ext" 2>/dev/null || true
                     _prep_cur=$(( _prep_cur + 1 ))
-                    _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
+                    _prep_bar "$_prep_cur" "$_prep_tot" "Preparing modpack..."
                 done
                 for ext in "${_ena_exts[@]}"; do
                     gnome-extensions enable "$ext" 2>/dev/null || true
                     _prep_cur=$(( _prep_cur + 1 ))
-                    _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
+                    _prep_bar "$_prep_cur" "$_prep_tot" "Preparing modpack..."
                 done
             fi
-            gsettings set org.gnome.shell.extensions.user-theme name "macW1Y-Dark" 2>/dev/null || true; _prep_cur=$(( _prep_cur + 1 )); _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
-            gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark" 2>/dev/null || true; _prep_cur=$(( _prep_cur + 1 )); _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
-            gsettings set org.gnome.desktop.interface icon-theme "macW1Y-dark" 2>/dev/null || true; _prep_cur=$(( _prep_cur + 1 )); _prep_bar "$_prep_cur" "$_prep_tot" "Підготовка модпаку..."
-            gsettings set org.gnome.desktop.interface font-name "default 10" 2>/dev/null || true; _prep_cur=$(( _prep_cur + 1 )); _prep_bar "$_prep_cur" "$_prep_tot" "Готово! Запуск інсталятора..."
+            gsettings set org.gnome.shell.extensions.user-theme name "macW1Y-Dark" 2>/dev/null || true; _prep_cur=$(( _prep_cur + 1 )); _prep_bar "$_prep_cur" "$_prep_tot" "Preparing modpack..."
+            gsettings set org.gnome.desktop.interface gtk-theme "macW1Y-Dark" 2>/dev/null || true; _prep_cur=$(( _prep_cur + 1 )); _prep_bar "$_prep_cur" "$_prep_tot" "Preparing modpack..."
+            gsettings set org.gnome.desktop.interface icon-theme "macW1Y-dark" 2>/dev/null || true; _prep_cur=$(( _prep_cur + 1 )); _prep_bar "$_prep_cur" "$_prep_tot" "Preparing modpack..."
+            gsettings set org.gnome.desktop.interface font-name "default 10" 2>/dev/null || true; _prep_cur=$(( _prep_cur + 1 )); _prep_bar "$_prep_cur" "$_prep_tot" "Ready! Launching installer..."
             printf "\n"
             export MAC_INSTALLER_SCRIPT="$SCRIPT_DIR/install.sh"
             if [ "$MOCK_MODE" = "true" ]; then
@@ -1912,12 +1912,18 @@ install_gdm_transition() {
     sudo rm -rf /etc/gnome-shell/ui/layout.js /etc/gnome-shell/ui 2>/dev/null || true
     sudo sed -i '/G_RESOURCE_OVERLAYS.*gnome-shell/d' /etc/environment 2>/dev/null || true
 
-    # 1. GDM Dconf profile
+    # 1. GDM Dconf profile (preserve distro greeter-dconf-defaults across Debian/Ubuntu/Fedora/Arch)
     sudo mkdir -p /etc/dconf/profile
-    if [ -f "$SCRIPT_DIR/macw1y-gdm/gdm" ]; then
-        sudo cp "$SCRIPT_DIR/macw1y-gdm/gdm" /etc/dconf/profile/gdm
-        sudo chmod 644 /etc/dconf/profile/gdm
-    fi
+    {
+        echo "user-db:user"
+        echo "system-db:gdm"
+        if [ -f /var/lib/gdm3/greeter-dconf-defaults ]; then
+            echo "file-db:/var/lib/gdm3/greeter-dconf-defaults"
+        elif [ -f /usr/share/gdm/greeter-dconf-defaults ]; then
+            echo "file-db:/usr/share/gdm/greeter-dconf-defaults"
+        fi
+    } | sudo tee /etc/dconf/profile/gdm >/dev/null
+    sudo chmod 644 /etc/dconf/profile/gdm
 
     # 2. Dconf settings for GDM and lock screen
     if [ -f "$SCRIPT_DIR/macw1y-gdm/99-wack-lockscreen" ]; then
@@ -2035,9 +2041,9 @@ install_gdm_transition() {
         fi
     fi
 
-    # 8. update-alternatives (Debian/Ubuntu/Mint) or direct gresource (Arch/CachyOS/Fedora) for GDM theme
+    # 8. update-alternatives (Ubuntu/derivatives with gdm-theme.gresource) or direct gresource (Debian/Mint/Arch/CachyOS/Fedora) for GDM theme
     if [ -f "$GRES_TARGET" ]; then
-        if command -v update-alternatives >/dev/null 2>&1 && [ "$DISTRO_FAMILY" = "debian" ]; then
+        if command -v update-alternatives >/dev/null 2>&1 && update-alternatives --query gdm-theme.gresource >/dev/null 2>&1; then
             sudo update-alternatives --install /usr/share/gnome-shell/gdm-theme.gresource gdm-theme.gresource "$GRES_TARGET" 100 2>/dev/null || true
             sudo update-alternatives --set gdm-theme.gresource "$GRES_TARGET" 2>/dev/null || true
         else

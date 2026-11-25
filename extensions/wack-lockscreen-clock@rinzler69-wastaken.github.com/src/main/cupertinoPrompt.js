@@ -16,7 +16,7 @@ export const WackCupertinoRestPrompt = GObject.registerClass(
                 x_align: Clutter.ActorAlign.CENTER,
                 reactive: false,
             });
-            this.vertical = true;
+            this.orientation = Clutter.Orientation.VERTICAL;
 
             this._extension = extension;
             this._avatarButton = null;

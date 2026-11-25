@@ -386,7 +386,7 @@ function fitWeekdayFontSize(weekdays, cellWidth, desiredFont, minFont = 9) {
 };
 
 function noEventsToday() {
-	return _('No events today');
+	return trWidget('No events today', _);
 }
 
 function isAllDayEvent(event) {

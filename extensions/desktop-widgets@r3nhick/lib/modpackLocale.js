@@ -86,6 +86,28 @@ const QUICK_STRINGS = {
         tr: 'Tüm gün',
         ru: 'Весь день',
     },
+    "I'm waiting 🐾": {
+        uk: 'Я чекаю 🐾',
+        pl: 'Czekam 🐾',
+        de: 'Ich warte 🐾',
+        fr: 'J’attends 🐾',
+        es: 'Estoy esperando 🐾',
+        it: 'Sto aspettando 🐾',
+        pt: 'Estou à espera 🐾',
+        ru: 'Я жду 🐾',
+        tr: 'Bekliyorum 🐾',
+    },
+    'Play something to get going': {
+        uk: 'Увімкни щось, щоб почати',
+        pl: 'Włącz coś, aby zacząć',
+        de: 'Spiele etwas ab, um zu starten',
+        fr: 'Lancez un morceau pour commencer',
+        es: 'Reproduce algo para empezar',
+        it: 'Riproduci qualcosa per iniziare',
+        pt: 'Reproduz algo para começar',
+        ru: 'Включи что-нибудь, чтобы начать',
+        tr: 'Başlamak için bir şey çal',
+    },
 };
 
 export function getModpackLangCode() {

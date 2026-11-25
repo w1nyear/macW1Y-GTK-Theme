@@ -1465,7 +1465,7 @@ export function enable() {
 
         _box = new St.BoxLayout({
             style_class: 'tahoe-osd',
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             visible: false,
             opacity: 0,
             reactive: false,

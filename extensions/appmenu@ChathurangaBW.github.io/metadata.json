@@ -12,6 +12,7 @@
     "51"
   ],
   "url": "https://github.com/ChathurangaBW/AppMenu",
+  "settings-schema": "org.gnome.shell.extensions.appmenu",
   "gettext-domain": "appmenu",
   "version": 15
 }

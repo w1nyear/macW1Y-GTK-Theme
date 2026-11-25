@@ -368,7 +368,7 @@ export class GdmAnimationController {
         }
 
         this._gdm._cupertinoRestPromptContainer = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             style_class: 'wack-cupertino-rest',
             opacity: 0,
             visible: true,

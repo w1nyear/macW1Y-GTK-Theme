@@ -774,7 +774,7 @@ const TopLevelMenuButton = GObject.registerClass(
                 Logger.error(`Could not parse shortcut '${accel}'`);
                 return;
             }
-            let seat = Clutter.get_default_backend().get_default_seat();
+            let seat = (typeof Clutter.get_default_backend === 'function' ? Clutter.get_default_backend() : (global.stage?.get_context?.() || global.stage?.context)?.get_backend?.() || global.backend)?.get_default_seat?.();
             let vd = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
             if (!vd) return;
 
@@ -902,7 +902,7 @@ export class MenuManager {
         getVirtualDevice() {
         if (!this._virtualDevice) {
             try {
-                const seat = Clutter.get_default_backend().get_default_seat();
+                const seat = (typeof Clutter.get_default_backend === 'function' ? Clutter.get_default_backend() : (global.stage?.get_context?.() || global.stage?.context)?.get_backend?.() || global.backend)?.get_default_seat?.();
                 this._virtualDevice = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
             } catch (e) {
                 Logger.error(`Failed to create virtual device: ${e}`);

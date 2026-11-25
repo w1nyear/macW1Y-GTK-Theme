@@ -445,7 +445,10 @@ export function setSetupWizardFlag(val) {
 
 export function hasTouchpadGestures() {
     try {
-        const seat = Clutter.get_default_backend().get_default_seat();
+        const backend = typeof Clutter.get_default_backend === 'function'
+            ? Clutter.get_default_backend()
+            : (global.stage?.get_context?.() || global.stage?.context)?.get_backend?.() || global.backend;
+        const seat = backend?.get_default_seat?.();
         if (seat && typeof seat.list_devices === 'function') {
             const devs = seat.list_devices();
             for (const d of devs) {
@@ -963,7 +966,7 @@ export class MacSetupWizard {
         });
 
         this._backBtn = new St.Button({
-            label: t('wizard_back', 'Назад', this._selectedLocale),
+            label: t('wizard_back', 'Back', this._selectedLocale),
             can_focus: true,
             reactive: false,
             visible: false,
@@ -989,7 +992,7 @@ export class MacSetupWizard {
         this._bottomBar.add_child(spacer);
 
         this._nextBtn = new St.Button({
-            label: t('wizard_continue', 'Продовжити', this._selectedLocale),
+            label: t('wizard_continue', 'Continue', this._selectedLocale),
             can_focus: true,
             reactive: true
         });
