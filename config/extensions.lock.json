@@ -274,7 +274,7 @@
         "50",
         "51"
       ],
-      "sha256": "8abab7b24a1b5c80fe3f2706ddb87f935c8b35ba3a3ca94bd039bef793478bdc",
+      "sha256": "9366ac3a4a90a79c460bca13aaa8dd707845e2ee1dc0f2de314d6d08230ff88f",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -288,9 +288,9 @@
       "patch_description": "macW1Y Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macW1Y Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macW1Y Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macW1Y horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; authentic unfullscreen window shrink animation and menubar slide-down with solid dark dimming backdrop; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
       "last_verified": "2026-11-24",
       "integrity_hash": "d7d391f17d291fe98b899ee1af85d1bb9c11017ff2e7be5f6b5ab4a555211bcf",
-      "pinned_sha256": "8abab7b24a1b5c80fe3f2706ddb87f935c8b35ba3a3ca94bd039bef793478bdc",
+      "pinned_sha256": "9366ac3a4a90a79c460bca13aaa8dd707845e2ee1dc0f2de314d6d08230ff88f",
       "expected_hash": "d7d391f17d291fe98b899ee1af85d1bb9c11017ff2e7be5f6b5ab4a555211bcf",
-      "dir_hash": "8abab7b2",
+      "dir_hash": "9366ac3a",
       "integrity": "d7d391f17d291fe98b899ee1af85d1bb9c11017ff2e7be5f6b5ab4a555211bcf"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {

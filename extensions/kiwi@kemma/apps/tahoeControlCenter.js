@@ -79,10 +79,12 @@ function _applyCCStylingToActiveStacks() {
     try {
         if (_panel?.glass?.stacks) {
             for (const s of _panel.glass.stacks) {
-                if (s && s.group === 'card' && s.effect) {
+                if (s && s.group !== 'backdrop' && s.effect) {
                     s.effect.setBlurRadius?.(_ccStyling.blur);
                     s.effect.setTintColor?.(0.0, 0.0, 0.0);
                     s.effect.setTintStrength?.(_ccStyling.tint / 100.0);
+                    s._appliedCcBlur = _ccStyling.blur;
+                    s._appliedCcTint = _ccStyling.tint;
                     s.effect.queue_repaint?.();
                     s.bgActor?.queue_redraw?.();
                 }
@@ -3935,14 +3937,14 @@ export function _makeGlassStack(monitor, radius, name, pure = false, edgePx = 0)
         } else {
             effect.setSurfaceLightEnabled(true);
             effect._setFloat('surface_light_enabled', 1.0);
-            effect._setFloat('sheen_intensity', 0.08);
-            effect._setFloat('rim_intensity', 0.12);
-            effect._setFloat('rim_width', 3.5);
+            effect._setFloat('sheen_intensity', 0.12);
+            effect._setFloat('rim_intensity', 0.28);
+            effect._setFloat('rim_width', 4.0);
             effect._setFloat('rim_power', 4.5);
             effect._setFloat('rim_directional_power', 2.5);
-            effect._setFloat('rim_light_color_intensity', 1.2);
-            effect._setFloat('specular_intensity', 0.08);
-            effect._setFloat('displacement_scale', Math.min(28.0, _qsGlassRefraction()));
+            effect._setFloat('rim_light_color_intensity', 1.35);
+            effect._setFloat('specular_intensity', 0.14);
+            effect._setFloat('displacement_scale', Math.max(22.0, Math.min(34.0, _qsGlassRefraction())));
             effect._setFloat('ior', 1.45);
             effect._setFloat('chroma_strength', 0.003);
             effect._setFloat('edge_smoothing', 1.5);
@@ -4190,16 +4192,22 @@ function _syncStack(s, monitor) {
     if (!_panelOpening && !_closing) {
         s.bgActor.opacity = p.box.opacity;
     }
+    if (s.group !== 'backdrop') {
+        if (!_ccStylingLoaded) _loadCCStyling();
+        if (s._appliedCcBlur !== _ccStyling.blur || s._appliedCcTint !== _ccStyling.tint) {
+            s.effect.setBlurRadius?.(_ccStyling.blur);
+            s.effect.setTintColor?.(0.0, 0.0, 0.0);
+            s.effect.setTintStrength?.(_ccStyling.tint / 100.0);
+            s._appliedCcBlur = _ccStyling.blur;
+            s._appliedCcTint = _ccStyling.tint;
+        }
+    }
     if (s.group === 'card') {
         if (typeof s.effect.setShapeType === 'function')
             s.effect.setShapeType(0.0);
         else if (typeof s.effect._setFloat === 'function')
             s.effect._setFloat('shape_type', 0.0);
         s.effect.setCornerRadius(22);
-        if (!_ccStylingLoaded) _loadCCStyling();
-        s.effect.setBlurRadius?.(_ccStyling.blur);
-        s.effect.setTintColor?.(0.0, 0.0, 0.0);
-        s.effect.setTintStrength?.(_ccStyling.tint / 100.0);
     } else if (s.group === 'backdrop') {
         s.effect.setCornerRadius(28);
         try {
