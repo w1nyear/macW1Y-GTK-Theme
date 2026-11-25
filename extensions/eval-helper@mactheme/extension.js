@@ -4550,7 +4550,25 @@ void main() {
 
                     if (global.window_group) {
                         global.window_group.remove_all_transitions();
-                        global.window_group.opacity = 0;
+                        global.window_group.opacity = 255;
+                        if (lm._backgroundGroup) {
+                            lm._backgroundGroup.remove_all_transitions();
+                            lm._backgroundGroup.opacity = 255;
+                        }
+                        for (const w of global.window_group.get_children()) {
+                            if (w !== lm._backgroundGroup) {
+                                w.remove_all_transitions();
+                                w.opacity = 0;
+                            }
+                        }
+                        if (!lm._macWinGroupChildAddedId) {
+                            lm._macWinGroupChildAddedId = global.window_group.connect('child-added', (_group, w) => {
+                                if (lm._startingUp && w !== lm._backgroundGroup) {
+                                    w.remove_all_transitions();
+                                    w.opacity = 0;
+                                }
+                            });
+                        }
                     }
 
                     for (const child of lm.uiGroup.get_children()) {
@@ -4953,21 +4971,47 @@ void main() {
                             }
                         }
 
+                        if (lm._macWinGroupChildAddedId && global.window_group) {
+                            try { global.window_group.disconnect(lm._macWinGroupChildAddedId); } catch (_) {}
+                            lm._macWinGroupChildAddedId = null;
+                        }
                         if (global.window_group) {
                             global.window_group.remove_all_transitions();
-                            global.window_group.opacity = 0;
-                            global.window_group.ease({
-                                opacity: 255,
-                                duration: DURATION,
-                                mode: MODE,
-                            });
+                            global.window_group.opacity = 255;
+                            if (lm._backgroundGroup) {
+                                lm._backgroundGroup.remove_all_transitions();
+                                lm._backgroundGroup.opacity = 255;
+                            }
+                            for (const w of global.window_group.get_children()) {
+                                if (w !== lm._backgroundGroup) {
+                                    w.remove_all_transitions();
+                                    w.opacity = 0;
+                                    w.ease({
+                                        opacity: 255,
+                                        duration: DURATION,
+                                        mode: MODE,
+                                    });
+                                }
+                            }
                         }
 
                         if (lm._coverPane) {
                             const cover = lm._coverPane;
                             lm._coverPane = null;
+                            for (const topActor of [lm.panelBox, ...dockContainers, ...glassActors]) {
+                                if (topActor && topActor.get_parent?.() === lm.uiGroup) {
+                                    try { lm.uiGroup.set_child_above_sibling(topActor, cover); } catch (_) {}
+                                }
+                            }
                             cover.remove_all_transitions();
-                            cover.destroy();
+                            cover.ease({
+                                opacity: 0,
+                                duration: 140,
+                                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                                onComplete: () => {
+                                    try { cover.destroy(); } catch (_) {}
+                                },
+                            });
                         }
 
                         if (lm._systemBackground) {
@@ -6153,6 +6197,10 @@ void main() {
         }
 
         if (Main.layoutManager) {
+            if (Main.layoutManager._macWinGroupChildAddedId && global.window_group) {
+                try { global.window_group.disconnect(Main.layoutManager._macWinGroupChildAddedId); } catch (_) {}
+                Main.layoutManager._macWinGroupChildAddedId = null;
+            }
             if (Main.layoutManager._macDockChildAddedId) {
                 try { Main.layoutManager.uiGroup.disconnect(Main.layoutManager._macDockChildAddedId); } catch (_) {}
                 Main.layoutManager._macDockChildAddedId = null;

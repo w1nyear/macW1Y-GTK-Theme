@@ -5988,3 +5988,18 @@ Task #938:
     * `unittest`: 55/55 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в install.sh; `diff` із root-файлами Ubuntu — 0 розбіжностей.
   * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+979. 2026-11-25 — Усунення сірого спалаху між GDM і анімацією робочого стола (Ubuntu/Debian/Mint/Fedora/Arch/CachyOS):
+  - Змінені файли:
+    * [gnome-shell-overlay/ui/layout.js](file:///home/vitaliy/macW1Y/gnome-shell-overlay/ui/layout.js) (_prepareStartupAnimation, _startupAnimationSession)
+    * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js) (prepareMacDesktopHidden, runMacStartupSession, disable)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py) (перевірка _macWinGroupChildAddedId)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Причина та виправлення:
+    * `this._backgroundGroup` (шпалери робочого стола) є дочірнім актором `global.window_group`. Коли під час приховування встановлювалося `global.window_group.opacity = 0` перед зняттям `_coverPane`, шпалери ставали повністю прозорими і оголювали сірий системний фон `_systemBackground` (мигання сірим перед початком анімації).
+    * Тепер `global.window_group` та `this._backgroundGroup` завжди лишаються з `opacity = 255` (шпалери не зникають ні на кадр), приховуються та плавно з’являються лише дочірні вікна/DING (`w !== _backgroundGroup`, через `_macWinGroupChildAddedId`), а `_coverPane` м’яко розчиняється за `140ms` (`EASE_OUT_QUAD`) під `panelBox`, `dashtodockContainer` та `liquid-glass-bg-actor`, залишаючи їх 560ms анімацію повністю видимою поверх шпалер.
+  - Перевірка та синхронізація:
+    * Синхронізовано користувацькі та root-файли на поточній Ubuntu (`/usr/share/mactheme/gnome-shell-overlay/ui/layout.js`, `/usr/share/mactheme/config/extensions.lock.json`, `~/.local/share/gnome-shell/extensions/eval-helper@mactheme`, `~/.config/macw1y/extensions.lock.json`), `diff` — 0 розбіжностей.
+    * `unittest`: 55/55 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в install.sh.
+  * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

@@ -886,7 +886,25 @@ export const LayoutManager = GObject.registerClass({
 
             if (global.window_group) {
                 global.window_group.remove_all_transitions();
-                global.window_group.opacity = 0;
+                global.window_group.opacity = 255;
+                if (this._backgroundGroup) {
+                    this._backgroundGroup.remove_all_transitions();
+                    this._backgroundGroup.opacity = 255;
+                }
+                for (const w of global.window_group.get_children()) {
+                    if (w !== this._backgroundGroup) {
+                        w.remove_all_transitions();
+                        w.opacity = 0;
+                    }
+                }
+                if (!this._macWinGroupChildAddedId) {
+                    this._macWinGroupChildAddedId = global.window_group.connect('child-added', (_group, w) => {
+                        if (this._startingUp && w !== this._backgroundGroup) {
+                            w.remove_all_transitions();
+                            w.opacity = 0;
+                        }
+                    });
+                }
             }
 
 
@@ -1366,14 +1384,28 @@ export const LayoutManager = GObject.registerClass({
         }
 
 
+        if (this._macWinGroupChildAddedId && global.window_group) {
+            try { global.window_group.disconnect(this._macWinGroupChildAddedId); } catch (_) {}
+            this._macWinGroupChildAddedId = null;
+        }
         if (global.window_group) {
             global.window_group.remove_all_transitions();
-            global.window_group.opacity = 0;
-            global.window_group.ease({
-                opacity: 255,
-                duration: DURATION,
-                mode: MODE,
-            });
+            global.window_group.opacity = 255;
+            if (this._backgroundGroup) {
+                this._backgroundGroup.remove_all_transitions();
+                this._backgroundGroup.opacity = 255;
+            }
+            for (const w of global.window_group.get_children()) {
+                if (w !== this._backgroundGroup) {
+                    w.remove_all_transitions();
+                    w.opacity = 0;
+                    w.ease({
+                        opacity: 255,
+                        duration: DURATION,
+                        mode: MODE,
+                    });
+                }
+            }
         }
 
 
@@ -1460,13 +1492,24 @@ export const LayoutManager = GObject.registerClass({
             });
         }
 
-        // Remove static wallpaper cover once all reveal animations are queued at opacity 0 / offscreen
-        // so the synchronized entrance animations play unobstructed directly over the live wallpaper
+        // Crossfade static wallpaper cover cleanly while reveal actors animate unobstructed above it
         if (this._coverPane) {
             const cover = this._coverPane;
             this._coverPane = null;
+            for (const topActor of [this.panelBox, ...dockContainers, ...glassActors]) {
+                if (topActor && topActor.get_parent?.() === this.uiGroup) {
+                    try { this.uiGroup.set_child_above_sibling(topActor, cover); } catch (_) {}
+                }
+            }
             cover.remove_all_transitions();
-            cover.destroy();
+            cover.ease({
+                opacity: 0,
+                duration: 140,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                onComplete: () => {
+                    try { cover.destroy(); } catch (_) {}
+                },
+            });
         }
 
 
