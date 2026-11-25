@@ -1215,7 +1215,6 @@ export default class EvalHelper extends Extension {
 
         const patchSpotlightKeybinding = async () => {
             try {
-
                 try {
                     const ibusSettings = new Gio.Settings({ schema_id: 'org.freedesktop.ibus.general.hotkey' });
                     let trig = ibusSettings.get_strv('trigger');
@@ -1228,117 +1227,24 @@ export default class EvalHelper extends Extension {
                 if (!ext?.stateObj?._settings) return;
 
                 try {
-                    ext.stateObj._settings.set_strv('search-shortcut', ['<Control>space', '<Primary>space']);
+                    const cur = ext.stateObj._settings.get_strv('search-shortcut');
+                    if (!Array.isArray(cur) || cur.length === 0) {
+                        ext.stateObj._settings.set_strv('search-shortcut', ['<Control>space', '<Primary>space']);
+                    }
                 } catch (_) {}
 
-                const isSpotlightBlocked = () => {
-                    if (typeof globalThis.isMacSpotlightBlocked === 'function') {
-                        return globalThis.isMacSpotlightBlocked();
+                // Keep appmenu as the single owner of search-shortcut and clipboard-shortcut,
+                // and recover them automatically if GNOME Shell still has ActionMode.NONE (0).
+                if (typeof ext.stateObj._syncSpotlightKeybinding === 'function') {
+                    ext.stateObj._syncSpotlightKeybinding();
+                } else {
+                    if (typeof ext.stateObj._addSearchKeybinding === 'function' && !Main.wm._allowedKeybindings?.['search-shortcut']) {
+                        ext.stateObj._searchShortcutInstalled = false;
+                        ext.stateObj._addSearchKeybinding();
                     }
-                    const disp = global.display;
-                    if (!disp) return false;
-                    if (typeof disp.is_grabbed === 'function' && disp.is_grabbed()) return true;
-                    const tracker = global.backend?.get_cursor_tracker?.();
-                    if (tracker && typeof tracker.get_pointer_visible === 'function' && tracker.get_pointer_visible() === false) return true;
-                    const curMon = typeof disp.get_current_monitor === 'function' ? disp.get_current_monitor() : -1;
-                    if (curMon >= 0 && typeof disp.get_monitor_in_fullscreen === 'function' && disp.get_monitor_in_fullscreen(curMon)) return true;
-                    if (Main.layoutManager?.primaryMonitor?.inFullscreen) return true;
-                    if (Main.layoutManager?.monitors?.some?.(m => m?.inFullscreen)) return true;
-                    if (Main.sessionMode?.isLocked) return true;
-                    const fw = typeof disp.get_focus_window === 'function' ? disp.get_focus_window() : null;
-                    if (fw && !fw.is_destroyed?.()) {
-                        const winType = typeof fw.get_window_type === 'function' ? fw.get_window_type() : 0;
-                        if (winType === 1 || fw.get_title?.()?.includes('Desktop Icons')) {
-                            return false;
-                        }
-                        if (typeof fw.is_fullscreen === 'function' && fw.is_fullscreen()) return true;
-                        if (fw.fullscreen) return true;
-                        const wmClass = (fw.get_wm_class?.() || '').toLowerCase();
-                        const isGame = (
-                            wmClass.includes('steam_app_') ||
-                            wmClass.includes('gamescope') ||
-                            wmClass === 'wine' || wmClass === 'wine64' ||
-                            wmClass.endsWith('.exe') ||
-                            wmClass === 'retroarch' ||
-                            wmClass === 'lutris' ||
-                            wmClass === 'heroic' ||
-                            wmClass === 'ryujinx' ||
-                            wmClass === 'yuzu' ||
-                            wmClass === 'rpcs3' ||
-                            wmClass === 'pcsx2' ||
-                            wmClass === 'dosbox' ||
-                            wmClass === 'ppsspp'
-                        );
-                        if (isGame) {
-                            if (fw.maximized_horizontally && fw.maximized_vertically) return true;
-                            if (typeof fw.is_screen_sized === 'function' && fw.is_screen_sized()) return true;
-                            if (typeof fw.is_monitor_sized === 'function' && fw.is_monitor_sized()) return true;
-                        }
-                    }
-                    return false;
-                };
-
-                let searchShortcutInstalled = false;
-                const syncShortcut = () => {
-                    const blocked = isSpotlightBlocked();
-                    if (blocked) {
-                        if (searchShortcutInstalled) {
-                            Main.wm.removeKeybinding('search-shortcut');
-                            searchShortcutInstalled = false;
-                        }
-                    } else {
-                        if (!searchShortcutInstalled) {
-                            Main.wm.removeKeybinding('search-shortcut');
-                            Main.wm.addKeybinding(
-                                'search-shortcut',
-                                ext.stateObj._settings,
-                                Meta.KeyBindingFlags.NONE,
-                                Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW | Shell.ActionMode.POPUP,
-                                async () => {
-                                    if (isSpotlightBlocked()) return;
-                                    try {
-                                        if (typeof globalThis._macSpotlightToggle === 'function') {
-                                            globalThis._macSpotlightToggle();
-                                            return;
-                                        }
-                                        if (typeof globalThis.toggleMacSpotlight === 'function') {
-                                            globalThis.toggleMacSpotlight();
-                                            return;
-                                        }
-                                        const mod = await import(`file://${ext.path}/searchDialog.js?t=${Date.now()}`);
-                                        if (mod?.toggleSearchDialog) {
-                                            mod.toggleSearchDialog();
-                                        }
-                                    } catch (e) {
-                                        console.error(`[EvalHelper] toggleSearchDialog error: ${e}`);
-                                    }
-                                }
-                            );
-                            searchShortcutInstalled = true;
-                        }
-                    }
-                };
-
-                syncShortcut();
-
-                if (!this._spotlightBlockWatcherInstalled) {
-                    this._spotlightBlockWatcherInstalled = true;
-                    const disp = global.display;
-                    if (disp) {
-                        disp.connectObject?.(
-                            'notify::focus-window', () => syncShortcut(),
-                            'in-fullscreen-changed', () => syncShortcut(),
-                            'grab-op-begin', () => syncShortcut(),
-                            'grab-op-end', () => syncShortcut(),
-                            this
-                        );
-                    }
-                    const tracker = global.backend?.get_cursor_tracker?.();
-                    if (tracker) {
-                        tracker.connectObject?.('visibility-changed', () => syncShortcut(), this);
-                    }
-                    if (global.window_manager) {
-                        global.window_manager.connectObject?.('size-change', () => syncShortcut(), this);
+                    if (typeof ext.stateObj._addClipboardKeybinding === 'function' && !Main.wm._allowedKeybindings?.['clipboard-shortcut']) {
+                        ext.stateObj._clipboardShortcutInstalled = false;
+                        ext.stateObj._addClipboardKeybinding();
                     }
                 }
             } catch (e) {

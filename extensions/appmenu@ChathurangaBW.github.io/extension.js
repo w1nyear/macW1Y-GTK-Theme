@@ -58,32 +58,9 @@ export default class AppMenuExtension extends Extension {
         global.display.connectObject(
             'notify::focus-window', () => {
                 this._scheduleMenuUpdate();
-                this._syncSpotlightKeybinding();
-            },
-            'in-fullscreen-changed', () => {
-                this._syncSpotlightKeybinding();
-            },
-            'grab-op-begin', () => {
-                this._syncSpotlightKeybinding();
-            },
-            'grab-op-end', () => {
-                this._syncSpotlightKeybinding();
             },
             this
         );
-
-        const tracker = global.backend?.get_cursor_tracker?.();
-        if (tracker) {
-            tracker.connectObject?.('visibility-changed', () => {
-                this._syncSpotlightKeybinding();
-            }, this);
-        }
-
-        if (global.window_manager) {
-            global.window_manager.connectObject?.('size-change', () => {
-                this._syncSpotlightKeybinding();
-            }, this);
-        }
 
         this._syncOverviewButton();
 
@@ -134,6 +111,7 @@ export default class AppMenuExtension extends Extension {
         if (Main.sessionMode) {
             Main.sessionMode.connectObject('updated', () => {
                 this._syncSessionMode();
+                this._syncSpotlightKeybinding();
             }, this);
             this._syncSessionMode();
         }
@@ -191,8 +169,14 @@ export default class AppMenuExtension extends Extension {
     }
 
     _addSearchKeybinding() {
-        if (!this._settings || this._searchShortcutInstalled)
+        if (!this._settings)
             return;
+        if (this._searchShortcutInstalled && Main.wm._allowedKeybindings?.['search-shortcut'])
+            return;
+        if (this._searchShortcutInstalled) {
+            try { Main.wm.removeKeybinding('search-shortcut'); } catch (_) {}
+            this._searchShortcutInstalled = false;
+        }
 
         Main.wm.addKeybinding(
             'search-shortcut',
@@ -213,16 +197,22 @@ export default class AppMenuExtension extends Extension {
     }
 
     _removeSearchKeybinding() {
-        if (!this._searchShortcutInstalled)
+        if (!this._searchShortcutInstalled && !Main.wm._allowedKeybindings?.['search-shortcut'])
             return;
 
-        Main.wm.removeKeybinding('search-shortcut');
+        try { Main.wm.removeKeybinding('search-shortcut'); } catch (_) {}
         this._searchShortcutInstalled = false;
     }
 
     _addClipboardKeybinding() {
-        if (!this._settings || this._clipboardShortcutInstalled)
+        if (!this._settings)
             return;
+        if (this._clipboardShortcutInstalled && Main.wm._allowedKeybindings?.['clipboard-shortcut'])
+            return;
+        if (this._clipboardShortcutInstalled) {
+            try { Main.wm.removeKeybinding('clipboard-shortcut'); } catch (_) {}
+            this._clipboardShortcutInstalled = false;
+        }
 
         Main.wm.addKeybinding(
             'clipboard-shortcut',
@@ -243,37 +233,31 @@ export default class AppMenuExtension extends Extension {
     }
 
     _removeClipboardKeybinding() {
-        if (!this._clipboardShortcutInstalled)
+        if (!this._clipboardShortcutInstalled && !Main.wm._allowedKeybindings?.['clipboard-shortcut'])
             return;
 
-        Main.wm.removeKeybinding('clipboard-shortcut');
+        try { Main.wm.removeKeybinding('clipboard-shortcut'); } catch (_) {}
         this._clipboardShortcutInstalled = false;
     }
 
     _syncSpotlightKeybinding() {
+        // Keep keybindings registered while enabled so GNOME never gets stuck with ActionMode.NONE (0);
+        // blocking is enforced dynamically inside the keybinding callback itself.
+        if (!this._searchShortcutInstalled || !Main.wm._allowedKeybindings?.['search-shortcut']) {
+            this._addSearchKeybinding();
+        }
+        if (!this._clipboardShortcutInstalled || !Main.wm._allowedKeybindings?.['clipboard-shortcut']) {
+            this._addClipboardKeybinding();
+        }
         const blocked = (typeof globalThis.isMacSpotlightBlocked === 'function')
             ? globalThis.isMacSpotlightBlocked()
             : false;
-
         if (blocked) {
-            if (this._searchShortcutInstalled) {
-                this._removeSearchKeybinding();
-            }
-            if (this._clipboardShortcutInstalled) {
-                this._removeClipboardKeybinding();
-            }
             try {
                 if (globalThis._macSpotlightGlobalInstance?._isOpen) {
                     globalThis._macSpotlightGlobalInstance.close(true);
                 }
             } catch (_) {}
-        } else {
-            if (!this._searchShortcutInstalled) {
-                this._addSearchKeybinding();
-            }
-            if (!this._clipboardShortcutInstalled) {
-                this._addClipboardKeybinding();
-            }
         }
     }
 

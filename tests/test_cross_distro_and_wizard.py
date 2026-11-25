@@ -136,6 +136,12 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("_hasCompletedColdBootSplash", pro_js)
         self.assertIn("_hasCompletedColdBootSplash", layout_js)
         self.assertIn(".macw1y_session_", eval_js)
+        appmenu_ext = (ROOT / "extensions" / "appmenu@ChathurangaBW.github.io" / "extension.js").read_text(encoding="utf-8")
+        self.assertIn("Main.wm._allowedKeybindings?.['search-shortcut']", appmenu_ext)
+        self.assertNotIn("tracker.connectObject?.('visibility-changed'", appmenu_ext)
+        search_dialog = (ROOT / "extensions" / "appmenu@ChathurangaBW.github.io" / "searchDialog.js").read_text(encoding="utf-8")
+        self.assertNotIn("get_pointer_visible() === false", search_dialog)
+        self.assertNotIn("ext.stateObj._settings.set_strv('search-shortcut', ['<Control>space', '<Primary>space']);\n                } catch (_) {}\n\n                const isSpotlightBlocked", eval_js)
 
 
 if __name__ == "__main__":

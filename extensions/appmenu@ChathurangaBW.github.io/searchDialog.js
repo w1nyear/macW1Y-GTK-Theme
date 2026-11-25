@@ -2113,7 +2113,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
     }
 
     _applyGlassUniforms() {
-        if (!_isGlassAlive(this._glass)) return;
+        if (this._destroyed || !_isActorValid(this) || !_isGlassAlive(this._glass)) return;
         const effect = this._glass.effect || this._glass._effect;
         if (!effect) return;
 
@@ -2215,6 +2215,8 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
             const path = ext?.path || `${GLib.get_user_data_dir()}/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com`;
             const mod = await import(`file://${path}/dist/rendering/backdropGlass.js`);
             const BackdropGlass = mod.BackdropGlass;
+            if (this._destroyed || !_isActorValid(this))
+                return;
 
             this._glass = new BackdropGlass({
                 extensionPath: path,
@@ -2223,6 +2225,11 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
                 owner: 'spotlight',
                 excludeActors: [this, this._box, this._backdrop],
             });
+            if (this._destroyed || !_isActorValid(this)) {
+                try { this._glass.destroy(); } catch (_) {}
+                this._glass = null;
+                return;
+            }
             this._glassResolutionKey = null;
             const mon = Main.layoutManager.primaryMonitor;
             if (mon) {
@@ -4703,6 +4710,7 @@ function applyAppmenuHorizontalFade(actor, leftOffset = 26.0, rightOffset = 26.0
     }
 
     _onDestroy() {
+        this._destroyed = true;
         this._cancelSyncLoop();
         try { this._interfaceSettings?.disconnectObject(this); } catch (_) {}
         this._interfaceSettings = null;
@@ -4760,41 +4768,14 @@ export function isSpotlightBlocked() {
         return globalThis.isMacSpotlightBlocked();
     }
     try {
+        if (Main.sessionMode?.isLocked ||
+            Main.sessionMode?.currentMode === 'unlock-dialog' ||
+            Main.sessionMode?.currentMode === 'gdm') {
+            return true;
+        }
+
         const disp = global.display;
         if (!disp) return false;
-
-
-        if (typeof disp.is_grabbed === 'function' && disp.is_grabbed()) {
-            return true;
-        }
-
-
-        const cursorTracker = global.backend?.get_cursor_tracker?.();
-        if (cursorTracker && typeof cursorTracker.get_pointer_visible === 'function') {
-            if (cursorTracker.get_pointer_visible() === false) {
-                return true;
-            }
-        }
-
-
-        const curMon = typeof disp.get_current_monitor === 'function' ? disp.get_current_monitor() : -1;
-        if (curMon >= 0 && typeof disp.get_monitor_in_fullscreen === 'function') {
-            if (disp.get_monitor_in_fullscreen(curMon)) {
-                return true;
-            }
-        }
-        if (Main.layoutManager?.primaryMonitor?.inFullscreen) {
-            return true;
-        }
-        if (Main.layoutManager?.monitors?.some?.(m => m?.inFullscreen)) {
-            return true;
-        }
-
-
-        if (Main.sessionMode?.isLocked) {
-            return true;
-        }
-
 
         const fw = typeof disp.get_focus_window === 'function' ? disp.get_focus_window() : null;
         if (fw && !fw.is_destroyed?.()) {
@@ -4804,14 +4785,12 @@ export function isSpotlightBlocked() {
                 return false;
             }
 
-
             if (typeof fw.is_fullscreen === 'function' && fw.is_fullscreen()) {
                 return true;
             }
             if (fw.fullscreen) {
                 return true;
             }
-
 
             const wmClass = (fw.get_wm_class?.() || '').toLowerCase();
             const isGame = (
@@ -4840,6 +4819,19 @@ export function isSpotlightBlocked() {
                     return true;
                 }
             }
+        }
+
+        const curMon = typeof disp.get_current_monitor === 'function' ? disp.get_current_monitor() : -1;
+        if (curMon >= 0 && typeof disp.get_monitor_in_fullscreen === 'function') {
+            if (disp.get_monitor_in_fullscreen(curMon)) {
+                return true;
+            }
+        }
+        if (Main.layoutManager?.primaryMonitor?.inFullscreen) {
+            return true;
+        }
+        if (Main.layoutManager?.monitors?.some?.(m => m?.inFullscreen)) {
+            return true;
         }
 
         return false;

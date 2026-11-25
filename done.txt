@@ -6051,3 +6051,17 @@ Task #938:
   - Перевірка та синхронізація:
     * Синхронізовано `~/.local/share/gnome-shell/extensions/{wack-lockscreen-clock@rinzler69-wastaken.github.com,eval-helper@mactheme}`, системні `/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com`, `/usr/share/mactheme/gnome-shell-overlay/ui/layout.js`, `~/.config/macw1y/extensions.lock.json`, `/usr/share/mactheme/config/extensions.lock.json`, а також створено маркер поточної сесії `/dev/shm/.macw1y_session_1000`.
     * `unittest`: 55/55 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в install.sh.
+983. 2026-11-25 — Виправлення непрацюючих комбінацій клавіш Spotlight і буфера обміну (`Ctrl+Space`, `Super+V` та користувацькі шорткати):
+  - Змінені файли:
+    * [extensions/appmenu@ChathurangaBW.github.io/extension.js](file:///home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/extension.js) (`enable`, `_addSearchKeybinding`, `_addClipboardKeybinding`, `_syncSpotlightKeybinding`)
+    * [extensions/appmenu@ChathurangaBW.github.io/searchDialog.js](file:///home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/searchDialog.js) (`_applyGlassUniforms`, `_initGlass`, `_onDestroy`, `isSpotlightBlocked`)
+    * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js) (`patchSpotlightKeybinding`)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Причина та виправлення:
+    * `appmenu` та `eval-helper` одночасно реєстрували й знімали `'search-shortcut'` через `Main.wm.removeKeybinding()` щоразу при приховуванні курсора (`cursorTracker.get_pointer_visible() === false` під час набору тексту на Wayland), захопленнях (`is_grabbed()`) або зміні фокусу/блокуванні. У результаті обидві комбінації (`search-shortcut` та `clipboard-shortcut`) залишались знятими (`Main.wm._allowedKeybindings === 0`) і не відновлювались, а `eval-helper` ще й примусово перезаписував `search-shortcut` на старті.
+    * Прибрано динамічне зняття `'search-shortcut'` і `'clipboard-shortcut'` з `Main.wm` на подіях курсора/фокусу та гонку між розширеннями: тепер єдиним власником біндингів є `appmenu`, хоткеї завжди лишаються зареєстрованими (`Shell.ActionMode.NORMAL | OVERVIEW | POPUP`), а блокування для повноекранних вікон/ігор та екрана блокування перевіряється безпосередньо всередині колбеку.
+    * З `isSpotlightBlocked()` прибрано помилкові перевірки `get_pointer_visible() === false` та `is_grabbed()`, які блокували Spotlight під час набору тексту, а в `MacSpotlightDialog._initGlass()` додано перевірку `_destroyed` / `_isActorValid()` перед зверненням до знищених акторів.
+  - Перевірка та синхронізація:
+    * Синхронізовано `~/.local/share/gnome-shell/extensions/{appmenu@ChathurangaBW.github.io,eval-helper@mactheme}` (зі збереженням симлінків), системні `/usr/share/gnome-shell/extensions/{appmenu@ChathurangaBW.github.io,eval-helper@mactheme}` (`appmenu` був застарілим), `~/.config/macw1y/extensions.lock.json`, `/usr/share/mactheme/config/extensions.lock.json`, а також одразу відновлено активні біндинги у поточній сесії (`scVal: 131`, `ccVal: 131`).
+    * `unittest`: 55/55 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в install.sh.
