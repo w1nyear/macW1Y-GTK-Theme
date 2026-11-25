@@ -1,0 +1,12 @@
+[Unit]
+Description=macW1Y Hardware DMI Info Cache
+After=local-fs.target
+ConditionPathExists=/sys/class/dmi/id
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/mac-hwinfo
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=About This Mac
+Name[uk]=Про цей комп’ютер
+Comment=View information about your system
+Exec=/usr/local/bin/mac-about
+Icon=org.gnome.Settings-about-symbolic
+Terminal=false
+NoDisplay=true
+Categories=System;Utility;
+StartupWMClass=mac-about

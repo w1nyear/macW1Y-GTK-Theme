@@ -1,5 +1,6 @@
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Logger from '../logger.js';
 
 const HOME = GLib.get_home_dir();
@@ -11,6 +12,69 @@ function launch(argv) {
     } catch (e) {
         Logger.error(`Failed to launch ${argv[0]}: ${e}`);
     }
+}
+
+let _aboutWindowCreatedId = 0;
+let _aboutWindowTimeoutId = 0;
+
+function _clearAboutCenterWatch() {
+    if (_aboutWindowCreatedId && global.display) {
+        try { global.display.disconnect(_aboutWindowCreatedId); } catch (_e) {}
+        _aboutWindowCreatedId = 0;
+    }
+    if (_aboutWindowTimeoutId) {
+        try { GLib.source_remove(_aboutWindowTimeoutId); } catch (_e) {}
+        _aboutWindowTimeoutId = 0;
+    }
+}
+
+function launchAboutThisMac() {
+    const candidates = [
+        '/usr/local/bin/mac-about',
+        GLib.build_filenamev([HOME, '.local', 'bin', 'mac-about']),
+        '/usr/bin/mac-about',
+    ];
+    const binPath = candidates.find(p => GLib.file_test(p, GLib.FileTest.IS_EXECUTABLE)) || 'mac-about';
+
+    _clearAboutCenterWatch();
+    try {
+        _aboutWindowCreatedId = global.display.connect('window-created', (_display, win) => {
+            try {
+                const wmClass = (win.get_wm_class?.() || '').toLowerCase();
+                const appId = (win.get_gtk_application_id?.() || '').toLowerCase();
+                if (!wmClass.includes('mac-about') && appId !== 'org.macw1y.about')
+                    return;
+                _clearAboutCenterWatch();
+                const centerWin = () => {
+                    try {
+                        const monIdx = win.get_monitor?.() ?? Main.layoutManager.primaryIndex;
+                        const wa = Main.layoutManager.getWorkAreaForMonitor(monIdx);
+                        const rect = win.get_frame_rect();
+                        if (wa && rect && rect.width > 0 && rect.height > 0) {
+                            const x = Math.round(wa.x + (wa.width - rect.width) / 2);
+                            const y = Math.round(wa.y + (wa.height - rect.height) / 2);
+                            win.move_frame(true, x, y);
+                        }
+                    } catch (_e) {}
+                };
+                GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                    centerWin();
+                    return GLib.SOURCE_REMOVE;
+                });
+                const sigId = win.connect('size-changed', () => {
+                    centerWin();
+                    try { win.disconnect(sigId); } catch (_e) {}
+                });
+            } catch (_e) {}
+        });
+        _aboutWindowTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 4000, () => {
+            _aboutWindowTimeoutId = 0;
+            _clearAboutCenterWatch();
+            return GLib.SOURCE_REMOVE;
+        });
+    } catch (_e) {}
+
+    launch([binPath]);
 }
 
 function openPath(path) {
@@ -156,7 +220,7 @@ async function ejectDevice(device) {
 
 export const fileActions = {
 
-    'about-this-system': () => launch(['gnome-control-center', 'about']),
+    'about-this-system': () => launchAboutThisMac(),
     'system-settings': () => launch(['gnome-control-center']),
     'app-store': () => launch(['gnome-software']),
     'recent-items': () => openPath('recent:///'),

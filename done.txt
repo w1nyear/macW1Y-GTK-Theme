@@ -6093,3 +6093,23 @@ Task #938:
   - Перевірка та синхронізація:
     * Синхронізовано `~/.local/share/gnome-shell/extensions/blur-my-shell@aunetx`, `~/.config/macw1y/extensions.lock.json` та `/usr/share/mactheme/config/extensions.lock.json`.
     * `unittest`: 55/55 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в install.sh.
+
+986. 2026-11-25 — Додано діалог «Про цей комп’ютер» («About This Mac») у стилі macOS замість прямого відкриття Параметрів:
+  - Змінені та створені файли:
+    * [bin/mac-about](file:///home/vitaliy/macW1Y/bin/mac-about) (GTK4 + Libadwaita вікно у світлій і темній темах з кнопками-світлофорами macOS, автоматичним вибором ілюстрації ноутбука/ПК, назвою моделі ПК, процесором і роком материнської плати/BIOS, таблицею `Chip`/`Memory`/`Startup disk`/`Serial number`/`macW1Y`, кнопкою `More Info...`, сірим гіперпосиланням на GitHub та текстом про GNU GPL v3)
+    * [bin/mac-hwinfo](file:///home/vitaliy/macW1Y/bin/mac-hwinfo) та [systemd/mac-hwinfo.service](file:///home/vitaliy/macW1Y/systemd/mac-hwinfo.service) (безпечне системне кешування `product_serial` / DMI у `/run/macw1y/hardware-info.json` для відображення реального серійного номера без запиту пароля)
+    * [assets/icons/about-laptop.png](file:///home/vitaliy/macW1Y/assets/icons/about-laptop.png) та [assets/icons/about-desktop.png](file:///home/vitaliy/macW1Y/assets/icons/about-desktop.png) (ілюстрації ноутбука та настільного ПК)
+    * [applications/org.macw1y.About.desktop](file:///home/vitaliy/macW1Y/applications/org.macw1y.About.desktop)
+    * [extensions/appmenu@ChathurangaBW.github.io/actions/fileActions.js](file:///home/vitaliy/macW1Y/extensions/appmenu@ChathurangaBW.github.io/actions/fileActions.js) (`launchAboutThisMac()` із центруванням вікна на активному моніторі)
+    * [bin/gnome-control-center](file:///home/vitaliy/macW1Y/bin/gnome-control-center) (підтримка аргументу `system about` для відкриття розділу Система -> Про систему з `More Info...`)
+    * [install.sh](file:///home/vitaliy/macW1Y/install.sh) (крос-дистрибутивне встановлення/оновлення/видалення `mac-about`, `mac-hwinfo`, `mac-hwinfo.service`, `org.macw1y.About.desktop` і `assets/icons/about-*.png`, 0 кирилиці)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py) (`test_about_this_mac_dialog_and_hwinfo_integration`)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Причина та виправлення:
+    * Пункт меню яблучка `'about-this-system'` у `fileActions.js` раніше одразу запускав `gnome-control-center about`.
+    * Тепер відкривається компактне центроване вікно `mac-about` у стилі macOS, яке зчитує дані DMI (`/sys/class/dmi/id/*` + `/run/macw1y/hardware-info.json`), `/proc/cpuinfo`, `/proc/meminfo` (фізичний обсяг ОЗП), завантажувальний диск `/` (`findmnt` + `lsblk` — мітка або модель диска) та версію `macW1Y` з `info.json`.
+    * Натискання `More Info...` відкриває Параметри (`gnome-control-center system about`), а сіре підкреслене гіперпосилання відкриває `https://github.com/w1nyear/macW1Y-GTK-Theme` з інформацією про ліцензію GNU GPL v3.
+  - Перевірка та синхронізація:
+    * Синхронізовано `~/.local/bin/{mac-about,mac-hwinfo,gnome-control-center}`, `~/.local/share/macW1Y/icons/about-*.png`, `~/.local/share/applications/org.macw1y.About.desktop`, `~/.local/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/actions/fileActions.js`, системні `/usr/local/bin/`, `/usr/share/mactheme/`, `/usr/share/applications/`, `/etc/systemd/system/mac-hwinfo.service` (`enabled` і запущено), `/usr/share/gnome-shell/extensions/appmenu@ChathurangaBW.github.io/actions/fileActions.js`, а також локальну та системну копії `extensions.lock.json`.
+    * `mac-about --json`: коректно визначає ноутбук, `Acer Nitro ANV15-51`, `Intel Core i5, 2026`, `Intel Core i5-13420H`, `16 GB`, `OV NVME SSD 512GB P300`, `NHQNCEU00843708D357600`, `macW1Y 0.8`.
+    * `unittest`: 56/56 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в `install.sh`.

@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+mac-hwinfo — Safely caches read-only DMI hardware metadata (including root-only
+SMBIOS serial numbers and physical RAM size) into /run/macw1y/hardware-info.json
+so unprivileged UI tools like mac-about can display accurate machine details.
+"""
+
+import json
+import os
+import re
+import shutil
+import subprocess
+from pathlib import Path
+
+DMI_DIR = Path("/sys/class/dmi/id")
+OUT_DIR = Path("/run/macw1y")
+OUT_FILE = OUT_DIR / "hardware-info.json"
+
+INVALID_VALUES = {
+    "",
+    "none",
+    "n/a",
+    "na",
+    "default string",
+    "to be filled by o.e.m.",
+    "to be filled by oem",
+    "not specified",
+    "not applicable",
+    "system serial number",
+    "chassis serial number",
+    "base board serial number",
+    "system product name",
+    "system manufacturer",
+    "board asset tag",
+    "type2 - board asset tag",
+    "chassis version",
+    "0123456789",
+    "123456789",
+    "00000000",
+    "xxxxxxxxxx",
+}
+
+
+def read_dmi(name: str) -> str:
+    p = DMI_DIR / name
+    try:
+        val = p.read_text(encoding="utf-8", errors="ignore").strip()
+    except Exception:
+        return ""
+    if val.lower() in INVALID_VALUES:
+        return ""
+    if set(val) <= {"0", "F", "f", "X", "x", "-", " "} and len(val) >= 4:
+        return ""
+    return val
+
+
+def detect_dmidecode_ram_gb() -> int:
+    dmidecode = shutil.which("dmidecode")
+    if not dmidecode:
+        return 0
+    try:
+        res = subprocess.run(
+            [dmidecode, "-t", "memory"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=3,
+            check=False,
+        )
+        if res.returncode != 0:
+            return 0
+        total_mb = 0
+        for line in res.stdout.splitlines():
+            m = re.match(r"^\s*Size:\s*(\d+)\s*(MB|MiB|GB|GiB)\s*$", line, re.I)
+            if m:
+                num = int(m.group(1))
+                unit = m.group(2).upper()
+                if unit in ("GB", "GIB"):
+                    total_mb += num * 1024
+                else:
+                    total_mb += num
+        if total_mb >= 512:
+            return max(1, round(total_mb / 1024))
+    except Exception:
+        pass
+    return 0
+
+
+def main() -> int:
+    serial = (
+        read_dmi("product_serial")
+        or read_dmi("board_serial")
+        or read_dmi("chassis_serial")
+    )
+    data = {
+        "product_serial": read_dmi("product_serial"),
+        "board_serial": read_dmi("board_serial"),
+        "chassis_serial": read_dmi("chassis_serial"),
+        "serial": serial,
+        "chassis_type": read_dmi("chassis_type"),
+        "product_name": read_dmi("product_name"),
+        "product_family": read_dmi("product_family"),
+        "sys_vendor": read_dmi("sys_vendor"),
+        "board_vendor": read_dmi("board_vendor"),
+        "board_name": read_dmi("board_name"),
+        "bios_date": read_dmi("bios_date"),
+        "ram_gb": detect_dmidecode_ram_gb(),
+    }
+
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    os.chmod(OUT_DIR, 0o755)
+    tmp_file = OUT_DIR / ".hardware-info.json.tmp"
+    tmp_file.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    os.chmod(tmp_file, 0o644)
+    os.replace(tmp_file, OUT_FILE)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -45,6 +45,9 @@ fi
 if [ "$1" = "about" ] || [ "$1" = "info" ]; then
     export MAC_SETTINGS_OPEN_ABOUT=1
     set -- "system"
+elif [ "$1" = "system" ] && [ "$2" = "about" ]; then
+    export MAC_SETTINGS_OPEN_ABOUT=1
+    set -- "system"
 fi
 
 if [ "$1" = "screenshot" ] || [ "$1" = "screenshots" ]; then

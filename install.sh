@@ -1784,7 +1784,7 @@ install_gamemode() {
     require_root
     
     # 1. Installing binary utilities and scripts
-    for bin_file in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-wine-runner mac-gpu-env-selector mac-sanitize-favorites.sh mac-apply-theme mac-diagnostics mac-extension-guard mac-build-theme mac-audit-sync mac-setup-wizard mac-apply-locale mac-icon-normalizer mac-sync-applications mac-theme-sync mac-integrity-check mac-widget-picker; do
+    for bin_file in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-wine-runner mac-gpu-env-selector mac-sanitize-favorites.sh mac-apply-theme mac-diagnostics mac-extension-guard mac-build-theme mac-audit-sync mac-setup-wizard mac-apply-locale mac-icon-normalizer mac-sync-applications mac-theme-sync mac-integrity-check mac-widget-picker mac-about mac-hwinfo; do
         if [ -f "$SCRIPT_DIR/bin/$bin_file" ] || [ -L "$SCRIPT_DIR/bin/$bin_file" ]; then
             sudo cp -f "$SCRIPT_DIR/bin/$bin_file" "/usr/local/bin/$bin_file"
             sudo chown root:root "/usr/local/bin/$bin_file" 2>/dev/null || true
@@ -1839,6 +1839,18 @@ install_gamemode() {
         sudo systemctl daemon-reload
         sudo systemctl enable mac-snap-cursor-override.service
         sudo systemctl start mac-snap-cursor-override.service 2>/dev/null || true
+    fi
+
+    # 2c. Hardware DMI info cache service (unprivileged About This Mac serial/model lookup)
+    if [ -f "$SCRIPT_DIR/systemd/mac-hwinfo.service" ]; then
+        sudo cp -f "$SCRIPT_DIR/systemd/mac-hwinfo.service" /etc/systemd/system/mac-hwinfo.service
+        sudo chmod 644 /etc/systemd/system/mac-hwinfo.service
+        sudo systemctl daemon-reload
+        sudo systemctl enable mac-hwinfo.service 2>/dev/null || true
+        sudo systemctl start mac-hwinfo.service 2>/dev/null || sudo /usr/local/bin/mac-hwinfo 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/applications/org.macw1y.About.desktop" ]; then
+        sudo install -Dm644 "$SCRIPT_DIR/applications/org.macw1y.About.desktop" /usr/share/applications/org.macw1y.About.desktop 2>/dev/null || true
     fi
 
     # 3. Multitasking responsiveness, sysctl low-latency tuning & Cgroups v2 QoS
@@ -2527,6 +2539,15 @@ EOF_CUR_THEME_UP
     fi
     sync_or_update_file "$SCRIPT_DIR/icons/control-center.png" "$TARGET_HOME/.local/share/icons/hicolor/scalable/apps/control-center.png" false
     sync_or_update_file "$SCRIPT_DIR/icons/control-center-symbolic.svg" "$TARGET_HOME/.local/share/icons/hicolor/scalable/apps/control-center-symbolic.svg" false
+    if [ -d "$SCRIPT_DIR/assets/icons" ]; then
+        mkdir -p "$TARGET_HOME/.local/share/macW1Y/icons"
+        sync_directory_tree "$SCRIPT_DIR/assets/icons" "$TARGET_HOME/.local/share/macW1Y/icons" false
+        if [ -w "/usr/share/mactheme" ] || sudo -n true 2>/dev/null; then
+            sudo mkdir -p /usr/share/mactheme/icons
+            sudo cp -f "$SCRIPT_DIR/assets/icons"/* /usr/share/mactheme/icons/ 2>/dev/null || true
+            sudo chmod 644 /usr/share/mactheme/icons/* 2>/dev/null || true
+        fi
+    fi
     run_as_user gsettings set org.gnome.desktop.interface icon-theme "macW1Y-dark" 2>/dev/null || true
 
     log_info "4/10 Checking macW1Y sound theme..."
@@ -2686,7 +2707,7 @@ EOF_CUR_THEME_UP
     if [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so" false
     fi
-    for b in gnome-control-center mac-widgets-settings mac-styling-settings mac-apply-theme mac-theme-sync mac-extension-guard mac-integrity-check mac-diagnostics toggle-launchpad.sh extension-manager mac-setup-wizard mac-apply-locale mac-gdm-bypass macW1Y mac_i18n.py; do
+    for b in gnome-control-center mac-widgets-settings mac-styling-settings mac-apply-theme mac-theme-sync mac-extension-guard mac-integrity-check mac-diagnostics toggle-launchpad.sh extension-manager mac-setup-wizard mac-apply-locale mac-gdm-bypass mac-about mac-hwinfo macW1Y mac_i18n.py; do
         if [ -f "$SCRIPT_DIR/bin/$b" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$b" "$LOCAL_BIN/$b" false
             chmod +x "$LOCAL_BIN/$b" 2>/dev/null || true
@@ -2822,13 +2843,20 @@ EOF_CUR_THEME_UP
     [ -f "$SCRIPT_DIR/touchpad/mac-touchpad.conf" ] && sync_or_update_file "$SCRIPT_DIR/touchpad/mac-touchpad.conf" "/etc/mac-touchpad.conf" true
     [ -f "$SCRIPT_DIR/etc/udev/rules.d/99-uinput.rules" ] && sync_or_update_file "$SCRIPT_DIR/etc/udev/rules.d/99-uinput.rules" "/etc/udev/rules.d/99-uinput.rules" true
     [ -f "$SCRIPT_DIR/systemd/mac-touchpad-daemon.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-touchpad-daemon.service" "/etc/systemd/system/mac-touchpad-daemon.service" true
+    [ -f "$SCRIPT_DIR/systemd/mac-hwinfo.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-hwinfo.service" "/etc/systemd/system/mac-hwinfo.service" true
+    [ -f "$SCRIPT_DIR/applications/org.macw1y.About.desktop" ] && sync_or_update_file "$SCRIPT_DIR/applications/org.macw1y.About.desktop" "/usr/share/applications/org.macw1y.About.desktop" true
 
-    for gb in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-wine-runner mac-gpu-env-selector mac-sanitize-favorites.sh mac-apply-theme mac-diagnostics mac-extension-guard mac-build-theme mac-audit-sync mac-setup-wizard mac-apply-locale mac-icon-normalizer mac-sync-applications mac-theme-sync mac-integrity-check mac-widget-picker; do
+    for gb in mac-gamemode gamemoderun nvidia-game-run nvidia-gpu prime-run DAMX nitro-key-detection.sh mac-boot-config mac-clipboard mac-gpu-manager bottles gamescope heroic lutris nvidia-run prismlauncher wine wine64 mac-wine-runner mac-gpu-env-selector mac-sanitize-favorites.sh mac-apply-theme mac-diagnostics mac-extension-guard mac-build-theme mac-audit-sync mac-setup-wizard mac-apply-locale mac-icon-normalizer mac-sync-applications mac-theme-sync mac-integrity-check mac-widget-picker mac-about mac-hwinfo; do
         if [ -f "$SCRIPT_DIR/bin/$gb" ] || [ -L "$SCRIPT_DIR/bin/$gb" ]; then
             sync_or_update_file "$SCRIPT_DIR/bin/$gb" "/usr/local/bin/$gb" true
             sudo chmod +x "/usr/local/bin/$gb" 2>/dev/null || true
         fi
     done
+    if [ -f "/etc/systemd/system/mac-hwinfo.service" ]; then
+        sudo systemctl daemon-reload 2>/dev/null || true
+        sudo systemctl enable mac-hwinfo.service 2>/dev/null || true
+        sudo systemctl start mac-hwinfo.service 2>/dev/null || sudo /usr/local/bin/mac-hwinfo 2>/dev/null || true
+    fi
 
     # Steam wrapper: updated only if Steam is present on the system
     if [ -x "/snap/bin/steam" ] || [ -x "/usr/games/steam" ] || [ -x "/usr/bin/steam" ] || { which flatpak >/dev/null 2>&1 && flatpak list 2>/dev/null | grep -q "com.valvesoftware.Steam"; }; then
@@ -3131,6 +3159,12 @@ run_clean_update() {
     sudo systemctl disable mac-grub-status.service 2>/dev/null || true
     sudo rm -f /etc/systemd/system/mac-grub-status.service
     sudo rm -rf /boot/grub/themes/macw1y-boot
+
+    sudo systemctl stop mac-hwinfo.service 2>/dev/null || true
+    sudo systemctl disable mac-hwinfo.service 2>/dev/null || true
+    sudo rm -f /etc/systemd/system/mac-hwinfo.service /usr/local/bin/mac-hwinfo /usr/local/bin/mac-about /usr/share/applications/org.macw1y.About.desktop
+    rm -f "$TARGET_HOME/.local/bin/mac-hwinfo" "$TARGET_HOME/.local/bin/mac-about"
+    sudo rm -rf /run/macw1y
     
     rm -rf "$TARGET_HOME/.local/share/macW1Y"
     sudo rm -rf /etc/macW1Y

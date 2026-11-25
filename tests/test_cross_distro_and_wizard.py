@@ -150,6 +150,30 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         tbo_js = (ROOT / "extensions" / "top-bar-organizer@julian.gse.jsts.xyz" / "extension.js").read_text(encoding="utf-8")
         self.assertIn('Main.panel.statusArea["macPrivacy"]', tbo_js)
 
+    def test_about_this_mac_dialog_and_hwinfo_integration(self):
+        file_actions = (ROOT / "extensions" / "appmenu@ChathurangaBW.github.io" / "actions" / "fileActions.js").read_text(encoding="utf-8")
+        self.assertIn("launchAboutThisMac", file_actions)
+        self.assertIn("'about-this-system': () => launchAboutThisMac()", file_actions)
+        mac_about = (ROOT / "bin" / "mac-about").read_text(encoding="utf-8")
+        self.assertIn("https://github.com/w1nyear/macW1Y-GTK-Theme", mac_about)
+        self.assertIn("GNU GPL v3", mac_about)
+        self.assertIn("about-laptop.png", mac_about)
+        self.assertIn("about-desktop.png", mac_about)
+        self.assertIn("open_system_about", mac_about)
+        mac_hwinfo = (ROOT / "bin" / "mac-hwinfo").read_text(encoding="utf-8")
+        self.assertIn("/run/macw1y", mac_hwinfo)
+        self.assertIn("product_serial", mac_hwinfo)
+        gcc_wrap = (ROOT / "bin" / "gnome-control-center").read_text(encoding="utf-8")
+        self.assertIn('"$1" = "system" ] && [ "$2" = "about"', gcc_wrap)
+        self.assertTrue((ROOT / "assets" / "icons" / "about-laptop.png").is_file())
+        self.assertTrue((ROOT / "assets" / "icons" / "about-desktop.png").is_file())
+        self.assertTrue((ROOT / "systemd" / "mac-hwinfo.service").is_file())
+        self.assertTrue((ROOT / "applications" / "org.macw1y.About.desktop").is_file())
+        install_sh = (ROOT / "install.sh").read_text(encoding="utf-8")
+        self.assertIn("mac-hwinfo.service", install_sh)
+        self.assertIn("mac-about", install_sh)
+
+
 
 if __name__ == "__main__":
     unittest.main()

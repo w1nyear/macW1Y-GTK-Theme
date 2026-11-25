@@ -1,0 +1,951 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+mac-about — macOS-style "About This Mac" Hardware & OS Information Dialog for macW1Y.
+Supports Light & Dark mode, cross-distro hardware detection, laptop/desktop artwork,
+and launches GNOME Settings -> System -> About on "More Info...".
+"""
+
+import glob
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+REPO_URL = "https://github.com/w1nyear/macW1Y-GTK-Theme"
+
+LAPTOP_CHASSIS_TYPES = {8, 9, 10, 11, 14, 30, 31, 32}
+
+VENDOR_ALIASES = {
+    "asustek computer inc.": "ASUS",
+    "asus": "ASUS",
+    "acer": "Acer",
+    "acer inc.": "Acer",
+    "lenovo": "Lenovo",
+    "dell inc.": "Dell",
+    "dell": "Dell",
+    "hewlett-packard": "HP",
+    "hp": "HP",
+    "micro-star international co., ltd.": "MSI",
+    "micro-star international": "MSI",
+    "msi": "MSI",
+    "gigabyte technology co., ltd.": "Gigabyte",
+    "gigabyte": "Gigabyte",
+    "asrock": "ASRock",
+    "apple inc.": "Apple",
+    "apple": "Apple",
+    "microsoft corporation": "Microsoft",
+    "samsung electronics co., ltd.": "Samsung",
+    "samsung": "Samsung",
+    "lg electronics": "LG",
+    "razer": "Razer",
+    "framework": "Framework",
+    "huawei": "HUAWEI",
+    "xiaomi": "Xiaomi",
+    "toshiba": "Toshiba",
+    "fujitsu": "Fujitsu",
+    "sony corporation": "Sony",
+    "system76": "System76",
+    "tuxedo": "TUXEDO",
+    "qemu": "QEMU",
+    "innotek gmbh": "VirtualBox",
+    "vmware, inc.": "VMware",
+}
+
+INVALID_DMI = {
+    "",
+    "none",
+    "n/a",
+    "na",
+    "default string",
+    "to be filled by o.e.m.",
+    "to be filled by oem",
+    "not specified",
+    "not applicable",
+    "system serial number",
+    "chassis serial number",
+    "base board serial number",
+    "system product name",
+    "system manufacturer",
+    "board asset tag",
+    "type2 - board asset tag",
+    "chassis version",
+    "sku",
+    "0123456789",
+    "123456789",
+    "00000000",
+    "xxxxxxxxxx",
+}
+
+STRINGS = {
+    "en": {
+        "chip": "Chip",
+        "memory": "Memory",
+        "startup_disk": "Startup disk",
+        "serial_number": "Serial number",
+        "os_label": "macW1Y",
+        "more_info": "More Info...",
+        "github_link": "GitHub Repository (macW1Y)",
+        "license_line1": "Distributed under the GNU GPL v3 License.",
+        "license_line2": "All Rights Reserved.",
+        "unavailable": "Unavailable",
+    },
+    "uk": {
+        "chip": "Чіп",
+        "memory": "Памʼять",
+        "startup_disk": "Завантажувальний диск",
+        "serial_number": "Серійний номер",
+        "os_label": "macW1Y",
+        "more_info": "Докладніше…",
+        "github_link": "Репозиторій GitHub (macW1Y)",
+        "license_line1": "Поширюється за ліцензією GNU GPL v3.",
+        "license_line2": "Усі права захищено.",
+        "unavailable": "Невідомо",
+    },
+    "de": {
+        "chip": "Chip",
+        "memory": "Speicher",
+        "startup_disk": "Startvolume",
+        "serial_number": "Seriennummer",
+        "os_label": "macW1Y",
+        "more_info": "Weitere Infos …",
+        "github_link": "GitHub-Repository (macW1Y)",
+        "license_line1": "Vertrieben unter der GNU GPL v3-Lizenz.",
+        "license_line2": "Alle Rechte vorbehalten.",
+        "unavailable": "Nicht verfügbar",
+    },
+    "fr": {
+        "chip": "Puce",
+        "memory": "Mémoire",
+        "startup_disk": "Disque de démarrage",
+        "serial_number": "Numéro de série",
+        "os_label": "macW1Y",
+        "more_info": "En savoir plus…",
+        "github_link": "Dépôt GitHub (macW1Y)",
+        "license_line1": "Distribué sous licence GNU GPL v3.",
+        "license_line2": "Tous droits réservés.",
+        "unavailable": "Indisponible",
+    },
+    "es": {
+        "chip": "Chip",
+        "memory": "Memoria",
+        "startup_disk": "Disco de arranque",
+        "serial_number": "Número de serie",
+        "os_label": "macW1Y",
+        "more_info": "Más información…",
+        "github_link": "Repositorio de GitHub (macW1Y)",
+        "license_line1": "Distribuido bajo la licencia GNU GPL v3.",
+        "license_line2": "Todos los derechos reservados.",
+        "unavailable": "No disponible",
+    },
+    "it": {
+        "chip": "Chip",
+        "memory": "Memoria",
+        "startup_disk": "Disco di avvio",
+        "serial_number": "Numero di serie",
+        "os_label": "macW1Y",
+        "more_info": "Ulteriori informazioni…",
+        "github_link": "Repository GitHub (macW1Y)",
+        "license_line1": "Distribuito sotto licenza GNU GPL v3.",
+        "license_line2": "Tutti i diritti riservati.",
+        "unavailable": "Non disponibile",
+    },
+    "pl": {
+        "chip": "Czip",
+        "memory": "Pamięć",
+        "startup_disk": "Dysk startowy",
+        "serial_number": "Numer seryjny",
+        "os_label": "macW1Y",
+        "more_info": "Więcej informacji…",
+        "github_link": "Repozytorium GitHub (macW1Y)",
+        "license_line1": "Rozpowszechniane na licencji GNU GPL v3.",
+        "license_line2": "Wszelkie prawa zastrzeżone.",
+        "unavailable": "Niedostępne",
+    },
+    "ru": {
+        "chip": "Чип",
+        "memory": "Память",
+        "startup_disk": "Загрузочный диск",
+        "serial_number": "Серийный номер",
+        "os_label": "macW1Y",
+        "more_info": "Подробнее…",
+        "github_link": "Репозиторий GitHub (macW1Y)",
+        "license_line1": "Распространяется по лицензии GNU GPL v3.",
+        "license_line2": "Все права защищены.",
+        "unavailable": "Недоступно",
+    },
+}
+
+
+def detect_locale() -> str:
+    candidates = []
+    locale_file = Path.home() / ".config" / "mac-styling" / "locale"
+    if locale_file.is_file():
+        try:
+            raw = locale_file.read_text(encoding="utf-8", errors="ignore").strip()
+            if raw:
+                candidates.append(raw)
+        except Exception:
+            pass
+    for env_key in ("LC_MESSAGES", "LC_ALL", "LANG"):
+        val = os.environ.get(env_key, "").strip()
+        if val:
+            candidates.append(val)
+    for cand in candidates:
+        short = cand.split(".")[0].split("_")[0].split("-")[0].lower()
+        if short in STRINGS:
+            return short
+    return "en"
+
+
+def clean_dmi_value(val: str) -> str:
+    val = (val or "").strip()
+    if val.lower() in INVALID_DMI:
+        return ""
+    if set(val) <= {"0", "F", "f", "X", "x", "-", " "} and len(val) >= 4:
+        return ""
+    return val
+
+
+def load_cached_hwinfo() -> dict:
+    for p in (Path("/run/macw1y/hardware-info.json"), Path("/etc/macW1Y/hardware-info.json")):
+        if p.is_file():
+            try:
+                return json.loads(p.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+    return {}
+
+
+def read_dmi(name: str, cache: dict) -> str:
+    p = Path("/sys/class/dmi/id") / name
+    try:
+        val = clean_dmi_value(p.read_text(encoding="utf-8", errors="ignore"))
+        if val:
+            return val
+    except Exception:
+        pass
+    return clean_dmi_value(str(cache.get(name, "")))
+
+
+def is_laptop_device(cache: dict) -> bool:
+    ctype_raw = read_dmi("chassis_type", cache)
+    if ctype_raw.isdigit():
+        if int(ctype_raw) in LAPTOP_CHASSIS_TYPES:
+            return True
+    if glob.glob("/sys/class/power_supply/BAT*"):
+        return True
+    return False
+
+
+def format_vendor(vendor: str) -> str:
+    v = clean_dmi_value(vendor)
+    if not v:
+        return ""
+    mapped = VENDOR_ALIASES.get(v.lower())
+    if mapped:
+        return mapped
+    v = re.sub(r",?\s*\b(Inc\.?|Corp\.?|Corporation|Co\.?,?\s*Ltd\.?|Ltd\.?|LLC|GmbH)\b", "", v, flags=re.I).strip(" ,.")
+    return v
+
+
+def detect_device_name(cache: dict, is_laptop: bool) -> str:
+    vendor = format_vendor(read_dmi("sys_vendor", cache) or read_dmi("board_vendor", cache))
+    model = read_dmi("product_name", cache)
+    family = read_dmi("product_family", cache)
+    board = read_dmi("board_name", cache)
+
+    if model:
+        if vendor and not model.lower().startswith(vendor.lower()) and vendor.lower() not in model.lower():
+            return f"{vendor} {model}"
+        return model
+    if family:
+        if vendor and not family.lower().startswith(vendor.lower()):
+            return f"{vendor} {family}"
+        return family
+    if board:
+        if vendor and not board.lower().startswith(vendor.lower()):
+            return f"{vendor} {board}"
+        return board
+    return "Laptop" if is_laptop else "Desktop PC"
+
+
+def detect_cpu() -> tuple[str, str]:
+    raw = ""
+    try:
+        for line in Path("/proc/cpuinfo").read_text(encoding="utf-8", errors="ignore").splitlines():
+            if ":" not in line:
+                continue
+            k, v = line.split(":", 1)
+            key = k.strip().lower()
+            if key in ("model name", "model", "hardware"):
+                raw = v.strip()
+                if key == "model name":
+                    break
+    except Exception:
+        pass
+
+    if not raw and shutil.which("lscpu"):
+        try:
+            env = dict(os.environ, LC_ALL="C")
+            out = subprocess.run(["lscpu"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, env=env, timeout=2, check=False).stdout
+            for line in out.splitlines():
+                if line.lower().startswith("model name:"):
+                    raw = line.split(":", 1)[1].strip()
+                    break
+        except Exception:
+            pass
+
+    if not raw:
+        arch = os.uname().machine or "Unknown CPU"
+        return arch, arch
+
+    full = raw
+    full = re.sub(r"\((?:R|TM|C)\)", "", full, flags=re.I)
+    full = re.sub(r"^\d+(?:th|st|nd|rd)\s+Gen\s+", "", full, flags=re.I)
+    full = re.sub(r"\s+@\s*[\d.]+\s*[GM]Hz.*$", "", full, flags=re.I)
+    full = re.sub(r"\s+(?:w/|with)\s+Radeon.*$", "", full, flags=re.I)
+    full = re.sub(r"\s+\d+-Core\s+Processor\b", "", full, flags=re.I)
+    full = re.sub(r"\s+Processor\b", "", full, flags=re.I)
+    full = re.sub(r"\s+CPU\b", "", full, flags=re.I)
+    full = re.sub(r"\s+", " ", full).strip()
+
+    short = full
+    patterns = [
+        r"(Intel\s+Core\s+Ultra\s+\d+)",
+        r"(Intel\s+Core\s+i[3579])",
+        r"(Intel\s+Core\s+[3579])",
+        r"(Intel\s+Xeon(?:\s+\w+)?)",
+        r"(Intel\s+Pentium|Intel\s+Celeron)",
+        r"(AMD\s+Ryzen\s+Threadripper(?:\s+PRO)?\s+\d+)",
+        r"(AMD\s+Ryzen\s+\d+)",
+        r"(AMD\s+EPYC|AMD\s+FX)",
+        r"(Apple\s+M\d+(?:\s+(?:Pro|Max|Ultra))?)",
+    ]
+    matched = False
+    for pat in patterns:
+        m = re.search(pat, full, re.I)
+        if m:
+            short = re.sub(r"\s+", " ", m.group(1)).strip()
+            matched = True
+            break
+    if not matched:
+        parts = full.split()
+        short = " ".join(parts[:3]) if len(parts) > 3 else full
+
+    return short, full
+
+
+def detect_board_year(cache: dict) -> str:
+    bios_date = read_dmi("bios_date", cache)
+    m = re.search(r"\b(19\d{2}|20\d{2})\b", bios_date)
+    return m.group(1) if m else ""
+
+
+def detect_memory(cache: dict) -> str:
+    cached_gb = cache.get("ram_gb")
+    if isinstance(cached_gb, int) and 1 <= cached_gb <= 4096:
+        return f"{cached_gb} GB"
+
+    try:
+        for line in Path("/proc/meminfo").read_text(encoding="utf-8", errors="ignore").splitlines():
+            if line.startswith("MemTotal:"):
+                kb = int(line.split()[1])
+                gib = kb / (1024.0 * 1024.0)
+                gb_dec = (kb * 1024.0) / 1e9
+                standard_sizes = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 384, 512, 1024]
+                for std in standard_sizes:
+                    if abs(gb_dec - std) / std <= 0.10 or abs(gib - std) / std <= 0.10:
+                        return f"{std} GB"
+                if gib >= 1:
+                    return f"{round(gib)} GB"
+                return f"{round(kb / 1024)} MB"
+    except Exception:
+        pass
+    return "Unknown"
+
+
+def detect_startup_disk() -> str:
+    generic_partlabels = {
+        "linux filesystem",
+        "basic data partition",
+        "efi system partition",
+        "root",
+        "rootfs",
+        "/",
+    }
+    try:
+        src = ""
+        fs_label = ""
+        res = subprocess.run(
+            ["findmnt", "-n", "-o", "SOURCE,LABEL", "/"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=2,
+            check=False,
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            # findmnt -P is safer with spaces in label
+            p_res = subprocess.run(
+                ["findmnt", "-n", "-P", "-o", "SOURCE,LABEL", "/"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                timeout=2,
+                check=False,
+            )
+            m_src = re.search(r'SOURCE="([^"]*)"', p_res.stdout)
+            m_lbl = re.search(r'LABEL="([^"]*)"', p_res.stdout)
+            src = (m_src.group(1) if m_src else "").split("[", 1)[0].strip()
+            fs_label = (m_lbl.group(1) if m_lbl else "").strip()
+        if fs_label and not re.fullmatch(r"[0-9a-fA-F-]{16,}", fs_label):
+            return fs_label
+
+        if src and os.path.exists(src):
+            part_res = subprocess.run(
+                ["lsblk", "-n", "-P", "-o", "LABEL,PARTLABEL,PKNAME,MODEL", src],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                timeout=2,
+                check=False,
+            )
+            txt = part_res.stdout.splitlines()[0] if part_res.stdout else ""
+            m_pl = re.search(r'PARTLABEL="([^"]*)"', txt)
+            m_pk = re.search(r'PKNAME="([^"]*)"', txt)
+            m_md = re.search(r'MODEL="([^"]*)"', txt)
+            partlabel = (m_pl.group(1) if m_pl else "").strip()
+            if partlabel and partlabel.lower() not in generic_partlabels:
+                return partlabel
+            model = (m_md.group(1) if m_md else "").strip()
+            pkname = (m_pk.group(1) if m_pk else "").strip()
+            if not model and pkname:
+                d_res = subprocess.run(
+                    ["lsblk", "-d", "-n", "-o", "MODEL", f"/dev/{pkname}"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    text=True,
+                    timeout=2,
+                    check=False,
+                )
+                model = d_res.stdout.strip()
+            if model:
+                return re.sub(r"\s+", " ", model).strip()
+            if pkname:
+                sys_model = Path(f"/sys/class/block/{pkname}/device/model")
+                if sys_model.is_file():
+                    return re.sub(r"\s+", " ", sys_model.read_text(encoding="utf-8", errors="ignore")).strip()
+    except Exception:
+        pass
+
+    os_release = Path("/etc/os-release")
+    if os_release.is_file():
+        for line in os_release.read_text(encoding="utf-8", errors="ignore").splitlines():
+            if line.startswith("PRETTY_NAME="):
+                return line.split("=", 1)[1].strip().strip('"')
+    return "Linux Disk"
+
+
+def detect_serial(cache: dict, strings: dict) -> str:
+    serial = (
+        read_dmi("product_serial", cache)
+        or read_dmi("board_serial", cache)
+        or read_dmi("chassis_serial", cache)
+        or clean_dmi_value(str(cache.get("serial", "")))
+    )
+    if serial:
+        return serial
+    return strings["unavailable"]
+
+
+def detect_macw1y_version() -> str:
+    candidates = [
+        Path(__file__).resolve().parent.parent / "info.json",
+        Path("/usr/share/mactheme/info.json"),
+        Path("/etc/macW1Y/info.json"),
+        Path.home() / ".local/share/macW1Y/info.json",
+        Path.home() / ".config/mac-styling/info.json",
+    ]
+    for c in candidates:
+        if c.is_file():
+            try:
+                data = json.loads(c.read_text(encoding="utf-8"))
+                ver = str(data.get("version", "")).strip()
+                if ver:
+                    return ver
+            except Exception:
+                pass
+    return "0.8"
+
+
+def find_device_asset(is_laptop: bool) -> str | None:
+    fname = "about-laptop.png" if is_laptop else "about-desktop.png"
+    candidates = [
+        Path(__file__).resolve().parent.parent / "assets" / "icons" / fname,
+        Path("/usr/share/mactheme/icons") / fname,
+        Path.home() / ".local/share/macW1Y/icons" / fname,
+        Path.home() / "macW1Y/assets/icons" / fname,
+        Path.home() / "MACTHEMEFILES/assets/icons" / fname,
+    ]
+    for c in candidates:
+        if c.is_file():
+            return str(c)
+    return None
+
+
+def collect_hardware_info() -> dict:
+    lang = detect_locale()
+    strings = STRINGS.get(lang, STRINGS["en"])
+    cache = load_cached_hwinfo()
+    is_laptop = is_laptop_device(cache)
+    device_name = detect_device_name(cache, is_laptop)
+    chip_short, chip_full = detect_cpu()
+    year = detect_board_year(cache)
+    subtitle = f"{chip_short}, {year}" if year else chip_short
+
+    return {
+        "locale": lang,
+        "strings": strings,
+        "is_laptop": is_laptop,
+        "asset": find_device_asset(is_laptop),
+        "device_name": device_name,
+        "subtitle": subtitle,
+        "chip_short": chip_short,
+        "chip_full": chip_full,
+        "year": year,
+        "memory": detect_memory(cache),
+        "startup_disk": detect_startup_disk(),
+        "serial": detect_serial(cache, strings),
+        "version": detect_macw1y_version(),
+    }
+
+
+def open_system_about():
+    env = dict(os.environ)
+    env["MAC_SETTINGS_OPEN_ABOUT"] = "1"
+    args = ["gnome-control-center", "system", "about"]
+    try:
+        res = subprocess.run(
+            ["gnome-control-center", "--list"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=2,
+            check=False,
+        )
+        panels = res.stdout.lower() if res.returncode == 0 else ""
+        if panels and "system" not in panels:
+            if "info-overview" in panels:
+                args = ["gnome-control-center", "info-overview"]
+            elif "about" in panels:
+                args = ["gnome-control-center", "about"]
+    except Exception:
+        pass
+
+    try:
+        subprocess.Popen(args, env=env, start_new_session=True)
+    except Exception:
+        pass
+
+
+def open_github_link():
+    try:
+        from gi.repository import Gio
+        Gio.AppInfo.launch_default_for_uri(REPO_URL, None)
+    except Exception:
+        try:
+            subprocess.Popen(["xdg-open", REPO_URL], start_new_session=True)
+        except Exception:
+            pass
+
+
+def run_gui(info: dict) -> int:
+    import gi
+    gi.require_version("Gtk", "4.0")
+    gi.require_version("Adw", "1")
+    from gi.repository import Adw, Gdk, Gio, GLib, Gtk
+
+    CSS = """
+    window.mac-about-window {
+        border-radius: 12px;
+        font-family: "SF Pro Text", "SF Pro Display", "Inter", sans-serif;
+    }
+    window.mac-about-window.mac-about-light {
+        background-color: #f4f4f5;
+        color: #1d1d1f;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+    }
+    window.mac-about-window.mac-about-dark {
+        background-color: #242426;
+        color: #f5f5f7;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    .mac-about-header {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+    }
+    button.traffic-dot {
+        min-width: 12px;
+        min-height: 12px;
+        padding: 0;
+        margin: 0;
+        border-radius: 9999px;
+        box-shadow: none;
+        outline: none;
+    }
+    button.traffic-close {
+        background-color: #ff5f57;
+        border: 0.75px solid #e0443e;
+    }
+    button.traffic-close:hover {
+        background-color: #ff4b42;
+    }
+    button.traffic-close label {
+        font-size: 9px;
+        font-weight: 800;
+        color: rgba(77, 0, 0, 0);
+        margin-top: -1px;
+    }
+    button.traffic-close:hover label {
+        color: rgba(77, 0, 0, 0.75);
+    }
+    .mac-about-light button.traffic-muted {
+        background-color: #e2e2e4;
+        border: 0.75px solid #cbccce;
+    }
+    .mac-about-dark button.traffic-muted {
+        background-color: #3f3f42;
+        border: 0.75px solid #4e4e52;
+    }
+    .about-title {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.35px;
+    }
+    .mac-about-light .about-title {
+        color: #3a3a3c;
+    }
+    .mac-about-dark .about-title {
+        color: #f5f5f7;
+    }
+    .about-subtitle {
+        font-size: 11px;
+        font-weight: 400;
+    }
+    .mac-about-light .about-subtitle {
+        color: #939398;
+    }
+    .mac-about-dark .about-subtitle {
+        color: #8e8e93;
+    }
+    .about-spec-key {
+        font-size: 11px;
+        font-weight: 500;
+    }
+    .mac-about-light .about-spec-key {
+        color: #2c2c2e;
+    }
+    .mac-about-dark .about-spec-key {
+        color: #e5e5e7;
+    }
+    .about-spec-val {
+        font-size: 11px;
+        font-weight: 400;
+    }
+    .mac-about-light .about-spec-val {
+        color: #7c7c80;
+    }
+    .mac-about-dark .about-spec-val {
+        color: #98989d;
+    }
+    button.about-more-btn {
+        border-radius: 6px;
+        padding: 4px 14px;
+        min-height: 24px;
+        font-size: 12px;
+        font-weight: 500;
+        box-shadow: none;
+        border: none;
+    }
+    .mac-about-light button.about-more-btn {
+        background-color: #e3e3e6;
+        color: #1c1c1e;
+    }
+    .mac-about-light button.about-more-btn:hover {
+        background-color: #d8d8dc;
+    }
+    .mac-about-light button.about-more-btn:active {
+        background-color: #ccccd1;
+    }
+    .mac-about-dark button.about-more-btn {
+        background-color: #5b5b5e;
+        color: #f5f5f7;
+    }
+    .mac-about-dark button.about-more-btn:hover {
+        background-color: #6a6a6e;
+    }
+    .mac-about-dark button.about-more-btn:active {
+        background-color: #4f4f52;
+    }
+    .about-footer-link,
+    .about-footer-text {
+        font-size: 10px;
+        font-weight: 400;
+    }
+    .mac-about-light .about-footer-link,
+    .mac-about-light .about-footer-link link,
+    .mac-about-light .about-footer-text {
+        color: #9a9aa0;
+    }
+    .mac-about-light .about-footer-link:hover,
+    .mac-about-light .about-footer-link link:hover {
+        color: #636368;
+    }
+    .mac-about-dark .about-footer-link,
+    .mac-about-dark .about-footer-link link,
+    .mac-about-dark .about-footer-text {
+        color: #78787d;
+    }
+    .mac-about-dark .about-footer-link:hover,
+    .mac-about-dark .about-footer-link link:hover {
+        color: #aeaeb2;
+    }
+    """
+
+    class MacAboutApp(Adw.Application):
+        def __init__(self):
+            super().__init__(
+                application_id="org.macw1y.About",
+                flags=Gio.ApplicationFlags.FLAGS_NONE,
+            )
+            self._win = None
+
+        def do_activate(self):
+            if self._win is not None:
+                self._win.present()
+                return
+
+            provider = Gtk.CssProvider()
+            provider.load_from_data(CSS.encode("utf-8"))
+            Gtk.StyleContext.add_provider_for_display(
+                Gdk.Display.get_default(),
+                provider,
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+            )
+
+            win = Gtk.ApplicationWindow(application=self)
+            win.set_title("About This Mac")
+            win.set_default_size(282, 486)
+            win.set_resizable(False)
+            win.set_decorated(False)
+            win.add_css_class("mac-about-window")
+
+            style_mgr = Adw.StyleManager.get_default()
+
+            def sync_theme(*_args):
+                if style_mgr.get_dark():
+                    win.remove_css_class("mac-about-light")
+                    win.add_css_class("mac-about-dark")
+                else:
+                    win.remove_css_class("mac-about-dark")
+                    win.add_css_class("mac-about-light")
+
+            sync_theme()
+            style_mgr.connect("notify::dark", sync_theme)
+
+            # Escape / Ctrl+W closes the window
+            key_ctrl = Gtk.EventControllerKey()
+
+            def on_key(_ctrl, keyval, _keycode, state):
+                if keyval == Gdk.KEY_Escape or (
+                    keyval in (Gdk.KEY_w, Gdk.KEY_q)
+                    and (state & Gdk.ModifierType.CONTROL_MASK)
+                ):
+                    win.close()
+                    return True
+                return False
+
+            key_ctrl.connect("key-pressed", on_key)
+            win.add_controller(key_ctrl)
+
+            handle = Gtk.WindowHandle()
+            root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+            root.set_hexpand(True)
+            root.set_vexpand(True)
+
+            # Top macOS traffic lights bar
+            top_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+            top_bar.add_css_class("mac-about-header")
+            top_bar.set_margin_start(13)
+            top_bar.set_margin_top(12)
+            top_bar.set_margin_bottom(8)
+            top_bar.set_halign(Gtk.Align.START)
+
+            close_btn = Gtk.Button()
+            close_btn.add_css_class("traffic-dot")
+            close_btn.add_css_class("traffic-close")
+            close_btn.set_valign(Gtk.Align.CENTER)
+            close_btn.set_can_focus(False)
+            close_lbl = Gtk.Label(label="×")
+            close_btn.set_child(close_lbl)
+            close_btn.connect("clicked", lambda *_: win.close())
+            top_bar.append(close_btn)
+
+            for _ in range(2):
+                dot = Gtk.Button()
+                dot.add_css_class("traffic-dot")
+                dot.add_css_class("traffic-muted")
+                dot.set_sensitive(False)
+                dot.set_can_focus(False)
+                dot.set_valign(Gtk.Align.CENTER)
+                top_bar.append(dot)
+
+            root.append(top_bar)
+
+            # Body container
+            body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+            body.set_margin_start(22)
+            body.set_margin_end(22)
+            body.set_margin_bottom(18)
+            body.set_vexpand(True)
+
+            # Device illustration
+            img_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+            img_box.set_halign(Gtk.Align.CENTER)
+            img_box.set_margin_top(26)
+            img_box.set_margin_bottom(24)
+            asset_path = info.get("asset")
+            if asset_path and os.path.isfile(asset_path):
+                pic = Gtk.Picture.new_for_filename(asset_path)
+                pic.set_can_shrink(True)
+                pic.set_content_fit(Gtk.ContentFit.CONTAIN)
+                if info["is_laptop"]:
+                    pic.set_size_request(164, 100)
+                else:
+                    pic.set_size_request(168, 86)
+                img_box.append(pic)
+            else:
+                icon_name = "computer-laptop" if info["is_laptop"] else "computer"
+                img = Gtk.Image.new_from_icon_name(icon_name)
+                img.set_pixel_size(96)
+                img_box.append(img)
+            body.append(img_box)
+
+            # Device Title
+            title_lbl = Gtk.Label(label=info["device_name"])
+            title_lbl.add_css_class("about-title")
+            title_lbl.set_justify(Gtk.Justification.CENTER)
+            title_lbl.set_wrap(True)
+            title_lbl.set_max_width_chars(22)
+            title_lbl.set_halign(Gtk.Align.CENTER)
+            body.append(title_lbl)
+
+            # Subtitle (CPU family, Year)
+            sub_lbl = Gtk.Label(label=info["subtitle"])
+            sub_lbl.add_css_class("about-subtitle")
+            sub_lbl.set_justify(Gtk.Justification.CENTER)
+            sub_lbl.set_margin_top(2)
+            sub_lbl.set_margin_bottom(18)
+            sub_lbl.set_halign(Gtk.Align.CENTER)
+            body.append(sub_lbl)
+
+            # Specs grid
+            st = info["strings"]
+            grid = Gtk.Grid()
+            grid.set_row_spacing(4)
+            grid.set_column_spacing(9)
+            grid.set_halign(Gtk.Align.CENTER)
+
+            rows = [
+                (st["chip"], info["chip_full"]),
+                (st["memory"], info["memory"]),
+                (st["startup_disk"], info["startup_disk"]),
+                (st["serial_number"], info["serial"]),
+                (st["os_label"], info["version"]),
+            ]
+            for idx, (k, v) in enumerate(rows):
+                k_lbl = Gtk.Label(label=k)
+                k_lbl.add_css_class("about-spec-key")
+                k_lbl.set_halign(Gtk.Align.END)
+                k_lbl.set_valign(Gtk.Align.START)
+
+                v_lbl = Gtk.Label(label=v)
+                v_lbl.add_css_class("about-spec-val")
+                v_lbl.set_halign(Gtk.Align.START)
+                v_lbl.set_valign(Gtk.Align.START)
+                v_lbl.set_selectable(True)
+                v_lbl.set_wrap(True)
+                v_lbl.set_max_width_chars(21)
+
+                grid.attach(k_lbl, 0, idx, 1, 1)
+                grid.attach(v_lbl, 1, idx, 1, 1)
+
+            body.append(grid)
+
+            # More Info... button
+            more_btn = Gtk.Button(label=st["more_info"])
+            more_btn.add_css_class("about-more-btn")
+            more_btn.set_halign(Gtk.Align.CENTER)
+            more_btn.set_margin_top(20)
+            more_btn.set_margin_bottom(16)
+            more_btn.set_cursor_from_name("pointer")
+
+            def on_more_clicked(*_args):
+                open_system_about()
+                win.close()
+
+            more_btn.connect("clicked", on_more_clicked)
+            body.append(more_btn)
+
+            # Spacer pushes footer cleanly to bottom edge like macOS dialog
+            spacer = Gtk.Box()
+            spacer.set_vexpand(True)
+            body.append(spacer)
+
+            # Clickable grey GitHub hyperlink
+            link_lbl = Gtk.Label()
+            link_lbl.add_css_class("about-footer-link")
+            link_lbl.set_halign(Gtk.Align.CENTER)
+            link_lbl.set_justify(Gtk.Justification.CENTER)
+            link_lbl.set_cursor_from_name("pointer")
+            escaped_text = GLib.markup_escape_text(st["github_link"])
+            link_lbl.set_markup(f'<a href="{REPO_URL}"><u>{escaped_text}</u></a>')
+            link_lbl.connect("activate-link", lambda _lbl, _uri: (open_github_link(), True)[1])
+            body.append(link_lbl)
+
+            # GPL v3 footer text
+            lic_lbl = Gtk.Label(label=f"{st['license_line1']}\n{st['license_line2']}")
+            lic_lbl.add_css_class("about-footer-text")
+            lic_lbl.set_halign(Gtk.Align.CENTER)
+            lic_lbl.set_justify(Gtk.Justification.CENTER)
+            lic_lbl.set_margin_top(2)
+            body.append(lic_lbl)
+
+            root.append(body)
+            handle.set_child(root)
+            win.set_child(handle)
+
+            self._win = win
+            win.present()
+
+    app = MacAboutApp()
+    return app.run(sys.argv[:1])
+
+
+def main() -> int:
+    info = collect_hardware_info()
+    if "--json" in sys.argv or "--print-info" in sys.argv:
+        out = dict(info)
+        out.pop("strings", None)
+        print(json.dumps(out, ensure_ascii=False, indent=2))
+        return 0
+    return run_gui(info)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
