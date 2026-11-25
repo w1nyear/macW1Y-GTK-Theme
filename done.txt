@@ -6003,3 +6003,21 @@ Task #938:
     * `unittest`: 55/55 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в install.sh.
   * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+980. 2026-11-25 — Усунення зависання ПК та накладання тексту при відкритті модальних діалогів (Спорожнити смітник, Polkit-автентифікація):
+  - Змінені файли:
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js) (виключення `modalDialogGroup` та `screenShieldGroup` для `owner === 'modal-dialog' / 'dialog'`)
+    * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js) (patchModalDialogLQVisual, createDialogGlass, syncDialogGlass, _fadeOpen, showMacEmptyTrashDialog)
+    * [extensions/blur-my-shell@aunetx/components/popup/targets.js](file:///home/vitaliy/macW1Y/extensions/blur-my-shell@aunetx/components/popup/targets.js) (запобігання подвійному розмиттю `mac-empty-trash-dialog` і діалогів із `_macDlgGlassState`)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Причина та виправлення:
+    * `BackdropGlass` для `modal-dialog` не виключав `modalDialogGroup` і сам `dialogActor` зі свого `UILayerSampler`, через що клонував самого себе й нерозмічені `StBin/StLabel/ClutterText` (флуд `Can't update stage views ... because it needs an allocation` у журналі GNOME Shell + мертве підвисання композитора до готовності шейдера). Додано жорстке виключення `modalDialogGroup`, `screenShieldGroup`, `dialogActor`, `dialogLayout`, `dialogBox`.
+    * У `syncDialogGlass` `set_style()` раніше викликався всередині `notify::allocation`, що провокувало рекурсивний перерахунок макета та `syncSources()` на кожному кадрі анімації, а `blur-my-shell` додавав ще й другий `BlurEffect`. Стилізація перенесена в одноразовий прохід (`stylesApplied`), а `_backdropLocked` фіксує фон на час анімації відкриття/закриття.
+    * Для `mac-empty-trash-dialog` вимкнено зайве створення `BackdropGlass` (використовується лише легкий `Shell.BlurEffect` із радіусом ≤24 та миттєвий старт без шейдерного сталу).
+    * Для діалогів автентифікації (`prompt-dialog`, Polkit) замість примусового стиснення до `260px` та ламання `button`/`MessageDialogContent` задано `min-width: 360px` без перекриття міток (`Розблокувати Віталій` / `Пароль`), а також миттєвий темний напівпрозорий fallback до завершення ініціалізації шейдера.
+  - Перевірка та синхронізація:
+    * Синхронізовано користувацькі розширення, `~/.config/macw1y/extensions.lock.json`, `/usr/share/mactheme/config/extensions.lock.json` та `/usr/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com`.
+    * `unittest`: 55/55 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в install.sh.
+  * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

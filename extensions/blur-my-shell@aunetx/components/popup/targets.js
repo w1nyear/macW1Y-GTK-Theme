@@ -67,8 +67,11 @@ export const PopupBlurTargets = class PopupBlurTargets {
 
         const delegate = this.actor.get_actor_delegate(actor);
 
-        if (this.has_any_style_class(actor, ['quick-settings']) ||
-            (delegate?.box && this.has_any_style_class(delegate.box, ['quick-settings'])) ||
+        if (this.has_any_style_class(actor, ['quick-settings', 'mac-empty-trash-dialog']) ||
+            (delegate?.box && this.has_any_style_class(delegate.box, ['quick-settings', 'mac-empty-trash-dialog'])) ||
+            actor._macDlgGlassState ||
+            actor.backgroundStack?.get_children?.().some(c => c.name === 'liquid-glass-dialog-actor') ||
+            actor.dialogLayout?._dialog?.has_style_class_name?.('mac-empty-trash-dialog') ||
             this.has_any_style_class(actor, ['unlock-dialog', 'login-dialog']) ||
             (actor.has_style_class_name && (actor.has_style_class_name('unlock-dialog') || actor.has_style_class_name('login-dialog'))) ||
             (actor.get_parent && (actor.get_parent()?.has_style_class_name?.('unlock-dialog') || actor.get_parent()?.name === 'unlockDialogGroup')) ||

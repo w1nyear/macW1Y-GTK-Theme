@@ -2215,8 +2215,9 @@ export default class EvalHelper extends Extension {
                 };
 
                 const createDialogGlass = async (dialogActor) => {
+                    const lgExt = Main.extensionManager.lookup('liquid-glass@thinkingcoding1231.gmail.com');
+                    if (!lgExt || lgExt.state !== 1) return null;
                     const path = getLiquidGlassPath();
-                    const ext = Main.extensionManager.lookup('liquid-glass@thinkingcoding1231.gmail.com');
                     const glassMod = await import(`file://${path}/dist/rendering/backdropGlass.js`);
                     const BackdropGlass = glassMod.BackdropGlass;
 
@@ -2224,6 +2225,7 @@ export default class EvalHelper extends Extension {
                     const dialogLayout = dialogActor.dialogLayout;
                     const dialogBox = dialogLayout?._dialog;
                     if (!stack || !dialogBox) return null;
+                    if (dialogBox.has_style_class_name?.('mac-empty-trash-dialog')) return null;
 
 
                     for (const child of stack.get_children()) {
@@ -2233,11 +2235,20 @@ export default class EvalHelper extends Extension {
                         }
                     }
 
+                    const exclusions = [
+                        dialogActor,
+                        dialogLayout,
+                        dialogBox,
+                        Main.layoutManager?.modalDialogGroup,
+                        Main.layoutManager?.screenShieldGroup,
+                    ].filter(Boolean);
+
                     const glass = new BackdropGlass({
                         extensionPath: path,
-                        settings: ext?.stateObj?._settings || null,
+                        settings: lgExt?.stateObj?._settings || null,
                         logger: console,
                         owner: 'modal-dialog',
+                        excludeActors: exclusions,
                     });
                     glass.name = 'liquid-glass-dialog-actor';
 
@@ -2248,6 +2259,7 @@ export default class EvalHelper extends Extension {
                     glass.setIsDock(false);
                     glass.setCornerSmoothingEnabled(0.0);
                     glass.setPadding(0);
+                    glass._backdropLocked = true;
                     try {
                         glass._effect?._setFloat?.('shadow_intensity', 0.0);
                         glass._effect?._setFloat?.('shadow_radius', 0.0);
@@ -2261,6 +2273,7 @@ export default class EvalHelper extends Extension {
                     const state = {
                         dialogActor, dialogLayout, dialogBox, glass,
                         lastX: null, lastY: null, lastW: null, lastH: null,
+                        stylesApplied: false, shaderShown: false, syncPending: false,
                     };
                     const cleanUpState = () => {
                         if (checkShaderTimerId) {
@@ -2272,28 +2285,42 @@ export default class EvalHelper extends Extension {
                         if (dialogActor._macDlgGlassState === state)
                             delete dialogActor._macDlgGlassState;
                     };
+                    const scheduleSyncDialogGlass = () => {
+                        if (state.syncPending || dialogActor.is_finalized?.()) return;
+                        state.syncPending = true;
+                        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                            state.syncPending = false;
+                            if (!dialogActor.is_finalized?.() && !glass.is_finalized?.())
+                                syncDialogGlass(state);
+                            return GLib.SOURCE_REMOVE;
+                        });
+                    };
                     dialogBox.connectObject(
-                        'notify::allocation', () => syncDialogGlass(state),
-                        'notify::position', () => syncDialogGlass(state),
+                        'notify::allocation', scheduleSyncDialogGlass,
+                        'notify::position', scheduleSyncDialogGlass,
                         dialogActor
                     );
                     dialogActor.connectObject(
-                        'opened', () => syncDialogGlass(state),
+                        'opened', () => {
+                            glass._backdropLocked = false;
+                            syncDialogGlass(state);
+                        },
                         'closed', () => {
+                            glass._backdropLocked = true;
                             if (glass.visible) glass.hide();
                             glass.scale_x = 1.0;
                             glass.scale_y = 1.0;
                         },
-                        'notify::opacity', () => syncDialogGlass(state),
-                        'notify::visible', () => syncDialogGlass(state),
                         'destroy', cleanUpState,
                         dialogActor
                     );
 
 
                     if (!glass._effect?._shadersLoaded) {
-                        checkShaderTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 20, () => {
-                            if (dialogActor.is_finalized?.() || glass.is_finalized?.()) {
+                        let shaderChecks = 0;
+                        checkShaderTimerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 80, () => {
+                            shaderChecks++;
+                            if (dialogActor.is_finalized?.() || glass.is_finalized?.() || shaderChecks > 50) {
                                 checkShaderTimerId = 0;
                                 return GLib.SOURCE_REMOVE;
                             }
@@ -2320,9 +2347,69 @@ export default class EvalHelper extends Extension {
                     const isOpeningOrOpen = dialogActor.visible && dialogActor.mapped && dialogActor.opacity > 0;
                     const shadersReady = (glass._effect?._shadersLoaded === true);
 
+                    const isPromptDialog = dialogActor.has_style_class_name?.('prompt-dialog') ||
+                        dialogBox.has_style_class_name?.('prompt-dialog');
+
+                    if (!state.stylesApplied) {
+                        state.stylesApplied = true;
+                        const styling = loadAlertStyling();
+                        const tintStrength = Math.max(0.0, Math.min(1.0, styling.alertTint / 100.0));
+                        const shadowIntensity = Math.max(0.0, Math.min(1.0, styling.alertShadow / 100.0));
+                        const fallbackBg = shadersReady
+                            ? 'transparent'
+                            : `rgba(32, 34, 42, ${(0.72 + tintStrength * 0.16).toFixed(2)})`;
+                        if (isPromptDialog) {
+                            dialogBox.set_style(`background-color: ${fallbackBg} !important; border-radius: 30px !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: 0 18px 48px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important; min-width: 360px !important; max-width: 440px !important; padding: 18px 20px 16px 20px !important;`);
+                        } else {
+                            dialogBox.set_style(`background-color: ${fallbackBg} !important; border-radius: 34px !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; box-shadow: 0 16px 45px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important; width: 260px !important; min-width: 260px !important; max-width: 260px !important; padding: 15px 18px 14px 18px !important;`);
+                            try {
+                                for (const btnBox of dialogBox.get_children().filter(c => c.has_style_class_name?.('modal-dialog-button-box') || c.get_children?.().some(b => b.has_style_class_name?.('modal-dialog-button')))) {
+                                    btnBox.set_style('padding-top: 3px !important; spacing: 8px !important;');
+                                }
+                                for (const button of dialogBox.get_children().flatMap(child => child.get_children?.() || []).flatMap(child => child.get_children?.() || []).filter(child => child.has_style_class_name?.('modal-dialog-button') || child.has_style_class_name?.('modal-dialog-linked-button'))) {
+                                    button.set_style('min-height: 28px !important; height: 28px !important; border-radius: 999px !important; margin: 0 4px !important; padding: 0 10px !important;');
+                                    if (button.label && (button.label.trim() === 'Завершити роботу' || button.label.trim() === 'Вимкнути живлення' || button.label.trim() === 'Power Off' || button.label.trim() === 'Выключить' || button.label.trim() === 'Ausschalten' || button.label.trim() === 'Éteindre' || button.label.trim() === 'Apagar' || button.label.trim() === 'Spegni' || button.label.trim() === 'Wyłącz')) {
+                                        button.label = t('shutdown_short', 'Вимкнути');
+                                    }
+                                    const ct = button.get_child?.();
+                                    if (ct && (ct.text?.trim() === 'Завершити роботу' || ct.text?.trim() === 'Вимкнути живлення' || ct.text?.trim() === 'Power Off' || ct.text?.trim() === 'Выключить' || ct.text?.trim() === 'Ausschalten' || ct.text?.trim() === 'Éteindre' || ct.text?.trim() === 'Apagar' || ct.text?.trim() === 'Spegni' || ct.text?.trim() === 'Wyłącz')) {
+                                        ct.text = t('shutdown_short', 'Вимкнути');
+                                    }
+                                }
+                                for (const mdc of dialogBox.get_children().flatMap(child => child.get_children?.() || []).filter(child => child.has_style_class_name?.('message-dialog-content') || child.name === 'MessageDialogContent')) {
+                                    mdc.set_x_align(Clutter.ActorAlign.START);
+                                    mdc.set_style('text-align: left !important; x-align: start !important; spacing: 3px !important;');
+                                }
+                                for (const label of dialogBox.get_children().flatMap(child => child.get_children?.() || []).flatMap(child => child.get_children?.() || []).filter(child => child.has_style_class_name?.('message-dialog-title') || child.has_style_class_name?.('message-dialog-description'))) {
+                                    label.set_x_align(Clutter.ActorAlign.START);
+                                    if (label.clutter_text) {
+                                        label.clutter_text.set_line_alignment(Pango.Alignment.LEFT);
+                                        label.clutter_text.set_x_align(Clutter.ActorAlign.START);
+                                    }
+                                    if (label.has_style_class_name?.('message-dialog-title')) {
+                                        label.set_style('text-align: left !important; x-align: start !important; margin-left: 4px !important; margin-right: 4px !important; margin-bottom: 2px !important;');
+                                    } else {
+                                        label.set_style('text-align: left !important; x-align: start !important; margin-left: 4px !important; margin-right: 4px !important; margin-top: 0px !important;');
+                                    }
+                                }
+                            } catch (_) {}
+                        }
+                    }
+
                     if (isClosing || !shadersReady) {
                         if (glass.visible && isClosing) glass.hide();
                         return;
+                    }
+
+                    if (!state.shaderShown) {
+                        state.shaderShown = true;
+                        const styling = loadAlertStyling();
+                        const shadowIntensity = Math.max(0.0, Math.min(1.0, styling.alertShadow / 100.0));
+                        if (isPromptDialog) {
+                            dialogBox.set_style(`background-color: transparent !important; border-radius: 30px !important; border: 1px solid rgba(255, 255, 255, 0.16) !important; box-shadow: 0 18px 48px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important; min-width: 360px !important; max-width: 440px !important; padding: 18px 20px 16px 20px !important;`);
+                        } else {
+                            dialogBox.set_style(`background-color: transparent !important; border-radius: 34px !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; box-shadow: 0 16px 45px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important; width: 260px !important; min-width: 260px !important; max-width: 260px !important; padding: 15px 18px 14px 18px !important;`);
+                        }
                     }
 
                     let monitorIndex = -1;
@@ -2354,7 +2441,8 @@ export default class EvalHelper extends Extension {
                         localBgY = Math.round((screenH - bgH) / 2);
                     }
 
-                    if (state.lastX !== localBgX || state.lastY !== localBgY || state.lastW !== bgW || state.lastH !== bgH || state.forceResync) {
+                    const geometryChanged = state.lastX !== localBgX || state.lastY !== localBgY || state.lastW !== bgW || state.lastH !== bgH || state.forceResync;
+                    if (geometryChanged) {
                         state.lastX = localBgX;
                         state.lastY = localBgY;
                         state.lastW = bgW;
@@ -2363,21 +2451,13 @@ export default class EvalHelper extends Extension {
 
                         const styling = loadAlertStyling();
                         const tintStrength = Math.max(0.0, Math.min(1.0, styling.alertTint / 100.0));
-                        const blurRadius = Math.max(0.0, Math.min(50.0, styling.alertBlur));
+                        const blurRadius = Math.max(0.0, Math.min(30.0, styling.alertBlur));
                         const shadowIntensity = Math.max(0.0, Math.min(1.0, styling.alertShadow / 100.0));
-
-                        const isTrash = dialogBox.has_style_class_name('mac-empty-trash-dialog');
-                        const radius = isTrash ? 30.0 : 34.0;
+                        const radius = isPromptDialog ? 30.0 : 34.0;
 
                         glass.setResolution(screenW, screenH);
                         glass.setCornerRadius(radius);
                         glass.setTintColor(0.0, 0.0, 0.0);
-                        let darkTheme = false;
-                        try {
-                            const interfaceSettings = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
-                            darkTheme = interfaceSettings.get_string('color-scheme') === 'prefer-dark' ||
-                                interfaceSettings.get_string('gtk-theme').toLowerCase().includes('dark');
-                        } catch (_) {}
                         glass.setTintStrength(tintStrength);
                         glass.setBlurRadius(blurRadius);
                         glass.setPadding(0);
@@ -2389,57 +2469,6 @@ export default class EvalHelper extends Extension {
                             glass._effect?._setFloat?.('shadow_max_radius', Math.max(25.0, shadowIntensity * 50.0));
                             glass._effect?._setFloat?.('ao_intensity', shadowIntensity * 0.35);
                             glass._effect?._setFloat?.('ao_radius', shadowIntensity * 15.0);
-                        } catch (_) {}
-
-                        if (isTrash) {
-                            if (glass.visible) glass.hide();
-                            const cardBg = `rgba(32, 34, 42, ${(0.62 + tintStrength * 0.22).toFixed(2)})`;
-                            dialogBox.set_style(`background-color: ${cardBg} !important; border-radius: 26px !important; border: 1px solid rgba(255, 255, 255, 0.20) !important; border-top: 1px solid rgba(255, 255, 255, 0.28) !important; box-shadow: 0 20px 50px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important; width: 280px !important; min-width: 280px !important; max-width: 280px !important; padding: 22px 20px 20px 20px !important;`);
-                            const blurEff = dialogBox.get_effects?.().find(e => e.name === 'mac-alert-blur-effect' || e instanceof Shell.BlurEffect);
-                            if (blurEff && blurEff.set_radius) {
-                                blurEff.set_radius(Math.round(blurRadius));
-                            }
-                            return;
-                        }
-
-                        try {
-                            const extra = ' width: 260px !important; min-width: 260px !important; max-width: 260px !important; padding: 15px 18px 14px 18px !important;';
-                            dialogBox.set_style(`background-color: transparent !important; border-radius: ${Math.round(radius)}px !important; border: 1px solid rgba(255, 255, 255, 0.14) !important; box-shadow: 0 16px 45px rgba(0, 0, 0, ${shadowIntensity.toFixed(2)}) !important;${extra}`);
-                            for (const btnBox of dialogBox.get_children().filter(c => c.has_style_class_name?.('modal-dialog-button-box') || c.get_children?.().some(b => b.has_style_class_name?.('modal-dialog-button')))) {
-                                try {
-                                    btnBox.set_style('padding-top: 3px !important; spacing: 8px !important;');
-                                } catch (_) {}
-                            }
-                            for (const button of dialogBox.get_children().flatMap(child => child.get_children?.() || []).flatMap(child => child.get_children?.() || []).filter(child => child.has_style_class_name?.('modal-dialog-button') || child.has_style_class_name?.('modal-dialog-linked-button'))) {
-                                button.set_style('min-height: 28px !important; height: 28px !important; border-radius: 999px !important; margin: 0 4px !important; padding: 0 10px !important;');
-                                if (button.label && (button.label.trim() === 'Завершити роботу' || button.label.trim() === 'Вимкнути живлення' || button.label.trim() === 'Power Off' || button.label.trim() === 'Выключить' || button.label.trim() === 'Ausschalten' || button.label.trim() === 'Éteindre' || button.label.trim() === 'Apagar' || button.label.trim() === 'Spegni' || button.label.trim() === 'Wyłącz')) {
-                                    button.label = t('shutdown_short', 'Вимкнути');
-                                }
-                                const ct = button.get_child?.();
-                                if (ct && (ct.text?.trim() === 'Завершити роботу' || ct.text?.trim() === 'Вимкнути живлення' || ct.text?.trim() === 'Power Off' || ct.text?.trim() === 'Выключить' || ct.text?.trim() === 'Ausschalten' || ct.text?.trim() === 'Éteindre' || ct.text?.trim() === 'Apagar' || ct.text?.trim() === 'Spegni' || ct.text?.trim() === 'Wyłącz')) {
-                                    ct.text = t('shutdown_short', 'Вимкнути');
-                                }
-                            }
-                            for (const mdc of dialogBox.get_children().flatMap(child => child.get_children?.() || []).filter(child => child.has_style_class_name?.('message-dialog-content') || child.name === 'MessageDialogContent')) {
-                                try {
-                                    mdc.set_x_align(Clutter.ActorAlign.START);
-                                    mdc.set_style('text-align: left !important; x-align: start !important; spacing: 3px !important;');
-                                } catch (_) {}
-                            }
-                            for (const label of dialogBox.get_children().flatMap(child => child.get_children?.() || []).flatMap(child => child.get_children?.() || []).filter(child => child.has_style_class_name?.('message-dialog-title') || child.has_style_class_name?.('message-dialog-description'))) {
-                                try {
-                                    label.set_x_align(Clutter.ActorAlign.START);
-                                    if (label.clutter_text) {
-                                        label.clutter_text.set_line_alignment(Pango.Alignment.LEFT);
-                                        label.clutter_text.set_x_align(Clutter.ActorAlign.START);
-                                    }
-                                    if (label.has_style_class_name?.('message-dialog-title')) {
-                                        label.set_style('text-align: left !important; x-align: start !important; margin-left: 4px !important; margin-right: 4px !important; margin-bottom: 2px !important;');
-                                    } else {
-                                        label.set_style('text-align: left !important; x-align: start !important; margin-left: 4px !important; margin-right: 4px !important; margin-top: 0px !important;');
-                                    }
-                                } catch (_) {}
-                            }
                         } catch (_) {}
 
                         const CLIP_PAD = 40;
@@ -2460,7 +2489,9 @@ export default class EvalHelper extends Extension {
                         }
                     }
 
-                    if (typeof glass.syncSources === 'function') glass.syncSources();
+                    if (geometryChanged && isOpeningOrOpen && !glass._backdropLocked && typeof glass.syncSources === 'function') {
+                        glass.syncSources();
+                    }
                 };
 
                 const syncAllDialogs = () => {
@@ -2494,6 +2525,7 @@ export default class EvalHelper extends Extension {
                         const stack = dialogActor.backgroundStack;
                         const dialogLayout = dialogActor.dialogLayout;
                         if (!stack || !dialogLayout?._dialog) return;
+                        if (dialogLayout._dialog.has_style_class_name?.('mac-empty-trash-dialog')) return;
                         dialogActor._macDlgGlassState = 'pending';
                         createDialogGlass(dialogActor).then((state) => {
                             if (!state) { delete dialogActor._macDlgGlassState; return; }
@@ -2553,19 +2585,26 @@ export default class EvalHelper extends Extension {
                         const ANIM_MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
 
                         if (glass) {
-                            glass.show();
-                            glass.remove_all_transitions();
-                            glass.set_pivot_point(0.5, 0.5);
-                            glass.scale_x = START_SCALE;
-                            glass.scale_y = START_SCALE;
-                            glass.opacity = 0;
-                            glass.ease({
-                                scale_x: 1.0,
-                                scale_y: 1.0,
-                                opacity: 255,
-                                duration: ANIM_DURATION,
-                                mode: ANIM_MODE,
-                            });
+                            glass._backdropLocked = true;
+                            if (glass._effect?._shadersLoaded) {
+                                glass.show();
+                                glass.remove_all_transitions();
+                                glass.set_pivot_point(0.5, 0.5);
+                                glass.scale_x = START_SCALE;
+                                glass.scale_y = START_SCALE;
+                                glass.opacity = 0;
+                                glass.ease({
+                                    scale_x: 1.0,
+                                    scale_y: 1.0,
+                                    opacity: 255,
+                                    duration: ANIM_DURATION,
+                                    mode: ANIM_MODE,
+                                    onComplete: () => {
+                                        glass._backdropLocked = false;
+                                        glass.wakeFrameSync?.();
+                                    },
+                                });
+                            }
                         }
                         if (content) {
                             content.remove_all_transitions();
@@ -2580,6 +2619,7 @@ export default class EvalHelper extends Extension {
                                 duration: ANIM_DURATION,
                                 mode: ANIM_MODE,
                                 onComplete: () => {
+                                    if (glass) glass._backdropLocked = false;
                                     if (this._macDlgGlassState && typeof this._macDlgGlassState === 'object') {
                                         syncDialogGlass(this._macDlgGlassState);
                                     }
@@ -2779,7 +2819,7 @@ export default class EvalHelper extends Extension {
 
                 const styling = loadAlertStyling();
                 const tintStrength = Math.max(0.0, Math.min(1.0, styling.alertTint / 100.0));
-                const blurRadius = Math.max(8, Math.min(45, styling.alertBlur || 18));
+                const blurRadius = Math.max(8, Math.min(24, styling.alertBlur || 18));
                 const shadowIntensity = Math.max(0.0, Math.min(1.0, styling.alertShadow / 100.0));
                 const cardBg = `rgba(32, 34, 42, ${(0.62 + tintStrength * 0.22).toFixed(2)})`;
                 const shadowVal = (shadowIntensity * 0.85).toFixed(2);

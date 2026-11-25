@@ -132,6 +132,12 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
             `lg-${owner}`
         );
         const baseExclusions = [this, global.windowGroup, global.window_group];
+        if (owner === 'modal-dialog' || owner === 'dialog') {
+            if (Main.layoutManager?.modalDialogGroup && !baseExclusions.includes(Main.layoutManager.modalDialogGroup))
+                baseExclusions.push(Main.layoutManager.modalDialogGroup);
+            if (Main.layoutManager?.screenShieldGroup && !baseExclusions.includes(Main.layoutManager.screenShieldGroup))
+                baseExclusions.push(Main.layoutManager.screenShieldGroup);
+        }
         if (Array.isArray(excludeActors)) {
             for (const a of excludeActors) {
                 if (a && !baseExclusions.includes(a)) baseExclusions.push(a);

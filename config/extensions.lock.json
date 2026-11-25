@@ -46,7 +46,7 @@
         "50",
         "51"
       ],
-      "sha256": "1d3ac73bd97d616082f49b0b7f1b5341a65b104e730bb06a59d346cd1c97f786",
+      "sha256": "5daf93cafa8a2e05b762fa96ee1679fd4b04043d898cdf87165c9e5a3cc17b9b",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -247,7 +247,7 @@
         "50",
         "51"
       ],
-      "sha256": "1c3b441821852e2d4327a8bf56ad8c9c39fe5ac0a039bdf94509d331fd9eabbb",
+      "sha256": "1861fd927429d2cfb329a1fd73e5fe03c18a80aba151e2ad6a3640e9ad8beaec",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -305,7 +305,7 @@
         "50",
         "51"
       ],
-      "sha256": "023fc364c98511ef97c97880ae42b1483af443c1caf497a8a475ae8efd87eabf",
+      "sha256": "22f1ed24dee873cbc5257c69c48790e066404cc34fcc0614c40378fb9cc1bec1",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [

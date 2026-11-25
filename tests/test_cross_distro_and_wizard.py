@@ -116,6 +116,13 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         dconf_txt = (ROOT / "dconf" / "gnome-all.dconf").read_text(encoding="utf-8")
         self.assertIn("show-trash=false", dconf_txt)
         self.assertIn("show-volumes=false", dconf_txt)
+        backdrop_js = (ROOT / "extensions" / "liquid-glass@thinkingcoding1231.gmail.com" / "dist" / "rendering" / "backdropGlass.js").read_text(encoding="utf-8")
+        self.assertIn("modalDialogGroup", backdrop_js)
+        self.assertIn("stylesApplied", eval_js)
+        self.assertIn("isPromptDialog", eval_js)
+        popup_targets = (ROOT / "extensions" / "blur-my-shell@aunetx" / "components" / "popup" / "targets.js").read_text(encoding="utf-8")
+        self.assertIn("mac-empty-trash-dialog", popup_targets)
+        self.assertIn("_macDlgGlassState", popup_targets)
 
 
 if __name__ == "__main__":
