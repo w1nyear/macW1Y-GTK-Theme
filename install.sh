@@ -1428,6 +1428,10 @@ install_extensions() {
     fi
     run_as_user gsettings set org.gnome.software download-updates false 2>/dev/null || true
     run_as_user gsettings set org.gnome.software download-updates-notify false 2>/dev/null || true
+    # Land directly on desktop instead of Overview on GNOME 40+ across all distros
+    if run_as_user gsettings writable org.gnome.shell start-in-overview >/dev/null 2>&1; then
+        run_as_user gsettings set org.gnome.shell start-in-overview false 2>/dev/null || true
+    fi
 
     run_as_user gsettings set org.gnome.shell.window-switcher app-icon-mode 'app-icon-only' 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com quick-settings-corner-radius 26.0 2>/dev/null || true

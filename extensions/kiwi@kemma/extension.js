@@ -20,6 +20,7 @@ import { enable as keyboardIndicatorEnable, disable as keyboardIndicatorDisable 
 import { enable as macWindowManagementEnable, disable as macWindowManagementDisable } from './apps/macWindowManagement.js';
 import { enable as windowControlsEnable, disable as windowControlsDisable } from './apps/windowControls.js';
 import { enable as tahoeScreenCastEnable, disable as tahoeScreenCastDisable } from './apps/tahoeScreenCast.js';
+import { enable as tahoeOSDEnable, disable as tahoeOSDDisable } from './apps/tahoeOSD.js';
 
 export default class KiwiExtension extends Extension {
     _resolveDark() {
@@ -31,13 +32,39 @@ export default class KiwiExtension extends Extension {
         }
     }
 
-    _on_settings_changed(_key) {
+    _on_settings_changed(key) {
         const gettextFunc = this.gettext ? this.gettext.bind(this) : (m => m);
         try {
             tahoeInkEnable();
         } catch (e) {
             console.warn(`[kiwi] tahoeInkEnable: ${e}`);
         }
+
+        // Fast synchronous init on extension enable (avoids multi-second async import?v=... stalls)
+        if (key === null) {
+            try { tahoeNCEnable(this._settings, gettextFunc); } catch (e) { console.warn(`[kiwi] tahoeNCEnable: ${e}`); }
+            try { tahoeQuickSettingsEnable(this._settings, gettextFunc); } catch (e) { console.warn(`[kiwi] tahoeQuickSettingsEnable: ${e}`); }
+            try { topbarButtonsEnable(); } catch (e) { console.warn(`[kiwi] topbarButtons: ${e}`); }
+            try { keyboardIndicatorEnable(this._settings); } catch (e) { console.warn(`[kiwi] keyboardIndicator: ${e}`); }
+            try { labelBlurEnable(); } catch (e) { console.warn(`[kiwi] labelBlur: ${e}`); }
+            try { tahoeOSDEnable(); this._tahoeOSD = { disable: tahoeOSDDisable }; } catch (e) { console.warn(`[kiwi] tahoeOSD: ${e}`); }
+            try {
+                if (this._settings?.get_boolean('reduce-window-animations'))
+                    reduceWindowAnimationsEnable();
+                else
+                    reduceWindowAnimationsDisable();
+            } catch (_) {}
+            try { macWindowManagementEnable(); } catch (e) { console.warn(`[kiwi] macWindowManagement: ${e}`); }
+            try {
+                if (this._settings?.get_boolean('show-window-controls'))
+                    windowControlsEnable(this);
+                else
+                    windowControlsDisable();
+            } catch (e) { console.warn(`[kiwi] windowControls: ${e}`); }
+            try { tahoeScreenCastEnable(this._settings, gettextFunc); } catch (e) { console.warn(`[kiwi] tahoeScreenCast: ${e}`); }
+            return;
+        }
+
         try {
             const ncUri = `${this.dir.get_child('apps').get_child('tahoeNotifications.js').get_uri()}?v=${Date.now()}`;
             import(ncUri).then(mod => {
@@ -211,6 +238,7 @@ export default class KiwiExtension extends Extension {
 
         this._setupMutualExclusion();
         this._on_settings_changed(null);
+        globalThis._macKiwiReady = true;
     }
 
     _setupMutualExclusion() {
@@ -280,6 +308,7 @@ export default class KiwiExtension extends Extension {
     }
 
     disable() {
+        globalThis._macKiwiReady = false;
         if (this._origMenuOpenState && Main.panel?.menuManager) {
             Main.panel.menuManager._onMenuOpenState = this._origMenuOpenState;
             this._origMenuOpenState = null;

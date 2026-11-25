@@ -3080,6 +3080,7 @@ export const MenuBarController = class MenuBarController {
 
 
         this._reorderRightBox();
+        globalThis._macMenuBarReady = true;
 
 
         this._setupMenuHoverGlide();
@@ -5914,6 +5915,7 @@ export const MenuBarController = class MenuBarController {
         if (!this.enabled)
             return;
         this.enabled = false;
+        globalThis._macMenuBarReady = false;
         this._cleanupMenubarActorAnimations();
         if (globalThis._macNotificationCenter === this) {
             globalThis._macNotificationCenter = null;

@@ -76,6 +76,10 @@ export class GdmManager {
         this._origSetUserListExpanded = null;
         this._origAuthPromptCancel = null;
         this._origBindOpacity = null;
+        this._gdmBootCover = null;
+        this._bootRevealTimeoutId = 0;
+        this._bootRevealIdleId = 0;
+        this._bootRevealed = false;
     }
 
     enable() {
@@ -83,6 +87,9 @@ export class GdmManager {
         if (Main.sessionMode.currentMode !== 'gdm') return;
 
         this._active = true;
+        this._bootRevealed = false;
+        globalThis._wackHandlesBootCover = true;
+        this._ensureBootCover();
 
         const themeContext = St.ThemeContext.get_for_stage(global.stage);
         themeContext.connectObject('notify::theme', () => this._ensureStylesheetLoaded(), this);
@@ -154,8 +161,179 @@ export class GdmManager {
         }
 
         this._teardown();
+        this._destroyBootCover();
+        globalThis._wackHandlesBootCover = false;
         this._settings = null;
         this._interfaceSettings = null;
+    }
+
+    _ensureBootCover() {
+        if (this._bootRevealed)
+            return this._gdmBootCover;
+        const uiGroup = Main.layoutManager?.uiGroup;
+        if (!uiGroup)
+            return null;
+
+        if (!this._gdmBootCover) {
+            const existing = Main.layoutManager?._gdmBootCover || globalThis._wackGdmBootCover ||
+                uiGroup.get_children().find(c => c.name === 'gdmBootCover');
+            if (existing) {
+                this._gdmBootCover = existing;
+                if (Main.layoutManager?._gdmBootCover === existing)
+                    Main.layoutManager._gdmBootCover = null;
+                globalThis._wackGdmBootCover = null;
+            } else {
+                const screenW = global.stage.width || global.screen_width || 1920;
+                const screenH = global.stage.height || global.screen_height || 1080;
+                this._gdmBootCover = new St.Widget({
+                    name: 'gdmBootCover',
+                    style: 'background-color: #000000;',
+                    layout_manager: new Clutter.FixedLayout(),
+                    x: 0,
+                    y: 0,
+                    width: screenW,
+                    height: screenH,
+                    opacity: 255,
+                    reactive: true,
+                });
+
+                // Carry Plymouth's centered Apple logo & completed progress bar visually across the DRM handoff
+                // so the black boot screen dissolves gently into GDM without an abrupt snap.
+                try {
+                    const logoPaths = [
+                        '/usr/share/plymouth/themes/macw1y-boot/logo.png',
+                        '/usr/share/plymouth/themes/apple-mac/logo.png',
+                    ];
+                    const foundLogo = logoPaths.find(p => GLib.file_test(p, GLib.FileTest.EXISTS));
+                    if (foundLogo) {
+                        const logoH = Math.max(50, Math.round(screenH * 0.092));
+                        const logoW = Math.round(logoH * 0.8125);
+                        const logoActor = new St.Widget({
+                            style: `background-image: url("file://${foundLogo}"); background-size: contain; background-repeat: no-repeat; background-position: center;`,
+                            x: Math.round((screenW - logoW) / 2),
+                            y: Math.round((screenH - logoH) / 2),
+                            width: logoW,
+                            height: logoH,
+                        });
+                        this._gdmBootCover.add_child(logoActor);
+
+                        const barW = Math.min(400, Math.max(180, Math.round(screenW * 0.14)));
+                        const barH = Math.min(10, Math.max(4, Math.round(screenH * 0.0056)));
+                        const barActor = new St.Widget({
+                            style: `background-color: rgba(255, 255, 255, 0.92); border-radius: ${Math.max(2, Math.round(barH / 2))}px;`,
+                            x: Math.round((screenW - barW) / 2),
+                            y: Math.round(screenH * 0.93),
+                            width: barW,
+                            height: barH,
+                        });
+                        this._gdmBootCover.add_child(barActor);
+                    }
+                } catch (_) {}
+
+                uiGroup.add_child(this._gdmBootCover);
+            }
+        }
+
+        try {
+            this._gdmBootCover.remove_all_transitions?.();
+            this._gdmBootCover.opacity = 255;
+            this._gdmBootCover.visible = true;
+            uiGroup.set_child_above_sibling(this._gdmBootCover, null);
+        } catch (_) {}
+        return this._gdmBootCover;
+    }
+
+    _destroyBootCover() {
+        if (this._bootRevealTimeoutId) {
+            GLib.source_remove(this._bootRevealTimeoutId);
+            this._bootRevealTimeoutId = 0;
+        }
+        if (this._bootRevealIdleId) {
+            GLib.source_remove(this._bootRevealIdleId);
+            this._bootRevealIdleId = 0;
+        }
+        if (this._gdmBootCover) {
+            try {
+                this._gdmBootCover.remove_all_transitions?.();
+                this._gdmBootCover.destroy();
+            } catch (_) {}
+            this._gdmBootCover = null;
+        }
+    }
+
+    _scheduleBootReveal(immediate = false) {
+        if (this._bootRevealed || !this._active)
+            return;
+
+        if (this._bootRevealIdleId) {
+            GLib.source_remove(this._bootRevealIdleId);
+            this._bootRevealIdleId = 0;
+        }
+
+        const runReveal = () => {
+            if (this._bootRevealed || !this._active)
+                return GLib.SOURCE_REMOVE;
+            this._bootRevealed = true;
+            if (this._bootRevealTimeoutId) {
+                GLib.source_remove(this._bootRevealTimeoutId);
+                this._bootRevealTimeoutId = 0;
+            }
+            this._bootRevealIdleId = 0;
+
+            const dialog = this._dialog;
+            if (dialog) {
+                dialog.remove_all_transitions();
+                dialog.opacity = 255;
+                if (!dialog._user && !this._isNotListed && dialog._userSelectionBox) {
+                    const count = dialog._userList?._items?.size ?? 0;
+                    if (count !== 1) {
+                        this._positionUserList();
+                        dialog._userSelectionBox.opacity = 255;
+                        dialog._userSelectionBox.visible = true;
+                    }
+                }
+            }
+            if (this._clockManager?.clockWrapper) {
+                this._clockManager.clockWrapper.remove_all_transitions();
+                this._clockManager.clockWrapper.translation_y = 0;
+                this._clockManager.clockWrapper.opacity = 255;
+                this._clockManager.clockWrapper.visible = true;
+                this._clockManager.positionClock();
+            }
+            if (Main.panel) {
+                Main.panel.remove_all_transitions();
+                Main.panel.translation_y = 0;
+                Main.panel.opacity = 255;
+            }
+
+            const cover = this._gdmBootCover;
+            if (cover) {
+                try {
+                    Main.layoutManager?.uiGroup?.set_child_above_sibling(cover, null);
+                } catch (_) {}
+                cover.remove_all_transitions();
+                cover.ease({
+                    opacity: 0,
+                    duration: 950,
+                    mode: Clutter.AnimationMode.EASE_IN_OUT_CUBIC,
+                    onComplete: () => {
+                        if (this._gdmBootCover === cover)
+                            this._gdmBootCover = null;
+                        try { cover.destroy(); } catch (_) {}
+                    },
+                });
+            }
+            return GLib.SOURCE_REMOVE;
+        };
+
+        if (immediate) {
+            this._bootRevealIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, runReveal);
+        } else if (!this._bootRevealTimeoutId) {
+            this._bootRevealTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1400, () => {
+                this._bootRevealTimeoutId = 0;
+                return runReveal();
+            });
+        }
     }
 
     _findLoginDialog() {
@@ -368,9 +546,17 @@ export class GdmManager {
             }
             if (dialog._userSelectionBox) {
                 dialog._userSelectionBox.remove_all_transitions();
-                dialog._userSelectionBox.opacity = 255;
-                dialog._userSelectionBox.visible = true;
-                this._positionUserList();
+                const itemsCount = dialog._userList?._items?.size ?? 0;
+                const waitingForSingleAutoSelect = !dialog._userListLoaded || itemsCount <= 1;
+                if (waitingForSingleAutoSelect) {
+                    // Keep picker hidden so single-user prompt never flashes at bottom before sliding up
+                    dialog._userSelectionBox.opacity = 0;
+                    dialog._userSelectionBox.visible = false;
+                } else {
+                    dialog._userSelectionBox.opacity = 255;
+                    dialog._userSelectionBox.visible = true;
+                    this._positionUserList();
+                }
             }
         }
 
@@ -778,8 +964,32 @@ export class GdmManager {
         const dialog = this._dialog;
         if (!dialog) return;
 
-        const FADE_DURATION = 800;
-        const FADE_MODE = Clutter.AnimationMode.EASE_OUT_QUAD;
+        if (!this._bootRevealed) {
+            this._ensureBootCover();
+            const wpGroup = this._wallpaperManager?.view?._group;
+            if (wpGroup) {
+                wpGroup.remove_all_transitions();
+                wpGroup.visible = true;
+                wpGroup.opacity = 255;
+            }
+            const bgGroup = Main.layoutManager?._backgroundGroup;
+            if (bgGroup) {
+                bgGroup.remove_all_transitions();
+                bgGroup.opacity = 255;
+            }
+            const hasPromptReady = Boolean(dialog._user && dialog._authPrompt?.visible);
+            const itemsCount = dialog._userList?._items?.size ?? 0;
+            const hasMultiPickerReady = Boolean(dialog._userListLoaded && itemsCount > 1);
+            if (hasPromptReady || hasMultiPickerReady) {
+                this._scheduleBootReveal(true);
+            } else {
+                this._scheduleBootReveal(false);
+            }
+            return;
+        }
+
+        const FADE_DURATION = 950;
+        const FADE_MODE = Clutter.AnimationMode.EASE_IN_OUT_CUBIC;
 
 
         const wpGroup = this._wallpaperManager?.view?._group;
@@ -1175,17 +1385,37 @@ export class GdmManager {
                 const singleItem = items[0];
                 if (singleItem) {
                     this._hasAutoSelectedUser = true;
+                    if (targetDialog._userSelectionBox) {
+                        targetDialog._userSelectionBox.opacity = 0;
+                        targetDialog._userSelectionBox.visible = false;
+                    }
                     _log('[WACK/GDM] Single user detected on boot, immediately activating password prompt');
                     if (typeof targetDialog._onUserListActivated === 'function') {
                         targetDialog._onUserListActivated(singleItem);
                     } else if (typeof singleItem.emit === 'function') {
                         singleItem.emit('activate');
                     }
+                    if (!this._bootRevealed)
+                        this._scheduleBootReveal(true);
                 }
+            } else if (items.length > 1) {
+                if (targetDialog._userSelectionBox) {
+                    this._positionUserList();
+                    targetDialog._userSelectionBox.opacity = 255;
+                    targetDialog._userSelectionBox.visible = true;
+                }
+                if (!this._bootRevealed)
+                    this._scheduleBootReveal(true);
+            } else if (targetDialog._userListLoaded && !this._bootRevealed) {
+                this._scheduleBootReveal(true);
             }
             return GLib.SOURCE_REMOVE;
         };
 
-        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, checkAndActivate);
+        if (targetDialog._userListLoaded) {
+            checkAndActivate();
+        } else {
+            GLib.idle_add(GLib.PRIORITY_DEFAULT, checkAndActivate);
+        }
     }
 }

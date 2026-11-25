@@ -809,6 +809,7 @@ export const LayoutManager = GObject.registerClass({
                 this._gdmBootCover = new St.Widget({
                     name: 'gdmBootCover',
                     style: 'background-color: #000000;',
+                    layout_manager: new Clutter.FixedLayout(),
                     x: 0,
                     y: 0,
                     width: screenW,
@@ -816,10 +817,39 @@ export const LayoutManager = GObject.registerClass({
                     reactive: true,
                 });
 
+                try {
+                    const logoPaths = [
+                        '/usr/share/plymouth/themes/macw1y-boot/logo.png',
+                        '/usr/share/plymouth/themes/apple-mac/logo.png',
+                    ];
+                    const foundLogo = logoPaths.find(p => GLib.file_test(p, GLib.FileTest.EXISTS));
+                    if (foundLogo) {
+                        const logoH = Math.max(50, Math.round(screenH * 0.092));
+                        const logoW = Math.round(logoH * 0.8125);
+                        this._gdmBootCover.add_child(new St.Widget({
+                            style: `background-image: url("file://${foundLogo}"); background-size: contain; background-repeat: no-repeat; background-position: center;`,
+                            x: Math.round((screenW - logoW) / 2),
+                            y: Math.round((screenH - logoH) / 2),
+                            width: logoW,
+                            height: logoH,
+                        }));
+                        const barW = Math.min(400, Math.max(180, Math.round(screenW * 0.14)));
+                        const barH = Math.min(10, Math.max(4, Math.round(screenH * 0.0056)));
+                        this._gdmBootCover.add_child(new St.Widget({
+                            style: `background-color: rgba(255, 255, 255, 0.92); border-radius: ${Math.max(2, Math.round(barH / 2))}px;`,
+                            x: Math.round((screenW - barW) / 2),
+                            y: Math.round(screenH * 0.93),
+                            width: barW,
+                            height: barH,
+                        }));
+                    }
+                } catch (_) {}
+
                 this.uiGroup.add_child(this._gdmBootCover);
                 this.uiGroup.set_child_above_sibling(this._gdmBootCover, null);
             }
         } else {
+            this._macStartupManaged = true;
             this.keyboardBox.hide();
 
 
@@ -997,14 +1027,26 @@ export const LayoutManager = GObject.registerClass({
 
         this.emit('startup-prepared');
 
+        if (globalThis._wackHandlesBootCover && this._gdmBootCover) {
+            // Let wack-lockscreen-clock crossfade the boot cover once prompt + single-user selection are ready
+            globalThis._wackGdmBootCover = this._gdmBootCover;
+            this._gdmBootCover = null;
+            if (this.panelBox) {
+                this.panelBox.remove_all_transitions();
+                this.panelBox.translation_y = 0;
+                this.panelBox.opacity = 255;
+            }
+            return;
+        }
+
 
         await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, () => {
             resolve();
             return GLib.SOURCE_REMOVE;
         }));
 
-        const DURATION = 650;
-        const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
+        const DURATION = 950;
+        const MODE = Clutter.AnimationMode.EASE_IN_OUT_CUBIC;
 
 
         if (this._gdmBootCover) {
@@ -1059,35 +1101,63 @@ export const LayoutManager = GObject.registerClass({
 
 
 
-        const STARTUP_TIMEOUT_MS = 1200;
+        const STARTUP_TIMEOUT_MS = 3200;
 
         const checkExtensions = async () => {
             const em = Main.extensionManager;
             if (!em) return;
-            const isReady = () => (em._enabledExtensions || []).every(uuid => {
+            const isExtEnabled = (uuid) => {
                 const ext = em.lookup(uuid);
-                return ext && (ext.state === 1 || ext.state === 2 || ext.state === 3);
-            });
+                return Boolean(ext && (ext.state === 1 || ext.state === 2 || ext.state === 3));
+            };
+            const isPanelVisualReady = () => {
+                const kiwiExt = em.lookup('kiwi@kemma');
+                if (kiwiExt && (kiwiExt.state === 1 || em._enabledExtensions?.includes('kiwi@kemma')) && !globalThis._macKiwiReady)
+                    return false;
+                const bmsExt = em.lookup('blur-my-shell@aunetx');
+                if (bmsExt && (bmsExt.state === 1 || em._enabledExtensions?.includes('blur-my-shell@aunetx'))) {
+                    const qs = Main.panel?.statusArea?.quickSettings;
+                    if (!globalThis._macMenuBarReady || (qs && !qs.has_style_class_name?.('mac-control-center-button')))
+                        return false;
+                }
+                return true;
+            };
+            const isReady = () => (em._enabledExtensions || []).every(isExtEnabled) && isPanelVisualReady();
             if (isReady()) return;
             return new Promise(resolve => {
-                const sigId = em.connect('extension-state-changed', () => {
+                let pollId = 0;
+                let sigId = 0;
+                const finish = () => {
+                    if (pollId) { GLib.source_remove(pollId); pollId = 0; }
+                    if (sigId) { try { em.disconnect(sigId); } catch (_) {} sigId = 0; }
+                    resolve();
+                };
+                sigId = em.connect('extension-state-changed', () => {
+                    if (isReady()) finish();
+                });
+                pollId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
                     if (isReady()) {
-                        try { em.disconnect(sigId); } catch (_) {}
-                        resolve();
+                        pollId = 0;
+                        finish();
+                        return GLib.SOURCE_REMOVE;
                     }
+                    return GLib.SOURCE_CONTINUE;
                 });
             });
         };
 
         const checkDock = async () => {
-            let dockContainer = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
-            if (dockContainer) return;
+            const isDockReady = () => {
+                const dc = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
+                const dash = dc?._dock?.dash;
+                return Boolean(dc && dash && dash._macHasItems && dash._macTrashReady);
+            };
+            if (isDockReady()) return;
             return new Promise(resolve => {
                 let attempts = 0;
                 GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
                     attempts++;
-                    dockContainer = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
-                    if (dockContainer || attempts > 25) {
+                    if (isDockReady() || attempts > 75) {
                         resolve();
                         return GLib.SOURCE_REMOVE;
                     }
@@ -1097,14 +1167,18 @@ export const LayoutManager = GObject.registerClass({
         };
 
         const checkLiquidGlass = async () => {
+            const isGlassReady = () => {
+                const lg = Main.extensionManager?.lookup('liquid-glass@thinkingcoding1231.gmail.com');
+                if (!lg || lg.state === 3 || lg.state === 2) return true;
+                const docks = lg?.stateObj?._dashDocks;
+                return Boolean(docks && docks.length > 0 && docks[0].manager?.bgActor && docks[0].manager?.effect?._shadersLoaded);
+            };
+            if (isGlassReady()) return;
             return new Promise(resolve => {
                 let attempts = 0;
                 GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
                     attempts++;
-                    const lg = Main.extensionManager?.lookup('liquid-glass@thinkingcoding1231.gmail.com');
-                    const docks = lg?.stateObj?._dashDocks;
-                    const ready = docks && docks.length > 0 && docks[0].manager?.bgActor;
-                    if (ready || attempts > 25) {
+                    if (isGlassReady() || attempts > 75) {
                         resolve();
                         return GLib.SOURCE_REMOVE;
                     }
@@ -1114,14 +1188,44 @@ export const LayoutManager = GObject.registerClass({
         };
 
         const checkWidgets = async () => {
+            const isWidgetsReady = () => {
+                const dw = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
+                if (!dw || dw.state === 3 || dw.state === 2) return true;
+                const layer = dw?.stateObj?._controller?._layer ||
+                    this._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer') || c.name === 'widget-layer');
+                return Boolean(layer && layer.get_children().length > 0);
+            };
+            if (isWidgetsReady()) return;
             return new Promise(resolve => {
                 let attempts = 0;
                 GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
                     attempts++;
-                    const dw = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
-                    const layer = dw?.stateObj?._controller?._layer ||
-                        this._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer') || c.name === 'widget-layer');
-                    if ((layer && layer.get_children().length > 0) || attempts > 25) {
+                    if (isWidgetsReady() || attempts > 75) {
+                        resolve();
+                        return GLib.SOURCE_REMOVE;
+                    }
+                    return GLib.SOURCE_CONTINUE;
+                });
+            });
+        };
+
+        const checkDing = async () => {
+            const dingExt = Main.extensionManager?.lookup('ding@rastersoft.com');
+            if (!dingExt || dingExt.state === 2 || dingExt.state === 3) return;
+            const isDingReady = () => {
+                const actors = global.get_window_actors?.() || [];
+                return actors.some(a => {
+                    const mw = a.meta_window || a.get_meta_window?.();
+                    return mw && (mw.get_gtk_application_id?.() === 'com.rastersoft.ding' ||
+                        mw.get_title?.()?.startsWith('Desktop Icons'));
+                });
+            };
+            if (isDingReady()) return;
+            return new Promise(resolve => {
+                let attempts = 0;
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+                    attempts++;
+                    if (isDingReady() || attempts > 55) {
                         resolve();
                         return GLib.SOURCE_REMOVE;
                     }
@@ -1146,9 +1250,19 @@ export const LayoutManager = GObject.registerClass({
 
 
         await Promise.race([
-            Promise.all([checkExtensions(), checkDock(), checkLiquidGlass(), checkWidgets()]),
+            Promise.all([checkExtensions(), checkDock(), checkLiquidGlass(), checkWidgets(), checkDing()]),
             timeoutBarrier
         ]);
+
+        // Settle one frame so Top Bar Organizer and Liquid Glass geometry sync cleanly before synchronized slide-in
+        try {
+            Main.layoutManager._macDockRevealActive = true;
+            global._liquidGlassDockSync?.();
+        } catch (_) {}
+        await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 60, () => {
+            resolve();
+            return GLib.SOURCE_REMOVE;
+        }));
 
 
         let dockContainer = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
@@ -1171,7 +1285,7 @@ export const LayoutManager = GObject.registerClass({
         }
 
 
-        const DURATION = 380;
+        const DURATION = 480;
         const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
 
 
@@ -1224,7 +1338,7 @@ export const LayoutManager = GObject.registerClass({
             cover.remove_all_transitions();
             cover.ease({
                 opacity: 0,
-                duration: 500,
+                duration: DURATION,
                 mode: MODE,
                 onComplete: () => cover.destroy(),
             });
@@ -1264,46 +1378,59 @@ export const LayoutManager = GObject.registerClass({
         const dockContainers = this.uiGroup.get_children().filter(c => c.name === 'dashtodockContainer');
         const glassActors = this.uiGroup.get_children().filter(c => c.name === 'liquid-glass-bg-actor');
 
-        try { global._liquidGlassDockSync?.(); } catch (_) {}
-
         for (const dc of dockContainers) {
             const dockH = dc.height > 0 ? dc.height : 92;
             dc.remove_all_transitions();
             dc.translation_y = -dockH;
-            dc.opacity = 0;
+            dc.opacity = 255;
             dc.show();
-            dc.ease({
-                opacity: 255,
-                duration: DURATION,
-                mode: MODE,
-            });
             for (const child of dc.get_children()) {
                 child.remove_all_transitions();
-                child.opacity = 0;
+                child.opacity = 255;
                 child.show();
-                child.ease({
-                    opacity: 255,
-                    duration: DURATION,
-                    mode: MODE,
-                });
             }
 
             const dock = dc._dock;
             if (dock) {
                 dock.translation_y = -dockH;
-                if (dock.dash) {
-                    dock.dash.remove_all_transitions();
-                    dock.dash.opacity = 255;
-                    dock.dash.translation_x = 0;
-                    dock.dash.translation_y = 0;
-                }
                 dock._dockState = 2;
                 dock._startupAnimationRan = true;
                 if (dock._slider) {
                     dock._slider.slide_x = 1;
                 }
+                const slideDist = dockH + 28;
+                const slideOffset = typeof dock._getSlideOffset === 'function'
+                    ? dock._getSlideOffset(slideDist)
+                    : { translation_x: 0, translation_y: slideDist };
+                if (dock.dash) {
+                    dock.dash.remove_all_transitions();
+                    dock.dash.visible = true;
+                    dock.dash.opacity = 0;
+                    dock.dash.translation_x = slideOffset.translation_x;
+                    dock.dash.translation_y = slideOffset.translation_y;
+                    dock.dash.ease({
+                        opacity: 255,
+                        translation_x: 0,
+                        translation_y: 0,
+                        duration: DURATION,
+                        mode: MODE,
+                        onComplete: () => {
+                            Main.layoutManager._macDockRevealActive = false;
+                            try { global._liquidGlassDockSync?.(); } catch (_) {}
+                        },
+                    });
+                }
+            } else {
+                dc.opacity = 0;
+                dc.ease({
+                    opacity: 255,
+                    duration: DURATION,
+                    mode: MODE,
+                });
             }
         }
+
+        try { global._liquidGlassDockSync?.(); } catch (_) {}
 
         for (const ga of glassActors) {
             ga.remove_all_transitions();
@@ -1313,6 +1440,10 @@ export const LayoutManager = GObject.registerClass({
                 opacity: 255,
                 duration: DURATION,
                 mode: MODE,
+                onComplete: () => {
+                    Main.layoutManager._macDockRevealActive = false;
+                    try { global._liquidGlassDockSync?.(); } catch (_) {}
+                },
             });
         }
 

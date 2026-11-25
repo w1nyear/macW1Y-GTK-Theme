@@ -685,8 +685,9 @@ export class DashManager {
       } catch (_) {}
       if (Number.isFinite(slX) && Number.isFinite(slW) && slW! > 50 && Number.isFinite(slY)) {
         const screenBottom = monitor ? (monitor.y + monitor.height) : 1080;
+        const revealActive = Boolean((Main.layoutManager as any)?._macDockRevealActive);
 
-        if (!isD2DTransitioning && slY! >= screenBottom) {
+        if (!isD2DTransitioning && !revealActive && slY! >= screenBottom) {
           this.bgActor.hide();
           this.bgActor.opacity = 0;
           return false;
@@ -739,7 +740,8 @@ export class DashManager {
           if (baseIconH === 0 || ic.h < baseIconH) baseIconH = ic.h;
         }
         const screenBottom = monitor ? (monitor.y + monitor.height) : 1080;
-        if (!isD2DTransitioning && minY >= screenBottom) {
+        const revealActive = Boolean((Main.layoutManager as any)?._macDockRevealActive);
+        if (!isD2DTransitioning && !revealActive && minY >= screenBottom) {
           this.bgActor.hide();
           this.bgActor.opacity = 0;
           return false;

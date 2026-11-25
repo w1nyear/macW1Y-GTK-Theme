@@ -5920,3 +5920,32 @@ Task #938:
     * Явно зафіксовано вимогу адаптувати та перевіряти кожен змінений або новий файл (інсталятор, утиліти з bin/, C-бібліотеки, JS-розширення, GDM/GSettings, systemd/autostart, залежності) під усі підтримувані дистрибутиви: GNOME 46–51 (`Clutter.Orientation`, fallback `Clutter.OffscreenEffect` + `Cogl.Pipeline` + `Clutter.PipelineNode`, захист від автооновлень EGO), GDM-профілі та `greeter-dconf-defaults`, SELinux `Enforcing`, генерація локалей (`/etc/locale.gen`, `update-locale`, `localectl`) та тести.
   * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+976. 2026-11-25 — Синхронізація та прискорення анімацій від Plymouth/GDM до робочого стола (Ubuntu/Debian/Mint/Fedora/Arch/CachyOS):
+  - Змінені файли:
+    * [extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/pro/pro.js](file:///home/vitaliy/macW1Y/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/pro/pro.js) (_ensureBootCover, _destroyBootCover, _scheduleBootReveal)
+    * [extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/pro/gdmAnimationController.js](file:///home/vitaliy/macW1Y/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/pro/gdmAnimationController.js) (onUserSelected)
+    * [gnome-shell-overlay/ui/layout.js](file:///home/vitaliy/macW1Y/gnome-shell-overlay/ui/layout.js) (_prepareStartupAnimation, _startupAnimationGreeter, _startupAnimationSession)
+    * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js) (prepareMacDesktopHidden, suppressStartupOverview, runMacStartupSession, disable)
+    * [extensions/kiwi@kemma/extension.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/extension.js) (enable)
+    * [extensions/blur-my-shell@aunetx/components/menubar_v29.js](file:///home/vitaliy/macW1Y/extensions/blur-my-shell@aunetx/components/menubar_v29.js) (_setupControlCenterButton, _reorderRightBox)
+    * [extensions/dash2dock-motion@unmade.space/dash.js](file:///home/vitaliy/macW1Y/extensions/dash2dock-motion@unmade.space/dash.js) (_redisplay)
+    * [extensions/dash2dock-motion@unmade.space/docking.js](file:///home/vitaliy/macW1Y/extensions/dash2dock-motion@unmade.space/docking.js) (_createDock, _runStartupAnimation)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/extension.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/extension.js) (прискорення retry-таймерів)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js) (_macDockRevealActive)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/src/dockManager.ts](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/src/dockManager.ts) (_macDockRevealActive)
+    * [extensions/ding@rastersoft.com/extension.js](file:///home/vitaliy/macW1Y/extensions/ding@rastersoft.com/extension.js) (enable)
+    * [bin/mac-sanitize-favorites.sh](file:///home/vitaliy/macW1Y/bin/mac-sanitize-favorites.sh) (кешування flatpak list)
+    * [bin/mac-ensure-extensions.sh](file:///home/vitaliy/macW1Y/bin/mac-ensure-extensions.sh) (фонова ініціалізація закладок і favorites)
+    * [install.sh](file:///home/vitaliy/macW1Y/install.sh) (start-in-overview false)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py) (test_boot_gdm_and_synchronized_desktop_startup)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Опис змін:
+    * Плавний перехід Plymouth → GDM через 950ms EASE_IN_OUT_CUBIC розчинення _gdmBootCover із логотипом macw1y-boot та прогрес-баром.
+    * Приховано однокористувацький _userSelectionBox до _autoSelectSingleUser(), щоб усунути стрибок аватарки/імені знизу вгору при появі поля пароля.
+    * Усунуто десинхронний старт сесії: приховання компонентів за шпалерною завісою, синхронний запуск kiwi/DING/dash2dock/liquid-glass, придушення Overview у eval-helper@mactheme та одночасний виїзд меню-бару (згори), доку з Liquid Glass і Trash (знизу) та поява віджетів і файлів на робочому столі (480ms EASE_OUT_CUBIC).
+  - Перевірка:
+    * Холодний ребут у QEMU/KVM VM Fedora 44 (GNOME Shell 50.0): GDM без стрибка списку (vm_fed_cold_3.png, vm_fed_cold_4.png) → робочий стіл без Overview з 21/21 увімкнених розширень, Liquid Glass на доку та віджетах, Trash на доку та робочому столі (vm_fed_cold_desk_6.png), 0 помилок у журналі GNOME Shell.
+    * unittest: 55/55 OK; mac-extension-guard verify: 21/21 LOCKED OK; mac-i18n-verify: OK; mac-audit-sync check: 100% PASS; 0 кирилиці в install.sh.
+  * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

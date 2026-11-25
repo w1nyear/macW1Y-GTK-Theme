@@ -78,6 +78,30 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         ensure_sh = (ROOT / "bin" / "mac-ensure-extensions.sh").read_text(encoding="utf-8")
         self.assertIn("extension-updates/$ext", ensure_sh)
 
+    def test_boot_gdm_and_synchronized_desktop_startup(self):
+        pro_js = (ROOT / "extensions" / "wack-lockscreen-clock@rinzler69-wastaken.github.com" / "src" / "pro" / "pro.js").read_text(encoding="utf-8")
+        self.assertIn("_ensureBootCover", pro_js)
+        self.assertIn("_scheduleBootReveal", pro_js)
+        self.assertIn("waitingForSingleAutoSelect", pro_js)
+        self.assertIn("macw1y-boot/logo.png", pro_js)
+        layout_js = (ROOT / "gnome-shell-overlay" / "ui" / "layout.js").read_text(encoding="utf-8")
+        self.assertIn("_macStartupManaged", layout_js)
+        self.assertIn("_macDockRevealActive", layout_js)
+        self.assertIn("checkDing", layout_js)
+        self.assertIn("macw1y-boot/logo.png", layout_js)
+        eval_js = (ROOT / "extensions" / "eval-helper@mactheme" / "extension.js").read_text(encoding="utf-8")
+        self.assertIn("_macStartupManaged", eval_js)
+        self.assertIn("_macDockRevealActive", eval_js)
+        self.assertIn("_macTrashReady", eval_js)
+        self.assertIn("suppressStartupOverview", eval_js)
+        self.assertIn("runMacStartupSession", eval_js)
+        install_sh = (ROOT / "install.sh").read_text(encoding="utf-8")
+        self.assertIn("start-in-overview false", install_sh)
+        kiwi_js = (ROOT / "extensions" / "kiwi@kemma" / "extension.js").read_text(encoding="utf-8")
+        self.assertIn("_macKiwiReady", kiwi_js)
+        ding_js = (ROOT / "extensions" / "ding@rastersoft.com" / "extension.js").read_text(encoding="utf-8")
+        self.assertNotIn("Main.layoutManager.connect('startup-complete'", ding_js)
+
 
 if __name__ == "__main__":
     unittest.main()

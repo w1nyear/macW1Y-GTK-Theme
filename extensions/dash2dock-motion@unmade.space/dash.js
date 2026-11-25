@@ -1135,6 +1135,10 @@ export const DockDash = GObject.registerClass({
         this._updateNumberOverlay();
 
         this.updateShowAppsButton();
+
+        this._macHasItems = nIcons > 0;
+        this._macTrashReady = !Docking.DockManager.settings.showTrash ||
+            newApps.some(a => Boolean(a?.isTrash));
     }
 
     _updateNumberOverlay() {

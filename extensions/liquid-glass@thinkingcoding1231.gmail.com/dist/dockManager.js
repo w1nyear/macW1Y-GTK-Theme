@@ -235,8 +235,7 @@ export class DashManager {
             return GLib.SOURCE_REMOVE;
         };
         this._marginRetryIds = [
-            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2500, reapply),
-            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 6000, reapply),
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, reapply),
         ];
         try {
             this._layoutSignals = [
@@ -916,7 +915,8 @@ export class DashManager {
             if (Number.isFinite(slX) && Number.isFinite(slW) && slW > 50 && Number.isFinite(slY)) {
                 const screenBottom = monitor ? (monitor.y + monitor.height) : 1080;
 
-                if (!isD2DTransitioning && slY >= screenBottom) {
+                const revealActive = Boolean(Main.layoutManager?._macDockRevealActive);
+                if (!isD2DTransitioning && !revealActive && slY >= screenBottom) {
                     this.bgActor.hide();
                     this.bgActor.opacity = 0;
                     return false;
@@ -945,7 +945,8 @@ export class DashManager {
         const fallbackIb = (!hasSlabBounds && !isD2DTransitioning) ? getIconBounds() : null;
         if (fallbackIb) {
             const screenBottom = monitor ? (monitor.y + monitor.height) : 1080;
-            if (fallbackIb.minY >= screenBottom) {
+            const revealActive = Boolean(Main.layoutManager?._macDockRevealActive);
+            if (!revealActive && fallbackIb.minY >= screenBottom) {
                 this.bgActor.hide();
                 this.bgActor.opacity = 0;
                 return false;

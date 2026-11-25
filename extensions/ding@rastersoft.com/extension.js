@@ -81,13 +81,9 @@ export default class DING extends Extension {
             this.DesktopIconsUsableArea = new VisibleArea.VisibleArea();
             this.data.visibleArea = this.DesktopIconsUsableArea;
         }
-        // If the desktop is still starting up, we wait until it is ready
-        if (Main.layoutManager._startingUp) {
-            this.data.startupPreparedId = Main.layoutManager.connect('startup-complete', () => this.innerEnable());
-        } else {
-            this.data.startupPreparedId = null;
-            this.innerEnable();
-        }
+        // Start desktop process immediately in background so icons are ready for synchronized startup reveal
+        this.data.startupPreparedId = null;
+        this.innerEnable();
     }
 
     disable() {

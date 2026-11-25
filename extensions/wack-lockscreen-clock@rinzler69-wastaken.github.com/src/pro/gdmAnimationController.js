@@ -473,6 +473,16 @@ export class GdmAnimationController {
         this._gdm._positionAuthPrompt();
         this._gdm._startCursorBlink();
 
+        if (!this._gdm._bootRevealed) {
+            if (authPrompt) {
+                authPrompt.remove_all_transitions();
+                authPrompt.visible = true;
+                authPrompt.opacity = 255;
+            }
+            this._gdm._scheduleBootReveal(true);
+            return;
+        }
+
         this.animateCupertinoPromptIn();
     }
 

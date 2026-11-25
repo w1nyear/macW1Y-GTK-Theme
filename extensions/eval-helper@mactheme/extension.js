@@ -4455,199 +4455,541 @@ void main() {
 
 
             if (!Main.layoutManager._isMacLayoutOverlay) {
+                try {
+                    Main.layoutManager._startInOverview = false;
+                } catch (_) {}
+                try {
+                    const shellSchema = Gio.SettingsSchemaSource.get_default()?.lookup('org.gnome.shell', true);
+                    if (shellSchema && shellSchema.has_key('start-in-overview')) {
+                        const shellSettings = new Gio.Settings({ schema_id: 'org.gnome.shell' });
+                        if (shellSettings.get_boolean('start-in-overview'))
+                            shellSettings.set_boolean('start-in-overview', false);
+                    }
+                } catch (_) {}
 
+                const suppressStartupOverview = () => {
+                    try {
+                        const ov = Main.overview;
+                        const lm = Main.layoutManager;
+                        if (lm) lm._startInOverview = false;
+                        if (!ov || ov.isDummy) return;
+                        const controls = ov._overview?.controls;
+                        if (controls?._stateAdjustment) {
+                            controls._stateAdjustment.remove_all_transitions();
+                            controls._stateAdjustment.value = 0;
+                        }
+                        if (ov._visible || ov._visibleTarget || ov._shown || lm?._inOverview || ov._shownState) {
+                            ov._shown = false;
+                            ov._visible = false;
+                            ov._visibleTarget = false;
+                            try { ov._changeShownState?.(0); } catch (_) {}
+                            try { ov.hide?.(); } catch (_) {}
+                            try { lm?.hideOverview?.(); } catch (_) {}
+                        }
+                        if (Main.panel)
+                            Main.panel.style = null;
+                    } catch (_) {}
+                };
+
+                const prepareMacDesktopHidden = async (withBgUpdate = true) => {
+                    if (Main.sessionMode.isGreeter) return;
+                    const lm = Main.layoutManager;
+                    lm._macStartupManaged = true;
+                    lm._startInOverview = false;
+                    suppressStartupOverview();
+                    lm._showSecondaryBackgrounds?.();
+
+                    const screenW = global.stage.width || global.screen_width || 1920;
+                    const screenH = global.stage.height || global.screen_height || 1080;
+                    let bgUri = 'file:///usr/share/backgrounds/GoldenGate_Day.jpg';
+                    try {
+                        const bgSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.background' });
+                        const uri = bgSettings.get_string('picture-uri-dark') || bgSettings.get_string('picture-uri');
+                        if (uri && uri !== '') bgUri = uri;
+                    } catch (_) {}
+
+                    const coverStyle = `background-color: #000000; background-image: url("${bgUri}"); background-size: cover; background-position: center;`;
+                    if (!lm._coverPane) {
+                        lm._coverPane = new St.Widget({
+                            name: 'macStartupCoverPane',
+                            style: coverStyle,
+                            opacity: 255,
+                            x: 0,
+                            y: 0,
+                            width: screenW,
+                            height: screenH,
+                            reactive: true,
+                        });
+                        lm.uiGroup.add_child(lm._coverPane);
+                    } else {
+                        lm._coverPane.remove_all_transitions?.();
+                        if (typeof lm._coverPane.set_style === 'function')
+                            lm._coverPane.set_style(coverStyle);
+                        else
+                            lm._coverPane.style = coverStyle;
+                        lm._coverPane.set_size?.(screenW, screenH);
+                        lm._coverPane.opacity = 255;
+                        lm._coverPane.show?.();
+                    }
+                    lm.uiGroup.set_child_above_sibling(lm._coverPane, null);
+
+                    lm.uiGroup.set_pivot_point(0, 0);
+                    lm.uiGroup.scale_x = 1.0;
+                    lm.uiGroup.scale_y = 1.0;
+                    lm.uiGroup.opacity = 255;
+
+                    if (lm.panelBox) {
+                        lm.panelBox.remove_all_transitions();
+                        const panelH = lm.panelBox.height > 0 ? lm.panelBox.height : 34;
+                        lm.panelBox.translation_y = -panelH;
+                        lm.panelBox.opacity = 0;
+                        if (lm._coverPane) {
+                            lm.uiGroup.set_child_above_sibling(lm.panelBox, lm._coverPane);
+                        }
+                    }
+
+                    if (global.window_group) {
+                        global.window_group.remove_all_transitions();
+                        global.window_group.opacity = 0;
+                    }
+
+                    for (const child of lm.uiGroup.get_children()) {
+                        if (child.name === 'dashtodockContainer' || child.name === 'liquid-glass-bg-actor') {
+                            child.remove_all_transitions();
+                            child.opacity = 0;
+                            if (child.name === 'dashtodockContainer') {
+                                for (const sub of child.get_children()) sub.opacity = 0;
+                            }
+                        }
+                    }
+
+                    if (!lm._macDockChildAddedId) {
+                        lm._macDockChildAddedId = lm.uiGroup.connect('child-added', (_group, child) => {
+                            if (!lm._startingUp) return;
+                            if (lm._coverPane && child !== lm._coverPane && child !== lm.panelBox) {
+                                lm.uiGroup.set_child_above_sibling(lm._coverPane, null);
+                                if (lm.panelBox) lm.uiGroup.set_child_above_sibling(lm.panelBox, lm._coverPane);
+                            }
+                            if (child.name === 'dashtodockContainer') {
+                                child.remove_all_transitions();
+                                child.opacity = 0;
+                                for (const sub of child.get_children()) sub.opacity = 0;
+                            } else if (child.name === 'liquid-glass-bg-actor') {
+                                child.remove_all_transitions();
+                                child.opacity = 0;
+                            }
+                        });
+                    }
+
+                    if (lm._backgroundGroup && !lm._macBgChildAddedId) {
+                        lm._macBgChildAddedId = lm._backgroundGroup.connect('child-added', (_group, child) => {
+                            if (!lm._startingUp) return;
+                            if ((child.has_style_class_name && child.has_style_class_name('widget-layer')) || child.name === 'widget-layer') {
+                                child.remove_all_transitions();
+                                child.opacity = 0;
+                            }
+                        });
+                    }
+
+                    const widgetsExt = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
+                    const widgetLayer = widgetsExt?.stateObj?._controller?._layer ||
+                        lm._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer'));
+                    if (widgetLayer) {
+                        widgetLayer.remove_all_transitions();
+                        widgetLayer.opacity = 0;
+                    }
+
+                    if (withBgUpdate && lm._updateBackgrounds) {
+                        await lm._updateBackgrounds();
+                    }
+                };
 
                 if (Main.layoutManager._prepareStartupAnimation) {
                     this._origPrepareStartupAnimation = Main.layoutManager._prepareStartupAnimation;
                     Main.layoutManager._prepareStartupAnimation = async function() {
-                    if (!Main.sessionMode.isGreeter) {
-                        this._showSecondaryBackgrounds();
+                        await prepareMacDesktopHidden(true);
+                        this.emit('startup-prepared');
+                    };
+                }
 
+                const alreadyRunningStartup = Boolean(
+                    Main.layoutManager._coverPane ||
+                    Main.layoutManager._systemBackground ||
+                    Main.overview?._visible ||
+                    Main.overview?._visibleTarget ||
+                    Main.overview?._shown ||
+                    Main.layoutManager._inOverview
+                );
 
-                        this.uiGroup.set_pivot_point(0, 0);
-                        this.uiGroup.scale_x = 1.0;
-                        this.uiGroup.scale_y = 1.0;
-                        this.uiGroup.opacity = 255;
+                // If shell startup already began before eval-helper enabled, hide components immediately too
+                if ((Main.layoutManager._startingUp || alreadyRunningStartup) && !Main.sessionMode.isGreeter) {
+                    prepareMacDesktopHidden(false).catch(() => {});
+                }
 
+                if (Main.layoutManager._startupAnimationComplete && !this._origStartupAnimationComplete) {
+                    this._origStartupAnimationComplete = Main.layoutManager._startupAnimationComplete;
+                    const origComplete = this._origStartupAnimationComplete;
+                    Main.layoutManager._startupAnimationComplete = function() {
+                        if (this._macStartupRevealActive)
+                            return;
+                        return origComplete.call(this);
+                    };
+                }
 
-                        if (this.panelBox) {
-                            this.panelBox.remove_all_transitions();
-                            const panelH = this.panelBox.height > 0 ? this.panelBox.height : 34;
-                            this.panelBox.translation_y = -panelH;
-                            this.panelBox.opacity = 0;
+                this._origStartupAnimationSession = Main.layoutManager._startupAnimationSession;
+                this._macSessionRevealPromise = null;
+                const runMacStartupSession = () => {
+                    if (this._macSessionRevealPromise)
+                        return this._macSessionRevealPromise;
+
+                    const lm = Main.layoutManager;
+                    lm._macStartupRevealActive = true;
+                    lm._macStartupManaged = true;
+                    lm._startInOverview = false;
+                    suppressStartupOverview();
+
+                    this._macSessionRevealPromise = (async () => {
+                        if (!lm._coverPane && (lm._startingUp || lm._macDockChildAddedId === undefined)) {
+                            await prepareMacDesktopHidden(false).catch(() => {});
                         }
+                        lm.uiGroup.scale_x = 1.0;
+                        lm.uiGroup.scale_y = 1.0;
+                        lm.uiGroup.set_pivot_point(0, 0);
+                        lm.uiGroup.opacity = 255;
 
+                        const STARTUP_TIMEOUT_MS = 3200;
 
-                        if (global.window_group) {
-                            global.window_group.remove_all_transitions();
-                            global.window_group.opacity = 0;
-                        }
-
-
-                        const dock = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
-                        if (dock) {
-                            dock.remove_all_transitions();
-                            dock.opacity = 0;
-                        }
-
-
-                        if (!this._macDockChildAddedId) {
-                            this._macDockChildAddedId = this.uiGroup.connect('child-added', (_group, child) => {
-                                if (child.name === 'dashtodockContainer') {
-                                    child.remove_all_transitions();
-                                    child.opacity = 0;
+                        const checkExtensions = async () => {
+                            const em = Main.extensionManager;
+                            if (!em || !em._enabledExtensions || em._enabledExtensions.length === 0)
+                                return;
+                            const isExtEnabled = (uuid) => {
+                                const ext = em.lookup(uuid);
+                                return Boolean(ext && (ext.state === 1 || ext.state === 2 || ext.state === 3));
+                            };
+                            const isPanelVisualReady = () => {
+                                const kiwiExt = em.lookup('kiwi@kemma');
+                                if (kiwiExt && (kiwiExt.state === 1 || em._enabledExtensions.includes('kiwi@kemma')) && !globalThis._macKiwiReady)
+                                    return false;
+                                const bmsExt = em.lookup('blur-my-shell@aunetx');
+                                if (bmsExt && (bmsExt.state === 1 || em._enabledExtensions.includes('blur-my-shell@aunetx'))) {
+                                    const qs = Main.panel?.statusArea?.quickSettings;
+                                    if (!globalThis._macMenuBarReady || (qs && !qs.has_style_class_name?.('mac-control-center-button')))
+                                        return false;
                                 }
+                                return true;
+                            };
+                            const isReady = () => em._enabledExtensions.every(isExtEnabled) && isPanelVisualReady();
+                            if (isReady()) return;
+
+                            await new Promise(resolve => {
+                                let pollId = 0;
+                                let sigId = 0;
+                                const finish = () => {
+                                    if (pollId) { GLib.source_remove(pollId); pollId = 0; }
+                                    if (sigId) { try { em.disconnect(sigId); } catch (_) {} sigId = 0; }
+                                    resolve();
+                                };
+                                sigId = em.connect('extension-state-changed', () => {
+                                    if (isReady()) finish();
+                                });
+                                pollId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
+                                    if (isReady()) {
+                                        pollId = 0;
+                                        finish();
+                                        return GLib.SOURCE_REMOVE;
+                                    }
+                                    return GLib.SOURCE_CONTINUE;
+                                });
+                            });
+                        };
+
+                        const checkDock = async () => {
+                            const isDockReady = () => {
+                                const dc = lm.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
+                                const dash = dc?._dock?.dash;
+                                return Boolean(dc && dash && dash._macHasItems && dash._macTrashReady);
+                            };
+                            if (isDockReady()) return;
+                            await new Promise(resolve => {
+                                let attempts = 0;
+                                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
+                                    attempts++;
+                                    if (isDockReady() || attempts > 75) {
+                                        resolve();
+                                        return GLib.SOURCE_REMOVE;
+                                    }
+                                    return GLib.SOURCE_CONTINUE;
+                                });
+                            });
+                        };
+
+                        const checkLiquidGlass = async () => {
+                            const isGlassReady = () => {
+                                const lg = Main.extensionManager?.lookup('liquid-glass@thinkingcoding1231.gmail.com');
+                                if (!lg || lg.state === 3 || lg.state === 2) return true;
+                                const docks = lg?.stateObj?._dashDocks;
+                                return Boolean(docks && docks.length > 0 && docks[0].manager?.bgActor && docks[0].manager?.effect?._shadersLoaded);
+                            };
+                            if (isGlassReady()) return;
+                            await new Promise(resolve => {
+                                let attempts = 0;
+                                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
+                                    attempts++;
+                                    if (isGlassReady() || attempts > 75) {
+                                        resolve();
+                                        return GLib.SOURCE_REMOVE;
+                                    }
+                                    return GLib.SOURCE_CONTINUE;
+                                });
+                            });
+                        };
+
+                        const checkWidgets = async () => {
+                            const isWidgetsReady = () => {
+                                const dw = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
+                                if (!dw || dw.state === 3 || dw.state === 2) return true;
+                                const layer = dw?.stateObj?._controller?._layer ||
+                                    lm._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer') || c.name === 'widget-layer');
+                                return Boolean(layer && layer.get_children().length > 0);
+                            };
+                            if (isWidgetsReady()) return;
+                            await new Promise(resolve => {
+                                let attempts = 0;
+                                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
+                                    attempts++;
+                                    if (isWidgetsReady() || attempts > 75) {
+                                        resolve();
+                                        return GLib.SOURCE_REMOVE;
+                                    }
+                                    return GLib.SOURCE_CONTINUE;
+                                });
+                            });
+                        };
+
+                        const checkDing = async () => {
+                            const dingExt = Main.extensionManager?.lookup('ding@rastersoft.com');
+                            if (!dingExt || dingExt.state === 2 || dingExt.state === 3) return;
+                            const isDingReady = () => {
+                                const actors = global.get_window_actors?.() || [];
+                                return actors.some(a => {
+                                    const mw = a.meta_window || a.get_meta_window?.();
+                                    return mw && (mw.get_gtk_application_id?.() === 'com.rastersoft.ding' ||
+                                        mw.get_title?.()?.startsWith('Desktop Icons'));
+                                });
+                            };
+                            if (isDingReady()) return;
+                            await new Promise(resolve => {
+                                let attempts = 0;
+                                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+                                    attempts++;
+                                    if (isDingReady() || attempts > 55) {
+                                        resolve();
+                                        return GLib.SOURCE_REMOVE;
+                                    }
+                                    return GLib.SOURCE_CONTINUE;
+                                });
+                            });
+                        };
+
+                        const timeoutBarrier = new Promise(resolve => {
+                            GLib.timeout_add(GLib.PRIORITY_DEFAULT, STARTUP_TIMEOUT_MS, () => {
+                                resolve();
+                                return GLib.SOURCE_REMOVE;
+                            });
+                        });
+
+                        try {
+                            if (typeof globalThis._macPrewarmSpotlight === 'function')
+                                globalThis._macPrewarmSpotlight();
+                        } catch (_) {}
+
+                        await Promise.race([
+                            Promise.all([checkExtensions(), checkDock(), checkLiquidGlass(), checkWidgets(), checkDing()]),
+                            timeoutBarrier,
+                        ]);
+
+                        suppressStartupOverview();
+
+                        try {
+                            lm._macDockRevealActive = true;
+                            global._liquidGlassDockSync?.();
+                        } catch (_) {}
+                        await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 60, () => {
+                            resolve();
+                            return GLib.SOURCE_REMOVE;
+                        }));
+
+                        if (lm._macDockChildAddedId) {
+                            try { lm.uiGroup.disconnect(lm._macDockChildAddedId); } catch (_) {}
+                            lm._macDockChildAddedId = null;
+                        }
+                        if (lm._macBgChildAddedId && lm._backgroundGroup) {
+                            try { lm._backgroundGroup.disconnect(lm._macBgChildAddedId); } catch (_) {}
+                            lm._macBgChildAddedId = null;
+                        }
+
+                        const DURATION = 480;
+                        const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
+
+                        if (lm.panelBox) {
+                            lm.panelBox.remove_all_transitions();
+                            const panelH = lm.panelBox.height > 0 ? lm.panelBox.height : 34;
+                            lm.panelBox.translation_y = -panelH;
+                            lm.panelBox.opacity = 0;
+                            lm.panelBox.show();
+                            if (lm._coverPane) {
+                                lm.uiGroup.set_child_above_sibling(lm.panelBox, lm._coverPane);
+                            }
+                            lm.panelBox.ease({
+                                translation_y: 0,
+                                opacity: 255,
+                                duration: DURATION,
+                                mode: MODE,
+                                onComplete: () => {
+                                    if (lm.panelBox) {
+                                        lm.panelBox.translation_y = 0;
+                                        lm.panelBox.opacity = 255;
+                                    }
+                                },
                             });
                         }
 
+                        if (lm._coverPane) {
+                            const cover = lm._coverPane;
+                            lm._coverPane = null;
+                            cover.remove_all_transitions();
+                            cover.ease({
+                                opacity: 0,
+                                duration: DURATION,
+                                mode: MODE,
+                                onComplete: () => cover.destroy(),
+                            });
+                        }
 
-                        if (this._backgroundGroup && !this._macBgChildAddedId) {
-                            this._macBgChildAddedId = this._backgroundGroup.connect('child-added', (_group, child) => {
-                                if ((child.has_style_class_name && child.has_style_class_name('widget-layer')) || child.name === 'widget-layer') {
-                                    child.remove_all_transitions();
-                                    child.opacity = 0;
+                        const dockContainers = lm.uiGroup.get_children().filter(c => c.name === 'dashtodockContainer');
+                        const glassActors = lm.uiGroup.get_children().filter(c => c.name === 'liquid-glass-bg-actor');
+
+                        for (const dc of dockContainers) {
+                            const dockH = dc.height > 0 ? dc.height : 92;
+                            dc.remove_all_transitions();
+                            dc.translation_y = -dockH;
+                            dc.opacity = 255;
+                            dc.show();
+                            for (const child of dc.get_children()) {
+                                child.remove_all_transitions();
+                                child.opacity = 255;
+                                child.show();
+                            }
+
+                            const dock = dc._dock;
+                            if (dock) {
+                                dock.translation_y = -dockH;
+                                dock._dockState = 2;
+                                dock._startupAnimationRan = true;
+                                if (dock._slider) dock._slider.slide_x = 1;
+                                const slideDist = dockH + 28;
+                                const slideOffset = typeof dock._getSlideOffset === 'function'
+                                    ? dock._getSlideOffset(slideDist)
+                                    : { translation_x: 0, translation_y: slideDist };
+                                if (dock.dash) {
+                                    dock.dash.remove_all_transitions();
+                                    dock.dash.visible = true;
+                                    dock.dash.opacity = 0;
+                                    dock.dash.translation_x = slideOffset.translation_x;
+                                    dock.dash.translation_y = slideOffset.translation_y;
+                                    dock.dash.ease({
+                                        opacity: 255,
+                                        translation_x: 0,
+                                        translation_y: 0,
+                                        duration: DURATION,
+                                        mode: MODE,
+                                        onComplete: () => {
+                                            Main.layoutManager._macDockRevealActive = false;
+                                            try { global._liquidGlassDockSync?.(); } catch (_) {}
+                                        },
+                                    });
                                 }
+                            } else {
+                                dc.opacity = 0;
+                                dc.ease({
+                                    opacity: 255,
+                                    duration: DURATION,
+                                    mode: MODE,
+                                });
+                            }
+                        }
+
+                        try { global._liquidGlassDockSync?.(); } catch (_) {}
+
+                        for (const ga of glassActors) {
+                            ga.remove_all_transitions();
+                            ga.opacity = 0;
+                            ga.show();
+                            ga.ease({
+                                opacity: 255,
+                                duration: DURATION,
+                                mode: MODE,
+                                onComplete: () => {
+                                    Main.layoutManager._macDockRevealActive = false;
+                                    try { global._liquidGlassDockSync?.(); } catch (_) {}
+                                },
                             });
                         }
 
                         const widgetsExt = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
                         const widgetLayer = widgetsExt?.stateObj?._controller?._layer ||
-                            this._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer'));
+                            lm._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer'));
                         if (widgetLayer) {
                             widgetLayer.remove_all_transitions();
-                            widgetLayer.opacity = 0;
+                            widgetLayer.show();
+                            if (widgetLayer.get_parent() === global.window_group) {
+                                widgetLayer.opacity = 255;
+                            } else {
+                                widgetLayer.opacity = 0;
+                                widgetLayer.ease({
+                                    opacity: 255,
+                                    duration: DURATION,
+                                    mode: MODE,
+                                });
+                            }
                         }
 
-                        await this._updateBackgrounds();
-                    }
-                    this.emit('startup-prepared');
-                };
-            }
+                        if (global.window_group) {
+                            global.window_group.remove_all_transitions();
+                            global.window_group.opacity = 0;
+                            global.window_group.ease({
+                                opacity: 255,
+                                duration: DURATION,
+                                mode: MODE,
+                            });
+                        }
 
-
-
-
-
-            this._origStartupAnimationSession = Main.layoutManager._startupAnimationSession;
-            Main.layoutManager._startupAnimationSession = async function() {
-
-                this.uiGroup.scale_x = 1.0;
-                this.uiGroup.scale_y = 1.0;
-                this.uiGroup.set_pivot_point(0, 0);
-                this.uiGroup.opacity = 255;
-
-
-                const waitForAllExtensions = async () => {
-                    const em = Main.extensionManager;
-                    if (!em || !em._enabledExtensions || em._enabledExtensions.length === 0)
-                        return;
-
-                    const isReady = () => em._enabledExtensions.every(uuid => {
-                        const ext = em.lookup(uuid);
-                        return ext && (ext.state === 1 || ext.state === 2 || ext.state === 3);
-                    });
-
-                    if (isReady()) return;
-
-                    await new Promise(resolve => {
-                        let timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 4000, () => {
-                            timeoutId = 0;
-                            try { em.disconnect(sigId); } catch (_) {}
-                            resolve();
-                            return GLib.SOURCE_REMOVE;
-                        });
-
-                        const sigId = em.connect('extension-state-changed', () => {
-                            if (isReady()) {
-                                if (timeoutId) GLib.source_remove(timeoutId);
-                                try { em.disconnect(sigId); } catch (_) {}
-                                resolve();
-                            }
-                        });
-                    });
+                        if (lm._systemBackground) {
+                            try { lm._systemBackground.destroy(); } catch (_) {}
+                            lm._systemBackground = null;
+                        }
+                        lm._macStartupRevealActive = false;
+                        lm._startingUp = false;
+                        try { lm.emit?.('startup-complete'); } catch (_) {}
+                    })();
+                    return this._macSessionRevealPromise;
                 };
 
-                await waitForAllExtensions();
+                Main.layoutManager._startupAnimationSession = runMacStartupSession;
 
-
-
-                await new Promise(resolve => GLib.timeout_add(GLib.PRIORITY_DEFAULT, 350, () => {
-                    resolve();
-                    return GLib.SOURCE_REMOVE;
-                }));
-
-
-                if (this._macDockChildAddedId) {
-                    try { this.uiGroup.disconnect(this._macDockChildAddedId); } catch (_) {}
-                    this._macDockChildAddedId = null;
-                }
-                if (this._macBgChildAddedId && this._backgroundGroup) {
-                    try { this._backgroundGroup.disconnect(this._macBgChildAddedId); } catch (_) {}
-                    this._macBgChildAddedId = null;
-                }
-
-
-                const DURATION = 650;
-                const MODE = Clutter.AnimationMode.EASE_OUT_CUBIC;
-
-
-                if (this.panelBox) {
-                    this.panelBox.remove_all_transitions();
-                    const panelH = this.panelBox.height > 0 ? this.panelBox.height : 34;
-                    this.panelBox.translation_y = -panelH;
-                    this.panelBox.opacity = 0;
-                    this.panelBox.ease({
-                        translation_y: 0,
-                        opacity: 255,
-                        duration: DURATION,
-                        mode: MODE,
+                // If GNOME Shell's own _doStartupAnimation() already started/passed _startupAnimationSession
+                // before eval-helper.enable() ran (common on Fedora/Arch/CachyOS/Mint without layout.js overlay),
+                // launch the coordinated barrier + synchronized reveal directly.
+                if ((Main.layoutManager._startingUp || alreadyRunningStartup) && !Main.sessionMode.isGreeter) {
+                    this._macDeferredStartupId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+                        this._macDeferredStartupId = 0;
+                        if (Main.layoutManager && (alreadyRunningStartup || Main.layoutManager._startingUp || Main.overview?._visible || Main.overview?._visibleTarget)) {
+                            runMacStartupSession();
+                        }
+                        return GLib.SOURCE_REMOVE;
                     });
                 }
-
-
-                const dock = this.uiGroup.get_children().find(c => c.name === 'dashtodockContainer');
-                if (dock) {
-                    dock.remove_all_transitions();
-                    dock.opacity = 0;
-                    dock.ease({
-                        opacity: 255,
-                        duration: DURATION,
-                        mode: MODE,
-                    });
-                    if (dock._dock?.dash) {
-                        dock._dock.dash.remove_all_transitions();
-                        dock._dock.dash.opacity = 255;
-                        dock._dock.dash.translation_x = 0;
-                        dock._dock.dash.translation_y = 0;
-                    }
-                }
-
-
-                const widgetsExt = Main.extensionManager?.lookup('desktop-widgets@r3nhick');
-                const widgetLayer = widgetsExt?.stateObj?._controller?._layer ||
-                    this._backgroundGroup?.get_children().find(c => c.has_style_class_name?.('widget-layer'));
-                if (widgetLayer) {
-                    widgetLayer.remove_all_transitions();
-                    widgetLayer.opacity = 0;
-                    widgetLayer.show();
-                    widgetLayer.ease({
-                        opacity: 255,
-                        duration: DURATION,
-                        mode: MODE,
-                    });
-                }
-
-
-                if (global.window_group) {
-                    global.window_group.remove_all_transitions();
-                    global.window_group.opacity = 0;
-                    global.window_group.ease({
-                        opacity: 255,
-                        duration: DURATION,
-                        mode: MODE,
-                    });
-                }
-            };
             }
         }
 
@@ -5781,6 +6123,20 @@ void main() {
             this._overviewWallpaperManager = null;
         }
 
+        if (this._macDeferredStartupId) {
+            GLib.source_remove(this._macDeferredStartupId);
+            this._macDeferredStartupId = 0;
+        }
+        this._macSessionRevealPromise = null;
+
+        if (Main.layoutManager && this._origStartupAnimationComplete) {
+            Main.layoutManager._startupAnimationComplete = this._origStartupAnimationComplete;
+            this._origStartupAnimationComplete = null;
+        }
+        if (Main.layoutManager) {
+            Main.layoutManager._macStartupRevealActive = false;
+        }
+
         if (Main.layoutManager && this._origStartupAnimationSession) {
             Main.layoutManager._startupAnimationSession = this._origStartupAnimationSession;
             this._origStartupAnimationSession = null;
@@ -5791,9 +6147,21 @@ void main() {
             this._origPrepareStartupAnimation = null;
         }
 
-        if (Main.layoutManager && Main.layoutManager._macDockChildAddedId) {
-            try { Main.layoutManager.uiGroup.disconnect(Main.layoutManager._macDockChildAddedId); } catch (_) {}
-            Main.layoutManager._macDockChildAddedId = null;
+        if (Main.layoutManager) {
+            if (Main.layoutManager._macDockChildAddedId) {
+                try { Main.layoutManager.uiGroup.disconnect(Main.layoutManager._macDockChildAddedId); } catch (_) {}
+                Main.layoutManager._macDockChildAddedId = null;
+            }
+            if (Main.layoutManager._macBgChildAddedId && Main.layoutManager._backgroundGroup) {
+                try { Main.layoutManager._backgroundGroup.disconnect(Main.layoutManager._macBgChildAddedId); } catch (_) {}
+                Main.layoutManager._macBgChildAddedId = null;
+            }
+            if (Main.layoutManager._coverPane) {
+                try { Main.layoutManager._coverPane.destroy(); } catch (_) {}
+                Main.layoutManager._coverPane = null;
+            }
+            Main.layoutManager._macDockRevealActive = false;
+            Main.layoutManager._macStartupManaged = false;
         }
 
         if (this._gcIntervalId) {

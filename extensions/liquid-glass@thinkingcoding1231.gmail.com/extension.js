@@ -187,7 +187,7 @@ export default class LiquidGlassExtension extends Extension {
     };
 
     if (this._settings.get_boolean('enable-quick-settings-glass')) {
-      this._quickSettingsTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1500, () => {
+      this._quickSettingsTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 120, () => {
         this._quickSettingsTimeoutId = 0;
         startQs();
         return GLib.SOURCE_REMOVE;

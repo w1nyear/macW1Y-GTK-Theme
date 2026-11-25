@@ -2350,6 +2350,10 @@ export class DockManager {
         const dock = new DockedDash(params);
         this._allDocks.push(dock);
 
+        if (Main.layoutManager?._startingUp && typeof dock.dash?._redisplay === 'function') {
+            try { dock.dash._redisplay(); } catch (_) {}
+        }
+
 
         dock.dash.showAppsButton.connectObject('notify::checked',
             button => this._onShowAppsButtonToggled(button), dock);
@@ -2390,7 +2394,11 @@ export class DockManager {
             return;
         this._startupAnimationRan = true;
 
-        if (Main.layoutManager?._isMacLayoutOverlay) {
+        if (Main.layoutManager?._isMacLayoutOverlay || Main.layoutManager?._macStartupManaged) {
+            // Do not reveal dock early here when macW1Y startup orchestrator is still running its barrier;
+            // only mark ready/restore if orchestrator has already finished starting up.
+            if (Main.layoutManager._startingUp)
+                return;
             DockManager.allDocks.forEach(dock => {
                 const {dash} = dock;
                 if (!dash)

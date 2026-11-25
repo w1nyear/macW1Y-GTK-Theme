@@ -93,12 +93,12 @@ for ext in "${BLOAT_EXTS[@]}"; do
     LD_PRELOAD= gnome-extensions disable "$ext" 2>/dev/null || true
 done
 
-# Ensure bookmarks are dynamically generated for current user and locale
-if [ -x /usr/local/bin/mac-generate-bookmarks.sh ]; then
-    /usr/local/bin/mac-generate-bookmarks.sh "$(id -un)" "$HOME" 2>/dev/null || true
-fi
-
-# Ensure favorite-apps does not contain uninstalled/phantom apps (Steam, Chrome, etc.)
-if [ -x /usr/local/bin/mac-sanitize-favorites.sh ]; then
-    /usr/local/bin/mac-sanitize-favorites.sh 2>/dev/null || true
-fi
+# Ensure bookmarks and favorite-apps in background so startup dock does not flicker/rebuild Trash twice
+(
+    if [ -x /usr/local/bin/mac-generate-bookmarks.sh ]; then
+        /usr/local/bin/mac-generate-bookmarks.sh "$(id -un)" "$HOME" 2>/dev/null || true
+    fi
+    if [ -x /usr/local/bin/mac-sanitize-favorites.sh ]; then
+        /usr/local/bin/mac-sanitize-favorites.sh 2>/dev/null || true
+    fi
+) >/dev/null 2>&1 &

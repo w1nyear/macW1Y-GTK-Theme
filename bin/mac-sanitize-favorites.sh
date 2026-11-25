@@ -25,10 +25,20 @@ import ast
 def which_exists(cmd):
     return shutil.which(cmd) is not None
 
+_FLATPAK_LIST_CACHE = None
+
 def flatpak_app_exists(app_ref):
+    global _FLATPAK_LIST_CACHE
+    if not which_exists('flatpak'):
+        return False
+    # Fast filesystem check before invoking slow flatpak CLI
+    for fdir in ('/var/lib/flatpak/app', os.path.expanduser('~/.local/share/flatpak/app')):
+        if os.path.isdir(os.path.join(fdir, app_ref)):
+            return True
     try:
-        out = subprocess.check_output(['flatpak', 'list'], stderr=subprocess.DEVNULL, text=True)
-        return app_ref in out
+        if _FLATPAK_LIST_CACHE is None:
+            _FLATPAK_LIST_CACHE = subprocess.check_output(['flatpak', 'list', '--app', '--columns=application'], stderr=subprocess.DEVNULL, text=True, timeout=3)
+        return app_ref in _FLATPAK_LIST_CACHE
     except Exception:
         return False
 
