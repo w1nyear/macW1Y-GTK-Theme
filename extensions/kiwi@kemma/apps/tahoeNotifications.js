@@ -1418,7 +1418,7 @@ function _syncToastGlass(monitor, s) {
             maxY = Math.max(maxY, r.y + r.h);
         }
 
-        const P = SHADER_PADDING + 8;
+        const P = Math.max(SHADER_PADDING + 48, 80);
         const clipX = Math.max(0, Math.floor(minX - P));
         const clipY = Math.max(0, Math.floor(minY - P));
         const clipW = Math.min(monitor.width - clipX, Math.ceil(maxX - clipX + 2 * P));
@@ -2736,9 +2736,9 @@ function _syncGlass(p, monitor, s) {
         const isSliding = !p._settleDone || (p.box?.translation_x !== 0 && Math.abs(p.box?.translation_x ?? 0) > 0.5);
         if (isSliding) {
             const targetX = (monitor.width - NC_W - 12) - m;
-            const clipMinX = Math.min(rx, targetX) - 50;
-            const clipMaxX = Math.max(rx + rw, targetX + rw) + 50;
-            setClipIfChanged(s.bgActor, clipMinX, ry - 50, clipMaxX - clipMinX, rh + 100);
+            const clipMinX = Math.min(rx, targetX) - 120;
+            const clipMaxX = Math.max(rx + rw, targetX + rw) + 120;
+            setClipIfChanged(s.bgActor, clipMinX, ry - 120, clipMaxX - clipMinX, rh + 240);
             ensureGlassAllocated(s.bgActor);
             return;
         }

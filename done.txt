@@ -6021,3 +6021,19 @@ Task #938:
     * `unittest`: 55/55 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в install.sh.
   * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+981. 2026-11-25 — Виправлення різкого обрізання тіні скла в Центрі керування та сповіщеннях:
+  - Змінені файли:
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js) (`_computeCompositeRect`)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/src/liquidEffect.ts](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/src/liquidEffect.ts) (`_computeCompositeRect`)
+    * [extensions/kiwi@kemma/apps/tahoeControlCenter.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeControlCenter.js) (`CLIP_PADDING`)
+    * [extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeNotifications.js) (`_syncToastGlass`, `_syncGlass`)
+    * [extensions/blur-my-shell@aunetx/components/notifications_v4.js](file:///home/vitaliy/macW1Y/extensions/blur-my-shell@aunetx/components/notifications_v4.js) (`_syncGlass`)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Причина та виправлення:
+    * У `LiquidEffect._computeCompositeRect()` для багаторегіонного режиму (`this._multiRegion === true`) поле `reach` примусово обнулялося (`? 0 : ...`), попри те що шейдери `glass.frag` і `LQ-OPTIMIZED.frag` малюють зовнішню тінь із радіусом `effShadowRad = min(rawShadowRad, 22.0)`. У результаті апаратний прямокутник малювання обрізався на ~4 px (`ceil(edgeFeather + 2)`) від межі кнопок, слайдерів Центру керування (`pill`, `disc`, `card`, `music`, `priv`, `edit`) та банерів сповіщень (`_toastStack`, `nc-cards`), залишаючи чіткий прямокутний зріз тіні без плавного згасання.
+    * Тепер `_computeCompositeRect()` у `dist/liquidEffect.js` та `src/liquidEffect.ts` обчислює `reach = !(shadowIntensity > 0.001) ? 0 : (this._multiRegion ? Math.min(rawReach, 22) : rawReach)`, що точно відповідає `effShadowRad` у шейдерах, тож тінь плавно згасає до 0 всередині меж композитного прямокутника.
+    * Збільшено зовнішні поля відсікання батьківських акторів: `CLIP_PADDING` у `tahoeControlCenter.js` піднято з `64` до `200`, `P` у `_syncToastGlass` (`tahoeNotifications.js`) з `SHADER_PADDING + 8` до `Math.max(SHADER_PADDING + 48, 80)` (та розширено поля анімації `_syncGlass` до `120 px`), і `P` у `notifications_v4.js` до `80`.
+  - Перевірка та синхронізація:
+    * Синхронізовано користувацькі розширення `~/.local/share/gnome-shell/extensions/{liquid-glass@thinkingcoding1231.gmail.com,kiwi@kemma,blur-my-shell@aunetx}`, системний `/usr/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com`, `~/.config/macw1y/extensions.lock.json` та `/usr/share/mactheme/config/extensions.lock.json`.
+    * `unittest`: 55/55 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в install.sh.

@@ -1552,7 +1552,7 @@ export const NotificationsController = class NotificationsController {
                 maxX = Math.max(maxX, r.x + r.w);
                 maxY = Math.max(maxY, r.y + r.h);
             }
-            const P = 32;
+            const P = 80;
             const clipX = Math.max(0, Math.floor(minX - P));
             const clipY = Math.max(0, Math.floor(minY - P));
             const clipW = Math.min(monitor.width - clipX, Math.ceil(maxX - clipX + 2 * P));

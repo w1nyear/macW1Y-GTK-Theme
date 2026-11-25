@@ -2641,9 +2641,10 @@ export const LiquidEffect = GObject.registerClass({
     const shadowMax = Math.max(this._pendingUniforms.get('shadow_max_radius') ?? 0, 5);
     const shadowRadius = Math.max(this._pendingUniforms.get('shadow_radius') ?? 0, 0);
     const shadowIntensity = this._pendingUniforms.get('shadow_intensity') ?? 0;
-    const reach = (this._multiRegion || !(shadowIntensity > 0))
+    const rawReach = Math.max(Math.min(shadowRadius, shadowMax), 2);
+    const reach = !(shadowIntensity > 0.001)
       ? 0
-      : Math.min(shadowRadius, shadowMax);
+      : (this._multiRegion ? Math.min(rawReach, 22) : rawReach);
 
 
 

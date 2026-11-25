@@ -123,6 +123,16 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         popup_targets = (ROOT / "extensions" / "blur-my-shell@aunetx" / "components" / "popup" / "targets.js").read_text(encoding="utf-8")
         self.assertIn("mac-empty-trash-dialog", popup_targets)
         self.assertIn("_macDlgGlassState", popup_targets)
+        liq_js = (ROOT / "extensions" / "liquid-glass@thinkingcoding1231.gmail.com" / "dist" / "liquidEffect.js").read_text(encoding="utf-8")
+        self.assertIn("this._multiRegion ? Math.min(rawReach, 22) : rawReach", liq_js)
+        liq_ts = (ROOT / "extensions" / "liquid-glass@thinkingcoding1231.gmail.com" / "src" / "liquidEffect.ts").read_text(encoding="utf-8")
+        self.assertIn("this._multiRegion ? Math.min(rawReach, 22) : rawReach", liq_ts)
+        cc_js = (ROOT / "extensions" / "kiwi@kemma" / "apps" / "tahoeControlCenter.js").read_text(encoding="utf-8")
+        self.assertIn("const CLIP_PADDING = 200;", cc_js)
+        notif_js = (ROOT / "extensions" / "kiwi@kemma" / "apps" / "tahoeNotifications.js").read_text(encoding="utf-8")
+        self.assertIn("Math.max(SHADER_PADDING + 48, 80)", notif_js)
+        bms_notif_js = (ROOT / "extensions" / "blur-my-shell@aunetx" / "components" / "notifications_v4.js").read_text(encoding="utf-8")
+        self.assertIn("const P = 80;", bms_notif_js)
 
 
 if __name__ == "__main__":

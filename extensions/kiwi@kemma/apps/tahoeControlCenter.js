@@ -193,7 +193,7 @@ const EDIT_H = 28;
 const LG_SCHEMA = 'org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com';
 const SHADER_PADDING = 20;
 const GLASS_EXPAND = 2;
-const CLIP_PADDING = 64;
+const CLIP_PADDING = 200;
 
 
 
