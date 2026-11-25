@@ -5949,3 +5949,19 @@ Task #938:
     * unittest: 55/55 OK; mac-extension-guard verify: 21/21 LOCKED OK; mac-i18n-verify: OK; mac-audit-sync check: 100% PASS; 0 кирилиці в install.sh.
   * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
   * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)
+
+977. 2026-11-25 — Повна перевірка, адаптація та розгортання анімацій запуску на поточній системі Ubuntu та інших дистрибутивах:
+  - Змінені файли:
+    * [gnome-shell-overlay/ui/layout.js](file:///home/vitaliy/macW1Y/gnome-shell-overlay/ui/layout.js) (піднято ліміт бар’єра STARTUP_TIMEOUT_MS з 3200 до 12000ms та poll-ліміти до 250/200 для повільних ПК)
+    * [extensions/eval-helper@mactheme/extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js) (піднято STARTUP_TIMEOUT_MS з 3200 до 12000ms та poll-ліміти до 250/200)
+    * [install.sh](file:///home/vitaliy/macW1Y/install.sh) (додано синхронізацію /usr/share/gnome-shell/extensions/ding@rastersoft.com на системах із режимом ubuntu.json і чисте оновлення /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py) (перевірка STARTUP_TIMEOUT_MS = 12000 і системної синхронізації DING)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Системна синхронізація на поточній Ubuntu 50.1 (root + user):
+    * Виявлено, що на Ubuntu системна сесія (`ubuntu.json`) ігнорувала користувацьку папку DING та завантажувала стару системну копію `/usr/share/gnome-shell/extensions/ding@rastersoft.com`, через що DING стартував із затримкою 7 с після логіну, а `/usr/share/mactheme/gnome-shell-overlay/ui/layout.js` і GDM-розширення `/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com` були від 17 листопада (таймаут 1.2 с, без бар’єра `_macKiwiReady`/`_macMenuBarReady`/`_macTrashReady` і без `_gdmBootCover`).
+    * Усе синхронізовано з репозиторієм: `/usr/share/mactheme/gnome-shell-overlay/ui/layout.js`, `/usr/local/bin/mac-ensure-extensions.sh`, `/usr/local/bin/mac-sanitize-favorites.sh`, `/usr/share/mactheme/config/extensions.lock.json`, `/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com`, `/usr/share/gnome-shell/extensions/ding@rastersoft.com`, а також користувацькі `~/.local/share/gnome-shell/extensions/` та `~/.config/macw1y/extensions.lock.json`.
+  - Перевірка:
+    * diff між системними root/user файлами Ubuntu та репозиторієм: 0 розбіжностей (`ALL_ROOT_DIFFS_CLEAN`).
+    * `unittest`: 55/55 OK; `mac-extension-guard verify`: 21/21 LOCKED OK; `mac-i18n-verify`: PASS; `mac-audit-sync check`: 100% PASS; `0` кирилиці в install.sh.
+  * [done.txt](file:///home/vitaliy/macW1Y/done.txt)
+  * [/home/vitaliy/Desktop/done.txt](file:///home/vitaliy/Desktop/done.txt)

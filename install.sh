@@ -1318,12 +1318,20 @@ install_extensions() {
     if [ -d "$SCRIPT_DIR/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com" ]; then
         require_root
         log_info "Installing wack-lockscreen-clock for GDM lock screen..."
-        sudo mkdir -p /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com
-        sudo cp -r "$SCRIPT_DIR/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/"* /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/
+        sudo rm -rf /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com
+        sudo cp -r "$SCRIPT_DIR/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com" /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com
         sudo glib-compile-schemas /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/schemas 2>/dev/null || true
     fi
     
-    # DING is bundled and installed in EXT_USER_DIR with its macW1Y patches.
+    # Sync system-mode DING on Ubuntu/Debian sessions where /usr/share/gnome-shell/extensions/ding@rastersoft.com overrides user extensions
+    if [ -d "$SCRIPT_DIR/extensions/ding@rastersoft.com" ] && { [ -d /usr/share/gnome-shell/extensions/ding@rastersoft.com ] || [ -f /usr/share/gnome-shell/modes/ubuntu.json ]; }; then
+        require_root
+        log_info "Syncing DING system extension for Ubuntu/session-mode compatibility..."
+        sudo rm -rf /usr/share/gnome-shell/extensions/ding@rastersoft.com
+        sudo cp -r "$SCRIPT_DIR/extensions/ding@rastersoft.com" /usr/share/gnome-shell/extensions/ding@rastersoft.com
+        sudo glib-compile-schemas /usr/share/gnome-shell/extensions/ding@rastersoft.com/schemas 2>/dev/null || true
+        sudo chmod -R a+rX /usr/share/gnome-shell/extensions/ding@rastersoft.com 2>/dev/null || true
+    fi
 
     # Importing Dconf
     if [ -f "$SCRIPT_DIR/dconf/gnome-all.dconf" ]; then

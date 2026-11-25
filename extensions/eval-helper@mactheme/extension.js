@@ -4657,7 +4657,7 @@ void main() {
                         lm.uiGroup.set_pivot_point(0, 0);
                         lm.uiGroup.opacity = 255;
 
-                        const STARTUP_TIMEOUT_MS = 3200;
+                        const STARTUP_TIMEOUT_MS = 12000;
 
                         const checkExtensions = async () => {
                             const em = Main.extensionManager;
@@ -4715,7 +4715,7 @@ void main() {
                                 let attempts = 0;
                                 GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
                                     attempts++;
-                                    if (isDockReady() || attempts > 75) {
+                                    if (isDockReady() || attempts > 250) {
                                         resolve();
                                         return GLib.SOURCE_REMOVE;
                                     }
@@ -4736,7 +4736,7 @@ void main() {
                                 let attempts = 0;
                                 GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
                                     attempts++;
-                                    if (isGlassReady() || attempts > 75) {
+                                    if (isGlassReady() || attempts > 250) {
                                         resolve();
                                         return GLib.SOURCE_REMOVE;
                                     }
@@ -4758,7 +4758,7 @@ void main() {
                                 let attempts = 0;
                                 GLib.timeout_add(GLib.PRIORITY_DEFAULT, 40, () => {
                                     attempts++;
-                                    if (isWidgetsReady() || attempts > 75) {
+                                    if (isWidgetsReady() || attempts > 250) {
                                         resolve();
                                         return GLib.SOURCE_REMOVE;
                                     }
@@ -4783,7 +4783,7 @@ void main() {
                                 let attempts = 0;
                                 GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
                                     attempts++;
-                                    if (isDingReady() || attempts > 55) {
+                                    if (isDingReady() || attempts > 200) {
                                         resolve();
                                         return GLib.SOURCE_REMOVE;
                                     }
