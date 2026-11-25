@@ -728,7 +728,7 @@ export class MacSetupWizard {
 
         const textH = 120;
         this._welcomeBox = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
             width: stageW,
@@ -755,7 +755,7 @@ export class MacSetupWizard {
         const btnBoxW = 140;
         const btnBoxH = 90;
         this._continueBtnBox = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
             x: Math.round((stageW - btnBoxW) / 2),
@@ -911,7 +911,7 @@ export class MacSetupWizard {
         });
 
         const mainLayout = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             width: cardW,
             height: cardH,
             style: 'padding: 40px 22px 20px 22px;'
@@ -919,7 +919,7 @@ export class MacSetupWizard {
 
 
         const headerBox = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_align: Clutter.ActorAlign.CENTER,
             style: 'margin-bottom: 16px;'
         });
@@ -945,7 +945,7 @@ export class MacSetupWizard {
 
 
         this._pageContainer = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             width: contentW,
             height: 280,
             x_align: Clutter.ActorAlign.FILL,
@@ -1067,7 +1067,7 @@ export class MacSetupWizard {
         const stageH = global.stage.height;
 
         const container = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
             opacity: 0,
@@ -1075,7 +1075,7 @@ export class MacSetupWizard {
         });
 
         const pill = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
             style: [
@@ -1109,7 +1109,7 @@ export class MacSetupWizard {
         const warnText = CHANGING_LANGUAGE_SUBLABELS[langCode]
             || t('changing_language_sub', 'Оновлення мови системи, віджетів, меню-бара та розширень…', langCode);
         const warnBox = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
             style: [
@@ -1229,7 +1229,7 @@ export class MacSetupWizard {
             this._applyNextBtnStyle();
 
             const centerWrapper = new St.BoxLayout({
-                vertical: true,
+                orientation: Clutter.Orientation.VERTICAL,
                 x_align: Clutter.ActorAlign.CENTER,
                 y_align: Clutter.ActorAlign.CENTER,
                 x_expand: true,
@@ -1257,7 +1257,7 @@ export class MacSetupWizard {
             });
 
             const itemsBox = new St.BoxLayout({
-                vertical: true,
+                orientation: Clutter.Orientation.VERTICAL,
                 width: listW - 12,
                 style: 'spacing: 1px;'
             });
@@ -1337,7 +1337,7 @@ export class MacSetupWizard {
             this._applyNextBtnStyle();
 
             const page2Box = new St.BoxLayout({
-                vertical: true,
+                orientation: Clutter.Orientation.VERTICAL,
                 x_align: Clutter.ActorAlign.FILL,
                 style: 'spacing: 12px;'
             });
@@ -1374,7 +1374,7 @@ export class MacSetupWizard {
                 });
                 row.add_child(icon);
 
-                const textBox = new St.BoxLayout({ vertical: true, x_expand: true });
+                const textBox = new St.BoxLayout({ orientation: Clutter.Orientation.VERTICAL, x_expand: true });
                 const rTitle = new St.Label({
                     text: item.title,
                     style: `font-size: 13px; font-weight: 600; color: ${titleColor};`
@@ -1412,7 +1412,7 @@ export class MacSetupWizard {
             this._applyNextBtnStyle();
 
             const page3Box = new St.BoxLayout({
-                vertical: true,
+                orientation: Clutter.Orientation.VERTICAL,
                 x_align: Clutter.ActorAlign.FILL
             });
 
@@ -1446,7 +1446,7 @@ export class MacSetupWizard {
             });
 
             const miniLayout = new St.BoxLayout({
-                vertical: true,
+                orientation: Clutter.Orientation.VERTICAL,
                 width: miniW,
                 height: miniH
             });
@@ -1560,7 +1560,7 @@ export class MacSetupWizard {
             this._applyNextBtnStyle();
 
             const page4Box = new St.BoxLayout({
-                vertical: true,
+                orientation: Clutter.Orientation.VERTICAL,
                 x_align: Clutter.ActorAlign.FILL,
                 style: 'spacing: 12px;'
             });
@@ -1578,7 +1578,7 @@ export class MacSetupWizard {
             });
             banner.add_child(checkIcon);
 
-            const bannerText = new St.BoxLayout({ vertical: true, x_expand: true });
+            const bannerText = new St.BoxLayout({ orientation: Clutter.Orientation.VERTICAL, x_expand: true });
             const bTitle = new St.Label({
                 text: t('wizard_ready_title', 'Система готова до роботи', curLang),
                 style: `font-size: 13px; font-weight: 600; color: ${titleColor};`
@@ -1594,7 +1594,7 @@ export class MacSetupWizard {
 
 
             const tipsBox = new St.BoxLayout({
-                vertical: true,
+                orientation: Clutter.Orientation.VERTICAL,
                 style: `background-color: ${rowBg}; border: 1px solid ${rowBorder}; border-radius: 14px; padding: 14px 20px; spacing: 10px;`
             });
             const tipsTitle = new St.Label({
