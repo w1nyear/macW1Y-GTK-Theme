@@ -6310,3 +6310,11 @@ Task #938:
     * Додано `- **Gemini 4 Hydrogen** — for developing the project.` у `## Thanksgiving`.
   - Перевірка та синхронізація:
     * `done.txt` синхронізовано з `/home/vitaliy/Desktop/done.txt`, перевірки (`unittest`, `mac-extension-guard verify`, `mac-i18n-verify`, `mac-audit-sync check`, `bash -n install.sh`) пройдені, зміни закомічено локально.
+
+1001. 2026-11-26 — Оновлено версію модпаку у `README.md` з `0.7` на `0.8`:
+  - Змінені файли:
+    * [README.md](file:///home/vitaliy/macW1Y/README.md)
+  - Зміни:
+    * Замінено `- **Version:** 0.7` на `- **Version:** 0.8`.
+  - Перевірка та синхронізація:
+    * `done.txt` синхронізовано з `/home/vitaliy/Desktop/done.txt`, перевірки (`unittest`, `mac-extension-guard verify`, `mac-i18n-verify`, `mac-audit-sync check`, `bash -n install.sh`) пройдені, зміни закомічено локально.

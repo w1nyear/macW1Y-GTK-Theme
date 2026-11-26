@@ -98,4 +98,4 @@ Run `./install.sh` and select **Uninstall** in the installer menu.
 - **Widgets:** Integrated desktop widgets by [r3nhick](https://github.com/r3nhick/desktop-widgets) (GPLv3).
 - **Author:** Vitaliy ([w1nyear](https://github.com/w1nyear))
 - **License:** GNU General Public License v3.0 (GPLv3).
-- **Version:** 0.7
+- **Version:** 0.8
