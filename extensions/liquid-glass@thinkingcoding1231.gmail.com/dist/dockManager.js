@@ -4,7 +4,19 @@ import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import { LiquidEffect } from './liquidEffect.js?v=fix3';
 import { UnpickableActor, UILayerSampler, WindowCloneManager, reportFrameLoopError, ensureGlassAllocated, isFrameSyncFrozen, setClipIfChanged, syncGlassCaptureClip } from './utils.js?v=fix4';
-import { glassRefreshDue, glassRefreshDone, glassForceRefresh, isBackdropDirtyOrChanged, addGlassWakeListener, removeGlassWakeListener, isActorNearGlass, hookWindowDamage } from './glassGate.js?v=fix4';
+import {
+    glassRefreshDue,
+    glassRefreshDone,
+    glassMarkDirty,
+    glassNeedsStructureSync,
+    glassForceRefresh,
+    isBackdropDirtyOrChanged,
+    isOverviewAnimating,
+    addGlassWakeListener,
+    removeGlassWakeListener,
+    isActorNearGlass,
+    hookWindowDamage
+} from './glassGate.js?v=fix4';
 
 const SHADER_PADDING = 20;
 
@@ -462,12 +474,13 @@ export class DashManager {
             catch (e) {
                 reportFrameLoopError('DockManager', e);
             }
-            if (didRefresh || Main.overview?.visible) {
+            const ovAnim = isOverviewAnimating?.() ?? false;
+            if (didRefresh || ovAnim) {
                 this._idleCount = 0;
             } else {
                 this._idleCount = (this._idleCount || 0) + 1;
             }
-            if (this._idleCount < 8 || Main.overview?.visible) {
+            if (this._idleCount < 8 || ovAnim) {
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             } else {
                 this._frameSyncId = 0;
@@ -486,17 +499,28 @@ export class DashManager {
                 this._frameSyncId = laterAdd(frameLaterType, frameTick);
             }
         };
+        const DOCK_SCENE_REASONS = new Set([
+            'background', 'restacked', 'fullscreen', 'overview', 'layout',
+            'overview-scroll', 'overview-transition', 'window-moved',
+            'switch-workspace', 'size-change', 'minimize', 'unminimize',
+            'destroy', 'active-workspace-changed', 'showing-desktop-changed',
+        ]);
         this._wakeUnsub = (damagedActor, reason) => {
             if (this._torndown || !this.bgActor || !this.targetActor?.mapped) return;
-            if (['restacked', 'fullscreen', 'overview', 'layout', 'overview-scroll', 'overview-transition'].includes(reason)) {
-                glassForceRefresh?.(this.bgActor);
-                try { this._windowCloneManager?.rebuildClones?.(); } catch (_) {}
-                try { this._uiSampler?.rebindSelf?.(); } catch (_) {}
-                try { this._uiSampler?.refresh?.(); } catch (_) {}
+            if (DOCK_SCENE_REASONS.has(reason)) {
+                this._structureDirty = true;
+                glassForceRefresh?.(this.bgActor, 250);
+                if (reason !== 'window-moved' && reason !== 'size-change') {
+                    try { this._windowCloneManager?.rebuildClones?.(); } catch (_) {}
+                    try { this._uiSampler?.rebindSelf?.(); } catch (_) {}
+                    try { this._uiSampler?.refresh?.(); } catch (_) {}
+                }
                 try { this.effect?.markBackdropDirty?.(); } catch (_) {}
+                this.wakeFrameSync();
+                return;
             }
-            if (!damagedActor || isActorNearGlass(damagedActor, this.bgActor) || Main.overview?.visible) {
-                this.effect?.markBackdropDirty?.();
+            if (!damagedActor || isActorNearGlass(damagedActor, this.bgActor)) {
+                glassMarkDirty?.(this.bgActor);
                 this.wakeFrameSync();
             }
         };
@@ -505,19 +529,19 @@ export class DashManager {
             if (this._idleTimeoutId || this._torndown)
                 return;
 
-            const intervalMs = Main.overview?.visible ? 150 : 1500;
+            const intervalMs = isOverviewAnimating?.() ? 150 : 1500;
             this._idleTimeoutId = GLib.timeout_add(GLib.PRIORITY_LOW, intervalMs, () => {
                 this._idleTimeoutId = 0;
                 if (this._torndown || !this.bgActor || !this.targetActor?.mapped)
                     return GLib.SOURCE_REMOVE;
                 let drifted = false;
                 try {
-                    drifted = Main.overview?.visible || isBackdropDirtyOrChanged(this.bgActor);
+                    drifted = isOverviewAnimating?.() || isBackdropDirtyOrChanged(this.bgActor);
                 } catch (_) {
                     drifted = true;
                 }
                 if (drifted) {
-                    this.effect?.markBackdropDirty?.();
+                    glassMarkDirty?.(this.bgActor);
                     this.wakeFrameSync();
                 } else {
                     this._scheduleIdleHeartbeat();
@@ -1126,60 +1150,53 @@ export class DashManager {
 
         setClipIfChanged(this.bgActor, localBgX - CLIP_PADDING, localBgY - CLIP_PADDING, bgW + CLIP_PADDING * 2, bgH + CLIP_PADDING * 2);
         const SHADOW_MAX_RADIUS = 32;
-        this.effect?.setShadowMaxRadius(SHADOW_MAX_RADIUS);
-
-
-
-
-
-
-
-
-
-
-
-
-
-        this.effect?.setResolution(screenW, screenH);
-
-
-
-
-        this.effect?.setGlassGeometry(localBgX, localBgY, bgW, bgH);
-
-
-
-
-
-        this._windowCloneManager?.setOffset(-monitor.x, -monitor.y);
-
-
-
-
+        if (this._lastShadowMaxRadius !== SHADOW_MAX_RADIUS) {
+            this._lastShadowMaxRadius = SHADOW_MAX_RADIUS;
+            this.effect?.setShadowMaxRadius(SHADOW_MAX_RADIUS);
+        }
+        if (this._lastResW !== screenW || this._lastResH !== screenH) {
+            this._lastResW = screenW;
+            this._lastResH = screenH;
+            this.effect?.setResolution(screenW, screenH);
+        }
+        if (this._lastGeoX !== localBgX || this._lastGeoY !== localBgY ||
+            this._lastGeoW !== bgW || this._lastGeoH !== bgH) {
+            this._lastGeoX = localBgX;
+            this._lastGeoY = localBgY;
+            this._lastGeoW = bgW;
+            this._lastGeoH = bgH;
+            this.effect?.setGlassGeometry(localBgX, localBgY, bgW, bgH);
+            this._geometryGrew = true;
+        }
 
         const extraH = _dockGlassExtras(localBgX, localBgY, bgW, bgH, screenW, screenH);
         if (!glassRefreshDue?.(this.bgActor, extraH))
             return false;
 
+        const needStruct = !this._syncedOnce || this._structureDirty || this._geometryGrew ||
+            (glassNeedsStructureSync?.(this.bgActor) ?? true);
+        this._structureDirty = false;
+        this._geometryGrew = false;
+        this._syncedOnce = true;
 
-
-
-
-        syncGlassCaptureClip({
-            cloneContainer: this._cloneContainer,
-            effect: this.effect,
-            originX: monitor.x,
-            originY: monitor.y,
-            uiSampler: this._uiSampler,
-            windowCloneManager: this._windowCloneManager,
-        });
-
-
-        this._uiSampler?.refresh();
-        this._uiSampler?.sync(monitor.x, monitor.y, screenW, screenH);
-        this._windowCloneManager?.sync();
-        this._syncWindowSignals?.();
+        if (needStruct) {
+            this._windowCloneManager?.setOffset(-monitor.x, -monitor.y);
+            syncGlassCaptureClip({
+                cloneContainer: this._cloneContainer,
+                effect: this.effect,
+                originX: monitor.x,
+                originY: monitor.y,
+                uiSampler: this._uiSampler,
+                windowCloneManager: this._windowCloneManager,
+            });
+            this._uiSampler?.refresh();
+            this._uiSampler?.sync(monitor.x, monitor.y, screenW, screenH);
+            this._windowCloneManager?.sync();
+            this._syncWindowSignals?.();
+        }
         this.effect?.markBackdropDirty?.();
+        this.liquidBox?.queue_redraw?.();
+        this.bgActor?.queue_redraw?.();
         glassRefreshDone?.(this.bgActor, extraH);
         return true;
     }

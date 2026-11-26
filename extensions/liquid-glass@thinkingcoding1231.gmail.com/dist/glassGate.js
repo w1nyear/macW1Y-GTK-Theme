@@ -96,6 +96,11 @@ const _wakeListeners = new Set();
 let _sceneSignalIds = [];
 let _sceneInvalidationId = 0;
 let _pendingSceneReason = null;
+let _overviewAnimUntilUs = 0;
+
+export function isOverviewAnimating() {
+    return GLib.get_monotonic_time() < _overviewAnimUntilUs;
+}
 
 export function addGlassWakeListener(fn) {
     if (typeof fn === 'function')
@@ -117,6 +122,8 @@ export function notifyGlassWake(actor, reason = null) {
 function _invalidateBackdropScene(reason) {
     _backdropSceneVersion++;
     _backdropDamageVersion++;
+    if (reason === 'overview' || reason === 'overview-transition' || reason === 'overview-scroll')
+        _overviewAnimUntilUs = GLib.get_monotonic_time() + 300000;
     if (reason === 'background' || reason === 'layout')
         _nonWindowDamageVersion++;
     _stageScan = { at: -1e12, h: 0 };
@@ -601,7 +608,8 @@ export function glassRefreshDue(glassActor, extraHash) {
             }
         }
 
-        const structuralChange = scanChanged || ownChanged || isSettling || sceneChanged || nonWinDmgChanged || st.forceStructural || !!Main.overview?.visible;
+        const overviewAnimating = isOverviewAnimating();
+        const structuralChange = scanChanged || ownChanged || isSettling || sceneChanged || nonWinDmgChanged || st.forceStructural || overviewAnimating;
         if (structuralChange || isNearDamaged) {
             st.lastScanH = scanH;
             st.lastDamage = dmg;
@@ -615,12 +623,12 @@ export function glassRefreshDue(glassActor, extraHash) {
 
         const sinceFull = nowUs - st.lastFull;
 
-        if (st.dirty || Main.overview?.visible) {
+        if (st.dirty || overviewAnimating) {
             const targetUs = _glassFpsIntervalUs;
             let dueInterval;
             if (ownChanged)
                 dueInterval = Math.min(GLASS_REFRESH_ACTIVE_INTERVAL_US, targetUs);
-            else if (scanChanged || sceneChanged || isSettling || st.forceStructural || Main.overview?.visible)
+            else if (scanChanged || sceneChanged || isSettling || st.forceStructural || overviewAnimating)
                 dueInterval = targetUs;
             else
                 dueInterval = Math.max(targetUs, GLASS_REFRESH_PIXEL_INTERVAL_US);
@@ -756,7 +764,7 @@ export function glassPollStats(enable) {
 export function isBackdropDirtyOrChanged(glassActor) {
     try {
         if (!glassActor) return false;
-        if (Main.overview?.visible) return true;
+        if (isOverviewAnimating()) return true;
         let st = _backdropPolls.get(glassActor);
         if (!st) return true;
         const nowUs = GLib.get_monotonic_time();

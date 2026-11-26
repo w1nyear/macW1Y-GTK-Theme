@@ -6318,3 +6318,19 @@ Task #938:
     * Замінено `- **Version:** 0.7` на `- **Version:** 0.8`.
   - Перевірка та синхронізація:
     * `done.txt` синхронізовано з `/home/vitaliy/Desktop/done.txt`, перевірки (`unittest`, `mac-extension-guard verify`, `mac-i18n-verify`, `mac-audit-sync check`, `bash -n install.sh`) пройдені, зміни закомічено локально.
+
+1002. 2026-11-26 — Оптимізовано плавність Огляду (Overview), Launchpad і наведення курсора на Dock під час запущеної гри та після тривалого простою UI:
+  - Змінені файли:
+    * [bin/mac-gamemode](file:///home/vitaliy/macW1Y/bin/mac-gamemode)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js)
+    * [extensions/kiwi@kemma/apps/tahoeApps.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeApps.js)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Причини та виправлення:
+    * У [mac-gamemode](file:///home/vitaliy/macW1Y/bin/mac-gamemode) процес гри (`GTA5_Enhanced.exe`) отримував `nice -15` на P-ядрах, тоді як `gnome-shell.real` лишався з `nice 0`, а `vm.swappiness=100` витісняв холодні сторінки інтерфейсу GNOME Shell у zram (~3.8 GiB) вже за хвилину без відкриття меню; тепер композитор (`gnome-shell`, `gnome-shell.real`, `mutter`, `xwayland`) отримує пріоритет `nice -18`, ігри — `nice -10`, `vm.swappiness` знижено до `25`, прибрано повторні виклики `ionice` через кеш `_proc_opt_cache` і обмежено опитування `nvidia-smi` до разу на 5 с.
+    * У [glassGate.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js) та [dockManager.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/dockManager.js) розділено постійний стан `Main.overview.visible` і коротку фазу анімації `isOverviewAnimating()`, завдяки чому статичний Огляд не тримає скло док-панелі у вічному 60 FPS циклі `BEFORE_REDRAW`, а наведення курсора на Dock при незмінній сцені не перебудовує всі клони вікон і `uiSampler` щокадру.
+    * У [tahoeApps.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeApps.js) додано кешування побудованого вікна Launchpad, іконок і шейдера скла між відкриттями (`_reopenCached()` / `_destroyCached()` з інвалідацією по `installed-changed`, моніторах і темі), запуск 220 мс zoom+fade анімації через `_scheduleOpenAnimation()` уже після готовності верстки та скла (щоб таймер не згорав до першого кадру), а також тротлінг `BEFORE_REDRAW` через `glassRefreshDue`/`glassNeedsStructureSync`.
+  - Перевірка та синхронізація:
+    * Оновлено `config/extensions.lock.json` (`liquid-glass@thinkingcoding1231.gmail.com`, `kiwi@kemma`), синхронізовано користувацькі розширення та `~/.local/bin/mac-gamemode`.
+    * Усі перевірки (`gjs -m`, `py_compile`, `unittest`, `mac-extension-guard verify`, `mac-i18n-verify`, `mac-audit-sync check`, `bash -n install.sh`) успішно пройдені.

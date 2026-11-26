@@ -23,6 +23,14 @@ let WindowCloneManager = null;
 let ensureGlassAllocated = () => {};
 let setClipIfChanged = () => {};
 let syncGlassCaptureClip = () => {};
+let glassRefreshDue = null;
+let glassRefreshDone = null;
+let glassMarkDirty = null;
+let glassNeedsStructureSync = null;
+let glassForceRefresh = null;
+let addGlassWakeListener = null;
+let removeGlassWakeListener = null;
+let isActorNearGlass = null;
 const _LG_BASE = 'file://' + GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist';
 import(_LG_BASE + '/liquidEffect.js').then(m => {
     if (m.LiquidEffect)
@@ -41,6 +49,22 @@ import(_LG_BASE + '/utils.js').then(m => {
         setClipIfChanged = m.setClipIfChanged;
     if (m.syncGlassCaptureClip)
         syncGlassCaptureClip = m.syncGlassCaptureClip;
+    if (m.glassRefreshDue)
+        glassRefreshDue = m.glassRefreshDue;
+    if (m.glassRefreshDone)
+        glassRefreshDone = m.glassRefreshDone;
+    if (m.glassMarkDirty)
+        glassMarkDirty = m.glassMarkDirty;
+    if (m.glassNeedsStructureSync)
+        glassNeedsStructureSync = m.glassNeedsStructureSync;
+    if (m.glassForceRefresh)
+        glassForceRefresh = m.glassForceRefresh;
+    if (m.addGlassWakeListener)
+        addGlassWakeListener = m.addGlassWakeListener;
+    if (m.removeGlassWakeListener)
+        removeGlassWakeListener = m.removeGlassWakeListener;
+    if (m.isActorNearGlass)
+        isActorNearGlass = m.isActorNearGlass;
 }).catch(e => console.warn(`[tahoe-apps] liquid-glass utils unavailable: ${e}`));
 
 
@@ -252,6 +276,15 @@ class TahoeApps {
         this._focusWindowId = 0;
         this._workspaceId = 0;
         this._overviewShowingId = 0;
+        this._isOpen = false;
+        this._cached = false;
+        this._appsDirty = false;
+        this._animatingOpen = false;
+        this._openAnimIdleId = 0;
+        this._glassIdleId = 0;
+        this._structureDirty = true;
+        this._wakeUnsub = null;
+        this._cachedMeta = null;
 
 
         this._origShowAppsOwn = Object.hasOwn(Main.overview, 'showApps');
@@ -278,16 +311,37 @@ class TahoeApps {
 
         this._showingId = Main.overview.connect('showing', () => {
             this._cancelPendingOpen();
-            if (this._overlay)
+            if (this._isOpen)
                 this._close();
         });
 
-
+        try {
+            this._installedChangedId = Shell.AppSystem.get_default().connect('installed-changed', () => {
+                this._appsDirty = true;
+                if (!this._isOpen)
+                    this._destroyCached();
+            });
+        } catch (_) {
+            this._installedChangedId = 0;
+        }
+        try {
+            this._monitorsChangedId = Main.layoutManager.connect('monitors-changed', () => {
+                this._appsDirty = true;
+                if (!this._isOpen)
+                    this._destroyCached();
+            });
+        } catch (_) {
+            this._monitorsChangedId = 0;
+        }
 
         this._settingsChangedId = settings.connect('changed', () => {
-            if (!this._overlay)
+            this._appsDirty = true;
+            if (!this._isOpen) {
+                this._destroyCached();
                 return;
+            }
             this._close();
+            this._destroyCached();
             this._build();
         });
     }
@@ -295,6 +349,16 @@ class TahoeApps {
     disable() {
         this._cancelPendingOpen();
         this._close();
+        this._destroyCached();
+
+        if (this._installedChangedId) {
+            try { Shell.AppSystem.get_default().disconnect(this._installedChangedId); } catch (_) {}
+            this._installedChangedId = 0;
+        }
+        if (this._monitorsChangedId) {
+            try { Main.layoutManager.disconnect(this._monitorsChangedId); } catch (_) {}
+            this._monitorsChangedId = 0;
+        }
 
         if (this._showingId) {
             Main.overview.disconnect(this._showingId);
@@ -345,7 +409,7 @@ class TahoeApps {
 
 
     _toggle() {
-        if (this._overlay) {
+        if (this._isOpen) {
             this._close();
             return;
         }
@@ -384,7 +448,7 @@ class TahoeApps {
             GLib.source_remove(this._safetyId);
             this._safetyId = 0;
         }
-        if (!this._overlay)
+        if (!this._isOpen)
             this._build();
     }
 
@@ -422,7 +486,7 @@ class TahoeApps {
 
     _setupGlassStep1() {
         const p = this._pendingGlass;
-        if (!p || !this._overlay)
+        if (!p || !this._overlay || !this._isOpen)
             return;
         const {monitor, winW, winH, tahoeRadius} = p;
         const PAD = 20;
@@ -431,6 +495,7 @@ class TahoeApps {
         bgActor.set_name('liquid-glass-bg-actor');
         bgActor.set_position(monitor.x, monitor.y);
         bgActor.set_size(monitor.width, monitor.height);
+        bgActor.opacity = 0;
         this._bgActor = bgActor;
 
         const liquidBox = new UnpickableActor();
@@ -506,6 +571,7 @@ class TahoeApps {
         } catch (e) {
             console.error(`[tahoe-apps] liquid glass effect failed: ${e}`);
             this._pendingGlass = null;
+            this._scheduleOpenAnimation();
             return;
         }
         this._glassIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
@@ -519,8 +585,10 @@ class TahoeApps {
     _setupGlassStep2() {
         const p = this._pendingGlass;
         this._pendingGlass = null;
-        if (!p || !this._overlay)
+        if (!p || !this._overlay || !this._isOpen) {
+            this._scheduleOpenAnimation();
             return;
+        }
         try {
             const windowCloneManager =
                 new WindowCloneManager(p.liquidBox, p.cloneContainer, 'lg-tahoe');
@@ -537,55 +605,335 @@ class TahoeApps {
                 uiSampler,
                 monitor: p.monitor,
             };
+            this._structureDirty = true;
+            try { glassForceRefresh?.(this._bgActor, 250); } catch (_) {}
         } catch (e) {
             console.error(`[tahoe-apps] liquid glass clones failed: ${e}`);
+            this._scheduleOpenAnimation();
             return;
         }
 
+        this._hookGlassWake();
+        this._startGlassLoop();
+        this._scheduleOpenAnimation();
+    }
 
-
-
-        if (this._glassState) {
-            this._laters = global.compositor.get_laters();
-            const tick = () => {
-                this._frameLaterId = 0;
-                if (!this._overlay || !this._glassState)
-                    return GLib.SOURCE_REMOVE;
-                try {
-                    const st = this._glassState;
-                    ensureGlassAllocated(st.bgActor ?? this._bgActor);
-                    st.windowCloneManager.setOffset(
-                        -st.monitor.x, -st.monitor.y);
-                    st.uiSampler.refresh();
-                    syncGlassCaptureClip({
-                        cloneContainer: this._cloneContainerRef,
-                        effect: st.effect,
-                        originX: st.monitor.x,
-                        originY: st.monitor.y,
-                        uiSampler: st.uiSampler,
-                        windowCloneManager: st.windowCloneManager,
-                    });
-                    st.uiSampler.sync(st.monitor.x, st.monitor.y,
-                        st.monitor.width, st.monitor.height);
-                    st.windowCloneManager.sync();
-                } catch (e) {
-                    console.error(`[tahoe-apps] glass sync failed: ${e}`);
+    _hookGlassWake() {
+        if (this._wakeUnsub || !addGlassWakeListener)
+            return;
+        const SCENE_REASONS = new Set([
+            'background', 'restacked', 'fullscreen', 'overview', 'layout',
+            'overview-scroll', 'overview-transition', 'window-moved',
+            'switch-workspace', 'size-change', 'minimize', 'unminimize',
+            'destroy', 'active-workspace-changed', 'showing-desktop-changed',
+        ]);
+        this._wakeUnsub = (damagedActor, reason) => {
+            if (!this._isOpen || !this._bgActor || !this._glassState)
+                return;
+            if (SCENE_REASONS.has(reason)) {
+                this._structureDirty = true;
+                glassForceRefresh?.(this._bgActor, 250);
+                if (reason !== 'window-moved' && reason !== 'size-change') {
+                    try { this._glassState.windowCloneManager?.rebuildClones?.(); } catch (_) {}
+                    try { this._glassState.uiSampler?.rebindSelf?.(); } catch (_) {}
                 }
-                this._frameLaterId =
-                    this._laters.add(Meta.LaterType.BEFORE_REDRAW, tick);
-                return GLib.SOURCE_REMOVE;
-            };
-            this._frameLaterId =
-                this._laters.add(Meta.LaterType.BEFORE_REDRAW, tick);
+                return;
+            }
+            if (!damagedActor || isActorNearGlass?.(damagedActor, this._bgActor)) {
+                glassMarkDirty?.(this._bgActor);
+            }
+        };
+        try {
+            addGlassWakeListener(this._wakeUnsub);
+        } catch (_) {
+            this._wakeUnsub = null;
         }
     }
 
+    _unhookGlassWake() {
+        if (!this._wakeUnsub)
+            return;
+        try { removeGlassWakeListener?.(this._wakeUnsub); } catch (_) {}
+        this._wakeUnsub = null;
+    }
+
+    _startGlassLoop() {
+        if (!this._glassState || this._frameLaterId)
+            return;
+        this._laters = global.compositor.get_laters();
+        const tick = () => {
+            this._frameLaterId = 0;
+            if (!this._isOpen || !this._overlay || !this._glassState)
+                return GLib.SOURCE_REMOVE;
+            try {
+                const st = this._glassState;
+                const bgActor = st.bgActor ?? this._bgActor;
+                ensureGlassAllocated(bgActor);
+                if (!this._animatingOpen) {
+                    const doHeavy = glassRefreshDue ? glassRefreshDue(bgActor) : true;
+                    if (doHeavy) {
+                        const needStruct = !this._syncedOnce || this._structureDirty ||
+                            (glassNeedsStructureSync ? glassNeedsStructureSync(bgActor) : true);
+                        this._structureDirty = false;
+                        this._syncedOnce = true;
+                        if (needStruct) {
+                            st.windowCloneManager.setOffset(-st.monitor.x, -st.monitor.y);
+                            st.uiSampler.refresh();
+                            syncGlassCaptureClip({
+                                cloneContainer: this._cloneContainerRef,
+                                effect: st.effect,
+                                originX: st.monitor.x,
+                                originY: st.monitor.y,
+                                uiSampler: st.uiSampler,
+                                windowCloneManager: st.windowCloneManager,
+                            });
+                            st.uiSampler.sync(st.monitor.x, st.monitor.y,
+                                st.monitor.width, st.monitor.height);
+                            st.windowCloneManager.sync();
+                        }
+                        st.effect?.markBackdropDirty?.();
+                        this._liquidBox?.queue_redraw?.();
+                        bgActor?.queue_redraw?.();
+                        glassRefreshDone?.(bgActor);
+                    }
+                }
+            } catch (e) {
+                console.error(`[tahoe-apps] glass sync failed: ${e}`);
+            }
+            this._frameLaterId =
+                this._laters.add(Meta.LaterType.BEFORE_REDRAW, tick);
+            return GLib.SOURCE_REMOVE;
+        };
+        this._frameLaterId =
+            this._laters.add(Meta.LaterType.BEFORE_REDRAW, tick);
+    }
+
+    _scheduleOpenAnimation() {
+        if (this._openAnimIdleId) {
+            try { GLib.source_remove(this._openAnimIdleId); } catch (_) {}
+            this._openAnimIdleId = 0;
+        }
+        if (!this._isOpen || !this._overlay || !this._window)
+            return;
+        this._animatingOpen = true;
+        this._openAnimIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            this._openAnimIdleId = 0;
+            if (!this._isOpen || !this._overlay || !this._window) {
+                this._animatingOpen = false;
+                return GLib.SOURCE_REMOVE;
+            }
+            const overlay = this._overlay;
+            const win = this._window;
+            overlay.remove_all_transitions?.();
+            win.remove_all_transitions?.();
+            overlay.opacity = 0;
+            win.opacity = 0;
+            win.scale_x = 0.94;
+            win.scale_y = 0.94;
+            if (this._bgActor) {
+                this._bgActor.remove_all_transitions?.();
+                this._bgActor.opacity = 0;
+                this._bgActor.show();
+                this._bgActor.ease({
+                    opacity: 255,
+                    duration: 180,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                });
+            }
+            overlay.ease({
+                opacity: 255,
+                duration: 180,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+            win.ease({
+                opacity: 255,
+                scale_x: 1,
+                scale_y: 1,
+                duration: 220,
+                mode: Clutter.AnimationMode.EASE_OUT_BACK,
+                onComplete: () => {
+                    this._animatingOpen = false;
+                    this._structureDirty = true;
+                    try {
+                        if (this._bgActor)
+                            glassForceRefresh?.(this._bgActor, 150);
+                    } catch (_) {}
+                },
+            });
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _resolveDarkMode() {
+        let dark = false;
+        const themeMode = this._settings.get_string('tahoe-theme');
+        if (themeMode === 'dark') {
+            dark = true;
+        } else if (themeMode !== 'light') {
+            try {
+                const iface = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
+                const scheme = iface.get_string('color-scheme');
+                const gtkTheme = iface.get_string('gtk-theme') || '';
+                const themeIsLight = (/light/i.test(gtkTheme) && !/dark/i.test(gtkTheme)) ||
+                    gtkTheme === 'Adwaita' || gtkTheme === 'Default';
+                if (scheme === 'prefer-light')
+                    dark = false;
+                else if (scheme === 'prefer-dark')
+                    dark = !themeIsLight;
+                else
+                    dark = false;
+            } catch (_) {}
+        }
+        return dark;
+    }
+
+    _stackOverlayActors() {
+        const overlay = this._overlay;
+        if (!overlay)
+            return;
+        const docks = dockContainers();
+        if (docks.length > 0 && docks[0].get_parent() === Main.layoutManager.uiGroup) {
+            if (overlay.get_parent() !== Main.layoutManager.uiGroup)
+                Main.layoutManager.uiGroup.insert_child_below(overlay, docks[0]);
+            else
+                Main.layoutManager.uiGroup.set_child_below_sibling(overlay, docks[0]);
+        } else if (overlay.get_parent() !== Main.layoutManager.uiGroup) {
+            Main.layoutManager.uiGroup.add_child(overlay);
+        }
+        if (this._bgActor) {
+            if (this._bgActor.get_parent() !== Main.layoutManager.uiGroup)
+                Main.layoutManager.uiGroup.insert_child_below(this._bgActor, overlay);
+            else
+                Main.layoutManager.uiGroup.set_child_below_sibling(this._bgActor, overlay);
+        }
+        if (Main.layoutManager.panelBox) {
+            try {
+                Main.layoutManager.uiGroup.set_child_below_sibling(overlay, Main.layoutManager.panelBox);
+            } catch (_) {}
+        }
+        for (const dock of docks) {
+            if (dock.get_parent() === Main.layoutManager.uiGroup) {
+                try {
+                    Main.layoutManager.uiGroup.set_child_above_sibling(dock, overlay);
+                } catch (_) {}
+            }
+        }
+    }
+
+    _connectOpenSignals() {
+        this._disconnectOpenSignals();
+        this._stageKeyId = global.stage.connect('key-press-event', (_actor, event) => {
+            if (event.get_key_symbol() === Clutter.KEY_Escape) {
+                if (this._menu)
+                    this._closeMenu();
+                else
+                    this._close();
+                return Clutter.EVENT_STOP;
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
+
+        const initialFocusWindow = global.display.focus_window;
+        this._focusWindowId = global.display.connect('notify::focus-window', () => {
+            const cur = global.display.focus_window;
+            if (cur && cur !== initialFocusWindow)
+                this._close();
+        });
+        this._workspaceId = global.workspace_manager.connect('active-workspace-changed', () => {
+            this._close();
+        });
+        this._overviewShowingId = Main.overview.connect('showing', () => {
+            this._close();
+        });
+    }
+
+    _disconnectOpenSignals() {
+        if (this._stageKeyId) {
+            try { global.stage.disconnect(this._stageKeyId); } catch (_) {}
+            this._stageKeyId = 0;
+        }
+        if (this._focusWindowId) {
+            try { global.display.disconnect(this._focusWindowId); } catch (_) {}
+            this._focusWindowId = 0;
+        }
+        if (this._workspaceId) {
+            try { global.workspace_manager.disconnect(this._workspaceId); } catch (_) {}
+            this._workspaceId = 0;
+        }
+        if (this._overviewShowingId) {
+            try { Main.overview.disconnect(this._overviewShowingId); } catch (_) {}
+            this._overviewShowingId = 0;
+        }
+    }
+
+    _reopenCached(monitor, dark) {
+        this._isOpen = true;
+        this._appsDirty = false;
+        this._structureDirty = true;
+        this._syncedOnce = false;
+        if (this._entry)
+            this._entry.set_text('');
+        if (this._scroll?.vadjustment)
+            this._scroll.vadjustment.value = 0;
+        for (const item of this._items) {
+            if (item?.actor)
+                item.actor._tahoeFired = false;
+        }
+        this._applyFilter();
+        const firstCat = this._sections.find(s => s.title !== 'Recommended');
+        if (firstCat)
+            this._setActivePill(firstCat.title);
+
+        this._overlay.opacity = 0;
+        this._overlay.show();
+        if (this._bgActor) {
+            this._bgActor.opacity = 0;
+            this._bgActor.show();
+        }
+        this._window.opacity = 0;
+        this._window.scale_x = 0.94;
+        this._window.scale_y = 0.94;
+
+        this._stackOverlayActors();
+        this._entry?.grab_key_focus?.();
+        this._connectOpenSignals();
+
+        if (this._glassState) {
+            try {
+                if (this._glassState.monitor !== monitor)
+                    this._glassState.monitor = monitor;
+                this._glassState.effect?.setTintColor?.(
+                    ...(dark ? [0.08, 0.08, 0.09] : [1, 1, 1]));
+                this._glassState.windowCloneManager?.rebuildClones?.();
+                this._glassState.uiSampler?.rebindSelf?.();
+                this._glassState.uiSampler?.refresh?.();
+                glassForceRefresh?.(this._bgActor, 250);
+            } catch (_) {}
+            this._hookGlassWake();
+            this._startGlassLoop();
+        } else if (this._pendingGlass) {
+            this._setupGlassStep1();
+        }
+
+        this._scheduleOpenAnimation();
+    }
+
     _build() {
-        if (this._overlay)
+        if (this._isOpen)
             return;
 
         const monitor = this._monitorAtPointer();
         const panelH = Main.layoutManager.panelBox.height;
+        const dark = this._resolveDarkMode();
+        const metaKey = `${monitor.x},${monitor.y},${monitor.width}x${monitor.height},${panelH},${dark}`;
+        if (this._cached && this._overlay && !this._appsDirty && this._cachedMeta === metaKey) {
+            this._reopenCached(monitor, dark);
+            return;
+        }
+        this._destroyCached();
+        this._isOpen = true;
+        this._appsDirty = false;
+        this._cachedMeta = metaKey;
 
         const overlay = new St.Widget({
             style_class: 'tahoe-overlay',
@@ -648,27 +996,6 @@ class TahoeApps {
         });
 
 
-        let dark = false;
-        const themeMode = this._settings.get_string('tahoe-theme');
-        if (themeMode === 'dark') {
-            dark = true;
-        } else if (themeMode !== 'light') {
-            try {
-                const iface = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
-                const scheme = iface.get_string('color-scheme');
-                const gtkTheme = iface.get_string('gtk-theme') || '';
-                const themeIsLight = (/light/i.test(gtkTheme) && !/dark/i.test(gtkTheme)) ||
-                    gtkTheme === 'Adwaita' || gtkTheme === 'Default';
-                if (scheme === 'prefer-light')
-                    dark = false;
-                else if (scheme === 'prefer-dark')
-                    dark = !themeIsLight;
-                else
-                    dark = false;
-            } catch (e) {
-
-            }
-        }
         if (dark)
             overlay.add_style_class_name('tahoe-dark');
         this._tahoeDark = dark;
@@ -832,67 +1159,14 @@ class TahoeApps {
 
         win.set_pivot_point(0.5, 0.5);
         win.opacity = 0;
-        win.scale_x = 0.96;
-        win.scale_y = 0.96;
+        win.scale_x = 0.94;
+        win.scale_y = 0.94;
         overlay.opacity = 0;
-        const docks = dockContainers();
-        if (docks.length > 0 && docks[0].get_parent() === Main.layoutManager.uiGroup) {
-            Main.layoutManager.uiGroup.insert_child_below(overlay, docks[0]);
-        } else {
-            Main.layoutManager.uiGroup.add_child(overlay);
-        }
-        if (Main.layoutManager.panelBox) {
-            try {
-                Main.layoutManager.uiGroup.set_child_below_sibling(overlay, Main.layoutManager.panelBox);
-            } catch (_) {}
-        }
-        for (const dock of docks) {
-            if (dock.get_parent() === Main.layoutManager.uiGroup) {
-                try {
-                    Main.layoutManager.uiGroup.set_child_above_sibling(dock, overlay);
-                } catch (_) {}
-            }
-        }
+        this._stackOverlayActors();
 
         entry.grab_key_focus();
-
-        this._stageKeyId = global.stage.connect('key-press-event', (_actor, event) => {
-            if (event.get_key_symbol() === Clutter.KEY_Escape) {
-                if (this._menu)
-                    this._closeMenu();
-                else
-                    this._close();
-                return Clutter.EVENT_STOP;
-            }
-            return Clutter.EVENT_PROPAGATE;
-        });
-
-        const initialFocusWindow = global.display.focus_window;
-        this._focusWindowId = global.display.connect('notify::focus-window', () => {
-            const cur = global.display.focus_window;
-            if (cur && cur !== initialFocusWindow)
-                this._close();
-        });
-        this._workspaceId = global.workspace_manager.connect('active-workspace-changed', () => {
-            this._close();
-        });
-        this._overviewShowingId = Main.overview.connect('showing', () => {
-            this._close();
-        });
-
-        overlay.ease({
-            opacity: 255,
-            duration: 180,
-            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-        });
-        win.ease({
-            opacity: 255,
-            scale_x: 1,
-            scale_y: 1,
-            duration: 220,
-            mode: Clutter.AnimationMode.EASE_OUT_BACK,
-        });
-
+        this._connectOpenSignals();
+        this._cached = true;
 
         this._glassIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
             this._glassIdleId = 0;
@@ -1185,11 +1459,11 @@ class TahoeApps {
         box.add_child(label);
 
         button.child = box;
-        let fired = false;
+        button._tahoeFired = false;
         const fire = () => {
-            if (fired)
+            if (button._tahoeFired)
                 return;
-            fired = true;
+            button._tahoeFired = true;
             this._launch(record);
         };
 
@@ -1542,60 +1816,86 @@ class TahoeApps {
 
 
     _close() {
-        if (!this._overlay)
+        if (!this._isOpen)
             return;
 
+        this._isOpen = false;
+        this._animatingOpen = false;
         this._cancelPendingOpen();
         this._closeMenu();
+        this._unhookGlassWake();
+        this._disconnectOpenSignals();
 
-
+        if (this._openAnimIdleId) {
+            try { GLib.source_remove(this._openAnimIdleId); } catch (_) {}
+            this._openAnimIdleId = 0;
+        }
         if (this._glassIdleId) {
-            try {
-                GLib.source_remove(this._glassIdleId);
-            } catch (e) {
-
-            }
+            try { GLib.source_remove(this._glassIdleId); } catch (_) {}
             this._glassIdleId = 0;
         }
-        this._pendingGlass = null;
-
-
-
         if (this._frameLaterId && this._laters) {
+            try { this._laters.remove(this._frameLaterId); } catch (_) {}
+            this._frameLaterId = 0;
+        }
+        if (this._overlay) {
             try {
-                this._laters.remove(this._frameLaterId);
+                this._overlay.remove_all_transitions?.();
+                this._overlay.opacity = 0;
+                this._overlay.hide();
+            } catch (_) {}
+        }
+        if (this._window) {
+            try { this._window.remove_all_transitions?.(); } catch (_) {}
+        }
+        if (this._bgActor) {
+            try {
+                this._bgActor.remove_all_transitions?.();
+                this._bgActor.opacity = 0;
+                this._bgActor.hide();
+            } catch (_) {}
+        }
+        if (this._grab) {
+            try {
+                Main.popModal(this._grab);
             } catch (e) {
-
+                console.error(`[tahoe-apps] popModal failed: ${e}`);
             }
+            this._grab = null;
+        }
+    }
+
+    _destroyCached() {
+        this._cached = false;
+        this._cachedMeta = null;
+        this._pendingGlass = null;
+        this._unhookGlassWake();
+        this._disconnectOpenSignals();
+
+        if (this._openAnimIdleId) {
+            try { GLib.source_remove(this._openAnimIdleId); } catch (_) {}
+            this._openAnimIdleId = 0;
+        }
+        if (this._glassIdleId) {
+            try { GLib.source_remove(this._glassIdleId); } catch (_) {}
+            this._glassIdleId = 0;
+        }
+        if (this._frameLaterId && this._laters) {
+            try { this._laters.remove(this._frameLaterId); } catch (_) {}
             this._frameLaterId = 0;
         }
         const glassState = this._glassState;
         this._glassState = null;
         if (glassState) {
-            try {
-                glassState.effect.cleanup();
-            } catch (e) {
-
-            }
-            try {
-                glassState.uiSampler.destroy();
-            } catch (e) {
-
-            }
-            try {
-                glassState.windowCloneManager.destroy();
-            } catch (e) {
-
-            }
+            try { glassState.effect.cleanup(); } catch (_) {}
+            try { glassState.uiSampler.destroy(); } catch (_) {}
+            try { glassState.windowCloneManager.destroy(); } catch (_) {}
         }
         if (this._bgActor) {
-            try {
-                this._bgActor.destroy();
-            } catch (e) {
-
-            }
+            try { this._bgActor.destroy(); } catch (_) {}
             this._bgActor = null;
         }
+        this._liquidBox = null;
         this._cloneContainerRef = null;
 
         const overlay = this._overlay;
@@ -1613,49 +1913,12 @@ class TahoeApps {
         this._items = [];
 
         if (this._vadjConn) {
-            try {
-                this._vadjConn.adj.disconnect(this._vadjConn.id);
-            } catch (e) {
-
-            }
+            try { this._vadjConn.adj.disconnect(this._vadjConn.id); } catch (_) {}
             this._vadjConn = null;
         }
-
-        if (this._stageKeyId) {
-            try {
-                global.stage.disconnect(this._stageKeyId);
-            } catch (_) {}
-            this._stageKeyId = 0;
+        if (overlay) {
+            try { overlay.destroy(); } catch (_) {}
         }
-        if (this._focusWindowId) {
-            try {
-                global.display.disconnect(this._focusWindowId);
-            } catch (_) {}
-            this._focusWindowId = 0;
-        }
-        if (this._workspaceId) {
-            try {
-                global.workspace_manager.disconnect(this._workspaceId);
-            } catch (_) {}
-            this._workspaceId = 0;
-        }
-        if (this._overviewShowingId) {
-            try {
-                Main.overview.disconnect(this._overviewShowingId);
-            } catch (_) {}
-            this._overviewShowingId = 0;
-        }
-
-        if (this._grab) {
-            try {
-                Main.popModal(this._grab);
-            } catch (e) {
-                console.error(`[tahoe-apps] popModal failed: ${e}`);
-            }
-            this._grab = null;
-        }
-
-        overlay.destroy();
     }
 }
 

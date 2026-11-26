@@ -299,6 +299,28 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("label._blurActor, label._blurArrowActor", d2d_icons)
         self.assertIn("const iconActor = visual?.first_child;", d2d_icons)
 
+    def test_gaming_overview_launchpad_and_dock_hover_responsiveness(self):
+        gm_py = (ROOT / "bin" / "mac-gamemode").read_text(encoding="utf-8")
+        self.assertIn("COMPOSITOR_NAMES", gm_py)
+        self.assertIn("'vm.swappiness': '25'", gm_py)
+        self.assertIn("os.setpriority(os.PRIO_PROCESS, pid, -18)", gm_py)
+        self.assertIn("_proc_opt_cache", gm_py)
+
+        glass_gate = (ROOT / "extensions" / "liquid-glass@thinkingcoding1231.gmail.com" / "dist" / "glassGate.js").read_text(encoding="utf-8")
+        self.assertIn("export function isOverviewAnimating()", glass_gate)
+        self.assertIn("_overviewAnimUntilUs", glass_gate)
+
+        dock_js = (ROOT / "extensions" / "liquid-glass@thinkingcoding1231.gmail.com" / "dist" / "dockManager.js").read_text(encoding="utf-8")
+        self.assertIn("isOverviewAnimating", dock_js)
+        self.assertIn("glassNeedsStructureSync", dock_js)
+        self.assertIn("glassMarkDirty", dock_js)
+
+        apps_js = (ROOT / "extensions" / "kiwi@kemma" / "apps" / "tahoeApps.js").read_text(encoding="utf-8")
+        self.assertIn("_reopenCached", apps_js)
+        self.assertIn("_scheduleOpenAnimation", apps_js)
+        self.assertIn("this._animatingOpen", apps_js)
+        self.assertIn("glassRefreshDue", apps_js)
+
 
 if __name__ == "__main__":
     unittest.main()
