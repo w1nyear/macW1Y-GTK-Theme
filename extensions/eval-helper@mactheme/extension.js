@@ -722,12 +722,41 @@ export default class EvalHelper extends Extension {
         } catch (_) {}
 
 
+        const isScreenshotShutterSoundEnabled = () => {
+            try {
+                const confPath = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'screenshot.json']);
+                if (GLib.file_test(confPath, GLib.FileTest.EXISTS)) {
+                    const [ok, data] = GLib.file_get_contents(confPath);
+                    if (ok) {
+                        const text = (data instanceof Uint8Array) ? new TextDecoder().decode(data) : data.toString();
+                        const json = JSON.parse(text);
+                        if (json.shutter_sound !== undefined)
+                            return Boolean(json.shutter_sound);
+                    }
+                }
+            } catch (_) {}
+            return true;
+        };
+
+        try {
+            // GNOME Shell's screenshot.js already plays 'screen-capture' on capture;
+            // honor screenshot.json's shutter_sound setting without spawning a second player.
+            if (Meta.SoundPlayer?.prototype?.play_from_theme && !this._origSoundPlayerPlayFromTheme) {
+                const origPlayFromTheme = Meta.SoundPlayer.prototype.play_from_theme;
+                this._origSoundPlayerPlayFromTheme = origPlayFromTheme;
+                Meta.SoundPlayer.prototype.play_from_theme = function (name, ...args) {
+                    if ((name === 'screen-capture' || name === 'camera-shutter') && !isScreenshotShutterSoundEnabled())
+                        return;
+                    return origPlayFromTheme.call(this, name, ...args);
+                };
+            }
+        } catch (_) {}
+
         try {
             if (Main.screenshotUI) {
                 this._screenshotTakenSignalId = Main.screenshotUI.connect('screenshot-taken', (_ui, file) => {
                     try {
                         const path = file?.get_path ? file.get_path() : null;
-                        GLib.spawn_command_line_async('/usr/local/bin/mac-screenshot-process --play-shutter');
                         if (path) {
                             GLib.spawn_command_line_async(`/usr/local/bin/mac-screenshot-process --file "${path}"`);
                         }
@@ -5963,6 +5992,10 @@ void main() {
                 try { Main.screenshotUI.disconnect(this._screencastNotifySignalId); } catch (_) {}
                 this._screencastNotifySignalId = 0;
             }
+        }
+        if (this._origSoundPlayerPlayFromTheme && Meta.SoundPlayer?.prototype) {
+            try { Meta.SoundPlayer.prototype.play_from_theme = this._origSoundPlayerPlayFromTheme; } catch (_) {}
+            this._origSoundPlayerPlayFromTheme = null;
         }
 
         if (this._dimmerWatchdogId) {

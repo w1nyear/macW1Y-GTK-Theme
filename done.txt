@@ -6385,3 +6385,19 @@ Task #938:
   - Перевірка та синхронізація:
     * Перекомпільовано `libmac_nautilus.so` та глобальні GTK3/GTK4 теми, синхронізовано у `/usr/local/lib/`, `~/.local/lib/`, `~/.themes/`, `~/.config/gtk-*`, а також `done.txt` у `/home/vitaliy/Desktop/done.txt`.
     * Візуально перевірено скріншотами Dark/Light Grid і List View, клік та навігацію через нижнє поле шляху, hover `< | >`, піднятий трафік, `gnome-tweaks` і `gnome-disks`; оновлено тести і пройдено повний аудит репозиторію.
+
+#1006: Усунення подвійного відтворення звуку затвора при створенні скріншота
+  - Проблема та причина:
+    * Живий моніторинг `pw-mon` та витягнутий модуль GNOME Shell (`libshell-18.so` -> `/org/gnome/shell/ui/screenshot.js`) підтвердили, що `captureScreenshot()` і `_flashAsync()` уже відтворюють звук теми `'screen-capture'` через `global.display.get_sound_player().play_from_theme('screen-capture', ...)` (потік `Mutter`), тоді як розширення [extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js) у обробнику `'screenshot-taken'` на `Main.screenshotUI` додатково викликало `/usr/local/bin/mac-screenshot-process --play-shutter` (другий потік `pw-play ... camera-shutter.ogg` приблизно через 338 мс).
+  - Змінені файли:
+    * [extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js)
+    * [mac-screenshot-process](file:///home/vitaliy/macW1Y/bin/mac-screenshot-process)
+    * [extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+    * [test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+  - Що реалізовано:
+    * Видалено дублюючий виклик `/usr/local/bin/mac-screenshot-process --play-shutter` із сигналу `'screenshot-taken'` у [extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js), залишивши постобробку `--file`.
+    * Додано обгортку `Meta.SoundPlayer.prototype.play_from_theme` (із чистим відновленням у `disable()`), яка читає `shutter_sound` із `~/.config/mac-styling/screenshot.json` лише для подій `'screen-capture'` та `'camera-shutter'` — це забезпечує рівно один звук при увімкненому перемикачі та повну тишу при `shutter_sound: false`.
+    * У [mac-screenshot-process](file:///home/vitaliy/macW1Y/bin/mac-screenshot-process) додано `SHUTTER_SOUND_PATHS` і `resolve_shutter_sound()` з резервним пошуком звукового файлу затвора між `macW1Y` та legacy `macOS` каталогами звукових тем для ручних викликів `--play-shutter`.
+  - Перевірка та синхронізація:
+    * Оновлено встановлене розширення `~/.local/share/gnome-shell/extensions/eval-helper@mactheme/extension.js`, хеш `eval-helper@mactheme` у [extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json) і `/usr/share/mactheme/config/extensions.lock.json`, `/usr/local/bin/mac-screenshot-process` та `~/.local/bin/mac-screenshot-process`, перезапущено `mac-screenshot-daemon.service`, а також гаряче оновлено поточну живу сесію GNOME Shell.
+    * Проведено живу перевірку `pw-mon` під час скріншота: 1 аудіопотік `Mutter` `screen-capture` і 0 потоків `pw-play` при `shutter_sound: true`, та 0 аудіопотоків при `shutter_sound: false`; додано регресійний тест і пройдено повний набір перевірок репозиторію.

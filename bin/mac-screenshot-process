@@ -20,7 +20,13 @@ import subprocess
 from pathlib import Path
 
 CONFIG_FILE = Path(os.path.expanduser("~/.config/mac-styling/screenshot.json"))
-SHUTTER_SOUND = "/usr/share/sounds/macW1Y/stereo/camera-shutter.ogg"
+SHUTTER_SOUND_PATHS = (
+    "/usr/share/sounds/macW1Y/stereo/camera-shutter.ogg",
+    os.path.expanduser("~/.local/share/sounds/macW1Y/stereo/camera-shutter.ogg"),
+    "/usr/share/sounds/macOS/stereo/camera-shutter.ogg",
+    os.path.expanduser("~/.local/share/sounds/macOS/stereo/camera-shutter.ogg"),
+)
+SHUTTER_SOUND = SHUTTER_SOUND_PATHS[0]
 
 DEFAULT_CONFIG = {
     "image_format": 0,           # 0=PNG, 1=JPEG, 2=WebP
@@ -81,18 +87,25 @@ def ss_tr(key):
     base = get_locale_code().split('_')[0]
     return SCREENSHOT_I18N.get(base, SCREENSHOT_I18N["en"]).get(key, SCREENSHOT_I18N["en"].get(key, key))
 
+def resolve_shutter_sound():
+    """Return the first installed camera shutter sound path, if any."""
+    candidates = SHUTTER_SOUND_PATHS if SHUTTER_SOUND == SHUTTER_SOUND_PATHS[0] else (SHUTTER_SOUND, *SHUTTER_SOUND_PATHS)
+    return next((path for path in candidates if os.path.exists(path)), None)
+
+
 def play_shutter():
     cfg = load_config()
     if not cfg.get("shutter_sound", True):
         return
-    if os.path.exists(SHUTTER_SOUND):
+    shutter_path = resolve_shutter_sound()
+    if shutter_path:
         try:
             if shutil.which("pw-play"):
-                subprocess.Popen(["pw-play", SHUTTER_SOUND], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.Popen(["pw-play", shutter_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             elif shutil.which("canberra-gtk-play"):
-                subprocess.Popen(["canberra-gtk-play", "-f", SHUTTER_SOUND], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.Popen(["canberra-gtk-play", "-f", shutter_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             elif shutil.which("aplay"):
-                subprocess.Popen(["aplay", "-q", SHUTTER_SOUND], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.Popen(["aplay", "-q", shutter_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception:
             pass
 

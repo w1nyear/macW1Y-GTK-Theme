@@ -392,6 +392,44 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("columnview > header > button", build_theme)
         self.assertIn("leaflet treeview.view:selected", build_theme)
 
+    def test_single_screenshot_shutter_sound_no_duplicate_spawn(self):
+        import runpy
+        import tempfile
+        from unittest.mock import patch
+
+        eval_js = (ROOT / "extensions" / "eval-helper@mactheme" / "extension.js").read_text(encoding="utf-8")
+        self.assertNotIn("--play-shutter", eval_js)
+        self.assertIn("Meta.SoundPlayer.prototype.play_from_theme", eval_js)
+        self.assertIn("_origSoundPlayerPlayFromTheme", eval_js)
+        self.assertIn("'screen-capture'", eval_js)
+        self.assertIn("screenshot.json", eval_js)
+
+        scope = runpy.run_path(str(ROOT / "bin" / "mac-screenshot-process"))
+        shutter_globals = scope["resolve_shutter_sound"].__globals__
+        with tempfile.TemporaryDirectory() as folder:
+            root = pathlib.Path(folder)
+            fallback = root / "macOS" / "camera-shutter.ogg"
+            fallback.parent.mkdir(parents=True)
+            fallback.write_bytes(b"OggS")
+            missing = root / "macW1Y" / "camera-shutter.ogg"
+            shutter_globals["SHUTTER_SOUND_PATHS"] = (str(missing), str(fallback))
+            shutter_globals["SHUTTER_SOUND"] = str(missing)
+            self.assertEqual(scope["resolve_shutter_sound"](), str(fallback))
+
+            cfg_file = root / "screenshot.json"
+            shutter_globals["CONFIG_FILE"] = cfg_file
+            cfg_file.write_text('{"shutter_sound": false}', encoding="utf-8")
+            with patch.object(shutter_globals["subprocess"], "Popen") as popen_mock:
+                scope["play_shutter"]()
+                popen_mock.assert_not_called()
+
+            cfg_file.write_text('{"shutter_sound": true}', encoding="utf-8")
+            with patch.object(shutter_globals["shutil"], "which", side_effect=lambda cmd: "/usr/bin/pw-play" if cmd == "pw-play" else None):
+                with patch.object(shutter_globals["subprocess"], "Popen") as popen_mock:
+                    scope["play_shutter"]()
+                    popen_mock.assert_called_once()
+                    self.assertEqual(popen_mock.call_args[0][0], ["pw-play", str(fallback)])
+
 
 if __name__ == "__main__":
     unittest.main()
