@@ -359,10 +359,27 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("transform: scale(0.965);", nautilus_c)
         self.assertNotIn("background-size: 14px 14px;", nautilus_c)
 
+        # Lower top bar, 36px/18px controls, flat borderless sidebar pill, fixed inline-buttons, & live-blurred bottom Path/Info bars
+        for symbol in (
+            "MacBottomBlurBar",
+            "mac_bottom_blur_bar_new",
+            "mac_update_bottom_bars",
+            "mac_polish_inline_zoom_buttons",
+            "mac_on_view_controls_popover_show",
+            "mac-bottom-blur-bar",
+            "mac-bottom-path-row",
+            "mac-bottom-info-row",
+            "mac-inline-zoom-row",
+            "min-height: 50px;",
+            "background-color: #363638;",
+        ):
+            self.assertIn(symbol, nautilus_c)
+
         build_theme = (ROOT / "bin" / "mac-build-theme").read_text(encoding="utf-8")
         self.assertIn("sidebar-orange-icon", build_theme)
         self.assertIn("sidebar-neutral-icon", build_theme)
         self.assertIn("#f28617", build_theme)
+        self.assertIn("#363638", build_theme)
 
 
 if __name__ == "__main__":

@@ -303,19 +303,44 @@ navigation-split-view list.navigation-sidebar row:selected:backdrop {
   outline: none;
 }
 
-/* Nautilus Finder sidebar selected state - authentic macOS neutral grey highlight & white label */
+/* Nautilus Finder sidebar selected state - authentic macOS flat solid neutral grey highlight & white label */
+.nautilus-window .sidebar-pane placessidebar row,
+.nautilus-window .sidebar-pane placessidebar row:hover,
 .nautilus-window .sidebar-pane placessidebar row:selected,
 .nautilus-window .sidebar-pane placessidebar row:selected:backdrop,
+.nautilus-window .sidebar-pane placessidebar row:selected:focus,
+.nautilus-window .sidebar-pane placessidebar row:selected:focus-within,
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected,
+.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:backdrop,
+window.nautilus-window .sidebar-pane placessidebar row,
+window.nautilus-window .sidebar-pane placessidebar row:hover,
+window.nautilus-window .sidebar-pane placessidebar row:selected,
+window.nautilus-window .sidebar-pane placessidebar row:selected:backdrop,
+window.nautilus-window .sidebar-pane placessidebar row:selected:focus,
+window.nautilus-window .sidebar-pane placessidebar row:selected:focus-within,
+window.nautilus-window placessidebar row:selected,
+window.nautilus-window placessidebar row:selected:backdrop {
+  border-radius: 10px;
+  border: none;
+  box-shadow: none;
+  background-image: none;
+  outline: none;
+}
+
+.nautilus-window .sidebar-pane placessidebar row:selected,
+.nautilus-window .sidebar-pane placessidebar row:selected:backdrop,
+.nautilus-window .sidebar-pane placessidebar row:selected:focus,
+.nautilus-window .sidebar-pane placessidebar row:selected:focus-within,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:backdrop,
 window.nautilus-window .sidebar-pane placessidebar row:selected,
 window.nautilus-window .sidebar-pane placessidebar row:selected:backdrop,
+window.nautilus-window .sidebar-pane placessidebar row:selected:focus,
+window.nautilus-window .sidebar-pane placessidebar row:selected:focus-within,
 window.nautilus-window placessidebar row:selected,
 window.nautilus-window placessidebar row:selected:backdrop {
-  border-radius: 10px;
-  background-color: rgba(255, 255, 255, 0.14);
+  background-color: #363638;
   color: #ffffff;
-  outline: none;
 }
 
 .nautilus-window .sidebar-pane placessidebar row:selected:hover,
@@ -323,7 +348,10 @@ window.nautilus-window placessidebar row:selected:backdrop {
 window.nautilus-window .sidebar-pane placessidebar row:selected:hover,
 window.nautilus-window placessidebar row:selected:hover {
   border-radius: 10px;
-  background-color: rgba(255, 255, 255, 0.18);
+  border: none;
+  box-shadow: none;
+  background-image: none;
+  background-color: #3e3e41;
   color: #ffffff;
   outline: none;
 }

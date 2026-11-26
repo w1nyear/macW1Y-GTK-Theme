@@ -6349,3 +6349,18 @@ Task #938:
   - Перевірка та синхронізація:
     * Перезібрано GTK-теми (`bin/mac-build-theme`), скомпільовано й встановлено `libmac_nautilus.so` у `~/.local/lib/`, `/usr/local/lib/` та `/usr/lib/x86_64-linux-gnu/`, синхронізовано `done.txt` у `/home/vitaliy/Desktop/done.txt`.
     * Пройдено всі перевірки репозиторію (`unittest`, `mac-audit-sync check`, `mac-extension-guard verify`, `mac-i18n-verify`, `bash -n install.sh`).
+
+
+1004. 2026-11-26 — Полірування верхньої панелі Nautilus, плоский рядок сайдбару, виправлення відступів поповерів і подвійна нижня панель із розмиттям (`Path Bar` + відомості про файл):
+  - Змінені файли:
+    * [src/mac_nautilus.c](file:///home/vitaliy/macW1Y/src/mac_nautilus.c)
+    * [bin/mac-build-theme](file:///home/vitaliy/macW1Y/bin/mac-build-theme)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+  - Що реалізовано:
+    * Верхню панель Nautilus злегка опущено (`min-height: 50px`, `padding: 4px 6px 2px 4px`, `windowcontrols` `margin-top: 3px`) та збільшено розмір кнопок і піктограм (`36x36` кола й `36px` капсули, іконки `17px–18px`, шеврони `12px–13px`), виправлено відображення кнопки `( » )` у світлій темі (`mac-theme-light` стани `:hover`/`:active`/`:checked` та колір `image`).
+    * У лівій бічній панелі вибрану сіру кнопку зроблено повністю суцільного кольору без відблисків і рамок (`#363638` у Dark / `#dcdce0` у Light, `border: none`, `box-shadow: none`, `background-image: none`) у `src/mac_nautilus.c` та `bin/mac-build-theme`.
+    * Виправлено відступи у контекстних меню (`popover > contents` `padding: 7px`, прибрано обнулення верхнього/нижнього відступу `:first-child`/`:last-child`, рівномірні відступи рядків та акселераторів) й усунено вільну порожню зону в меню «Розмір піктограм» і «Сортування» (`[ ⊞ ⌄ ]` `mac_polish_inline_zoom_buttons` — вимкнено `homogeneous` на зовнішньому `box.inline-buttons` із прихованим `GtkGizmo`, вирівняно підпис зліва і компактні капсули `−`/`+` праворуч, приховано порожні секції).
+    * Додано подвійну нижню панель над `AdwTabView` у `GtkOverlay` без конфліктів із `reveal-bottom-bars`: верхня смуга із живим GPU-розмиттям (`MacBottomBlurBar`, `GtkWidgetPaintable` + `gtk_snapshot_push_blur` над контентом із захисною базою кольору) показує клікабельний навігаційний шлях `Path Bar` (іконки + папки + поточний вибраний файл), а нижня смуга показує короткі відомості про вибраний файл (назва • розмір / Тека • дата зміни) або кількість об'єктів та вільний простір асинхронно без блокування UI.
+  - Перевірка та синхронізація:
+    * Скомпільовано через `dependencies/build-native.sh` (`-O3 -Werror=implicit-function-declaration -Wl,-z,defs`), встановлено `libmac_nautilus.so`, перезібрано GTK-теми (`bin/mac-build-theme`), синхронізовано `done.txt` у `/home/vitaliy/Desktop/done.txt`.
+    * Візуально перевірено скріншотами Nautilus у Dark та Light режимах і меню `[ ⊞ ⌄ ]`, `( » )`, `[ ≡ ▾ ]`; пройдено всі тести та перевірки репозиторію.
