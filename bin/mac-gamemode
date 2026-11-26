@@ -34,7 +34,8 @@ GAME_EXCLUDES = {
     'systemd', 'oom_reaper', 'khungtaskd', 'switcheroo-control',
     'switcheroo-cont', 'mac-switcheroo-', 'xdg-desktop-portal',
     'xdg-document-portal', 'ibus-portal', 'python3', 'bash', 'sh',
-    'zsh', 'gnome-shell', 'gnome-shell.real', 'mutter', 'mutter-x11-frames',
+    'zsh', 'gnome-shell', 'gnome-shell.rea', 'gnome-shell.real',
+    'mutter', 'mutter-x11-fram', 'mutter-x11-frames',
     'xwayland', 'pipewire', 'wireplumber', 'pulseaudio',
     'fossilize_replay', 'fossilize_repla', 'fossilize', 'steamwebhelper',
     'steam', 'srt-bwrap', 'pv-adverb', 'bwrap', 'pressure-vessel-adverb',
@@ -43,8 +44,14 @@ GAME_EXCLUDES = {
 }
 
 COMPOSITOR_NAMES = {
-    'gnome-shell', 'gnome-shell.real', 'mutter', 'mutter-x11-frames', 'xwayland'
+    'gnome-shell', 'gnome-shell.rea', 'gnome-shell.real',
+    'mutter', 'mutter-x11-fram', 'mutter-x11-frames', 'xwayland'
 }
+
+
+def is_compositor_process(comm_l):
+    """Match compositor/display processes, including Linux 15-char truncated comm names."""
+    return comm_l in COMPOSITOR_NAMES or comm_l.startswith(('gnome-shell', 'mutter-x11-'))
 
 GAME_REGEXES = [
     re.compile(r'steam_app_\d+'),
@@ -126,7 +133,7 @@ def get_system_stall_pressure():
 def is_game_process(comm, cmdline, pid=None):
     comm_l = comm.lower()
     cmdline_l = cmdline.lower()
-    if comm_l in GAME_EXCLUDES:
+    if comm_l in GAME_EXCLUDES or is_compositor_process(comm_l):
         return False
     if any(comm_l.startswith(p) for p in ['xdg-', 'systemd-', 'ibus-']):
         return False
@@ -357,7 +364,7 @@ def optimize_processes():
                 cmdline = f.read().replace('\x00', ' ').strip()
             comm_l = comm.lower()
 
-            if comm_l in COMPOSITOR_NAMES:
+            if is_compositor_process(comm_l):
                 tag = ('comp', -18)
                 if _proc_opt_cache.get(pid) != tag:
                     try:
@@ -554,6 +561,10 @@ def apply_app_loading_burst(throttled=False):
     Allows CPU to boost freely up to 4.60 GHz for short tasks and app responsiveness.
     """
     set_cpu_freq('powersave', 'balance_performance', TARGET_MIN_FREQ, HARDWARE_MAX_FREQ, turbo=True)
+    apply_sysctl({
+        'vm.swappiness': '25',
+        'vm.vfs_cache_pressure': '60',
+    })
     set_gpu_performance(False)
     set_wifi_powersave(False)
     optimize_processes()
