@@ -6293,3 +6293,12 @@ Task #938:
   - Перевірка та синхронізація:
     * Оновлено `config/extensions.lock.json` (`liquid-glass@thinkingcoding1231.gmail.com`, `kiwi@kemma`) та синхронізовано користувацькі розширення й lock-файли.
     * Усі перевірки (`gjs -m`, `unittest`, `mac-extension-guard verify`, `mac-i18n-verify`, `mac-audit-sync check`, `bash -n install.sh`) успішно пройдені.
+
+999. 2026-11-26 — Оновлено `README.md` (системні вимоги, реальні результати 50-елементного бенчмарка та розділ подяки Thanksgiving):
+  - Змінені файли:
+    * [README.md](file:///home/vitaliy/macW1Y/README.md)
+  - Зміни:
+    * У таблиці `## System Requirements` оновлено мінімальні та рекомендовані характеристики: мінімум — Intel Celeron & Intel HD Graphics (**53.7 FPS / 50 elements**, поріг плавності 30+ FPS); рекомендовано — Intel Core i3 10th Gen @ 1.2 GHz (**203.8 FPS / 50 elements**), відповідно оновлено примітку про продуктивність.
+    * Між `## Multitouch Gestures` і `## Integrated Projects & License` додано розділ `## Thanksgiving` англійською з подяками для `Teemo` та `Lilithium`.
+  - Перевірка та синхронізація:
+    * `done.txt` синхронізовано з `/home/vitaliy/Desktop/done.txt`, перевірки репозиторію (`unittest`, `mac-extension-guard verify`, `mac-i18n-verify`, `mac-audit-sync check`, `bash -n install.sh`) пройдені, зміни закомічено локально.

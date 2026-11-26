@@ -48,12 +48,13 @@
 | Component | Minimum | Recommended |
 |---|---|---|
 | RAM | 4 GB | 8–16 GB |
-| CPU | 2 cores / 4 threads, 64-bit (e.g., Intel Core i3 8th Gen / AMD Ryzen 3) | 4–8 cores / 8–12+ threads (e.g., Intel Core i5 11th–13th Gen / AMD Ryzen 5 5000+) |
-| GPU | OpenGL 3.3+ (Intel HD Graphics 520+, AMD Radeon R5/R7, NVIDIA GT 710+) | Intel UHD / Iris Xe Graphics, AMD Radeon Graphics, NVIDIA GTX 1050+ |
+| CPU | 2 cores, 64-bit (e.g., Intel Celeron / AMD Athlon) | 2+ cores / 4+ threads, 64-bit (e.g., Intel Core i3 10th Gen @ 1.2 GHz / AMD Ryzen 3+) |
+| GPU | OpenGL 3.3+ (Intel HD Graphics / AMD Radeon R5 / NVIDIA GT 710+) | Intel UHD / Iris Xe Graphics, AMD Radeon Graphics, NVIDIA GTX 1050+ |
 | Storage | 4 GB | 10 GB SSD |
 | Display | 1366 × 768 @ 60 Hz | 1920 × 1080 @ 60–120+ Hz |
+| Liquid Glass Benchmark | 30+ FPS (**53.7 FPS / 50 elements** on Intel Celeron & Intel HD Graphics) | 120+ FPS (**203.8 FPS / 50 elements** on Intel Core i3 10th Gen @ 1.2 GHz) |
 
-> **Note on Liquid Glass Performance:** Thanks to baked bevel map caching and multithreaded strip rendering (scaling up to 8 worker threads), the Liquid Glass shader runs smoothly even on dual-core CPUs and reaches **1,000+ FPS** in the 50-element benchmark on modern multi-core processors.
+> **Note on Liquid Glass Performance:** Thanks to baked bevel map caching and multithreaded strip rendering (scaling up to 8 worker threads), **30+ FPS** in the 50-element benchmark is already enough for smooth Liquid Glass rendering. Verified hardware results: **53.7 FPS / 50 elements** on an older **Intel Celeron & Intel HD Graphics** laptop, **203.8 FPS / 50 elements** on an **Intel Core i3 10th Gen (1.2 GHz)** laptop, and **1,000+ FPS** on modern multi-core processors.
 
 ---
 
@@ -81,6 +82,13 @@ Run `./install.sh` and select **Uninstall** in the installer menu.
 - **4-Finger Single Tap:** Toggle Overview.
 - **4-Finger Double Tap:** Open Launchpad / App Grid.
 - **4-Finger Horizontal Swipe:** Switch virtual workspaces.
+
+---
+
+## Thanksgiving
+
+- **Teemo** — for sending macOS screenshots.
+- **Lilithium** — for minor improvement suggestions.
 
 ---
 
