@@ -6302,3 +6302,11 @@ Task #938:
     * Між `## Multitouch Gestures` і `## Integrated Projects & License` додано розділ `## Thanksgiving` англійською з подяками для `Teemo` та `Lilithium`.
   - Перевірка та синхронізація:
     * `done.txt` синхронізовано з `/home/vitaliy/Desktop/done.txt`, перевірки репозиторію (`unittest`, `mac-extension-guard verify`, `mac-i18n-verify`, `mac-audit-sync check`, `bash -n install.sh`) пройдені, зміни закомічено локально.
+
+1000. 2026-11-26 — Додано запис для `Gemini 4 Hydrogen` у розділ `## Thanksgiving` файлу `README.md`:
+  - Змінені файли:
+    * [README.md](file:///home/vitaliy/macW1Y/README.md)
+  - Зміни:
+    * Додано `- **Gemini 4 Hydrogen** — for developing the project.` у `## Thanksgiving`.
+  - Перевірка та синхронізація:
+    * `done.txt` синхронізовано з `/home/vitaliy/Desktop/done.txt`, перевірки (`unittest`, `mac-extension-guard verify`, `mac-i18n-verify`, `mac-audit-sync check`, `bash -n install.sh`) пройдені, зміни закомічено локально.

@@ -87,6 +87,7 @@ Run `./install.sh` and select **Uninstall** in the installer menu.
 
 ## Thanksgiving
 
+- **Gemini 4 Hydrogen** — for developing the project.
 - **Teemo** — for sending macOS screenshots.
 - **Lilithium** — for minor improvement suggestions.
 
