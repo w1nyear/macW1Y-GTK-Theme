@@ -277,11 +277,14 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         cc_js = (ROOT / "extensions" / "kiwi@kemma" / "apps" / "tahoeControlCenter.js").read_text(encoding="utf-8")
         self.assertIn("_markCCGlassPixelDirty", cc_js)
         self.assertIn("glassNeedsStructureSync(s.bgActor)", cc_js)
+        self.assertIn("s.liquidBox?.queue_redraw?.();", cc_js)
+        self.assertIn("s.bgActor?.queue_redraw?.();", cc_js)
         self.assertNotIn("_CC_PIXEL_PULSE_US = 350000", cc_js)
 
         nc_js = (ROOT / "extensions" / "kiwi@kemma" / "apps" / "tahoeNotifications.js").read_text(encoding="utf-8")
         self.assertIn("_markNcStacksPixelDirty", nc_js)
         self.assertIn("glassNeedsStructureSync(s.bgActor)", nc_js)
+        self.assertIn("s.liquidBox?.queue_redraw?.();", nc_js)
         self.assertNotIn("_NC_PIXEL_PULSE_US = 350000", nc_js)
 
     def test_dock_label_tracks_magnified_launch_bounce_distance(self):

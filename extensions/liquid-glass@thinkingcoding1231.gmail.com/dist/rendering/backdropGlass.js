@@ -444,6 +444,8 @@ export const BackdropGlass = _registerBackdropGlass(class BackdropGlass extends 
                         this._windowClones?.sync?.();
                     }
                     this._effect?.markBackdropDirty?.();
+                    this._liquidBox?.queue_redraw?.();
+                    this.queue_redraw?.();
                     glassRefreshDone?.(this);
                 }
             } catch (e) {

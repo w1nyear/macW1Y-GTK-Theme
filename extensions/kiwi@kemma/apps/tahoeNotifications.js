@@ -1320,6 +1320,8 @@ function _hookToastWake() {
                 try { _toastStack.uiSampler?.refresh?.(); } catch (_) {}
             }
             try { _toastStack.effect?.markBackdropDirty?.(); } catch (_) {}
+            try { _toastStack.liquidBox?.queue_redraw?.(); } catch (_) {}
+            try { _toastStack.bgActor?.queue_redraw?.(); } catch (_) {}
             _toastTickStart();
             return;
         }
@@ -1536,6 +1538,8 @@ function _syncToastGlass(monitor, s) {
         }
         try {
             s.effect?.markBackdropDirty?.();
+            s.liquidBox?.queue_redraw?.();
+            s.bgActor?.queue_redraw?.();
             glassRefreshDone(s.bgActor, extraH);
         } catch (_) {}
     } catch (e) {
@@ -1841,6 +1845,8 @@ function _invalidateNcStacks(p, rebuild = false) {
             try { s.uiSampler?.refresh?.(); } catch (_) {}
         }
         try { s.effect?.markBackdropDirty?.(); } catch (_) {}
+        try { s.liquidBox?.queue_redraw?.(); } catch (_) {}
+        try { s.bgActor?.queue_redraw?.(); } catch (_) {}
     }
     p._nextPixelPulseUs = GLib.get_monotonic_time() + _NC_IDLE_PULSE_US;
 }
@@ -2813,6 +2819,8 @@ function _syncCards(p, monitor, s) {
         }
         try {
             s.effect?.markBackdropDirty?.();
+            s.liquidBox?.queue_redraw?.();
+            s.bgActor?.queue_redraw?.();
             glassRefreshDone(s.bgActor, extraH);
         } catch (_) {}
     } catch (_) {}
@@ -2928,6 +2936,8 @@ function _syncGlass(p, monitor, s) {
         }
         try {
             s.effect?.markBackdropDirty?.();
+            s.liquidBox?.queue_redraw?.();
+            s.bgActor?.queue_redraw?.();
             glassRefreshDone(s.bgActor, extraH);
         } catch (_) {}
     } catch (_) {}
@@ -3191,6 +3201,7 @@ function _buildPanel(merges = null) {
                 if (!p._nextPixelPulseUs || nowUs >= p._nextPixelPulseUs) {
                     p._nextPixelPulseUs = nowUs + _NC_IDLE_PULSE_US;
                     for (const s of p.stacks) {
+                        s._structureDirty = true;
                         try {
                             if (glassMarkDirty)
                                 glassMarkDirty(s.bgActor);

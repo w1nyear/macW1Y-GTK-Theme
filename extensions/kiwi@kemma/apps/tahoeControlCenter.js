@@ -3990,6 +3990,8 @@ function _invalidateCCGlass(p, rebuild = false) {
             try { s.uiSampler?.refresh?.(); } catch (_) {}
         }
         try { s.effect?.markBackdropDirty?.(); } catch (_) {}
+        try { s.liquidBox?.queue_redraw?.(); } catch (_) {}
+        try { s.bgActor?.queue_redraw?.(); } catch (_) {}
     }
     if (p.glass)
         p.glass._nextPixelPulseUs = GLib.get_monotonic_time() + _CC_IDLE_PULSE_US;
@@ -4134,6 +4136,7 @@ function _startGlass(slideOffset = 0) {
             if (!glass._nextPixelPulseUs || nowUs >= glass._nextPixelPulseUs) {
                 glass._nextPixelPulseUs = nowUs + _CC_IDLE_PULSE_US;
                 for (const s of glass.stacks) {
+                    s._structureDirty = true;
                     try {
                         if (glassMarkDirty)
                             glassMarkDirty(s.bgActor);
@@ -4356,6 +4359,8 @@ function _syncStack(s, monitor) {
     }
     try {
         s.effect?.markBackdropDirty?.();
+        s.liquidBox?.queue_redraw?.();
+        s.bgActor?.queue_redraw?.();
         glassRefreshDone(s.bgActor, extraH);
     } catch (_) {}
 }

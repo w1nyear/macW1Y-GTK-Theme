@@ -6278,3 +6278,18 @@ Task #938:
   - Перевірка та синхронізація:
     * Оновлено `config/extensions.lock.json` (`cupertino-dock-lite@rinzler69-wastaken.github.com`, `dash2dock-motion@unmade.space`) та синхронізовано користувацькі розширення й lock-файли.
     * Усі перевірки (`gjs -m`, `unittest`, `mac-extension-guard verify`, `mac-i18n-verify`, `mac-audit-sync check`, `bash -n install.sh`) успішно пройдені.
+
+998. 2026-11-26 — Відновлено перехоплення та перерозмиття живого фону й кнопок у Центрі керування, Центрі сповіщень і діалоговому склі після оптимізації тротлінгу:
+  - Змінені файли:
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js)
+    * [extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/rendering/backdropGlass.js)
+    * [extensions/kiwi@kemma/apps/tahoeControlCenter.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeControlCenter.js)
+    * [extensions/kiwi@kemma/apps/tahoeNotifications.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeNotifications.js)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Причина та виправлення:
+    * Виклик `effect.markBackdropDirty()` (`queue_repaint()`) без `queue_redraw()` на `liquidBox`/`bgActor` (у межах `if (doHeavy)`) змушував `Clutter.OffscreenEffect` перевикористовувати старий кешований FBO-кадр без `ACTOR_DIRTY`, через що фон і кнопки Центру керування показували стару тінь/вікно навіть після переміщення вікна чи оновлення фону.
+    * Повернуто `liquidBox?.queue_redraw?.()` та `bgActor?.queue_redraw?.()` виключно всередині rate-limited `doHeavy` та структурної інвалідації, ввімкнено `s._structureDirty = true` на 1.2-секундному фоновому пульсі, а в `_hookWindowDamage()` ([glassGate.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/glassGate.js)) додано скидання `_stageScan.at` при зміні геометрії/видимості вікон та слухачі `notify::visible` / `notify::mapped`.
+  - Перевірка та синхронізація:
+    * Оновлено `config/extensions.lock.json` (`liquid-glass@thinkingcoding1231.gmail.com`, `kiwi@kemma`) та синхронізовано користувацькі розширення й lock-файли.
+    * Усі перевірки (`gjs -m`, `unittest`, `mac-extension-guard verify`, `mac-i18n-verify`, `mac-audit-sync check`, `bash -n install.sh`) успішно пройдені.

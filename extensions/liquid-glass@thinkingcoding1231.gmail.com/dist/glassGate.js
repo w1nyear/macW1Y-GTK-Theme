@@ -398,6 +398,8 @@ function _hookWindowDamage(actor) {
 
         const onMotionOrDamage = (reason) => {
             actor._lastDamageUs = GLib.get_monotonic_time();
+            if (reason !== 'window-damaged')
+                _stageScan.at = -1e12;
             noteWindowContentDamaged();
             notifyGlassWake(actor, reason);
         };
@@ -407,6 +409,8 @@ function _hookWindowDamage(actor) {
         actor.connect('notify::size', () => onMotionOrDamage('window-moved'));
         actor.connect('notify::translation-x', () => onMotionOrDamage('window-moved'));
         actor.connect('notify::translation-y', () => onMotionOrDamage('window-moved'));
+        actor.connect('notify::visible', () => onMotionOrDamage('window-moved'));
+        actor.connect('notify::mapped', () => onMotionOrDamage('window-moved'));
 
         let mwSigs = [];
         const mw = actor.get_meta_window?.();
