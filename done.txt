@@ -6364,3 +6364,24 @@ Task #938:
   - Перевірка та синхронізація:
     * Скомпільовано через `dependencies/build-native.sh` (`-O3 -Werror=implicit-function-declaration -Wl,-z,defs`), встановлено `libmac_nautilus.so`, перезібрано GTK-теми (`bin/mac-build-theme`), синхронізовано `done.txt` у `/home/vitaliy/Desktop/done.txt`.
     * Візуально перевірено скріншотами Nautilus у Dark та Light режимах і меню `[ ⊞ ⌄ ]`, `( » )`, `[ ≡ ▾ ]`; пройдено всі тести та перевірки репозиторію.
+
+
+1005. 2026-11-26 — Клікабельне поле вводу шляху внизу Nautilus, статичний заголовок, редизайн переліку (List View), підтягнуті кнопки навігації/трафіку та глобалізація стилю під Tahoe:
+  - Змінені файли:
+    * [src/mac_nautilus.c](file:///home/vitaliy/macW1Y/src/mac_nautilus.c)
+    * [bin/mac-build-theme](file:///home/vitaliy/macW1Y/bin/mac-build-theme)
+    * [config/macw1y-tokens.json](file:///home/vitaliy/macW1Y/config/macw1y-tokens.json)
+    * [config/gtk-4.0/titlebuttons4.css](file:///home/vitaliy/macW1Y/config/gtk-4.0/titlebuttons4.css)
+    * [gtk-4.0/titlebuttons4.css](file:///home/vitaliy/macW1Y/gtk-4.0/titlebuttons4.css)
+    * [gtk-3.0/titlebuttons3.css](file:///home/vitaliy/macW1Y/gtk-3.0/titlebuttons3.css)
+    * [config/gtk-3.0/titlebuttons3.css](file:///home/vitaliy/macW1Y/config/gtk-3.0/titlebuttons3.css)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+  - Що реалізовано:
+    * Нижня панель місцевості (`bottom_path_stack` / `bottom_path_row`) тепер реагує на натискання по порожній області або поточному елементу (збережено перехід вгору по батьківських крихтах `.mac-bottom-crumb-up`) й відкриває капсульне поле вводу (`GtkEntry` `.mac-bottom-path-entry`) з авто-виділенням повного шляху, підтримкою `~` і миттєвою навігацією по `Enter` (через `NautilusLocationEntry` `location-changed` / `slot.open-location`), а також закриттям по `Escape` або втраті фокуса (`can_focus = FALSE` на кнопках крихт без залишкової рамки фокуса).
+    * Заголовок поточної теки у верхній панелі Nautilus замінено на чисто статичний неінтерактивний `GtkLabel.mac-finder-title-label` без hover-підсвітки, натискань і контекстного меню.
+    * Повністю перероблено вигляд списку (`GtkColumnView` / `.nautilus-list-view`): чистий прозорий рядок заголовків колонок із тонкими вертикальними розділювачами `14px`, плаваючі заокруглені zebra-рядки (`margin: 0 16px`, `border-radius: 7px`) у Dark та Light темах без рамки фокуса, яскравий `@accent_bg_color` для вибраного рядка з чітким білим текстом метаданих (`opacity: 1.0`) і приховані порожні зірочки `button.star:not(.starred)` у стані спокою.
+    * Зменшено та концентрично відцентровано hover-зону всередині капсули `[ < | > ]` (`size_request(29, 28)` + `margin: 3px 2px` всередині `72x36`), піднято кнопки трафік-світла (`margin_y: 10px`, `padding_left: 11px`) і верхню панель (`min-height: 44px`).
+    * У [mac-build-theme](file:///home/vitaliy/macW1Y/bin/mac-build-theme) глобалізовано круглі Liquid Glass кнопки та капсульні `[ < | > ]` групи headerbar, прозорі заголовки `columnview > header > button`, плоский нейтральний виділений лівий сайдбар (`#363638` / `#dcdce0`) й стилізацію GTK3/GTK4 включно з `libhandy` (`leaflet treeview.view` та `button.popup.toggle` без завищеної специфічності `:not(...)`, збережено акцентний сайдбар у `window.mac-settings-window`).
+  - Перевірка та синхронізація:
+    * Перекомпільовано `libmac_nautilus.so` та глобальні GTK3/GTK4 теми, синхронізовано у `/usr/local/lib/`, `~/.local/lib/`, `~/.themes/`, `~/.config/gtk-*`, а також `done.txt` у `/home/vitaliy/Desktop/done.txt`.
+    * Візуально перевірено скріншотами Dark/Light Grid і List View, клік та навігацію через нижнє поле шляху, hover `< | >`, піднятий трафік, `gnome-tweaks` і `gnome-disks`; оновлено тести і пройдено повний аудит репозиторію.

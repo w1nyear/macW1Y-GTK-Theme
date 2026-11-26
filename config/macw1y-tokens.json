@@ -72,11 +72,11 @@
     "traffic_light_radius": 9999
   },
   "dimensions": {
-    "headerbar_height": 38,
+    "headerbar_height": 42,
     "traffic_light_size": 16,
     "traffic_light_spacing": 6,
-    "traffic_light_margin_y": 11,
-    "traffic_light_padding_left": 12,
+    "traffic_light_margin_y": 10,
+    "traffic_light_padding_left": 11,
     "row_min_height": 35,
     "row_padding_x": 14,
     "card_margin_x": 15,

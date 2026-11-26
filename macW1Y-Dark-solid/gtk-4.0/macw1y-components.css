@@ -87,7 +87,7 @@ toolbarview > .top-bar,
 toolbarview > .top-bar.flat,
 toolbarview > .top-bar.raised,
 toolbarview > .top-bar headerbar {
-  min-height: 38px;
+  min-height: 42px;
   padding-top: 0;
   padding-bottom: 0;
   margin-top: 0;
@@ -102,7 +102,7 @@ toolbarview > .top-bar headerbar {
 headerbar > windowhandle > box,
 headerbar windowhandle,
 headerbar centerbox {
-  min-height: 38px;
+  min-height: 42px;
   padding-top: 0;
   padding-bottom: 0;
   margin-top: 0;
@@ -253,7 +253,10 @@ window.nautilus-window .sidebar-pane placessidebar row {
   min-height: 28px;
   padding: 2px 8px;
   margin: 1.5px 15px 1.5px 10px;
-  border-radius: 7px;
+  border-radius: 10px;
+  border: none;
+  box-shadow: none;
+  background-image: none;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.90);
   transition: background-color 150ms ease-out, color 150ms ease-out;
@@ -269,8 +272,11 @@ navigation-split-view list.navigation-sidebar row:hover,
 .nautilus-window .sidebar-pane placessidebar row:hover,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:hover,
 window.nautilus-window .sidebar-pane placessidebar row:hover {
-  border-radius: 7px;
-  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  border: none;
+  box-shadow: none;
+  background-image: none;
+  background-color: rgba(255, 255, 255, 0.06);
 }
 
 navigation-split-view list row:selected,
@@ -295,11 +301,19 @@ placessidebar row:selected:focus,
 placessidebar row:selected:focus-within,
 placessidebar .navigation-sidebar row:selected,
 placessidebar .navigation-sidebar row:selected:backdrop,
+.navigation-sidebar > row:selected:focus-visible:focus-within,
+list.navigation-sidebar > row:selected:focus-visible:focus-within,
+leaflet list.navigation-sidebar row:selected,
+leaflet list.navigation-sidebar > row:selected,
+leaflet list.navigation-sidebar > row:selected:backdrop,
 navigation-split-view list.navigation-sidebar row:selected,
 navigation-split-view list.navigation-sidebar row:selected:backdrop {
-  border-radius: 7px;
-  background-color: rgba(255, 255, 255, 0.10);
-  color: @accent_bg_color;
+  border-radius: 10px;
+  border: none;
+  box-shadow: none;
+  background-image: none;
+  background-color: #363638;
+  color: #ffffff;
   outline: none;
 }
 
@@ -396,9 +410,12 @@ overlay-split-view list row:selected:hover,
 list.navigation-sidebar row:selected:hover,
 placessidebar row:selected:hover,
 placessidebar .navigation-sidebar row:selected:hover {
-  border-radius: 7px;
-  background-color: rgba(255, 255, 255, 0.14);
-  color: @accent_bg_color;
+  border-radius: 10px;
+  border: none;
+  box-shadow: none;
+  background-image: none;
+  background-color: #3e3e41;
+  color: #ffffff;
   outline: none;
 }
 
@@ -406,12 +423,8 @@ navigation-split-view list row:selected label,
 overlay-split-view list row:selected label,
 .navigation-sidebar row:selected label,
 list.navigation-sidebar row:selected label,
-placessidebar row:selected label,
-row:selected label,
-row:selected label:selected,
-row:selected label selection,
-row:selected selection {
-  color: @accent_bg_color;
+placessidebar row:selected label {
+  color: #ffffff;
   font-weight: 500;
   background: transparent;
   background-color: transparent;
@@ -591,13 +604,9 @@ navigation-split-view list row:selected box image,
 .navigation-sidebar row:selected box image,
 navigationview.sidebar list row:selected image,
 .sidebar-pane list row:selected image,
-.navigation-sidebar row:selected .sidebar-orange-icon,
 .navigation-sidebar row:selected .sidebar-neutral-icon,
-placessidebar row:selected .sidebar-orange-icon,
-placessidebar row:selected .sidebar-neutral-icon,
-row:selected image,
-row:selected image:selected {
-  color: @accent_bg_color;
+placessidebar row:selected .sidebar-neutral-icon {
+  color: #ffffff;
   background: transparent;
   background-color: transparent;
   background-image: none;
@@ -1121,15 +1130,8 @@ levelbar trough block.filled {
 /* =========================================================================
  * 6. Buttons, Segmented Controls & Keycaps (macW1Y Flat Push Buttons)
  * ========================================================================= */
-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill),
-button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
-adwactionrow button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
-list.boxed-list row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
-preferencespage row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
-preferencesgroup row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
-dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
-window.dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action),
-.content-pane button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action) {
+button,
+button.text-button {
   min-height: 24px;
   padding: 3px 12px;
   border-radius: 6px;
@@ -1143,15 +1145,8 @@ window.dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):n
   transition: background-color 150ms ease-out, color 150ms ease-out;
 }
 
-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill):hover,
-button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover,
-adwactionrow button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover,
-list.boxed-list row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover,
-preferencespage row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover,
-preferencesgroup row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover,
-dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover,
-window.dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover,
-.content-pane button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover {
+button:hover,
+button.text-button:hover {
   background-color: alpha(currentColor, 0.14);
   border: none;
   border-style: none;
@@ -1159,15 +1154,8 @@ window.dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):n
   color: @window_fg_color;
 }
 
-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill):active,
-button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active,
-adwactionrow button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active,
-list.boxed-list row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active,
-preferencespage row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active,
-preferencesgroup row button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active,
-dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active,
-window.dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active,
-.content-pane button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active {
+button:active,
+button.text-button:active {
   background-color: alpha(currentColor, 0.22);
   border: none;
   border-style: none;
@@ -1175,11 +1163,78 @@ window.dialog button:not(.flat):not(.accent-button):not(.circular):not(.close):n
   color: @window_fg_color;
 }
 
-/* Headerbar control buttons - macW1Y style (excluding windowcontrols and splitbuttons) */
-headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button),
-.titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+button.flat {
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+
+button.flat:hover {
+  background-color: alpha(currentColor, 0.08);
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+
+button.flat:active {
+  background-color: alpha(currentColor, 0.16);
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+
+columnview > header,
+columnview.view > header {
+  min-height: 28px;
+  margin: 0 0 4px 0;
+  padding: 0;
+  background: none;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.085);
+  box-shadow: none;
+  outline: none;
+}
+
+columnview > header > button,
+columnview.view > header > button {
+  min-height: 26px;
+  padding: 2px 10px;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  outline: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.56);
+}
+
+columnview > header > button:not(:last-child),
+columnview.view > header > button:not(:last-child) {
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.14));
+  background-size: 1px 14px;
+  background-position: right center;
+  background-repeat: no-repeat;
+}
+
+columnview > header > button:hover,
+columnview.view > header > button:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Headerbar control buttons - Global macOS Tahoe Liquid Glass style across ALL GTK4/Libadwaita apps */
+headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):not(.mac-finder-title-btn):not(.suggested-action):not(.destructive-action),
+.titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.suggested-action):not(.destructive-action),
 headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
-headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.mac-finder-title-btn),
 headerbar button.circular,
 headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
 toolbar button:not(.text-button),
@@ -1188,26 +1243,29 @@ actionbar button:not(.text-button),
 actionbar button.image-button,
 .inline-toolbar button:not(.text-button),
 .inline-toolbar button.image-button,
-splitbutton.image-button > button,
-menubutton.image-button > button,
-button.image-button:not(.text-button):not(.close):not(.minimize):not(.maximize):not(.titlebutton),
 button.circular {
-  min-width: 28px;
-  min-height: 28px;
+  min-width: 32px;
+  min-height: 32px;
   border-radius: 9999px;
-  padding: 0;
-  margin: 5px 3px;
-  background-color: rgba(255, 255, 255, 0.09);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-  color: rgba(255, 255, 255, 0.90);
-  transition: background-color 150ms ease-out, color 150ms ease-out;
+  padding: 0 6px;
+  margin: 4px 2px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.095) 55%, rgba(255, 255, 255, 0.115) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.07), 0 2px 6px rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.92);
+  transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out;
 }
 
-headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):hover,
-.titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton),
+headerbar button.circular,
+headerbar menubutton:not(.mac-sort-pill) > button:not(.text-button):not(.close):not(.minimize):not(.maximize):not(.titlebutton) {
+  padding: 0;
+}
+
+headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):not(.mac-finder-title-btn):not(.suggested-action):not(.destructive-action):hover,
+.titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.suggested-action):not(.destructive-action):hover,
 headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
-headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
+headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.mac-finder-title-btn):hover,
 headerbar button.circular:hover,
 headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
 toolbar button:not(.text-button):hover,
@@ -1216,38 +1274,82 @@ actionbar button:not(.text-button):hover,
 actionbar button.image-button:hover,
 .inline-toolbar button:not(.text-button):hover,
 .inline-toolbar button.image-button:hover,
-splitbutton.image-button > button:hover,
-menubutton.image-button > button:hover,
-button.image-button:not(.text-button):not(.close):not(.minimize):not(.maximize):not(.titlebutton):hover,
 button.circular:hover {
-  background-color: var(--mac-row-hover, rgba(255, 255, 255, 0.16));
-  border-color: var(--mac-card-border, rgba(255, 255, 255, 0.12));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.19) 0%, rgba(255, 255, 255, 0.15) 100%);
+  border-color: rgba(255, 255, 255, 0.20);
   border-radius: 9999px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-  color: var(--mac-text-primary, @window_fg_color);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 2px 6px rgba(0, 0, 0, 0.28);
+  color: #ffffff;
 }
 
-headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):active,
-.titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):not(.mac-finder-title-btn):not(.suggested-action):not(.destructive-action):active,
+headerbar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.nautilus-path-button):not(.mac-finder-title-btn):not(.suggested-action):not(.destructive-action):checked,
+.titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.suggested-action):not(.destructive-action):active,
+.titlebar button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.suggested-action):not(.destructive-action):checked,
 headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
-headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+headerbar button.image-button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):checked,
+headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.mac-finder-title-btn):active,
+headerbar button.flat:not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.mac-finder-title-btn):checked,
 headerbar button.circular:active,
+headerbar button.circular:checked,
 headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
+headerbar menubutton > button:not(.close):not(.minimize):not(.maximize):not(.titlebutton):checked,
 toolbar button:not(.text-button):active,
-toolbar button.image-button:active,
 actionbar button:not(.text-button):active,
-actionbar button.image-button:active,
 .inline-toolbar button:not(.text-button):active,
-.inline-toolbar button.image-button:active,
-splitbutton.image-button > button:active,
-menubutton.image-button > button:active,
-button.image-button:not(.text-button):not(.close):not(.minimize):not(.maximize):not(.titlebutton):active,
 button.circular:active {
-  background-color: var(--mac-row-active, rgba(255, 255, 255, 0.24));
-  border-color: var(--mac-card-border, rgba(255, 255, 255, 0.16));
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.24);
   border-radius: 9999px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.20);
-  color: var(--mac-text-primary, @window_fg_color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+  color: #ffffff;
+}
+
+/* Global Headerbar Linked Controls (Back/Forward Capsule Pills across ALL GTK4/Libadwaita apps) */
+headerbar box.linked:not(.vertical),
+headerbar .linked:not(.vertical) {
+  min-height: 32px;
+  border-radius: 9999px;
+  padding: 0 2px;
+  margin: 4px 2px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.095) 55%, rgba(255, 255, 255, 0.115) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.07), 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+headerbar box.linked:not(.vertical) > button,
+headerbar .linked:not(.vertical) > button,
+headerbar .linked:not(.vertical) > menubutton > button {
+  min-width: 26px;
+  min-height: 26px;
+  padding: 0 6px;
+  margin: 3px 2px;
+  border-radius: 9999px;
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+headerbar box.linked:not(.vertical) > button:hover,
+headerbar .linked:not(.vertical) > button:hover,
+headerbar .linked:not(.vertical) > menubutton > button:hover {
+  background: rgba(255, 255, 255, 0.13);
+  border: none;
+  box-shadow: none;
+  color: #ffffff;
+}
+
+headerbar box.linked:not(.vertical) > button:active,
+headerbar box.linked:not(.vertical) > button:checked,
+headerbar .linked:not(.vertical) > button:active,
+headerbar .linked:not(.vertical) > button:checked {
+  background: rgba(255, 255, 255, 0.22);
+  border: none;
+  box-shadow: none;
+  color: #ffffff;
 }
 
 headerbar button image,
@@ -1543,11 +1645,11 @@ NautilusHistoryControls button:active {
 .nautilus-window headerbar .end > button,
 .nautilus-window headerbar button.mac-circle-button,
 .nautilus-window headerbar button.mac-search-button {
-  min-width: 26px;
-  min-height: 26px;
+  min-width: 34px;
+  min-height: 34px;
   border-radius: 9999px;
   padding: 0;
-  margin: 2px 4px;
+  margin: 2px 3px;
   background-color: var(--mac-input-bg, rgba(255, 255, 255, 0.09));
   border: 1px solid var(--mac-input-border, rgba(255, 255, 255, 0.08));
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
@@ -1567,9 +1669,9 @@ NautilusHistoryControls button:active {
 .nautilus-window headerbar .end > button image,
 .nautilus-window headerbar button.mac-circle-button image,
 .nautilus-window headerbar button.mac-search-button image {
-  min-width: 13px;
-  min-height: 13px;
-  -gtk-icon-size: 13px;
+  min-width: 17px;
+  min-height: 17px;
+  -gtk-icon-size: 17px;
   margin: 0;
   padding: 0;
 }
@@ -1795,6 +1897,7 @@ splitbutton.suggested-action > menubutton > button {
 }
 
 button.suggested-action:hover,
+button.suggested-action:active,
 menubutton.suggested-action > button:hover,
 splitbutton.suggested-action > button:hover,
 splitbutton.suggested-action > menubutton > button:hover {
@@ -1803,6 +1906,8 @@ splitbutton.suggested-action > menubutton > button:hover {
 }
 
 button.destructive-action,
+button.destructive-action:hover,
+button.destructive-action:active,
 menubutton.destructive-action > button,
 splitbutton.destructive-action > button {
   background-color: #e01b24;
@@ -2242,7 +2347,7 @@ scrollbar > range > trough > slider:hover {
 }
 
 /* =========================================================================
- * 11. Menus, Popovers & Context Menus
+ * 11. Menus, Popovers & Context Menus (Global Unified Capsule Style)
  * ========================================================================= */
 popover > contents,
 .popover-menu > contents,
@@ -2252,20 +2357,23 @@ popover.context-menu > contents,
 menu {
   background-color: var(--mac-card-bg, #1e1e1e);
   border: 1px solid var(--mac-popover-border, rgba(255, 255, 255, 0.10));
-  border-radius: 20px;
+  border-radius: 19px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-  padding: 4px;
+  padding: 7px;
   min-width: 140px;
 }
 
 popover modelbutton,
 popover > contents listview > row,
 .popover-menu modelbutton,
+popover.menu modelbutton,
 menu menuitem {
-  min-height: 28px;
-  padding: 4px 10px;
-  border-radius: 6px;
+  min-height: 25px;
+  padding: 4px 12px;
+  margin: 1.5px 2px;
+  border-radius: 9999px;
   color: rgba(255, 255, 255, 0.90);
+  transition: background-color 140ms cubic-bezier(0.25, 0.1, 0.25, 1.0), color 100ms ease;
 }
 
 popover modelbutton:hover,
@@ -2274,9 +2382,12 @@ popover > contents listview > row:hover,
 popover > contents listview > row:selected,
 .popover-menu modelbutton:hover,
 .popover-menu modelbutton:selected,
+popover.menu modelbutton:hover,
+popover.menu modelbutton:selected,
 menu menuitem:hover {
   background-color: @accent_bg_color;
   color: @accent_fg_color;
+  border-radius: 9999px;
 }
 
 /* =========================================================================
@@ -2289,7 +2400,7 @@ headerbar windowcontrols:not(.empty).start:dir(ltr),
 windowcontrols.start:dir(ltr) {
   border-spacing: 6px;
   padding: 0;
-  padding-left: 12px;
+  padding-left: 11px;
   padding-right: 0;
   margin-top: 0;
   margin-bottom: 0;
@@ -2299,17 +2410,18 @@ windowcontrols.start:dir(ltr) {
 headerbar windowcontrols.end:dir(ltr),
 headerbar windowcontrols:not(.empty).end:dir(ltr),
 windowcontrols.end:dir(ltr) {
-  padding-right: 12px;
+  padding-right: 11px;
   margin-top: 0;
   margin-bottom: 0;
 }
 
 .nautilus-window headerbar windowcontrols,
 .nautilus-window windowcontrols,
-.sidebar-pane headerbar windowcontrols {
+.sidebar-pane headerbar windowcontrols,
+.nautilus-sidebar-headerbar windowcontrols {
   border-spacing: 6px;
   padding: 0;
-  padding-left: 12px;
+  padding-left: 11px;
   margin-top: 0;
   margin-bottom: 0;
   margin-left: 0px;
@@ -2332,8 +2444,8 @@ headerbar button.titlebutton,
   min-width: 16px;
   min-height: 16px;
   padding: 0;
-  margin-top: 11px;
-  margin-bottom: 11px;
+  margin-top: 10px;
+  margin-bottom: 10px;
   margin-left: 0;
   margin-right: 0;
   border-radius: 9999px;
@@ -2548,12 +2660,12 @@ preferencespage > scrolledwindow > undershoot.top,
 navigation-view-page toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane toolbarview.undershoot-top scrolledwindow > undershoot.top,
 .content-pane scrolledwindow undershoot.top {
-  min-height: 38px;
+  min-height: 42px;
   background: linear-gradient(to bottom,
     var(--mac-window-bg, #202022) 0%,
     alpha(var(--mac-window-bg, #202022), 0.90) 12px,
     alpha(var(--mac-window-bg, #202022), 0.40) 24px,
-    transparent 38px);
+    transparent 42px);
   border: none;
   box-shadow: none;
 }

@@ -21,7 +21,7 @@ windowcontrols:hover button {
   background-position: center;
 }
 
-/* Spacing between buttons */
+/* Window Controls Spacing — Crisp Higher & Left Corner Placement (macOS Reference) */
 windowcontrols button > image {
   padding: 0 3px;
 }
@@ -29,23 +29,17 @@ windowcontrols button > image {
 windowcontrols {
   margin-left: 0px;
   margin-right: 10px;
+  padding-left: 11px;
 }
 
-/* Nautilus Window Controls Lift to macW1Y Baseline */
-.nautilus-window headerbar windowcontrols,
-.nautilus-window windowcontrols,
-.nautilus-window .sidebar-pane headerbar windowcontrols,
-.nautilus-window .nautilus-sidebar-headerbar windowcontrols {
-  margin-top: -6px;
-  margin-bottom: 6px;
-}
-
+windowcontrols button,
+headerbar windowcontrols button,
 .nautilus-window headerbar windowcontrols button,
 .nautilus-window windowcontrols button,
 .nautilus-window .sidebar-pane headerbar windowcontrols button,
 .nautilus-window .nautilus-sidebar-headerbar windowcontrols button {
-  margin-top: 1px;
-  margin-bottom: 21px;
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 windowcontrols button.close,

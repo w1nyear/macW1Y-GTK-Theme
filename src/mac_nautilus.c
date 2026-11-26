@@ -1359,12 +1359,13 @@ typedef struct {
     GtkWidget *content_tv;
     GtkWidget *tab_view;
     GtkWidget *bottom_bar;
+    GtkWidget *bottom_path_stack;
     GtkWidget *bottom_path_box;
     GtkWidget *bottom_path_scroll;
+    GtkWidget *bottom_path_entry;
     GtkWidget *bottom_info_name_lbl;
     GtkWidget *bottom_info_meta_lbl;
     GtkWidget *toolbar_switcher;
-    GtkWidget *title_btn;
     GtkWidget *title_label;
     GtkWidget *sort_btn;
     GtkWidget *info_btn;
@@ -1381,7 +1382,8 @@ typedef struct {
     gulong sel_changed_sig;
     guint rebind_idle_id;
     guint path_scroll_idle_id;
-    gboolean show_inline_pathbar;
+    guint path_focus_idle_id;
+    gboolean path_entry_closing;
 } MacNautilusCtx;
 
 static void mac_free_closure(gpointer data, GClosure *closure G_GNUC_UNUSED)
@@ -1392,6 +1394,9 @@ static void mac_free_closure(gpointer data, GClosure *closure G_GNUC_UNUSED)
 static void mac_ctx_clear_slot(MacNautilusCtx *ctx);
 static void mac_ctx_schedule_rebind(MacNautilusCtx *ctx);
 static void mac_update_bottom_bars(MacNautilusCtx *ctx);
+static void mac_open_bottom_path_entry(MacNautilusCtx *ctx);
+static void mac_close_bottom_path_entry(MacNautilusCtx *ctx);
+static void mac_on_bottom_edit_clicked(GtkButton *btn, gpointer user_data);
 
 static void mac_free_ctx(gpointer data)
 {
@@ -1404,6 +1409,10 @@ static void mac_free_ctx(gpointer data)
     if (ctx->path_scroll_idle_id) {
         g_source_remove(ctx->path_scroll_idle_id);
         ctx->path_scroll_idle_id = 0;
+    }
+    if (ctx->path_focus_idle_id) {
+        g_source_remove(ctx->path_focus_idle_id);
+        ctx->path_focus_idle_id = 0;
     }
     if (ctx->info_cancellable) {
         g_cancellable_cancel(ctx->info_cancellable);
@@ -2065,6 +2074,7 @@ static GtkWidget *mac_make_bottom_crumb_widget(const char *label, const char *ic
     if (clickable) {
         gtk_widget_add_css_class(w, "flat");
         gtk_widget_set_focus_on_click(w, FALSE);
+        gtk_widget_set_can_focus(w, FALSE);
     }
     if (is_selected_leaf) {
         gtk_widget_add_css_class(w, "mac-bottom-crumb-selected");
@@ -2114,6 +2124,10 @@ static void mac_update_bottom_bars(MacNautilusCtx *ctx)
     GFile *loc = mac_get_active_slot_location(ctx);
     GFile *sel_loc = (sel_count == 1) ? mac_get_first_selected_location(ctx) : NULL;
     gboolean uk = is_ukrainian_locale();
+
+    if (ctx->bottom_path_stack && GTK_IS_STACK(ctx->bottom_path_stack)) {
+        mac_close_bottom_path_entry(ctx);
+    }
 
     /* Rebuild Path Bar Breadcrumbs */
     GtkWidget *old = NULL;
@@ -2173,15 +2187,17 @@ static void mac_update_bottom_bars(MacNautilusCtx *ctx)
             }
 
             const char *ico = mac_icon_for_folder_file(f, is_home, is_root);
-            gboolean clickable = (up_steps > 0);
-            GtkWidget *crumb = mac_make_bottom_crumb_widget(disp, ico, clickable,
+            GtkWidget *crumb = mac_make_bottom_crumb_widget(disp, ico, TRUE,
                                                             (!sel_loc && up_steps == 0), NULL);
-            if (clickable) {
+            if (up_steps > 0) {
+                gtk_widget_add_css_class(crumb, "mac-bottom-crumb-up");
                 MacPathStepData *sd = g_new0(MacPathStepData, 1);
                 sd->ctx = ctx;
                 sd->up_steps = up_steps;
                 g_signal_connect_data(crumb, "clicked", G_CALLBACK(mac_on_bottom_crumb_clicked),
                                       sd, mac_free_closure, 0);
+            } else {
+                g_signal_connect(crumb, "clicked", G_CALLBACK(mac_on_bottom_edit_clicked), ctx);
             }
             gtk_box_append(GTK_BOX(ctx->bottom_path_box), crumb);
 
@@ -2201,7 +2217,8 @@ static void mac_update_bottom_bars(MacNautilusCtx *ctx)
     if (sel_loc) {
         char *bname = g_file_get_basename(sel_loc);
         GtkWidget *leaf = mac_make_bottom_crumb_widget(bname ? bname : "", "text-x-generic",
-                                                       FALSE, TRUE, &leaf_img);
+                                                       TRUE, TRUE, &leaf_img);
+        g_signal_connect(leaf, "clicked", G_CALLBACK(mac_on_bottom_edit_clicked), ctx);
         gtk_box_append(GTK_BOX(ctx->bottom_path_box), leaf);
         g_free(bname);
     }
@@ -2421,17 +2438,17 @@ static void mac_sync_toolbar_switcher_visibility(MacNautilusCtx *ctx)
     gboolean is_pathbar = (g_strcmp0(page, "pathbar") == 0);
     gboolean expand_input = !is_pathbar;
 
-    if (is_pathbar && !ctx->show_inline_pathbar) {
+    if (is_pathbar) {
         gtk_widget_set_visible(ctx->toolbar_switcher, FALSE);
-        if (ctx->title_btn) gtk_widget_set_visible(ctx->title_btn, TRUE);
+        if (ctx->title_label) gtk_widget_set_visible(ctx->title_label, TRUE);
     } else {
-        if (ctx->title_btn) gtk_widget_set_visible(ctx->title_btn, FALSE);
+        if (ctx->title_label) gtk_widget_set_visible(ctx->title_label, FALSE);
         gtk_widget_set_visible(ctx->toolbar_switcher, TRUE);
     }
 
     GtkWidget *ht = gtk_widget_get_parent(ctx->toolbar_switcher);
     if (ht) {
-        gtk_widget_set_hexpand(ht, expand_input || ctx->show_inline_pathbar);
+        gtk_widget_set_hexpand(ht, expand_input);
         gtk_widget_set_halign(ht, expand_input ? GTK_ALIGN_FILL : GTK_ALIGN_START);
     }
     gtk_widget_set_hexpand(ctx->toolbar_switcher, expand_input);
@@ -2449,61 +2466,212 @@ static void mac_on_toolbar_page_changed(GObject *obj G_GNUC_UNUSED,
                                         gpointer user_data)
 {
     MacNautilusCtx *ctx = (MacNautilusCtx *)user_data;
-    const char *page = gtk_stack_get_visible_child_name(GTK_STACK(ctx->toolbar_switcher));
-    if (g_strcmp0(page, "pathbar") != 0) {
-        ctx->show_inline_pathbar = FALSE;
-    }
     mac_sync_toolbar_switcher_visibility(ctx);
 }
 
-static void mac_on_path_step_clicked(GtkButton *btn G_GNUC_UNUSED, gpointer user_data)
+static void mac_close_bottom_path_entry(MacNautilusCtx *ctx)
 {
-    MacPathStepData *sd = (MacPathStepData *)user_data;
-    if (!sd || !sd->ctx) return;
-    if (sd->popover) gtk_popover_popdown(GTK_POPOVER(sd->popover));
-    mac_navigate_up_steps(sd->ctx, sd->up_steps);
-}
-
-static void mac_on_copy_path_clicked(GtkButton *btn G_GNUC_UNUSED, gpointer user_data)
-{
-    MacPathStepData *sd = (MacPathStepData *)user_data;
-    if (!sd || !sd->ctx) return;
-    if (sd->popover) gtk_popover_popdown(GTK_POPOVER(sd->popover));
-    GFile *loc = mac_get_active_slot_location(sd->ctx);
-    if (loc) {
-        char *path = g_file_get_path(loc);
-        char *text = path ? path : g_file_get_uri(loc);
-        GdkDisplay *disp = gdk_display_get_default();
-        if (disp && text) {
-            GdkClipboard *cb = gdk_display_get_clipboard(disp);
-            if (cb) gdk_clipboard_set_text(cb, text);
+    if (!ctx || !ctx->bottom_path_stack || !GTK_IS_STACK(ctx->bottom_path_stack)) return;
+    if (ctx->path_entry_closing) return;
+    ctx->path_entry_closing = TRUE;
+    if (ctx->path_focus_idle_id) {
+        g_source_remove(ctx->path_focus_idle_id);
+        ctx->path_focus_idle_id = 0;
+    }
+    if (g_strcmp0(gtk_stack_get_visible_child_name(GTK_STACK(ctx->bottom_path_stack)), "breadcrumbs") != 0) {
+        if (ctx->window && GTK_IS_WINDOW(ctx->window) && ctx->bottom_path_entry &&
+            gtk_widget_is_focus(ctx->bottom_path_entry)) {
+            gtk_window_set_focus(GTK_WINDOW(ctx->window), NULL);
         }
-        g_free(text);
-        g_object_unref(loc);
+        gtk_stack_set_visible_child_name(GTK_STACK(ctx->bottom_path_stack), "breadcrumbs");
+    }
+    ctx->path_entry_closing = FALSE;
+}
+
+static void mac_open_bottom_path_entry(MacNautilusCtx *ctx)
+{
+    if (!ctx || !ctx->bottom_path_stack || !ctx->bottom_path_entry) return;
+    if (ctx->path_focus_idle_id) {
+        g_source_remove(ctx->path_focus_idle_id);
+        ctx->path_focus_idle_id = 0;
+    }
+    GFile *loc = mac_get_active_slot_location(ctx);
+    char *path = loc ? g_file_get_path(loc) : NULL;
+    char *text = path ? path : (loc ? g_file_get_uri(loc) : g_strdup(g_get_home_dir()));
+    if (loc) g_object_unref(loc);
+
+    gtk_editable_set_text(GTK_EDITABLE(ctx->bottom_path_entry), text ? text : "");
+    g_free(text);
+
+    gtk_stack_set_visible_child_name(GTK_STACK(ctx->bottom_path_stack), "entry");
+    gtk_widget_grab_focus(ctx->bottom_path_entry);
+    gtk_editable_select_region(GTK_EDITABLE(ctx->bottom_path_entry), 0, -1);
+}
+
+static void mac_on_bottom_edit_clicked(GtkButton *btn G_GNUC_UNUSED, gpointer user_data)
+{
+    mac_open_bottom_path_entry((MacNautilusCtx *)user_data);
+}
+
+static gboolean mac_bottom_click_is_up_crumb(GtkGesture *gesture, double x, double y)
+{
+    GtkWidget *w = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(gesture));
+    if (!w) return FALSE;
+    GtkWidget *picked = gtk_widget_pick(w, x, y, GTK_PICK_DEFAULT);
+    if (!picked) return FALSE;
+    GtkWidget *btn = GTK_IS_BUTTON(picked) ? picked : gtk_widget_get_ancestor(picked, GTK_TYPE_BUTTON);
+    return (btn && gtk_widget_has_css_class(btn, "mac-bottom-crumb-up"));
+}
+
+static void mac_on_bottom_path_bg_pressed(GtkGestureClick *gesture,
+                                          int n_press G_GNUC_UNUSED,
+                                          double x,
+                                          double y,
+                                          gpointer user_data G_GNUC_UNUSED)
+{
+    if (mac_bottom_click_is_up_crumb(GTK_GESTURE(gesture), x, y)) {
+        gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_DENIED);
+    } else {
+        gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
     }
 }
 
-static void mac_on_toggle_breadcrumbs_clicked(GtkButton *btn G_GNUC_UNUSED, gpointer user_data)
+static void mac_on_bottom_path_bg_released(GtkGestureClick *gesture,
+                                           int n_press G_GNUC_UNUSED,
+                                           double x,
+                                           double y,
+                                           gpointer user_data)
 {
-    MacPathStepData *sd = (MacPathStepData *)user_data;
-    if (!sd || !sd->ctx) return;
-    if (sd->popover) gtk_popover_popdown(GTK_POPOVER(sd->popover));
-    sd->ctx->show_inline_pathbar = !sd->ctx->show_inline_pathbar;
-    mac_sync_toolbar_switcher_visibility(sd->ctx);
+    MacNautilusCtx *ctx = (MacNautilusCtx *)user_data;
+    if (mac_bottom_click_is_up_crumb(GTK_GESTURE(gesture), x, y)) {
+        return;
+    }
+    mac_open_bottom_path_entry(ctx);
 }
 
-static void mac_on_edit_location_clicked(GtkButton *btn G_GNUC_UNUSED, gpointer user_data)
+static void mac_on_bottom_path_entry_activate(GtkEntry *entry, gpointer user_data)
 {
-    MacPathStepData *sd = (MacPathStepData *)user_data;
-    if (!sd || !sd->ctx) return;
-    if (sd->popover) gtk_popover_popdown(GTK_POPOVER(sd->popover));
-    GObject *slot = NULL;
-    if (sd->ctx->window && g_object_class_find_property(G_OBJECT_GET_CLASS(sd->ctx->window), "active-slot")) {
-        g_object_get(sd->ctx->window, "active-slot", &slot, NULL);
+    MacNautilusCtx *ctx = (MacNautilusCtx *)user_data;
+    if (!ctx) return;
+    const char *raw = gtk_editable_get_text(GTK_EDITABLE(entry));
+    if (!raw) {
+        mac_close_bottom_path_entry(ctx);
+        return;
     }
-    GtkWidget *target = (slot && GTK_IS_WIDGET(slot)) ? GTK_WIDGET(slot) : sd->ctx->window;
-    gtk_widget_activate_action(target, "slot.open-location", NULL);
-    if (slot) g_object_unref(slot);
+    char *trimmed = g_strdup(raw);
+    g_strstrip(trimmed);
+    if (!*trimmed) {
+        g_free(trimmed);
+        mac_close_bottom_path_entry(ctx);
+        return;
+    }
+
+    char *expanded = NULL;
+    if (g_strcmp0(trimmed, "~") == 0) {
+        expanded = g_strdup(g_get_home_dir());
+    } else if (g_str_has_prefix(trimmed, "~/")) {
+        expanded = g_build_filename(g_get_home_dir(), trimmed + 2, NULL);
+    } else {
+        expanded = g_strdup(trimmed);
+    }
+    g_free(trimmed);
+
+    GFile *dest = NULL;
+    if (expanded[0] == '/' || g_strstr_len(expanded, -1, "://") != NULL) {
+        dest = g_file_parse_name(expanded);
+    } else {
+        GFile *cur = mac_get_active_slot_location(ctx);
+        if (cur) {
+            dest = g_file_resolve_relative_path(cur, expanded);
+            g_object_unref(cur);
+        } else {
+            dest = g_file_parse_name(expanded);
+        }
+    }
+
+    mac_close_bottom_path_entry(ctx);
+
+    if (dest) {
+        GObject *slot = NULL;
+        if (ctx->window && g_object_class_find_property(G_OBJECT_GET_CLASS(ctx->window), "active-slot")) {
+            g_object_get(ctx->window, "active-slot", &slot, NULL);
+        }
+        GtkWidget *target = (slot && GTK_IS_WIDGET(slot)) ? GTK_WIDGET(slot) : ctx->window;
+        gboolean navigated = FALSE;
+
+        GtkWidget *loc_page = (ctx->toolbar_switcher && GTK_IS_STACK(ctx->toolbar_switcher))
+            ? gtk_stack_get_child_by_name(GTK_STACK(ctx->toolbar_switcher), "location")
+            : NULL;
+        GtkWidget *loc_entry = loc_page ? find_descendant_by_type_name(loc_page, "NautilusLocationEntry") : NULL;
+        if (!loc_entry && loc_page && g_strcmp0(G_OBJECT_TYPE_NAME(loc_page), "NautilusLocationEntry") == 0) {
+            loc_entry = loc_page;
+        }
+        if (loc_entry) {
+            guint sig_id = g_signal_lookup("location-changed", G_OBJECT_TYPE(loc_entry));
+            GSignalQuery q = {0};
+            if (sig_id != 0) {
+                g_signal_query(sig_id, &q);
+                if (q.n_params == 1 && g_type_is_a(q.param_types[0], G_TYPE_FILE)) {
+                    g_signal_emit(loc_entry, sig_id, 0, dest);
+                    navigated = TRUE;
+                } else if (q.n_params == 2 && g_type_is_a(q.param_types[0], G_TYPE_FILE)) {
+                    g_signal_emit(loc_entry, sig_id, 0, dest, 0);
+                    navigated = TRUE;
+                }
+            }
+            if (!navigated && GTK_IS_EDITABLE(loc_entry)) {
+                gtk_widget_activate_action(target, "slot.open-location", NULL);
+                char *d_text = g_file_get_path(dest);
+                if (!d_text) d_text = g_file_get_uri(dest);
+                gtk_editable_set_text(GTK_EDITABLE(loc_entry), d_text ? d_text : expanded);
+                g_free(d_text);
+                g_signal_emit_by_name(loc_entry, "activate");
+            }
+        }
+        if (slot) g_object_unref(slot);
+        g_object_unref(dest);
+    }
+    g_free(expanded);
+}
+
+static gboolean mac_on_bottom_path_entry_key(GtkEventControllerKey *ctrl G_GNUC_UNUSED,
+                                             guint keyval,
+                                             guint keycode G_GNUC_UNUSED,
+                                             GdkModifierType state G_GNUC_UNUSED,
+                                             gpointer user_data)
+{
+    if (keyval == GDK_KEY_Escape) {
+        mac_close_bottom_path_entry((MacNautilusCtx *)user_data);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+static gboolean mac_close_bottom_path_entry_idle(gpointer user_data)
+{
+    MacNautilusCtx *ctx = (MacNautilusCtx *)user_data;
+    if (!ctx || !ctx->bottom_path_stack || !GTK_IS_WIDGET(ctx->bottom_path_stack)) return G_SOURCE_REMOVE;
+    ctx->path_focus_idle_id = 0;
+    if (ctx->bottom_path_entry && gtk_widget_in_destruction(ctx->bottom_path_entry)) return G_SOURCE_REMOVE;
+    if (!gtk_widget_is_focus(ctx->bottom_path_entry)) {
+        GtkRoot *root = gtk_widget_get_root(ctx->bottom_path_entry);
+        GtkWidget *focus_w = root && GTK_IS_WINDOW(root) ? gtk_window_get_focus(GTK_WINDOW(root)) : NULL;
+        if (!focus_w || !gtk_widget_is_ancestor(focus_w, ctx->bottom_path_entry)) {
+            mac_close_bottom_path_entry(ctx);
+        }
+    }
+    return G_SOURCE_REMOVE;
+}
+
+static void mac_on_bottom_path_entry_leave(GtkEventControllerFocus *ctrl G_GNUC_UNUSED,
+                                           gpointer user_data)
+{
+    MacNautilusCtx *ctx = (MacNautilusCtx *)user_data;
+    if (!ctx || ctx->path_entry_closing) return;
+    if (ctx->path_focus_idle_id) {
+        g_source_remove(ctx->path_focus_idle_id);
+    }
+    ctx->path_focus_idle_id = g_idle_add(mac_close_bottom_path_entry_idle, ctx);
 }
 
 static GtkWidget *mac_make_popover_menu_row(const char *label_text, const char *icon_name)
@@ -2525,77 +2693,6 @@ static GtkWidget *mac_make_popover_menu_row(const char *label_text, const char *
     gtk_box_append(GTK_BOX(box), lbl);
     gtk_button_set_child(GTK_BUTTON(btn), box);
     return btn;
-}
-
-static void mac_on_title_btn_clicked(GtkButton *btn, gpointer user_data)
-{
-    MacNautilusCtx *ctx = (MacNautilusCtx *)user_data;
-    if (!ctx) return;
-
-    GtkWidget *pop = gtk_popover_new();
-    gtk_popover_set_has_arrow(GTK_POPOVER(pop), FALSE);
-    gtk_popover_set_position(GTK_POPOVER(pop), GTK_POS_BOTTOM);
-    gtk_widget_add_css_class(pop, "mac-finder-menu");
-    gtk_widget_set_parent(pop, GTK_WIDGET(btn));
-
-    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
-
-    GFile *cur = mac_get_active_slot_location(ctx);
-    guint depth = 0;
-    while (cur && depth < 12) {
-        char *bname = g_file_get_basename(cur);
-        const char *disp = (bname && *bname && g_strcmp0(bname, "/") != 0) ? bname : "/";
-        const char *ico = (depth == 0) ? "folder-open-symbolic" : (g_strcmp0(disp, "/") == 0 ? "drive-harddisk-symbolic" : "folder-symbolic");
-        GtkWidget *row = mac_make_popover_menu_row(disp, ico);
-        MacPathStepData *sd = g_new0(MacPathStepData, 1);
-        sd->ctx = ctx;
-        sd->popover = pop;
-        sd->up_steps = depth;
-        g_signal_connect_data(row, "clicked", G_CALLBACK(mac_on_path_step_clicked), sd, mac_free_closure, 0);
-        gtk_box_append(GTK_BOX(vbox), row);
-        g_free(bname);
-
-        GFile *parent = g_file_get_parent(cur);
-        g_object_unref(cur);
-        cur = parent;
-        depth++;
-    }
-    if (cur) g_object_unref(cur);
-
-    GtkWidget *sep = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
-    gtk_box_append(GTK_BOX(vbox), sep);
-
-    gboolean uk = is_ukrainian_locale();
-    GtkWidget *loc_row = mac_make_popover_menu_row(
-        mac_tr("enter_location", uk ? "Ввести адресу… (Ctrl+L)" : "Enter Location… (Ctrl+L)"), "document-edit-symbolic");
-    MacPathStepData *sd_loc = g_new0(MacPathStepData, 1);
-    sd_loc->ctx = ctx;
-    sd_loc->popover = pop;
-    g_signal_connect_data(loc_row, "clicked", G_CALLBACK(mac_on_edit_location_clicked), sd_loc, mac_free_closure, 0);
-    gtk_box_append(GTK_BOX(vbox), loc_row);
-
-    GtkWidget *copy_row = mac_make_popover_menu_row(
-        mac_tr("copy_path", uk ? "Копіювати шлях" : "Copy Path"), "edit-copy-symbolic");
-    MacPathStepData *sd_cp = g_new0(MacPathStepData, 1);
-    sd_cp->ctx = ctx;
-    sd_cp->popover = pop;
-    g_signal_connect_data(copy_row, "clicked", G_CALLBACK(mac_on_copy_path_clicked), sd_cp, mac_free_closure, 0);
-    gtk_box_append(GTK_BOX(vbox), copy_row);
-
-    GtkWidget *bc_row = mac_make_popover_menu_row(
-        ctx->show_inline_pathbar
-            ? mac_tr("hide_pathbar", uk ? "Сховати навігаційний шлях" : "Hide Path Bar")
-            : mac_tr("show_pathbar", uk ? "Показати навігаційний шлях" : "Show Path Bar"),
-        "go-jump-symbolic");
-    MacPathStepData *sd_bc = g_new0(MacPathStepData, 1);
-    sd_bc->ctx = ctx;
-    sd_bc->popover = pop;
-    g_signal_connect_data(bc_row, "clicked", G_CALLBACK(mac_on_toggle_breadcrumbs_clicked), sd_bc, mac_free_closure, 0);
-    gtk_box_append(GTK_BOX(vbox), bc_row);
-
-    gtk_popover_set_child(GTK_POPOVER(pop), vbox);
-    g_signal_connect(pop, "closed", G_CALLBACK(gtk_widget_unparent), NULL);
-    gtk_popover_popup(GTK_POPOVER(pop));
 }
 
 typedef struct {
@@ -3069,16 +3166,16 @@ static void style_history_controls_widget(GtkWidget *hist_widget)
         if (back_btn && GTK_IS_BUTTON(back_btn)) {
             gtk_button_set_icon_name(GTK_BUTTON(back_btn), "mac-finder-back-symbolic");
             gtk_widget_add_css_class(back_btn, "mac-history-button");
-            gtk_widget_set_size_request(back_btn, 35, 36);
+            gtk_widget_set_size_request(back_btn, 29, 28);
             GtkWidget *img = find_descendant_by_type_name(back_btn, "GtkImage");
-            if (img && GTK_IS_IMAGE(img)) gtk_image_set_pixel_size(GTK_IMAGE(img), 17);
+            if (img && GTK_IS_IMAGE(img)) gtk_image_set_pixel_size(GTK_IMAGE(img), 16);
         }
         if (fwd_btn && GTK_IS_BUTTON(fwd_btn)) {
             gtk_button_set_icon_name(GTK_BUTTON(fwd_btn), "mac-finder-forward-symbolic");
             gtk_widget_add_css_class(fwd_btn, "mac-history-button");
-            gtk_widget_set_size_request(fwd_btn, 35, 36);
+            gtk_widget_set_size_request(fwd_btn, 29, 28);
             GtkWidget *img = find_descendant_by_type_name(fwd_btn, "GtkImage");
-            if (img && GTK_IS_IMAGE(img)) gtk_image_set_pixel_size(GTK_IMAGE(img), 17);
+            if (img && GTK_IS_IMAGE(img)) gtk_image_set_pixel_size(GTK_IMAGE(img), 16);
         }
         if (back_btn && fwd_btn && !g_object_get_data(G_OBJECT(box), "mac-divider-added")) {
             g_object_set_data(G_OBJECT(box), "mac-divider-added", GINT_TO_POINTER(1));
@@ -3358,7 +3455,7 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "    border: none;\n"
             "    box-shadow: none;\n"
             "}\n"
-            /* === Headerbar Geometry: Slightly Lower Position + Crisp Margins === */
+            /* === Headerbar Geometry: Raised Top Bar + High/Left Traffic Lights (Photo 7) === */
             "window.nautilus-window headerbar,\n"
             "window.nautilus-window .content-pane headerbar,\n"
             "window.nautilus-window .sidebar-pane headerbar,\n"
@@ -3367,7 +3464,7 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "window.nautilus-window toolbarview > .top-bar,\n"
             "window.nautilus-window .content-pane toolbarview > .top-bar,\n"
             "window.nautilus-window .sidebar-pane toolbarview > .top-bar {\n"
-            "    min-height: 50px;\n"
+            "    min-height: 44px;\n"
             "    padding-top: 0px;\n"
             "    padding-bottom: 0px;\n"
             "    margin-top: 0px;\n"
@@ -3382,22 +3479,22 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "window.nautilus-window toolbarview > .top-bar .collapse-spacing headerbar.nautilus-content-headerbar,\n"
             "window.nautilus-window .content-pane toolbarview > .top-bar .collapse-spacing headerbar.nautilus-content-headerbar,\n"
             "window.nautilus-window .content-pane headerbar {\n"
-            "    min-height: 50px;\n"
-            "    padding: 4px 6px 2px 4px;\n"
+            "    min-height: 44px;\n"
+            "    padding: 2px 6px 2px 4px;\n"
             "}\n"
             "window.nautilus-window .sidebar-pane headerbar,\n"
             "window.nautilus-window headerbar.nautilus-sidebar-headerbar,\n"
             "window.nautilus-window .sidebar-pane toolbarview > .top-bar .collapse-spacing headerbar.nautilus-sidebar-headerbar {\n"
-            "    min-height: 50px;\n"
-            "    padding: 4px 6px 2px 6px;\n"
+            "    min-height: 44px;\n"
+            "    padding: 2px 6px 2px 0px;\n"
             "}\n"
             "window.nautilus-window toolbarview > .top-bar .collapse-spacing headerbar.nautilus-content-headerbar > windowhandle,\n"
             "window.nautilus-window toolbarview > .top-bar .collapse-spacing headerbar.nautilus-content-headerbar > windowhandle > box,\n"
             "window.nautilus-window headerbar.nautilus-content-headerbar > windowhandle,\n"
             "window.nautilus-window headerbar.nautilus-content-headerbar > windowhandle > box,\n"
             "window.nautilus-window headerbar.nautilus-content-headerbar centerbox {\n"
-            "    min-height: 44px;\n"
-            "    padding-top: 1px;\n"
+            "    min-height: 40px;\n"
+            "    padding-top: 0px;\n"
             "    padding-bottom: 0px;\n"
             "    margin-top: 0px;\n"
             "    margin-bottom: 0px;\n"
@@ -3415,56 +3512,42 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "window.nautilus-window .sidebar-pane toolbarview > .top-bar .collapse-spacing headerbar.nautilus-sidebar-headerbar > windowhandle > box,\n"
             "window.nautilus-window headerbar.nautilus-sidebar-headerbar > windowhandle,\n"
             "window.nautilus-window headerbar.nautilus-sidebar-headerbar > windowhandle > box {\n"
-            "    min-height: 44px;\n"
-            "    padding-top: 1px;\n"
+            "    min-height: 40px;\n"
+            "    padding-top: 0px;\n"
             "    padding-bottom: 0px;\n"
             "    margin-top: 0px;\n"
             "    margin-bottom: 0px;\n"
             "}\n"
             "window.nautilus-window tabbar,\n"
             "window.nautilus-window .top-bar tabbar {\n"
-            "    margin-top: 2px;\n"
+            "    margin-top: 0px;\n"
             "}\n"
-            /* === Global Traffic Lights Preserved (16px icons from titlebuttons4.css, nudged slightly lower) === */
+            /* === Global Traffic Lights Raised & Left (Photo 7) === */
             "window.nautilus-window .sidebar-pane headerbar windowcontrols,\n"
             "window.nautilus-window .nautilus-sidebar-headerbar windowcontrols,\n"
             "window.nautilus-window headerbar windowcontrols,\n"
             "window.nautilus-window windowcontrols {\n"
-            "    margin: 3px 0px 0px 4px;\n"
+            "    margin: 0px;\n"
+            "    padding-left: 11px;\n"
             "    padding-top: 0px;\n"
             "    padding-bottom: 0px;\n"
             "}\n"
-            /* === Folder Title Button next to [ < | > ] === */
-            "window.nautilus-window button.mac-finder-title-btn {\n"
-            "    background: transparent;\n"
-            "    background-color: transparent;\n"
-            "    background-image: none;\n"
-            "    border: none;\n"
-            "    box-shadow: none;\n"
-            "    border-radius: 9px;\n"
-            "    min-height: 30px;\n"
-            "    padding: 2px 8px;\n"
-            "    margin: 0 4px 0 2px;\n"
-            "    color: rgba(255, 255, 255, 0.94);\n"
-            "}\n"
-            "window.nautilus-window button.mac-finder-title-btn:hover {\n"
-            "    background-color: rgba(255, 255, 255, 0.08);\n"
-            "}\n"
-            "window.nautilus-window button.mac-finder-title-btn:active {\n"
-            "    background-color: rgba(255, 255, 255, 0.14);\n"
-            "}\n"
-            "window.nautilus-window.mac-theme-light button.mac-finder-title-btn {\n"
-            "    color: rgba(0, 0, 0, 0.88);\n"
-            "}\n"
-            "window.nautilus-window.mac-theme-light button.mac-finder-title-btn:hover {\n"
-            "    background-color: rgba(0, 0, 0, 0.06);\n"
-            "}\n"
+            /* === Static Plain Text Folder Title next to [ < | > ] (No hover / No menu) === */
             "window.nautilus-window label.mac-finder-title-label {\n"
-            "    font-size: 15px;\n"
+            "    font-size: 14.5px;\n"
             "    font-weight: 700;\n"
             "    letter-spacing: -0.15px;\n"
+            "    color: rgba(255, 255, 255, 0.94);\n"
+            "    margin: 0 6px 0 8px;\n"
+            "    padding: 0;\n"
+            "    background: transparent;\n"
+            "    border: none;\n"
+            "    box-shadow: none;\n"
             "}\n"
-            /* === Tahoe Liquid Glass Toolbar Pills & Circles (36px + Larger Icons) === */
+            "window.nautilus-window.mac-theme-light label.mac-finder-title-label {\n"
+            "    color: rgba(0, 0, 0, 0.88);\n"
+            "}\n"
+            /* === Tahoe Liquid Glass Toolbar Pills & Circles (36px + Inset Back/Fwd Hover) === */
             "window.nautilus-window headerbar button,\n"
             "window.nautilus-window headerbar button:focus,\n"
             "window.nautilus-window headerbar button:focus-visible,\n"
@@ -3506,8 +3589,8 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "}\n"
             "window.nautilus-window headerbar separator.mac-history-divider {\n"
             "    min-width: 1px;\n"
-            "    min-height: 18px;\n"
-            "    margin: 9px 0;\n"
+            "    min-height: 16px;\n"
+            "    margin: 10px 0;\n"
             "    padding: 0;\n"
             "    background-color: rgba(255, 255, 255, 0.12);\n"
             "    border: none;\n"
@@ -3517,7 +3600,20 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "}\n"
             "window.nautilus-window headerbar button.mac-history-button,\n"
             "window.nautilus-window headerbar NautilusHistoryControls button,\n"
-            "window.nautilus-window headerbar #history_controls button,\n"
+            "window.nautilus-window headerbar #history_controls button {\n"
+            "    min-width: 28px;\n"
+            "    min-height: 28px;\n"
+            "    padding: 0;\n"
+            "    margin: 3px 2px;\n"
+            "    border-radius: 9999px;\n"
+            "    background: transparent;\n"
+            "    background-color: transparent;\n"
+            "    background-image: none;\n"
+            "    border: none;\n"
+            "    box-shadow: none;\n"
+            "    color: rgba(255, 255, 255, 0.92);\n"
+            "    transition: background-color 120ms ease, color 120ms ease;\n"
+            "}\n"
             "window.nautilus-window headerbar button.mac-pill-inner-btn {\n"
             "    min-width: 34px;\n"
             "    min-height: 36px;\n"
@@ -3533,9 +3629,9 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "}\n"
             "window.nautilus-window headerbar button.mac-history-button image,\n"
             "window.nautilus-window headerbar NautilusHistoryControls button image {\n"
-            "    -gtk-icon-size: 17px;\n"
-            "    min-width: 17px;\n"
-            "    min-height: 17px;\n"
+            "    -gtk-icon-size: 16px;\n"
+            "    min-width: 16px;\n"
+            "    min-height: 16px;\n"
             "}\n"
             "window.nautilus-window.mac-theme-light headerbar button.mac-history-button,\n"
             "window.nautilus-window.mac-theme-light headerbar NautilusHistoryControls button,\n"
@@ -3545,7 +3641,7 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "window.nautilus-window headerbar button.mac-history-button:hover,\n"
             "window.nautilus-window headerbar NautilusHistoryControls button:hover,\n"
             "window.nautilus-window headerbar button.mac-pill-inner-btn:hover {\n"
-            "    background-color: rgba(255, 255, 255, 0.12);\n"
+            "    background-color: rgba(255, 255, 255, 0.13);\n"
             "    color: #ffffff;\n"
             "}\n"
             "window.nautilus-window headerbar button.mac-history-button:active,\n"
@@ -4158,13 +4254,206 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "window.nautilus-window.mac-theme-light image.mac-eject-icon {\n"
             "    color: rgba(0, 0, 0, 0.45);\n"
             "}\n"
-            /* === Grid View & Crisp Rounded Thumbnails + Extended Scroll Space Behind Bottom Bars === */
+            /* === Grid View & Finder List View Overhaul (Photo 4 1:1 Zebra Pills + Vertical Dividers) === */
             "window.nautilus-window .nautilus-grid-view gridview {\n"
             "    padding: 10px 24px 72px 24px;\n"
             "    border-spacing: 10px;\n"
             "}\n"
+            "window.nautilus-window.mac-theme-light .nautilus-grid-view,\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view,\n"
+            "window.nautilus-window.mac-theme-light .nautilus-grid-view label,\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view row:not(:selected) label {\n"
+            "    color: rgba(0, 0, 0, 0.88);\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view columnview {\n"
+            "    padding-left: 16px;\n"
+            "    padding-right: 16px;\n"
+            "    background: transparent;\n"
+            "    outline: none;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view columnview > header,\n"
+            "window.nautilus-window .nautilus-list-view columnview > header.activatable,\n"
+            "window.nautilus-window .nautilus-list-view columnview.view > header,\n"
+            "window.nautilus-window .nautilus-list-view columnview.view > header.activatable {\n"
+            "    min-height: 28px;\n"
+            "    margin: 0 0 4px 0;\n"
+            "    padding: 0;\n"
+            "    background: none;\n"
+            "    background-color: transparent;\n"
+            "    background-image: none;\n"
+            "    border: none;\n"
+            "    border-radius: 0px;\n"
+            "    border-bottom: 1px solid rgba(255, 255, 255, 0.085);\n"
+            "    box-shadow: none;\n"
+            "    outline: none;\n"
+            "}\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view columnview > header {\n"
+            "    border-bottom-color: rgba(0, 0, 0, 0.08);\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view columnview > header > button,\n"
+            "window.nautilus-window .nautilus-list-view columnview.view > header > button,\n"
+            "window.nautilus-window .nautilus-list-view columnview > header > button:last-child {\n"
+            "    min-height: 26px;\n"
+            "    padding: 2px 10px;\n"
+            "    margin: 0;\n"
+            "    border: none;\n"
+            "    border-style: none;\n"
+            "    border-image: none;\n"
+            "    border-radius: 0;\n"
+            "    background: none;\n"
+            "    background-color: transparent;\n"
+            "    background-image: none;\n"
+            "    box-shadow: none;\n"
+            "    outline: none;\n"
+            "    font-size: 12px;\n"
+            "    font-weight: 500;\n"
+            "    color: rgba(255, 255, 255, 0.56);\n"
+            "}\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view columnview > header > button,\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view columnview.view > header > button,\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view columnview > header > button:last-child {\n"
+            "    color: rgba(0, 0, 0, 0.52);\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view columnview > header > button:first-child,\n"
+            "window.nautilus-window .nautilus-list-view columnview.view > header > button:first-child {\n"
+            "    padding-left: 12px;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view columnview > header > button:not(:last-child),\n"
+            "window.nautilus-window .nautilus-list-view columnview.view > header > button:not(:last-child) {\n"
+            "    background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.14));\n"
+            "    background-size: 1px 14px;\n"
+            "    background-position: right center;\n"
+            "    background-repeat: no-repeat;\n"
+            "}\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view columnview > header > button:not(:last-child),\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view columnview.view > header > button:not(:last-child) {\n"
+            "    background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.12));\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view columnview > header > button:hover,\n"
+            "window.nautilus-window .nautilus-list-view columnview.view > header > button:hover {\n"
+            "    background-color: rgba(255, 255, 255, 0.04);\n"
+            "    color: rgba(255, 255, 255, 0.85);\n"
+            "}\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view columnview > header > button:hover,\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view columnview.view > header > button:hover {\n"
+            "    background-color: rgba(0, 0, 0, 0.035);\n"
+            "    color: rgba(0, 0, 0, 0.85);\n"
+            "}\n"
             "window.nautilus-window .nautilus-list-view columnview > listview {\n"
+            "    margin-left: -16px;\n"
+            "    margin-right: -16px;\n"
+            "    padding-top: 4px;\n"
             "    padding-bottom: 68px;\n"
+            "    border-spacing: 0px;\n"
+            "    background: transparent;\n"
+            "    outline: none;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row,\n"
+            "window.nautilus-window .nautilus-list-view columnview.view > listview > row,\n"
+            "window.nautilus-window .nautilus-list-view listview.view > row.activatable,\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row:focus,\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row:focus-visible,\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row:focus:focus-visible,\n"
+            "window.nautilus-window .nautilus-list-view columnview.view > listview > row:focus-visible,\n"
+            "window.nautilus-window .nautilus-list-view columnview.view > listview > row:focus:focus-visible,\n"
+            "window.nautilus-window .nautilus-list-view listview.view > row.activatable:focus,\n"
+            "window.nautilus-window .nautilus-list-view listview.view > row.activatable:focus-visible,\n"
+            "window.nautilus-window .nautilus-list-view listview.view > row.activatable:focus:focus-visible,\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row > cell,\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row > cell:focus,\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row > cell:focus-visible,\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row > cell:focus:focus-visible {\n"
+            "    outline: 0px none transparent;\n"
+            "    outline-style: none;\n"
+            "    outline-width: 0px;\n"
+            "    outline-color: transparent;\n"
+            "    border: none;\n"
+            "    box-shadow: none;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row,\n"
+            "window.nautilus-window .nautilus-list-view listview.view > row.activatable {\n"
+            "    margin: 0 16px;\n"
+            "    padding: 0 4px;\n"
+            "    min-height: 28px;\n"
+            "    border-radius: 7px;\n"
+            "    border: none;\n"
+            "    background-image: none;\n"
+            "    background-color: transparent;\n"
+            "    transition: background-color 110ms ease;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row:nth-child(odd):not(:selected),\n"
+            "window.nautilus-window .nautilus-list-view listview.view > row.activatable:nth-child(odd):not(:disabled):not(:selected) {\n"
+            "    background-image: none;\n"
+            "    background-color: rgba(255, 255, 255, 0.048);\n"
+            "}\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view columnview > listview > row:nth-child(odd):not(:selected),\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view listview.view > row.activatable:nth-child(odd):not(:disabled):not(:selected) {\n"
+            "    background-image: none;\n"
+            "    background-color: rgba(0, 0, 0, 0.038);\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row:nth-child(even):not(:selected),\n"
+            "window.nautilus-window .nautilus-list-view listview.view > row.activatable:nth-child(even):not(:selected) {\n"
+            "    background-image: none;\n"
+            "    background-color: transparent;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row:hover:not(:selected),\n"
+            "window.nautilus-window .nautilus-list-view listview.view > row.activatable:hover:not(:selected) {\n"
+            "    background-color: rgba(255, 255, 255, 0.088);\n"
+            "}\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view columnview > listview > row:hover:not(:selected),\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view listview.view > row.activatable:hover:not(:selected) {\n"
+            "    background-color: rgba(0, 0, 0, 0.065);\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row:selected,\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row:selected:hover,\n"
+            "window.nautilus-window .nautilus-list-view listview.view > row.activatable:selected,\n"
+            "window.nautilus-window .nautilus-list-view listview.view > row.activatable:selected:hover {\n"
+            "    background-color: @accent_bg_color;\n"
+            "    color: @accent_fg_color;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row:selected label,\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row:selected cell label,\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row:selected cell label.dim-label,\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view columnview > listview > row:selected label,\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view columnview > listview > row:selected cell label,\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view columnview > listview > row:selected cell label.dim-label {\n"
+            "    color: #ffffff;\n"
+            "    opacity: 1.0;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row:selected button.star,\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view columnview > listview > row:selected button.star {\n"
+            "    color: #ffffff;\n"
+            "    opacity: 0.85;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view .nautilus-view-cell {\n"
+            "    padding: 3px 8px;\n"
+            "    min-height: 24px;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row > cell:not(:first-child) label {\n"
+            "    color: rgba(255, 255, 255, 0.56);\n"
+            "}\n"
+            "window.nautilus-window.mac-theme-light .nautilus-list-view columnview > listview > row > cell:not(:first-child) label {\n"
+            "    color: rgba(0, 0, 0, 0.52);\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row:not(:hover):not(:selected) button.star:not(.starred),\n"
+            "window.nautilus-window .nautilus-list-view listview.view > row:not(:hover):not(:selected) button.star:not(.starred) {\n"
+            "    opacity: 0;\n"
+            "}\n"
+            "window.nautilus-window .nautilus-list-view button.star,\n"
+            "window.nautilus-window .nautilus-list-view button.star:hover,\n"
+            "window.nautilus-window .nautilus-list-view button.star:active,\n"
+            "window.nautilus-window .nautilus-list-view columnview > listview > row button.star {\n"
+            "    min-width: 22px;\n"
+            "    min-height: 22px;\n"
+            "    padding: 0;\n"
+            "    margin: 0;\n"
+            "    border: none;\n"
+            "    border-radius: 9999px;\n"
+            "    box-shadow: none;\n"
+            "    background: transparent;\n"
+            "    background-color: transparent;\n"
+            "    background-image: none;\n"
+            "    transition: opacity 120ms ease;\n"
             "}\n"
             "window.nautilus-window .content-pane scrolledwindow undershoot.bottom,\n"
             "window.nautilus-window .content-pane scrolledwindow > undershoot.bottom {\n"
@@ -4193,10 +4482,31 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             "window.nautilus-window.mac-theme-light box.mac-bottom-blur-bar {\n"
             "    border-top: 1px solid rgba(0, 0, 0, 0.10);\n"
             "}\n"
-            "window.nautilus-window box.mac-bottom-path-row {\n"
+            "window.nautilus-window box.mac-bottom-path-row,\n"
+            "window.nautilus-window box.mac-bottom-entry-row {\n"
             "    min-height: 27px;\n"
             "    padding: 1px 10px;\n"
             "    margin: 0;\n"
+            "}\n"
+            "window.nautilus-window entry.mac-bottom-path-entry {\n"
+            "    min-height: 23px;\n"
+            "    padding: 0 10px;\n"
+            "    margin: 1px 2px;\n"
+            "    border-radius: 9999px;\n"
+            "    background-color: rgba(255, 255, 255, 0.10);\n"
+            "    border: 1px solid rgba(255, 255, 255, 0.18);\n"
+            "    box-shadow: none;\n"
+            "    font-size: 12px;\n"
+            "    font-weight: 500;\n"
+            "    color: rgba(255, 255, 255, 0.94);\n"
+            "}\n"
+            "window.nautilus-window.mac-theme-light entry.mac-bottom-path-entry {\n"
+            "    background-color: rgba(255, 255, 255, 0.82);\n"
+            "    border: 1px solid rgba(0, 0, 0, 0.15);\n"
+            "    color: rgba(0, 0, 0, 0.90);\n"
+            "}\n"
+            "window.nautilus-window entry.mac-bottom-path-entry:focus-within {\n"
+            "    border-color: @accent_bg_color;\n"
             "}\n"
             "window.nautilus-window scrolledwindow.mac-bottom-path-scroll,\n"
             "window.nautilus-window scrolledwindow.mac-bottom-path-scroll > viewport {\n"
@@ -4483,20 +4793,17 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
             ctx->toolbar_switcher = toolbar_switcher;
         }
 
-        /* Left-aligned clickable current folder title right beside [ < | > ] */
-        GtkWidget *title_btn = gtk_button_new();
-        gtk_widget_add_css_class(title_btn, "mac-finder-title-btn");
-        gtk_widget_set_valign(title_btn, GTK_ALIGN_CENTER);
-        gtk_widget_set_focus_on_click(title_btn, FALSE);
+        /* Static non-interactive current folder title right beside [ < | > ] */
         GtkWidget *title_lbl = gtk_label_new("");
         gtk_widget_add_css_class(title_lbl, "mac-finder-title-label");
+        gtk_widget_set_valign(title_lbl, GTK_ALIGN_CENTER);
+        gtk_widget_set_margin_start(title_lbl, 8);
+        gtk_widget_set_margin_end(title_lbl, 6);
+        gtk_widget_set_can_target(title_lbl, FALSE);
         gtk_label_set_ellipsize(GTK_LABEL(title_lbl), PANGO_ELLIPSIZE_END);
-        gtk_label_set_max_width_chars(GTK_LABEL(title_lbl), 24);
-        gtk_button_set_child(GTK_BUTTON(title_btn), title_lbl);
+        gtk_label_set_max_width_chars(GTK_LABEL(title_lbl), 28);
         g_object_bind_property(window, "title", title_lbl, "label", G_BINDING_SYNC_CREATE);
-        g_signal_connect(title_btn, "clicked", G_CALLBACK(mac_on_title_btn_clicked), ctx);
-        adw_header_bar_pack_start(content_hb, title_btn);
-        ctx->title_btn = title_btn;
+        adw_header_bar_pack_start(content_hb, title_lbl);
         ctx->title_label = title_lbl;
 
         if (ctx->toolbar_switcher) {
@@ -4638,8 +4945,18 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
                 gtk_widget_set_valign(bottom_bar, GTK_ALIGN_END);
                 gtk_widget_set_halign(bottom_bar, GTK_ALIGN_FILL);
 
+                GtkWidget *path_stack = gtk_stack_new();
+                gtk_stack_set_transition_type(GTK_STACK(path_stack), GTK_STACK_TRANSITION_TYPE_NONE);
+
                 GtkWidget *path_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
                 gtk_widget_add_css_class(path_row, "mac-bottom-path-row");
+                GtkGesture *path_click = gtk_gesture_click_new();
+                gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(path_click), GDK_BUTTON_PRIMARY);
+                gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(path_click), GTK_PHASE_CAPTURE);
+                g_signal_connect(path_click, "pressed", G_CALLBACK(mac_on_bottom_path_bg_pressed), ctx);
+                g_signal_connect(path_click, "released", G_CALLBACK(mac_on_bottom_path_bg_released), ctx);
+                gtk_widget_add_controller(path_row, GTK_EVENT_CONTROLLER(path_click));
+
                 GtkWidget *path_scroll = gtk_scrolled_window_new();
                 gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(path_scroll),
                                                GTK_POLICY_EXTERNAL, GTK_POLICY_NEVER);
@@ -4650,7 +4967,27 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
                 gtk_widget_set_valign(path_box, GTK_ALIGN_CENTER);
                 gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(path_scroll), path_box);
                 gtk_box_append(GTK_BOX(path_row), path_scroll);
-                gtk_box_append(GTK_BOX(bottom_bar), path_row);
+                gtk_stack_add_named(GTK_STACK(path_stack), path_row, "breadcrumbs");
+
+                GtkWidget *entry_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+                gtk_widget_add_css_class(entry_row, "mac-bottom-entry-row");
+                GtkWidget *path_entry = gtk_entry_new();
+                gtk_widget_add_css_class(path_entry, "mac-bottom-path-entry");
+                gtk_widget_set_hexpand(path_entry, TRUE);
+                gtk_widget_set_valign(path_entry, GTK_ALIGN_CENTER);
+                gtk_entry_set_placeholder_text(GTK_ENTRY(path_entry), "/home/...");
+                g_signal_connect(path_entry, "activate", G_CALLBACK(mac_on_bottom_path_entry_activate), ctx);
+                GtkEventController *focus_ctrl = gtk_event_controller_focus_new();
+                g_signal_connect(focus_ctrl, "leave", G_CALLBACK(mac_on_bottom_path_entry_leave), ctx);
+                gtk_widget_add_controller(path_entry, focus_ctrl);
+                GtkEventController *key_ctrl = gtk_event_controller_key_new();
+                g_signal_connect(key_ctrl, "key-pressed", G_CALLBACK(mac_on_bottom_path_entry_key), ctx);
+                gtk_widget_add_controller(path_entry, key_ctrl);
+                gtk_box_append(GTK_BOX(entry_row), path_entry);
+                gtk_stack_add_named(GTK_STACK(path_stack), entry_row, "entry");
+
+                gtk_stack_set_visible_child_name(GTK_STACK(path_stack), "breadcrumbs");
+                gtk_box_append(GTK_BOX(bottom_bar), path_stack);
 
                 GtkWidget *mid_sep = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
                 gtk_widget_add_css_class(mid_sep, "mac-bottom-divider");
@@ -4681,8 +5018,10 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
                 ctx->content_tv = content_tv;
                 ctx->tab_view = tab_view;
                 ctx->bottom_bar = bottom_bar;
+                ctx->bottom_path_stack = path_stack;
                 ctx->bottom_path_box = path_box;
                 ctx->bottom_path_scroll = path_scroll;
+                ctx->bottom_path_entry = path_entry;
                 ctx->bottom_info_name_lbl = info_name;
                 ctx->bottom_info_meta_lbl = info_meta;
             }

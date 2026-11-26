@@ -77,7 +77,8 @@ scale slider {
 }
 
 /* GTK 3 Base Push Buttons (macW1Y Flat Push Buttons) */
-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill) {
+button,
+button.text-button {
   min-height: 24px;
   padding: 3px 12px;
   border-radius: 6px;
@@ -91,23 +92,8 @@ button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):
   transition: background-color 150ms ease-out, color 150ms ease-out;
 }
 
-button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action) {
-  min-height: 24px;
-  min-width: 60px;
-  padding: 3px 12px;
-  border-radius: 6px;
-  background-color: alpha(currentColor, 0.08);
-  border: none;
-  border-style: none;
-  box-shadow: none;
-  color: @theme_fg_color;
-  font-size: 13px;
-  font-weight: 500;
-  transition: background-color 150ms ease-out, color 150ms ease-out;
-}
-
-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill):hover,
-button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):hover {
+button:hover,
+button.text-button:hover {
   background-color: alpha(currentColor, 0.14);
   border: none;
   border-style: none;
@@ -115,8 +101,8 @@ button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not
   color: @theme_fg_color;
 }
 
-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):not(.pill):active,
-button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not(.minimize):not(.maximize):not(.titlebutton):not(.image-button):not(.suggested-action):not(.destructive-action):active {
+button:active,
+button.text-button:active {
   background-color: alpha(currentColor, 0.22);
   border: none;
   border-style: none;
@@ -124,33 +110,57 @@ button.text-button:not(.flat):not(.accent-button):not(.circular):not(.close):not
   color: @theme_fg_color;
 }
 
-/* macW1Y Universal 1:1 Circular Icon & Action Buttons (Etap 655) */
-headerbar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button),
-.titlebar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button),
-headerbar button.image-button,
-headerbar menubutton,
-headerbar menubutton > button,
-headerbar button.popup,
-headerbar button.toggle,
+button.flat {
+  background-color: transparent;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+
+button.flat:hover {
+  background-color: alpha(currentColor, 0.08);
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+
+button.flat:active {
+  background-color: alpha(currentColor, 0.16);
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* macW1Y Universal 1:1 Headerbar Liquid Glass Circles & Linked Back/Forward Capsules (GTK 3) */
+headerbar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):not(.suggested-action):not(.destructive-action),
+window headerbar.titlebar > button.flat.image-button.toggle,
+window headerbar.titlebar > button.flat.image-button.toggle:dir(ltr),
+headerbar.titlebar > button.flat.image-button.toggle,
+headerbar.titlebar > button.flat.image-button.toggle:dir(ltr),
+window headerbar button.toggle:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button),
+window headerbar button.popup:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button),
+.titlebar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):not(.suggested-action):not(.destructive-action),
+headerbar button.image-button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button),
+headerbar menubutton > button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button),
+headerbar button.popup:not(.text-button),
+headerbar button.toggle:not(.text-button),
 headerbar button.circular,
-.titlebar button.image-button,
-.titlebar menubutton,
-.titlebar menubutton > button,
-.titlebar button.popup,
-.titlebar button.toggle,
+.titlebar button.image-button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button),
+.titlebar menubutton > button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button),
+.titlebar button.popup:not(.text-button),
+.titlebar button.toggle:not(.text-button),
 .titlebar button.circular,
 toolbar button:not(.text-button),
-toolbar toolbutton > button,
-toolbar button.image-button,
-toolbar.inline-toolbar toolbutton > button,
-toolbar.inline-toolbar button.image-button,
-.inline-toolbar button,
-.inline-toolbar button.image-button,
+toolbar toolbutton > button:not(.text-button),
+toolbar button.image-button:not(.text-button),
+toolbar.inline-toolbar toolbutton > button:not(.text-button),
+toolbar.inline-toolbar button.image-button:not(.text-button),
 .inline-toolbar button:not(.text-button),
+.inline-toolbar button.image-button:not(.text-button),
 actionbar button:not(.text-button),
-actionbar button.image-button,
+actionbar button.image-button:not(.text-button),
 .actionbar button:not(.text-button),
-.actionbar button.image-button,
+.actionbar button.image-button:not(.text-button),
 #devtab-grid-toolbar button,
 #devtab-grid-toolbar button:first-child,
 #devtab-grid-toolbar button:last-child,
@@ -159,18 +169,159 @@ window box.inline-toolbar#devtab-grid-toolbar button,
 window box.inline-toolbar#devtab-grid-toolbar button:first-child,
 window box.inline-toolbar#devtab-grid-toolbar button:last-child,
 window box.inline-toolbar#devtab-grid-toolbar button.destructive-action,
-button.image-button:not(.text-button),
 button.circular {
-  min-width: 28px;
-  min-height: 28px;
+  min-width: 32px;
+  min-height: 32px;
   padding: 0;
-  margin: 5px 3px;
+  margin: 4px 2px;
   border-radius: 9999px;
-  background-color: rgba(255, 255, 255, 0.09);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-  color: rgba(255, 255, 255, 0.90);
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.095));
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 2px 6px rgba(0, 0, 0, 0.24);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* GTK3 Linked Headerbar Capsule Groups (e.g. Back/Forward history controls) */
+headerbar .linked:not(.vertical),
+.titlebar .linked:not(.vertical) {
+  min-height: 32px;
+  padding: 0 2px;
+  margin: 4px 2px;
+  border-radius: 9999px;
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.095));
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 2px 6px rgba(0, 0, 0, 0.24);
+}
+
+headerbar .linked:not(.vertical) > button,
+.titlebar .linked:not(.vertical) > button {
+  min-width: 26px;
+  min-height: 26px;
+  margin: 3px 2px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  background: transparent;
+  background-color: transparent;
   background-image: none;
+  border: none;
+  box-shadow: none;
+}
+
+headerbar .linked:not(.vertical) > button:hover,
+.titlebar .linked:not(.vertical) > button:hover {
+  background-color: rgba(255, 255, 255, 0.13);
+  background-image: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* GTK3 Global Left Sidebar & Context Menus matching Nautilus Tahoe style */
+.sidebar,
+placessidebar,
+placessidebar list,
+stacksidebar list,
+treeview.view.sidebar,
+leaflet scrolledwindow,
+leaflet treeview.view,
+paned.horizontal > box:first-child > scrolledwindow > treeview.view,
+paned.horizontal > scrolledwindow:first-child > treeview.view {
+  background-color: #262628;
+  background-image: none;
+  border-right: 1px solid rgba(0, 0, 0, 0.34);
+}
+
+leaflet treeview.view:not(:selected):not(:hover),
+paned.horizontal > box:first-child > scrolledwindow > treeview.view:not(:selected):not(:hover),
+paned.horizontal > scrolledwindow:first-child > treeview.view:not(:selected):not(:hover) {
+  background-color: #262628;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+leaflet treeview.view:hover:not(:selected),
+paned.horizontal > box:first-child > scrolledwindow > treeview.view:hover:not(:selected) {
+  background-color: #2f2f31;
+}
+
+placessidebar row,
+stacksidebar row,
+.sidebar row {
+  min-height: 28px;
+  padding: 1px 10px;
+  margin: 1px 10px;
+  border-radius: 10px;
+  border: none;
+  box-shadow: none;
+  background-image: none;
+  background-color: transparent;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+placessidebar row:hover,
+stacksidebar row:hover,
+.sidebar row:hover {
+  border-radius: 10px;
+  background-color: #2f2f31;
+  border: none;
+  box-shadow: none;
+}
+
+placessidebar row:selected,
+placessidebar row:selected:backdrop,
+stacksidebar row:selected,
+stacksidebar row:selected:backdrop,
+.sidebar row:selected,
+.sidebar row:selected:backdrop,
+.sidebar treeview.view:selected,
+.sidebar treeview.view:selected:focus,
+treeview.view.sidebar:selected,
+treeview.view.sidebar:selected:focus,
+leaflet treeview.view:selected,
+leaflet treeview.view:selected:focus,
+leaflet treeview.view:selected:backdrop,
+leaflet treeview.view:selected:hover,
+leaflet treeview.view:selected:focus:hover,
+paned.horizontal > box:first-child > scrolledwindow > treeview.view:selected,
+paned.horizontal > box:first-child > scrolledwindow > treeview.view:selected:focus,
+paned.horizontal > box:first-child > scrolledwindow > treeview.view:selected:hover,
+paned.horizontal > scrolledwindow:first-child > treeview.view:selected,
+paned.horizontal > scrolledwindow:first-child > treeview.view:selected:hover {
+  border-radius: 10px;
+  background-color: #363638;
+  background-image: none;
+  border: none;
+  box-shadow: none;
+  outline: none;
+  color: #ffffff;
+}
+
+placessidebar row:selected label,
+stacksidebar row:selected label,
+.sidebar row:selected label {
+  color: #ffffff;
+}
+
+popover,
+popover.background,
+menu {
+  border-radius: 19px;
+  padding: 7px;
+}
+
+popover modelbutton,
+menu menuitem {
+  min-height: 25px;
+  padding: 4px 12px;
+  margin: 1.5px 2px;
+  border-radius: 9999px;
+}
+
+popover modelbutton:hover,
+popover modelbutton:selected,
+menu menuitem:hover {
+  border-radius: 9999px;
+  background-color: @theme_selected_bg_color;
+  color: @theme_selected_fg_color;
 }
 
 /* GTK3 Sidebar headerbar: clean window controls, no redundant app title */
@@ -257,31 +408,34 @@ window dialog headerbar .title {
 }
 
 headerbar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):hover,
+window headerbar.titlebar > button.flat.image-button.toggle:hover,
+window headerbar.titlebar > button.flat.image-button.toggle:dir(ltr):hover,
+headerbar.titlebar > button.flat.image-button.toggle:hover,
+headerbar.titlebar > button.flat.image-button.toggle:dir(ltr):hover,
+window headerbar button.toggle:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):hover,
+window headerbar button.popup:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):hover,
 .titlebar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):hover,
-headerbar button.image-button:hover,
-headerbar menubutton:hover,
-headerbar menubutton > button:hover,
-headerbar button.popup:hover,
-headerbar button.toggle:hover,
+headerbar button.image-button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):hover,
+headerbar menubutton > button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):hover,
+headerbar button.popup:not(.text-button):hover,
+headerbar button.toggle:not(.text-button):hover,
 headerbar button.circular:hover,
-.titlebar button.image-button:hover,
-.titlebar menubutton:hover,
-.titlebar menubutton > button:hover,
-.titlebar button.popup:hover,
-.titlebar button.toggle:hover,
+.titlebar button.image-button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):hover,
+.titlebar menubutton > button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):hover,
+.titlebar button.popup:not(.text-button):hover,
+.titlebar button.toggle:not(.text-button):hover,
 .titlebar button.circular:hover,
 toolbar button:not(.text-button):hover,
-toolbar toolbutton > button:hover,
-toolbar button.image-button:hover,
-toolbar.inline-toolbar toolbutton > button:hover,
-toolbar.inline-toolbar button.image-button:hover,
-.inline-toolbar button:hover,
-.inline-toolbar button.image-button:hover,
+toolbar toolbutton > button:not(.text-button):hover,
+toolbar button.image-button:not(.text-button):hover,
+toolbar.inline-toolbar toolbutton > button:not(.text-button):hover,
+toolbar.inline-toolbar button.image-button:not(.text-button):hover,
 .inline-toolbar button:not(.text-button):hover,
+.inline-toolbar button.image-button:not(.text-button):hover,
 actionbar button:not(.text-button):hover,
-actionbar button.image-button:hover,
+actionbar button.image-button:not(.text-button):hover,
 .actionbar button:not(.text-button):hover,
-.actionbar button.image-button:hover,
+.actionbar button.image-button:not(.text-button):hover,
 #devtab-grid-toolbar button:hover,
 #devtab-grid-toolbar button:first-child:hover,
 #devtab-grid-toolbar button:last-child:hover,
@@ -290,7 +444,6 @@ window box.inline-toolbar#devtab-grid-toolbar button:hover,
 window box.inline-toolbar#devtab-grid-toolbar button:first-child:hover,
 window box.inline-toolbar#devtab-grid-toolbar button:last-child:hover,
 window box.inline-toolbar#devtab-grid-toolbar button.destructive-action:hover,
-button.image-button:not(.text-button):hover,
 button.circular:hover {
   background-color: rgba(255, 255, 255, 0.16);
   border-color: rgba(255, 255, 255, 0.12);
@@ -301,56 +454,62 @@ button.circular:hover {
 
 headerbar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):active,
 headerbar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):checked,
+window headerbar.titlebar > button.flat.image-button.toggle:active,
+window headerbar.titlebar > button.flat.image-button.toggle:checked,
+window headerbar.titlebar > button.flat.image-button.toggle:dir(ltr):active,
+window headerbar.titlebar > button.flat.image-button.toggle:dir(ltr):checked,
+headerbar.titlebar > button.flat.image-button.toggle:active,
+headerbar.titlebar > button.flat.image-button.toggle:checked,
+headerbar.titlebar > button.flat.image-button.toggle:dir(ltr):active,
+headerbar.titlebar > button.flat.image-button.toggle:dir(ltr):checked,
+window headerbar button.toggle:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):active,
+window headerbar button.toggle:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):checked,
+window headerbar button.popup:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):active,
+window headerbar button.popup:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):checked,
 .titlebar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):active,
 .titlebar button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):checked,
-headerbar button.image-button:active,
-headerbar button.image-button:checked,
-headerbar menubutton:active,
-headerbar menubutton:checked,
-headerbar menubutton > button:active,
-headerbar menubutton > button:checked,
-headerbar button.popup:active,
-headerbar button.popup:checked,
-headerbar button.toggle:active,
-headerbar button.toggle:checked,
+headerbar button.image-button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):active,
+headerbar button.image-button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):checked,
+headerbar menubutton > button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):active,
+headerbar menubutton > button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):checked,
+headerbar button.popup:not(.text-button):active,
+headerbar button.popup:not(.text-button):checked,
+headerbar button.toggle:not(.text-button):active,
+headerbar button.toggle:not(.text-button):checked,
 headerbar button.circular:active,
 headerbar button.circular:checked,
-.titlebar button.image-button:active,
-.titlebar button.image-button:checked,
-.titlebar menubutton:active,
-.titlebar menubutton:checked,
-.titlebar menubutton > button:active,
-.titlebar menubutton > button:checked,
-.titlebar button.popup:active,
-.titlebar button.popup:checked,
-.titlebar button.toggle:active,
-.titlebar button.toggle:checked,
+.titlebar button.image-button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):active,
+.titlebar button.image-button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):checked,
+.titlebar menubutton > button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):active,
+.titlebar menubutton > button:not(.titlebutton):not(.close):not(.minimize):not(.maximize):not(.text-button):checked,
+.titlebar button.popup:not(.text-button):active,
+.titlebar button.popup:not(.text-button):checked,
+.titlebar button.toggle:not(.text-button):active,
+.titlebar button.toggle:not(.text-button):checked,
 .titlebar button.circular:active,
 .titlebar button.circular:checked,
 toolbar button:not(.text-button):active,
 toolbar button:not(.text-button):checked,
-toolbar toolbutton > button:active,
-toolbar toolbutton > button:checked,
-toolbar button.image-button:active,
-toolbar button.image-button:checked,
-toolbar.inline-toolbar toolbutton > button:active,
-toolbar.inline-toolbar toolbutton > button:checked,
-toolbar.inline-toolbar button.image-button:active,
-toolbar.inline-toolbar button.image-button:checked,
-.inline-toolbar button:active,
-.inline-toolbar button:checked,
-.inline-toolbar button.image-button:active,
-.inline-toolbar button.image-button:checked,
+toolbar toolbutton > button:not(.text-button):active,
+toolbar toolbutton > button:not(.text-button):checked,
+toolbar button.image-button:not(.text-button):active,
+toolbar button.image-button:not(.text-button):checked,
+toolbar.inline-toolbar toolbutton > button:not(.text-button):active,
+toolbar.inline-toolbar toolbutton > button:not(.text-button):checked,
+toolbar.inline-toolbar button.image-button:not(.text-button):active,
+toolbar.inline-toolbar button.image-button:not(.text-button):checked,
 .inline-toolbar button:not(.text-button):active,
 .inline-toolbar button:not(.text-button):checked,
+.inline-toolbar button.image-button:not(.text-button):active,
+.inline-toolbar button.image-button:not(.text-button):checked,
 actionbar button:not(.text-button):active,
 actionbar button:not(.text-button):checked,
-actionbar button.image-button:active,
-actionbar button.image-button:checked,
+actionbar button.image-button:not(.text-button):active,
+actionbar button.image-button:not(.text-button):checked,
 .actionbar button:not(.text-button):active,
 .actionbar button:not(.text-button):checked,
-.actionbar button.image-button:active,
-.actionbar button.image-button:checked,
+.actionbar button.image-button:not(.text-button):active,
+.actionbar button.image-button:not(.text-button):checked,
 #devtab-grid-toolbar button:active,
 #devtab-grid-toolbar button:checked,
 #devtab-grid-toolbar button:first-child:active,
@@ -367,8 +526,6 @@ window box.inline-toolbar#devtab-grid-toolbar button:last-child:active,
 window box.inline-toolbar#devtab-grid-toolbar button:last-child:checked,
 window box.inline-toolbar#devtab-grid-toolbar button.destructive-action:active,
 window box.inline-toolbar#devtab-grid-toolbar button.destructive-action:checked,
-button.image-button:not(.text-button):active,
-button.image-button:not(.text-button):checked,
 button.circular:active,
 button.circular:checked {
   background-color: rgba(255, 255, 255, 0.24);

@@ -27,7 +27,13 @@ headerbar button > image {
 }
 
 headerbar.titlebar {
-  padding-left: 12px;
+  padding-left: 11px;
+}
+
+headerbar button.titlebutton,
+.titlebar button.titlebutton {
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 /* Reset default theming on these buttons for all interactive states */

@@ -339,7 +339,7 @@ class TestCrossDistroAndWizard(unittest.TestCase):
             "mac-finder-more-symbolic",
             "mac-finder-search-symbolic",
             "mac_sync_view_split_icons",
-            "mac_on_title_btn_clicked",
+            "mac-finder-title-label",
             "mac_build_sort_popover",
             "mac-finder-menu",
             "mac-finder-pop-row",
@@ -347,7 +347,9 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         ):
             self.assertIn(symbol, nautilus_c)
 
-        # Share & AirDrop toolbar buttons removed, native stack preserved for search toggle
+        # Static plain folder title only (no hover/click menu) & removed Share/AirDrop buttons
+        self.assertNotIn("mac_on_title_btn_clicked", nautilus_c)
+        self.assertNotIn("mac-finder-title-btn", nautilus_c)
         self.assertNotIn("mac-finder-share-person-symbolic", nautilus_c)
         self.assertNotIn("mac-finder-airdrop-symbolic", nautilus_c)
         self.assertNotIn("share_btn", nautilus_c)
@@ -359,19 +361,26 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("transform: scale(0.965);", nautilus_c)
         self.assertNotIn("background-size: 14px 14px;", nautilus_c)
 
-        # Lower top bar, 36px/18px controls, flat borderless sidebar pill, fixed inline-buttons, & live-blurred bottom Path/Info bars
+        # Raised compact top bar, concentric Back/Forward hover, clickable bottom path entry, & List View zebra/dividers
         for symbol in (
             "MacBottomBlurBar",
             "mac_bottom_blur_bar_new",
             "mac_update_bottom_bars",
             "mac_polish_inline_zoom_buttons",
             "mac_on_view_controls_popover_show",
+            "mac_open_bottom_path_entry",
+            "mac_on_bottom_path_entry_activate",
             "mac-bottom-blur-bar",
             "mac-bottom-path-row",
+            "mac-bottom-path-entry",
             "mac-bottom-info-row",
             "mac-inline-zoom-row",
-            "min-height: 50px;",
+            "min-height: 44px;",
+            "margin: 3px 2px;",
             "background-color: #363638;",
+            "row:nth-child(odd):not(:selected)",
+            "columnview > header > button:not(:last-child)",
+            "button.star:not(.starred)",
         ):
             self.assertIn(symbol, nautilus_c)
 
@@ -380,6 +389,8 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("sidebar-neutral-icon", build_theme)
         self.assertIn("#f28617", build_theme)
         self.assertIn("#363638", build_theme)
+        self.assertIn("columnview > header > button", build_theme)
+        self.assertIn("leaflet treeview.view:selected", build_theme)
 
 
 if __name__ == "__main__":
