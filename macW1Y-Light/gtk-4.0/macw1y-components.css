@@ -303,7 +303,7 @@ navigation-split-view list.navigation-sidebar row:selected:backdrop {
   outline: none;
 }
 
-/* Nautilus Finder sidebar selected state - authentic macOS neutral grey highlight */
+/* Nautilus Finder sidebar selected state - authentic macOS neutral grey highlight & white label */
 .nautilus-window .sidebar-pane placessidebar row:selected,
 .nautilus-window .sidebar-pane placessidebar row:selected:backdrop,
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected,
@@ -312,8 +312,8 @@ window.nautilus-window .sidebar-pane placessidebar row:selected,
 window.nautilus-window .sidebar-pane placessidebar row:selected:backdrop,
 window.nautilus-window placessidebar row:selected,
 window.nautilus-window placessidebar row:selected:backdrop {
-  border-radius: 7px;
-  background-color: rgba(0, 0, 0, 0.10);
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.09);
   color: #000000;
   outline: none;
 }
@@ -322,8 +322,8 @@ window.nautilus-window placessidebar row:selected:backdrop {
 .nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected:hover,
 window.nautilus-window .sidebar-pane placessidebar row:selected:hover,
 window.nautilus-window placessidebar row:selected:hover {
-  border-radius: 7px;
-  background-color: rgba(0, 0, 0, 0.14);
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.12);
   color: #000000;
   outline: none;
 }
@@ -344,20 +344,22 @@ window.nautilus-window row.sidebar-row:selected label,
   color: #000000;
 }
 
-window.nautilus-window .sidebar-pane placessidebar row:selected image,
-window.nautilus-window .sidebar-pane list.navigation-sidebar row:selected image,
-window.nautilus-window .sidebar-pane row:selected image,
-window.nautilus-window .navigation-sidebar row:selected image,
-window.nautilus-window placessidebar row:selected image,
-window.nautilus-window row.sidebar-row:selected image,
-.nautilus-window .sidebar-pane placessidebar row:selected image,
-.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected image,
-.nautilus-window .sidebar-pane list.navigation-sidebar row:selected image,
-.nautilus-window .sidebar-pane row:selected image,
-.nautilus-window .navigation-sidebar row:selected image,
-.nautilus-window placessidebar row:selected image,
-.nautilus-window row.sidebar-row:selected image {
+window.nautilus-window .sidebar-pane placessidebar row:selected image.sidebar-neutral-icon,
+window.nautilus-window .sidebar-pane list.navigation-sidebar row:selected image.sidebar-neutral-icon,
+window.nautilus-window .sidebar-pane row:selected image.sidebar-neutral-icon,
+window.nautilus-window placessidebar row:selected image.sidebar-neutral-icon,
+.nautilus-window .sidebar-pane placessidebar row:selected image.sidebar-neutral-icon,
+.nautilus-window .sidebar-pane row:selected image.sidebar-neutral-icon {
   color: #000000;
+}
+
+window.nautilus-window .sidebar-pane row image.sidebar-orange-icon,
+window.nautilus-window .sidebar-pane row:selected image.sidebar-orange-icon,
+window.nautilus-window placessidebar row image.sidebar-orange-icon,
+window.nautilus-window placessidebar row:selected image.sidebar-orange-icon,
+.nautilus-window .sidebar-pane row image.sidebar-orange-icon,
+.nautilus-window .sidebar-pane row:selected image.sidebar-orange-icon {
+  color: #f28617;
 }
 
 navigation-split-view list row:selected:hover,
@@ -377,19 +379,6 @@ overlay-split-view list row:selected label,
 .navigation-sidebar row:selected label,
 list.navigation-sidebar row:selected label,
 placessidebar row:selected label,
-.nautilus-window .sidebar-pane placessidebar row:selected label,
-.nautilus-window .sidebar-pane placessidebar .navigation-sidebar:not(.view) > row:selected label,
-.nautilus-window .sidebar-pane list.navigation-sidebar row:selected label,
-.nautilus-window .sidebar-pane row:selected label,
-.nautilus-window .navigation-sidebar row:selected label,
-.nautilus-window placessidebar row:selected label,
-.nautilus-window row.sidebar-row:selected label,
-window.nautilus-window .sidebar-pane placessidebar row:selected label,
-window.nautilus-window .sidebar-pane list.navigation-sidebar row:selected label,
-window.nautilus-window .sidebar-pane row:selected label,
-window.nautilus-window .navigation-sidebar row:selected label,
-window.nautilus-window placessidebar row:selected label,
-window.nautilus-window row.sidebar-row:selected label,
 row:selected label,
 row:selected label:selected,
 row:selected label selection,
@@ -402,6 +391,12 @@ row:selected selection {
   box-shadow: none;
   border: none;
   outline: none;
+}
+
+.nautilus-window .sidebar-pane row:selected label,
+window.nautilus-window .sidebar-pane row:selected label,
+window.nautilus-window placessidebar row:selected label {
+  color: #000000;
 }
 
 /* All children inside selected sidebar rows must have transparent background */
@@ -510,14 +505,19 @@ placessidebar row button,
 window.nautilus-window .sidebar-pane placessidebar row button.sidebar-button,
 window.nautilus-window .sidebar-pane placessidebar row button#eject_button,
 window.nautilus-window .sidebar-pane placessidebar row button {
-  min-width: 24px;
-  min-height: 24px;
+  min-width: 20px;
+  min-height: 20px;
   padding: 0;
-  margin: 0 4px 0 0;
+  margin: 0 2px 0 0;
   border-radius: 9999px;
   border: none;
-  background-color: rgba(255, 255, 255, 0.12);
+  background-color: transparent;
   box-shadow: none;
+}
+
+.nautilus-window .sidebar-pane placessidebar row button.sidebar-button:hover,
+window.nautilus-window .sidebar-pane placessidebar row button.sidebar-button:hover {
+  background-color: rgba(255, 255, 255, 0.14);
 }
 
 placessidebar .navigation-sidebar > row button.sidebar-button image,
@@ -1527,16 +1527,10 @@ NautilusHistoryControls button:active {
   transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out;
 }
 
-.nautilus-window headerbar menubutton.mac-circle-button,
-.nautilus-window headerbar box.end > menubutton,
-.nautilus-window headerbar .end > menubutton,
-.nautilus-window .content-pane headerbar box.end > menubutton,
-.nautilus-window .content-pane headerbar .end > menubutton {
-  opacity: 0;
-  min-width: 0;
-  min-height: 0;
-  padding: 0;
-  margin: 0;
+/* Nautilus headerbar menu/circle controls stay visible when reparented */
+.nautilus-window headerbar box.mac-end-toolbar > menubutton,
+.nautilus-window headerbar box.mac-end-toolbar > button {
+  opacity: 1;
 }
 
 .nautilus-window .content-pane headerbar box.end > button image,

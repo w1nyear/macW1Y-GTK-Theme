@@ -6334,3 +6334,18 @@ Task #938:
   - Перевірка та синхронізація:
     * Оновлено `config/extensions.lock.json` (`liquid-glass@thinkingcoding1231.gmail.com`, `kiwi@kemma`), синхронізовано користувацькі розширення та `~/.local/bin/mac-gamemode`.
     * Усі перевірки (`gjs -m`, `py_compile`, `unittest`, `mac-extension-guard verify`, `mac-i18n-verify`, `mac-audit-sync check`, `bash -n install.sh`) успішно пройдені.
+
+1003. 2026-11-26 — Повне оновлення інтерфейсу Nautilus (`Finder` macOS Tahoe Dark / Light, компактні поповери, верхній тулбар без зайвих кнопок):
+  - Змінені файли:
+    * [src/mac_nautilus.c](file:///home/vitaliy/macW1Y/src/mac_nautilus.c)
+    * [bin/mac-build-theme](file:///home/vitaliy/macW1Y/bin/mac-build-theme)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+  - Що реалізовано:
+    * Перероблено макет верхньої панелі Nautilus під Finder: капсула навігації `[ < | > ]` з розділювачем, клікабельний заголовок поточної теки з поповером переходу вгору / `Ctrl+L` / копіюванням шляху / перемикачем навігаційного шляху (без постійної розтягнутої капсули pathbar), а також піднята й компактніше притиснута до лівого та правого країв права панель дій (`[ ≡ ▾ ]` Сортування та вигляд, `( i )` Властивості, `[ 🗑  ⏏ ]` Кошик + Вийняти, нативний `[ ⊞ ⌄ ]` `NautilusViewControls`, перенесене системне меню `( » )` та чистий `( 🔍 )` `GtkToggleButton` на `slot.search-visible`). Видалено непрацюючі кнопки «Надіслати» (`Share`) і `AirDrop`.
+    * Додано набір чітких замкнених SVG-іконок `mac-finder-*-symbolic` у кеш `~/.cache/macw1y-nautilus-icons` і підмінено вбудовану стрілку `GtkBuiltinIcon` у `AdwSplitButton` на подвійний шеврон `mac-finder-chevron-updown-symbolic`.
+    * Повернуто глобальний вигляд іконок керування вікном (трафік-світло `titlebuttons4.css` та `windows-assets/button-*.png` 16px без зменшення/спотворень) із синхронним вирівнюванням `yc = 22px` на одній горизонталі з верхнім тулбаром.
+    * Оновлено бічну панель: помаранчеві іконки обраного (`#f28617` через `sidebar-orange-icon`), нейтральна скляна капсула активного рядка з білим текстом, прозорі кнопки вилучення дисків у стані спокою, прибрано роздільник над Кошиком, забезпечено реакцію на Light / Dark режими через `AdwStyleManager:dark`.
+    * Усі контекстні меню та поповери Nautilus зроблено значно компактнішими (`border-radius: 18px`, `padding: 5px`, об'єднаний рядок масштабу `− / +`), із капсульним заокругленням рядків `9999px` як у меню-барі та плавними анімаціями наведення й пружинного натискання кнопок.
+  - Перевірка та синхронізація:
+    * Перезібрано GTK-теми (`bin/mac-build-theme`), скомпільовано й встановлено `libmac_nautilus.so` у `~/.local/lib/`, `/usr/local/lib/` та `/usr/lib/x86_64-linux-gnu/`, синхронізовано `done.txt` у `/home/vitaliy/Desktop/done.txt`.
+    * Пройдено всі перевірки репозиторію (`unittest`, `mac-audit-sync check`, `mac-extension-guard verify`, `mac-i18n-verify`, `bash -n install.sh`).

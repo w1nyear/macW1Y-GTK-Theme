@@ -321,6 +321,49 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("this._animatingOpen", apps_js)
         self.assertIn("glassRefreshDue", apps_js)
 
+    def test_nautilus_tahoe_finder_ui_overhaul(self):
+        nautilus_c = (ROOT / "src" / "mac_nautilus.c").read_text(encoding="utf-8")
+        # Tahoe Finder custom closed-contour SVG theme icons and split-button chevron replacement
+        for symbol in (
+            "mac_ensure_finder_icons",
+            "mac-finder-back-symbolic",
+            "mac-finder-forward-symbolic",
+            "mac-finder-sort-list-symbolic",
+            "mac-finder-chevron-down-symbolic",
+            "mac-finder-info-symbolic",
+            "mac-finder-trash-symbolic",
+            "mac-finder-eject-symbolic",
+            "mac-finder-grid-symbolic",
+            "mac-finder-list-symbolic",
+            "mac-finder-chevron-updown-symbolic",
+            "mac-finder-more-symbolic",
+            "mac-finder-search-symbolic",
+            "mac_sync_view_split_icons",
+            "mac_on_title_btn_clicked",
+            "mac_build_sort_popover",
+            "mac-finder-menu",
+            "mac-finder-pop-row",
+            "mac-finder-pop-mini-btn",
+        ):
+            self.assertIn(symbol, nautilus_c)
+
+        # Share & AirDrop toolbar buttons removed, native stack preserved for search toggle
+        self.assertNotIn("mac-finder-share-person-symbolic", nautilus_c)
+        self.assertNotIn("mac-finder-airdrop-symbolic", nautilus_c)
+        self.assertNotIn("share_btn", nautilus_c)
+        self.assertNotIn("airdrop_btn", nautilus_c)
+        self.assertIn('gtk_actionable_set_action_name(GTK_ACTIONABLE(search_toggle), "slot.search-visible")', nautilus_c)
+
+        # Compact animated menubar-style popover geometry & global traffic lights preserved (no 14px override)
+        self.assertIn("border-radius: 9999px;", nautilus_c)
+        self.assertIn("transform: scale(0.965);", nautilus_c)
+        self.assertNotIn("background-size: 14px 14px;", nautilus_c)
+
+        build_theme = (ROOT / "bin" / "mac-build-theme").read_text(encoding="utf-8")
+        self.assertIn("sidebar-orange-icon", build_theme)
+        self.assertIn("sidebar-neutral-icon", build_theme)
+        self.assertIn("#f28617", build_theme)
+
 
 if __name__ == "__main__":
     unittest.main()
