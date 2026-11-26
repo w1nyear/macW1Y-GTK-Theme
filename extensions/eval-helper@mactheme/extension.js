@@ -1728,6 +1728,7 @@ export default class EvalHelper extends Extension {
                             this._squareItems = false;
                             this._itemTileSize = itemW;
                             this._itemSpacing = spacing;
+                            if (typeof this.set_height === 'function') this.set_height(m.totalH);
 
                             if (this._list) {
                                 this._list.spacing = spacing;
@@ -1779,6 +1780,8 @@ export default class EvalHelper extends Extension {
                             if (this._label) {
                                 this._label.hide();
                                 this._label.opacity = 0;
+                                if (typeof this._label.set_height === 'function') this._label.set_height(0);
+                                this._label.style = 'font-size: 0px; margin: 0px; padding: 0px;';
                             }
                             this._setIconSize();
                         };
@@ -1804,6 +1807,7 @@ export default class EvalHelper extends Extension {
                             this._squareItems = false;
                             this._itemTileSize = itemW;
                             this._itemSpacing = spacing;
+                            if (typeof this.set_height === 'function') this.set_height(m.totalH);
 
                             if (this._list) {
                                 this._list.spacing = spacing;
@@ -1901,7 +1905,14 @@ export default class EvalHelper extends Extension {
 
                         if (this._switcherList) {
                             this._switcherList._squareItems = false;
-                            this._switcherList.style = `background-color: rgba(22, 22, 22, ${tintA}) !important; border-radius: ${radius}px !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; box-shadow: 0 16px 40px rgba(0, 0, 0, ${shadowA}) !important; padding: ${vPad}px ${hPad}px !important;`;
+                            if (typeof this._switcherList._setIconSize === 'function' && !this._switcherList._itemTileSize) {
+                                this._switcherList._setIconSize();
+                            }
+                            const resolvedM = _macCalcAltTabMetrics(cfg, this._switcherList._itemTileSize);
+                            if (typeof this._switcherList.set_height === 'function') {
+                                this._switcherList.set_height(resolvedM.totalH);
+                            }
+                            this._switcherList.style = `background-color: rgba(22, 22, 22, ${tintA}) !important; border-radius: ${radius}px !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; box-shadow: 0 16px 40px rgba(0, 0, 0, ${shadowA}) !important; padding: 0px ${hPad}px !important;`;
                             if (this._switcherList._list) {
                                 this._switcherList._list.style = `spacing: ${cfg.spacing}px !important;`;
                                 this._switcherList._list.spacing = cfg.spacing;

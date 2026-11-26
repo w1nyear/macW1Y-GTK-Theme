@@ -6401,3 +6401,16 @@ Task #938:
   - Перевірка та синхронізація:
     * Оновлено встановлене розширення `~/.local/share/gnome-shell/extensions/eval-helper@mactheme/extension.js`, хеш `eval-helper@mactheme` у [extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json) і `/usr/share/mactheme/config/extensions.lock.json`, `/usr/local/bin/mac-screenshot-process` та `~/.local/bin/mac-screenshot-process`, перезапущено `mac-screenshot-daemon.service`, а також гаряче оновлено поточну живу сесію GNOME Shell.
     * Проведено живу перевірку `pw-mon` під час скріншота: 1 аудіопотік `Mutter` `screen-capture` і 0 потоків `pw-play` при `shutter_sound: true`, та 0 аудіопотоків при `shutter_sound: false`; додано регресійний тест і пройдено повний набір перевірок репозиторію.
+
+#1007: Фіксація коректної висоти Alt+Tab / WindowSwitcher меню
+  - Проблема та причина:
+    * При перемиканні через `WindowSwitcherPopup` (`switch-windows` / `<Alt>Above_Tab`) підклас `WindowSwitcher` (зареєстрований через `GObject.registerClass`) продовжував викликати власний GObject vfunc `vfunc_get_preferred_height` попри JS-присвоєння на прототипі, додаючи висоту прихованого `_label` (`20px`) і нижній CSS `padding` (`9px`) з `SwitcherPopup.show()` поверх `totalH` (`97px` -> `126px`).
+  - Змінені файли:
+    * [extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js)
+    * [extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+    * [test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+  - Що реалізовано:
+    * У `AppSwitcher._setIconSize()`, `WindowSwitcher._setIconSize()` та `SwitcherPopup.show()` у [extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js) явно задано `set_height(m.totalH)` (фіксовану висоту на рівні Clutter-актора), обнулено висоту й стиль прихованого `WindowSwitcher._label`, а вертикальний CSS-падінг у `SwitcherPopup.show()` замінено на `padding: 0px ${hPad}px !important;`, бо вертикальні відступи вже розраховуються всередині `SwitcherList.vfunc_allocate()`.
+  - Перевірка та синхронізація:
+    * Синхронізовано `~/.local/share/gnome-shell/extensions/eval-helper@mactheme/extension.js`, оновлено хеш у [extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json) і `/usr/share/mactheme/config/extensions.lock.json`, гаряче оновлено поточну сесію GNOME Shell.
+    * Жива перевірка через `EvalHelper`: обидва перемикачі (`AppSwitcherPopup` і `WindowSwitcherPopup`) повертають `minH: 97`, `natH: 97`, `allocH: 97`, `padBot: 0`.

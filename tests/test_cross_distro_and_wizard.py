@@ -237,6 +237,8 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("radius: 34", eval_js)
         self.assertIn("_macCalcAltTabMetrics", eval_js)
         self.assertIn("return [m.totalH, m.totalH];", eval_js)
+        self.assertIn("this._switcherList.set_height(resolvedM.totalH);", eval_js)
+        self.assertIn("padding: 0px ${hPad}px !important;", eval_js)
         self.assertNotIn("const totalH = 82;", eval_js)
 
         styling_json = (ROOT / "config" / "mac-styling" / "styling.json").read_text(encoding="utf-8")
