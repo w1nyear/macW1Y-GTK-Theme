@@ -6264,3 +6264,17 @@ Task #938:
   - Перевірка та синхронізація:
     * Оновлено `config/extensions.lock.json` (`liquid-glass@thinkingcoding1231.gmail.com`, `kiwi@kemma`) та синхронізовано користувацькі й системні копії розширень і lock-файлів.
     * Усі перевірки (`unittest`, `mac-extension-guard verify`, `mac-i18n-verify`, `mac-audit-sync check`, `bash -n install.sh`) успішно пройдені.
+
+997. 2026-11-26 — Збережено стабільну дистанцію між іконкою та пілюлею підпису (бір-тагом) у док під час стрибків при запуску програми (навіть при збільшенні іконок у маніфікаторі):
+  - Змінені файли:
+    * [extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/animator.js](file:///home/vitaliy/macW1Y/extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/animator.js)
+    * [extensions/dash2dock-motion@unmade.space/appIcons.js](file:///home/vitaliy/macW1Y/extensions/dash2dock-motion@unmade.space/appIcons.js)
+    * [tests/test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+    * [config/extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+  - Причина та виправлення:
+    * Під час наведення й магніфікації (`magnify-max-scale=2.0`) іконка `realIcon` знаходиться всередині масштабованого `el.actor` (`scale_y` до `2.0`), тоді як `labelActor` (`dash-label` та його `_arrowTailActor`, `_blurActor`, `_blurArrowActor`) розміщені прямо в `Main.uiGroup` (`scale = 1.0`). Через однаковий локальний `translation_y = jY` іконка підстрибувала на екрані в `scale_y` разів вище, наздоганяючи та прикриваючи бір-таг.
+    * У [animator.js](file:///home/vitaliy/macW1Y/extensions/cupertino-dock-lite@rinzler69-wastaken.github.com/animator.js) додано `_getAncestorScale()` та `_syncLabelTranslation()`, які масштабують зміщення підпису й усіх його шарів (`(jX * srcSx) / dstSx`, `(jY * srcSy) / dstSy`) відповідно до реального масштабу батьків іконки.
+    * У [appIcons.js](file:///home/vitaliy/macW1Y/extensions/dash2dock-motion@unmade.space/appIcons.js) `positionItemLabel()` одразу підхоплює активний зсув стрибка іконки з урахуванням масштабу, а `animateLaunch()` переміщує також `_blurActor` і `_blurArrowActor` на масштабовану екранну дистанцію.
+  - Перевірка та синхронізація:
+    * Оновлено `config/extensions.lock.json` (`cupertino-dock-lite@rinzler69-wastaken.github.com`, `dash2dock-motion@unmade.space`) та синхронізовано користувацькі розширення й lock-файли.
+    * Усі перевірки (`gjs -m`, `unittest`, `mac-extension-guard verify`, `mac-i18n-verify`, `mac-audit-sync check`, `bash -n install.sh`) успішно пройдені.

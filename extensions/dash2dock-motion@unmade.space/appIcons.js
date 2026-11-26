@@ -1016,9 +1016,21 @@ export const DockAbstractAppIcon = GObject.registerClass({
 
         this.remove_transition(prop.replace(/_/g, '-'));
         const label = this.label ?? this.get_parent?.()?.label;
-        const tail = label?._arrowTailActor;
-        if (label) label.remove_transition(prop.replace(/_/g, '-'));
-        if (tail) tail.remove_transition(prop.replace(/_/g, '-'));
+        const labelActors = label
+            ? [label, label._arrowTailActor, label._blurActor, label._blurArrowActor].filter(Boolean)
+            : [];
+        for (const actor of labelActors)
+            actor.remove_transition(prop.replace(/_/g, '-'));
+
+        let effScale = 1.0;
+        try {
+            const isX = prop === 'translation_x';
+            for (let p = this.get_parent?.(); p && p !== Main.uiGroup && p !== global.stage; p = p.get_parent?.()) {
+                const s = isX ? p.scale_x : p.scale_y;
+                if (Number.isFinite(s) && s > 0)
+                    effScale *= s;
+            }
+        } catch (_) {}
 
         this.ease({
             [prop]: dir * travel,
@@ -1032,27 +1044,13 @@ export const DockAbstractAppIcon = GObject.registerClass({
                 });
             },
         });
-        if (label) {
-            label.ease({
-                [prop]: dir * travel,
+        for (const actor of labelActors) {
+            actor.ease({
+                [prop]: dir * travel * effScale,
                 duration: 200,
                 mode: Clutter.AnimationMode.EASE_OUT_QUAD,
                 onComplete: () => {
-                    label.ease({
-                        [prop]: 0,
-                        duration: 600,
-                        mode: Clutter.AnimationMode.EASE_OUT_BOUNCE,
-                    });
-                },
-            });
-        }
-        if (tail) {
-            tail.ease({
-                [prop]: dir * travel,
-                duration: 200,
-                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-                onComplete: () => {
-                    tail.ease({
+                    actor.ease({
                         [prop]: 0,
                         duration: 600,
                         mode: Clutter.AnimationMode.EASE_OUT_BOUNCE,
@@ -2528,6 +2526,30 @@ export function positionItemLabel(item) {
     y = Math.round(y);
     item.label.set_position(x, y);
     _updateTailPosition(item.label, position);
+
+    // Preserve active bounce translation scaled to screen space if label repositions mid-bounce.
+    try {
+        const iconActor = visual?.first_child;
+        const jx = iconActor?.translation_x || 0;
+        const jy = iconActor?.translation_y || 0;
+        if (jx !== 0 || jy !== 0) {
+            let sx = 1.0, sy = 1.0;
+            for (let p = iconActor.get_parent?.(); p && p !== Main.uiGroup && p !== global.stage; p = p.get_parent?.()) {
+                if (Number.isFinite(p.scale_x) && p.scale_x > 0) sx *= p.scale_x;
+                if (Number.isFinite(p.scale_y) && p.scale_y > 0) sy *= p.scale_y;
+            }
+            const lx = jx * sx;
+            const ly = jy * sy;
+            item.label.translation_x = lx;
+            item.label.translation_y = ly;
+            for (const sub of [item.label._arrowTailActor, item.label._blurActor, item.label._blurArrowActor]) {
+                if (sub) {
+                    sub.translation_x = lx;
+                    sub.translation_y = ly;
+                }
+            }
+        }
+    } catch (_) {}
 }
 
 export function itemShowLabel() {

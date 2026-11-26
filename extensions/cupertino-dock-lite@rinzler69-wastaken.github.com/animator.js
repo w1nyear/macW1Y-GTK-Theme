@@ -129,6 +129,7 @@ export class Animator {
         c._appwell._indicator._notificationBadgeBin = null;
       }
       this._setD2dBadgeOpacity(c._appwell, 255);
+      this._syncLabelTranslation(c, realIcon, 0, 0);
       this._disconnectAppwellHooks(c._appwell);
       c.destroy();
     });
@@ -494,17 +495,7 @@ export class Animator {
             icon._appwell._indicator._notificationBadgeBin.translation_x = 0;
             icon._appwell._indicator._notificationBadgeBin.translation_y = 0;
           }
-          const labelActor = icon._label ?? icon._appwell?.get_parent?.()?.label ?? icon._appwell?.label ?? icon._appwell?.child?._delegate?.label ?? icon._appwell?._delegate?.label;
-          if (labelActor) {
-            labelActor.translation_x = 0;
-            labelActor.translation_y = 0;
-            for (const sub of [labelActor._arrowTailActor, labelActor._blurActor, labelActor._blurArrowActor]) {
-              if (sub) {
-                sub.translation_x = 0;
-                sub.translation_y = 0;
-              }
-            }
-          }
+          this._syncLabelTranslation(icon, realIcon, 0, 0);
           this._setD2dBadgeOpacity(icon._appwell, 255);
           icon.opacity = 0;
           icon._wasActive = false;
@@ -569,17 +560,7 @@ export class Animator {
         icon._appwell._indicator._notificationBadgeBin = null;
       }
 
-      const labelActor = icon._label ?? icon._appwell?.get_parent?.()?.label ?? icon._appwell?.label ?? icon._appwell?.child?._delegate?.label ?? icon._appwell?._delegate?.label;
-      if (labelActor) {
-        labelActor.translation_x = jX;
-        labelActor.translation_y = jY;
-        for (const sub of [labelActor._arrowTailActor, labelActor._blurActor, labelActor._blurArrowActor]) {
-          if (sub) {
-            sub.translation_x = jX;
-            sub.translation_y = jY;
-          }
-        }
-      }
+      this._syncLabelTranslation(icon, realIcon, jX, jY);
     });
 
     this._initialized = true;
@@ -588,6 +569,51 @@ export class Animator {
       this._startAnimation();
     else
       this._endAnimation();
+  }
+
+  _resolveLabelActor(icon) {
+    return icon?._appwell?.get_parent?.()?.label ??
+      icon?._label ??
+      icon?._appwell?.label ??
+      icon?._appwell?.child?._delegate?.label ??
+      icon?._appwell?._delegate?.label ??
+      null;
+  }
+
+  _getAncestorScale(actor) {
+    let sx = 1.0;
+    let sy = 1.0;
+    try {
+      for (let p = actor?.get_parent?.(); p && p !== Main.uiGroup && p !== global.stage; p = p.get_parent?.()) {
+        if (Number.isFinite(p.scale_x) && p.scale_x > 0)
+          sx *= p.scale_x;
+        if (Number.isFinite(p.scale_y) && p.scale_y > 0)
+          sy *= p.scale_y;
+      }
+    } catch (_) {}
+    return [sx, sy];
+  }
+
+  _syncLabelTranslation(icon, realIcon, jX, jY) {
+    const labelActor = this._resolveLabelActor(icon);
+    if (!labelActor)
+      return;
+    let tx = jX;
+    let ty = jY;
+    if (jX !== 0 || jY !== 0) {
+      const [srcSx, srcSy] = realIcon ? this._getAncestorScale(realIcon) : [1.0, 1.0];
+      const [dstSx, dstSy] = this._getAncestorScale(labelActor);
+      tx = dstSx > 0 ? (jX * srcSx) / dstSx : jX * srcSx;
+      ty = dstSy > 0 ? (jY * srcSy) / dstSy : jY * srcSy;
+    }
+    labelActor.translation_x = tx;
+    labelActor.translation_y = ty;
+    for (const sub of [labelActor._arrowTailActor, labelActor._blurActor, labelActor._blurArrowActor]) {
+      if (sub) {
+        sub.translation_x = tx;
+        sub.translation_y = ty;
+      }
+    }
   }
 
   _findIcons() { return this.extension._findIcons(); }
@@ -628,17 +654,7 @@ export class Animator {
       } else if (icon._appwell?._indicator) {
         icon._appwell._indicator._notificationBadgeBin = null;
       }
-      const labelActor = icon._label ?? icon._appwell?.get_parent?.()?.label ?? icon._appwell?.label ?? icon._appwell?.child?._delegate?.label ?? icon._appwell?._delegate?.label;
-      if (labelActor) {
-        labelActor.translation_x = 0;
-        labelActor.translation_y = 0;
-        for (const sub of [labelActor._arrowTailActor, labelActor._blurActor, labelActor._blurArrowActor]) {
-          if (sub) {
-            sub.translation_x = 0;
-            sub.translation_y = 0;
-          }
-        }
-      }
+      this._syncLabelTranslation(icon, realIcon, 0, 0);
       this._setD2dBadgeOpacity(icon._appwell, 255);
       if (icon._badge) icon._badge.visible = false;
       icon.set_scale(1.0, 1.0);

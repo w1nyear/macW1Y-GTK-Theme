@@ -284,6 +284,18 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("glassNeedsStructureSync(s.bgActor)", nc_js)
         self.assertNotIn("_NC_PIXEL_PULSE_US = 350000", nc_js)
 
+    def test_dock_label_tracks_magnified_launch_bounce_distance(self):
+        anim_js = (ROOT / "extensions" / "cupertino-dock-lite@rinzler69-wastaken.github.com" / "animator.js").read_text(encoding="utf-8")
+        self.assertIn("_getAncestorScale", anim_js)
+        self.assertIn("_syncLabelTranslation", anim_js)
+        self.assertIn("(jY * srcSy) / dstSy", anim_js)
+        self.assertIn("this._syncLabelTranslation(icon, realIcon, jX, jY);", anim_js)
+
+        d2d_icons = (ROOT / "extensions" / "dash2dock-motion@unmade.space" / "appIcons.js").read_text(encoding="utf-8")
+        self.assertIn("dir * travel * effScale", d2d_icons)
+        self.assertIn("label._blurActor, label._blurArrowActor", d2d_icons)
+        self.assertIn("const iconActor = visual?.first_child;", d2d_icons)
+
 
 if __name__ == "__main__":
     unittest.main()
