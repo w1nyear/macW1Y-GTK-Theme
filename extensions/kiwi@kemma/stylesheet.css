@@ -1651,7 +1651,7 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
 }
 .tahoe-qs-music-box { spacing: 1px; }
 .tahoe-qs-music-art {
-    width: 44px; height: 44px;
+    height: 46px;
     border-radius: 10px;
     background-color: rgba(255, 255, 255, 0.18);
     margin-bottom: 6px;

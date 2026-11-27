@@ -1829,6 +1829,7 @@ function _buildPanel() {
     });
     const art = new St.Bin({
         style_class: 'tahoe-qs-music-art',
+        x_expand: true,
         child: artIcon,
     });
     artWrap.add_child(art);
@@ -3521,11 +3522,17 @@ function _setArt(p, url) {
             return;
         p.artUrl = url;
         console.log(`[tahoe-qs-art] url=${url.slice(0, 100)}`);
-        const make = path => new St.Icon({
-            gicon: new Gio.FileIcon({file: Gio.File.new_for_path(path)}),
-            icon_size: 44,
-        });
-        const fallback = () => p.artBin.set_child(p.artIcon);
+        const applyArt = path => {
+            const uri = Gio.File.new_for_path(path).get_uri();
+            p.artBin.set_child(null);
+            p.artBin.set_style(
+                `background-image: url("${uri}"); background-size: cover; background-position: center;`
+            );
+        };
+        const fallback = () => {
+            p.artBin.set_style(null);
+            p.artBin.set_child(p.artIcon);
+        };
         let path = null;
         if (url.startsWith('file://'))
             path = Gio.File.new_for_uri(url).get_path();
@@ -3533,7 +3540,7 @@ function _setArt(p, url) {
             path = url;
         if (path && GLib.file_test(path, GLib.FileTest.EXISTS)) {
             console.log(`[tahoe-qs-art] local file ok: ${path.slice(0, 100)}`);
-            p.artBin.set_child(make(path));
+            applyArt(path);
             return;
         }
         if (!path && (url.startsWith('file://') || url.startsWith('/')))
@@ -3557,7 +3564,7 @@ function _setArt(p, url) {
                         out.write_bytes(bytes, null);
                         out.close(null);
                         console.log(`[tahoe-qs-art] cached: ${dst}`);
-                        p.artBin.set_child(make(dst));
+                        applyArt(dst);
                     } catch (e) {
                         console.log(`[tahoe-qs-art] download failed: ${e}`);
                     }
@@ -3567,6 +3574,7 @@ function _setArt(p, url) {
         fallback();
     } catch (_) {
         try {
+            p.artBin.set_style(null);
             p.artBin.set_child(p.artIcon);
         } catch (__) {
 
