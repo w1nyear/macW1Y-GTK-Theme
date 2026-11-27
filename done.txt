@@ -6434,3 +6434,19 @@ Task #938:
   - Перевірка та синхронізація:
     * Синхронізовано розширення, бінарні скрипти (`/usr/local/bin/`, `~/.local/bin/`), [styling.json](file:///home/vitaliy/macW1Y/config/mac-styling/styling.json), `extensions.lock.json` (`/usr/share/mactheme/config/extensions.lock.json`) та `done.txt` у `/home/vitaliy/Desktop/done.txt`, перезапущено `mac-screenshot-daemon.service`.
     * Візуально перевірено в живій сесії GNOME Shell панель Liquid Glass, тултіпи, меню «Параметри» з мікрофонами, запис WAV (`ffmpeg -f pulse`), іконку запису крайньою зліва в менюбарі та меню «Зупинити»; пройдено повний набір тестів, аудит синхронізації, верифікацію i18n, цілісності розширень і перевірок швидкодії.
+
+#1009: Усунення дублювання сповіщення «Запис екрана збережено» після відеозапису та підтримка wpctl для системного звуку
+  - Проблема та причина:
+    * Симлінк `~/Videos -> ~/Відео` призводив до того, що `mac-screenshot-daemon.service` через `inotify` стежив за `~/Відео/Screencasts` паралельно з викликом `--file` з [extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js), а `process_video()` після розблокування `flock` повторно обробляв `.mp4` і слав друге сповіщення (GNOME Shell ігнорує хінт `x-canonical-private-synchronous`). Додатково застарілий `_screencastPath` міг тригерити обробку при помилці, а `_default_sink_monitor()` шукав лише відсутній `pactl` замість `wpctl`.
+  - Змінені файли:
+    * [mac-screenshot-process](file:///home/vitaliy/macW1Y/bin/mac-screenshot-process)
+    * [extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js)
+    * [macScreenshotUI.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/macScreenshotUI.js)
+    * [extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+    * [test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+  - Що реалізовано:
+    * У [mac-screenshot-process](file:///home/vitaliy/macW1Y/bin/mac-screenshot-process) перевірку `_was_recently_done(p)` перенесено всередину `_acquire_process_lock(p)` для `process_video()` і `process_image()`, позначення `.done` виконується до `temp_path.rename(dest_path)` (без гонки `IN_MOVED_TO`), дедупліковано `watch_dirs` через `.resolve()`, додано 1.5с пріоритет для `--file` у `run_daemon()`, коалесценцію швидких сповіщень через `-p` / `-r` (`last_notify_*.json`) та визначення системного монітора через `wpctl inspect @DEFAULT_AUDIO_SINK@`.
+    * У [extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js) та [macScreenshotUI.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/macScreenshotUI.js) додано `_lastHandledScreencastPath`, `_macScreencastFailed`, очищення `_screencastPath` при старті й блокування повторного входу `_stoppingScreencast`.
+  - Перевірка та синхронізація:
+    * Синхронізовано `/usr/local/bin/mac-screenshot-process`, `~/.local/bin/mac-screenshot-process`, `eval-helper@mactheme`, [extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json), `/usr/share/mactheme/config/extensions.lock.json` та `/home/vitaliy/Desktop/done.txt`; перезапущено `mac-screenshot-daemon.service`.
+    * Жива перевірка запису через UI -> зупинка з менюбара підтвердила 1 сповіщення («Запис екрана збережено») замість 2 і наявність обох потоків (`h264` відео + `aac` аудіо з системного монітора); пройдено повний набір тестів і перевірок.

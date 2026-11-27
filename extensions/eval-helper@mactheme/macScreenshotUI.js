@@ -1465,8 +1465,14 @@ class MacScreenshotController {
         };
 
         ui.stopScreencast = async function() {
-            await self._stopAudioCaptureAndClicks();
-            return await self._orig.stopScreencast.call(this);
+            if (self._stoppingScreencast) return;
+            self._stoppingScreencast = true;
+            try {
+                await self._stopAudioCaptureAndClicks();
+                return await self._orig.stopScreencast.call(this);
+            } finally {
+                self._stoppingScreencast = false;
+            }
         };
     }
 
@@ -1594,6 +1600,8 @@ class MacScreenshotController {
         this._startAudioCaptureIfNeeded();
         this._startClickWatcherIfNeeded();
 
+        ui._screencastPath = null;
+        ui._macScreencastFailed = false;
         ui._setScreencastInProgress(true);
         try {
             ui._screencastStarting = true;
@@ -1603,6 +1611,7 @@ class MacScreenshotController {
             const [, path] = await method(template, { 'draw-cursor': new GLib.Variant('b', drawCursor) });
             ui._screencastPath = path;
         } catch (err) {
+            ui._macScreencastFailed = true;
             await this._stopAudioCaptureAndClicks();
             ui._screencastFailed(0, err);
         } finally {

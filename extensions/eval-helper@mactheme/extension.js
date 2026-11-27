@@ -781,10 +781,16 @@ export default class EvalHelper extends Extension {
                         }
                     } catch (_) {}
                 });
+                this._lastHandledScreencastPath = null;
                 this._screencastNotifySignalId = Main.screenshotUI.connect('notify::screencast-in-progress', () => {
                     try {
-                        if (!Main.screenshotUI._screencastInProgress && Main.screenshotUI._screencastPath) {
-                            const p = Main.screenshotUI._screencastPath;
+                        if (Main.screenshotUI._screencastInProgress) {
+                            this._lastHandledScreencastPath = null;
+                            return;
+                        }
+                        const p = Main.screenshotUI._screencastPath;
+                        if (p && p !== this._lastHandledScreencastPath && !Main.screenshotUI._macScreencastFailed) {
+                            this._lastHandledScreencastPath = p;
                             const ctrl = MacScreenshotUI.getMacScreenshotController();
                             const audioPath = ctrl ? ctrl.takeAudioSidecarPath() : null;
                             const cmd = audioPath

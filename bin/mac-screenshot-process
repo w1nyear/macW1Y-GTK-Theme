@@ -112,19 +112,33 @@ def play_shutter():
         except Exception:
             pass
 
-def notify(title, message="", icon="applets-screenshooter-symbolic"):
+def notify(title, message="", icon="applets-screenshooter-symbolic", dedup_key="video"):
     if shutil.which("notify-send"):
         try:
             cmd = [
                 "notify-send",
+                "-p",
                 "-a", ss_tr("app"),
                 "-h", "string:x-canonical-private-synchronous:mac-screenshot-notify",
                 "-i", icon,
-                title
             ]
+            # Coalesce rapid repeated notifications via standard FreeDesktop replace-id
+            nid_file = LOCK_DIR / f"last_notify_{dedup_key}.json"
+            try:
+                if nid_file.exists():
+                    info = json.loads(nid_file.read_text(encoding="utf-8"))
+                    if time.time() - float(info.get("ts", 0)) < 12.0 and int(info.get("id", 0)) > 0:
+                        cmd.extend(["-r", str(int(info["id"]))])
+            except Exception:
+                pass
+            cmd.append(title)
             if message:
                 cmd.append(message)
-            subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            LOCK_DIR.mkdir(parents=True, exist_ok=True)
+            res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=3)
+            nid_str = (res.stdout or "").strip().splitlines()[-1] if res.stdout else ""
+            if nid_str.isdigit():
+                nid_file.write_text(json.dumps({"id": int(nid_str), "ts": time.time()}), encoding="utf-8")
         except Exception:
             pass
 
@@ -292,7 +306,7 @@ def process_image(file_path):
 
     try:
         lock_handle = _acquire_process_lock(p)
-        if not p.exists() or p.stat().st_size == 0:
+        if not p.exists() or p.stat().st_size == 0 or _was_recently_done(p):
             return None
         time.sleep(0.15)
         with Image.open(p) as img:
@@ -411,6 +425,18 @@ def _audio_pending_or_active():
 
 
 def _default_sink_monitor():
+    try:
+        if shutil.which("wpctl"):
+            out = subprocess.check_output(
+                ["wpctl", "inspect", "@DEFAULT_AUDIO_SINK@"], text=True, stderr=subprocess.DEVNULL
+            )
+            for line in out.splitlines():
+                if "node.name" in line and "=" in line:
+                    val = line.split("=", 1)[1].strip().strip('"').strip("'")
+                    if val:
+                        return f"{val}.monitor"
+    except Exception:
+        pass
     try:
         if shutil.which("pactl"):
             sink = subprocess.check_output(
@@ -571,8 +597,10 @@ def process_video(file_path, audio_file=None):
     lock_handle = None
     try:
         lock_handle = _acquire_process_lock(p)
-        # Re-check in case another worker (e.g. daemon) already replaced p with another container
+        # Re-check in case another worker (e.g. daemon or --file) already processed or replaced p
         if not p.exists() or p.stat().st_size == 0:
+            return None
+        if not has_audio and _was_recently_done(p):
             return None
 
         # Wait for screencast recorder to finish writing (file size stabilization)
@@ -684,14 +712,15 @@ def process_video(file_path, audio_file=None):
 
         res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if res.returncode == 0 and temp_path.exists() and temp_path.stat().st_size > 0:
+            # Mark done BEFORE atomic rename so daemon inotify IN_MOVED_TO never races ahead
+            _mark_done(p)
+            _mark_done(dest_path)
             if dest_path.exists() and dest_path != p:
                 dest_path.unlink()
             temp_path.rename(dest_path)
             if dest_path != p and p.exists():
                 p.unlink()
 
-            _mark_done(p)
-            _mark_done(dest_path)
             notify(ss_tr("video_saved"), "", icon="video-x-generic-symbolic")
             return dest_path
     except Exception as e:
@@ -719,7 +748,7 @@ def process_video(file_path, audio_file=None):
 def run_daemon():
     print("[mac-screenshot-process] Daemon started, watching screenshot and screencast directories via inotify...")
     home = Path(os.path.expanduser("~"))
-    watch_dirs = [
+    raw_watch_dirs = [
         home / "Зображення" / "Знімки екрана",
         home / "Obrazy" / "Zrzuty ekranu",
         home / "Pictures" / "Screenshots",
@@ -727,9 +756,14 @@ def run_daemon():
         home / "Wideo" / "Nagrania ekranu",
         home / "Videos" / "Screencasts"
     ]
-
-    for d in watch_dirs:
+    watch_dirs = []
+    seen_watch_resolved = set()
+    for d in raw_watch_dirs:
         d.mkdir(parents=True, exist_ok=True)
+        rd = d.resolve()
+        if rd not in seen_watch_resolved:
+            seen_watch_resolved.add(rd)
+            watch_dirs.append(d)
 
     # Track by inode and canonical path so we NEVER reprocess any file
     processed_inodes = set()
@@ -816,7 +850,8 @@ def run_daemon():
                         pass
         elif f.suffix.lower() in [".webm", ".mp4", ".mkv"]:
             if not f.stem.endswith("_temp") and "Originals" not in f.parts:
-                # If audio sidecar recording/muxing is active or pending, give `--file --audio-file` first claim
+                # Give extension.js `--file [--audio-file]` first claim on the lock before daemon fallback runs
+                time.sleep(1.5)
                 for _ in range(15):
                     if not _audio_pending_or_active():
                         break

@@ -470,8 +470,16 @@ class TestCrossDistroAndWizard(unittest.TestCase):
             self.assertIn(needle, ss_ui_js)
 
         eval_js = (ext_root / "eval-helper@mactheme" / "extension.js").read_text(encoding="utf-8")
-        for needle in ("SyncScreenshotStyling", "handleCapturedScreenshot", "takeAudioSidecarPath", "--audio-file"):
+        for needle in (
+            "SyncScreenshotStyling",
+            "handleCapturedScreenshot",
+            "takeAudioSidecarPath",
+            "--audio-file",
+            "_lastHandledScreencastPath",
+            "_macScreencastFailed",
+        ):
             self.assertIn(needle, eval_js)
+        self.assertIn("_stoppingScreencast", ss_ui_js)
 
         liquid_js = (ext_root / "liquid-glass@thinkingcoding1231.gmail.com" / "dist" / "liquidEffect.js").read_text(encoding="utf-8")
         self.assertIn("o.includes('screenshot')", liquid_js)
@@ -491,7 +499,21 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         self.assertIn("this.container.visible = true", cast_js)
 
         proc_py = (ROOT / "bin" / "mac-screenshot-process").read_text(encoding="utf-8")
-        for needle in ("--pick-folder", "--record-audio", "--audio-file", "--mic", "--system-audio", "_acquire_process_lock", "pick_folder_dialog", "record_audio_stream"):
+        for needle in (
+            "--pick-folder",
+            "--record-audio",
+            "--audio-file",
+            "--mic",
+            "--system-audio",
+            "_acquire_process_lock",
+            "_was_recently_done",
+            "seen_watch_resolved",
+            "wpctl",
+            "last_notify_",
+            '"-r"',
+            "pick_folder_dialog",
+            "record_audio_stream",
+        ):
             self.assertIn(needle, proc_py)
 
         settings_py = (ROOT / "bin" / "mac-styling-settings").read_text(encoding="utf-8")
