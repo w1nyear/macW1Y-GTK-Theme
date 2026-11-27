@@ -1306,6 +1306,21 @@ install_extensions() {
     run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com dock-margin-bottom 8 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.keybindings toggle-message-tray "['<Super>m']" 2>/dev/null || true
     run_as_user gsettings set org.gnome.shell.extensions.appmenu clipboard-shortcut "['<Super>v']" 2>/dev/null || true
+
+    # Install user-level Super+P monitor preference persistence helper & service
+    if [ -f "$SCRIPT_DIR/bin/mac-monitor-persist" ] && [ -f "$SCRIPT_DIR/systemd/mac-monitor-persist.service" ]; then
+        mkdir -p "$TARGET_HOME/.local/bin" "$TARGET_HOME/.config/systemd/user"
+        macw1y_state record-file "$TARGET_HOME/.local/bin/mac-monitor-persist" --component extensions 2>/dev/null || true
+        macw1y_state record-file "$TARGET_HOME/.config/systemd/user/mac-monitor-persist.service" --component extensions 2>/dev/null || true
+        macw1y_state record-service "mac-monitor-persist.service" --scope user 2>/dev/null || true
+        cp -f "$SCRIPT_DIR/bin/mac-monitor-persist" "$TARGET_HOME/.local/bin/mac-monitor-persist"
+        chmod 755 "$TARGET_HOME/.local/bin/mac-monitor-persist"
+        cp -f "$SCRIPT_DIR/systemd/mac-monitor-persist.service" "$TARGET_HOME/.config/systemd/user/mac-monitor-persist.service"
+        chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.local/bin/mac-monitor-persist" "$TARGET_HOME/.config/systemd/user/mac-monitor-persist.service" 2>/dev/null || true
+        run_as_user systemctl --user daemon-reload 2>/dev/null || true
+        run_as_user systemctl --user enable --now mac-monitor-persist.service 2>/dev/null || true
+    fi
+
     log_success "GNOME Shell extensions configured successfully!"
 }
 

@@ -313,6 +313,9 @@ restore_ui() {
     rm -f "$TARGET_HOME/.config/environment.d/10-gnome-shell-overlay.conf"
     rm -f "$TARGET_HOME/.config/systemd/user/mac-app-manager.service"
     rm -f "$TARGET_HOME/.config/systemd/user/mac-screenshot-daemon.service"
+    run_as_user systemctl --user disable --now mac-monitor-persist.service 2>/dev/null || true
+    rm -f "$TARGET_HOME/.config/systemd/user/mac-monitor-persist.service"
+    rm -f "$TARGET_HOME/.local/bin/mac-monitor-persist"
     rm -f "$TARGET_HOME/.config/systemd/user/org.gnome.Shell@.service.d/mac-transition.conf*"
     run_as_user update-desktop-database "$TARGET_HOME/.local/share/applications" 2>/dev/null || true
 
