@@ -6450,3 +6450,14 @@ Task #938:
   - Перевірка та синхронізація:
     * Синхронізовано `/usr/local/bin/mac-screenshot-process`, `~/.local/bin/mac-screenshot-process`, `eval-helper@mactheme`, [extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json), `/usr/share/mactheme/config/extensions.lock.json` та `/home/vitaliy/Desktop/done.txt`; перезапущено `mac-screenshot-daemon.service`.
     * Жива перевірка запису через UI -> зупинка з менюбара підтвердила 1 сповіщення («Запис екрана збережено») замість 2 і наявність обох потоків (`h264` відео + `aac` аудіо з системного монітора); пройдено повний набір тестів і перевірок.
+
+#1010: Затемнення області за межами прямокутника виділення у режимі вибору області Print Screen
+  - Змінені файли:
+    * [macScreenshotUI.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/macScreenshotUI.js)
+    * [extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+    * [test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+  - Що реалізовано:
+    * У `_removeFullscreenDimming()` у [macScreenshotUI.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/macScreenshotUI.js) для чотирьох зовнішніх прямокутників `_areaIndicator` (`_topRect`, `_bottomRect`, `_leftRect`, `_rightRect`) повернуто затемнення `rgba(0, 0, 0, 0.42)`, залишаючи внутрішню область виділення (`_selectionRect`) прозорою й світлою, а повноекранний режим і вибір вікна без затемнення.
+  - Перевірка та синхронізація:
+    * Синхронізовано `~/.local/share/gnome-shell/extensions/eval-helper@mactheme/`, [extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json), `/usr/share/mactheme/config/extensions.lock.json` та `/home/vitaliy/Desktop/done.txt`.
+    * Візуально перевірено в `Print Screen` (область усередині світла, зовні затемнена `0.42`) та пройдено весь набір тестів і перевірок репозиторію.

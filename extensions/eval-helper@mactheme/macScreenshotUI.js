@@ -1129,16 +1129,24 @@ class MacScreenshotController {
     _removeFullscreenDimming() {
         const ui = this._ui;
         if (!ui) return;
-        const clearShades = (ind) => {
+        const setRectShades = (ind, styleVal) => {
             if (!ind) return;
             for (const r of [ind._topRect, ind._bottomRect, ind._leftRect, ind._rightRect]) {
                 if (r) {
-                    r.style = 'background-color: transparent !important; background: none !important;';
+                    r.style = styleVal;
                 }
             }
         };
-        clearShades(ui._areaSelector?._areaIndicator);
-        clearShades(ui._screencastAreaIndicator);
+        // Darken only the region outside the dashed selection rectangle in area mode;
+        // keep inside the rectangle, fullscreen, and window modes unobstructed.
+        setRectShades(
+            ui._areaSelector?._areaIndicator,
+            'background-color: rgba(0, 0, 0, 0.42) !important; background-image: none !important;'
+        );
+        setRectShades(
+            ui._screencastAreaIndicator,
+            'background-color: transparent !important; background: none !important;'
+        );
         if (ui._areaSelector) {
             ui._areaSelector.style = 'background-color: transparent !important;';
         }

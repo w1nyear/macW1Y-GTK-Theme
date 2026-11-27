@@ -247,7 +247,7 @@
         "50",
         "51"
       ],
-      "sha256": "9b15907ada55317df66558e6a4e375b452fcdd653e6aaae678ad4d498c6c9d37",
+      "sha256": "bea94ef1b65b2e86b8fd0f1eece186f9638371e9fa79cea4705f4cecf735b2e3",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -258,7 +258,7 @@
       "has_custom_patches": true,
       "patch_description": "Local D-Bus EvalHelper service and macW1Y Alt+Tab switcher enhancements",
       "last_verified": "2026-11-26",
-      "pinned_sha256": "9b15907ada55317df66558e6a4e375b452fcdd653e6aaae678ad4d498c6c9d37",
+      "pinned_sha256": "bea94ef1b65b2e86b8fd0f1eece186f9638371e9fa79cea4705f4cecf735b2e3",
       "integrity_hash": "f5219cbdadcf16d4e5f75d8d3754abe7d184d9ea3fef62fcf5fb2ec510cd91b7",
       "integrity": "f5219cbdadcf16d4e5f75d8d3754abe7d184d9ea3fef62fcf5fb2ec510cd91b7"
     },

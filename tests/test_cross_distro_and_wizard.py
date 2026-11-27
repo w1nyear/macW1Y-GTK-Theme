@@ -466,6 +466,7 @@ class TestCrossDistroAndWizard(unittest.TestCase):
             "handleCapturedScreenshot",
             "takeAudioSidecarPath",
             "_macSyncScreenshotStyling",
+            "rgba(0, 0, 0, 0.42)",
         ):
             self.assertIn(needle, ss_ui_js)
 
