@@ -9924,22 +9924,22 @@ window.nautilus-window shadow,
 
 window.nautilus-window .sidebar-pane headerbar,
 window.nautilus-window .nautilus-sidebar-headerbar {
-    margin-top: -6px;
+    margin-top: 0px;
 }
 
 window.nautilus-window .sidebar-pane headerbar windowcontrols.start:dir(ltr),
 window.nautilus-window .nautilus-sidebar-headerbar windowcontrols,
 window.nautilus-window windowcontrols.start {
     margin-left: 3px;
-    margin-top: -6px;
-    margin-bottom: 6px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 window.nautilus-window .sidebar-pane headerbar windowcontrols button,
 window.nautilus-window .nautilus-sidebar-headerbar windowcontrols button,
 window.nautilus-window windowcontrols.start button {
-    margin-top: 1px;
-    margin-bottom: 21px;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
 
 navigation-split-view headerbar windowcontrols.start:dir(ltr),

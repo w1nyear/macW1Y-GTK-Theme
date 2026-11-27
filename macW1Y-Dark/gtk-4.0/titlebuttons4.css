@@ -31,21 +31,21 @@ windowcontrols {
   margin-right: 10px;
 }
 
-/* Nautilus Window Controls Lift to macW1Y Baseline */
+/* Nautilus Window Controls Baseline */
 .nautilus-window headerbar windowcontrols,
 .nautilus-window windowcontrols,
 .nautilus-window .sidebar-pane headerbar windowcontrols,
 .nautilus-window .nautilus-sidebar-headerbar windowcontrols {
-  margin-top: -6px;
-  margin-bottom: 6px;
+  margin-top: 0px;
+  margin-bottom: 0px;
 }
 
 .nautilus-window headerbar windowcontrols button,
 .nautilus-window windowcontrols button,
 .nautilus-window .sidebar-pane headerbar windowcontrols button,
 .nautilus-window .nautilus-sidebar-headerbar windowcontrols button {
-  margin-top: 1px;
-  margin-bottom: 21px;
+  margin-top: 0px;
+  margin-bottom: 0px;
 }
 
 windowcontrols button.close,
