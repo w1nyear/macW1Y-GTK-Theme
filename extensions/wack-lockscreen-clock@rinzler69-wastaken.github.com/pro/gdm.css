@@ -1,7 +1,9 @@
 
 .login-dialog .login-dialog-button.login-dialog-auth-menu-button,
 .login-dialog .login-dialog-auth-menu-button,
-.login-dialog-auth-menu-button {
+.login-dialog-auth-menu-button,
+.login-dialog .wack-cupertino-prompt .login-dialog-button.default,
+.login-dialog .wack-cupertino-prompt .login-dialog-button:not(.cancel-button):not(.a11y-button):not(.login-dialog-session-list-button):not(.login-dialog-auth-menu-button) {
     display: none !important;
     width: 0px !important;
     height: 0px !important;

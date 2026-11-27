@@ -297,7 +297,7 @@ class MacScreenshotController {
         this._bar = new St.BoxLayout({
             name: 'mac-screenshot-bar',
             style_class: 'mac-screenshot-bar',
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             reactive: true,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
@@ -350,7 +350,7 @@ class MacScreenshotController {
             y_align: Clutter.ActorAlign.CENTER,
         });
         const optRow = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             y_align: Clutter.ActorAlign.CENTER,
             style: 'spacing: 5px;',
         });
@@ -608,7 +608,7 @@ class MacScreenshotController {
         this._optionsPopup.add_child(this._optHoverPill);
 
         this._optionsListBox = new St.BoxLayout({
-            vertical: true,
+            orientation: Clutter.Orientation.VERTICAL,
             reactive: true,
             style: 'width: 286px; padding: 6px; spacing: 1px;',
         });
@@ -654,7 +654,7 @@ class MacScreenshotController {
                 style: 'padding: 5px 10px 5px 8px; border-radius: 7px; background-color: transparent;',
             });
             const box = new St.BoxLayout({
-                vertical: false,
+                orientation: Clutter.Orientation.HORIZONTAL,
                 x_expand: true,
                 y_align: Clutter.ActorAlign.CENTER,
                 style: 'spacing: 6px;',

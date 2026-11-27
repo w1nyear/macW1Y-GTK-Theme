@@ -10,6 +10,14 @@
    - Оновлено контрольні суми цілісності в `config/extensions.lock.json` та синхронізовано розширення.
    - Проведено повну перевірку на 4 збережених QEMU/KVM ВМ (`Arch Linux`, `Debian 13`, `Fedora 44`, `Ubuntu 26.10`) зі зняттям 5 скріншотів кожної ОС (GRUB `macw1y-boot`, Cupertino GDM, Finder + `Мас стилізація`, Print Screen + Liquid Glass + віджети, чистий робочий стіл із `fastfetch`), пройдено `python3 -m unittest discover -s tests` (67/67 OK), `bin/mac-extension-guard verify` (21/21 OK) і `bin/mac-i18n-verify`.
 
+771. Усунення всіх крос-дистрибутивних візуальних розбіжностей у ВМ (GDM, Nautilus, Параметри, Print Screen, шрифт термінала):
+   - **GDM локскрін (Arch Linux, Ubuntu 26.10)**: приховано системний `_defaultButtonWell` та `_nextButton` (стрілку `>`) у `extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/src/pro/gdmAnimationController.js` + CSS (`pro/gdm.css`, `stylesheet.css`), а також додано синхронізацію `/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com` у режим `--update` (`install.sh`).
+   - **Nautilus Finder UI (Arch Linux, Debian 13, Fedora 44, Ubuntu 26.10)**: додано D-Bus сервіс `services/org.gnome.Nautilus.service` (`Exec=/usr/local/bin/nautilus --gapplication-service`) з розгортанням у `install.sh` (`--install`, `--update`, `--uninstall`), щоб D-Bus активація з `ding`/GNOME завжди запускала обгортку з `libmac_nautilus.so`.
+   - **Параметри GNOME 51 (Arch Linux)**: оновлено всі 16 шаблонів `cc-window.ui` (видалено неіснуючий у 51.2.1 `development_warning_dialog` і додано `AdwNavigationView` `id="navigation"`), а в `bin/gnome-control-center` виключено несумісний оверлей `cc-system-panel.ui` для GNOME Control Center `>= 51` — усі вкладки бічної панелі та `Мас стилізація` працюють без збоїв.
+   - **Print Screen UI на GNOME 51 (Arch Linux, Ubuntu 26.10)**: у `extensions/eval-helper@mactheme/macScreenshotUI.js` замінено застаріле `vertical: true/false` на `orientation: Clutter.Orientation.VERTICAL/HORIZONTAL` у всіх `St.BoxLayout`.
+   - **Шрифт термінала `Ptyxis` (Debian 13, Fedora 44, Ubuntu 26.10)**: додано сильний pattern-аліас `'SF Mono' -> 'Default Mono'` у `config/fonts.conf`, оновлено `dconf/gnome-all.dconf` на `'Default Mono 10.5'`, а в `install.sh --update` додано синхронізацію `fonts.conf`, `fc-cache -f` та міграцію `org.gnome.Ptyxis font-name`.
+   - **Повторна послідовна перевірка 4 ВМ**: кожна ВМ перевірена по черзі (`arch` -> `debian` -> `fedora` -> `ubuntu`) із збереженням дисків і знімків `pre_macw1y`; усі 67 unit-тестів (`tests/`), `bin/mac-extension-guard verify` (21/21) та `bin/mac-i18n-verify` успішно пройдені.
+
 ================================================================================
                macW1Y v0.7 — Журнал виконаних завдань розробки
 ================================================================================

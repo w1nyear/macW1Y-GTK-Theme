@@ -386,6 +386,20 @@ export class GdmAnimationController {
         authPrompt.set_pivot_point(0, 0);
         authPrompt.add_style_class_name('wack-cupertino-prompt');
 
+        for (const btnActor of [authPrompt._defaultButtonWell, authPrompt._nextButton]) {
+            if (!btnActor) continue;
+            btnActor.visible = false;
+            btnActor.opacity = 0;
+            if (!btnActor._wackHideNextId) {
+                btnActor._wackHideNextId = btnActor.connect('notify::visible', () => {
+                    if (btnActor.visible && authPrompt.has_style_class_name('wack-cupertino-prompt')) {
+                        btnActor.visible = false;
+                        btnActor.opacity = 0;
+                    }
+                });
+            }
+        }
+
         if (authPrompt._message) {
             authPrompt._message.add_style_class_name('wack-cupertino-message');
             authPrompt._message.y_expand = false;

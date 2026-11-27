@@ -1310,6 +1310,11 @@ install_extensions() {
                 fi
             fi
         done
+        if [ -d "$SCRIPT_DIR/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com" ]; then
+            sync_directory_tree "$SCRIPT_DIR/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com" "/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com" true
+            sudo glib-compile-schemas "/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/schemas" 2>/dev/null || true
+            sudo chmod -R a+rX "/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com" 2>/dev/null || true
+        fi
         chown -R "${TARGET_USER}:${TARGET_USER}" "$EXT_USER_DIR"
     fi
     
@@ -1782,6 +1787,8 @@ install_settings_overlay() {
         rm -f "$APP_DIR/firmware-updater_firmware-updater.desktop" 2>/dev/null || true
     fi
     [ -f "$SCRIPT_DIR/services/org.gnome.Settings.service" ] && cp "$SCRIPT_DIR/services/org.gnome.Settings.service" "$SVC_DIR/"
+    [ -f "$SCRIPT_DIR/services/org.gnome.Nautilus.service" ] && cp "$SCRIPT_DIR/services/org.gnome.Nautilus.service" "$SVC_DIR/"
+    pkill -x nautilus 2>/dev/null || true
     
     if [ -d "$SCRIPT_DIR/config/mac-styling" ]; then
         cp -r "$SCRIPT_DIR/config/mac-styling/"* "$CFG_DIR/"
@@ -2747,6 +2754,11 @@ EOF_CUR_THEME_UP
                 fi
             fi
         done
+        if [ -d "$SCRIPT_DIR/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com" ]; then
+            sync_directory_tree "$SCRIPT_DIR/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com" "/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com" true
+            sudo glib-compile-schemas "/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/schemas" 2>/dev/null || true
+            sudo chmod -R a+rX "/usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com" 2>/dev/null || true
+        fi
         local EXT_LIST=(
             "user-theme@gnome-shell-extensions.gcampax.github.com"
             "ubuntu-appindicators@ubuntu.com"
@@ -2826,6 +2838,19 @@ EOF_CUR_THEME_UP
         chown "${TARGET_USER}:${TARGET_USER}" "$EXT_UPDATES_PATH" 2>/dev/null || true
         run_as_user gsettings set org.gnome.shell allow-extension-installation true 2>/dev/null || true
         run_as_user gsettings set org.gnome.software download-updates false 2>/dev/null || true
+
+        if [ -f "$SCRIPT_DIR/config/fonts.conf" ]; then
+            mkdir -p "$TARGET_HOME/.config/fontconfig" 2>/dev/null || true
+            sync_or_update_file "$SCRIPT_DIR/config/fonts.conf" "$TARGET_HOME/.config/fontconfig/fonts.conf" false
+            sync_or_update_file "$SCRIPT_DIR/config/fonts.conf" "/etc/fonts/conf.d/50-macw1y-fonts.conf" true
+            fc-cache -f >/dev/null 2>&1 || true
+            run_as_user fc-cache -f >/dev/null 2>&1 || true
+        fi
+        local cur_ptyxis_font
+        cur_ptyxis_font="$(run_as_user gsettings get org.gnome.Ptyxis font-name 2>/dev/null || true)"
+        if [ "$cur_ptyxis_font" = "'SF Mono 10.5'" ] || [ -z "$cur_ptyxis_font" ]; then
+            run_as_user gsettings set org.gnome.Ptyxis font-name 'Default Mono 10.5' 2>/dev/null || true
+        fi
     fi
 
     log_info "7/10 Checking Settings components (GNOME Control Center Overlay)..."
@@ -2924,6 +2949,9 @@ EOF_CUR_THEME_UP
         rm -f "$APP_DIR/firmware-updater_firmware-updater.desktop" 2>/dev/null || true
     fi
     [ -f "$SCRIPT_DIR/services/org.gnome.Settings.service" ] && sync_or_update_file "$SCRIPT_DIR/services/org.gnome.Settings.service" "$SVC_DIR/org.gnome.Settings.service" false
+    [ -f "$SCRIPT_DIR/bin/gnome-control-center" ] && sync_or_update_file "$SCRIPT_DIR/bin/gnome-control-center" "/usr/local/bin/gnome-control-center" true && sudo chmod +x /usr/local/bin/gnome-control-center 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/services/org.gnome.Nautilus.service" ] && sync_or_update_file "$SCRIPT_DIR/services/org.gnome.Nautilus.service" "$SVC_DIR/org.gnome.Nautilus.service" false
+    pkill -x nautilus 2>/dev/null || true
     if [ -d "$SCRIPT_DIR/config/mac-styling" ]; then
         sync_directory_tree "$SCRIPT_DIR/config/mac-styling" "$CFG_DIR" false
     fi
@@ -3218,7 +3246,7 @@ run_clean_update() {
     rm -f "$TARGET_HOME/.local/lib/libmac_settings.so"
     sudo rm -f /usr/local/lib/libmacpopover.so /usr/lib/libmacpopover.so
     rm -f "$TARGET_HOME/.local/share/applications/mac-styling-settings.desktop" "$TARGET_HOME/.local/share/applications/org.gnome.Settings.desktop"
-    rm -f "$TARGET_HOME/.local/share/dbus-1/services/org.gnome.Settings.service"
+    rm -f "$TARGET_HOME/.local/share/dbus-1/services/org.gnome.Settings.service" "$TARGET_HOME/.local/share/dbus-1/services/org.gnome.Nautilus.service"
     rm -rf "$TARGET_HOME/.config/mac-styling"
     rm -f "$TARGET_HOME/.config/environment.d/10-mac-theme.conf"
     

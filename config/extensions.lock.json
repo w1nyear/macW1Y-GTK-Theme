@@ -247,7 +247,7 @@
         "50",
         "51"
       ],
-      "sha256": "dc56ba0170236da467e6630b2eb31a8df552cfa0eaac91f2374eb41bda85e9bb",
+      "sha256": "a22b026eb337bd01c9571f5fce6d172dd81b930601f3ffb7da3d451a5fc2dece",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -258,7 +258,7 @@
       "has_custom_patches": true,
       "patch_description": "Local D-Bus EvalHelper service and macW1Y Alt+Tab switcher enhancements",
       "last_verified": "2026-11-27",
-      "pinned_sha256": "dc56ba0170236da467e6630b2eb31a8df552cfa0eaac91f2374eb41bda85e9bb",
+      "pinned_sha256": "a22b026eb337bd01c9571f5fce6d172dd81b930601f3ffb7da3d451a5fc2dece",
       "integrity_hash": "f5219cbdadcf16d4e5f75d8d3754abe7d184d9ea3fef62fcf5fb2ec510cd91b7",
       "integrity": "f5219cbdadcf16d4e5f75d8d3754abe7d184d9ea3fef62fcf5fb2ec510cd91b7"
     },
@@ -551,7 +551,7 @@
         "50",
         "51"
       ],
-      "sha256": "8fee0e14043ac3bafc277b74b2d9f130a9aa5f6ec825b0b413c345b7f376e038",
+      "sha256": "f648d1b9973aa1ece3dc4e5367edb269f1e5ccc5115292644188fc714698d148",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -560,7 +560,7 @@
       "has_custom_patches": true,
       "patch_description": "Curtain slide & fullscreen dimming elimination (Task 575); GDM lockscreen date and prompt positioning (Task 669); static-first GDM wallpaper and deferred video startup (Phase 7); corrected GDM module paths, isolated optional UI failures, restored native actors/state on teardown, and hardened video/player lifecycle (Phase 8)",
       "last_verified": "2026-11-27",
-      "pinned_sha256": "1640a0a0c2871132b4d1a768bfd3b6e8e6bee92841b20643674b292b3b6ea00e"
+      "pinned_sha256": "73398e736a205d1fc1a9e54191ef6343dd7920042c00227c05ad108f9c783bac"
     },
     "wifi-hotspot-quick-settings@aryan10.github.io": {
       "uuid": "wifi-hotspot-quick-settings@aryan10.github.io",
