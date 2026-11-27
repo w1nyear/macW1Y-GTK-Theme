@@ -425,22 +425,22 @@ export const DockAbstractAppIcon = GObject.registerClass({
         }
     }
 
-    _startBackgroundWatcher() {
+    _startBackgroundWatcher(delayMs = 150) {
         if (this._bgWatcherId)
             return;
-        this._bgWatcherId = GLib.timeout_add(GLib.PRIORITY_LOW, 2000, () => {
-            if (!this.running || this.windowsCount > 0) {
-                this._bgWatcherId = 0;
+        this._bgWatcherId = GLib.timeout_add(GLib.PRIORITY_DEFAULT_IDLE, delayMs, () => {
+            this._bgWatcherId = 0;
+            if (!this.running || this.windowsCount > 0)
                 return GLib.SOURCE_REMOVE;
-            }
             _cachedRunningComms = null;
             const stillRunning = isAppRunningInBackground(this.app, this.windowsCount);
             if (!stillRunning) {
                 this.running = false;
-                this._bgWatcherId = 0;
                 return GLib.SOURCE_REMOVE;
             }
-            return GLib.SOURCE_CONTINUE;
+            const nextDelay = delayMs < 400 ? 350 : 1500;
+            this._startBackgroundWatcher(nextDelay);
+            return GLib.SOURCE_REMOVE;
         });
     }
 
@@ -452,9 +452,11 @@ export const DockAbstractAppIcon = GObject.registerClass({
     }
 
     _updateRunningState() {
+        if (this.windowsCount === 0)
+            _cachedRunningComms = null;
         this.running = isAppRunningInBackground(this.app, this.windowsCount);
         if (this.running && this.windowsCount === 0)
-            this._startBackgroundWatcher();
+            this._startBackgroundWatcher(150);
         else
             this._stopBackgroundWatcher();
     }
