@@ -96,7 +96,12 @@ fi
 # 5. Overlay file check & activation
 OVERLAY="/usr/share/mactheme/gnome-shell-overlay/ui/layout.js"
 if [ ! -f "$OVERLAY" ]; then
-    OVERLAY="$HOME/MACTHEMEFILES/gnome-shell-overlay/ui/layout.js"
+    for cand in "$HOME/macW1Y/gnome-shell-overlay/ui/layout.js" "$HOME/MACTHEMEFILES/gnome-shell-overlay/ui/layout.js"; do
+        if [ -f "$cand" ]; then
+            OVERLAY="$cand"
+            break
+        fi
+    done
 fi
 
 if [ -f "$OVERLAY" ]; then

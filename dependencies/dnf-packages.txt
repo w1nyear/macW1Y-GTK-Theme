@@ -53,3 +53,4 @@ dbus-daemon
 xdg-utils
 libnotify
 zenity
+python3-pillow

@@ -1061,7 +1061,7 @@ scale > trough > slider:active {
   min-height: 20px;
   margin: -8px -17px;
   background-color: transparent;
-  background-image: url('file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass.svg');
+  background-image: url('assets/scalable/slider-glass.svg');
   background-repeat: no-repeat;
   background-size: 100% 100%;
   border-style: none;
@@ -1101,7 +1101,7 @@ scale.vertical > trough > slider:active {
   min-height: 38px;
   margin: -17px -8px;
   background-color: transparent;
-  background-image: url('file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass-vertical.svg');
+  background-image: url('assets/scalable/slider-glass-vertical.svg');
   background-repeat: no-repeat;
   background-size: 100% 100%;
   border-style: none;

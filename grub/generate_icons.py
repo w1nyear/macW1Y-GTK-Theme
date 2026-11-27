@@ -19,10 +19,15 @@ SW, SH = W * S, H * S
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def get_font_path(font_name, fallback_names=None):
+    repo_root = os.path.dirname(SCRIPT_DIR)
     candidates = [
+        os.path.join(repo_root, f'fonts/default/{font_name}'),
+        os.path.expanduser(f'~/.local/share/fonts/default/{font_name}'),
         os.path.expanduser(f'~/.local/share/fonts/SF_Pro_Display/{font_name}'),
         os.path.expanduser(f'~/.local/share/fonts/SF_Pro_Text/{font_name}'),
+        f'/usr/local/share/fonts/default/{font_name}',
         f'/usr/local/share/fonts/{font_name}',
+        f'/usr/share/fonts/default/{font_name}',
         f'/usr/share/fonts/{font_name}',
         f'/usr/share/fonts/truetype/{font_name}',
         f'/usr/share/fonts/opentype/{font_name}',
@@ -30,6 +35,11 @@ def get_font_path(font_name, fallback_names=None):
     if fallback_names:
         for fb in fallback_names:
             candidates.extend([
+                os.path.join(repo_root, f'fonts/default/{fb}'),
+                os.path.expanduser(f'~/.local/share/fonts/default/{fb}'),
+                f'/usr/local/share/fonts/default/{fb}',
+                f'/usr/share/fonts/dejavu-sans-fonts/{fb}',
+                f'/usr/share/fonts/liberation-sans-fonts/{fb}',
                 f'/usr/share/fonts/truetype/dejavu/{fb}',
                 f'/usr/share/fonts/truetype/liberation/{fb}',
                 f'/usr/share/fonts/{fb}',
@@ -48,11 +58,11 @@ def load_font(font_name, size, fallbacks=None):
             pass
     return ImageFont.load_default()
 
-f_label = load_font('Default-Display-Medium.otf', int(round(15 * S)), ['DejaVuSans-Bold.ttf', 'LiberationSans-Bold.ttf'])
-f_continue = load_font('Default-Medium.otf', int(round(12.5 * S)), ['DejaVuSans.ttf', 'LiberationSans-Regular.ttf'])
+f_label = load_font('DefaultDisplay-Medium.otf', int(round(15 * S)), ['Default-Bold.otf', 'DejaVuSans-Bold.ttf', 'LiberationSans-Bold.ttf'])
+f_continue = load_font('Default-Medium.otf', int(round(12.5 * S)), ['Default-Regular.otf', 'DejaVuSans.ttf', 'LiberationSans-Regular.ttf'])
 f_power = load_font('Default-Regular.otf', int(round(12.5 * S)), ['DejaVuSans.ttf', 'LiberationSans-Regular.ttf'])
-f_time = load_font('Default-Medium.otf', int(round(13.5 * S)), ['DejaVuSans.ttf', 'LiberationSans-Regular.ttf'])
-f_abc = load_font('Default-Semibold.otf', int(round(12.5 * S)), ['DejaVuSans-Bold.ttf', 'LiberationSans-Bold.ttf'])
+f_time = load_font('Default-Medium.otf', int(round(13.5 * S)), ['Default-Regular.otf', 'DejaVuSans.ttf', 'LiberationSans-Regular.ttf'])
+f_abc = load_font('Default-Semibold.otf', int(round(12.5 * S)), ['Default-Bold.otf', 'DejaVuSans-Bold.ttf', 'LiberationSans-Bold.ttf'])
 
 # 1. Base clean assets from permanent directory
 assets_dir = os.path.join(SCRIPT_DIR, 'assets')
@@ -111,8 +121,10 @@ def create_uefi_chip_icon():
     # Pin 1 indicator dot
     d.ellipse([x0 + 6 * S, y0 + 6 * S, x0 + 10 * S, y0 + 10 * S], fill=(120, 120, 128, 255))
 
-    f_u = ImageFont.truetype(font_bold, int(round(13 * S)))
-    f_s = ImageFont.truetype(font_text, int(round(6 * S)))
+    f_u_path = get_font_path('Default-Bold.otf', ['DejaVuSans-Bold.ttf', 'LiberationSans-Bold.ttf'])
+    f_s_path = get_font_path('Default-Regular.otf', ['DejaVuSans.ttf', 'LiberationSans-Regular.ttf'])
+    f_u = ImageFont.truetype(f_u_path, int(round(13 * S))) if f_u_path else ImageFont.load_default()
+    f_s = ImageFont.truetype(f_s_path, int(round(6 * S))) if f_s_path else ImageFont.load_default()
 
     # Thin accent lines
     d.line([cx - 18 * S, cy - 12 * S, cx + 18 * S, cy - 12 * S], fill=(140, 140, 148, 180), width=1 * S)
@@ -403,21 +415,49 @@ def render_transition_frame(progress, ext_name='VTOYEFI', os_name='Ubuntu'):
 
     return im.resize((W, H), Image.Resampling.LANCZOS)
 
-def main():
-    print("Generating macW1Y macW1Y GRUB theme assets (lower placement & unclipped gear)...")
+def detect_local_os():
+    """Detect current Linux distro display label and GRUB icon class names from /etc/os-release."""
+    os_id = 'ubuntu'
+    pretty = 'Linux'
+    if os.path.isfile('/etc/os-release'):
+        data = {}
+        try:
+            with open('/etc/os-release', 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if '=' in line and not line.startswith('#'):
+                        k, v = line.split('=', 1)
+                        data[k] = v.strip().strip('"')
+            os_id = data.get('ID', 'linux').lower()
+            raw_name = data.get('NAME') or data.get('PRETTY_NAME') or os_id.title()
+            # Keep card labels concise like macOS Startup Manager
+            name_map = {
+                'ubuntu': 'Ubuntu',
+                'debian': 'Debian',
+                'fedora': 'Fedora',
+                'arch': 'Arch Linux',
+                'cachyos': 'CachyOS',
+                'linuxmint': 'Linux Mint',
+            }
+            pretty = name_map.get(os_id, raw_name.split()[0] if len(raw_name) > 14 else raw_name)
+        except Exception:
+            pass
+    aliases = {'gnu-linux', 'linux', 'ubuntu', 'debian', 'fedora', 'arch', 'archlinux', 'cachyos', os_id}
+    return pretty, sorted(aliases)
 
-    base_dirs = [
-        '/boot/grub/themes/macw1y-boot',
-        os.path.join(SCRIPT_DIR, 'macw1y-boot')
-    ]
-    usb_dirs = [
-        '/boot/grub/themes/macw1y-boot-usb',
-        os.path.join(SCRIPT_DIR, 'macw1y-boot-usb')
-    ]
-    usb2_dirs = [
-        '/boot/grub/themes/macw1y-boot-usb2',
-        os.path.join(SCRIPT_DIR, 'macw1y-boot-usb2')
-    ]
+def main():
+    print("Generating macW1Y GRUB theme assets (cross-distro layout)...")
+    os_label, os_aliases = detect_local_os()
+
+    grub_roots = []
+    if os.path.isdir('/boot/grub') or not os.path.isdir('/boot/grub2'):
+        grub_roots.append('/boot/grub')
+    if os.path.isdir('/boot/grub2'):
+        grub_roots.append('/boot/grub2')
+
+    base_dirs = [f'{r}/themes/macw1y-boot' for r in grub_roots] + [os.path.join(SCRIPT_DIR, 'macw1y-boot')]
+    usb_dirs = [f'{r}/themes/macw1y-boot-usb' for r in grub_roots] + [os.path.join(SCRIPT_DIR, 'macw1y-boot-usb')]
+    usb2_dirs = [f'{r}/themes/macw1y-boot-usb2' for r in grub_roots] + [os.path.join(SCRIPT_DIR, 'macw1y-boot-usb2')]
 
     for b in base_dirs:
         os.makedirs(f'{b}/icons', exist_ok=True)
@@ -428,8 +468,8 @@ def main():
         os.makedirs(f'{u2}/icons', exist_ok=True)
 
     # 1. 3-card layout screens (Standard without USB)
-    print("1. Rendering 3-card layout screens...")
-    s3_ubuntu = render_3item_screen('os', 'Ubuntu')
+    print(f"1. Rendering 3-card layout screens (OS='{os_label}')...")
+    s3_os = render_3item_screen('os', os_label)
     s3_uefi = render_3item_screen('uefi')
     s3_options = render_3item_screen('options')
     s3_shutdown = render_3item_screen('shutdown')
@@ -437,9 +477,8 @@ def main():
 
     for b in base_dirs:
         icons_dir = f'{b}/icons'
-        s3_ubuntu.save(f'{icons_dir}/ubuntu.png')
-        s3_ubuntu.save(f'{icons_dir}/gnu-linux.png')
-        s3_ubuntu.save(f'{icons_dir}/linux.png')
+        for alias in os_aliases:
+            s3_os.save(f'{icons_dir}/{alias}.png')
 
         s3_uefi.save(f'{icons_dir}/uefi-firmware.png')
         s3_uefi.save(f'{icons_dir}/uefi.png')
@@ -485,7 +524,7 @@ def main():
     # 3. 4-card layout screens (With USB drive)
     print(f"3. Rendering 4-card layout screens (USB connected: {ext1_name})...")
     s4_usb = render_4item_screen('usb', ext_name=ext1_name)
-    s4_ubuntu = render_4item_screen('os', ext_name=ext1_name, os_name='Ubuntu')
+    s4_os = render_4item_screen('os', ext_name=ext1_name, os_name=os_label)
     s4_uefi = render_4item_screen('uefi', ext_name=ext1_name)
     s4_options = render_4item_screen('options', ext_name=ext1_name)
     s4_shutdown = render_4item_screen('shutdown', ext_name=ext1_name)
@@ -497,9 +536,8 @@ def main():
         s4_usb.save(f'{icons_dir}/external.png')
         s4_usb.save(f'{icons_dir}/drive.png')
 
-        s4_ubuntu.save(f'{icons_dir}/ubuntu.png')
-        s4_ubuntu.save(f'{icons_dir}/gnu-linux.png')
-        s4_ubuntu.save(f'{icons_dir}/linux.png')
+        for alias in os_aliases:
+            s4_os.save(f'{icons_dir}/{alias}.png')
 
         s4_uefi.save(f'{icons_dir}/uefi-firmware.png')
         s4_uefi.save(f'{icons_dir}/uefi.png')
@@ -528,7 +566,7 @@ def main():
     print(f"4. Rendering 5-card layout screens (Dual boot: {ext1_name}, {ext2_name})...")
     s5_usb1 = render_5item_screen('usb1', ext1_name=ext1_name, ext2_name=ext2_name)
     s5_usb2 = render_5item_screen('usb2', ext1_name=ext1_name, ext2_name=ext2_name)
-    s5_ubuntu = render_5item_screen('os', ext1_name=ext1_name, ext2_name=ext2_name, os_name='Ubuntu')
+    s5_os = render_5item_screen('os', ext1_name=ext1_name, ext2_name=ext2_name, os_name=os_label)
     s5_uefi = render_5item_screen('uefi', ext1_name=ext1_name, ext2_name=ext2_name)
     s5_options = render_5item_screen('options', ext1_name=ext1_name, ext2_name=ext2_name)
     s5_shutdown = render_5item_screen('shutdown', ext1_name=ext1_name, ext2_name=ext2_name)
@@ -537,16 +575,19 @@ def main():
     import shutil
     import glob
 
-    for u2 in usb2_dirs:
-        # Copy theme.txt, background.png, and all *.pf2 fonts from macw1y-boot
-        src_dir = '/boot/grub/themes/macw1y-boot'
-        if os.path.exists(f'{src_dir}/theme.txt'):
-            shutil.copy2(f'{src_dir}/theme.txt', f'{u2}/theme.txt')
-        if os.path.exists(f'{src_dir}/background.png'):
-            shutil.copy2(f'{src_dir}/background.png', f'{u2}/background.png')
-        for pf2 in glob.glob(f'{src_dir}/*.pf2'):
-            shutil.copy2(pf2, u2)
+    src_base = next((d for d in base_dirs if os.path.exists(f'{d}/theme.txt')), os.path.join(SCRIPT_DIR, 'macw1y-boot'))
+    for target_dir in base_dirs + usb_dirs + usb2_dirs:
+        if target_dir == src_base:
+            continue
+        for fname in ('theme.txt', 'background.png', 'apple_center.png'):
+            if os.path.exists(f'{src_base}/{fname}') and not os.path.exists(f'{target_dir}/{fname}'):
+                shutil.copy2(f'{src_base}/{fname}', f'{target_dir}/{fname}')
+        for pf2 in glob.glob(f'{src_base}/*.pf2'):
+            dst_pf2 = os.path.join(target_dir, os.path.basename(pf2))
+            if not os.path.exists(dst_pf2):
+                shutil.copy2(pf2, dst_pf2)
 
+    for u2 in usb2_dirs:
         icons_dir = f'{u2}/icons'
         s5_usb1.save(f'{icons_dir}/usb1.png')
         s5_usb2.save(f'{icons_dir}/usb2.png')
@@ -561,9 +602,8 @@ def main():
         s5_usb1.save(f'{icons_dir}/external.png')
         s5_usb1.save(f'{icons_dir}/drive.png')
 
-        s5_ubuntu.save(f'{icons_dir}/ubuntu.png')
-        s5_ubuntu.save(f'{icons_dir}/gnu-linux.png')
-        s5_ubuntu.save(f'{icons_dir}/linux.png')
+        for alias in os_aliases:
+            s5_os.save(f'{icons_dir}/{alias}.png')
 
         s5_uefi.save(f'{icons_dir}/uefi-firmware.png')
         s5_uefi.save(f'{icons_dir}/uefi.png')

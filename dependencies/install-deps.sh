@@ -16,6 +16,11 @@ case "$manager" in
     apt)
         sudo apt-get update
         sudo apt-get install -y "${packages[@]}"
+        for opt in ptyxis fastfetch; do
+            if apt-cache show "$opt" >/dev/null 2>&1; then
+                sudo apt-get install -y "$opt" 2>/dev/null || true
+            fi
+        done
         ;;
     dnf)
         missing=()
@@ -25,7 +30,15 @@ case "$manager" in
         if [ ${#missing[@]} -gt 0 ]; then
             sudo dnf install -y --setopt=install_weak_deps=False "${missing[@]}"
         fi
+        for opt in ptyxis fastfetch; do
+            rpm -q "$opt" >/dev/null 2>&1 || sudo dnf install -y --setopt=install_weak_deps=False "$opt" 2>/dev/null || true
+        done
         ;;
-    pacman) sudo pacman -Syu --needed --noconfirm "${packages[@]}" ;;
+    pacman)
+        sudo pacman -Syu --needed --noconfirm "${packages[@]}"
+        for opt in ptyxis fastfetch; do
+            sudo pacman -S --needed --noconfirm "$opt" 2>/dev/null || true
+        done
+        ;;
 esac
 printf 'Обов’язкові залежності встановлено.\n'

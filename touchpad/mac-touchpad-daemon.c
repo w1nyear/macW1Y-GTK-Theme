@@ -57,12 +57,10 @@ static void read_touchpad_config(struct TouchpadConfig *cfg) {
     if (home && strcmp(home, "/root") != 0) {
         snprintf(conf_path, sizeof(conf_path), "%s/.config/mac-touchpad.conf", home);
     } else {
-        if (access("/home/vitaliy/.config/mac-touchpad.conf", R_OK) == 0) {
-            strncpy(conf_path, "/home/vitaliy/.config/mac-touchpad.conf", sizeof(conf_path) - 1);
-        } else if (access("/home/vitaliy/MACTHEMEFILES/touchpad/mac-touchpad.conf", R_OK) == 0) {
-            strncpy(conf_path, "/home/vitaliy/MACTHEMEFILES/touchpad/mac-touchpad.conf", sizeof(conf_path) - 1);
-        } else {
+        if (access("/etc/mac-touchpad.conf", R_OK) == 0) {
             snprintf(conf_path, sizeof(conf_path), "/etc/mac-touchpad.conf");
+        } else if (access("/usr/share/mactheme/mac-touchpad.conf", R_OK) == 0) {
+            snprintf(conf_path, sizeof(conf_path), "/usr/share/mactheme/mac-touchpad.conf");
         }
     }
     FILE *f = fopen(conf_path, "r");

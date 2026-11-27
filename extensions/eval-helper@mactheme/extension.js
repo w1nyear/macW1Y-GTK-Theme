@@ -473,15 +473,18 @@ export default class EvalHelper extends Extension {
         try {
             const nodeInfo = Gio.DBusNodeInfo.new_for_xml(EvalIface);
             this._dbusImpl = Gio.DBusExportedObject.wrapJSObject(nodeInfo.interfaces[0], {
-                Eval: async (code) => {
+                EvalAsync: async (params, invocation) => {
+                    const [code] = params;
+                    let out = 'null';
                     try {
                         let res = eval(code);
                         if (res && typeof res.then === 'function')
                             res = await res;
-                        return JSON.stringify(res !== undefined ? res : null) ?? 'null';
+                        out = JSON.stringify(res !== undefined ? res : null) ?? 'null';
                     } catch (e) {
-                        return `ERROR: ${e?.name}: ${e?.message}\n${e?.stack || e}`;
+                        out = `ERROR: ${e?.name}: ${e?.message}\n${e?.stack || e}`;
                     }
+                    invocation.return_value(new GLib.Variant('(s)', [out]));
                 },
                 ShowEmptyTrashDialog: () => {
                     try {

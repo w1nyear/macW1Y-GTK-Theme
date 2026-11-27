@@ -16,39 +16,46 @@ import sys
 def patch_file(path, patches):
     if not os.path.exists(path):
         print(f"Skipping {path} (not found)")
-        return
+        return False
     with open(path, 'rb') as f:
         data = bytearray(f.read())
-    
+
+    # Verify all offsets first before modifying anything on disk
+    for offset, old_val, new_val in patches:
+        if offset + 8 > len(data):
+            print(f"Skipping {path}: file size ({len(data)}) smaller than patch offset {hex(offset)}")
+            return False
+        curr = struct.unpack('<Q', data[offset:offset+8])[0]
+        if curr != old_val and curr != new_val:
+            print(f"Skipping {path}: GRUB binary at {hex(offset)} has {hex(curr)} (expected {hex(old_val)} or {hex(new_val)})")
+            return False
+
     for offset, old_val, new_val in patches:
         curr = struct.unpack('<Q', data[offset:offset+8])[0]
         if curr != new_val:
-            assert curr == old_val, f'Mismatch at {hex(offset)} in {path}: expected {hex(old_val)} or {hex(new_val)}, got {hex(curr)}'
             data[offset:offset+8] = struct.pack('<Q', new_val)
             print(f'Patched {path} at {hex(offset)}: {hex(old_val)} -> {hex(new_val)}')
         else:
             print(f'Already patched {path} at {hex(offset)}: {hex(new_val)}')
-    
+
     with open(path, 'wb') as f:
         f.write(data)
     print(f'Successfully updated {path}')
+    return True
 
 def main():
-    backup_dir = '/home/vitaliy/MACTHEMEFILES/grub/backup'
-
-    # 1. Restore fresh clean binaries from orig backups first to guarantee clean state
-    if os.path.exists(f'{backup_dir}/normal.mod.orig'):
-        shutil.copy2(f'{backup_dir}/normal.mod.orig', '/boot/grub/x86_64-efi/normal.mod')
-        shutil.copy2(f'{backup_dir}/usr_normal.mod.orig', '/usr/lib/grub/x86_64-efi/normal.mod')
-        print("Restored clean normal.mod from backup")
-
-    if os.path.exists(f'{backup_dir}/grubx64.efi.orig'):
-        shutil.copy2(f'{backup_dir}/grubx64.efi.orig', '/boot/efi/EFI/ubuntu/grubx64.efi')
-        print("Restored clean grubx64.efi from backup")
-
-    if os.path.exists(f'{backup_dir}/emu_normal.mod.orig') and os.path.exists('/usr/lib/grub/x86_64-emu/normal.mod'):
-        shutil.copy2(f'{backup_dir}/emu_normal.mod.orig', '/usr/lib/grub/x86_64-emu/normal.mod')
-        print("Restored clean emu normal.mod from backup")
+    # Only restore from host-local backups if created on this exact system;
+    # NEVER overwrite another distro/version's GRUB or EFI binaries with foreign files!
+    local_backup_dir = '/var/lib/macw1y/grub-backup'
+    if os.path.isdir(local_backup_dir):
+        if os.path.exists(f'{local_backup_dir}/normal.mod.orig') and os.path.exists('/boot/grub/x86_64-efi/normal.mod'):
+            shutil.copy2(f'{local_backup_dir}/normal.mod.orig', '/boot/grub/x86_64-efi/normal.mod')
+        if os.path.exists(f'{local_backup_dir}/usr_normal.mod.orig') and os.path.exists('/usr/lib/grub/x86_64-efi/normal.mod'):
+            shutil.copy2(f'{local_backup_dir}/usr_normal.mod.orig', '/usr/lib/grub/x86_64-efi/normal.mod')
+        if os.path.exists(f'{local_backup_dir}/grubx64.efi.orig') and os.path.exists('/boot/efi/EFI/ubuntu/grubx64.efi'):
+            shutil.copy2(f'{local_backup_dir}/grubx64.efi.orig', '/boot/efi/EFI/ubuntu/grubx64.efi')
+        if os.path.exists(f'{local_backup_dir}/emu_normal.mod.orig') and os.path.exists('/usr/lib/grub/x86_64-emu/normal.mod'):
+            shutil.copy2(f'{local_backup_dir}/emu_normal.mod.orig', '/usr/lib/grub/x86_64-emu/normal.mod')
 
     # 2. Apply navigation patches:
     # UP: 0x74e7 (PREV) — kept as PREV, NEVER boot!

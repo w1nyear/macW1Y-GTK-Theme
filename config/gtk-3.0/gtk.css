@@ -254,7 +254,7 @@ headerbar button.titlebutton.close,
 windowcontrols button.close {
   background-color: #ed6a5e;
   color: #ed6a5e;
-  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-close-dark.png");
+  background-image: url("windows-assets/titlebutton-close-dark.png");
 }
 
 headerbar button.titlebutton.close:hover,
@@ -262,7 +262,7 @@ headerbar button.titlebutton.close:hover,
 windowcontrols button.close:hover {
   background-color: #ed6a5e;
   color: #ed6a5e;
-  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-close-hover-dark.png");
+  background-image: url("windows-assets/titlebutton-close-hover-dark.png");
 }
 
 headerbar button.titlebutton.close:active,
@@ -270,7 +270,7 @@ headerbar button.titlebutton.close:active,
 windowcontrols button.close:active {
   background-color: #bf4942;
   color: #bf4942;
-  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-close-active-dark.png");
+  background-image: url("windows-assets/titlebutton-close-active-dark.png");
 }
 
 headerbar button.titlebutton.minimize,
@@ -278,7 +278,7 @@ headerbar button.titlebutton.minimize,
 windowcontrols button.minimize {
   background-color: #f4bf4f;
   color: #f4bf4f;
-  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-minimize-dark.png");
+  background-image: url("windows-assets/titlebutton-minimize-dark.png");
 }
 
 headerbar button.titlebutton.minimize:hover,
@@ -286,7 +286,7 @@ headerbar button.titlebutton.minimize:hover,
 windowcontrols button.minimize:hover {
   background-color: #f4bf4f;
   color: #f4bf4f;
-  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-minimize-hover-dark.png");
+  background-image: url("windows-assets/titlebutton-minimize-hover-dark.png");
 }
 
 headerbar button.titlebutton.minimize:active,
@@ -294,7 +294,7 @@ headerbar button.titlebutton.minimize:active,
 windowcontrols button.minimize:active {
   background-color: #c4993a;
   color: #c4993a;
-  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-minimize-active-dark.png");
+  background-image: url("windows-assets/titlebutton-minimize-active-dark.png");
 }
 
 headerbar button.titlebutton.maximize,
@@ -302,7 +302,7 @@ headerbar button.titlebutton.maximize,
 windowcontrols button.maximize {
   background-color: #61c554;
   color: #61c554;
-  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-maximize-dark.png");
+  background-image: url("windows-assets/titlebutton-maximize-dark.png");
 }
 
 headerbar button.titlebutton.maximize:hover,
@@ -310,7 +310,7 @@ headerbar button.titlebutton.maximize:hover,
 windowcontrols button.maximize:hover {
   background-color: #61c554;
   color: #61c554;
-  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-maximize-hover-dark.png");
+  background-image: url("windows-assets/titlebutton-maximize-hover-dark.png");
 }
 
 headerbar button.titlebutton.maximize:active,
@@ -318,7 +318,7 @@ headerbar button.titlebutton.maximize:active,
 windowcontrols button.maximize:active {
   background-color: #4b9c40;
   color: #4b9c40;
-  background-image: url("file:///home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/windows-assets/titlebutton-maximize-active-dark.png");
+  background-image: url("windows-assets/titlebutton-maximize-active-dark.png");
 }
 /* --- MAC-TRAFFIC-LIGHTS-END --- */
 
@@ -589,7 +589,7 @@ switch:checked slider:active {
   min-height: 22px;
   margin: 1px;
   background-color: transparent;
-  background-image: url("file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass.svg");
+  background-image: url("assets/scalable/slider-glass.svg");
   background-repeat: no-repeat;
   background-size: 100% 100%;
   border: none;
@@ -660,7 +660,7 @@ scale slider:active {
   min-height: 28px;
   margin: -12px -15px;
   background-color: transparent;
-  background-image: url("file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass.svg");
+  background-image: url("assets/scalable/slider-glass.svg");
   background-repeat: no-repeat;
   background-size: 100% 100%;
   border: none;
@@ -672,7 +672,7 @@ scale.vertical slider:active {
   min-height: 42px;
   margin: -15px -12px;
   background-color: transparent;
-  background-image: url("file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass-vertical.svg");
+  background-image: url("assets/scalable/slider-glass-vertical.svg");
   background-repeat: no-repeat;
   background-size: 100% 100%;
   border: none;
@@ -769,6 +769,7 @@ scale slider:disabled {
   border-bottom-right-radius: 9999px;
   border-left: none;
 }
+
 
 
 

@@ -505,10 +505,19 @@ export function render({body, createLabel, theme, sizeForWidget, widget, setting
 	const useAccent = settings?.get_boolean('battery-use-accent-color') ?? false;
 	const devices = getCachedBatteryDevices().slice(0, slotLimit);
 	refreshBatteryDevices();
+	const displayDevices = devices.length > 0 ? devices : [{
+		source: 'upower',
+		name: _('AC Power'),
+		kind: DEVICE_TYPE.COMPUTER,
+		percentage: 100,
+		powerSupply: true,
+		iconName: 'computer-symbolic',
+		nativePath: 'ac-fallback',
+	}];
 	const iconKey = String(settings?.get_string('battery-icon-size') ?? 'medium');
 	const iconRatio = ICON_RATIOS[iconKey] ?? ICON_RATIOS.medium;
 	const [width, height] = sizeForWidget(widget);
-	const plan = batteryPlan(width, height, iconRatio, devices.length);
+	const plan = batteryPlan(width, height, iconRatio, displayDevices.length);
 	const tray = new St.BoxLayout(boxLayoutProps({
 		style_class: 'widget-battery-tray',
 		x_expand: true,
@@ -517,11 +526,9 @@ export function render({body, createLabel, theme, sizeForWidget, widget, setting
 		style: `spacing: ${plan.gap}px;`,
 	}));
 
-	for (let index = 0; index < devices.length; index++) {
-		tray.add_child(createSlot(devices[index], theme, createLabel, plan, showPercent, useAccent));
+	for (let index = 0; index < displayDevices.length; index++) {
+		tray.add_child(createSlot(displayDevices[index], theme, createLabel, plan, showPercent, useAccent));
 	};
 
-	if (devices.length > 0) {
-		body.add_child(tray);
-	};
+	body.add_child(tray);
 };

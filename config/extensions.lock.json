@@ -247,7 +247,7 @@
         "50",
         "51"
       ],
-      "sha256": "ed62f84b5cc2150b8039102e723b52d10dcda6b2629f9fe5e2ce1c62d1522246",
+      "sha256": "dc56ba0170236da467e6630b2eb31a8df552cfa0eaac91f2374eb41bda85e9bb",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -258,7 +258,7 @@
       "has_custom_patches": true,
       "patch_description": "Local D-Bus EvalHelper service and macW1Y Alt+Tab switcher enhancements",
       "last_verified": "2026-11-27",
-      "pinned_sha256": "ed62f84b5cc2150b8039102e723b52d10dcda6b2629f9fe5e2ce1c62d1522246",
+      "pinned_sha256": "dc56ba0170236da467e6630b2eb31a8df552cfa0eaac91f2374eb41bda85e9bb",
       "integrity_hash": "f5219cbdadcf16d4e5f75d8d3754abe7d184d9ea3fef62fcf5fb2ec510cd91b7",
       "integrity": "f5219cbdadcf16d4e5f75d8d3754abe7d184d9ea3fef62fcf5fb2ec510cd91b7"
     },
@@ -551,7 +551,7 @@
         "50",
         "51"
       ],
-      "sha256": "1640a0a0c2871132b4d1a768bfd3b6e8e6bee92841b20643674b292b3b6ea00e",
+      "sha256": "8fee0e14043ac3bafc277b74b2d9f130a9aa5f6ec825b0b413c345b7f376e038",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -621,7 +621,7 @@
         "50",
         "51"
       ],
-      "sha256": "bb26e4fc8ac4d2fba04e0ff23757dae0b9289a32842241172e5c67a23083ee62",
+      "sha256": "dd751336d2d443101fae71b9d445aa5990a01eafffed072811b86a4096c602a0",
       "status": "locked",
       "source": "github",
       "macw1y_components": [

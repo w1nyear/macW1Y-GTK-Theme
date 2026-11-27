@@ -7,6 +7,13 @@ import Meta from 'gi://Meta';
 
 const SOCKET_PATH = GLib.build_filenamev([GLib.get_user_runtime_dir(), "mac_touchpad.sock"]);
 
+function _getEvalHelperPath() {
+    const userPath = GLib.get_home_dir() + '/.local/share/gnome-shell/extensions/eval-helper@mactheme';
+    if (GLib.file_test(userPath + '/macSetupWizard.js', GLib.FileTest.EXISTS))
+        return userPath;
+    return '/usr/share/gnome-shell/extensions/eval-helper@mactheme';
+}
+
 export default class GestureImpl {
     constructor(ext) {
         this._ext = ext;
@@ -52,7 +59,7 @@ export default class GestureImpl {
                 },
                 ShowSetupWizard: async (force) => {
                     try {
-                        const m = await import(`file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=${Date.now()}`);
+                        const m = await import(`file://${_getEvalHelperPath()}/macSetupWizard.js?v=${Date.now()}`);
                         return m.startSetupWizard(force);
                     } catch (e) {
                         return false;
@@ -60,7 +67,7 @@ export default class GestureImpl {
                 },
                 GetSetupWizardStatus: async () => {
                     try {
-                        const m = await import(`file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=${Date.now()}`);
+                        const m = await import(`file://${_getEvalHelperPath()}/macSetupWizard.js?v=${Date.now()}`);
                         return JSON.stringify({
                             active: !!globalThis.macSetupWizardActive,
                             flag: m.getSetupWizardFlag(),
@@ -73,7 +80,7 @@ export default class GestureImpl {
                 },
                 ResetSetupWizard: async () => {
                     try {
-                        const m = await import(`file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=${Date.now()}`);
+                        const m = await import(`file://${_getEvalHelperPath()}/macSetupWizard.js?v=${Date.now()}`);
                         m.setSetupWizardFlag(true);
                         return true;
                     } catch (e) {
@@ -89,7 +96,7 @@ export default class GestureImpl {
 
 
         try {
-            import(`file:///home/vitaliy/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=${Date.now()}`).then(m => {
+            import(`file://${_getEvalHelperPath()}/macSetupWizard.js?v=${Date.now()}`).then(m => {
                 if (m.getSetupWizardFlag()) {
                     GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
                         m.startSetupWizard(false);

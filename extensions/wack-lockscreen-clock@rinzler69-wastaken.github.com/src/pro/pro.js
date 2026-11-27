@@ -198,6 +198,7 @@ export class GdmManager {
                     return GLib.SOURCE_CONTINUE;
                 }
                 this._findDialogTimeoutId = null;
+                this._scheduleBootReveal(true);
                 return GLib.SOURCE_REMOVE;
             };
             this._findDialogTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, pollForDialog);
@@ -312,10 +313,24 @@ export class GdmManager {
             this._gdmBootCover.visible = true;
             uiGroup.set_child_above_sibling(this._gdmBootCover, null);
         } catch (_) {}
+        if (!this._bootCoverFailsafeId) {
+            this._bootCoverFailsafeId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 6000, () => {
+                this._bootCoverFailsafeId = 0;
+                if (this._active && !this._bootRevealed)
+                    this._scheduleBootReveal(true);
+                else
+                    this._destroyBootCover();
+                return GLib.SOURCE_REMOVE;
+            });
+        }
         return this._gdmBootCover;
     }
 
     _destroyBootCover() {
+        if (this._bootCoverFailsafeId) {
+            GLib.source_remove(this._bootCoverFailsafeId);
+            this._bootCoverFailsafeId = 0;
+        }
         if (this._bootRevealTimeoutId) {
             GLib.source_remove(this._bootRevealTimeoutId);
             this._bootRevealTimeoutId = 0;

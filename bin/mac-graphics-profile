@@ -12,9 +12,21 @@ import subprocess
 import glob
 from datetime import datetime
 
+def _resolve_repo_config():
+    for cand in [
+        os.environ.get("MACW1Y_REPO", ""),
+        os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..")),
+        os.path.expanduser("~/macW1Y"),
+        os.path.expanduser("~/MACTHEMEFILES"),
+        "/usr/share/mactheme",
+    ]:
+        if cand and os.path.isfile(os.path.join(cand, "config/graphics-profile.json")):
+            return os.path.join(cand, "config/graphics-profile.json")
+    return "/usr/share/mactheme/config/graphics-profile.json"
+
 CONFIG_DIR = os.path.expanduser("~/.config/macW1Y")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "graphics-profile.json")
-REPO_CONFIG_FILE = "/home/vitaliy/macW1Y/config/graphics-profile.json"
+REPO_CONFIG_FILE = _resolve_repo_config()
 
 LIQUID_SCHEMA = "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com"
 BMS_SCHEMA = "org.gnome.shell.extensions.blur-my-shell"
@@ -123,9 +135,10 @@ def save_config(cfg):
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2, ensure_ascii=False)
         try:
-            os.makedirs(os.path.dirname(REPO_CONFIG_FILE), exist_ok=True)
-            with open(REPO_CONFIG_FILE, "w", encoding="utf-8") as f:
-                json.dump(cfg, f, indent=2, ensure_ascii=False)
+            if os.access(os.path.dirname(REPO_CONFIG_FILE), os.W_OK) or (os.path.exists(REPO_CONFIG_FILE) and os.access(REPO_CONFIG_FILE, os.W_OK)):
+                os.makedirs(os.path.dirname(REPO_CONFIG_FILE), exist_ok=True)
+                with open(REPO_CONFIG_FILE, "w", encoding="utf-8") as f:
+                    json.dump(cfg, f, indent=2, ensure_ascii=False)
         except Exception:
             pass
     except Exception as e:

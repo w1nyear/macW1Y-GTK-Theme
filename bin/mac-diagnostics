@@ -26,9 +26,30 @@ except Exception:
     def _dt(key, fb): return fb
     def _dtf(key, params, fb): return fb.format(**params) if params else fb
 
-REPO_DIR = "/home/vitaliy/MACTHEMEFILES"
-MANIFEST_PATH = os.path.join(REPO_DIR, "config/macw1y-manifest.json")
-LOCK_PATH = os.path.join(REPO_DIR, "config/extensions.lock.json")
+def _resolve_repo_dir():
+    candidates = [
+        os.environ.get("MACW1Y_REPO", ""),
+        os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..")),
+        os.path.expanduser("~/macW1Y"),
+        os.path.expanduser("~/MACTHEMEFILES"),
+        "/usr/share/mactheme",
+    ]
+    for c in candidates:
+        if c and os.path.isfile(os.path.join(c, "config/macw1y-manifest.json")):
+            return c
+    return "/usr/share/mactheme" if os.path.isdir("/usr/share/mactheme") else os.path.expanduser("~/macW1Y")
+
+REPO_DIR = _resolve_repo_dir()
+MANIFEST_PATH = next((p for p in [
+    os.path.join(REPO_DIR, "config/macw1y-manifest.json"),
+    os.path.expanduser("~/.config/macw1y/macw1y-manifest.json"),
+    "/usr/share/mactheme/config/macw1y-manifest.json",
+] if os.path.isfile(p)), os.path.join(REPO_DIR, "config/macw1y-manifest.json"))
+LOCK_PATH = next((p for p in [
+    os.path.join(REPO_DIR, "config/extensions.lock.json"),
+    os.path.expanduser("~/.config/macw1y/extensions.lock.json"),
+    "/usr/share/mactheme/config/extensions.lock.json",
+] if os.path.isfile(p)), os.path.join(REPO_DIR, "config/extensions.lock.json"))
 HOME = os.path.expanduser("~")
 
 C_RESET = "\033[0m"
@@ -104,9 +125,14 @@ def run_diagnostics(auto_fix=False):
             lock = json.load(f).get("extensions", {})
             
         try:
-            enabled_exts = set(subprocess.check_output(["gnome-extensions", "list", "--enabled"], text=True).splitlines())
+            enabled_exts = set(subprocess.check_output(["gnome-extensions", "list", "--enabled"], text=True, stderr=subprocess.DEVNULL).splitlines())
         except Exception:
             enabled_exts = set()
+        if not enabled_exts:
+            ev_exts = eval_js("[...Main.extensionManager._extensions.values()].filter(e => e.state === 1).map(e => e.uuid).join('\\n')")
+            if ev_exts and ev_exts.startswith("('"):
+                raw = ev_exts[2:].rsplit("',)", 1)[0].replace("\\n", "\n")
+                enabled_exts = {x.strip() for x in raw.splitlines() if x.strip()}
             
         missing_count = 0
         for uuid, info in lock.items():

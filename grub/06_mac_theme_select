@@ -21,21 +21,25 @@ if [ "$timeout_style_val" = "menu" ] || [ "${timeout_val}" != "0" ]; then
     is_menu_enabled=1
 fi
 
-cat << EOF
-# Ensure all partition and filesystem drivers are loaded for USB, Thunderbolt, NVMe and external SATA
-insmod part_gpt
-insmod part_msdos
-insmod fat
-insmod exfat
-insmod ntfs
-insmod ext2
-insmod iso9660
-insmod udf
-insmod chain
-insmod probe
-insmod png
-insmod gfxterm_background
-EOF
+# Emit insmod safely only for runtime modules present on disk in /boot/grub*/x86_64-efi
+# so monolithic signed GRUB builds (e.g. Fedora) do not print missing-module errors.
+has_grub_mod() {
+    local m="$1"
+    for dir in /boot/grub/x86_64-efi /boot/grub2/x86_64-efi; do
+        [ -f "${dir}/${m}.mod" ] && return 0
+    done
+    return 1
+}
+
+echo "# Ensure partition and filesystem drivers are loaded"
+for mod in part_gpt part_msdos fat ext2 btrfs xfs lvm iso9660 chain png; do
+    echo "insmod ${mod}"
+done
+for opt_mod in exfat ntfs udf probe gfxterm_background; do
+    if has_grub_mod "$opt_mod"; then
+        echo "insmod ${opt_mod}"
+    fi
+done
 
 if [ "$is_menu_enabled" = "1" ]; then
     # GRUB menu enabled: Scan external USB & Thunderbolt devices and configure theme
@@ -52,7 +56,10 @@ set mac_ext2_dev=""
 set mac_ext2_path=""
 set mac_ext2_name=""
 set mac_ext2_class="usb2"
+EOF
 
+    if has_grub_mod probe; then
+        cat << EOF
 for dev in (*); do
     if [ "\$dev" != "(\$root)" -a "\$dev" != "proc" -a "\$dev" != "memdisk" ]; then
         probe --fs-uuid "\$dev" --set=dev_uuid
@@ -64,7 +71,7 @@ for dev in (*); do
         if [ "\$dev_uuid" = "\$root_uuid" ]; then set is_own_dev=1; fi
         if [ "\$is_own_dev" = "0" ]; then
             set dev_boot_path=""
-            for p in /EFI/BOOT/BOOTX64.EFI /efi/boot/bootx64.efi /EFI/BOOT/bootx64.efi /EFI/BOOT/BOOTX64.efi /EFI/BOOT/grubx64.efi /efi/boot/grubx64.efi /EFI/Microsoft/Boot/bootmgfw.efi /efi/microsoft/boot/bootmgfw.efi /EFI/ubuntu/grubx64.efi /efi/ubuntu/grubx64.efi /EFI/fedora/grubx64.efi /EFI/arch/grubx64.efi /EFI/systemd/systemd-bootx64.efi /bootmgr.efi /ventoy/ventoy.disk; do
+            for p in /EFI/BOOT/BOOTX64.EFI /efi/boot/bootx64.efi /EFI/BOOT/bootx64.efi /EFI/BOOT/BOOTX64.efi /EFI/BOOT/grubx64.efi /efi/boot/grubx64.efi /EFI/Microsoft/Boot/bootmgfw.efi /efi/microsoft/boot/bootmgfw.efi /EFI/ubuntu/grubx64.efi /efi/ubuntu/grubx64.efi /EFI/debian/grubx64.efi /EFI/fedora/grubx64.efi /EFI/arch/grubx64.efi /EFI/systemd/systemd-bootx64.efi /bootmgr.efi /ventoy/ventoy.disk; do
                 if [ -f "\$dev\$p" ]; then
                     set dev_boot_path="\$p"
                     break
@@ -79,6 +86,8 @@ for dev in (*); do
                         set dev_name="Windows"
                     elif [ "\$dev_boot_path" = "/EFI/ubuntu/grubx64.efi" -o "\$dev_boot_path" = "/efi/ubuntu/grubx64.efi" ]; then
                         set dev_name="Ubuntu Live"
+                    elif [ "\$dev_boot_path" = "/EFI/debian/grubx64.efi" ]; then
+                        set dev_name="Debian Live"
                     elif [ "\$dev_boot_path" = "/EFI/fedora/grubx64.efi" ]; then
                         set dev_name="Fedora Live"
                     elif [ "\$dev_boot_path" = "/EFI/arch/grubx64.efi" ]; then
@@ -111,24 +120,43 @@ for dev in (*); do
         fi
     fi
 done
+EOF
+    fi
+
+    cat << EOF
+
+set mac_grub_prefix="(\$root)/boot/grub"
+if [ -n "\$prefix" -a -d "\$prefix/themes/macw1y-boot" ]; then
+    set mac_grub_prefix="\$prefix"
+elif [ -d (\$root)/boot/grub2/themes/macw1y-boot ]; then
+    set mac_grub_prefix="(\$root)/boot/grub2"
+elif [ -d (\$root)/grub2/themes/macw1y-boot ]; then
+    set mac_grub_prefix="(\$root)/grub2"
+elif [ -d (\$root)/grub/themes/macw1y-boot ]; then
+    set mac_grub_prefix="(\$root)/grub"
+fi
 
 if [ "\$mac_ext_count" = "2" ]; then
-    if [ -f (\$root)/boot/grub/themes/macw1y-boot-usb2/theme.txt ]; then
-        set theme=(\$root)/boot/grub/themes/macw1y-boot-usb2/theme.txt
+    if [ -f \$mac_grub_prefix/themes/macw1y-boot-usb2/theme.txt ]; then
+        set theme=\$mac_grub_prefix/themes/macw1y-boot-usb2/theme.txt
+    elif [ -f \$mac_grub_prefix/themes/apple-mac-usb2/theme.txt ]; then
+        set theme=\$mac_grub_prefix/themes/apple-mac-usb2/theme.txt
     else
-        set theme=(\$root)/boot/grub/themes/apple-mac-usb2/theme.txt
+        set theme=\$mac_grub_prefix/themes/macw1y-boot/theme.txt
     fi
 elif [ "\$mac_ext_count" = "1" ]; then
-    if [ -f (\$root)/boot/grub/themes/macw1y-boot-usb/theme.txt ]; then
-        set theme=(\$root)/boot/grub/themes/macw1y-boot-usb/theme.txt
+    if [ -f \$mac_grub_prefix/themes/macw1y-boot-usb/theme.txt ]; then
+        set theme=\$mac_grub_prefix/themes/macw1y-boot-usb/theme.txt
+    elif [ -f \$mac_grub_prefix/themes/apple-mac-usb/theme.txt ]; then
+        set theme=\$mac_grub_prefix/themes/apple-mac-usb/theme.txt
     else
-        set theme=(\$root)/boot/grub/themes/apple-mac-usb/theme.txt
+        set theme=\$mac_grub_prefix/themes/macw1y-boot/theme.txt
     fi
 else
-    if [ -f (\$root)/boot/grub/themes/macw1y-boot/theme.txt ]; then
-        set theme=(\$root)/boot/grub/themes/macw1y-boot/theme.txt
+    if [ -f \$mac_grub_prefix/themes/macw1y-boot/theme.txt ]; then
+        set theme=\$mac_grub_prefix/themes/macw1y-boot/theme.txt
     else
-        set theme=(\$root)/boot/grub/themes/apple-mac/theme.txt
+        set theme=\$mac_grub_prefix/themes/apple-mac/theme.txt
     fi
 fi
 export theme
@@ -141,10 +169,18 @@ else
 
 # Replace OEM PC logo immediately with macW1Y Apple logo
 terminal_output gfxterm
-if [ -f (\$root)/boot/grub/themes/apple-mac/apple_center.png ]; then
-    background_image -m stretch (\$root)/boot/grub/themes/apple-mac/apple_center.png
+if [ -n "\$prefix" -a -f "\$prefix/themes/macw1y-boot/apple_center.png" ]; then
+    background_image -m stretch "\$prefix/themes/macw1y-boot/apple_center.png"
 elif [ -f (\$root)/boot/grub/themes/macw1y-boot/apple_center.png ]; then
     background_image -m stretch (\$root)/boot/grub/themes/macw1y-boot/apple_center.png
+elif [ -f (\$root)/boot/grub2/themes/macw1y-boot/apple_center.png ]; then
+    background_image -m stretch (\$root)/boot/grub2/themes/macw1y-boot/apple_center.png
+elif [ -f (\$root)/grub2/themes/macw1y-boot/apple_center.png ]; then
+    background_image -m stretch (\$root)/grub2/themes/macw1y-boot/apple_center.png
+elif [ -f (\$root)/grub/themes/macw1y-boot/apple_center.png ]; then
+    background_image -m stretch (\$root)/grub/themes/macw1y-boot/apple_center.png
+elif [ -f (\$root)/boot/grub/themes/apple-mac/apple_center.png ]; then
+    background_image -m stretch (\$root)/boot/grub/themes/apple-mac/apple_center.png
 fi
 EOF
     else

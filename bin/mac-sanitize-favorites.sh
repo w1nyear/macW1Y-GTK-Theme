@@ -177,11 +177,13 @@ def find_best_browser():
         ('google-chrome.desktop', ['/usr/bin/google-chrome-stable', '/usr/bin/google-chrome', '/snap/bin/google-chrome', 'google-chrome']),
         ('firefox_firefox.desktop', ['/snap/bin/firefox']),
         ('firefox.desktop', ['/usr/bin/firefox', '/usr/lib/firefox/firefox', 'firefox']),
+        ('firefox-esr.desktop', ['/usr/bin/firefox-esr', '/usr/lib/firefox-esr/firefox-esr', 'firefox-esr']),
         ('brave-browser.desktop', ['/usr/bin/brave-browser', 'brave-browser']),
         ('chromium_chromium.desktop', ['/snap/bin/chromium']),
         ('chromium.desktop', ['/usr/bin/chromium', '/usr/bin/chromium-browser', 'chromium']),
         ('microsoft-edge.desktop', ['/usr/bin/microsoft-edge', 'microsoft-edge']),
         ('opera.desktop', ['/usr/bin/opera', 'opera']),
+        ('org.gnome.Epiphany.desktop', ['/usr/bin/epiphany', 'epiphany']),
     ]
     for desk, bins in candidates:
         for b in bins:
@@ -268,7 +270,7 @@ def main():
 
     # Check if a browser is present
     known_browsers = {
-        'google-chrome.desktop', 'firefox_firefox.desktop', 'firefox.desktop',
+        'google-chrome.desktop', 'firefox_firefox.desktop', 'firefox.desktop', 'firefox-esr.desktop',
         'brave-browser.desktop', 'chromium_chromium.desktop', 'chromium.desktop',
         'microsoft-edge.desktop', 'opera.desktop', 'org.gnome.Epiphany.desktop'
     }

@@ -247,9 +247,13 @@ static gboolean save_screenshot_cb(gpointer user_data) {
         GdkTexture *tex = gsk_renderer_render_texture(renderer, node, NULL);
         gsk_render_node_unref(node);
         if (tex) {
-            gdk_texture_save_to_png(tex, "/home/vitaliy/MACTHEMEFILES/scratch/ptyxis_rendered.png");
+            const char *env_out = g_getenv("MAC_TERMINAL_SCREENSHOT_PATH");
+            char *fallback_out = env_out ? NULL : g_build_filename(g_get_user_runtime_dir(), "ptyxis_rendered.png", NULL);
+            const char *out_path = env_out ? env_out : fallback_out;
+            gdk_texture_save_to_png(tex, out_path);
             g_object_unref(tex);
-            printf("[mac_terminal] Saved window screenshot to /home/vitaliy/MACTHEMEFILES/scratch/ptyxis_rendered.png (%dx%d)\n", w, h);
+            printf("[mac_terminal] Saved window screenshot to %s (%dx%d)\n", out_path, w, h);
+            g_free(fallback_out);
         }
     }
     g_object_unref(paintable);
@@ -490,17 +494,21 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
 
 
     GtkWidget *icon = NULL;
+    const char *home_dir = g_get_home_dir();
+    char *home_folder_dark = home_dir ? g_build_filename(home_dir, ".local/share/icons/macW1Y-dark/places/scalable/folder.svg", NULL) : NULL;
+    char *home_folder_light = home_dir ? g_build_filename(home_dir, ".local/share/icons/macW1Y/places/scalable/folder.svg", NULL) : NULL;
     const char *folder_icon_paths[] = {
         "/usr/share/icons/macW1Y-dark/places/scalable/folder.svg",
-        "/home/vitaliy/.local/share/icons/macW1Y-dark/places/scalable/folder.svg",
+        home_folder_dark,
         "/usr/share/icons/macW1Y/places/scalable/folder.svg",
-        "/home/vitaliy/.local/share/icons/macW1Y/places/scalable/folder.svg",
+        home_folder_light,
         NULL
     };
     for (int i = 0; folder_icon_paths[i]; i++) {
-        if (access(folder_icon_paths[i], R_OK) == 0) {
+        if (folder_icon_paths[i] && access(folder_icon_paths[i], R_OK) == 0) {
             GError *err = NULL;
             GdkPixbuf *pb = gdk_pixbuf_new_from_file_at_scale(folder_icon_paths[i], 14, 14, TRUE, &err);
+            if (err) g_error_free(err);
             if (pb) {
                 GdkTexture *tex = gdk_texture_new_for_pixbuf(pb);
                 g_object_unref(pb);
@@ -516,6 +524,8 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
             }
         }
     }
+    g_free(home_folder_dark);
+    g_free(home_folder_light);
     if (!icon) {
         icon = gtk_image_new_from_icon_name("folder");
         gtk_image_set_pixel_size(GTK_IMAGE(icon), 14);

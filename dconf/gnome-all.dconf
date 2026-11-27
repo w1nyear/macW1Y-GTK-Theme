@@ -127,8 +127,8 @@ name='Ігри'
 [org/gnome/desktop/background]
 color-shading-type='solid'
 picture-options='zoom'
-picture-uri='file:///home/vitaliy/.local/share/backgrounds/2026-10-27-19-51-32-GoldenGate_Day.jpg'
-picture-uri-dark='file:///home/vitaliy/.local/share/backgrounds/2026-10-27-19-51-32-GoldenGate_Day.jpg'
+picture-uri='file:///usr/share/backgrounds/GoldenGate_Day.jpg'
+picture-uri-dark='file:///usr/share/backgrounds/GoldenGate_Day.jpg'
 primary-color='#000000000000'
 secondary-color='#000000000000'
 
@@ -149,7 +149,7 @@ sources=[('xkb', 'us'), ('xkb', 'ua')]
 accent-color='orange'
 clock-show-weekday=true
 color-scheme='prefer-dark'
-cursor-theme='macOS'
+cursor-theme='macW1Y'
 document-font-name='default 10'
 enable-animations=true
 font-antialiasing='grayscale'
@@ -259,7 +259,7 @@ daily-limit-seconds=uint32 28800
 [org/gnome/desktop/screensaver]
 color-shading-type='solid'
 picture-options='zoom'
-picture-uri='file:///home/vitaliy/.local/share/backgrounds/2026-10-27-19-51-32-GoldenGate_Day.jpg'
+picture-uri='file:///usr/share/backgrounds/GoldenGate_Day.jpg'
 primary-color='#000000000000'
 secondary-color='#000000000000'
 
@@ -273,7 +273,7 @@ idle-delay=uint32 0
 allow-volume-above-100-percent=true
 event-sounds=true
 input-feedback-sounds=true
-theme-name='macOS'
+theme-name='macW1Y'
 
 [org/gnome/desktop/wm/keybindings]
 switch-applications=['<Super>Tab', '<Alt>Tab']
@@ -319,36 +319,6 @@ initial-size=(1158, 624)
 initial-size-file-chooser=(890, 550)
 maximized=false
 
-[org/gnome/portal/filechooser/Counter-Strike 2]
-last-folder-path='/run/media/vitaliy/Games'
-
-[org/gnome/portal/filechooser/ai.opencode.desktop]
-last-folder-path='/home/vitaliy/macW1Y'
-
-[org/gnome/portal/filechooser/antigravity_antigravity]
-last-folder-path='/home/vitaliy/Відео/Трансляції з екрана'
-
-[org/gnome/portal/filechooser/appimage-impactor]
-last-folder-path='/home/vitaliy/Завантажене'
-
-[org/gnome/portal/filechooser/com.google.Chrome]
-last-folder-path='/home/vitaliy/Десктоп'
-
-[org/gnome/portal/filechooser/dev.khcrysalis.PlumeImpactor]
-last-folder-path='/home/vitaliy/Завантажене/Telegram Desktop'
-
-[org/gnome/portal/filechooser/firefox_firefox]
-last-folder-path='/home/vitaliy/Завантажене'
-
-[org/gnome/portal/filechooser/org.gnome.Settings]
-last-folder-path='/run/media/vitaliy/nvme1/DriveFiles/FastInstaller/another'
-
-[org/gnome/portal/filechooser/org.gnome.Zenity]
-last-folder-path='/home/vitaliy/Завантажене'
-
-[org/gnome/portal/filechooser/telegram-desktop_telegram-desktop]
-last-folder-path='/home/vitaliy/Десктоп'
-
 [org/gnome/ptyxis/profiles/2e3d0a57697030bc1d7286ca6acea541]
 opacity=0.88
 
@@ -362,6 +332,7 @@ sleep-inactive-ac-type='nothing'
 sleep-inactive-battery-type='nothing'
 
 [org/gnome/shell]
+allow-extension-installation=true
 app-picker-layout=[{'org.gnome.clocks.desktop': <{'position': <0>}>, 'org.gnome.Calculator.desktop': <{'position': <1>}>, 'com.mattjakeman.ExtensionManager.desktop': <{'position': <2>}>, 'org.gnome.tweaks.desktop': <{'position': <3>}>, 'update-manager.desktop': <{'position': <4>}>, 'firmware-updater_firmware-updater.desktop': <{'position': <5>}>, 'gnome-language-selector.desktop': <{'position': <6>}>, 'net.nokyan.Resources.desktop': <{'position': <7>}>, 'org.gnome.TextEditor.desktop': <{'position': <8>}>, 'Utilities': <{'position': <9>}>, 'System': <{'position': <10>}>, 'zoom-client_zoom-client.desktop': <{'position': <11>}>, 'discord_discord.desktop': <{'position': <12>}>, 'damx.desktop': <{'position': <13>}>, 'com.dev47apps.droidcam.desktop': <{'position': <14>}>, 'nvidia-settings.desktop': <{'position': <15>}>, 'steam-nvidia.desktop': <{'position': <16>}>, 'snap-store_snap-store.desktop': <{'position': <17>}>, 'wine.desktop': <{'position': <18>}>, '1022cd65-504d-4627-8076-7d978edb89a4': <{'position': <19>}>, 'org.gnome.Weather.desktop': <{'position': <20>}>, 'gay.pancake.lsfg-vk-ui.desktop': <{'position': <21>}>, 'screenruler.desktop': <{'position': <22>}>, 'info.desktop': <{'position': <23>}>, 'liner.desktop': <{'position': <24>}>, 'PrismLauncher.desktop': <{'position': <25>}>, 'df8a314e-89f6-4c7f-ad4a-eec3eaef93e5': <{'position': <26>}>, 'serein.desktop': <{'position': <27>}>, 'dev.khcrysalis.PlumeImpactor.desktop': <{'position': <28>}>, 'mpv.desktop': <{'position': <29>}>, 'cz.viceverse.serein.desktop': <{'position': <30>}>, 'org.prismlauncher.PrismLauncher.desktop': <{'position': <31>}>, 'rustdesk.desktop': <{'position': <32>}>, 'com.anthropic.Claude.desktop': <{'position': <33>}>, 'deepseek-linux_deepseek-linux.desktop': <{'position': <34>}>, 'ai.opencode.desktop.desktop': <{'position': <35>}>}]
 command-history=['killall -3 gnome-shell', 'logout', 'r', 'ls', 'kill ./gui.sh', 'kill gui.sh']
 disable-extension-version-validation=true

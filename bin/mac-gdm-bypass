@@ -34,8 +34,8 @@ show_help() {
     echo -e " ${C_BOLD}Description:${C_RESET}"
     echo -e "   When executed in a TTY console (e.g. Alt+F3), this command completely"
     echo -e "   bypasses the GDM login screen, forces static wallpaper, clears crash lockouts,"
-    echo -e "   enables automatic login for 'vitaliy', restarts GDM, and switches directly"
-    echo -e "   to the graphical desktop (VT2/VT1).\n"
+    echo -e "   enables automatic login for the current user, restarts GDM, and switches"
+    echo -e "   directly to the graphical desktop (VT2/VT1).\n"
 }
 
 # Auto-elevate to root if executed as standard user
@@ -108,7 +108,11 @@ fi
 
 # Determine GDM custom.conf dynamically
 GDM_CONF="/etc/gdm/custom.conf"
-[ ! -f /etc/gdm3/custom.conf ] || GDM_CONF="/etc/gdm3/custom.conf"
+if [ -f /etc/gdm3/custom.conf ]; then
+    GDM_CONF="/etc/gdm3/custom.conf"
+elif [ -f /etc/gdm3/daemon.conf ]; then
+    GDM_CONF="/etc/gdm3/daemon.conf"
+fi
 
 # Check / Dry-Run Mode
 if [ "$DO_CHECK" -eq 1 ]; then

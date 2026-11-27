@@ -45,3 +45,4 @@ dbus
 xdg-utils
 libnotify
 zenity
+python-pillow

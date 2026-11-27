@@ -386,9 +386,9 @@ export class LockscreenMenuBarManager {
 
             const CC_PATHS = [
                 '/usr/share/mactheme/icons/controlcenter.png',
-                '/home/vitaliy/.themes/macW1Y-Dark/icons/control-center.png',
-                '/home/vitaliy/.themes/macW1Y-Dark/icons/control-center.png',
+                '/usr/share/themes/macW1Y-Dark/icons/control-center.png',
                 GLib.get_home_dir() + '/.themes/macW1Y-Dark/icons/control-center.png',
+                GLib.get_home_dir() + '/.local/share/macW1Y/icons/controlcenter.png',
             ];
             let ccFile = null;
             for (const p of CC_PATHS) {

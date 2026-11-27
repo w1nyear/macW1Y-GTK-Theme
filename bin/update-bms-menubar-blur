@@ -3,9 +3,12 @@ import GLib from "gi://GLib";
 import Gio from "gi://Gio";
 import system from "system";
 
-const { unpack_pipelines, pack_pipelines } = await import(
-    `file://${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/conveniences/pipeline_settings.js`
-);
+const bmsCandidates = [
+    `${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/conveniences/pipeline_settings.js`,
+    `/usr/share/gnome-shell/extensions/blur-my-shell@aunetx/conveniences/pipeline_settings.js`,
+];
+const bmsPath = bmsCandidates.find(p => GLib.file_test(p, GLib.FileTest.EXISTS)) || bmsCandidates[0];
+const { unpack_pipelines, pack_pipelines } = await import(`file://${bmsPath}`);
 
 const top_blur = parseFloat(system.programArgs[0] || "5.0");
 const settings = new Gio.Settings({ schema_id: "org.gnome.shell.extensions.blur-my-shell" });

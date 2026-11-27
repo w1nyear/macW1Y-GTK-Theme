@@ -23,26 +23,26 @@
       <stop offset="100%" stop-color="#000000" stop-opacity="0.25"/>
     </linearGradient>
 
-    <!-- Top side optical refraction: stretches blue track horizontally at the boundary -->
+    <!-- Top side optical refraction: stretches accent track horizontally at the boundary -->
     <linearGradient id="topHorizontalStretch" x1="18" y1="5" x2="38" y2="5" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#70c4ff" stop-opacity="0.0"/>
-      <stop offset="15%" stop-color="#38a8ff" stop-opacity="0.85"/>
-      <stop offset="50%" stop-color="#0c8eff" stop-opacity="0.98"/>
-      <stop offset="85%" stop-color="#38a8ff" stop-opacity="0.85"/>
-      <stop offset="100%" stop-color="#70c4ff" stop-opacity="0.0"/>
+      <stop offset="0%" stop-color="#ffa759" stop-opacity="0.0"/>
+      <stop offset="15%" stop-color="#ff8526" stop-opacity="0.85"/>
+      <stop offset="50%" stop-color="#ff6a00" stop-opacity="0.98"/>
+      <stop offset="85%" stop-color="#ff8526" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#ffa759" stop-opacity="0.0"/>
     </linearGradient>
 
     <linearGradient id="topRefractBlue" x1="28" y1="3" x2="28" y2="15" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#38a8ff" stop-opacity="0.95"/>
-      <stop offset="40%" stop-color="#0c8eff" stop-opacity="0.85"/>
-      <stop offset="75%" stop-color="#0c8eff" stop-opacity="0.35"/>
-      <stop offset="100%" stop-color="#0c8eff" stop-opacity="0.0"/>
+      <stop offset="0%" stop-color="#ff8526" stop-opacity="0.95"/>
+      <stop offset="40%" stop-color="#ff6a00" stop-opacity="0.85"/>
+      <stop offset="75%" stop-color="#ff6a00" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#ff6a00" stop-opacity="0.0"/>
     </linearGradient>
 
-    <!-- Middle Blue Track Line -->
+    <!-- Middle Accent Track Line -->
     <linearGradient id="trackBlueLineV" x1="28" y1="14" x2="28" y2="42" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#0c8eff" stop-opacity="0.95"/>
-      <stop offset="100%" stop-color="#0c8eff" stop-opacity="0.98"/>
+      <stop offset="0%" stop-color="#ff6a00" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#ff6a00" stop-opacity="0.98"/>
     </linearGradient>
 
     <!-- Middle White Track Line -->
@@ -81,12 +81,12 @@
 
   <!-- 3. Optical Refraction Track with 0.2px blur (whiskers removed!) -->
   <g filter="url(#opticalBlurV)">
-    <!-- Top Refraction: stretches blue track horizontally at the boundary (x=18 to x=38) -->
+    <!-- Top Refraction: stretches accent track horizontally at the boundary (x=18 to x=38) -->
     <path d="M 28 3 C 21 3, 18 4, 18 6 C 18 9, 24 11, 24 14 L 32 14 C 32 11, 38 9, 38 6 C 38 4, 35 3, 28 3 Z" fill="url(#topHorizontalStretch)"/>
     <path d="M 28 3 C 22 3, 19 4, 19 6 C 19 9, 24.5 11, 24.5 14 L 31.5 14 C 31.5 11, 37 9, 37 6 C 37 4, 34 3, 28 3 Z" fill="url(#topRefractBlue)"/>
 
-    <!-- Middle Track: BLUE on the top half (y=14..42), WHITE on the bottom half (y=42..70) -->
-    <rect x="21" y="14" width="14" height="28" rx="3" fill="#38a8ff" fill-opacity="0.22"/>
+    <!-- Middle Track: ACCENT on the top half (y=14..42), WHITE on the bottom half (y=42..70) -->
+    <rect x="21" y="14" width="14" height="28" rx="3" fill="#ff8526" fill-opacity="0.22"/>
     <rect x="21" y="42" width="14" height="28" rx="3" fill="#ffffff" fill-opacity="0.20"/>
     <rect x="24" y="14" width="8" height="28" fill="url(#trackBlueLineV)"/>
     <rect x="24" y="42" width="8" height="28" fill="url(#trackWhiteLineV)"/>
@@ -103,4 +103,3 @@
   <!-- 5. Outer rim stroke -->
   <rect x="2" y="2" width="52" height="80" rx="26" stroke="url(#edgeStrokeV)" stroke-width="1.2" fill="none"/>
 </svg>
-<!-- macw1y-asset-id: default-vector -->

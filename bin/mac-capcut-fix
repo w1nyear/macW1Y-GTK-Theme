@@ -10,7 +10,15 @@ set -e
 WINE_PREFIX="${WINEPREFIX:-$HOME/.wine}"
 CAPCUT_BASE="$WINE_PREFIX/drive_c/users"
 
-FIX_DIR="/home/vitaliy/MACTHEMEFILES/src/capcut-wine-fix"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+FIX_DIR=""
+for cand in "$SCRIPT_DIR/../src/capcut-wine-fix" "$HOME/macW1Y/src/capcut-wine-fix" "$HOME/MACTHEMEFILES/src/capcut-wine-fix" "/usr/share/mactheme/src/capcut-wine-fix"; do
+    if [ -d "$cand" ]; then
+        FIX_DIR="$cand"
+        break
+    fi
+done
+[ -z "$FIX_DIR" ] && FIX_DIR="/usr/share/mactheme/src/capcut-wine-fix"
 PROXY_DLL="$FIX_DIR/metasecml.dll"
 
 find "$CAPCUT_BASE" -maxdepth 6 -type d -path "*/CapCut/Apps/*" 2>/dev/null | while read -r app_dir; do

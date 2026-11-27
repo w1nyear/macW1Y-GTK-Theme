@@ -979,14 +979,13 @@ install_themes() {
     mkdir -p "$THEMES_DIR"
     
     if [ -d "$SCRIPT_DIR/macW1Y-Dark" ]; then
-        cp -r "$SCRIPT_DIR/macW1Y-Dark" "$THEMES_DIR/"
-        [ -d "$SCRIPT_DIR/macW1Y-Dark-solid" ] && cp -r "$SCRIPT_DIR/macW1Y-Dark-solid" "$THEMES_DIR/"
-        ln -sfn "macW1Y-Dark" "$THEMES_DIR/macW1Y-Dark"
-        ln -sfn "macW1Y-Dark-solid" "$THEMES_DIR/macW1Y-Dark-solid"
+        cp -rf "$SCRIPT_DIR/macW1Y-Dark" "$THEMES_DIR/"
+        [ -d "$SCRIPT_DIR/macW1Y-Dark-solid" ] && cp -rf "$SCRIPT_DIR/macW1Y-Dark-solid" "$THEMES_DIR/"
+        rm -f "$THEMES_DIR/macW1Y-Dark/macW1Y-Dark" "$THEMES_DIR/macW1Y-Dark-solid/macW1Y-Dark-solid" 2>/dev/null || true
         sudo mkdir -p /usr/share/themes
+        sudo rm -f /usr/share/themes/macW1Y-Dark/macW1Y-Dark /usr/share/themes/macW1Y-Dark-solid/macW1Y-Dark-solid 2>/dev/null || true
         sudo cp -rf "$SCRIPT_DIR/macW1Y-Dark" /usr/share/themes/
         [ -d "$SCRIPT_DIR/macW1Y-Dark-solid" ] && sudo cp -rf "$SCRIPT_DIR/macW1Y-Dark-solid" /usr/share/themes/
-        sudo ln -sfn macW1Y-Dark /usr/share/themes/macW1Y-Dark
         sudo ln -sfn macW1Y-Dark /usr/share/themes/macW1Y
         sudo chmod -R a+rX /usr/share/themes/macW1Y* /usr/share/themes/macW1Y* 2>/dev/null || true
         log_success "Themes copied to ~/.themes/ and /usr/share/themes/"
@@ -996,10 +995,14 @@ install_themes() {
     if [ -f "$SCRIPT_DIR/bin/mac-build-theme" ]; then
         python3 "$SCRIPT_DIR/bin/mac-build-theme" || true
     fi
-    [ -d "$SCRIPT_DIR/gtk-3.0" ] && cp -r "$SCRIPT_DIR/gtk-3.0/"* "$TARGET_HOME/.config/gtk-3.0/"
-    [ -d "$SCRIPT_DIR/gtk-4.0" ] && cp -r "$SCRIPT_DIR/gtk-4.0/"* "$TARGET_HOME/.config/gtk-4.0/"
+    [ -d "$SCRIPT_DIR/gtk-3.0" ] && cp -rf "$SCRIPT_DIR/gtk-3.0/"* "$TARGET_HOME/.config/gtk-3.0/"
+    [ -d "$SCRIPT_DIR/gtk-4.0" ] && cp -rf "$SCRIPT_DIR/gtk-4.0/"* "$TARGET_HOME/.config/gtk-4.0/"
+    rm -f "$TARGET_HOME/.config/gtk-3.0/bookmarks" 2>/dev/null || true
+    if [ -f "$SCRIPT_DIR/bin/mac-generate-slider-glass.py" ]; then
+        run_as_user python3 "$SCRIPT_DIR/bin/mac-generate-slider-glass.py" "orange" 2>/dev/null || true
+    fi
     (cd "$TARGET_HOME/.config/gtk-4.0" && ln -sfn gtk-Dark.css gtk-dark.css 2>/dev/null || true)
-    sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$TARGET_HOME/.config/gtk-3.0/gtk.css" "$TARGET_HOME/.config/gtk-4.0/gtk.css" "$TARGET_HOME/.config/gtk-4.0/gtk-Dark.css" 2>/dev/null || true
+    sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$TARGET_HOME/.config/gtk-3.0/gtk.css" "$TARGET_HOME/.config/gtk-4.0/gtk.css" "$TARGET_HOME/.config/gtk-4.0/gtk-Dark.css" "$TARGET_HOME/.themes"/macW1Y*/gtk-3.0/gtk.css "$TARGET_HOME/.themes"/macW1Y*/gtk-4.0/macw1y-components.css 2>/dev/null || true
     chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/gtk-3.0" "$TARGET_HOME/.config/gtk-4.0"
     
     if [ -d "$SCRIPT_DIR/gnome-shell-theme" ]; then
@@ -1128,16 +1131,13 @@ install_icons() {
         fi
     done
     
-    # Creating compatibility symlinks macW1Y-dark -> macW1Y-dark, macW1Y-Dark -> macW1Y-dark and macW1Y -> macW1Y
-    ln -sfn "macW1Y-dark" "$ICONS_DIR/macW1Y-dark"
+    # Creating compatibility symlinks macW1Y-Dark -> macW1Y-dark and ~/.icons mappings
+    rm -f "$ICONS_DIR/macW1Y-dark/macW1Y-dark" "$ICONS_DIR/macW1Y/macW1Y" 2>/dev/null || true
     ln -sfn "macW1Y-dark" "$ICONS_DIR/macW1Y-Dark"
-    ln -sfn "macW1Y" "$ICONS_DIR/macW1Y"
     mkdir -p "$TARGET_HOME/.icons" "$ICONS_DIR/default" "$TARGET_HOME/.icons/default"
-    ln -sfn "$ICONS_DIR/macW1Y" "$TARGET_HOME/.icons/macW1Y"
     ln -sfn "$ICONS_DIR/macW1Y" "$TARGET_HOME/.icons/macW1Y"
     ln -sfn "$ICONS_DIR/macW1Y-dark" "$TARGET_HOME/.icons/macW1Y-dark"
     ln -sfn "$ICONS_DIR/macW1Y-dark" "$TARGET_HOME/.icons/macW1Y-Dark"
-    ln -sfn "$ICONS_DIR/macW1Y-dark" "$TARGET_HOME/.icons/macW1Y-dark"
 
     # User-level default cursor theme fallback
     cat << 'EOF_DEF_THEME' > "$ICONS_DIR/default/index.theme"
@@ -1155,7 +1155,6 @@ Inherits=macW1Y
 EOF_CUR_THEME
 
     if [ -w "/usr/share/icons" ] || sudo -n true 2>/dev/null; then
-        sudo ln -sfn "$ICONS_DIR/macW1Y" /usr/share/icons/macW1Y
         sudo ln -sfn "$ICONS_DIR/macW1Y" /usr/share/icons/macW1Y
         if command -v update-alternatives >/dev/null 2>&1; then
             sudo update-alternatives --install /usr/share/icons/default/index.theme x-cursor-theme "$ICONS_DIR/macW1Y/cursor.theme" 100 2>/dev/null || true
@@ -1406,15 +1405,6 @@ install_extensions() {
         "kiwi@kemma"
         "desktop-widgets@r3nhick"
     )
-    for ext_id in "${EXT_LIST[@]}"; do
-        if [ "$APPLY_LOW_SPEC" = "true" ] && [ "$ext_id" = "liquid-glass@thinkingcoding1231.gmail.com" ]; then
-            run_as_user gnome-extensions disable "$ext_id" 2>/dev/null || true
-            continue
-        fi
-        run_as_user gnome-extensions enable "$ext_id" 2>/dev/null || true
-    done
-
-    # Disabling legacy overlay extensions
     local UBUNTU_BLOAT_EXTS=(
         "dash-to-dock@micxgx.gmail.com"
         "snapd-prompting@canonical.com"
@@ -1423,9 +1413,7 @@ install_extensions() {
         "tiling-assistant@ubuntu.com"
         "ubuntu-dock@ubuntu.com"
     )
-    for ext_id in "${UBUNTU_BLOAT_EXTS[@]}"; do
-        run_as_user gnome-extensions disable "$ext_id" 2>/dev/null || true
-    done
+    apply_mac_extensions_gsettings "${EXT_LIST[@]}" --disabled "${UBUNTU_BLOAT_EXTS[@]}"
 
     # Optimizing search indexing services (preventing Nautilus and app startup delays)
     run_as_user systemctl --user unmask localsearch-3.service tracker-miner-fs-3.service 2>/dev/null || true
@@ -1435,10 +1423,13 @@ install_extensions() {
     run_as_user gsettings set org.freedesktop.Tracker3.Miner.Files index-single-directories "[]" 2>/dev/null || true
     run_as_user gsettings set org.freedesktop.Tracker3.Miner.Files throttle 20 2>/dev/null || true
 
-    # Prevent GNOME Software from automatically staging untrusted extension updates
-    if [ -d "$TARGET_HOME/.local/share/gnome-shell/extension-updates" ]; then
-        rm -rf "$TARGET_HOME/.local/share/gnome-shell/extension-updates"/* 2>/dev/null || true
-    fi
+    # Prevent GNOME Software/Shell from staging untrusted extension updates (downgrading user-theme on older GNOME)
+    local EXT_UPDATES_PATH="$TARGET_HOME/.local/share/gnome-shell/extension-updates"
+    sudo rm -rf "$EXT_UPDATES_PATH" 2>/dev/null || rm -rf "$EXT_UPDATES_PATH" 2>/dev/null || true
+    touch "$EXT_UPDATES_PATH" 2>/dev/null || true
+    chmod 444 "$EXT_UPDATES_PATH" 2>/dev/null || true
+    chown "${TARGET_USER}:${TARGET_USER}" "$EXT_UPDATES_PATH" 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell allow-extension-installation true 2>/dev/null || true
     run_as_user gsettings set org.gnome.software download-updates false 2>/dev/null || true
     run_as_user gsettings set org.gnome.software download-updates-notify false 2>/dev/null || true
     # Land directly on desktop instead of Overview on GNOME 40+ across all distros
@@ -1540,6 +1531,115 @@ install_extensions() {
 # ------------------------------------------------------------------------------
 # 8. Integration into Settings (GNOME Control Center Overlay)
 # ------------------------------------------------------------------------------
+apply_mac_extensions_gsettings() {
+    local enabled=()
+    local disabled=()
+    local in_disabled=0
+    local arg
+    for arg in "$@"; do
+        if [ "$arg" = "--disabled" ]; then
+            in_disabled=1
+            continue
+        fi
+        if [ "$in_disabled" -eq 0 ]; then
+            if [ "$APPLY_LOW_SPEC" = "true" ] && [ "$arg" = "liquid-glass@thinkingcoding1231.gmail.com" ]; then
+                run_as_user gnome-extensions disable "$arg" 2>/dev/null || true
+                disabled+=("$arg")
+            else
+                enabled+=("$arg")
+                run_as_user gnome-extensions enable "$arg" 2>/dev/null || true
+            fi
+        else
+            disabled+=("$arg")
+            run_as_user gnome-extensions disable "$arg" 2>/dev/null || true
+        fi
+    done
+
+    # Persist gsettings arrays directly so headless/pre-login VM installs apply on first graphical login
+    local en_gvariant dis_gvariant
+    en_gvariant=$(python3 -c 'import sys; print("[" + ", ".join(repr(x) for x in sys.argv[1:]) + "]")' "${enabled[@]}")
+    dis_gvariant=$(python3 -c 'import sys; print("[" + ", ".join(repr(x) for x in sys.argv[1:]) + "]")' "${disabled[@]}")
+    run_as_user gsettings set org.gnome.shell disable-user-extensions false 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell enabled-extensions "$en_gvariant" 2>/dev/null || true
+    run_as_user gsettings set org.gnome.shell disabled-extensions "$dis_gvariant" 2>/dev/null || true
+}
+
+install_user_systemd_units() {
+    local USER_SYSTEMD="$TARGET_HOME/.config/systemd/user"
+    mkdir -p "$USER_SYSTEMD"
+    for unit_name in mac-theme-sync.service mac-app-manager.service mac-screenshot-daemon.service mac-integrity-check.service mac-integrity-check.timer; do
+        if [ -f "$SCRIPT_DIR/systemd/$unit_name" ]; then
+            sync_or_update_file "$SCRIPT_DIR/systemd/$unit_name" "$USER_SYSTEMD/$unit_name" false
+        fi
+    done
+    chown -R "${TARGET_USER}:${TARGET_USER}" "$USER_SYSTEMD" 2>/dev/null || true
+    run_as_user systemctl --user daemon-reload 2>/dev/null || true
+    run_as_user systemctl --user enable --now mac-theme-sync.service mac-app-manager.service mac-screenshot-daemon.service mac-integrity-check.timer 2>/dev/null || true
+}
+
+install_mac_cli_and_overlays() {
+    local OVERLAY_DIR="$TARGET_HOME/.local/share/gnome-control-center-overlay"
+    local LOCAL_BIN="$TARGET_HOME/.local/bin"
+    mkdir -p "$OVERLAY_DIR" "$LOCAL_BIN"
+
+    if [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ]; then
+        sync_directory_tree "$SCRIPT_DIR/gnome-control-center-overlay" "$OVERLAY_DIR" false
+        sudo mkdir -p /usr/share/mactheme/gnome-control-center-overlay
+        sudo cp -rf "$SCRIPT_DIR/gnome-control-center-overlay/"* /usr/share/mactheme/gnome-control-center-overlay/ 2>/dev/null || true
+        sudo find /usr/share/mactheme/gnome-control-center-overlay -type d -exec chmod 755 {} + 2>/dev/null || true
+        sudo find /usr/share/mactheme/gnome-control-center-overlay -type f -exec chmod 644 {} + 2>/dev/null || true
+    fi
+
+    sudo mkdir -p /usr/share/mactheme/config /usr/local/bin
+    [ -f "$SCRIPT_DIR/info.json" ] && sudo install -Dm644 "$SCRIPT_DIR/info.json" /usr/share/mactheme/info.json 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/config/macw1y-manifest.json" ] && sudo install -Dm644 "$SCRIPT_DIR/config/macw1y-manifest.json" /usr/share/mactheme/config/macw1y-manifest.json 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/config/macw1y-tokens.json" ] && sudo install -Dm644 "$SCRIPT_DIR/config/macw1y-tokens.json" /usr/share/mactheme/config/macw1y-tokens.json 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/config/graphics-profile.json" ] && sudo install -Dm644 "$SCRIPT_DIR/config/graphics-profile.json" /usr/share/mactheme/config/graphics-profile.json 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/config/extensions.lock.json" ] && sudo install -Dm644 "$SCRIPT_DIR/config/extensions.lock.json" /usr/share/mactheme/config/extensions.lock.json 2>/dev/null || true
+
+    local MAC_BINS=(
+        gnome-control-center mac-widgets-settings mac-styling-settings
+        mac-apply-theme mac-theme-sync mac-extension-guard mac-integrity-check
+        mac-diagnostics toggle-launchpad.sh extension-manager mac-setup-wizard
+        mac-apply-locale mac-gdm-bypass mac-about mac-hwinfo
+        mac-screenshot-process mac-airdrop mac-uninstall-app
+        mac-graphics-profile mac-lowspec-optimizer mac-gpu-manager
+        mac-gamemode mac-boot-config mac-audit-sync mac-build-theme
+        mac-icon-normalizer mac-sync-applications mac-wine-runner
+        mac-clipboard mac-widget-picker mac-login-sound
+        mac-generate-slider-glass.py update-mac-styling-css update-bms-menubar-blur
+        mac-ensure-extensions.sh mac-sanitize-favorites.sh mac-generate-bookmarks.sh
+        macW1Y mac_i18n.py
+    )
+    local b mode
+    for b in "${MAC_BINS[@]}"; do
+        if [ -f "$SCRIPT_DIR/bin/$b" ]; then
+            mode=755
+            [ "$b" = "mac_i18n.py" ] && mode=644
+            sync_or_update_file "$SCRIPT_DIR/bin/$b" "$LOCAL_BIN/$b" false
+            chmod "$mode" "$LOCAL_BIN/$b" 2>/dev/null || true
+            sudo install -Dm"$mode" "$SCRIPT_DIR/bin/$b" "/usr/local/bin/$b" 2>/dev/null || true
+        fi
+    done
+
+    local purelib
+    purelib=$(python3 -c "import sysconfig; print(sysconfig.get_path('purelib'))" 2>/dev/null || true)
+    if [ -n "$purelib" ] && [ -d "$purelib" ] && [ -f "$SCRIPT_DIR/bin/mac_i18n.py" ]; then
+        sudo install -Dm644 "$SCRIPT_DIR/bin/mac_i18n.py" "$purelib/mac_i18n.py" 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/bin/macW1Y" ]; then
+        sudo ln -sf /usr/local/bin/macW1Y /usr/local/bin/macw1y 2>/dev/null || true
+        sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macW1Y 2>/dev/null || true
+        sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macw1y 2>/dev/null || true
+    fi
+    if [ -f "$SCRIPT_DIR/bin/mac-gdm-bypass" ]; then
+        sudo ln -sf mac-gdm-bypass /usr/local/bin/mac-GDM-BYPASS 2>/dev/null || true
+        sudo ln -sf /usr/local/bin/mac-gdm-bypass /usr/bin/mac-gdm-bypass 2>/dev/null || true
+        sudo ln -sf /usr/local/bin/mac-gdm-bypass /usr/bin/mac-GDM-BYPASS 2>/dev/null || true
+    fi
+    install_user_systemd_units
+}
+
 install_settings_overlay() {
     log_step "Stage 8/13: Integrating Mac Styling and preferences into Settings"
     local OVERLAY_DIR="$TARGET_HOME/.local/share/gnome-control-center-overlay"
@@ -1551,28 +1651,9 @@ install_settings_overlay() {
     
     mkdir -p "$OVERLAY_DIR" "$LOCAL_BIN" "$LOCAL_LIB" "$APP_DIR" "$SVC_DIR" "$CFG_DIR"
     
-    if [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ]; then
-        cp "$SCRIPT_DIR/gnome-control-center-overlay"/cc-*.ui "$OVERLAY_DIR/"
-        cp "$SCRIPT_DIR/gnome-control-center-overlay/libmac_settings.c" "$OVERLAY_DIR/"
-    fi
-    
-    log_info "Compiling libmac_settings.so dynamic library..."
-    if [ -f "$SCRIPT_DIR/lib/libmac_settings.so" ]; then
-        cp "$SCRIPT_DIR/lib/libmac_settings.so" "$LOCAL_LIB/libmac_settings.so"
-        [ -d "$SCRIPT_DIR/control-center" ] && cp -f "$SCRIPT_DIR/lib/libmac_settings.so" "$SCRIPT_DIR/control-center/libmac_settings.so" 2>/dev/null || true
-        [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ] && cp -f "$SCRIPT_DIR/lib/libmac_settings.so" "$SCRIPT_DIR/gnome-control-center-overlay/libmac_settings.so" 2>/dev/null || true
-    fi
-
-    # System-wide installation of library and overlays for all users
-    sudo mkdir -p /usr/share/mactheme/gnome-control-center-overlay
+    install_mac_cli_and_overlays
     if [ -f "$LOCAL_LIB/libmac_settings.so" ]; then
-        install_mac_shared_lib "$LOCAL_LIB/libmac_settings.so"
-        sudo cp -f "$LOCAL_LIB/libmac_settings.so" /usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so
         sudo chmod 755 /usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so 2>/dev/null || true
-    fi
-    if [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ]; then
-        sudo cp -f "$SCRIPT_DIR/gnome-control-center-overlay"/cc-*.ui /usr/share/mactheme/gnome-control-center-overlay/ 2>/dev/null || true
-        sudo chmod 644 /usr/share/mactheme/gnome-control-center-overlay/* 2>/dev/null || true
     fi
     
     # System wrapper for gnome-control-center
@@ -1581,35 +1662,6 @@ install_settings_overlay() {
     log_info "Compiling libmac_extension_manager.so dynamic library..."
     cp "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so"
 
-    [ -f "$SCRIPT_DIR/bin/gnome-control-center" ] && cp "$SCRIPT_DIR/bin/gnome-control-center" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/gnome-control-center"
-    [ -f "$SCRIPT_DIR/bin/mac-widgets-settings" ] && cp "$SCRIPT_DIR/bin/mac-widgets-settings" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/mac-widgets-settings"
-    [ -f "$SCRIPT_DIR/bin/mac-styling-settings" ] && cp "$SCRIPT_DIR/bin/mac-styling-settings" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/mac-styling-settings"
-    [ -f "$SCRIPT_DIR/bin/mac_i18n.py" ] && cp "$SCRIPT_DIR/bin/mac_i18n.py" "$LOCAL_BIN/" && chmod 644 "$LOCAL_BIN/mac_i18n.py"
-    if [ -f "$SCRIPT_DIR/bin/mac_i18n.py" ]; then
-        sudo install -Dm644 "$SCRIPT_DIR/bin/mac_i18n.py" /usr/local/bin/mac_i18n.py
-        local purelib
-        purelib=$(python3 -c "import sysconfig; print(sysconfig.get_path('purelib'))" 2>/dev/null || true)
-        if [ -n "$purelib" ] && [ -d "$purelib" ]; then
-            sudo install -Dm644 "$SCRIPT_DIR/bin/mac_i18n.py" "$purelib/mac_i18n.py" 2>/dev/null || true
-        fi
-    fi
-    [ -f "$SCRIPT_DIR/bin/gnome-theme-switcher" ] && cp "$SCRIPT_DIR/bin/gnome-theme-switcher" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/gnome-theme-switcher"
-    [ -f "$SCRIPT_DIR/bin/toggle-launchpad.sh" ] && cp "$SCRIPT_DIR/bin/toggle-launchpad.sh" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/toggle-launchpad.sh"
-    [ -f "$SCRIPT_DIR/bin/extension-manager" ] && cp "$SCRIPT_DIR/bin/extension-manager" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/extension-manager"
-    if [ -f "$SCRIPT_DIR/bin/macW1Y" ]; then
-        cp "$SCRIPT_DIR/bin/macW1Y" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/macW1Y"
-        sudo cp -f "$SCRIPT_DIR/bin/macW1Y" /usr/local/bin/macW1Y && sudo chmod 755 /usr/local/bin/macW1Y
-        sudo ln -sf /usr/local/bin/macW1Y /usr/local/bin/macw1y 2>/dev/null || true
-        sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macW1Y 2>/dev/null || true
-        sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macw1y 2>/dev/null || true
-    fi
-    if [ -f "$SCRIPT_DIR/bin/mac-gdm-bypass" ]; then
-        cp "$SCRIPT_DIR/bin/mac-gdm-bypass" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/mac-gdm-bypass"
-        sudo cp -f "$SCRIPT_DIR/bin/mac-gdm-bypass" /usr/local/bin/mac-gdm-bypass && sudo chmod 755 /usr/local/bin/mac-gdm-bypass
-        sudo ln -sf mac-gdm-bypass /usr/local/bin/mac-GDM-BYPASS 2>/dev/null || true
-        sudo ln -sf /usr/local/bin/mac-gdm-bypass /usr/bin/mac-gdm-bypass 2>/dev/null || true
-        sudo ln -sf /usr/local/bin/mac-gdm-bypass /usr/bin/mac-GDM-BYPASS 2>/dev/null || true
-    fi
     if [ -x "/usr/bin/google-chrome-stable" ] || [ -x "/usr/bin/google-chrome" ] || [ -x "/snap/bin/google-chrome" ]; then
         [ -f "$SCRIPT_DIR/bin/google-chrome" ] && cp "$SCRIPT_DIR/bin/google-chrome" "$LOCAL_BIN/" && chmod +x "$LOCAL_BIN/google-chrome"
     else
@@ -1678,11 +1730,23 @@ install_settings_overlay() {
     if [ -x "/snap/bin/firefox" ] || [ -x "/usr/bin/firefox" ]; then
         if [ -f "$SCRIPT_DIR/applications/firefox_firefox.desktop" ]; then
             cp -f "$SCRIPT_DIR/applications/firefox_firefox.desktop" "$APP_DIR/"
+            if [ ! -x "/snap/bin/firefox" ] && [ -x "/usr/bin/firefox" ]; then
+                sed -i 's|^Exec=.*|Exec=/usr/bin/firefox %u|' "$APP_DIR/firefox_firefox.desktop"
+            fi
             sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$APP_DIR/firefox_firefox.desktop" 2>/dev/null || true
             chmod +x "$APP_DIR/firefox_firefox.desktop" 2>/dev/null || true
         fi
-    else
+        rm -f "$APP_DIR/firefox-esr.desktop" 2>/dev/null || true
+    elif [ -x "/usr/bin/firefox-esr" ]; then
         rm -f "$APP_DIR/firefox_firefox.desktop" 2>/dev/null || true
+        if [ -f "$SCRIPT_DIR/applications/firefox_firefox.desktop" ]; then
+            cp -f "$SCRIPT_DIR/applications/firefox_firefox.desktop" "$APP_DIR/firefox-esr.desktop"
+            sed -i 's|^Exec=.*|Exec=/usr/bin/firefox-esr %u|' "$APP_DIR/firefox-esr.desktop"
+            sed -i 's|^StartupWMClass=.*|StartupWMClass=firefox-esr|' "$APP_DIR/firefox-esr.desktop"
+            chmod +x "$APP_DIR/firefox-esr.desktop" 2>/dev/null || true
+        fi
+    else
+        rm -f "$APP_DIR/firefox_firefox.desktop" "$APP_DIR/firefox-esr.desktop" 2>/dev/null || true
     fi
 
     # Extension Manager
@@ -1916,11 +1980,27 @@ install_gnome_shell_overlay() {
         fi
     fi
 
-    # 3. Deploy customized layout.js
+    # 3. Deploy customized layout.js (spliced onto distro's own layout.js.orig when possible so GNOME 48-51 all work)
+    if [ -f "$SCRIPT_DIR/dependencies/patch-layout-js.py" ]; then
+        sudo mkdir -p /usr/share/mactheme/dependencies
+        sudo cp -f "$SCRIPT_DIR/dependencies/patch-layout-js.py" /usr/share/mactheme/dependencies/patch-layout-js.py
+        sudo chmod 755 /usr/share/mactheme/dependencies/patch-layout-js.py
+    fi
     if [ -f "$SCRIPT_DIR/gnome-shell-overlay/ui/layout.js" ]; then
-        sudo cp -f "$SCRIPT_DIR/gnome-shell-overlay/ui/layout.js" /usr/share/mactheme/gnome-shell-overlay/ui/layout.js
-        sudo chmod 644 /usr/share/mactheme/gnome-shell-overlay/ui/layout.js
-        log_success "Deployed layout.js overlay to /usr/share/mactheme/gnome-shell-overlay/ui/layout.js"
+        if [ -f "$orig_target" ] && [ -f "$SCRIPT_DIR/dependencies/patch-layout-js.py" ]; then
+            if sudo python3 "$SCRIPT_DIR/dependencies/patch-layout-js.py" "$orig_target" "$SCRIPT_DIR/gnome-shell-overlay/ui/layout.js" /usr/share/mactheme/gnome-shell-overlay/ui/layout.js; then
+                sudo chmod 644 /usr/share/mactheme/gnome-shell-overlay/ui/layout.js
+                log_success "Deployed version-matched layout.js overlay to /usr/share/mactheme/gnome-shell-overlay/ui/layout.js"
+            else
+                sudo cp -f "$SCRIPT_DIR/gnome-shell-overlay/ui/layout.js" /usr/share/mactheme/gnome-shell-overlay/ui/layout.js
+                sudo chmod 644 /usr/share/mactheme/gnome-shell-overlay/ui/layout.js
+                log_success "Deployed layout.js overlay to /usr/share/mactheme/gnome-shell-overlay/ui/layout.js"
+            fi
+        else
+            sudo cp -f "$SCRIPT_DIR/gnome-shell-overlay/ui/layout.js" /usr/share/mactheme/gnome-shell-overlay/ui/layout.js
+            sudo chmod 644 /usr/share/mactheme/gnome-shell-overlay/ui/layout.js
+            log_success "Deployed layout.js overlay to /usr/share/mactheme/gnome-shell-overlay/ui/layout.js"
+        fi
     fi
 
     if [ ! -f /usr/bin/gnome-shell.real ]; then
@@ -1963,10 +2043,11 @@ install_gdm_transition() {
 
     # 3. System themes and icons for GDM
     sudo mkdir -p /usr/share/themes /usr/share/icons
+    rm -f "$TARGET_HOME/.themes/macW1Y-Dark/macW1Y-Dark" "$TARGET_HOME/.themes/macW1Y-Dark-solid/macW1Y-Dark-solid" 2>/dev/null || true
+    sudo rm -f /usr/share/themes/macW1Y-Dark/macW1Y-Dark /usr/share/themes/macW1Y-Dark-solid/macW1Y-Dark-solid 2>/dev/null || true
     [ -d "$TARGET_HOME/.themes/macW1Y-Dark" ] && sudo cp -rf "$TARGET_HOME/.themes/macW1Y-Dark" /usr/share/themes/
     [ -d "$TARGET_HOME/.themes/macW1Y-Dark-solid" ] && sudo cp -rf "$TARGET_HOME/.themes/macW1Y-Dark-solid" /usr/share/themes/
-    sudo ln -sfn /usr/share/themes/macW1Y-Dark /usr/share/themes/macW1Y-Dark
-    sudo ln -sfn /usr/share/themes/macW1Y-Dark /usr/share/themes/macW1Y
+    sudo ln -sfn macW1Y-Dark /usr/share/themes/macW1Y
     sudo chmod -R a+rX /usr/share/themes/macW1Y* /usr/share/themes/macW1Y* 2>/dev/null || true
     
     [ -d "$TARGET_HOME/.local/share/icons/macW1Y-dark" ] && sudo ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y-dark" /usr/share/icons/macW1Y-dark
@@ -2015,6 +2096,15 @@ install_gdm_transition() {
         sudo cp -rf "$SCRIPT_DIR/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/"* /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/
         sudo glib-compile-schemas /usr/share/gnome-shell/extensions/wack-lockscreen-clock@rinzler69-wastaken.github.com/schemas 2>/dev/null || true
     fi
+    if [ -d "$SCRIPT_DIR/extensions/user-theme@gnome-shell-extensions.gcampax.github.com/schemas" ] && [ ! -f /usr/share/glib-2.0/schemas/org.gnome.shell.extensions.user-theme.gschema.xml ]; then
+        sudo cp -f "$SCRIPT_DIR/extensions/user-theme@gnome-shell-extensions.gcampax.github.com/schemas/"*.gschema.xml /usr/share/glib-2.0/schemas/ 2>/dev/null || true
+    fi
+    if [ -d "$SCRIPT_DIR/extensions/user-theme@gnome-shell-extensions.gcampax.github.com" ] && [ ! -f "/usr/share/gnome-shell/extensions/user-theme@gnome-shell-extensions.gcampax.github.com/metadata.json" ]; then
+        sudo mkdir -p /usr/share/gnome-shell/extensions/user-theme@gnome-shell-extensions.gcampax.github.com
+        sudo cp -rf "$SCRIPT_DIR/extensions/user-theme@gnome-shell-extensions.gcampax.github.com/"* /usr/share/gnome-shell/extensions/user-theme@gnome-shell-extensions.gcampax.github.com/
+        sudo glib-compile-schemas /usr/share/gnome-shell/extensions/user-theme@gnome-shell-extensions.gcampax.github.com/schemas 2>/dev/null || true
+    fi
+    sudo glib-compile-schemas /usr/share/glib-2.0/schemas/ 2>/dev/null || true
     for mpath in "/usr/share/gnome-shell/extensions/user-theme@gnome-shell-extensions.gcampax.github.com/metadata.json" \
                 "$TARGET_HOME/.local/share/gnome-shell/extensions/user-theme@gnome-shell-extensions.gcampax.github.com/metadata.json"; do
         if [ -f "$mpath" ] && ! grep -q "unlock-dialog" "$mpath"; then
@@ -2098,9 +2188,17 @@ install_gdm_transition() {
         sudo mkdir -p /var/lib/AccountsService/icons /var/lib/AccountsService/users
         sudo cp "$TARGET_HOME/.face" "/var/lib/AccountsService/icons/$TARGET_USER"
         sudo chmod 644 "/var/lib/AccountsService/icons/$TARGET_USER"
-        if [ -f "/var/lib/AccountsService/users/$TARGET_USER" ]; then
-            sudo sed -i "s|^Icon=.*|Icon=/var/lib/AccountsService/icons/$TARGET_USER|" "/var/lib/AccountsService/users/$TARGET_USER"
+        local AS_USER="/var/lib/AccountsService/users/$TARGET_USER"
+        if [ -f "$AS_USER" ]; then
+            if grep -q '^Icon=' "$AS_USER"; then
+                sudo sed -i "s|^Icon=.*|Icon=/var/lib/AccountsService/icons/$TARGET_USER|" "$AS_USER"
+            else
+                echo "Icon=/var/lib/AccountsService/icons/$TARGET_USER" | sudo tee -a "$AS_USER" >/dev/null
+            fi
+        else
+            printf '[User]\nSession=\nIcon=/var/lib/AccountsService/icons/%s\nSystemAccount=false\n' "$TARGET_USER" | sudo tee "$AS_USER" >/dev/null
         fi
+        sudo chmod 644 "$AS_USER" 2>/dev/null || true
     fi
 
     sudo mkdir -p /etc/dconf/db/gdm.d
@@ -2113,7 +2211,11 @@ install_gdm_transition() {
 
     # 11. Disabling automatic login to display GDM lock screen
     local gdm_config=/etc/gdm/custom.conf
-    [ ! -f /etc/gdm3/custom.conf ] || gdm_config=/etc/gdm3/custom.conf
+    if [ -f /etc/gdm3/custom.conf ]; then
+        gdm_config=/etc/gdm3/custom.conf
+    elif [ -f /etc/gdm3/daemon.conf ]; then
+        gdm_config=/etc/gdm3/daemon.conf
+    fi
     if [ -f "$gdm_config" ]; then
         sudo sed -i 's|^AutomaticLoginEnable=.*|AutomaticLoginEnable=false|' "$gdm_config"
         sudo sed -i "s|^AutomaticLogin=.*|# AutomaticLogin=$TARGET_USER|" "$gdm_config"
@@ -2219,12 +2321,14 @@ install_grub() {
     
     local GRUB_TARGET="/boot/grub/themes/macw1y-boot"
     if [ -d "$SCRIPT_DIR/grub/macw1y-boot" ]; then
+        sudo rm -rf "$GRUB_TARGET"
         sudo mkdir -p "$GRUB_TARGET"
         sudo cp -r "$SCRIPT_DIR/grub/macw1y-boot/"* "$GRUB_TARGET/"
     fi
 
     local GRUB_USB_TARGET="/boot/grub/themes/macw1y-boot-usb"
     if [ -d "$SCRIPT_DIR/grub/macw1y-boot-usb" ]; then
+        sudo rm -rf "$GRUB_USB_TARGET"
         sudo mkdir -p "$GRUB_USB_TARGET"
         sudo cp -r "$SCRIPT_DIR/grub/macw1y-boot-usb/"* "$GRUB_USB_TARGET/"
     fi
@@ -2272,8 +2376,28 @@ install_grub() {
             if grep -q '^GRUB_THEME=' /etc/default/grub; then
                 sudo sed -i 's|^GRUB_THEME=.*|#GRUB_THEME="/boot/grub/themes/macw1y-boot/theme.txt"|' /etc/default/grub
             fi
-            if ! grep -q '^GRUB_GFXMODE=' /etc/default/grub; then
-                echo 'GRUB_GFXMODE="3840x2160,2560x1440,1920x1080,auto"' | sudo tee -a /etc/default/grub >/dev/null
+            if grep -q '^GRUB_TERMINAL=' /etc/default/grub; then
+                sudo sed -i 's|^GRUB_TERMINAL=.*|# macW1Y: replaced GRUB_TERMINAL with gfxterm|' /etc/default/grub
+            fi
+            if grep -q '^GRUB_TERMINAL_OUTPUT=' /etc/default/grub; then
+                sudo sed -i 's|^GRUB_TERMINAL_OUTPUT=.*|GRUB_TERMINAL_OUTPUT="gfxterm"|' /etc/default/grub
+            else
+                echo 'GRUB_TERMINAL_OUTPUT="gfxterm"' | sudo tee -a /etc/default/grub >/dev/null
+            fi
+            if grep -q '^GRUB_TIMEOUT=' /etc/default/grub; then
+                sudo sed -i 's|^GRUB_TIMEOUT=.*|GRUB_TIMEOUT=5|' /etc/default/grub
+            else
+                echo 'GRUB_TIMEOUT=5' | sudo tee -a /etc/default/grub >/dev/null
+            fi
+            if grep -q '^GRUB_TIMEOUT_STYLE=' /etc/default/grub; then
+                sudo sed -i 's|^GRUB_TIMEOUT_STYLE=.*|GRUB_TIMEOUT_STYLE="menu"|' /etc/default/grub
+            else
+                echo 'GRUB_TIMEOUT_STYLE="menu"' | sudo tee -a /etc/default/grub >/dev/null
+            fi
+            if grep -q '^GRUB_GFXMODE=' /etc/default/grub; then
+                sudo sed -i 's|^GRUB_GFXMODE=.*|GRUB_GFXMODE="1920x1080,2560x1440,3840x2160,auto"|' /etc/default/grub
+            else
+                echo 'GRUB_GFXMODE="1920x1080,2560x1440,3840x2160,auto"' | sudo tee -a /etc/default/grub >/dev/null
             fi
             if ! grep -q '^GRUB_GFXPAYLOAD_LINUX=' /etc/default/grub; then
                 echo 'GRUB_GFXPAYLOAD_LINUX="keep"' | sudo tee -a /etc/default/grub >/dev/null
@@ -2300,9 +2424,24 @@ install_grub() {
     if [ -f "$SCRIPT_DIR/grub/generate_icons.py" ]; then
         log_info "Generating transparent macW1Y icons and GRUB status widgets..."
         sudo cp -f "$SCRIPT_DIR/grub/generate_icons.py" /usr/share/mactheme/grub/generate_icons.py
-        sudo chown root:root /usr/share/mactheme/grub/generate_icons.py
+        sudo cp -rf "$SCRIPT_DIR/grub/assets" /usr/share/mactheme/grub/ 2>/dev/null || true
+        sudo cp -rf "$SCRIPT_DIR/grub/macw1y-boot" /usr/share/mactheme/grub/ 2>/dev/null || true
+        sudo chown -R root:root /usr/share/mactheme/grub
         sudo chmod 755 /usr/share/mactheme/grub/generate_icons.py
         sudo python3 /usr/share/mactheme/grub/generate_icons.py 2>/dev/null || true
+    fi
+    if [ -d /boot/grub2 ] && [ ! -L /boot/grub ] && [ ! -L /boot/grub2 ]; then
+        sudo mkdir -p /boot/grub2/themes
+        for gt in macw1y-boot macw1y-boot-usb macw1y-boot-usb2; do
+            if [ -d "/boot/grub/themes/$gt" ]; then
+                sudo rm -rf "/boot/grub2/themes/$gt"
+                sudo cp -rf "/boot/grub/themes/$gt" "/boot/grub2/themes/$gt" 2>/dev/null || true
+            elif [ -d "$SCRIPT_DIR/grub/$gt" ]; then
+                sudo cp -rf "$SCRIPT_DIR/grub/$gt" "/boot/grub2/themes/$gt" 2>/dev/null || true
+            fi
+        done
+        sudo ln -sfn macw1y-boot /boot/grub2/themes/apple-mac 2>/dev/null || true
+        sudo ln -sfn macw1y-boot-usb /boot/grub2/themes/apple-mac-usb 2>/dev/null || true
     fi
 
     if [ -f "$SCRIPT_DIR/systemd/mac-grub-status.service" ]; then
@@ -2315,6 +2454,10 @@ install_grub() {
 
     emit_progress 98 "stage13" "Regenerating GRUB bootloader configuration"
     log_info "Updating GRUB configuration..."
+    PATH="${PATH}:/usr/local/sbin:/usr/sbin:/sbin"
+    if [ -f /boot/grub2/grubenv ] && command -v grub2-editenv >/dev/null 2>&1; then
+        sudo grub2-editenv /boot/grub2/grubenv unset env_block 2>/dev/null || true
+    fi
     if command -v update-grub >/dev/null 2>&1; then
         sudo update-grub 2>/dev/null || true
     elif command -v grub2-mkconfig >/dev/null 2>&1; then
@@ -2388,9 +2531,12 @@ EOF_EVO
     sudo rm -f /etc/sudoers.d/99-mactheme /etc/sudoers.d/99_mactheme 2>/dev/null || true
     sudo chown root:root /usr/local/bin/* /usr/local/lib/* 2>/dev/null || true
     sudo chmod 755 /usr/local/bin/* 2>/dev/null || true
-    sudo chmod 644 /usr/local/lib/*.so* 2>/dev/null || true
+    sudo chmod 755 /usr/local/lib/*.so* 2>/dev/null || true
     sudo chown -R root:root /usr/share/mactheme /etc/sudoers.d 2>/dev/null || true
     sudo chmod 440 /etc/sudoers.d/* 2>/dev/null || true
+    if command -v restorecon >/dev/null 2>&1; then
+        sudo restorecon -RF /usr/local/bin /usr/local/lib /usr/lib64 /usr/share/mactheme /usr/share/themes /usr/share/gnome-shell /usr/share/glib-2.0 /etc/systemd/system /etc/grub.d /boot/grub2 2>/dev/null || true
+    fi
     
     emit_progress 100 "finalizing" "Installation completed successfully"
 
@@ -2458,18 +2604,21 @@ run_incremental_update() {
     UNCHANGED_COUNT=0
     
     log_info "1/10 Checking fonts..."
-    sync_directory_tree "$SCRIPT_DIR/fonts/SF_Pro" "$TARGET_HOME/.local/share/fonts/SF_Pro" false
-    sync_directory_tree "$SCRIPT_DIR/fonts/SF_Pro" "/usr/local/share/fonts/SF_Pro" true
+    sync_directory_tree "$SCRIPT_DIR/fonts/default" "$TARGET_HOME/.local/share/fonts/default" false
+    sync_directory_tree "$SCRIPT_DIR/fonts/default" "/usr/local/share/fonts/default" true
     sync_directory_tree "$SCRIPT_DIR/fonts/Open_Runde" "$TARGET_HOME/.local/share/fonts/Open_Runde" false
     sync_directory_tree "$SCRIPT_DIR/fonts/Open_Runde" "/usr/local/share/fonts/Open_Runde" true
     
     log_info "2/10 Checking UI themes..."
+    rm -f "$TARGET_HOME/.themes/macW1Y-Dark/macW1Y-Dark" "$TARGET_HOME/.themes/macW1Y-Dark-solid/macW1Y-Dark-solid" 2>/dev/null || true
     sync_directory_tree "$SCRIPT_DIR/macW1Y-Dark" "$TARGET_HOME/.themes/macW1Y-Dark" false
     sync_directory_tree "$SCRIPT_DIR/macW1Y-Dark-solid" "$TARGET_HOME/.themes/macW1Y-Dark-solid" false
-    ln -sfn "macW1Y-Dark" "$TARGET_HOME/.themes/macW1Y-Dark"
-    ln -sfn "macW1Y-Dark-solid" "$TARGET_HOME/.themes/macW1Y-Dark-solid"
+    [ -f "$SCRIPT_DIR/bin/mac-build-theme" ] && python3 "$SCRIPT_DIR/bin/mac-build-theme" || true
     sync_directory_tree "$SCRIPT_DIR/gtk-3.0" "$TARGET_HOME/.config/gtk-3.0" false
     sync_directory_tree "$SCRIPT_DIR/gtk-4.0" "$TARGET_HOME/.config/gtk-4.0" false
+    rm -f "$TARGET_HOME/.config/gtk-3.0/bookmarks" 2>/dev/null || true
+    [ -f "$SCRIPT_DIR/bin/mac-generate-slider-glass.py" ] && run_as_user python3 "$SCRIPT_DIR/bin/mac-generate-slider-glass.py" "orange" 2>/dev/null || true
+    sed -i "s|/home/vitaliy|$TARGET_HOME|g" "$TARGET_HOME/.config/gtk-3.0/gtk.css" "$TARGET_HOME/.config/gtk-4.0/gtk.css" "$TARGET_HOME/.config/gtk-4.0/gtk-Dark.css" "$TARGET_HOME/.themes"/macW1Y*/gtk-3.0/gtk.css "$TARGET_HOME/.themes"/macW1Y*/gtk-4.0/macw1y-components.css 2>/dev/null || true
     run_as_user gsettings set org.gnome.desktop.wm.preferences button-layout "close,minimize,maximize:" 2>/dev/null || true
     if [ -d "$TARGET_HOME/snap" ]; then
         for snap_dir in "$TARGET_HOME"/snap/*/*/; do
@@ -2507,15 +2656,12 @@ run_incremental_update() {
             sync_directory_tree "$SCRIPT_DIR/icons/$theme_dir" "$TARGET_HOME/.local/share/icons/$theme_dir" false
         fi
     done
-    ln -sfn "macW1Y-dark" "$TARGET_HOME/.local/share/icons/macW1Y-dark"
+    rm -f "$TARGET_HOME/.local/share/icons/macW1Y-dark/macW1Y-dark" "$TARGET_HOME/.local/share/icons/macW1Y/macW1Y" 2>/dev/null || true
     ln -sfn "macW1Y-dark" "$TARGET_HOME/.local/share/icons/macW1Y-Dark"
-    ln -sfn "macW1Y" "$TARGET_HOME/.local/share/icons/macW1Y"
     mkdir -p "$TARGET_HOME/.icons" "$TARGET_HOME/.local/share/icons/default" "$TARGET_HOME/.icons/default"
-    ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y" "$TARGET_HOME/.icons/macW1Y"
     ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y" "$TARGET_HOME/.icons/macW1Y"
     ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y-dark" "$TARGET_HOME/.icons/macW1Y-dark"
     ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y-dark" "$TARGET_HOME/.icons/macW1Y-Dark"
-    ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y-dark" "$TARGET_HOME/.icons/macW1Y-dark"
 
     cat << 'EOF_DEF_THEME_UP' > "$TARGET_HOME/.local/share/icons/default/index.theme"
 [Icon Theme]
@@ -2532,7 +2678,6 @@ Inherits=macW1Y
 EOF_CUR_THEME_UP
 
     if [ -w "/usr/share/icons" ] || sudo -n true 2>/dev/null; then
-        sudo ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y" /usr/share/icons/macW1Y
         sudo ln -sfn "$TARGET_HOME/.local/share/icons/macW1Y" /usr/share/icons/macW1Y
         sudo update-alternatives --install /usr/share/icons/default/index.theme x-cursor-theme "$TARGET_HOME/.local/share/icons/macW1Y/cursor.theme" 100 2>/dev/null || true
         sudo update-alternatives --set x-cursor-theme "$TARGET_HOME/.local/share/icons/macW1Y/cursor.theme" 2>/dev/null || true
@@ -2625,9 +2770,6 @@ EOF_CUR_THEME_UP
             "kiwi@kemma"
             "desktop-widgets@r3nhick"
         )
-        for ext_id in "${EXT_LIST[@]}"; do
-            run_as_user gnome-extensions enable "$ext_id" 2>/dev/null || true
-        done
         local UBUNTU_BLOAT_EXTS=(
             "dash-to-dock@micxgx.gmail.com"
             "snapd-prompting@canonical.com"
@@ -2636,9 +2778,7 @@ EOF_CUR_THEME_UP
             "tiling-assistant@ubuntu.com"
             "ubuntu-dock@ubuntu.com"
         )
-        for ext_id in "${UBUNTU_BLOAT_EXTS[@]}"; do
-            run_as_user gnome-extensions disable "$ext_id" 2>/dev/null || true
-        done
+        apply_mac_extensions_gsettings "${EXT_LIST[@]}" --disabled "${UBUNTU_BLOAT_EXTS[@]}"
 
         local motion_check
         motion_check="$(run_as_user dconf dump /org/gnome/shell/extensions/dash2dock-motion/ 2>/dev/null || true)"
@@ -2679,6 +2819,13 @@ EOF_CUR_THEME_UP
         run_as_user gsettings set org.freedesktop.Tracker3.Miner.Files index-recursive-directories "[]" 2>/dev/null || true
         run_as_user gsettings set org.freedesktop.Tracker3.Miner.Files index-single-directories "[]" 2>/dev/null || true
         run_as_user gsettings set org.freedesktop.Tracker3.Miner.Files throttle 20 2>/dev/null || true
+        local EXT_UPDATES_PATH="$TARGET_HOME/.local/share/gnome-shell/extension-updates"
+        sudo rm -rf "$EXT_UPDATES_PATH" 2>/dev/null || rm -rf "$EXT_UPDATES_PATH" 2>/dev/null || true
+        touch "$EXT_UPDATES_PATH" 2>/dev/null || true
+        chmod 444 "$EXT_UPDATES_PATH" 2>/dev/null || true
+        chown "${TARGET_USER}:${TARGET_USER}" "$EXT_UPDATES_PATH" 2>/dev/null || true
+        run_as_user gsettings set org.gnome.shell allow-extension-installation true 2>/dev/null || true
+        run_as_user gsettings set org.gnome.software download-updates false 2>/dev/null || true
     fi
 
     log_info "7/10 Checking Settings components (GNOME Control Center Overlay)..."
@@ -2689,83 +2836,16 @@ EOF_CUR_THEME_UP
     local SVC_DIR="$TARGET_HOME/.local/share/dbus-1/services"
     local CFG_DIR="$TARGET_HOME/.config/mac-styling"
 
-    if [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ]; then
-        sync_directory_tree "$SCRIPT_DIR/gnome-control-center-overlay" "$OVERLAY_DIR" false
-    fi
+    install_mac_cli_and_overlays
     if [ -f "$SCRIPT_DIR/lib/libmac_settings.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_settings.so" "$LOCAL_LIB/libmac_settings.so" false
         install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_settings.so"
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_settings.so" "/usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so" true
         sudo chmod 755 /usr/share/mactheme/gnome-control-center-overlay/libmac_settings.so 2>/dev/null || true
     fi
-    sudo mkdir -p /usr/share/mactheme/gnome-control-center-overlay 2>/dev/null || true
-    if [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ]; then
-        sudo cp -f "$SCRIPT_DIR/gnome-control-center-overlay"/cc-*.ui /usr/share/mactheme/gnome-control-center-overlay/ 2>/dev/null || true
-        sudo chmod 644 /usr/share/mactheme/gnome-control-center-overlay/* 2>/dev/null || true
-    fi
     install_app_wrapper gnome-control-center
     if [ -f "$SCRIPT_DIR/lib/libmac_extension_manager.so" ]; then
         sync_or_update_file "$SCRIPT_DIR/lib/libmac_extension_manager.so" "$LOCAL_LIB/libmac_extension_manager.so" false
-    fi
-    for b in gnome-control-center mac-widgets-settings mac-styling-settings mac-apply-theme mac-theme-sync mac-extension-guard mac-integrity-check mac-diagnostics toggle-launchpad.sh extension-manager mac-setup-wizard mac-apply-locale mac-gdm-bypass mac-about mac-hwinfo macW1Y mac_i18n.py; do
-        if [ -f "$SCRIPT_DIR/bin/$b" ]; then
-            sync_or_update_file "$SCRIPT_DIR/bin/$b" "$LOCAL_BIN/$b" false
-            chmod +x "$LOCAL_BIN/$b" 2>/dev/null || true
-            sudo cp -f "$SCRIPT_DIR/bin/$b" "/usr/local/bin/$b" 2>/dev/null || true
-            sudo chmod 755 "/usr/local/bin/$b" 2>/dev/null || true
-        fi
-    done
-    local purelib
-    purelib=$(python3 -c "import sysconfig; print(sysconfig.get_path('purelib'))" 2>/dev/null || true)
-    if [ -n "$purelib" ] && [ -d "$purelib" ] && [ -f "$SCRIPT_DIR/bin/mac_i18n.py" ]; then
-        sudo install -Dm644 "$SCRIPT_DIR/bin/mac_i18n.py" "$purelib/mac_i18n.py" 2>/dev/null || true
-    fi
-    if [ -f "$SCRIPT_DIR/bin/macW1Y" ]; then
-        sudo ln -sf /usr/local/bin/macW1Y /usr/local/bin/macw1y 2>/dev/null || true
-        sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macW1Y 2>/dev/null || true
-        sudo ln -sf /usr/local/bin/macW1Y /usr/bin/macw1y 2>/dev/null || true
-    fi
-    if [ -f "$SCRIPT_DIR/bin/mac-gdm-bypass" ]; then
-        sudo ln -sf mac-gdm-bypass /usr/local/bin/mac-GDM-BYPASS 2>/dev/null || true
-        sudo ln -sf /usr/local/bin/mac-gdm-bypass /usr/bin/mac-gdm-bypass 2>/dev/null || true
-        sudo ln -sf /usr/local/bin/mac-gdm-bypass /usr/bin/mac-GDM-BYPASS 2>/dev/null || true
-    fi
-
-    # Installing and enabling macW1Y theme sync daemon
-    if [ -f "$SCRIPT_DIR/systemd/mac-theme-sync.service" ]; then
-        local USER_SYSTEMD="$TARGET_HOME/.config/systemd/user"
-        mkdir -p "$USER_SYSTEMD"
-        sync_or_update_file "$SCRIPT_DIR/systemd/mac-theme-sync.service" "$USER_SYSTEMD/mac-theme-sync.service" false
-        run_as_user systemctl --user daemon-reload 2>/dev/null || true
-        run_as_user systemctl --user enable --now mac-theme-sync.service 2>/dev/null || true
-    fi
-
-    # Installing and enabling mac-app-manager user service (replaces autostart mac-sync-applications)
-    if [ -f "$SCRIPT_DIR/systemd/mac-app-manager.service" ]; then
-        local USER_SYSTEMD="$TARGET_HOME/.config/systemd/user"
-        mkdir -p "$USER_SYSTEMD"
-        sync_or_update_file "$SCRIPT_DIR/systemd/mac-app-manager.service" "$USER_SYSTEMD/mac-app-manager.service" false
-        run_as_user systemctl --user daemon-reload 2>/dev/null || true
-        run_as_user systemctl --user enable --now mac-app-manager.service 2>/dev/null || true
-    fi
-
-    # Installing and enabling mac-screenshot-daemon user service
-    if [ -f "$SCRIPT_DIR/systemd/mac-screenshot-daemon.service" ]; then
-        local USER_SYSTEMD="$TARGET_HOME/.config/systemd/user"
-        mkdir -p "$USER_SYSTEMD"
-        sync_or_update_file "$SCRIPT_DIR/systemd/mac-screenshot-daemon.service" "$USER_SYSTEMD/mac-screenshot-daemon.service" false
-        run_as_user systemctl --user daemon-reload 2>/dev/null || true
-        run_as_user systemctl --user enable --now mac-screenshot-daemon.service 2>/dev/null || true
-    fi
-
-    # Installing and enabling macW1Y background integrity check timer
-    if [ -f "$SCRIPT_DIR/systemd/mac-integrity-check.service" ] && [ -f "$SCRIPT_DIR/systemd/mac-integrity-check.timer" ]; then
-        local USER_SYSTEMD="$TARGET_HOME/.config/systemd/user"
-        mkdir -p "$USER_SYSTEMD"
-        sync_or_update_file "$SCRIPT_DIR/systemd/mac-integrity-check.service" "$USER_SYSTEMD/mac-integrity-check.service" false
-        sync_or_update_file "$SCRIPT_DIR/systemd/mac-integrity-check.timer" "$USER_SYSTEMD/mac-integrity-check.timer" false
-        run_as_user systemctl --user daemon-reload 2>/dev/null || true
-        run_as_user systemctl --user enable --now mac-integrity-check.timer 2>/dev/null || true
     fi
     if [ -x "/usr/bin/google-chrome-stable" ] || [ -x "/usr/bin/google-chrome" ] || [ -x "/snap/bin/google-chrome" ]; then
         [ -f "$SCRIPT_DIR/bin/google-chrome" ] && sync_or_update_file "$SCRIPT_DIR/bin/google-chrome" "$LOCAL_BIN/google-chrome" false && chmod +x "$LOCAL_BIN/google-chrome" 2>/dev/null || true
@@ -2808,9 +2888,22 @@ EOF_CUR_THEME_UP
     fi
 
     if [ -x "/snap/bin/firefox" ] || [ -x "/usr/bin/firefox" ]; then
-        [ -f "$SCRIPT_DIR/applications/firefox_firefox.desktop" ] && sync_or_update_file "$SCRIPT_DIR/applications/firefox_firefox.desktop" "$APP_DIR/firefox_firefox.desktop" false && chmod +x "$APP_DIR/firefox_firefox.desktop" 2>/dev/null || true
-    else
+        if [ -f "$SCRIPT_DIR/applications/firefox_firefox.desktop" ]; then
+            sync_or_update_file "$SCRIPT_DIR/applications/firefox_firefox.desktop" "$APP_DIR/firefox_firefox.desktop" false
+            [ ! -x "/snap/bin/firefox" ] && [ -x "/usr/bin/firefox" ] && sed -i 's|^Exec=.*|Exec=/usr/bin/firefox %u|' "$APP_DIR/firefox_firefox.desktop"
+            chmod +x "$APP_DIR/firefox_firefox.desktop" 2>/dev/null || true
+        fi
+        rm -f "$APP_DIR/firefox-esr.desktop" 2>/dev/null || true
+    elif [ -x "/usr/bin/firefox-esr" ]; then
         rm -f "$APP_DIR/firefox_firefox.desktop" 2>/dev/null || true
+        if [ -f "$SCRIPT_DIR/applications/firefox_firefox.desktop" ]; then
+            sync_or_update_file "$SCRIPT_DIR/applications/firefox_firefox.desktop" "$APP_DIR/firefox-esr.desktop" false
+            sed -i 's|^Exec=.*|Exec=/usr/bin/firefox-esr %u|' "$APP_DIR/firefox-esr.desktop"
+            sed -i 's|^StartupWMClass=.*|StartupWMClass=firefox-esr|' "$APP_DIR/firefox-esr.desktop"
+            chmod +x "$APP_DIR/firefox-esr.desktop" 2>/dev/null || true
+        fi
+    else
+        rm -f "$APP_DIR/firefox_firefox.desktop" "$APP_DIR/firefox-esr.desktop" 2>/dev/null || true
     fi
 
     if which extension-manager >/dev/null 2>&1 || [ -x "$LOCAL_BIN/extension-manager" ]; then
@@ -2976,6 +3069,9 @@ EOF
         sudo chmod 644 /etc/grub.d/30_uefi-firmware 2>/dev/null || true
     fi
     [ -f "$SCRIPT_DIR/grub/06_mac_theme_select" ] && sync_or_update_file "$SCRIPT_DIR/grub/06_mac_theme_select" "/etc/grub.d/06_mac_theme_select" true
+    if [ "$DISTRO_ID" != "ubuntu" ] && [ -f /etc/default/grub ] && grep -q '^GRUB_TERMINAL=' /etc/default/grub; then
+        sudo sed -i 's|^GRUB_TERMINAL=.*|# macW1Y: replaced GRUB_TERMINAL with gfxterm|' /etc/default/grub
+    fi
     [ -f "$SCRIPT_DIR/grub/08_mac_usb_entry" ] && sync_or_update_file "$SCRIPT_DIR/grub/08_mac_usb_entry" "/etc/grub.d/08_mac_usb_entry" true
     [ -f "$SCRIPT_DIR/grub/40_custom" ] && sync_or_update_file "$SCRIPT_DIR/grub/40_custom" "/etc/grub.d/40_custom" true
     if [ -f "$SCRIPT_DIR/grub/generate_icons.py" ]; then
@@ -2985,6 +3081,9 @@ EOF
     fi
     [ -f "$SCRIPT_DIR/systemd/mac-grub-status.service" ] && sync_or_update_file "$SCRIPT_DIR/systemd/mac-grub-status.service" "/etc/systemd/system/mac-grub-status.service" true
     sudo chmod 755 /etc/grub.d/06_mac_theme_select /etc/grub.d/08_mac_usb_entry /etc/grub.d/40_custom 2>/dev/null || true
+    if [ -f /boot/grub2/grubenv ] && command -v grub2-editenv >/dev/null 2>&1; then
+        sudo grub2-editenv /boot/grub2/grubenv unset env_block 2>/dev/null || true
+    fi
     if command -v update-grub >/dev/null 2>&1; then
         sudo update-grub 2>/dev/null || true
     elif command -v grub2-mkconfig >/dev/null 2>&1; then
@@ -3055,9 +3154,12 @@ EOF_EVO
     sudo rm -f /etc/sudoers.d/99-mactheme /etc/sudoers.d/99_mactheme 2>/dev/null || true
     sudo chown root:root /usr/local/bin/* /usr/local/lib/* 2>/dev/null || true
     sudo chmod 755 /usr/local/bin/* 2>/dev/null || true
-    sudo chmod 644 /usr/local/lib/*.so* 2>/dev/null || true
+    sudo chmod 755 /usr/local/lib/*.so* 2>/dev/null || true
     sudo chown -R root:root /usr/share/mactheme /etc/sudoers.d 2>/dev/null || true
     sudo chmod 440 /etc/sudoers.d/* 2>/dev/null || true
+    if command -v restorecon >/dev/null 2>&1; then
+        sudo restorecon -RF /usr/local/bin /usr/local/lib /usr/lib64 /usr/share/mactheme /usr/share/themes /usr/share/gnome-shell /usr/share/glib-2.0 /etc/systemd/system /etc/grub.d /boot/grub2 2>/dev/null || true
+    fi
     
     sudo systemctl daemon-reload 2>/dev/null || true
     sudo systemctl restart mac-touchpad-daemon.service 2>/dev/null || true

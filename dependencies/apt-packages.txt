@@ -48,3 +48,4 @@ dbus-x11
 xdg-utils
 libnotify-bin
 zenity
+python3-pil

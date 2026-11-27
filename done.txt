@@ -1,4 +1,16 @@
 ================================================================================
+               macW1Y v0.8 — Крос-дистрибутивна міграція та VM-тестування
+================================================================================
+
+770. Повна крос-дистрибутивна міграція macW1Y v0.8 та наскрізне VM-тестування (Arch Linux, Debian 13, Fedora 44, Ubuntu 26.10):
+   - Уніфіковано SSOT-налаштування (`config/macw1y-manifest.json`, `dconf/gnome-all.dconf`) та виправлено циклічні симлінки у `install.sh` для сумісності з `uutils cp` в Ubuntu 26.10.
+   - Виправлено `grub/patch_grub_keys.py`, `grub/06_mac_theme_select` та `install.sh` (Stage 13): додано перевірку наявності модулів у `/boot/grub*/x86_64-efi`, пріоритет `$prefix`, очищення застарілих `GRUB_TERMINAL=serial` та `env_block` у `grubenv` для чистого запуску `macw1y-boot` на Fedora (SELinux Enforcing) і Debian 13.
+   - Реалізовано версійно-незалежний генератор overlay `dependencies/patch-layout-js.py` (підтримка GNOME 46–51, захист `addChrome` від виклику до `uiGroup.realize` у GNOME 48, ре-підключення `_startupAnimation`), а також захисне розкриття у `wack-lockscreen-clock@rinzler69-wastaken.github.com` та `EvalAsync` D-Bus метод у `eval-helper@mactheme` для повної сумісності з GNOME 48–51.
+   - Додано синтетичний AC/Desktop fallback (100% з іконкою монітора) у `desktop-widgets@r3nhick/widgets/battery/widget.js`, EvalHelper fallback у `bin/mac-diagnostics` та блокування небажаного автооновлення/даунгрейду заблокованих розширень через `extension-updates` у `install.sh`.
+   - Оновлено контрольні суми цілісності в `config/extensions.lock.json` та синхронізовано розширення.
+   - Проведено повну перевірку на 4 збережених QEMU/KVM ВМ (`Arch Linux`, `Debian 13`, `Fedora 44`, `Ubuntu 26.10`) зі зняттям 5 скріншотів кожної ОС (GRUB `macw1y-boot`, Cupertino GDM, Finder + `Мас стилізація`, Print Screen + Liquid Glass + віджети, чистий робочий стіл із `fastfetch`), пройдено `python3 -m unittest discover -s tests` (67/67 OK), `bin/mac-extension-guard verify` (21/21 OK) і `bin/mac-i18n-verify`.
+
+================================================================================
                macW1Y v0.7 — Журнал виконаних завдань розробки
 ================================================================================
 Початок циклу розробки версії macW1Y v0.7 (базова гілка main, оновлення 0.7)

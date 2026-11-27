@@ -277,22 +277,39 @@ def update_all_locations(accent="orange"):
     svg_h = generate_slider_glass_h(palette)
     svg_v = generate_slider_glass_v(palette)
 
-    dirs = [
-        "/home/vitaliy/.config/gtk-4.0/assets/scalable",
-        "/home/vitaliy/MACTHEMEFILES/config/gtk-4.0/assets/scalable",
-        "/home/vitaliy/MACTHEMEFILES/macW1Y-Dark/gtk-4.0/assets/scalable",
-        "/home/vitaliy/MACTHEMEFILES/macW1Y-Dark-solid/gtk-4.0/assets/scalable",
-        "/home/vitaliy/MACTHEMEFILES/macW1Y-Light/gtk-4.0/assets/scalable",
-        "/home/vitaliy/MACTHEMEFILES/macW1Y-Light-solid/gtk-4.0/assets/scalable",
-        "/home/vitaliy/.themes/macW1Y-Dark/gtk-4.0/assets/scalable",
-        "/home/vitaliy/.themes/macW1Y-Dark-solid/gtk-4.0/assets/scalable",
-        "/home/vitaliy/.themes/macW1Y-Light/gtk-4.0/assets/scalable",
-        "/home/vitaliy/.themes/macW1Y-Light-solid/gtk-4.0/assets/scalable",
-        "/home/vitaliy/.themes/macW1Y-Dark/gtk-3.0/assets/scalable",
-        "/home/vitaliy/.themes/macW1Y-Dark-solid/gtk-3.0/assets/scalable",
-        "/home/vitaliy/.themes/macW1Y-Light/gtk-3.0/assets/scalable",
-        "/home/vitaliy/.themes/macW1Y-Light-solid/gtk-3.0/assets/scalable",
+    home = os.path.expanduser("~")
+    repo_candidates = [
+        os.environ.get("MACW1Y_REPO", ""),
+        os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..")),
+        os.path.join(home, "macW1Y"),
+        os.path.join(home, "MACTHEMEFILES"),
     ]
+    repo_dir = next((c for c in repo_candidates if c and os.path.isdir(os.path.join(c, "macW1Y-Dark"))), None)
+
+    dirs = [
+        os.path.join(home, ".config/gtk-4.0/assets/scalable"),
+        os.path.join(home, ".config/gtk-3.0/assets/scalable"),
+    ]
+    themes = ["macW1Y-Dark", "macW1Y-Dark-solid", "macW1Y-Light", "macW1Y-Light-solid"]
+    for t in themes:
+        dirs.append(os.path.join(home, ".themes", t, "gtk-4.0/assets/scalable"))
+        dirs.append(os.path.join(home, ".themes", t, "gtk-3.0/assets/scalable"))
+    if repo_dir and os.access(repo_dir, os.W_OK):
+        dirs.append(os.path.join(repo_dir, "config/gtk-4.0/assets/scalable"))
+        dirs.append(os.path.join(repo_dir, "config/gtk-3.0/assets/scalable"))
+        dirs.append(os.path.join(repo_dir, "gtk-4.0/assets/scalable"))
+        dirs.append(os.path.join(repo_dir, "gtk-3.0/assets/scalable"))
+        for t in themes:
+            if os.path.isdir(os.path.join(repo_dir, t)):
+                dirs.append(os.path.join(repo_dir, t, "gtk-4.0/assets/scalable"))
+                dirs.append(os.path.join(repo_dir, t, "gtk-3.0/assets/scalable"))
+    if os.path.isdir("/usr/share/mactheme") and os.access("/usr/share/mactheme", os.W_OK):
+        dirs.append("/usr/share/mactheme/gtk-4.0/assets/scalable")
+        dirs.append("/usr/share/mactheme/gtk-3.0/assets/scalable")
+        for t in themes:
+            if os.path.isdir(f"/usr/share/themes/{t}") and os.access(f"/usr/share/themes/{t}", os.W_OK):
+                dirs.append(f"/usr/share/themes/{t}/gtk-4.0/assets/scalable")
+                dirs.append(f"/usr/share/themes/{t}/gtk-3.0/assets/scalable")
 
     for d in dirs:
         if not os.path.exists(d):

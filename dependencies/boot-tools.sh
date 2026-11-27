@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Генератор обирається за конфігурацією встановленої системи.
 macw1y_rebuild_initramfs() {
+    local PATH="${PATH}:/usr/local/sbin:/usr/sbin:/sbin"
     if command -v update-initramfs >/dev/null 2>&1 && [ -d /etc/initramfs-tools ]; then
         sudo update-initramfs -u
     elif command -v mkinitcpio >/dev/null 2>&1 && compgen -G '/etc/mkinitcpio.d/*.preset' >/dev/null; then
@@ -14,6 +15,7 @@ macw1y_rebuild_initramfs() {
 }
 
 macw1y_has_grub() {
+    local PATH="${PATH}:/usr/local/sbin:/usr/sbin:/sbin"
     if [ -d /run/initramfs/live ] || grep -q -E 'boot=live|liveimg|root=live:' /proc/cmdline 2>/dev/null; then
         return 1
     fi

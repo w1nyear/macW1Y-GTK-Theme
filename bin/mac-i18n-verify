@@ -11,10 +11,15 @@ import json
 import re
 import subprocess
 
-REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
 if not os.path.exists(os.path.join(REPO_ROOT, "config/i18n/catalog.json")):
-    for candidate in ["/home/vitaliy/MACTHEMEFILES", "/home/vitaliy/macW1Y"]:
-        if os.path.exists(os.path.join(candidate, "config/i18n/catalog.json")):
+    for candidate in [
+        os.environ.get("MACW1Y_REPO", ""),
+        os.path.expanduser("~/macW1Y"),
+        os.path.expanduser("~/MACTHEMEFILES"),
+        "/usr/share/mactheme",
+    ]:
+        if candidate and os.path.exists(os.path.join(candidate, "config/i18n/catalog.json")):
             REPO_ROOT = candidate
             break
 

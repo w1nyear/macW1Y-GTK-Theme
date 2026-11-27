@@ -714,15 +714,35 @@ static void schedule_json_save(void) {
     json_timer_id = g_timeout_add(250, (GSourceFunc)save_json_cb, NULL);
 }
 
+static char *resolve_mac_bin(const char *bin_name) {
+    char *cand = NULL;
+    cand = g_build_filename("/usr/local/bin", bin_name, NULL);
+    if (g_file_test(cand, G_FILE_TEST_IS_EXECUTABLE)) return cand;
+    g_free(cand);
+
+    const char *home = g_get_home_dir();
+    if (home) {
+        const char *subdirs[] = { ".local/bin", "macW1Y/bin", "MACTHEMEFILES/bin", NULL };
+        for (int i = 0; subdirs[i]; i++) {
+            cand = g_build_filename(home, subdirs[i], bin_name, NULL);
+            if (g_file_test(cand, G_FILE_TEST_IS_EXECUTABLE)) return cand;
+            g_free(cand);
+        }
+    }
+    return g_strdup(bin_name);
+}
+
 static gboolean save_css_cb(gpointer user_data) {
     (void)user_data;
     css_timer_id = 0;
+    char *bin_path = resolve_mac_bin("update-mac-styling-css");
     char *cmd = g_strdup_printf(
-        "/home/vitaliy/MACTHEMEFILES/bin/update-mac-styling-css %d %d",
-        state.menubar_tint, state.blur_tint
+        "%s %d %d",
+        bin_path, state.menubar_tint, state.blur_tint
     );
     g_spawn_command_line_async(cmd, NULL);
     g_free(cmd);
+    g_free(bin_path);
     return G_SOURCE_REMOVE;
 }
 
@@ -734,12 +754,14 @@ static void schedule_css_save(void) {
 }
 
 static void apply_menubar_blur(void) {
+    char *bin_path = resolve_mac_bin("update-bms-menubar-blur");
     char *cmd = g_strdup_printf(
-        "/home/vitaliy/MACTHEMEFILES/bin/update-bms-menubar-blur %d",
-        state.menubar_blur
+        "%s %d",
+        bin_path, state.menubar_blur
     );
     g_spawn_command_line_async(cmd, NULL);
     g_free(cmd);
+    g_free(bin_path);
 
     GSettingsSchemaSource *src = g_settings_schema_source_get_default();
     if (src && g_settings_schema_source_lookup(src, "org.gnome.shell.extensions.blur-my-shell.panel", TRUE)) {
@@ -7325,7 +7347,7 @@ void on_mac_styling_clicked(void *row, void *user_data) {
 
 void on_run_diagnostics_clicked(void *widget, gpointer data) {
     (void)widget; (void)data;
-    g_spawn_command_line_async("ptyxis -- mac-diagnostics || gnome-terminal -- mac-diagnostics || /usr/local/bin/mac-diagnostics", NULL);
+    g_spawn_command_line_async("/bin/sh -c 'if command -v ptyxis >/dev/null 2>&1; then exec ptyxis -- mac-diagnostics; elif command -v kgx >/dev/null 2>&1; then exec kgx -- mac-diagnostics; elif command -v gnome-terminal >/dev/null 2>&1; then exec gnome-terminal -- mac-diagnostics; else exec /usr/local/bin/mac-diagnostics; fi'", NULL);
 }
 
 void on_restore_theme_clicked(void *widget, gpointer data) {
@@ -10245,23 +10267,20 @@ static char *mac_get_localized_ui_path(const char *basename)
             path = g_build_filename(home, ".local", "share", "gnome-control-center-overlay", "locales", cur_loc, basename, NULL);
             if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
             g_free(path);
+
+            const char *repo_rel_locs[] = {
+                "macW1Y/gnome-control-center-overlay/locales",
+                "MACTHEMEFILES/gnome-control-center-overlay/locales",
+                "macW1Y/control-center/locales",
+                "MACTHEMEFILES/control-center/locales",
+                NULL
+            };
+            for (int r = 0; repo_rel_locs[r]; r++) {
+                path = g_build_filename(home, repo_rel_locs[r], cur_loc, basename, NULL);
+                if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
+                g_free(path);
+            }
         }
-
-        path = g_build_filename("/home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/locales", cur_loc, basename, NULL);
-        if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
-        g_free(path);
-
-        path = g_build_filename("/home/vitaliy/macW1Y/gnome-control-center-overlay/locales", cur_loc, basename, NULL);
-        if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
-        g_free(path);
-
-        path = g_build_filename("/home/vitaliy/MACTHEMEFILES/control-center/locales", cur_loc, basename, NULL);
-        if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
-        g_free(path);
-
-        path = g_build_filename("/home/vitaliy/macW1Y/control-center/locales", cur_loc, basename, NULL);
-        if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
-        g_free(path);
     }
 
     /* Fallback to English if not UK */
@@ -10274,23 +10293,20 @@ static char *mac_get_localized_ui_path(const char *basename)
             path = g_build_filename(home, ".local", "share", "gnome-control-center-overlay", "locales", "en", basename, NULL);
             if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
             g_free(path);
+
+            const char *repo_rel_locs[] = {
+                "macW1Y/gnome-control-center-overlay/locales",
+                "MACTHEMEFILES/gnome-control-center-overlay/locales",
+                "macW1Y/control-center/locales",
+                "MACTHEMEFILES/control-center/locales",
+                NULL
+            };
+            for (int r = 0; repo_rel_locs[r]; r++) {
+                path = g_build_filename(home, repo_rel_locs[r], "en", basename, NULL);
+                if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
+                g_free(path);
+            }
         }
-
-        path = g_build_filename("/home/vitaliy/MACTHEMEFILES/gnome-control-center-overlay/locales", "en", basename, NULL);
-        if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
-        g_free(path);
-
-        path = g_build_filename("/home/vitaliy/macW1Y/gnome-control-center-overlay/locales", "en", basename, NULL);
-        if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
-        g_free(path);
-
-        path = g_build_filename("/home/vitaliy/MACTHEMEFILES/control-center/locales", "en", basename, NULL);
-        if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
-        g_free(path);
-
-        path = g_build_filename("/home/vitaliy/macW1Y/control-center/locales", "en", basename, NULL);
-        if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
-        g_free(path);
     }
 
 
@@ -10302,11 +10318,14 @@ static char *mac_get_localized_ui_path(const char *basename)
         path = g_build_filename(home, ".local", "share", "gnome-control-center-overlay", basename, NULL);
         if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
         g_free(path);
-    }
 
-    path = g_build_filename("/home/vitaliy/MACTHEMEFILES/control-center", basename, NULL);
-    if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
-    g_free(path);
+        const char *repo_bases[] = { "macW1Y/control-center", "MACTHEMEFILES/control-center", NULL };
+        for (int r = 0; repo_bases[r]; r++) {
+            path = g_build_filename(home, repo_bases[r], basename, NULL);
+            if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
+            g_free(path);
+        }
+    }
 
     return NULL;
 }
@@ -10928,12 +10947,14 @@ static void init_mac_settings_css(void) {
             if (iface_settings) {
                 gchar *accent = g_settings_get_string(iface_settings, "accent-color");
                 if (accent) {
+                    char *gen_bin = resolve_mac_bin("mac-generate-slider-glass.py");
                     char *argv[] = {
-                        "/home/vitaliy/MACTHEMEFILES/bin/mac-generate-slider-glass.py",
+                        gen_bin,
                         accent,
                         NULL
                     };
                     g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
+                    g_free(gen_bin);
                     g_free(accent);
                 }
                 g_object_unref(iface_settings);
@@ -10942,8 +10963,24 @@ static void init_mac_settings_css(void) {
         }
     }
 
+    const char *home = g_get_home_dir();
+    char *sg_h = home ? g_build_filename(home, ".config/gtk-4.0/assets/scalable/slider-glass.svg", NULL) : NULL;
+    char *sg_v = home ? g_build_filename(home, ".config/gtk-4.0/assets/scalable/slider-glass-vertical.svg", NULL) : NULL;
+    if (!sg_h || !g_file_test(sg_h, G_FILE_TEST_EXISTS)) {
+        g_free(sg_h);
+        sg_h = g_strdup("/usr/share/mactheme/gtk-4.0/assets/scalable/slider-glass.svg");
+    }
+    if (!sg_v || !g_file_test(sg_v, G_FILE_TEST_EXISTS)) {
+        g_free(sg_v);
+        sg_v = g_strdup("/usr/share/mactheme/gtk-4.0/assets/scalable/slider-glass-vertical.svg");
+    }
+    char *sg_h_uri = g_filename_to_uri(sg_h, NULL, NULL);
+    char *sg_v_uri = g_filename_to_uri(sg_v, NULL, NULL);
+    g_free(sg_h);
+    g_free(sg_v);
+
     GtkCssProvider *provider = gtk_css_provider_new();
-    gtk_css_provider_load_from_string(provider,
+    char *settings_css = g_strconcat(
         "window.mac-settings-window, "
         "window.mac-settings-window.background, "
         "window.mac-settings-window > dialog-host, "
@@ -12796,7 +12833,7 @@ static void init_mac_settings_css(void) {
         "  margin: -8px -17px; "
         "  border-radius: 9999px; "
         "  background-color: transparent; "
-        "  background-image: url('file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass.svg'); "
+        "  background-image: url('", sg_h_uri, "'); "
         "  background-repeat: no-repeat; "
         "  background-size: 100% 100%; "
         "  border: none; "
@@ -12843,7 +12880,7 @@ static void init_mac_settings_css(void) {
         "  margin: -17px -8px; "
         "  border-radius: 9999px; "
         "  background-color: transparent; "
-        "  background-image: url('file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass-vertical.svg'); "
+        "  background-image: url('", sg_v_uri, "'); "
         "  background-repeat: no-repeat; "
         "  background-size: 100% 100%; "
         "  border: none; "
@@ -13087,8 +13124,13 @@ static void init_mac_settings_css(void) {
         "  background-color: rgba(28, 28, 32, 0.85); "
         "  border-right: 1px solid rgba(0, 0, 0, 0.40); "
         "  min-width: 30px; "
-        "}"
+        "}",
+        NULL
     );
+    gtk_css_provider_load_from_string(provider, settings_css);
+    g_free(settings_css);
+    g_free(sg_h_uri);
+    g_free(sg_v_uri);
     gtk_style_context_add_provider_for_display(
         gdk_display_get_default(),
         GTK_STYLE_PROVIDER(provider),
@@ -13123,7 +13165,7 @@ static GtkListBoxRow *create_account_row(AdwNavigationSplitView *split_view) {
     adw_avatar_set_show_initials(ADW_AVATAR(avatar), TRUE);
 
     GdkTexture *tex = NULL;
-    char *acc_icon = g_strdup_printf("/var/lib/AccountsService/icons/%s", user_name ? user_name : "vitaliy");
+    char *acc_icon = g_strdup_printf("/var/lib/AccountsService/icons/%s", user_name ? user_name : "user");
     char *face_path = g_build_filename(g_get_home_dir(), ".face", NULL);
     char *face_icon_path = g_build_filename(g_get_home_dir(), ".face.icon", NULL);
 

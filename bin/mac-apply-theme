@@ -300,10 +300,21 @@ def main():
                     if os.path.exists("/tmp/mac_orig_layout.js"):
                         os.unlink("/tmp/mac_orig_layout.js")
 
-            if not os.path.exists(overlay_dst) or get_file_md5(overlay_src) != get_file_md5(overlay_dst):
-                subprocess.run(["sudo", "cp", "-f", overlay_src, overlay_dst], check=False)
+            patcher = os.path.join(REPO_DIR, "dependencies/patch-layout-js.py")
+            if not os.path.exists(patcher):
+                patcher = "/usr/share/mactheme/dependencies/patch-layout-js.py"
+            tmp_patched = "/tmp/mac_patched_layout.js"
+            src_for_dst = overlay_src
+            if os.path.exists(orig_dst) and os.path.exists(patcher):
+                res_p = subprocess.run(["python3", patcher, orig_dst, overlay_src, tmp_patched], check=False)
+                if res_p.returncode == 0 and os.path.exists(tmp_patched):
+                    src_for_dst = tmp_patched
+            if not os.path.exists(overlay_dst) or get_file_md5(src_for_dst) != get_file_md5(overlay_dst):
+                subprocess.run(["sudo", "cp", "-f", src_for_dst, overlay_dst], check=False)
                 subprocess.run(["sudo", "chmod", "644", overlay_dst], check=False)
                 changes_count += 1
+            if os.path.exists(tmp_patched):
+                os.unlink(tmp_patched)
 
             # Shell watchdog overlay is disabled on RPM/Pacman systems (preserve packaged binary)
             is_debian = os.path.exists("/etc/debian_version") and shutil.which("dpkg-divert") is not None
