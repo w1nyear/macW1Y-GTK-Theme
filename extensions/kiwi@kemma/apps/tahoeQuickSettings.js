@@ -201,6 +201,20 @@ function _qsGlassBrightness() {
     }
 }
 
+let _lastBrightnessWarnMs = 0;
+function _notifyBrightnessUnavailable() {
+    const now = Date.now();
+    if (now - _lastBrightnessWarnMs < 3000)
+        return;
+    _lastBrightnessWarnMs = now;
+    try {
+        Main.notify(
+            'Display Brightness Unavailable',
+            'Brightness control is not supported on this external monitor.'
+        );
+    } catch (_) {}
+}
+
 function _qsInt(key, dflt) {
     try {
         return _settings?.get_int?.(key) ?? dflt;
@@ -1083,16 +1097,12 @@ function _buildPanel() {
                 '/org/gnome/SettingsDaemon/Power/Screen',
                 'org.gnome.SettingsDaemon.Power.Screen',
                 null);
-            if (proxy) {
+            const b = proxy ? proxy.get_cached_property('Brightness') : null;
+            const bVal = b !== null ? b.unpack() : -1;
+            if (proxy && proxy.get_name_owner() && b !== null && bVal >= 0) {
                 haveBrightness = true;
                 state.screen = proxy;
-                try {
-                    const b = proxy.get_cached_property('Brightness');
-                    if (b !== null)
-                        disp.slider.value = b.unpack() / 100;
-                } catch (_) {
-
-                }
+                disp.slider.value = bVal / 100;
                 disp.slider.connect('notify::value', () => {
                     if (state.dispGuard)
                         return;
@@ -1157,13 +1167,26 @@ function _buildPanel() {
             });
         }
     } else {
-
-        disp.box.opacity = 140;
+        disp.box.opacity = 165;
         try {
             disp.slider.reactive = false;
             disp.slider.can_focus = false;
-        } catch (_) {
-
+        } catch (_) {}
+        const onUnavailableClick = (_actor, event) => {
+            if (event && event.get_button && event.get_button() !== 1)
+                return Clutter.EVENT_PROPAGATE;
+            _notifyBrightnessUnavailable();
+            return Clutter.EVENT_STOP;
+        };
+        disp.box.reactive = true;
+        disp.box.connect('button-press-event', onUnavailableClick);
+        if (disp.iconL) {
+            disp.iconL.reactive = true;
+            disp.iconL.connect('button-press-event', onUnavailableClick);
+        }
+        if (disp.iconR) {
+            disp.iconR.reactive = true;
+            disp.iconR.connect('button-press-event', onUnavailableClick);
         }
     }
 

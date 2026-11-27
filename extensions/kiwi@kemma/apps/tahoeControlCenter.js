@@ -238,6 +238,20 @@ function _qsGlassBrightness() {
     }
 }
 
+let _lastBrightnessWarnMs = 0;
+function _notifyBrightnessUnavailable() {
+    const now = Date.now();
+    if (now - _lastBrightnessWarnMs < 3000)
+        return;
+    _lastBrightnessWarnMs = now;
+    try {
+        Main.notify(
+            'Display Brightness Unavailable',
+            'Brightness control is not supported on this external monitor.'
+        );
+    } catch (_) {}
+}
+
 function _qsInt(key, dflt) {
     try {
         return _settings?.get_int?.(key) ?? dflt;
@@ -820,16 +834,36 @@ export async function _openDisplaySubmenu(sourceActor, state) {
         const subSlider = new TahoeSlider(curVal);
         subSlider.x_expand = true;
         subSlider.y_align = Clutter.ActorAlign.CENTER;
-        subSlider.connect('notify::value', () => {
-            if (state.brightScale) {
-                try { state.brightScale.value = subSlider.value; } catch (_) {}
-            } else if (state.screen) {
-                try {
-                    state.screen.set('org.gnome.SettingsDaemon.Power.Screen', 'Brightness',
-                        GLib.Variant.new_int32(Math.round(subSlider.value * 100)));
-                } catch (_) {}
-            }
-        });
+        const hasSubBrightness = !!(state.brightScale || state.screen);
+        if (hasSubBrightness) {
+            subSlider.connect('notify::value', () => {
+                if (state.brightScale) {
+                    try { state.brightScale.value = subSlider.value; } catch (_) {}
+                } else if (state.screen) {
+                    try {
+                        state.screen.call(
+                            'org.freedesktop.DBus.Properties.Set',
+                            new GLib.Variant('(ssv)', [
+                                'org.gnome.SettingsDaemon.Power.Screen',
+                                'Brightness',
+                                GLib.Variant.new_int32(Math.round(subSlider.value * 100)),
+                            ]),
+                            Gio.DBusCallFlags.NONE,
+                            -1,
+                            null,
+                            null);
+                    } catch (_) {}
+                }
+            });
+        } else {
+            sliderRow.opacity = 150;
+            subSlider.reactive = false;
+            subSlider.can_focus = false;
+            sliderItem.connect('button-press-event', () => {
+                _notifyBrightnessUnavailable();
+                return Clutter.EVENT_STOP;
+            });
+        }
         sliderRow.add_child(iconL);
         sliderRow.add_child(subSlider);
         sliderItem.add_child(sliderRow);
@@ -2089,16 +2123,12 @@ function _buildPanel() {
                 '/org/gnome/SettingsDaemon/Power/Screen',
                 'org.gnome.SettingsDaemon.Power.Screen',
                 null);
-            if (proxy) {
+            const b = proxy ? proxy.get_cached_property('Brightness') : null;
+            const bVal = b !== null ? b.unpack() : -1;
+            if (proxy && proxy.get_name_owner() && b !== null && bVal >= 0) {
                 haveBrightness = true;
                 state.screen = proxy;
-                try {
-                    const b = proxy.get_cached_property('Brightness');
-                    if (b !== null)
-                        disp.slider.value = b.unpack() / 100;
-                } catch (_) {
-
-                }
+                disp.slider.value = bVal / 100;
                 disp.slider.connect('notify::value', () => {
                     if (state.dispGuard)
                         return;
@@ -2163,13 +2193,25 @@ function _buildPanel() {
             });
         }
     } else {
-
-        disp.box.opacity = 140;
+        disp.box.opacity = 165;
         try {
             disp.slider.reactive = false;
             disp.slider.can_focus = false;
-        } catch (_) {
-
+        } catch (_) {}
+        const onUnavailableClick = (_actor, event) => {
+            if (event && event.get_button && event.get_button() !== 1)
+                return Clutter.EVENT_PROPAGATE;
+            _notifyBrightnessUnavailable();
+            return Clutter.EVENT_STOP;
+        };
+        disp.box.connect('button-press-event', onUnavailableClick);
+        if (disp.iconL) {
+            disp.iconL.reactive = true;
+            disp.iconL.connect('button-press-event', onUnavailableClick);
+        }
+        if (disp.iconR) {
+            disp.iconR.reactive = true;
+            disp.iconR.connect('button-press-event', onUnavailableClick);
         }
     }
 
