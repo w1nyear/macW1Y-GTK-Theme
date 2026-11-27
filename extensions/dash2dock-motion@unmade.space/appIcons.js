@@ -98,11 +98,6 @@ function isAppRunningInBackground(app, windowsCount) {
         return false;
     if (windowsCount > 0)
         return true;
-    if (app.state === Shell.AppState.RUNNING)
-        return true;
-    const pids = app.get_pids ? app.get_pids() : [];
-    if (pids && pids.length > 0)
-        return true;
 
     const id = app.get_id ? app.get_id() : '';
     if (id === 'launchpad.desktop' || id.startsWith('location:'))
@@ -114,22 +109,25 @@ function isAppRunningInBackground(app, windowsCount) {
     const exec = info.get_executable ? info.get_executable() : null;
     if (!exec)
         return false;
-    const base = GLib.path_get_basename(exec);
+    const base = GLib.path_get_basename(exec).toLowerCase();
     if (!base || base.endsWith('.sh'))
         return false;
 
-    const comms = getRunningProcessComms();
-    if (comms.has(base) || comms.has(base.slice(0, 15)))
-        return true;
-
-    if (base.includes('chrome') && (comms.has('chrome') || comms.has('google-chrome')))
-        return true;
-    if (base.includes('telegram') && (comms.has('telegram-deskto') || comms.has('Telegram')))
-        return true;
-    if (base.includes('steam') && (comms.has('steam') || comms.has('steamwebhelper')))
-        return true;
-    if (base.includes('opencode') && (comms.has('opencode') || comms.has('ai.opencode.desktop')))
-        return true;
+    // Only keep the running dot with 0 windows for true tray/background apps;
+    // regular GTK/GApplication apps (e.g. Nautilus, Settings, Text Editor) linger
+    // in /proc for ~10s after their last window closes and should clear immediately.
+    if (base.includes('telegram')) {
+        const comms = getRunningProcessComms();
+        return comms.has('telegram-deskto') || comms.has('Telegram');
+    }
+    if (base.includes('steam')) {
+        const comms = getRunningProcessComms();
+        return comms.has('steam') || comms.has('steamwebhelper');
+    }
+    if (base.includes('discord')) {
+        const comms = getRunningProcessComms();
+        return comms.has('Discord') || comms.has('discord');
+    }
 
     return false;
 }
