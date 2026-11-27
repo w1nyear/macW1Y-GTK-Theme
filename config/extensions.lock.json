@@ -46,7 +46,7 @@
         "50",
         "51"
       ],
-      "sha256": "910e8aaab68a653946636005a2ca1e0cda7ceed07c1d3155da37a3c52e8f307e",
+      "sha256": "57932ed913748229964f7a5a2bb56cd876aa02ab0e04db03dd02c75a87c79a8c",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -57,9 +57,9 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macW1Y horizontal Cairo battery indicator",
-      "last_verified": "2026-11-08",
-      "pinned_sha256": "7a07b049736d83f94ee5c21247c973245d8ffc52cb63b88d7bf5547932f461a0",
-      "dir_hash": "86d3838f"
+      "last_verified": "2026-11-26",
+      "pinned_sha256": "57932ed913748229964f7a5a2bb56cd876aa02ab0e04db03dd02c75a87c79a8c",
+      "dir_hash": "57932ed9"
     },
     "compiz-alike-magic-lamp-effect@hermes83.github.com": {
       "uuid": "compiz-alike-magic-lamp-effect@hermes83.github.com",
@@ -247,7 +247,7 @@
         "50",
         "51"
       ],
-      "sha256": "7f1c6e0a99c31bd68b9d552a68b042d21df6d0eeadd3534e9e1f572694abe1c2",
+      "sha256": "20ecd5cd84917ece2d07efa3e197620cc85a0d4af736caa59612011d90f35491",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -258,7 +258,7 @@
       "has_custom_patches": true,
       "patch_description": "Local D-Bus EvalHelper service and macW1Y Alt+Tab switcher enhancements",
       "last_verified": "2026-11-26",
-      "pinned_sha256": "f5219cbdadcf16d4e5f75d8d3754abe7d184d9ea3fef62fcf5fb2ec510cd91b7",
+      "pinned_sha256": "20ecd5cd84917ece2d07efa3e197620cc85a0d4af736caa59612011d90f35491",
       "integrity_hash": "f5219cbdadcf16d4e5f75d8d3754abe7d184d9ea3fef62fcf5fb2ec510cd91b7",
       "integrity": "f5219cbdadcf16d4e5f75d8d3754abe7d184d9ea3fef62fcf5fb2ec510cd91b7"
     },
@@ -274,7 +274,7 @@
         "50",
         "51"
       ],
-      "sha256": "a8a9f9ebb7074d2ba5744d2cb4b9db6a56e4b9baed0311414711fbd801f83108",
+      "sha256": "c2d4bab84a5cc654744474edefc66b4ee13a6c074322b3d774a671708e40d966",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -286,11 +286,11 @@
       ],
       "has_custom_patches": true,
       "patch_description": "macW1Y Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macW1Y Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macW1Y Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macW1Y horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; authentic unfullscreen window shrink animation and menubar slide-down with solid dark dimming backdrop; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
-      "last_verified": "2026-11-24",
+      "last_verified": "2026-11-26",
       "integrity_hash": "ec7c44ad7fa2c4fd48b21576722dd4c6bee2391fa0884ec33a6288af17545501",
-      "pinned_sha256": "ec7c44ad7fa2c4fd48b21576722dd4c6bee2391fa0884ec33a6288af17545501",
+      "pinned_sha256": "c2d4bab84a5cc654744474edefc66b4ee13a6c074322b3d774a671708e40d966",
       "expected_hash": "d7d391f17d291fe98b899ee1af85d1bb9c11017ff2e7be5f6b5ab4a555211bcf",
-      "dir_hash": "ec7c44ad",
+      "dir_hash": "c2d4bab8",
       "integrity": "ec7c44ad7fa2c4fd48b21576722dd4c6bee2391fa0884ec33a6288af17545501"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {
@@ -305,7 +305,7 @@
         "50",
         "51"
       ],
-      "sha256": "bb30f908a538184fb3cb252692adc825a6a247871bce4a7e48370d4a9231a7a7",
+      "sha256": "044e26c72f3cbc8f91d41247ca39657d490315b0059e95f1808d8f3009214899",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -316,7 +316,7 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Local custom Liquid Glass GLSL refraction & border shader; UI container owner check for strict rounded rectangle radius enforcement and setShapeType API",
-      "last_verified": "2026-11-22",
+      "last_verified": "2026-11-26",
       "integrity_hash": "a9de965c1b2f53b8cce257b3bd436995a26767d9eb9f0754fcc82d32e5498b73",
       "files": {
         "global.d.ts": "02492c5b3b37afc11cb19dee9ae1e9ae8f4e6f8502920b57ae6d0b6f8175c41a",
@@ -370,8 +370,8 @@
         "icons/audio-volume-medium-symbolic.svg": "8447a2300f7d0fda2c3be92ca17736079661de4cc6942571468220bb2a25ee82",
         "icons/shapes-large-symbolic.svg": "713fe56bf2d550a9c99600a1ce8cd87b993b40101f9d5fa7b007907efc9cdd11"
       },
-      "pinned_sha256": "a9de965c1b2f53b8cce257b3bd436995a26767d9eb9f0754fcc82d32e5498b73",
-      "dir_hash": "a9de965c"
+      "pinned_sha256": "044e26c72f3cbc8f91d41247ca39657d490315b0059e95f1808d8f3009214899",
+      "dir_hash": "044e26c7"
     },
     "macw1y-touchpad-gestures@mactheme": {
       "uuid": "macw1y-touchpad-gestures@mactheme",

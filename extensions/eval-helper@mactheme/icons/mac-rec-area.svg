@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <defs>
+    <mask id="cut">
+      <rect width="24" height="24" fill="white"/>
+      <circle cx="18.3" cy="16.7" r="4.9" fill="black"/>
+    </mask>
+  </defs>
+  <g mask="url(#cut)">
+    <rect x="2.8" y="5.2" width="17.8" height="13.2" rx="2.0" stroke="#ffffff" stroke-width="1.6" stroke-dasharray="3.1 2.1" stroke-linecap="round"/>
+  </g>
+  <circle cx="18.3" cy="16.7" r="3.45" stroke="#ffffff" stroke-width="1.45"/>
+  <circle cx="18.3" cy="16.7" r="1.65" fill="#ffffff"/>
+</svg>

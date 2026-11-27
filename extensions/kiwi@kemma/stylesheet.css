@@ -1964,11 +1964,12 @@ Gjs_apps_windowControls_WindowControlsIndicator.panel-button:focus {
    macW1Y Screen Recording & Screen Sharing Menubar Indicator & Menu
    ========================================================================= */
 .mac-screencast-button {
-  padding: 0 4px;
+  padding: 0 5px;
+  border-radius: 999px;
 }
 .mac-screencast-menu {
-  min-width: 290px;
-  padding: 6px 12px;
+  min-width: 150px;
+  padding: 4px 6px;
 }
 .mac-screencast-header {
   spacing: 8px;

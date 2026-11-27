@@ -6414,3 +6414,23 @@ Task #938:
   - Перевірка та синхронізація:
     * Синхронізовано `~/.local/share/gnome-shell/extensions/eval-helper@mactheme/extension.js`, оновлено хеш у [extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json) і `/usr/share/mactheme/config/extensions.lock.json`, гаряче оновлено поточну сесію GNOME Shell.
     * Жива перевірка через `EvalHelper`: обидва перемикачі (`AppSwitcherPopup` і `WindowSwitcherPopup`) повертають `minH: 97`, `natH: 97`, `allocH: 97`, `padBot: 0`.
+
+#1008: Оновлення меню знімка та запису екрана (Print Screen) у стилі macOS Tahoe з Liquid Glass, опціями збереження, записом аудіо, індикатором у менюбарі та параметрами в Mac стилізації
+  - Змінені файли:
+    * [macScreenshotUI.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/macScreenshotUI.js) та [icons/](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/icons)
+    * [extension.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/extension.js)
+    * [liquidEffect.js](file:///home/vitaliy/macW1Y/extensions/liquid-glass@thinkingcoding1231.gmail.com/dist/liquidEffect.js)
+    * [targets.js](file:///home/vitaliy/macW1Y/extensions/blur-my-shell@aunetx/components/popup/targets.js), [blur_surface.js](file:///home/vitaliy/macW1Y/extensions/blur-my-shell@aunetx/components/popup/blur_surface.js) і [menubar_v29.js](file:///home/vitaliy/macW1Y/extensions/blur-my-shell@aunetx/components/menubar_v29.js)
+    * [tahoeScreenCast.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeScreenCast.js) і [stylesheet.css](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/stylesheet.css)
+    * [mac-screenshot-process](file:///home/vitaliy/macW1Y/bin/mac-screenshot-process)
+    * [mac-styling-settings](file:///home/vitaliy/macW1Y/bin/mac-styling-settings) і [styling.json](file:///home/vitaliy/macW1Y/config/mac-styling/styling.json)
+    * [extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json) і [test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+  - Що реалізовано:
+    * Побудовано панель `Print Screen` 1:1 за референсами без затемнення всього екрана: кнопка закриття (`×`) зліва всередині капсули, 3 режими фото (екран / вікно / область), розділювач, 3 режими відеозапису (включно з вибраним вікном через `ScreencastAreaAsync`), розділювач, «Параметри ⌄» і синя кнопка «Зняти» / «Записати», плаваючі підказки над іконками режимів і пунктирна рамка виділення області без зміщення (`Clutter.BindCoordinate.SIZE`).
+    * Додано реальний `BackdropGlass` Liquid Glass для панелі захоплення і контекстного меню «Параметри», анімацію відкриття/закриття зі Spotlight (`scale 1.04 <-> 1.0`, `translation_y -6 <-> 0`, `240ms`/`200ms`) і плавне ковзання акцентної підсвітки пунктів у меню параметрів.
+    * Меню «Параметри» наповнено реальними режимами збереження («Фото»/«Відео» залежно від режиму, «Робочий стіл», «Документи», «Завантаження», протилежна папка та «Інше місце…» через `--pick-folder`), таймером затримки з відліком, плаваючою мініатюрою, реальним переліком мікрофонів з `Gvc.MixerControl` («Немає» + системні джерела PipeWire/Pulse) і секцією «Зйомка» («Відображати клацання миші» та «Увімкнути системний звук» через `--record-audio` + `--audio-file` з блокуванням перегонів `--daemon`).
+    * У правому менюбарі при активному записі екрана крайньою зліва відображається іконка кола з квадратом (`macScreenCast` у [tahoeScreenCast.js](file:///home/vitaliy/macW1Y/extensions/kiwi@kemma/apps/tahoeScreenCast.js), виправлено `gi://cairo` `setFillRule` + видимість `container` в `menubar_v29.js`), а по кліку відкривається контекстне меню з єдиним пунктом «Зупинити».
+    * До [mac-styling-settings](file:///home/vitaliy/macW1Y/bin/mac-styling-settings) додано окрему групу налаштувань панелі знімків екрана з інтерактивним передоглядом капсули й повзунками розмиття, тінту та тіні з миттєвою синхронізацією (`SyncScreenshotStyling`).
+  - Перевірка та синхронізація:
+    * Синхронізовано розширення, бінарні скрипти (`/usr/local/bin/`, `~/.local/bin/`), [styling.json](file:///home/vitaliy/macW1Y/config/mac-styling/styling.json), `extensions.lock.json` (`/usr/share/mactheme/config/extensions.lock.json`) та `done.txt` у `/home/vitaliy/Desktop/done.txt`, перезапущено `mac-screenshot-daemon.service`.
+    * Візуально перевірено в живій сесії GNOME Shell панель Liquid Glass, тултіпи, меню «Параметри» з мікрофонами, запис WAV (`ffmpeg -f pulse`), іконку запису крайньою зліва в менюбарі та меню «Зупинити»; пройдено повний набір тестів, аудит синхронізації, верифікацію i18n, цілісності розширень і перевірок швидкодії.

@@ -432,6 +432,76 @@ class TestCrossDistroAndWizard(unittest.TestCase):
                     popen_mock.assert_called_once()
                     self.assertEqual(popen_mock.call_args[0][0], ["pw-play", str(fallback)])
 
+    def test_macos_screenshot_ui_liquid_glass_recording_and_settings(self):
+        import json
+        ext_root = ROOT / "extensions"
+        ss_icons_dir = ext_root / "eval-helper@mactheme" / "icons"
+        for icon_name in (
+            "mac-shot-close.svg",
+            "mac-shot-screen.svg",
+            "mac-shot-window.svg",
+            "mac-shot-area.svg",
+            "mac-rec-screen.svg",
+            "mac-rec-window.svg",
+            "mac-rec-area.svg",
+        ):
+            self.assertTrue((ss_icons_dir / icon_name).is_file(), f"Missing screenshot SVG icon: {icon_name}")
+
+        ss_ui_js = (ext_root / "eval-helper@mactheme" / "macScreenshotUI.js").read_text(encoding="utf-8")
+        for needle in (
+            "class MacScreenshotController",
+            "BackdropGlass",
+            "OPEN_ANIM_MS = 240",
+            "CLOSE_ANIM_MS = 200",
+            "scale_x: 1.04",
+            "translation_y: -6",
+            "_glideOptionPillTo",
+            "_getAvailableMics",
+            "_pickCustomFolder",
+            "--pick-folder",
+            "--record-audio",
+            "ScreencastAreaAsync",
+            "_spawnClickRing",
+            "Clutter.BindCoordinate.SIZE",
+            "handleCapturedScreenshot",
+            "takeAudioSidecarPath",
+            "_macSyncScreenshotStyling",
+        ):
+            self.assertIn(needle, ss_ui_js)
+
+        eval_js = (ext_root / "eval-helper@mactheme" / "extension.js").read_text(encoding="utf-8")
+        for needle in ("SyncScreenshotStyling", "handleCapturedScreenshot", "takeAudioSidecarPath", "--audio-file"):
+            self.assertIn(needle, eval_js)
+
+        liquid_js = (ext_root / "liquid-glass@thinkingcoding1231.gmail.com" / "dist" / "liquidEffect.js").read_text(encoding="utf-8")
+        self.assertIn("o.includes('screenshot')", liquid_js)
+
+        bms_targets = (ext_root / "blur-my-shell@aunetx" / "components" / "popup" / "targets.js").read_text(encoding="utf-8")
+        bms_surface = (ext_root / "blur-my-shell@aunetx" / "components" / "popup" / "blur_surface.js").read_text(encoding="utf-8")
+        bms_menubar = (ext_root / "blur-my-shell@aunetx" / "components" / "menubar_v29.js").read_text(encoding="utf-8")
+        self.assertIn("screenshot-ui-panel", bms_targets)
+        self.assertIn("screenshot-ui-panel", bms_surface)
+        self.assertIn("isCastActive", bms_menubar)
+        self.assertIn("isCastTopActive", bms_menubar)
+
+        cast_js = (ext_root / "kiwi@kemma" / "apps" / "tahoeScreenCast.js").read_text(encoding="utf-8")
+        self.assertIn("import Cairo from 'gi://cairo';", cast_js)
+        self.assertIn("cr.setFillRule(", cast_js)
+        self.assertIn("Зупинити", cast_js)
+        self.assertIn("this.container.visible = true", cast_js)
+
+        proc_py = (ROOT / "bin" / "mac-screenshot-process").read_text(encoding="utf-8")
+        for needle in ("--pick-folder", "--record-audio", "--audio-file", "--mic", "--system-audio", "_acquire_process_lock", "pick_folder_dialog", "record_audio_stream"):
+            self.assertIn(needle, proc_py)
+
+        settings_py = (ROOT / "bin" / "mac-styling-settings").read_text(encoding="utf-8")
+        for needle in ("screenshot_preview_row", "screenshot_blur_scale", "screenshot_tint_scale", "screenshot_shadow_scale", "update_screenshot_preview", "SyncScreenshotStyling"):
+            self.assertIn(needle, settings_py)
+
+        styling_json = json.loads((ROOT / "config" / "mac-styling" / "styling.json").read_text(encoding="utf-8"))
+        for key in ("screenshot_blur", "screenshot_tint", "screenshot_shadow"):
+            self.assertIn(key, styling_json)
+
 
 if __name__ == "__main__":
     unittest.main()

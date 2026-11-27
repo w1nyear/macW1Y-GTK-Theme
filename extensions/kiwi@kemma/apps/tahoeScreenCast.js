@@ -5,6 +5,7 @@
 
 
 import Atk from 'gi://Atk';
+import Cairo from 'gi://cairo';
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
@@ -71,15 +72,14 @@ const MacScreenCastIcon = GObject.registerClass({
 
             const cx = w / 2;
             const cy = h / 2;
-            const R = 8.5;
-            const sq = 7.0;
-            const sqR = 1.2;
+            const R = 8.0;
+            const sq = 6.6;
+            const sqR = 1.3;
 
-            cr.set_fill_rule(imports.gi.cairo.FillRule.EVEN_ODD);
-
+            cr.setFillRule(Cairo.FillRule?.EVEN_ODD ?? 1);
 
             cr.arc(cx, cy, R, 0, 2 * Math.PI);
-
+            cr.closePath();
 
             const x = cx - sq / 2;
             const y = cy - sq / 2;
@@ -155,145 +155,26 @@ const MacScreenCastButton = GObject.registerClass({
 
     _buildMenu() {
         this.menu.box.add_style_class_name('mac-screencast-menu');
-
-
-        const headItem = new PopupMenu.PopupBaseMenuItem({
-            reactive: false,
-            can_focus: false,
-            style_class: 'mac-screencast-header-item',
-        });
-        const headBox = new St.BoxLayout({
-            orientation: Clutter.Orientation.VERTICAL,
-            style_class: 'mac-screencast-header',
-            x_expand: true,
-        });
-
-        const topRow = new St.BoxLayout({
-            style_class: 'mac-screencast-title-row',
-            x_expand: true,
-        });
-
-
-        const hDot = new St.Icon({
-            icon_name: 'media-record-symbolic',
-            icon_size: 15,
-            style_class: 'mac-screencast-red-dot',
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        topRow.add_child(hDot);
-
-        this._titleLabel = new St.Label({
-            style_class: 'mac-screencast-head-title',
-            text: t('screen_recording', 'Запис екрана'),
-            x_expand: true,
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        topRow.add_child(this._titleLabel);
-
-        this._timerLabel = new St.Label({
-            style_class: 'mac-screencast-head-timer',
-            text: '00:00',
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        topRow.add_child(this._timerLabel);
-        headBox.add_child(topRow);
-
-        headItem.add_child(headBox);
-        this.menu.addMenuItem(headItem);
-
-
-        const cardItem = new PopupMenu.PopupBaseMenuItem({
-            reactive: false,
-            can_focus: false,
-            style_class: 'mac-screencast-card-item',
-        });
-        const card = new St.BoxLayout({
-            orientation: Clutter.Orientation.VERTICAL,
-            style_class: 'mac-screencast-card',
-            x_expand: true,
-        });
-
-
-        this._srcRow = this._createInfoRow(t('source_label', 'Джерело:'), t('entire_screen', 'Весь екран'));
-        card.add_child(this._srcRow.box);
-
-
-        const mon = Main.layoutManager.primaryMonitor;
-        const resText = mon ? `${mon.width} × ${mon.height}` : '1920 × 1080';
-        this._resRow = this._createInfoRow(t('resolution_label', 'Роздільність:'), resText);
-        card.add_child(this._resRow.box);
-
-
-        this._destRow = this._createInfoRow(t('save_location_label', 'Збереження:'), t('videos_folder', 'Папка «Відео»'));
-        card.add_child(this._destRow.box);
-
-        cardItem.add_child(card);
-        this.menu.addMenuItem(cardItem);
-
-
-        const stopItem = new PopupMenu.PopupBaseMenuItem({
-            reactive: true,
-            can_focus: true,
-            style_class: 'mac-screencast-stop-menu-item',
-        });
-        const stopBtn = new St.Button({
-            style_class: 'mac-screencast-stop-btn',
-            x_expand: true,
-            can_focus: true,
-            reactive: true,
-        });
-        const stopRow = new St.BoxLayout({
-            x_align: Clutter.ActorAlign.CENTER,
-            y_align: Clutter.ActorAlign.CENTER,
-            style_class: 'mac-screencast-stop-row',
-        });
-        const stopIcon = new St.Icon({
-            icon_name: 'media-playback-stop-symbolic',
-            icon_size: 14,
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        this._stopLabel = new St.Label({
-            text: t('stop_recording', 'Зупинити запис'),
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        stopRow.add_child(stopIcon);
-        stopRow.add_child(this._stopLabel);
-        stopBtn.set_child(stopRow);
-
-        const onStopTrigger = () => {
+        const lang = (GLib.get_language_names?.()?.[0] || '').toLowerCase();
+        let stopTxt = 'Stop';
+        try {
+            const locFile = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'locale']);
+            let loc = lang;
+            if (GLib.file_test(locFile, GLib.FileTest.EXISTS)) {
+                const [ok, raw] = GLib.file_get_contents(locFile);
+                if (ok) loc = new TextDecoder().decode(raw).trim().toLowerCase();
+            }
+            if (loc.startsWith('uk')) stopTxt = 'Зупинити';
+            else if (loc.startsWith('ru')) stopTxt = 'Остановить';
+            else if (loc.startsWith('pl')) stopTxt = 'Zatrzymaj';
+            else if (loc.startsWith('de')) stopTxt = 'Stoppen';
+        } catch (_) {}
+        this._stopMenuItem = new PopupMenu.PopupMenuItem(stopTxt);
+        this._stopMenuItem.connect('activate', () => {
             this.menu.close();
             this.stopAll();
-        };
-        stopBtn.connect('clicked', onStopTrigger);
-        stopItem.connect('activate', onStopTrigger);
-        stopItem.add_child(stopBtn);
-        this.menu.addMenuItem(stopItem);
-
-
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-
-
-        this._openFolderItem = new PopupMenu.PopupMenuItem(t('open_recordings_folder', 'Відкрити папку із записами'));
-        this._openFolderItem.connect('activate', () => {
-            this._openVideosFolder();
         });
-        this.menu.addMenuItem(this._openFolderItem);
-
-        const ssItem = new PopupMenu.PopupMenuItem(t('take_screenshot', 'Зробити знімок екрана…'));
-        ssItem.connect('activate', () => {
-            try {
-                Main.screenshotUI?.open();
-            } catch (_) {}
-        });
-        this.menu.addMenuItem(ssItem);
-
-        const dispItem = new PopupMenu.PopupMenuItem(t('display_settings', 'Параметри дисплея…'));
-        dispItem.connect('activate', () => {
-            try {
-                Gio.AppInfo.create_from_commandline('gnome-control-center display', null, 0).launch([], null);
-            } catch (_) {}
-        });
-        this.menu.addMenuItem(dispItem);
+        this.menu.addMenuItem(this._stopMenuItem);
     }
 
     _openVideosFolder() {
@@ -354,29 +235,11 @@ const MacScreenCastButton = GObject.registerClass({
             if (parent !== rightBox) {
                 if (parent) parent.remove_child(actor);
                 rightBox.insert_child_at_index(actor, 0);
-            }
-
-            const kids = rightBox.get_children();
-
-            const targetRoles = ['keyboard', 'kiwi-wifi-button', 'ydotool-trigger-button'];
-            let targetIdx = -1;
-            for (const role of targetRoles) {
-                const btn = Main.panel.statusArea?.[role];
-                const a = btn instanceof Clutter.Actor ? btn : btn?.container || btn?.actor;
-                if (a) {
-                    const idx = kids.indexOf(a);
-                    if (idx >= 0 && (targetIdx === -1 || idx < targetIdx)) {
-                        targetIdx = idx;
-                    }
-                }
-            }
-            if (targetIdx >= 0) {
-                const curIdx = kids.indexOf(actor);
-                if (curIdx !== targetIdx) {
-                    rightBox.set_child_at_index(actor, targetIdx);
-                }
             } else {
-                rightBox.set_child_at_index(actor, 0);
+                const kids = rightBox.get_children();
+                if (kids[0] !== actor) {
+                    rightBox.set_child_at_index(actor, 0);
+                }
             }
         } catch (_) {}
     }
@@ -389,43 +252,25 @@ const MacScreenCastButton = GObject.registerClass({
         const active = isRec || isShare;
 
         if (active) {
-            if (isRec && isShare) {
-                this._titleLabel.text = t('recording_and_broadcast', 'Запис та трансляція');
-                this._stopLabel.text = t('stop_all', 'Зупинити все');
-                this._destRow.l.text = t('status_label', 'Статус:');
-                this._destRow.v.text = 'Запис + PipeWire трансляція';
-                this._openFolderItem.visible = true;
-            } else if (isRec) {
-                this._titleLabel.text = t('screen_recording', 'Запис екрана');
-                this._stopLabel.text = t('stop_recording', 'Зупинити запис');
-                this._destRow.l.text = t('save_location_label', 'Збереження:');
-                this._destRow.v.text = t('videos_folder', 'Папка «Відео»');
-                this._openFolderItem.visible = true;
-            } else {
-                this._titleLabel.text = t('screen_broadcast', 'Трансляція екрана');
-                this._stopLabel.text = t('stop_broadcast', 'Зупинити трансляцію');
-                this._destRow.l.text = t('session_label', 'Сесія:');
-                this._destRow.v.text = 'PipeWire ScreenCast';
-                this._openFolderItem.visible = false;
-            }
-
             if (!this.visible) {
                 this._secondsPassed = 0;
-                this._updateTimer();
-                this.visible = true;
             }
-
-            if (!this._timerId) {
-                this._timerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000, () => {
-                    this._secondsPassed++;
-                    this._updateTimer();
-                    return GLib.SOURCE_CONTINUE;
-                });
+            this.visible = true;
+            if (this.container) {
+                this.container.style = null;
+                this.container.set_width(-1);
+                this.container.visible = true;
+                this.container.show();
             }
-
+            this._icon?.queue_repaint?.();
             this._ensurePosition();
+            try { Main.panel?._rightBox?.queue_relayout?.(); } catch (_) {}
         } else {
             this.visible = false;
+            if (this.container) {
+                this.container.visible = false;
+                this.container.hide();
+            }
             if (this._timerId) {
                 GLib.source_remove(this._timerId);
                 this._timerId = 0;
@@ -436,30 +281,25 @@ const MacScreenCastButton = GObject.registerClass({
         }
     }
 
-    showTest(active = true, mode = 'recording') {
+    showTest(active = true, _mode = 'recording') {
         if (active) {
-            this._isRecording = (mode === 'recording');
-            this._isSharing = (mode === 'sharing');
-            this._titleLabel.text = mode === 'recording' ? t('screen_recording', 'Запис екрана') : t('screen_broadcast', 'Трансляція екрана');
-            this._stopLabel.text = mode === 'recording' ? t('stop_recording', 'Зупинити запис') : t('stop_broadcast', 'Зупинити трансляцію');
+            this._isRecording = true;
             this.visible = true;
-            this._ensurePosition();
-            if (!this._timerId) {
-                this._secondsPassed = 14;
-                this._updateTimer();
-                this._timerId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000, () => {
-                    this._secondsPassed++;
-                    this._updateTimer();
-                    return GLib.SOURCE_CONTINUE;
-                });
+            if (this.container) {
+                this.container.style = null;
+                this.container.set_width(-1);
+                this.container.visible = true;
+                this.container.show();
             }
+            this._icon?.queue_repaint?.();
+            this._ensurePosition();
+            try { Main.panel?._rightBox?.queue_relayout?.(); } catch (_) {}
         } else {
             this.visible = false;
-            if (this._timerId) {
-                GLib.source_remove(this._timerId);
-                this._timerId = 0;
+            if (this.container) {
+                this.container.visible = false;
+                this.container.hide();
             }
-            this._secondsPassed = 0;
             if (this.menu?.isOpen)
                 this.menu.close();
         }

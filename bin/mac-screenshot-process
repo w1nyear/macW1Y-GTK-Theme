@@ -14,6 +14,9 @@ import os
 import sys
 import time
 import json
+import fcntl
+import hashlib
+import signal
 import shutil
 import argparse
 import subprocess
@@ -288,6 +291,9 @@ def process_image(file_path):
         return None
 
     try:
+        lock_handle = _acquire_process_lock(p)
+        if not p.exists() or p.stat().st_size == 0:
+            return None
         time.sleep(0.15)
         with Image.open(p) as img:
             orig_w, orig_h = img.size
@@ -341,117 +347,341 @@ def process_image(file_path):
         if dest_path != p and p.exists():
             p.unlink()
 
+        _mark_done(p)
+        _mark_done(dest_path)
         # Screenshots: GNOME Shell already sends the native screenshot notification.
         # Do not send any processing notifications so there is exactly ONE notification for screenshots.
         return dest_path
     except Exception as e:
         print(f"Error processing image {file_path}: {e}", file=sys.stderr)
         return None
+    finally:
+        if 'lock_handle' in locals() and lock_handle:
+            try:
+                fcntl.flock(lock_handle, fcntl.LOCK_UN)
+                lock_handle.close()
+            except Exception:
+                pass
 
-def process_video(file_path):
+LOCK_DIR = Path("/tmp/macw1y_ss_locks")
+
+
+def _path_key(file_path):
+    return hashlib.sha1(str(Path(file_path).resolve()).encode("utf-8", "ignore")).hexdigest()
+
+
+def _acquire_process_lock(file_path):
+    LOCK_DIR.mkdir(parents=True, exist_ok=True)
+    lock_file = open(LOCK_DIR / f"{_path_key(file_path)}.lock", "w")
+    fcntl.flock(lock_file, fcntl.LOCK_EX)
+    return lock_file
+
+
+def _mark_done(file_path):
+    try:
+        LOCK_DIR.mkdir(parents=True, exist_ok=True)
+        marker = LOCK_DIR / f"{_path_key(file_path)}.done"
+        marker.write_text(str(time.time()), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def _was_recently_done(file_path, max_age=25.0):
+    try:
+        marker = LOCK_DIR / f"{_path_key(file_path)}.done"
+        if marker.exists():
+            return (time.time() - marker.stat().st_mtime) < max_age
+    except Exception:
+        pass
+    return False
+
+
+def _audio_pending_or_active():
+    try:
+        active = LOCK_DIR / "audio_active.flag"
+        pending = LOCK_DIR / "audio_pending_mux.flag"
+        now = time.time()
+        if active.exists() and (now - active.stat().st_mtime) < 3600:
+            return True
+        if pending.exists() and (now - pending.stat().st_mtime) < 6.0:
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def _default_sink_monitor():
+    try:
+        if shutil.which("pactl"):
+            sink = subprocess.check_output(
+                ["pactl", "get-default-sink"], text=True, stderr=subprocess.DEVNULL
+            ).strip()
+            if sink:
+                return f"{sink}.monitor"
+            out = subprocess.check_output(
+                ["pactl", "list", "short", "sources"], text=True, stderr=subprocess.DEVNULL
+            )
+            for line in out.splitlines():
+                parts = line.split("\t")
+                if len(parts) >= 2 and parts[1].endswith(".monitor"):
+                    return parts[1]
+    except Exception:
+        pass
+    return None
+
+
+def pick_folder_dialog():
+    try:
+        import gi
+        gi.require_version("Gtk", "4.0")
+        from gi.repository import Gtk, Gio
+
+        result = {"path": ""}
+        loc = get_locale_code().split("_")[0]
+        titles = {
+            "uk": "Виберіть папку збереження",
+            "ru": "Выберите папку сохранения",
+            "pl": "Wybierz folder zapisu",
+            "de": "Speicherort auswählen",
+        }
+        title = titles.get(loc, "Choose Save Location")
+
+        class PickerApp(Gtk.Application):
+            def __init__(self):
+                super().__init__(application_id="org.macw1y.ScreenshotFolderPicker",
+                                 flags=Gio.ApplicationFlags.NON_UNIQUE)
+
+            def do_activate(self):
+                self.hold()
+                dialog = Gtk.FileDialog(title=title, modal=True)
+
+                def on_done(dlg, res):
+                    try:
+                        folder = dlg.select_folder_finish(res)
+                        if folder:
+                            p = folder.get_path()
+                            if p:
+                                result["path"] = p
+                    except Exception:
+                        pass
+                    self.release()
+                    self.quit()
+
+                dialog.select_folder(None, None, on_done)
+
+        app = PickerApp()
+        app.run([])
+        if result["path"]:
+            print(result["path"], flush=True)
+            return 0
+        return 1
+    except Exception:
+        if shutil.which("zenity"):
+            try:
+                out = subprocess.check_output(
+                    ["zenity", "--file-selection", "--directory"],
+                    text=True, stderr=subprocess.DEVNULL
+                ).strip()
+                if out:
+                    print(out, flush=True)
+                    return 0
+            except Exception:
+                pass
+        return 1
+
+
+def record_audio_stream(out_path, mic_device=None, system_audio=False):
+    if not out_path or not shutil.which("ffmpeg"):
+        return 1
+    sources = []
+    if mic_device:
+        sources.append(mic_device)
+    if system_audio:
+        mon = _default_sink_monitor()
+        if mon and mon not in sources:
+            sources.append(mon)
+    if not sources:
+        return 1
+
+    LOCK_DIR.mkdir(parents=True, exist_ok=True)
+    active_flag = LOCK_DIR / "audio_active.flag"
+    pending_flag = LOCK_DIR / "audio_pending_mux.flag"
+    active_flag.write_text(str(os.getpid()), encoding="utf-8")
+
+    cmd = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error"]
+    for src in sources:
+        cmd.extend(["-f", "pulse", "-i", src])
+    if len(sources) > 1:
+        cmd.extend(["-filter_complex", f"amix=inputs={len(sources)}:duration=longest:dropout_transition=0"])
+    cmd.extend(["-c:a", "pcm_s16le", "-ar", "48000", "-ac", "2", str(out_path)])
+
+    stop_requested = {"flag": False}
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def _request_stop(_signum, _frame):
+        if stop_requested["flag"]:
+            return
+        stop_requested["flag"] = True
+        try:
+            if proc.poll() is None and proc.stdin:
+                proc.stdin.write(b"q\n")
+                proc.stdin.flush()
+        except Exception:
+            try:
+                proc.send_signal(signal.SIGINT)
+            except Exception:
+                pass
+
+    signal.signal(signal.SIGINT, _request_stop)
+    signal.signal(signal.SIGTERM, _request_stop)
+
+    try:
+        while proc.poll() is None:
+            if stop_requested["flag"]:
+                try:
+                    proc.wait(timeout=2.0)
+                except subprocess.TimeoutExpired:
+                    proc.terminate()
+                break
+            time.sleep(0.08)
+    finally:
+        try:
+            active_flag.unlink(missing_ok=True)
+        except Exception:
+            pass
+        try:
+            pending_flag.write_text(str(time.time()), encoding="utf-8")
+        except Exception:
+            pass
+    return 0
+
+
+def process_video(file_path, audio_file=None):
     p = Path(file_path).resolve()
+    audio_path = Path(audio_file).resolve() if audio_file else None
+    has_audio = bool(audio_path and audio_path.exists() and audio_path.stat().st_size > 44)
     if not p.exists() or p.stat().st_size == 0:
+        if audio_path and audio_path.exists():
+            audio_path.unlink(missing_ok=True)
         return None
 
     if "Originals" in p.parts or p.stem.endswith("_processed") or p.stem.endswith("_temp"):
         return None
 
-    # Wait for screencast recorder to finish writing (file size stabilization)
-    prev_size = -1
-    for _ in range(30):
-        try:
-            cur_size = p.stat().st_size
-            if cur_size == prev_size and cur_size > 1024:
-                break
-            prev_size = cur_size
-        except Exception:
-            pass
-        time.sleep(0.4)
+    lock_handle = None
+    try:
+        lock_handle = _acquire_process_lock(p)
+        # Re-check in case another worker (e.g. daemon) already replaced p with another container
+        if not p.exists() or p.stat().st_size == 0:
+            return None
 
-    cfg = load_config()
-    container_idx = cfg.get("video_container", 0) # 0=MP4, 1=WebM, 2=MKV
-    codec_idx = cfg.get("video_codec", 0)         # 0=H.264, 1=VP9, 2=AV1
-    fps_idx = cfg.get("video_fps", 0)             # 0=60, 1=30
-    processing_enabled = cfg.get("processing_enabled", True)
-    target_idx = cfg.get("processing_target", 2)
-    scope_idx = cfg.get("processing_scope", 0)    # 0=both, 1=screenshots, 2=screencasts
-    keep_orig = cfg.get("keep_original", False)
-
-    apply_proc = processing_enabled and (scope_idx in [0, 2])
-
-    cont_map = {0: ".mp4", 1: ".webm", 2: ".mkv"}
-    target_ext = cont_map.get(container_idx, ".mp4")
-
-    target_w, target_h, target_name = get_target_resolution(target_idx) if apply_proc else (None, None, None)
-
-    if not shutil.which("ffmpeg"):
-        return None
-
-    dest_path = p.with_suffix(target_ext)
-    temp_path = p.with_name(f"{p.stem}_temp{target_ext}")
-
-    if keep_orig:
-        orig_dir = p.parent / "Originals"
-        orig_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(p, orig_dir / p.name)
-
-    cmd = ["ffmpeg", "-y", "-i", str(p)]
-
-    # Video filter for resolution scaling & contrast-adaptive super-resolution
-    vf_filters = []
-    if target_w:
-        orig_vw, orig_vh = None, None
-        if shutil.which("ffprobe"):
+        # Wait for screencast recorder to finish writing (file size stabilization)
+        prev_size = -1
+        for _ in range(30):
             try:
-                probe = subprocess.check_output([
-                    "ffprobe", "-v", "error", "-select_streams", "v:0",
-                    "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", str(p)
-                ], text=True, stderr=subprocess.DEVNULL).strip()
-                if "x" in probe:
-                    orig_vw, orig_vh = map(int, probe.split("x")[:2])
+                cur_size = p.stat().st_size
+                if cur_size == prev_size and cur_size > 1024:
+                    break
+                prev_size = cur_size
             except Exception:
                 pass
+            time.sleep(0.4)
 
-        if orig_vw and orig_vw < target_w:
-            # Small video / crop: Lanczos + FidelityFX CAS + Unsharp super-resolution
-            vf_filters.append(f"scale={target_w}:-2:flags=lanczos+accurate_rnd")
-            vf_filters.append("cas=0.85")
-            vf_filters.append("unsharp=5:5:0.8:5:5:0.0")
-        elif orig_vw and orig_vw >= target_w:
-            vf_filters.append(f"scale={target_w}:-2:flags=lanczos+accurate_rnd")
-            vf_filters.append("cas=0.6")
+        cfg = load_config()
+        container_idx = cfg.get("video_container", 0)  # 0=MP4, 1=WebM, 2=MKV
+        codec_idx = cfg.get("video_codec", 0)          # 0=H.264, 1=VP9, 2=AV1
+        fps_idx = cfg.get("video_fps", 0)              # 0=60, 1=30
+        processing_enabled = cfg.get("processing_enabled", True)
+        target_idx = cfg.get("processing_target", 2)
+        scope_idx = cfg.get("processing_scope", 0)     # 0=both, 1=screenshots, 2=screencasts
+        keep_orig = cfg.get("keep_original", False)
+
+        apply_proc = processing_enabled and (scope_idx in [0, 2])
+
+        cont_map = {0: ".mp4", 1: ".webm", 2: ".mkv"}
+        target_ext = cont_map.get(container_idx, ".mp4") if apply_proc else (p.suffix.lower() or ".webm")
+        if target_ext not in (".mp4", ".webm", ".mkv"):
+            target_ext = ".mp4"
+
+        target_w, target_h, _target_name = get_target_resolution(target_idx) if apply_proc else (None, None, None)
+
+        if not shutil.which("ffmpeg"):
+            return None
+
+        dest_path = p.with_suffix(target_ext)
+        temp_path = p.with_name(f"{p.stem}_temp{target_ext}")
+
+        if keep_orig and apply_proc:
+            orig_dir = p.parent / "Originals"
+            orig_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(p, orig_dir / p.name)
+
+        cmd = ["ffmpeg", "-y", "-i", str(p)]
+        if has_audio:
+            cmd.extend(["-i", str(audio_path)])
+
+        if not apply_proc and has_audio:
+            # Fast remux with audio without full video re-encode
+            cmd.extend(["-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy"])
         else:
-            vf_filters.append(f"scale={target_w}:-2:flags=lanczos+accurate_rnd")
-            vf_filters.append("cas=0.85")
-            vf_filters.append("unsharp=5:5:0.8:5:5:0.0")
-    else:
-        # Native clarity enhancement
-        vf_filters.append("cas=0.55")
+            # Video filter for resolution scaling & contrast-adaptive super-resolution
+            vf_filters = []
+            if target_w:
+                orig_vw, orig_vh = None, None
+                if shutil.which("ffprobe"):
+                    try:
+                        probe = subprocess.check_output([
+                            "ffprobe", "-v", "error", "-select_streams", "v:0",
+                            "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", str(p)
+                        ], text=True, stderr=subprocess.DEVNULL).strip()
+                        if "x" in probe:
+                            orig_vw, orig_vh = map(int, probe.split("x")[:2])
+                    except Exception:
+                        pass
 
-    if vf_filters:
-        cmd.extend(["-vf", ",".join(vf_filters)])
+                if orig_vw and orig_vw < target_w:
+                    vf_filters.append(f"scale={target_w}:-2:flags=lanczos+accurate_rnd")
+                    vf_filters.append("cas=0.85")
+                    vf_filters.append("unsharp=5:5:0.8:5:5:0.0")
+                elif orig_vw and orig_vw >= target_w:
+                    vf_filters.append(f"scale={target_w}:-2:flags=lanczos+accurate_rnd")
+                    vf_filters.append("cas=0.6")
+                else:
+                    vf_filters.append(f"scale={target_w}:-2:flags=lanczos+accurate_rnd")
+                    vf_filters.append("cas=0.85")
+                    vf_filters.append("unsharp=5:5:0.8:5:5:0.0")
+            else:
+                vf_filters.append("cas=0.55")
 
-    # Video Codec
-    if codec_idx == 0: # H.264
-        cmd.extend(["-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p"])
-    elif codec_idx == 1: # VP9
-        cmd.extend(["-c:v", "libvpx-vp9", "-crf", "24", "-b:v", "0"])
-    elif codec_idx == 2: # AV1
-        if "libsvtav1" in subprocess.getoutput("ffmpeg -encoders 2>/dev/null"):
-            cmd.extend(["-c:v", "libsvtav1", "-crf", "28", "-preset", "6"])
+            if vf_filters:
+                cmd.extend(["-vf", ",".join(vf_filters)])
+
+            if target_ext == ".webm":
+                cmd.extend(["-c:v", "libvpx-vp9", "-crf", "24", "-b:v", "0"])
+            elif codec_idx == 0:
+                cmd.extend(["-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p"])
+            elif codec_idx == 1:
+                cmd.extend(["-c:v", "libvpx-vp9", "-crf", "24", "-b:v", "0"])
+            elif codec_idx == 2:
+                if "libsvtav1" in subprocess.getoutput("ffmpeg -encoders 2>/dev/null"):
+                    cmd.extend(["-c:v", "libsvtav1", "-crf", "28", "-preset", "6"])
+                else:
+                    cmd.extend(["-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p"])
+
+            target_fps = 60 if fps_idx == 0 else 30
+            cmd.extend(["-r", str(target_fps)])
+            if has_audio:
+                cmd.extend(["-map", "0:v:0", "-map", "1:a:0"])
+
+        if target_ext == ".webm":
+            cmd.extend(["-c:a", "libopus", "-b:a", "160k"])
         else:
-            cmd.extend(["-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p"])
+            cmd.extend(["-c:a", "aac", "-b:a", "192k"])
+        if has_audio:
+            cmd.append("-shortest")
 
-    # Framerate
-    target_fps = 60 if fps_idx == 0 else 30
-    cmd.extend(["-r", str(target_fps)])
+        cmd.append(str(temp_path))
 
-    # Audio copy if exists
-    cmd.extend(["-c:a", "aac", "-b:a", "192k"])
-
-    cmd.append(str(temp_path))
-
-    try:
         res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if res.returncode == 0 and temp_path.exists() and temp_path.stat().st_size > 0:
             if dest_path.exists() and dest_path != p:
@@ -460,13 +690,30 @@ def process_video(file_path):
             if dest_path != p and p.exists():
                 p.unlink()
 
-            msg = ""
-            notify(ss_tr("video_saved"), msg, icon="video-x-generic-symbolic")
+            _mark_done(p)
+            _mark_done(dest_path)
+            notify(ss_tr("video_saved"), "", icon="video-x-generic-symbolic")
             return dest_path
     except Exception as e:
         print(f"Error processing video {file_path}: {e}", file=sys.stderr)
-        if temp_path.exists():
-            temp_path.unlink()
+        if 'temp_path' in locals() and temp_path.exists():
+            temp_path.unlink(missing_ok=True)
+    finally:
+        try:
+            (LOCK_DIR / "audio_pending_mux.flag").unlink(missing_ok=True)
+        except Exception:
+            pass
+        if audio_path and audio_path.exists():
+            try:
+                audio_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+        if lock_handle:
+            try:
+                fcntl.flock(lock_handle, fcntl.LOCK_UN)
+                lock_handle.close()
+            except Exception:
+                pass
     return None
 
 def run_daemon():
@@ -557,6 +804,9 @@ def run_daemon():
         # Process new file
         if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".webp"]:
             if not f.stem.endswith("_temp") and "Originals" not in f.parts:
+                time.sleep(0.25)
+                if _was_recently_done(f):
+                    return
                 dest = process_image(f)
                 if dest and dest.exists():
                     try:
@@ -566,6 +816,13 @@ def run_daemon():
                         pass
         elif f.suffix.lower() in [".webm", ".mp4", ".mkv"]:
             if not f.stem.endswith("_temp") and "Originals" not in f.parts:
+                # If audio sidecar recording/muxing is active or pending, give `--file --audio-file` first claim
+                for _ in range(15):
+                    if not _audio_pending_or_active():
+                        break
+                    time.sleep(0.2)
+                if _was_recently_done(f):
+                    return
                 dest = process_video(f)
                 if dest and dest.exists():
                     try:
@@ -617,13 +874,25 @@ def run_daemon():
 def main():
     parser = argparse.ArgumentParser(description="macW1Y default Screenshot Processing Engine")
     parser.add_argument("--file", "-f", help="Path to screenshot or screencast file to process")
+    parser.add_argument("--audio-file", help="Optional WAV sidecar path to mux into screencast video")
     parser.add_argument("--play-shutter", action="store_true", help="Play the macW1Y camera shutter sound")
+    parser.add_argument("--pick-folder", action="store_true", help="Open GTK4 folder chooser dialog and print selected path")
+    parser.add_argument("--record-audio", action="store_true", help="Record microphone and/or system monitor audio to --out WAV")
+    parser.add_argument("--out", help="Output WAV path for --record-audio")
+    parser.add_argument("--mic", help="Pulse/PipeWire source name for --record-audio")
+    parser.add_argument("--system-audio", action="store_true", help="Include default sink monitor in --record-audio")
     parser.add_argument("--daemon", action="store_true", help="Run background watcher daemon")
     args = parser.parse_args()
 
     if args.play_shutter:
         play_shutter()
         return
+
+    if args.pick_folder:
+        sys.exit(pick_folder_dialog())
+
+    if args.record_audio:
+        sys.exit(record_audio_stream(args.out, mic_device=args.mic, system_audio=args.system_audio))
 
     if args.daemon:
         run_daemon()
@@ -634,7 +903,7 @@ def main():
         if p.suffix.lower() in [".png", ".jpg", ".jpeg", ".webp"]:
             process_image(p)
         elif p.suffix.lower() in [".webm", ".mp4", ".mkv"]:
-            process_video(p)
+            process_video(p, audio_file=args.audio_file)
         return
 
     parser.print_help()

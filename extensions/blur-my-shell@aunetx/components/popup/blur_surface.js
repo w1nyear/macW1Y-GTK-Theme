@@ -14,7 +14,7 @@ import { PopupBlurStaticActor } from './static_actor.js';
 const NOTIFICATION_STYLE_CLASSES = ['notification-banner'];
 const FULL_GEOMETRY_STYLE_CLASSES = [
     'popup-menu-content', 'candidate-popup-content',
-    'quick-settings', 'quick-toggle-menu', 'screenshot-ui-panel',
+    'quick-settings', 'quick-toggle-menu',
     'notification-banner', 'snap-assistant',
     'osd-window', 'resize-popup', 'workspace-switcher',
     'modal-dialog', 'run-dialog',

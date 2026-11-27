@@ -2976,6 +2976,7 @@ export const LiquidEffect = _registerLiquidEffect(class LiquidEffect extends Clu
                     o.includes('dialog') ||
                     o.includes('switcher') ||
                     o.includes('clipboard') ||
+                    o.includes('screenshot') ||
                     o.includes('toast') ||
                     o.includes('topbar') ||
                     o.includes('widget')

@@ -14,6 +14,7 @@ import GObject from 'gi://GObject';
 import cairo from 'cairo';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as MacSetupWizard from './macSetupWizard.js';
+import * as MacScreenshotUI from './macScreenshotUI.js';
 import { t } from './mac_i18n.js';
 import { MacAnimationCache } from './macAnimationCache.js';
 
@@ -48,6 +49,9 @@ const EvalIface = `
       <arg type="b" direction="out" name="success"/>
     </method>
     <method name="SyncAltTabStyling">
+      <arg type="b" direction="out" name="success"/>
+    </method>
+    <method name="SyncScreenshotStyling">
       <arg type="b" direction="out" name="success"/>
     </method>
     <method name="GetAnimationDiagnostics">
@@ -577,6 +581,18 @@ export default class EvalHelper extends Extension {
                         return false;
                     }
                 },
+                SyncScreenshotStyling: () => {
+                    try {
+                        if (typeof globalThis._macSyncScreenshotStyling === 'function') {
+                            globalThis._macSyncScreenshotStyling();
+                            return true;
+                        }
+                        return false;
+                    } catch (e) {
+                        console.error(`[EvalHelper] SyncScreenshotStyling error: ${e}`);
+                        return false;
+                    }
+                },
                 GetAnimationDiagnostics: () => {
                     try {
                         const diag = MacAnimationCache.getDiagnostics();
@@ -754,11 +770,14 @@ export default class EvalHelper extends Extension {
 
         try {
             if (Main.screenshotUI) {
+                MacScreenshotUI.installMacScreenshotUI(this.dir);
                 this._screenshotTakenSignalId = Main.screenshotUI.connect('screenshot-taken', (_ui, file) => {
                     try {
-                        const path = file?.get_path ? file.get_path() : null;
-                        if (path) {
-                            GLib.spawn_command_line_async(`/usr/local/bin/mac-screenshot-process --file "${path}"`);
+                        const ctrl = MacScreenshotUI.getMacScreenshotController();
+                        const finalPath = ctrl ? ctrl.handleCapturedScreenshot(file) : (file?.get_path ? file.get_path() : null);
+                        if (finalPath) {
+                            const quoted = GLib.shell_quote(finalPath);
+                            GLib.spawn_command_line_async(`/usr/local/bin/mac-screenshot-process --file ${quoted}`);
                         }
                     } catch (_) {}
                 });
@@ -766,7 +785,12 @@ export default class EvalHelper extends Extension {
                     try {
                         if (!Main.screenshotUI._screencastInProgress && Main.screenshotUI._screencastPath) {
                             const p = Main.screenshotUI._screencastPath;
-                            GLib.spawn_command_line_async(`/usr/local/bin/mac-screenshot-process --file "${p}"`);
+                            const ctrl = MacScreenshotUI.getMacScreenshotController();
+                            const audioPath = ctrl ? ctrl.takeAudioSidecarPath() : null;
+                            const cmd = audioPath
+                                ? `/usr/local/bin/mac-screenshot-process --file ${GLib.shell_quote(p)} --audio-file ${GLib.shell_quote(audioPath)}`
+                                : `/usr/local/bin/mac-screenshot-process --file ${GLib.shell_quote(p)}`;
+                            GLib.spawn_command_line_async(cmd);
                         }
                     } catch (_) {}
                 });
@@ -5995,6 +6019,7 @@ void main() {
             this._snapshotCleanups = null;
         }
         if (Main.screenshotUI) {
+            try { MacScreenshotUI.destroyMacScreenshotUI(); } catch (_) {}
             if (this._screenshotTakenSignalId) {
                 try { Main.screenshotUI.disconnect(this._screenshotTakenSignalId); } catch (_) {}
                 this._screenshotTakenSignalId = 0;

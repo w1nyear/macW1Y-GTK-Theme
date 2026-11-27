@@ -5718,7 +5718,16 @@ export const MenuBarController = class MenuBarController {
                         }
 
 
-                        const isHiddenSystem = ['tiling-assistant', 'unattended_upgrade', 'livepatch', 'software_update', 'screenRecording', 'screenSharing', 'dwellClick', 'a11y', 'macWifi', 'macBluetooth', 'macVolume', 'macBattery', 'macScreenCast'].some(s => role.includes(s));
+                        const castInd = Main.panel.statusArea?.['macScreenCast'];
+                        const isCastActive = Boolean(castInd && (castInd.visible || castInd._isRecording || castInd._isSharing || Main.screenshotUI?.screencast_in_progress));
+                        if (role === 'macScreenCast' && isCastActive) {
+                            child.visible = true;
+                            child.show();
+                            child.set_width?.(-1);
+                            const f = child.get_first_child?.();
+                            if (f) f.visible = true;
+                        }
+                        const isHiddenSystem = ['tiling-assistant', 'unattended_upgrade', 'livepatch', 'software_update', 'screenRecording', 'screenSharing', 'dwellClick', 'a11y', 'macWifi', 'macBluetooth', 'macVolume', 'macBattery'].some(s => role.includes(s)) || (role === 'macScreenCast' && !isCastActive);
                         const isAppIndicator = role.startsWith('appindicator-') && !isHiddenSystem;
                         const isSubVisible = (c) => {
                             if (!c.visible) return false;
@@ -5747,6 +5756,15 @@ export const MenuBarController = class MenuBarController {
 
         const desiredOrder = [];
 
+        const castIndTop = Main.panel.statusArea?.['macScreenCast'];
+        const isCastTopActive = Boolean(castIndTop && (castIndTop.visible || castIndTop._isRecording || castIndTop._isSharing || Main.screenshotUI?.screencast_in_progress));
+        const macScreenCastBtn = castIndTop?.container || castIndTop;
+        if (macScreenCastBtn && isCastTopActive && ensureInRightBox(macScreenCastBtn)) {
+            macScreenCastBtn.style = null;
+            macScreenCastBtn.set_width?.(-1);
+            desiredOrder.push(macScreenCastBtn);
+        }
+
         if (this._privacyIndicator?.container && isAlive(this._privacyIndicator.container)) {
             try {
                 if (!rightBox.contains(this._privacyIndicator.container)) {
@@ -5765,7 +5783,7 @@ export const MenuBarController = class MenuBarController {
                     continue;
                 }
                 if (role.includes('kiwi-wifi-button') || role.includes('kiwi-search-button') ||
-                    role.includes('macWifi') || role.includes('macBluetooth') || role.includes('macVolume') || role.includes('macBattery')) {
+                    role.includes('macWifi') || role.includes('macBluetooth') || role.includes('macVolume') || role.includes('macBattery') || role === 'macScreenCast') {
                     continue;
                 }
                 if (ensureInRightBox(ext) && ext !== Main.panel.statusArea?.keyboard?.container) {
@@ -5899,7 +5917,16 @@ export const MenuBarController = class MenuBarController {
                         try { return v?.container === child || v === child; } catch (_e) { return false; }
                     })?.[0] || '';
 
-                    const isHiddenSystem = ['tiling-assistant', 'unattended_upgrade', 'livepatch', 'software_update', 'screenRecording', 'screenSharing', 'dwellClick', 'a11y', 'macWifi', 'macBluetooth', 'macVolume', 'macBattery', 'macScreenCast'].some(s => role.includes(s));
+                    const castIndRow = Main.panel.statusArea?.['macScreenCast'];
+                    const isCastRowActive = Boolean(castIndRow && (castIndRow.visible || castIndRow._isRecording || castIndRow._isSharing || Main.screenshotUI?.screencast_in_progress));
+                    if (role === 'macScreenCast' && isCastRowActive) {
+                        child.visible = true;
+                        child.show();
+                        child.set_width?.(-1);
+                        const f = child.get_first_child?.();
+                        if (f) f.visible = true;
+                    }
+                    const isHiddenSystem = ['tiling-assistant', 'unattended_upgrade', 'livepatch', 'software_update', 'screenRecording', 'screenSharing', 'dwellClick', 'a11y', 'macWifi', 'macBluetooth', 'macVolume', 'macBattery'].some(s => role.includes(s)) || (role === 'macScreenCast' && !isCastRowActive);
                     const isAppIndicator = role.startsWith('appindicator-') && !isHiddenSystem;
 
                     const isSubVisible = (c) => {

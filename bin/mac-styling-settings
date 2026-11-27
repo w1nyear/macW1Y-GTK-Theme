@@ -291,6 +291,120 @@ class MacStylingWindow(Adw.ApplicationWindow):
             0, 100, int(self.spotlight_shadow)
         )
 
+        # 6.7. Screenshot & Screen Recording Menu (Print Screen) Group
+        screenshot_group = Adw.PreferencesGroup()
+        screenshot_group.set_title(self._ss_t("group_title"))
+        screenshot_group.set_description(self._ss_t("group_desc"))
+        pref_page.add(screenshot_group)
+
+        self.screenshot_preview_row = Adw.PreferencesRow()
+        self.screenshot_preview_row.set_activatable(False)
+        ss_outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        ss_outer.set_margin_top(10)
+        ss_outer.set_margin_bottom(12)
+        ss_outer.set_margin_start(14)
+        ss_outer.set_margin_end(14)
+
+        ss_hdr = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        ss_title_lbl = Gtk.Label(label=self._ss_t("preview_title"), xalign=0.0)
+        ss_title_lbl.add_css_class("heading")
+        ss_sub_lbl = Gtk.Label(label=self._ss_t("preview_desc"), xalign=0.0)
+        ss_sub_lbl.add_css_class("caption")
+        ss_sub_lbl.add_css_class("dim-label")
+        ss_hdr.append(ss_title_lbl)
+        ss_hdr.append(ss_sub_lbl)
+        ss_outer.append(ss_hdr)
+
+        ss_stage = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        ss_stage.set_name("screenshot-preview-stage")
+        ss_stage.set_halign(Gtk.Align.FILL)
+        ss_stage.set_valign(Gtk.Align.CENTER)
+
+        self.screenshot_preview_pill = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        self.screenshot_preview_pill.set_name("screenshot-preview-pill")
+        self.screenshot_preview_pill.set_halign(Gtk.Align.CENTER)
+        self.screenshot_preview_pill.set_valign(Gtk.Align.CENTER)
+
+        close_badge = Gtk.Label(label="✕")
+        close_badge.set_name("screenshot-preview-close")
+        self.screenshot_preview_pill.append(close_badge)
+
+        self._ss_preview_mode_is_video = False
+        self._ss_preview_active_idx = 2
+        self._ss_preview_buttons = []
+
+        icon_defs = [
+            ("mac-shot-screen.svg", "display-symbolic", False),
+            ("mac-shot-window.svg", "window-new-symbolic", False),
+            ("mac-shot-area.svg", "edit-select-all-symbolic", False),
+            ("mac-rec-screen.svg", "camera-video-symbolic", True),
+            ("mac-rec-window.svg", "video-display-symbolic", True),
+            ("mac-rec-area.svg", "media-record-symbolic", True),
+        ]
+        icons_roots = [
+            os.path.expanduser("~/.local/share/gnome-shell/extensions/eval-helper@mactheme/icons"),
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "extensions", "eval-helper@mactheme", "icons"),
+        ]
+
+        def _load_ss_icon(svg_name, fallback_name):
+            for root in icons_roots:
+                p = os.path.join(root, svg_name)
+                if os.path.exists(p):
+                    img = Gtk.Image.new_from_file(p)
+                    img.set_pixel_size(16)
+                    return img
+            img = Gtk.Image.new_from_icon_name(fallback_name)
+            img.set_pixel_size(15)
+            return img
+
+        for idx, (svg_name, fallback_name, is_vid) in enumerate(icon_defs):
+            if idx == 3:
+                sep1 = Gtk.Box()
+                sep1.set_name("screenshot-preview-sep")
+                self.screenshot_preview_pill.append(sep1)
+            btn = Gtk.Button()
+            btn.add_css_class("flat")
+            btn.add_css_class("screenshot-preview-mode-btn")
+            if idx == self._ss_preview_active_idx:
+                btn.add_css_class("active")
+            btn.set_child(_load_ss_icon(svg_name, fallback_name))
+            btn.connect("clicked", self._on_ss_preview_mode_clicked, idx, is_vid)
+            self._ss_preview_buttons.append(btn)
+            self.screenshot_preview_pill.append(btn)
+
+        sep2 = Gtk.Box()
+        sep2.set_name("screenshot-preview-sep")
+        self.screenshot_preview_pill.append(sep2)
+
+        opt_lbl = Gtk.Label(label=f"{self._ss_t('options')} ⌄")
+        opt_lbl.set_name("screenshot-preview-options")
+        self.screenshot_preview_pill.append(opt_lbl)
+
+        self.screenshot_preview_action_btn = Gtk.Button(label=self._ss_t("capture"))
+        self.screenshot_preview_action_btn.set_name("screenshot-preview-action")
+        self.screenshot_preview_action_btn.connect("clicked", lambda _b: self._on_ss_preview_mode_clicked(
+            None, 3 if not self._ss_preview_mode_is_video else 2, not self._ss_preview_mode_is_video
+        ))
+        self.screenshot_preview_pill.append(self.screenshot_preview_action_btn)
+
+        ss_stage.append(self.screenshot_preview_pill)
+        ss_outer.append(ss_stage)
+        self.screenshot_preview_row.set_child(ss_outer)
+        screenshot_group.add(self.screenshot_preview_row)
+
+        self.screenshot_blur_scale = self._create_slider_row(
+            screenshot_group, t("spot_blur", "Розмиття"), self._ss_t("blur_desc"),
+            0, 50, int(getattr(self, "screenshot_blur", 16))
+        )
+        self.screenshot_tint_scale = self._create_slider_row(
+            screenshot_group, t("spot_tint", "Затемнення"), self._ss_t("tint_desc"),
+            0, 100, int(getattr(self, "screenshot_tint", 14))
+        )
+        self.screenshot_shadow_scale = self._create_slider_row(
+            screenshot_group, t("spot_shadow", "Тінь"), self._ss_t("shadow_desc"),
+            0, 100, int(getattr(self, "screenshot_shadow", 28))
+        )
+
         # 6.8. Alt+Tab / App Switcher Group
         alttab_group = Adw.PreferencesGroup()
         alttab_group.set_title(t("alttab_group_title", "Перемикач програм (Alt+Tab / Cmd+Tab)"))
@@ -481,7 +595,74 @@ class MacStylingWindow(Adw.ApplicationWindow):
         toolbar_view.set_content(overlay)
         self.set_content(toolbar_view)
         self._initializing = False
+        self.update_screenshot_preview()
         self.update_alttab_preview()
+
+    def _ss_t(self, key):
+        loc = get_locale().split("_")[0]
+        table = {
+            "uk": {
+                "group_title": "Меню знімку та запису екрана (Print Screen)",
+                "group_desc": "Параметри Liquid Glass, розмиття, тінту та тіні панелі скріншоту",
+                "preview_title": "Передогляд панелі Print Screen",
+                "preview_desc": "Інтерактивний вигляд скляної панелі захоплення знімку та відео",
+                "blur_desc": "Розмиття фонового скла панелі захоплення (px)",
+                "tint_desc": "Затемнення (тінт) скляної панелі та меню параметрів (%)",
+                "shadow_desc": "Інтенсивність та радіус тіні панелі скріншоту (%)",
+                "options": "Параметри",
+                "capture": "Зняти",
+                "record": "Записати",
+            },
+            "ru": {
+                "group_title": "Меню снимка и записи экрана (Print Screen)",
+                "group_desc": "Параметры Liquid Glass, размытия, тинта и тени панели снимка",
+                "preview_title": "Предпросмотр панели Print Screen",
+                "preview_desc": "Интерактивный вид стеклянной панели снимка и записи экрана",
+                "blur_desc": "Размытие фонового стекла панели (px)",
+                "tint_desc": "Затемнение (тинт) стеклянной панели (%)",
+                "shadow_desc": "Интенсивность и радиус тени панели (%)",
+                "options": "Параметры",
+                "capture": "Снять",
+                "record": "Записать",
+            },
+            "pl": {
+                "group_title": "Menu zrzutu i nagrywania ekranu (Print Screen)",
+                "group_desc": "Rozmycie, przyciemnienie i cień paska Liquid Glass przechwytywania",
+                "preview_title": "Podgląd paska Print Screen",
+                "preview_desc": "Interaktywny podgląd szklanego paska zrzutu i nagrywania",
+                "blur_desc": "Rozmycie szkła tła paska (px)",
+                "tint_desc": "Przyciemnienie szkła i menu opcji (%)",
+                "shadow_desc": "Intensywność i promień cienia paska (%)",
+                "options": "Opcje",
+                "capture": "Przechwyć",
+                "record": "Nagraj",
+            },
+        }
+        en = {
+            "group_title": "Screenshot & Recording Menu (Print Screen)",
+            "group_desc": "Liquid Glass blur, tint, and shadow settings for the capture bar",
+            "preview_title": "Print Screen Bar Preview",
+            "preview_desc": "Interactive preview of the floating Liquid Glass capture toolbar",
+            "blur_desc": "Background Liquid Glass blur radius (px)",
+            "tint_desc": "Glass tint opacity for toolbar and options menu (%)",
+            "shadow_desc": "Drop shadow strength and spread radius (%)",
+            "options": "Options",
+            "capture": "Capture",
+            "record": "Record",
+        }
+        return table.get(loc, en).get(key, en.get(key, key))
+
+    def _on_ss_preview_mode_clicked(self, _btn, idx, is_vid):
+        self._ss_preview_mode_is_video = bool(is_vid)
+        self._ss_preview_active_idx = idx
+        for i, b in enumerate(self._ss_preview_buttons):
+            if i == idx:
+                b.add_css_class("active")
+            else:
+                b.remove_css_class("active")
+        self.screenshot_preview_action_btn.set_label(
+            self._ss_t("record") if self._ss_preview_mode_is_video else self._ss_t("capture")
+        )
 
     def _create_profile_combo(self, group):
         row = Adw.ComboRow()
@@ -621,6 +802,10 @@ class MacStylingWindow(Adw.ApplicationWindow):
         self.spotlight_tint = 15
         self.spotlight_shadow = 35
 
+        self.screenshot_blur = 16
+        self.screenshot_tint = 14
+        self.screenshot_shadow = 28
+
         self.label_blur = 30
         self.label_tint = 28
         self.label_shadow = 25
@@ -674,6 +859,10 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 self.spotlight_blur = sdata.get("spotlight_blur", self.spotlight_blur)
                 self.spotlight_tint = sdata.get("spotlight_tint", self.spotlight_tint)
                 self.spotlight_shadow = sdata.get("spotlight_shadow", self.spotlight_shadow)
+
+                self.screenshot_blur = sdata.get("screenshot_blur", self.screenshot_blur)
+                self.screenshot_tint = sdata.get("screenshot_tint", self.screenshot_tint)
+                self.screenshot_shadow = sdata.get("screenshot_shadow", self.screenshot_shadow)
 
                 self.label_blur = sdata.get("label_blur", self.label_blur)
                 self.label_tint = sdata.get("label_tint", self.label_tint)
@@ -767,12 +956,95 @@ class MacStylingWindow(Adw.ApplicationWindow):
         # Show floating toast warning
         self.revealer.set_reveal_child(True)
 
+        self.update_screenshot_preview()
         self.update_alttab_preview()
         self.apply_realtime()
 
         if self.save_timer:
             GLib.source_remove(self.save_timer)
         self.save_timer = GLib.timeout_add(400, self.save_css)
+
+    def update_screenshot_preview(self):
+        try:
+            blur = int(self.screenshot_blur_scale.get_value()) if hasattr(self, 'screenshot_blur_scale') else 16
+            tint = int(self.screenshot_tint_scale.get_value()) if hasattr(self, 'screenshot_tint_scale') else 14
+            shadow = int(self.screenshot_shadow_scale.get_value()) if hasattr(self, 'screenshot_shadow_scale') else 28
+
+            tint_alpha = min(0.92, max(0.06, (tint / 100.0) * 0.85 + 0.14))
+            sheen_alpha = min(0.32, 0.08 + (blur / 50.0) * 0.20)
+            shadow_alpha = min(0.85, max(0.05, (shadow / 100.0) * 0.85))
+            shadow_radius = max(4, int(6 + (shadow / 100.0) * 28))
+            rim_alpha = min(0.40, 0.18 + (blur / 50.0) * 0.16)
+
+            css_ss = f"""
+            #screenshot-preview-stage {{
+                background: linear-gradient(125deg, #1b3a5f 0%, #3d2c5e 52%, #1e4d40 100%);
+                border-radius: 14px;
+                padding: 18px 12px;
+                border: 1px solid rgba(255, 255, 255, 0.10);
+            }}
+            #screenshot-preview-pill {{
+                background: linear-gradient(180deg, rgba(255, 255, 255, {sheen_alpha:.2f}) 0%, rgba(28, 28, 32, {tint_alpha:.2f}) 45%, rgba(18, 18, 22, {min(0.95, tint_alpha + 0.10):.2f}) 100%);
+                border-radius: 14px;
+                border: 1px solid rgba(255, 255, 255, {rim_alpha:.2f});
+                box-shadow: 0 6px {shadow_radius}px rgba(0, 0, 0, {shadow_alpha:.2f});
+                padding: 5px 8px;
+            }}
+            #screenshot-preview-close {{
+                min-width: 16px;
+                min-height: 16px;
+                border-radius: 9999px;
+                background-color: rgba(255, 255, 255, 0.24);
+                color: rgba(25, 25, 28, 0.90);
+                font-size: 9px;
+                font-weight: 700;
+                padding: 0 3px;
+                margin-right: 2px;
+            }}
+            .screenshot-preview-mode-btn {{
+                min-width: 22px;
+                min-height: 22px;
+                padding: 3px 4px;
+                border-radius: 6px;
+                color: #ffffff;
+                background-color: transparent;
+            }}
+            .screenshot-preview-mode-btn.active {{
+                background-color: rgba(255, 255, 255, 0.22);
+            }}
+            #screenshot-preview-sep {{
+                min-width: 1px;
+                min-height: 16px;
+                background-color: rgba(255, 255, 255, 0.20);
+                margin: 2px 3px;
+            }}
+            #screenshot-preview-options {{
+                font-size: 11px;
+                font-weight: 500;
+                color: rgba(255, 255, 255, 0.92);
+                padding: 0 5px;
+            }}
+            #screenshot-preview-action {{
+                background-image: none;
+                background-color: #0a84ff;
+                color: #ffffff;
+                font-size: 11px;
+                font-weight: 600;
+                border-radius: 8px;
+                padding: 3px 10px;
+                min-height: 22px;
+                border: none;
+                box-shadow: 0 2px 6px rgba(10, 132, 255, 0.35);
+            }}
+            """
+            if not hasattr(self, '_screenshot_css_provider'):
+                self._screenshot_css_provider = Gtk.CssProvider()
+                display = Gdk.Display.get_default()
+                if display:
+                    Gtk.StyleContext.add_provider_for_display(display, self._screenshot_css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+            self._screenshot_css_provider.load_from_data(css_ss.encode('utf-8'))
+        except Exception as e:
+            print("update_screenshot_preview error:", e)
 
     def update_alttab_preview(self):
         try:
@@ -962,6 +1234,9 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 "spotlight_blur": int(self.spot_blur_scale.get_value()),
                 "spotlight_tint": int(self.spot_tint_scale.get_value()),
                 "spotlight_shadow": int(self.spot_shadow_scale.get_value()),
+                "screenshot_blur": int(self.screenshot_blur_scale.get_value()),
+                "screenshot_tint": int(self.screenshot_tint_scale.get_value()),
+                "screenshot_shadow": int(self.screenshot_shadow_scale.get_value()),
                 "label_blur": int(self.label_blur_scale.get_value()),
                 "label_tint": int(self.label_tint_scale.get_value()),
                 "label_shadow": int(self.label_shadow_scale.get_value()),
@@ -981,6 +1256,10 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 pass
             try:
                 run_cmd("gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell/Extensions/EvalHelper --method org.gnome.Shell.Extensions.EvalHelper.SyncAltTabStyling")
+            except Exception:
+                pass
+            try:
+                run_cmd("gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell/Extensions/EvalHelper --method org.gnome.Shell.Extensions.EvalHelper.SyncScreenshotStyling")
             except Exception:
                 pass
         except Exception as e:
