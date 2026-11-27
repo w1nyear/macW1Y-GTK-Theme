@@ -1094,9 +1094,20 @@ function _buildPanel() {
 
                 }
                 disp.slider.connect('notify::value', () => {
+                    if (state.dispGuard)
+                        return;
                     try {
-                        proxy.set('org.gnome.SettingsDaemon.Power.Screen', 'Brightness',
-                            GLib.Variant.new_int32(Math.round(disp.slider.value * 100)));
+                        proxy.call(
+                            'org.freedesktop.DBus.Properties.Set',
+                            new GLib.Variant('(ssv)', [
+                                'org.gnome.SettingsDaemon.Power.Screen',
+                                'Brightness',
+                                GLib.Variant.new_int32(Math.round(disp.slider.value * 100)),
+                            ]),
+                            Gio.DBusCallFlags.NONE,
+                            -1,
+                            null,
+                            null);
                     } catch (_) {
 
                     }
@@ -1124,7 +1135,28 @@ function _buildPanel() {
 
         }
     }
-    if (!haveBrightness) {
+    if (haveBrightness) {
+        const stepBrightness = (delta) => {
+            try {
+                const cur = typeof disp.slider.value === 'number' ? disp.slider.value : 0.5;
+                disp.slider.value = Math.max(0.05, Math.min(1.0, Math.round((cur + delta) * 100) / 100));
+            } catch (_) {}
+        };
+        if (disp.iconL) {
+            disp.iconL.reactive = true;
+            disp.iconL.connect('button-press-event', () => {
+                stepBrightness(-0.10);
+                return Clutter.EVENT_STOP;
+            });
+        }
+        if (disp.iconR) {
+            disp.iconR.reactive = true;
+            disp.iconR.connect('button-press-event', () => {
+                stepBrightness(0.10);
+                return Clutter.EVENT_STOP;
+            });
+        }
+    } else {
 
         disp.box.opacity = 140;
         try {
@@ -1146,13 +1178,43 @@ function _buildPanel() {
         }
         return Clutter.EVENT_PROPAGATE;
     });
+    const setSinkMuted = (sink, muted) => {
+        if (!sink) return;
+        if (typeof sink.change_is_muted === 'function')
+            sink.change_is_muted(muted);
+        else
+            sink.is_muted = muted;
+    };
+    const stepVolume = (delta) => {
+        try {
+            if (!state.sink || !state.control)
+                return;
+            const max = state.control.get_vol_max_norm() || 65536;
+            const cur = state.sink.is_muted ? 0 : (state.sink.volume / max);
+            const next = Math.max(0, Math.min(1, Math.round((cur + delta) * 100) / 100));
+            if (next <= 0.001) {
+                state.sink.volume = 0;
+                setSinkMuted(state.sink, true);
+            } else {
+                if (state.sink.is_muted)
+                    setSinkMuted(state.sink, false);
+                state.sink.volume = Math.round(next * max);
+            }
+            state.sink.push_volume();
+            snd.slider.value = next;
+        } catch (_) {}
+    };
     if (snd.iconL) {
         snd.iconL.reactive = true;
         snd.iconL.connect('button-press-event', () => {
-            try {
-                if (state.sink)
-                    state.sink.is_muted = !state.sink.is_muted;
-            } catch (_) {}
+            stepVolume(-0.05);
+            return Clutter.EVENT_STOP;
+        });
+    }
+    if (snd.iconR) {
+        snd.iconR.reactive = true;
+        snd.iconR.connect('button-press-event', () => {
+            stepVolume(0.05);
             return Clutter.EVENT_STOP;
         });
     }
@@ -1253,7 +1315,7 @@ function _buildPanel() {
                         const max = control.get_vol_max_norm() || 65536;
                         state.sink.volume = Math.round(snd.slider.value * max);
                         if (state.sink.is_muted && snd.slider.value > 0)
-                            state.sink.is_muted = false;
+                            setSinkMuted(state.sink, false);
                         state.sink.push_volume();
                     } catch (_) {
 

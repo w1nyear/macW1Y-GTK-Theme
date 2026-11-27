@@ -181,6 +181,20 @@ class LocalizationAndPathSafetyTests(unittest.TestCase):
         for key in ("stage_manager", "notification_fallback", "screenshot_capture", "screenshot", "recording_and_pipewire"):
             self.assertIn(f'"{key}":', i18n_txt)
 
+    def test_control_center_brightness_and_volume_buttons_and_dbus_set(self):
+        for rel in (
+            "extensions/kiwi@kemma/apps/tahoeControlCenter.js",
+            "extensions/kiwi@kemma/apps/tahoeQuickSettings.js",
+        ):
+            src = (ROOT / rel).read_text(encoding="utf-8")
+            self.assertNotIn("proxy.set('org.gnome.SettingsDaemon.Power.Screen'", src, f"Invalid Gio.DBusProxy.set in {rel}")
+            self.assertIn("org.freedesktop.DBus.Properties.Set", src, f"Missing valid D-Bus Properties.Set in {rel}")
+            self.assertIn("disp.iconL.reactive = true;", src, f"Missing disp.iconL handler in {rel}")
+            self.assertIn("disp.iconR.reactive = true;", src, f"Missing disp.iconR handler in {rel}")
+            self.assertIn("snd.iconL.reactive = true;", src, f"Missing snd.iconL handler in {rel}")
+            self.assertIn("snd.iconR.reactive = true;", src, f"Missing snd.iconR handler in {rel}")
+            self.assertIn("sink.change_is_muted", src, f"Missing Gvc change_is_muted in {rel}")
+
     def test_no_hardcoded_vitaliy_or_unsafe_sudoers(self):
         self.assertFalse((ROOT / "etc/sudoers.d/99-mactheme").exists(), "Author sudoers file must be removed")
         boot_sudoers = (ROOT / "etc/sudoers.d/99-mac-boot-config").read_text(encoding="utf-8")
