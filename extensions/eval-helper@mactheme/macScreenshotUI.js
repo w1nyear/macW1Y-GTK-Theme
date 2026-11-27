@@ -227,6 +227,8 @@ class MacScreenshotController {
         this._isClosingAnim = false;
         this._optionsOpen = false;
         this._relocatingFile = false;
+        this._selectedWinWidget = null;
+        this._hoveredWinWidget = null;
 
         this._orig = {};
         this._modeButtons = {};
@@ -331,6 +333,7 @@ class MacScreenshotController {
         }
 
         // 2. Build 1:1 macOS Screenshot Toolbar Pill
+        this._buildWindowHighlights();
         this._buildToolbar();
         this._buildTooltip();
         this._buildOptionsPopup();
@@ -574,6 +577,7 @@ class MacScreenshotController {
         }
 
         this._removeFullscreenDimming();
+        this._syncWindowModeOverlays();
         this._refreshModeButtonsVisual();
         if (this._optionsOpen) {
             this._rebuildOptionsContent();
@@ -1158,7 +1162,164 @@ class MacScreenshotController {
         }
         for (const w of (ui._windowSelectors || [])) {
             w.style = 'background-color: transparent !important;';
+            w.opacity = 0;
+            w.reactive = false;
+            if (w._container) {
+                w._container.opacity = 0;
+                w._container.reactive = false;
+            }
         }
+    }
+
+    _buildWindowHighlights() {
+        const bin = this._ui?._primaryMonitorBin;
+        if (!bin || this._winHighlight) return;
+        this._winHoverHighlight = new St.Widget({
+            name: 'mac-screenshot-window-hover',
+            reactive: false,
+            visible: false,
+            opacity: 0,
+            x_align: Clutter.ActorAlign.START,
+            y_align: Clutter.ActorAlign.START,
+            style: 'background-color: rgba(18, 128, 255, 0.16); border: 1.5px solid rgba(86, 174, 255, 0.60); border-radius: 12px;',
+        });
+        this._winHighlight = new St.Widget({
+            name: 'mac-screenshot-window-highlight',
+            reactive: false,
+            visible: false,
+            opacity: 0,
+            x_align: Clutter.ActorAlign.START,
+            y_align: Clutter.ActorAlign.START,
+            style: 'background-color: rgba(18, 128, 255, 0.28); border: 2px solid rgba(86, 174, 255, 0.88); border-radius: 12px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);',
+        });
+        bin.insert_child_below(this._winHoverHighlight, this._ui._panel);
+        bin.insert_child_below(this._winHighlight, this._ui._panel);
+    }
+
+    _getSelectableWindowsZOrdered() {
+        const ui = this._ui;
+        const widgets = ui?._windowSelectors?.flatMap(s => s.windows()) || [];
+        if (!widgets.length) return [];
+
+        const actors = global.get_window_actors().slice().reverse();
+        const activeWs = global.workspace_manager.get_active_workspace();
+        const monIdx = Main.layoutManager.primaryIndex;
+        const ordered = [];
+        const used = new Set();
+
+        for (const actor of actors) {
+            const meta = actor?.metaWindow;
+            if (!meta || !actor.visible || meta.minimized || meta.is_override_redirect()) continue;
+            if (!meta.located_on_workspace(activeWs)) continue;
+            const wt = meta.window_type;
+            if (wt === 1 || wt === 2 || wt === 5) continue; // Skip DESKTOP (1), DOCK (2), SPLASHSCREEN (5)
+            const r = meta.get_frame_rect?.();
+            if (!r || r.width < 10 || r.height < 10) continue;
+
+            // Find matching UIWindowSelectorWindow widget on the active monitor
+            const match = widgets.find(w => {
+                if (used.has(w) || !w.boundingBox) return false;
+                const b = w.boundingBox;
+                return Math.abs(b.x - r.x) <= 2 && Math.abs(b.y - r.y) <= 2 &&
+                       Math.abs(b.width - r.width) <= 2 && Math.abs(b.height - r.height) <= 2;
+            });
+            if (match && meta.get_monitor() === monIdx) {
+                used.add(match);
+                ordered.push({ widget: match, rect: r });
+            }
+        }
+
+        // Fallback if compositor metadata differs slightly
+        for (const w of widgets) {
+            if (!used.has(w) && w.boundingBox) {
+                ordered.push({ widget: w, rect: w.boundingBox });
+            }
+        }
+        return ordered;
+    }
+
+    _placeWindowOverlay(actor, rect) {
+        const mon = Main.layoutManager.primaryMonitor;
+        if (!actor || !mon || !rect) return;
+        const x1 = Math.max(0, Math.round(rect.x - mon.x));
+        const y1 = Math.max(0, Math.round(rect.y - mon.y));
+        const x2 = Math.min(mon.width, Math.round(rect.x + rect.width - mon.x));
+        const y2 = Math.min(mon.height, Math.round(rect.y + rect.height - mon.y));
+        const w = Math.max(0, x2 - x1);
+        const h = Math.max(0, y2 - y1);
+        if (w < 8 || h < 8) {
+            actor.hide();
+            return;
+        }
+        actor.set_position(x1, y1);
+        actor.set_size(w, h);
+        actor.opacity = 255;
+        actor.show();
+    }
+
+    _selectWindowWidget(entry) {
+        if (!entry?.widget) return;
+        const widgets = this._ui?._windowSelectors?.flatMap(s => s.windows()) || [];
+        for (const w of widgets) {
+            const isSel = (w === entry.widget);
+            w.checked = isSel;
+            w.toggle_mode = !isSel;
+        }
+        this._selectedWinWidget = entry.widget;
+        this._hoveredWinWidget = null;
+        this._winHoverHighlight?.hide();
+        this._placeWindowOverlay(this._winHighlight, entry.rect);
+    }
+
+    _findWindowAtCoords(px, py) {
+        const entries = this._getSelectableWindowsZOrdered();
+        for (const entry of entries) {
+            const r = entry.rect;
+            if (px >= r.x && px <= r.x + r.width && py >= r.y && py <= r.y + r.height) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    _syncWindowModeOverlays() {
+        const ui = this._ui;
+        if (!ui) return;
+        // Keep GNOME's centered thumbnail grid hidden so real desktop windows remain in place
+        for (const ws of (ui._windowSelectors || [])) {
+            ws.remove_all_transitions();
+            ws.opacity = 0;
+            ws.reactive = false;
+            ws.hide();
+        }
+        if (this._activeTarget !== 'window') {
+            this._winHighlight?.hide();
+            if (this._winHighlight) this._winHighlight.opacity = 0;
+            this._winHoverHighlight?.hide();
+            if (this._winHoverHighlight) this._winHoverHighlight.opacity = 0;
+            this._hoveredWinWidget = null;
+            try { ui.set_cursor_type(Clutter.CursorType.INHERIT); } catch (_) {}
+            return;
+        }
+
+        const entries = this._getSelectableWindowsZOrdered();
+        let activeEntry = entries.find(e => e.widget === this._selectedWinWidget || e.widget.checked);
+        if (!activeEntry && entries.length > 0) {
+            activeEntry = entries[0];
+        }
+        if (activeEntry) {
+            this._selectWindowWidget(activeEntry);
+        } else {
+            this._winHighlight?.hide();
+        }
+        try {
+            const bin = ui._primaryMonitorBin;
+            const ref = this._toolbarGlass || ui._panel;
+            if (bin && ref) {
+                if (this._winHoverHighlight) bin.set_child_below_sibling?.(this._winHoverHighlight, ref);
+                if (this._winHighlight) bin.set_child_below_sibling?.(this._winHighlight, ref);
+            }
+        } catch (_) {}
     }
 
     async _initGlasses() {
@@ -1323,11 +1484,22 @@ class MacScreenshotController {
         this._orig.finishClosing = ui._finishClosing;
         this._orig.onCapture = ui._onCaptureButtonClicked;
         this._orig.onCastToggle = ui._onCastButtonToggled;
+        this._orig.onWindowToggled = ui._onWindowButtonToggled;
         this._orig.syncWinSens = ui._syncWindowButtonSensitivity;
         this._orig.startScreencast = ui._startScreencast;
         this._orig.stopScreencast = ui.stopScreencast;
 
-        // Close options or countdown on outside click / Escape
+        const isInsideUiControls = (px, py) => {
+            const inside = (actor) => {
+                if (!actor?.visible) return false;
+                const [ax, ay] = actor.get_transformed_position();
+                const [aw, ah] = actor.get_transformed_size();
+                return px >= ax && px <= ax + aw && py >= ay && py <= ay + ah;
+            };
+            return inside(self._bar) || inside(self._optionsPopup) || inside(self._tooltip) || inside(self._countdownBox);
+        };
+
+        // Close options or countdown on outside click / Escape; handle live window hover & click selection
         this._capturedSignalId = ui.connect('captured-event', (_actor, event) => {
             const et = event.type();
             if (et === Clutter.EventType.KEY_PRESS && event.get_key_symbol() === Clutter.KEY_Escape) {
@@ -1353,12 +1525,60 @@ class MacScreenshotController {
                     return Clutter.EVENT_STOP;
                 }
             }
+            if (self._activeTarget === 'window' && !self._optionsOpen) {
+                if (et === Clutter.EventType.MOTION) {
+                    const [px, py] = event.get_coords();
+                    if (isInsideUiControls(px, py)) {
+                        self._hoveredWinWidget = null;
+                        self._winHoverHighlight?.hide();
+                        try { ui.set_cursor_type(Clutter.CursorType.INHERIT); } catch (_) {}
+                        return Clutter.EVENT_PROPAGATE;
+                    }
+                    const hit = self._findWindowAtCoords(px, py);
+                    if (hit) {
+                        try { ui.set_cursor_type(Clutter.CursorType.POINTING_HAND); } catch (_) {}
+                        if (hit.widget !== self._selectedWinWidget) {
+                            self._hoveredWinWidget = hit.widget;
+                            self._placeWindowOverlay(self._winHoverHighlight, hit.rect);
+                        } else {
+                            self._hoveredWinWidget = null;
+                            self._winHoverHighlight?.hide();
+                        }
+                    } else {
+                        self._hoveredWinWidget = null;
+                        self._winHoverHighlight?.hide();
+                        try { ui.set_cursor_type(Clutter.CursorType.INHERIT); } catch (_) {}
+                    }
+                    return Clutter.EVENT_PROPAGATE;
+                }
+                if (et === Clutter.EventType.BUTTON_PRESS && event.get_button?.() === 1) {
+                    const [px, py] = event.get_coords();
+                    if (!isInsideUiControls(px, py)) {
+                        const hit = self._findWindowAtCoords(px, py);
+                        if (hit) {
+                            self._selectWindowWidget(hit);
+                            return Clutter.EVENT_STOP;
+                        }
+                    }
+                }
+            }
             return Clutter.EVENT_PROPAGATE;
         });
 
         ui._syncWindowButtonSensitivity = function() {
             const windows = this._windowSelectors.flatMap(selector => selector.windows());
             this._windowButton.reactive = Main.sessionMode.hasWindows && windows.length > 0;
+        };
+
+        ui._onWindowButtonToggled = function() {
+            if (this._windowButton.checked) {
+                this._windowButton.toggle_mode = false;
+                this._selectionButton.checked = false;
+                this._screenButton.checked = false;
+            } else {
+                this._windowButton.toggle_mode = true;
+            }
+            self._syncWindowModeOverlays();
         };
 
         ui._onCastButtonToggled = function() {
@@ -1396,6 +1616,8 @@ class MacScreenshotController {
 
             const targetIsVideo = (mode === 1) ? true : (self._state.remember_selection ? self._state.last_is_video : false);
             const targetArea = self._state.remember_selection ? self._state.last_target : 'area';
+            self._selectedWinWidget = null;
+            self._hoveredWinWidget = null;
 
             await self._orig.open.call(this, targetIsVideo ? 1 : 0);
 
@@ -1433,6 +1655,9 @@ class MacScreenshotController {
             if (instantly) {
                 self._isClosingAnim = false;
                 self._disconnectStageSync();
+                self._winHighlight?.hide();
+                self._winHoverHighlight?.hide();
+                try { this.set_cursor_type(Clutter.CursorType.INHERIT); } catch (_) {}
                 if (self._toolbarGlass) {
                     self._toolbarGlass.hide();
                     self._toolbarGlass.opacity = 0;
@@ -1457,6 +1682,9 @@ class MacScreenshotController {
         ui._finishClosing = function() {
             self._isClosingAnim = false;
             self._disconnectStageSync();
+            self._winHighlight?.hide();
+            self._winHoverHighlight?.hide();
+            try { this.set_cursor_type(Clutter.CursorType.INHERIT); } catch (_) {}
             if (self._toolbarGlass) {
                 self._toolbarGlass.hide();
                 self._toolbarGlass.opacity = 0;
@@ -1575,10 +1803,13 @@ class MacScreenshotController {
             const win = ui._windowSelectors.flatMap(s => s.windows()).find(w => w.checked);
             if (win?.boundingBox) {
                 const b = win.boundingBox;
-                const x = Math.max(0, Math.round(b.x));
-                const y = Math.max(0, Math.round(b.y));
-                const w = Math.max(16, Math.round(b.width));
-                const h = Math.max(16, Math.round(b.height));
+                const mon = Main.layoutManager.monitors[Main.layoutManager.primaryIndex];
+                const x = Math.max(mon?.x ?? 0, Math.round(b.x));
+                const y = Math.max(mon?.y ?? 0, Math.round(b.y));
+                const maxW = mon ? Math.max(16, (mon.x + mon.width) - x) : Math.round(b.width);
+                const maxH = mon ? Math.max(16, (mon.y + mon.height) - y) : Math.round(b.height);
+                const w = Math.max(16, Math.min(maxW, Math.round(b.x + b.width - x)));
+                const h = Math.max(16, Math.min(maxH, Math.round(b.y + b.height - y)));
                 return [x, y, w, h, true];
             }
         }
@@ -1842,9 +2073,19 @@ class MacScreenshotController {
             if (this._orig.finishClosing) ui._finishClosing = this._orig.finishClosing;
             if (this._orig.onCapture) ui._onCaptureButtonClicked = this._orig.onCapture;
             if (this._orig.onCastToggle) ui._onCastButtonToggled = this._orig.onCastToggle;
+            if (this._orig.onWindowToggled) ui._onWindowButtonToggled = this._orig.onWindowToggled;
             if (this._orig.syncWinSens) ui._syncWindowButtonSensitivity = this._orig.syncWinSens;
             if (this._orig.startScreencast) ui._startScreencast = this._orig.startScreencast;
             if (this._orig.stopScreencast) ui.stopScreencast = this._orig.stopScreencast;
+
+            for (const w of (ui._windowSelectors || [])) {
+                w.opacity = 255;
+                w.reactive = true;
+                if (w._container) {
+                    w._container.opacity = 255;
+                    w._container.reactive = true;
+                }
+            }
 
             ui._typeButtonContainer?.show();
             ui._bottomRowContainer?.show();
@@ -1865,7 +2106,7 @@ class MacScreenshotController {
             }
         }
 
-        for (const actor of [this._bar, this._tooltip, this._optionsPopup, this._countdownBox, this._toolbarGlass, this._optionsGlass, this._floatingThumb]) {
+        for (const actor of [this._bar, this._tooltip, this._optionsPopup, this._countdownBox, this._toolbarGlass, this._optionsGlass, this._floatingThumb, this._winHighlight, this._winHoverHighlight]) {
             if (actor) {
                 try { actor.destroy(); } catch (_) {}
             }

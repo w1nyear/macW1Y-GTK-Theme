@@ -6461,3 +6461,15 @@ Task #938:
   - Перевірка та синхронізація:
     * Синхронізовано `~/.local/share/gnome-shell/extensions/eval-helper@mactheme/`, [extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json), `/usr/share/mactheme/config/extensions.lock.json` та `/home/vitaliy/Desktop/done.txt`.
     * Візуально перевірено в `Print Screen` (область усередині світла, зовні затемнена `0.42`) та пройдено весь набір тестів і перевірок репозиторію.
+
+#1011: Нативна підсвітка вікон синім накладенням у стилі macOS у режимі «Вікно» (Print Screen) без центральної сітки мініатюр
+  - Змінені файли:
+    * [macScreenshotUI.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/macScreenshotUI.js)
+    * [extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json)
+    * [test_cross_distro_and_wizard.py](file:///home/vitaliy/macW1Y/tests/test_cross_distro_and_wizard.py)
+  - Що реалізовано:
+    * У [macScreenshotUI.js](file:///home/vitaliy/macW1Y/extensions/eval-helper@mactheme/macScreenshotUI.js) приховано стандартну сітку мініатюр GNOME (`_windowSelectors` і перевизначено `_onWindowButtonToggled`), залишивши вікна на їхніх реальних місцях на робочому столі.
+    * Додано синю напівпрозору підсвітку вікон (`_winHighlight` — вибране вікно, `_winHoverHighlight` — попереднє наведення) у Z-порядку вікон (`_getSelectableWindowsZOrdered()`), вибір вікна кліком по його геометрії (`_findWindowAtCoords` + `_selectWindowWidget`) із синхронізацією `checked` для захоплення фото й запису відео вибраного вікна (`_getScreencastGeometry()` з обмеженням у межах монітора).
+  - Перевірка та синхронізація:
+    * Синхронізовано `~/.local/share/gnome-shell/extensions/eval-helper@mactheme/`, [extensions.lock.json](file:///home/vitaliy/macW1Y/config/extensions.lock.json), `/usr/share/mactheme/config/extensions.lock.json` та `/home/vitaliy/Desktop/done.txt`.
+    * Візуально перевірено синю підсвітку вибраного вікна позаду скляної панелі `Print Screen` та пройдено повний набір тестів і перевірок.

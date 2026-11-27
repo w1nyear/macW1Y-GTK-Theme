@@ -467,6 +467,12 @@ class TestCrossDistroAndWizard(unittest.TestCase):
             "takeAudioSidecarPath",
             "_macSyncScreenshotStyling",
             "rgba(0, 0, 0, 0.42)",
+            "_buildWindowHighlights",
+            "_syncWindowModeOverlays",
+            "_findWindowAtCoords",
+            "_selectWindowWidget",
+            "_onWindowButtonToggled",
+            "mac-screenshot-window-highlight",
         ):
             self.assertIn(needle, ss_ui_js)
 
