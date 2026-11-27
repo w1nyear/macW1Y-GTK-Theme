@@ -247,9 +247,9 @@ static gboolean save_screenshot_cb(gpointer user_data) {
         GdkTexture *tex = gsk_renderer_render_texture(renderer, node, NULL);
         gsk_render_node_unref(node);
         if (tex) {
-            gdk_texture_save_to_png(tex, "/home/vitaliy/MACTHEMEFILES/scratch/ptyxis_rendered.png");
+            gdk_texture_save_to_png(tex, "/tmp/ptyxis_rendered.png");
             g_object_unref(tex);
-            printf("[mac_terminal] Saved window screenshot to /home/vitaliy/MACTHEMEFILES/scratch/ptyxis_rendered.png (%dx%d)\n", w, h);
+            printf("[mac_terminal] Saved window screenshot to /tmp/ptyxis_rendered.png (%dx%d)\n", w, h);
         }
     }
     g_object_unref(paintable);
@@ -492,9 +492,9 @@ static void apply_mac_terminal_styling(GtkWindow *window) {
     GtkWidget *icon = NULL;
     const char *folder_icon_paths[] = {
         "/usr/share/icons/macW1Y-dark/places/scalable/folder.svg",
-        "/home/vitaliy/.local/share/icons/macW1Y-dark/places/scalable/folder.svg",
+        "/usr/share/icons/macW1Y-dark/places/scalable/folder.svg",
         "/usr/share/icons/macW1Y/places/scalable/folder.svg",
-        "/home/vitaliy/.local/share/icons/macW1Y/places/scalable/folder.svg",
+        "/usr/share/icons/macW1Y/places/scalable/folder.svg",
         NULL
     };
     for (int i = 0; folder_icon_paths[i]; i++) {

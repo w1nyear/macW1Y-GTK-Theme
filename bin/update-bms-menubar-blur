@@ -1,5 +1,5 @@
 #!/usr/bin/env -S gjs -m
-import { unpack_pipelines, pack_pipelines } from "file:///home/vitaliy/.local/share/gnome-shell/extensions/blur-my-shell@aunetx/conveniences/pipeline_settings.js";
+import { unpack_pipelines, pack_pipelines } from "file:///usr/share/mactheme/extensions/blur-my-shell@aunetx/conveniences/pipeline_settings.js";
 import Gio from "gi://Gio";
 import system from "system";
 

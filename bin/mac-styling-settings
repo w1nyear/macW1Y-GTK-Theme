@@ -918,7 +918,7 @@ class MacStylingWindow(Adw.ApplicationWindow):
         # Update gradient panel top_blur in real-time
         try:
             top_blur_val = round(p_glass * 10.0, 1)
-            run_cmd(f"/home/vitaliy/.local/bin/update-bms-menubar-blur {top_blur_val}")
+            run_cmd(f"update-bms-menubar-blur {top_blur_val}")
         except Exception as e:
             print("Error updating menubar blur:", e)
 

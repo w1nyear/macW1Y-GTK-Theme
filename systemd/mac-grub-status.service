@@ -5,7 +5,7 @@ Before=shutdown.target reboot.target halt.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 /home/vitaliy/MACTHEMEFILES/grub/generate_icons.py
+ExecStart=/usr/bin/python3 /usr/share/mactheme/grub/generate_icons.py
 TimeoutStartSec=10
 
 [Install]

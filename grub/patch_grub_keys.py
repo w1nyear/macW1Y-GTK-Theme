@@ -34,7 +34,7 @@ def patch_file(path, patches):
     print(f'Successfully updated {path}')
 
 def main():
-    backup_dir = '/home/vitaliy/MACTHEMEFILES/grub/backup'
+    backup_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backup')
 
     # 1. Restore fresh clean binaries from orig backups first to guarantee clean state
     if os.path.exists(f'{backup_dir}/normal.mod.orig'):

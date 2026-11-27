@@ -8390,7 +8390,11 @@ export const TRANSLATIONS = {
         "installer_mock_done": "macW1Y installation simulation completed successfully! In demo mode, computer is not restarted.",
         "installer_banner_title": "macW1Y Transformation Modpack",
         "installer_banner_sub": "Transformation & Maintenance System",
-        "installer_done": "Installation completed successfully!"
+        "installer_done": "Installation completed successfully!",
+        "stage_manager": "Stage Manager",
+        "notification_fallback": "Notification",
+        "screenshot_capture": "Screen Capture",
+        "recording_and_pipewire": "Recording + PipeWire Stream"
     },
     "es": {
         "wifi": "Wi-Fi",
@@ -23384,7 +23388,11 @@ export const TRANSLATIONS = {
         "installer_mock_done": "Встановлення macW1Y успішно протестовано в тестовому режимі!\nУ режимі муляжу перезавантаження комп'ютера не виконується.",
         "installer_banner_title": "Модпак macW1Y Transformation",
         "installer_banner_sub": "Система трансформації та обслуговування",
-        "installer_done": "Встановлення успішно завершено!"
+        "installer_done": "Встановлення успішно завершено!",
+        "stage_manager": "Stage Manager",
+        "notification_fallback": "Повідомлення",
+        "screenshot_capture": "Захоплення знімків екрана",
+        "recording_and_pipewire": "Запис + PipeWire трансляція"
     },
     "vi": {
         "wifi": "Wi-Fi",

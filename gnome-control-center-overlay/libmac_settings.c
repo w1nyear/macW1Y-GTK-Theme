@@ -649,7 +649,7 @@ static gboolean save_css_cb(gpointer user_data) {
     (void)user_data;
     css_timer_id = 0;
     char *cmd = g_strdup_printf(
-        "/home/vitaliy/MACTHEMEFILES/bin/update-mac-styling-css %d %d",
+        "/usr/local/bin/update-mac-styling-css %d %d",
         state.menubar_tint, state.blur_tint
     );
     g_spawn_command_line_async(cmd, NULL);
@@ -666,7 +666,7 @@ static void schedule_css_save(void) {
 
 static void apply_menubar_blur(void) {
     char *cmd = g_strdup_printf(
-        "/home/vitaliy/MACTHEMEFILES/bin/update-bms-menubar-blur %d",
+        "/usr/local/bin/update-bms-menubar-blur %d",
         state.menubar_blur
     );
     g_spawn_command_line_async(cmd, NULL);
@@ -8302,7 +8302,7 @@ static char *mac_get_localized_ui_path(const char *basename)
         }
 
 
-        path = g_build_filename("/home/vitaliy/MACTHEMEFILES/control-center/locales", loc, basename, NULL);
+        path = g_build_filename("/usr/share/mactheme/gnome-control-center-overlay/locales", loc, basename, NULL);
         if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
         g_free(path);
 
@@ -8318,7 +8318,7 @@ static char *mac_get_localized_ui_path(const char *basename)
                 g_free(path);
             }
 
-            path = g_build_filename("/home/vitaliy/MACTHEMEFILES/control-center/locales", "en", basename, NULL);
+            path = g_build_filename("/usr/share/mactheme/gnome-control-center-overlay/locales", "en", basename, NULL);
             if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
             g_free(path);
         }
@@ -8335,7 +8335,7 @@ static char *mac_get_localized_ui_path(const char *basename)
         g_free(path);
     }
 
-    path = g_build_filename("/home/vitaliy/MACTHEMEFILES/control-center", basename, NULL);
+    path = g_build_filename("/usr/share/mactheme/gnome-control-center-overlay", basename, NULL);
     if (g_file_test(path, G_FILE_TEST_EXISTS)) return path;
     g_free(path);
 
@@ -8934,7 +8934,7 @@ static void init_mac_settings_css(void) {
                 gchar *accent = g_settings_get_string(iface_settings, "accent-color");
                 if (accent) {
                     char *argv[] = {
-                        "/home/vitaliy/MACTHEMEFILES/bin/mac-generate-slider-glass.py",
+                        "/usr/local/bin/mac-generate-slider-glass.py",
                         accent,
                         NULL
                     };
@@ -11097,7 +11097,7 @@ static GtkListBoxRow *create_account_row(AdwNavigationSplitView *split_view) {
     adw_avatar_set_show_initials(ADW_AVATAR(avatar), TRUE);
 
     GdkTexture *tex = NULL;
-    char *acc_icon = g_strdup_printf("/var/lib/AccountsService/icons/%s", user_name ? user_name : "vitaliy");
+    char *acc_icon = g_strdup_printf("/var/lib/AccountsService/icons/%s", user_name ? user_name : "");
     char *face_path = g_build_filename(g_get_home_dir(), ".face", NULL);
     char *face_icon_path = g_build_filename(g_get_home_dir(), ".face.icon", NULL);
 

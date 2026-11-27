@@ -23,7 +23,7 @@ try:
 except Exception:
     IS_UK = True
 
-REPO_DIR = "/home/vitaliy/MACTHEMEFILES"
+REPO_DIR = os.environ.get("MACW1Y_REPO", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MANIFEST_PATH = os.path.join(REPO_DIR, "config/macw1y-manifest.json")
 LOCK_PATH = os.path.join(REPO_DIR, "config/extensions.lock.json")
 HOME = os.path.expanduser("~")

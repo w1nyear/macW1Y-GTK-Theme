@@ -87,7 +87,7 @@ folder-children=['System', 'Utilities', 'YaST', 'Pardus', '1022cd65-504d-4627-80
 
 [org/gnome/desktop/app-folders/folders/1022cd65-504d-4627-8076-7d978edb89a4]
 apps=['libreoffice_impress.desktop', 'libreoffice_draw.desktop', 'libreoffice_math.desktop', 'libreoffice_writer.desktop', 'libreoffice_calc.desktop', 'libreoffice_base.desktop', 'libreoffice_libreoffice.desktop']
-name='Офіс'
+name='Office'
 
 [org/gnome/desktop/app-folders/folders/Pardus]
 categories=['X-Pardus-Apps']
@@ -116,8 +116,6 @@ name='Ігри'
 [org/gnome/desktop/background]
 color-shading-type='solid'
 picture-options='zoom'
-picture-uri='file:///home/vitaliy/.local/share/backgrounds/2026-10-27-19-51-32-GoldenGate_Day.jpg'
-picture-uri-dark='file:///home/vitaliy/.local/share/backgrounds/2026-10-27-19-51-32-GoldenGate_Day.jpg'
 primary-color='#000000000000'
 secondary-color='#000000000000'
 
@@ -262,7 +260,6 @@ button-layout='close,minimize,maximize:'
 num-workspaces=3
 theme='macW1Y-Dark'
 titlebar-font='Default Bold 11'
-workspace-names=['Робочий стіл 1', 'Робочий стіл 2', 'Робочий стіл 3']
 
 [org/gnome/evolution-data-server]
 migrated=true
@@ -294,31 +291,22 @@ initial-size-file-chooser=(890, 550)
 maximized=false
 
 [org/gnome/portal/filechooser/Counter-Strike 2]
-last-folder-path='/run/media/vitaliy/Games'
 
 [org/gnome/portal/filechooser/ai.opencode.desktop]
-last-folder-path='/home/vitaliy/macW1Y'
 
 [org/gnome/portal/filechooser/antigravity_antigravity]
-last-folder-path='/home/vitaliy/Відео/Трансляції з екрана'
 
 [org/gnome/portal/filechooser/appimage-impactor]
-last-folder-path='/home/vitaliy/Завантажене'
 
 [org/gnome/portal/filechooser/com.google.Chrome]
-last-folder-path='/home/vitaliy/Завантажене'
 
 [org/gnome/portal/filechooser/firefox_firefox]
-last-folder-path='/home/vitaliy/Завантажене'
 
 [org/gnome/portal/filechooser/org.gnome.Settings]
-last-folder-path='/run/media/vitaliy/nvme1/DriveFiles/FastInstaller/another'
 
 [org/gnome/portal/filechooser/org.gnome.Zenity]
-last-folder-path='/home/vitaliy/Завантажене'
 
 [org/gnome/portal/filechooser/telegram-desktop_telegram-desktop]
-last-folder-path='/home/vitaliy/Зображення/Знімки екрана'
 
 [org/gnome/ptyxis/profiles/2e3d0a57697030bc1d7286ca6acea541]
 opacity=0.88

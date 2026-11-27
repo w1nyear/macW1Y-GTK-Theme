@@ -14,7 +14,7 @@ from datetime import datetime
 
 CONFIG_DIR = os.path.expanduser("~/.config/macW1Y")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "graphics-profile.json")
-REPO_CONFIG_FILE = "/home/vitaliy/macW1Y/config/graphics-profile.json"
+REPO_CONFIG_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "graphics-profile.json")
 
 LIQUID_SCHEMA = "org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com"
 BMS_SCHEMA = "org.gnome.shell.extensions.blur-my-shell"

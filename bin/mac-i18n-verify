@@ -13,7 +13,7 @@ import subprocess
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if not os.path.exists(os.path.join(REPO_ROOT, "config/i18n/catalog.json")):
-    for candidate in ["/home/vitaliy/MACTHEMEFILES", "/home/vitaliy/macW1Y"]:
+    for candidate in [os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "/usr/share/mactheme"]:
         if os.path.exists(os.path.join(candidate, "config/i18n/catalog.json")):
             REPO_ROOT = candidate
             break

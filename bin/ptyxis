@@ -51,5 +51,5 @@ for candidate in /usr/bin/ptyxis /usr/bin/ptyxis.orig; do
     fi
     exec "$candidate" "${NEW_ARGS[@]}"
 done
-printf '%s\n' 'macW1Y: не знайдено оригінальний виконуваний файл ptyxis.' >&2
+printf '%s\n' 'macW1Y: original ptyxis executable not found.' >&2
 exit 127

@@ -3075,7 +3075,7 @@ function _editCatalog() {
     return [
         {id: 'wifi', title: _('Wi-Fi'), icon: 'network-wireless-symbolic', category: 'connectivity'},
         {id: 'bt', title: _('Bluetooth'), icon: 'bluetooth-active-symbolic', category: 'connectivity'},
-        {id: 'air', title: _('Режим'), icon: 'power-profile-performance-symbolic', category: 'connectivity'},
+        {id: 'air', title: t('power_mode_short', 'Mode'), icon: 'power-profile-performance-symbolic', category: 'connectivity'},
         {id: 'focus', title: _('Focus'), gicon: g.focus, icon: 'weather-clear-night-symbolic', category: 'focus'},
         {id: 'display', title: _('Display'), icon: 'display-brightness-symbolic', category: 'display'},
         {id: 'dark', title: _('Dark Mode'), gicon: g.theme, icon: 'weather-clear-night-symbolic', category: 'display'},

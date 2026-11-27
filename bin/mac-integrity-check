@@ -43,7 +43,7 @@ def check_integrity():
         pass
 
     # 3. Quick check of SSOT manifest
-    manifest_path = "/home/vitaliy/MACTHEMEFILES/config/macw1y-manifest.json"
+    manifest_path = "/usr/share/mactheme/config/macw1y-manifest.json"
     if os.path.exists(manifest_path):
         try:
             with open(manifest_path) as f:
@@ -64,7 +64,7 @@ def check_integrity():
             issues.append(f"Помилка перевірки маніфесту: {e}")
 
     # 4. Check enabled extensions
-    lock_path = "/home/vitaliy/MACTHEMEFILES/config/extensions.lock.json"
+    lock_path = "/usr/share/mactheme/config/extensions.lock.json"
     if os.path.exists(lock_path):
         try:
             with open(lock_path) as f:

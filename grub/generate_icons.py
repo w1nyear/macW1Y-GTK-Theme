@@ -17,11 +17,13 @@ S = 2  # 2x supersampling downscaled with Lanczos for 4K Retina sharpness
 SW, SH = W * S, H * S
 
 # Font configuration
-font_display = '/home/vitaliy/.local/share/fonts/SF_Pro_Display/Default-Display-Medium.otf'
-font_text = '/home/vitaliy/.local/share/fonts/SF_Pro_Text/Default-Medium.otf'
-font_regular = '/home/vitaliy/.local/share/fonts/SF_Pro_Text/Default-Regular.otf'
-font_semibold = '/home/vitaliy/.local/share/fonts/SF_Pro_Text/Default-Semibold.otf'
-font_bold = '/home/vitaliy/.local/share/fonts/SF_Pro_Display/Default-Display-Bold.otf'
+import os
+_FONT_BASE = '/usr/local/share/fonts' if os.path.isdir('/usr/local/share/fonts/SF_Pro_Display') else os.path.expanduser('~/.local/share/fonts')
+font_display = f'{_FONT_BASE}/SF_Pro_Display/Default-Display-Medium.otf'
+font_text = f'{_FONT_BASE}/SF_Pro_Text/Default-Medium.otf'
+font_regular = f'{_FONT_BASE}/SF_Pro_Text/Default-Regular.otf'
+font_semibold = f'{_FONT_BASE}/SF_Pro_Text/Default-Semibold.otf'
+font_bold = f'{_FONT_BASE}/SF_Pro_Display/Default-Display-Bold.otf'
 
 f_label = ImageFont.truetype(font_display, int(round(15 * S)))
 f_continue = ImageFont.truetype(font_text, int(round(12.5 * S)))
@@ -30,7 +32,7 @@ f_time = ImageFont.truetype(font_text, int(round(13.5 * S)))
 f_abc = ImageFont.truetype(font_semibold, int(round(12.5 * S)))
 
 # 1. Base clean assets from permanent directory
-assets_dir = '/home/vitaliy/MACTHEMEFILES/grub/assets'
+assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets')
 disk_raw = Image.open(f'{assets_dir}/disk.png').convert('RGBA')
 gear_raw = Image.open(f'{assets_dir}/gear.png').convert('RGBA')
 p_raw = Image.open(f'{assets_dir}/power.png').convert('RGBA')
@@ -383,15 +385,15 @@ def main():
 
     base_dirs = [
         '/boot/grub/themes/macw1y-boot',
-        '/home/vitaliy/MACTHEMEFILES/grub/macw1y-boot'
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'macw1y-boot')
     ]
     usb_dirs = [
         '/boot/grub/themes/macw1y-boot-usb',
-        '/home/vitaliy/MACTHEMEFILES/grub/macw1y-boot-usb'
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'macw1y-boot-usb')
     ]
     usb2_dirs = [
         '/boot/grub/themes/macw1y-boot-usb2',
-        '/home/vitaliy/MACTHEMEFILES/grub/macw1y-boot-usb2'
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'macw1y-boot-usb2')
     ]
 
     for b in base_dirs:

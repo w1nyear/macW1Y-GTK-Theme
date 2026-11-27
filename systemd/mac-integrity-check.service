@@ -1,6 +1,6 @@
 [Unit]
 Description=macW1Y Background System & Extension Integrity Check
-Documentation=https://github.com/vitaliy/macW1Y
+Documentation=https://github.com/w1nyear/macW1Y-GTK-Theme
 After=graphical-session.target
 
 [Service]

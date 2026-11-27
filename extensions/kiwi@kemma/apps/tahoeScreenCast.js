@@ -393,7 +393,7 @@ const MacScreenCastButton = GObject.registerClass({
                 this._titleLabel.text = t('recording_and_broadcast', 'Запис та трансляція');
                 this._stopLabel.text = t('stop_all', 'Зупинити все');
                 this._destRow.l.text = t('status_label', 'Статус:');
-                this._destRow.v.text = 'Запис + PipeWire трансляція';
+                this._destRow.v.text = t('recording_and_pipewire', 'Recording + PipeWire Stream');
                 this._openFolderItem.visible = true;
             } else if (isRec) {
                 this._titleLabel.text = t('screen_recording', 'Запис екрана');

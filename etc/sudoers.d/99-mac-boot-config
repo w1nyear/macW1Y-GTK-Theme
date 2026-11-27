@@ -1,1 +1,3 @@
-ALL ALL=(ALL) NOPASSWD: /usr/local/bin/mac-boot-config
+# macW1Y: Passwordless root execution of mac-boot-config is disabled by default.
+# Administrators who explicitly want group-scoped access can uncomment:
+# %sudo ALL=(root) NOPASSWD: /usr/local/bin/mac-boot-config

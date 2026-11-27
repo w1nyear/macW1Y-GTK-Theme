@@ -346,7 +346,7 @@ export function buildNotificationCard(source, notification, options = {}) {
 
 
 
-        const shotApp = appName && !appName.includes('Захоплення') ? appName : 'Скріншот';
+        const shotApp = appName && !appName.includes('Захоплення') ? appName : t('screenshot', 'Screenshot');
         appLabel = new St.Label({
             text: shotApp,
             y_align: Clutter.ActorAlign.CENTER,
@@ -396,7 +396,7 @@ export function buildNotificationCard(source, notification, options = {}) {
         }
 
 
-        const displayTitle = rawTitle || (!hasBody ? (appName || 'Повідомлення') : '');
+        const displayTitle = rawTitle || (!hasBody ? (appName || t('notification_fallback', 'Notification')) : '');
         if (displayTitle && (!isDuplicateTitle || !hasBody)) {
             titleLabel = new St.Label({
                 x_expand: true,

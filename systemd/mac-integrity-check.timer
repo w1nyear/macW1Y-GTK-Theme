@@ -1,6 +1,6 @@
 [Unit]
 Description=Scheduled Integrity Watchdog for macW1Y
-Documentation=https://github.com/vitaliy/macW1Y
+Documentation=https://github.com/w1nyear/macW1Y-GTK-Theme
 
 [Timer]
 OnStartupSec=3min

@@ -291,9 +291,9 @@ export default class GestureImpl {
         } else if (cmd === 'TRI_UP') {
             this._showCursor();
         } else if (cmd === 'CMD_COPY') {
-            this._showOsd('Скопійовано', 'edit-copy-symbolic');
+            this._showOsd(this._tGesture('copied'), 'edit-copy-symbolic');
         } else if (cmd === 'CMD_PASTE') {
-            this._showOsd('Вставлено', 'edit-paste-symbolic');
+            this._showOsd(this._tGesture('pasted'), 'edit-paste-symbolic');
         } else if (cmd === '4FG_TAP') {
             if (Main.overview.visible) {
                 Main.overview.hide();
@@ -560,12 +560,12 @@ export default class GestureImpl {
 
                     this._pinchTriggered = true;
                     this._sendToDaemon('CMD_COPY');
-                    this._showOsd('Скопійовано', 'edit-copy-symbolic');
+                    this._showOsd(this._tGesture('copied'), 'edit-copy-symbolic');
                 } else if (scale >= 1.18) {
 
                     this._pinchTriggered = true;
                     this._sendToDaemon('CMD_PASTE');
-                    this._showOsd('Вставлено', 'edit-paste-symbolic');
+                    this._showOsd(this._tGesture('pasted'), 'edit-paste-symbolic');
                 }
             }
         } else if (phase === Clutter.TouchpadGesturePhase.END || phase === Clutter.TouchpadGesturePhase.CANCEL) {
@@ -573,6 +573,36 @@ export default class GestureImpl {
         }
 
         return Clutter.EVENT_PROPAGATE;
+    }
+
+    _tGesture(key) {
+        const TABLE = {
+            en: { copied: 'Copied', pasted: 'Pasted' },
+            uk: { copied: 'Скопійовано', pasted: 'Вставлено' },
+            de: { copied: 'Kopiert', pasted: 'Eingefügt' },
+            fr: { copied: 'Copié', pasted: 'Collé' },
+            es: { copied: 'Copiado', pasted: 'Pegado' },
+            pl: { copied: 'Skopiowano', pasted: 'Wklejono' },
+            it: { copied: 'Copiato', pasted: 'Incollato' },
+        };
+        let lang = 'en';
+        try {
+            const locFile = `${GLib.get_home_dir()}/.config/mac-styling/locale`;
+            if (GLib.file_test(locFile, GLib.FileTest.EXISTS)) {
+                const [ok, bytes] = GLib.file_get_contents(locFile);
+                if (ok) {
+                    const code = new TextDecoder().decode(bytes).trim().toLowerCase().split(/[_.]/)[0];
+                    if (TABLE[code]) lang = code;
+                }
+            } else {
+                for (const l of GLib.get_language_names()) {
+                    if (!l || l === 'C' || l === 'POSIX') continue;
+                    const code = l.toLowerCase().split(/[_.-]/)[0];
+                    if (TABLE[code]) { lang = code; break; }
+                }
+            }
+        } catch (_) {}
+        return (TABLE[lang] && TABLE[lang][key]) || TABLE.en[key] || key;
     }
 
     _showOsd(label, iconName) {

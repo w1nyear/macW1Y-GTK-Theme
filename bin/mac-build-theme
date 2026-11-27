@@ -14,7 +14,7 @@ import subprocess
 
 REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if not os.path.exists(os.path.join(REPO_DIR, "config/macw1y-tokens.json")):
-    for candidate in ["/home/vitaliy/MACTHEMEFILES", "/home/vitaliy/macW1Y"]:
+    for candidate in [os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "/usr/share/mactheme"]:
         if os.path.exists(os.path.join(candidate, "config/macw1y-tokens.json")):
             REPO_DIR = candidate
             break
@@ -109,8 +109,8 @@ def generate_gtk4_components_css(tokens, is_dark=False):
     e = tokens["effects"]
     t = tokens["typography"]
 
-    slider_glass_url = "file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass.svg"
-    slider_glass_v_url = "file:///home/vitaliy/.config/gtk-4.0/assets/scalable/slider-glass-vertical.svg"
+    slider_glass_url = f"file://{os.path.expanduser('~')}/.config/gtk-4.0/assets/scalable/slider-glass.svg"
+    slider_glass_v_url = f"file://{os.path.expanduser('~')}/.config/gtk-4.0/assets/scalable/slider-glass-vertical.svg"
 
     css = f"""/* macW1Y 0.7.1 — Master Unified Component Stylesheet for GTK 4 / Libadwaita */
 /* DO NOT EDIT DIRECTLY: Generated from config/macw1y-tokens.json */
