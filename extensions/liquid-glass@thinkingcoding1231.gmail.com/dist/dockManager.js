@@ -95,6 +95,8 @@ export class DashManager {
         if (!this.targetActor || !this._settings)
             return;
         global._liquidGlassDockSync = () => {
+            if (!this._isEffectActive || !this.bgActor || this.bgActor.is_finalized?.() || !this.bgActor.get_stage?.())
+                return;
             this.wakeFrameSync();
             this._syncGeometry();
         };
@@ -1132,6 +1134,7 @@ export class DashManager {
         if (!this._isEffectActive)
             return;
         this._isEffectActive = false;
+        global._liquidGlassDockSync = null;
         this._currentMarginStyle = undefined;
         if (this._idleTimeoutId) {
             GLib.source_remove(this._idleTimeoutId);

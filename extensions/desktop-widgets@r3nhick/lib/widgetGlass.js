@@ -149,8 +149,14 @@ export class WidgetGlass {
             this._animateHover(record, actor.hover ? 1 : 0);
         }));
 
+        record.glassDestroyed = false;
+        if (record.glass) {
+            record.glass.connect('destroy', () => {
+                record.glassDestroyed = true;
+            });
+        }
         record.signalIds.push(actor.connect('destroy', () => {
-            this._detach(view.id);
+            this._detach(view.id, true);
         }));
 
         // Try immediate update
@@ -304,26 +310,32 @@ export class WidgetGlass {
         record.timeline.start();
     }
 
-    _detach(id) {
+    _detach(id, actorDisposed = false) {
         const record = this._records.get(id);
         if (!record)
             return;
 
-        record.timeline?.stop();
+        this._records.delete(id);
+        try {
+            record.timeline?.stop();
+        } catch (_) {}
 
-        for (const signalId of record.signalIds) {
-            try {
-                record.actor.disconnect(signalId);
-            } catch (e) {
-                // Actor might be destroyed already
+        if (!actorDisposed && record.actor && !record.actor.is_finalized?.()) {
+            for (const signalId of record.signalIds) {
+                try {
+                    record.actor.disconnect(signalId);
+                } catch (_) {}
             }
         }
+        record.signalIds = [];
 
-        if (record.glass) {
-            record.glass.get_parent()?.remove_child(record.glass);
-            record.glass.destroy();
+        if (record.glass && !record.glassDestroyed && !record.glass.is_finalized?.()) {
+            try {
+                if (record.glass.get_parent?.())
+                    record.glass.get_parent().remove_child(record.glass);
+                record.glass.destroy();
+            } catch (_) {}
         }
-
-        this._records.delete(id);
+        record.glass = null;
     }
 }

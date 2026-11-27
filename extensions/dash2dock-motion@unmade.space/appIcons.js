@@ -2026,23 +2026,31 @@ function _updateTailPosition(label, position) {
         arrowBoxH = arrowH;
     }
 
+    if (!tail || tail._macDestroyed || tail.is_finalized?.() || !tail.get_stage?.())
+        return;
+
     tail.set_size(Math.round(tailW), Math.round(tailH));
     tail.set_position(Math.round(posX), Math.round(posY));
-    try {
-        const tBox = new Clutter.ActorBox();
-        tBox.x1 = posX;
-        tBox.y1 = posY;
-        tBox.x2 = posX + tailW;
-        tBox.y2 = posY + tailH;
-        tail.allocate(tBox);
-    } catch (_) {}
+    if (tail.visible) {
+        try {
+            const tBox = new Clutter.ActorBox();
+            tBox.x1 = posX;
+            tBox.y1 = posY;
+            tBox.x2 = posX + tailW;
+            tBox.y2 = posY + tailH;
+            tail.allocate(tBox);
+        } catch (_) {}
+    }
 
-    if (label._blurActor) {
-        label._blurActor.set_size(pillWidth, pillHeight);
-        label._blurActor.set_position(lx, ly);
-        if (label._blurActor._blurEff && 'corner_radius' in label._blurActor._blurEff) {
-            label._blurActor._blurEff.corner_radius = Math.round(pillHeight / 2);
+    const blurActor = label._blurActor;
+    if (blurActor && !blurActor._macDestroyed && !blurActor.is_finalized?.() && blurActor.get_stage?.()) {
+        blurActor.set_size(pillWidth, pillHeight);
+        blurActor.set_position(lx, ly);
+        if (blurActor._blurEff && 'corner_radius' in blurActor._blurEff) {
+            blurActor._blurEff.corner_radius = Math.round(pillHeight / 2);
         }
+    } else if (blurActor && (blurActor._macDestroyed || blurActor.is_finalized?.())) {
+        label._blurActor = null;
     }
 
     tail.queue_repaint();
@@ -2064,12 +2072,20 @@ function _ensureLabelTail(label, position) {
         labelBlurEff.enabled = false;
     }
 
+    if (label._blurActor && (label._blurActor._macDestroyed || label._blurActor.is_finalized?.()))
+        label._blurActor = null;
+
     if (!label._blurActor) {
         const blurActor = new St.Widget({
             style_class: 'dash-label-blur-pill',
             reactive: false,
         });
         blurActor.set_style('background-color: transparent !important; background: transparent !important; border: none !important; box-shadow: none !important;');
+        blurActor.connect('destroy', () => {
+            blurActor._macDestroyed = true;
+            if (label._blurActor === blurActor)
+                label._blurActor = null;
+        });
         label._blurActor = blurActor;
 
         const cfg = globalThis._macLabelStylingConfig || { blur: 20, tint: 20, shadow: 25 };
@@ -2357,7 +2373,7 @@ export function itemShowLabel() {
             other.opacity = 0;
             other.hide();
             for (const sub of [other._blurActor, other._arrowTailActor]) {
-                if (sub) {
+                if (sub && !sub._macDestroyed && !sub.is_finalized?.() && sub.get_stage?.()) {
                     sub.remove_all_transitions();
                     sub.opacity = 0;
                     sub.hide();
