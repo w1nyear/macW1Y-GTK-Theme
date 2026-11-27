@@ -35,6 +35,7 @@ export class WallpaperManager {
                         y: monitor.y,
                         width: monitor.width,
                         height: monitor.height,
+                        clip_to_allocation: true,
                         effect: new Shell.BlurEffect({ name: 'blur' }),
                     });
                     const effect = widget.get_effect('blur');

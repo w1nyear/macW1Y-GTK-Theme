@@ -1242,6 +1242,8 @@ StEntry StLabel.hint-text {
   background-color: #2a2a2a;
   background-image: url("assets/background.png");
   background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .login-dialog-banner-view {
