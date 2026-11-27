@@ -228,9 +228,18 @@ export const LayoutManager = GObject.registerClass({
         this._isPopupWindowVisible = false;
         this._startingUp = true;
         this._isMacLayoutOverlay = true;
-        this._startInOverview =
-            Main.sessionMode.hasOverview &&
-            global.settings.get_boolean('start-in-overview');
+        this._startInOverview = false;
+        if (Main.sessionMode.hasOverview) {
+            try {
+                const schema = global.settings?.settings_schema;
+                if (schema && typeof schema.has_key === 'function' && schema.has_key('start-in-overview')) {
+                    this._startInOverview =
+                        global.settings.get_boolean('start-in-overview');
+                }
+            } catch (_e) {
+                this._startInOverview = false;
+            }
+        }
 
 
         this.uiGroup = new UiActor({name: 'uiGroup'});
