@@ -182,6 +182,28 @@
                         </child>
                       </object>
                     </child>
+                    <child>
+                      <object class="AdwComboRow" id="liquid_fps_row">
+                        <property name="title">Częstotliwość odświeżania szkła</property>
+                        <property name="subtitle">Systemowy limit FPS renderowania szkła (Dock, menu, widżety, powiadomienia)</property>
+                        <property name="model">
+                          <object class="GtkStringList">
+                            <items>
+                              <item>10 FPS</item>
+                              <item>30 FPS</item>
+                              <item>60 FPS</item>
+                              <item>90 FPS</item>
+                              <item>120 FPS</item>
+                              <item>144 FPS</item>
+                              <item>165 FPS</item>
+                              <item>240 FPS</item>
+                            </items>
+                          </object>
+                        </property>
+                        <signal name="realize" handler="init_liquid_fps" />
+                        <signal name="notify::selected" handler="on_liquid_fps_limit_changed" />
+                      </object>
+                    </child>
                   </object>
                 </child>
 

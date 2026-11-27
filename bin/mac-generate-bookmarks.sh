@@ -95,7 +95,7 @@ DOWNLOAD_URI="$(encode_path_uri "$DOWNLOAD_DIR")"
 PICTURES_URI="$(encode_path_uri "$PICTURES_DIR")"
 VIDEOS_URI="$(encode_path_uri "$VIDEOS_DIR")"
 
-# Set localized labels
+# Set localized labels via mac_i18n (all 58 languages), with uk/en fallback
 if [ "$IS_UKRAINIAN" -eq 1 ]; then
     LBL_APPS="Програми"
     LBL_DESK="Робочий стіл"
@@ -110,6 +110,38 @@ else
     LBL_DOWN="Downloads"
     LBL_PICS="Pictures"
     LBL_VIDS="Movies"
+fi
+
+if command -v python3 >/dev/null 2>&1; then
+    _BM_LOC=""
+    if [ -f "$TARGET_HOME/.config/mac-styling/locale" ]; then
+        _BM_LOC=$(head -n 1 "$TARGET_HOME/.config/mac-styling/locale" | tr -d ' \n\r')
+    elif [ -f "$TARGET_HOME/.config/user-dirs.locale" ]; then
+        _BM_LOC=$(head -n 1 "$TARGET_HOME/.config/user-dirs.locale" | tr -d ' \n\r')
+    fi
+    _BM_OUT=$(python3 - "$0" "$_BM_LOC" <<'PY' 2>/dev/null
+import os, sys
+script_dir = os.path.dirname(os.path.realpath(sys.argv[1]))
+ov = sys.argv[2] or None
+for p in ("/usr/local/bin", script_dir):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+import mac_i18n
+for k in ("bookmark_applications", "bookmark_desktop", "bookmark_documents", "bookmark_downloads", "bookmark_pictures", "bookmark_movies"):
+    print(mac_i18n.t(k, override_locale=ov))
+PY
+)
+    if [ -n "$_BM_OUT" ]; then
+        readarray -t _BM_LINES <<< "$_BM_OUT"
+        if [ "${#_BM_LINES[@]}" -ge 6 ] && [ -n "${_BM_LINES[0]}" ]; then
+            LBL_APPS="${_BM_LINES[0]}"
+            LBL_DESK="${_BM_LINES[1]}"
+            LBL_DOCS="${_BM_LINES[2]}"
+            LBL_DOWN="${_BM_LINES[3]}"
+            LBL_PICS="${_BM_LINES[4]}"
+            LBL_VIDS="${_BM_LINES[5]}"
+        fi
+    fi
 fi
 
 cat > "$BOOKMARKS_FILE" <<EOF

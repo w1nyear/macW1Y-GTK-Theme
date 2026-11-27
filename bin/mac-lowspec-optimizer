@@ -71,10 +71,26 @@ def run_cmd(cmd, check=False):
 def is_root():
     return os.geteuid() == 0
 
+def _lowspec_t(key, fallback):
+    try:
+        sys.path.insert(0, "/usr/local/bin")
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import mac_i18n
+        user = os.environ.get("SUDO_USER")
+        loc = None
+        if user and user != "root":
+            loc_f = os.path.expanduser(f"~{user}/.config/mac-styling/locale")
+            if os.path.exists(loc_f):
+                with open(loc_f, "r", encoding="utf-8") as f:
+                    loc = f.read().strip().lower() or None
+        return mac_i18n.t(key, fallback, override_locale=loc)
+    except Exception:
+        return fallback
+
 def require_sudo():
     if not is_root():
         if subprocess.run(["sudo", "-n", "true"], capture_output=True).returncode != 0:
-            print("Помилка: Для цієї операції потрібні права root (sudo).", file=sys.stderr)
+            print(_lowspec_t("lowspec_need_root", "Error: root privileges (sudo) are required for this operation."), file=sys.stderr)
             sys.exit(1)
 
 def get_total_ram_bytes():
@@ -224,26 +240,26 @@ def optimize_background_services(disable=True):
 def apply_all():
     """Master routine to activate all low-spec & Intel HD optimizations."""
     print("═══════════════════════════════════════════════════════════════════")
-    print("  macW1Y Eco Engine — Активація оптимізацій для Intel HD / Слабких ПК")
+    print("  macW1Y Eco Engine — Activating Intel HD / Low-Spec optimizations")
     print("═══════════════════════════════════════════════════════════════════")
     
     # 1. ZRAM in-memory swap
     ok, msg = start_zram()
-    print(f" • [1/5] Стиснення оперативної пам'яті (ZRAM): {'✔ ' + msg if ok else '✘ ' + msg}")
+    print(f" • [1/5] ZRAM memory compression: {'✔ ' + msg if ok else '✘ ' + msg}")
     install_systemd_service()
     
     # 2. Kernel Virtual Memory
     ok, msg = apply_sysctl_optimizations()
-    print(f" • [2/5] Налаштування параметрів ядра Linux: {'✔ ' + msg if ok else '✘ ' + msg}")
+    print(f" • [2/5] Linux kernel VM parameters: {'✔ ' + msg if ok else '✘ ' + msg}")
     
     # 3. Background Services Throttling
     optimize_background_services(disable=True)
-    print(" • [3/5] Оптимізація фонових служб: ✔ Вимкнено apport, whoopsie та індексатори диска.")
+    print(" • [3/5] Background services: ✔ Disabled apport, whoopsie and disk indexers.")
     
     # 4. Apply Graphics Profile (Eco)
     if shutil.which("mac-graphics-profile"):
         run_cmd("mac-graphics-profile set eco")
-        print(" • [4/5] Графічний профіль швидкодії: ✔ Перемкнуто на 'Eco' (легкі шейдери, швидкі анімації).")
+        print(" • [4/5] Graphics profile: ✔ Switched to 'Eco' (light shaders, fast animations).")
     
     # 5. Pure Blur instead of heavy Liquid Glass shader
     # For Intel HD Graphics & older GPUs, disable glass shader and use native fast blur
@@ -275,12 +291,12 @@ def apply_all():
         run_cmd("gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell/Extensions/EvalHelper --method org.gnome.Shell.Extensions.EvalHelper.Eval 'globalThis._macPureBlurMode = true; true;'")
     except Exception:
         pass
-    print(" • [5/6] Режим простого розмиття замість скла: ✔ Шейдер скла вимкнено, активовано нативне розмиття.")
+    print(" • [5/6] Pure Blur mode: ✔ Glass shader disabled, native blur enabled.")
 
     # 6. GNOME Shell settings tuning
     run_cmd("gsettings set org.gnome.mutter center-new-windows true")
     run_cmd("gsettings set org.gnome.desktop.interface enable-animations true")
-    print(" • [6/6] Налаштування інтерфейсу GNOME: ✔ Адаптовано композитор для низького навантаження.")
+    print(" • [6/6] GNOME Shell tuning: ✔ Compositor tuned for low overhead.")
     
     # Save state
     state = {
@@ -292,14 +308,14 @@ def apply_all():
     save_state(state)
         
     print("═══════════════════════════════════════════════════════════════════")
-    print("  🎉 ГОТОВО! Комплексна оптимізація успішно активована.")
+    print("  🎉 " + _lowspec_t("lowspec_done", "DONE! Low-spec optimization successfully activated."))
     print("═══════════════════════════════════════════════════════════════════")
     return True
 
 def restore_all():
     """Restores default system parameters."""
     print("═══════════════════════════════════════════════════════════════════")
-    print("  macW1Y Eco Engine — Відновлення стандартних налаштувань")
+    print("  macW1Y Eco Engine — Restoring default settings")
     print("═══════════════════════════════════════════════════════════════════")
     
     stop_zram()
@@ -335,7 +351,7 @@ def restore_all():
 
     save_state({"enabled": False, "pure_blur_mode": False, "restored_at": datetime.now().isoformat(), "profile": "balanced"})
             
-    print("✔ Стандартні параметри системи відновлено.")
+    print("✔ Default system settings restored.")
     return True
 
 def get_version():
@@ -364,26 +380,26 @@ def get_status():
     print("==================================================")
     print(f"  macW1Y {get_version()} Low-Spec & Hardware Optimizer Status")
     print("==================================================")
-    print(f"Статус режиму Eco      : {'УВІМКНЕНО (Active)' if enabled else 'ВИМКНЕНО (Default)'}")
-    print(f"Стиснення ZRAM         : {'АКТИВНО (В памʼяті)' if zram_active else 'НЕ АКТИВНО'}")
-    print(f"Параметр vm.swappiness : {swappiness} (Рекомендовано: 10)")
-    print(f"Параметр vfs_pressure  : {vfs} (Рекомендовано: 50)")
+    print(f"Eco Mode Status        : {'ENABLED (Active)' if enabled else 'DISABLED (Default)'}")
+    print(f"ZRAM Compression       : {'ACTIVE (In RAM)' if zram_active else 'INACTIVE'}")
+    print(f"vm.swappiness          : {swappiness} (Recommended: 10)")
+    print(f"vm.vfs_cache_pressure  : {vfs} (Recommended: 50)")
     
     if zram_active:
-        print("\nДеталі ZRAM пристроїв:")
+        print("\nZRAM Device Details:")
         os.system("zramctl 2>/dev/null")
     print("==================================================")
 
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help", "help"]:
-        print("Використання: mac-lowspec-optimizer [КОМАНДА]")
-        print("Команди:")
-        print("  apply        Увімкнути комплексні оптимізації для слабких ПК та Intel HD")
-        print("  restore      Вимкнути та повернути стандартні параметри системи")
-        print("  status       Показати детальний стан та параметри пам'яті/ядра")
-        print("  is-enabled   Перевірити активність режиму (код виходу 0 або 1)")
-        print("  start-zram   (Службова) Ініціалізувати ZRAM у ядрі")
-        print("  stop-zram    (Службова) Зупинити ZRAM")
+        print("Usage: mac-lowspec-optimizer [COMMAND]")
+        print("Commands:")
+        print("  apply        Activate low-spec & Intel HD optimizations")
+        print("  restore      Disable optimizations and restore system defaults")
+        print("  status       Show detailed memory and kernel optimization status")
+        print("  is-enabled   Check whether Eco mode is active (exit 0 or 1)")
+        print("  start-zram   (Internal) Initialize ZRAM in kernel")
+        print("  stop-zram    (Internal) Stop ZRAM")
         sys.exit(0)
         
     cmd = sys.argv[1].lower()
@@ -407,7 +423,7 @@ def main():
         print(msg)
         sys.exit(0 if ok else 1)
     else:
-        print(f"Невідома команда: {cmd}", file=sys.stderr)
+        print(f"Unknown command: {cmd}", file=sys.stderr)
         sys.exit(1)
 
 if __name__ == "__main__":

@@ -502,8 +502,10 @@ class TestCrossDistroAndWizard(unittest.TestCase):
         cast_js = (ext_root / "kiwi@kemma" / "apps" / "tahoeScreenCast.js").read_text(encoding="utf-8")
         self.assertIn("import Cairo from 'gi://cairo';", cast_js)
         self.assertIn("cr.setFillRule(", cast_js)
-        self.assertIn("Зупинити", cast_js)
+        self.assertIn("t('stop',", cast_js)
         self.assertIn("this.container.visible = true", cast_js)
+        kiwi_i18n = (ext_root / "kiwi@kemma" / "apps" / "mac_i18n.js").read_text(encoding="utf-8")
+        self.assertIn('"stop": "Зупинити"', kiwi_i18n)
 
         proc_py = (ROOT / "bin" / "mac-screenshot-process").read_text(encoding="utf-8")
         for needle in (

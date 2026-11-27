@@ -226,7 +226,7 @@ def get_disk_capacity_info(lang_code="uk"):
         template = mac_i18n.t("installer_disk_info", override_locale=lang_code)
         return template.format(total_gb=total_gb, avail_gb=avail_gb)
     except Exception:
-        return "128 ГБ всього, 64 ГБ доступно"
+        return "128 GB total, 64 GB available"
 
 def get_battery_info():
     try:
@@ -1468,7 +1468,7 @@ class MacModalSheetHost(Gtk.Box):
 class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     def __init__(self, app, action_override=None, preview_screen=None, preview_modal=None, cached_password=None, initial_lang=None):
         super().__init__(application=app)
-        self.set_title("Встановлення macW1Y")
+        self.set_title("macW1Y")
         self.set_decorated(False)
         self._fullscreen_menu_layout = "--fullscreen-preview" in sys.argv or not any(
             arg in sys.argv for arg in ("--preview", "--no-kiosk")
@@ -1484,7 +1484,6 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.display_name = get_user_display_name(self.username)
         self.avatar_path = get_user_avatar_path(self.username)
         self.version = get_modpack_version()
-        self.disk_info = get_disk_capacity_info()
 
         self.selected_language = "uk"
         if initial_lang:
@@ -1505,6 +1504,9 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
                             break
             except Exception:
                 self.selected_language = "uk"
+
+        self.set_title(self.tr("installer_app_title", "macW1Y Installation"))
+        self.disk_info = get_disk_capacity_info(self.selected_language)
 
         self.cached_password = cached_password or ""
         self.selected_action = action_override or "install"
@@ -2330,8 +2332,8 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
     def _on_forgot_password(self, btn):
         self._show_simple_alert(
-            "Відновлення пароля",
-            "Для скидання або зміни пароля облікового запису скористайтеся меню відновлення GRUB або зверніться до системного адміністратора."
+            self.tr("installer_forgot_title", "Password Reset"),
+            self.tr("installer_forgot_desc", "To reset or change your account password, use the GRUB recovery menu or contact your system administrator.")
         )
 
     # --------------------------------------------------------------------------
@@ -2374,7 +2376,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         lbl_error.add_css_class("mac-modal-desc")
         lbl_error.set_halign(Gtk.Align.START)
         lbl_error.set_xalign(0.0)
-        lbl_error.set_markup("<span color='#ff453a'>Невірний пароль, спробуйте ще раз.</span>")
+        lbl_error.set_markup(f"<span color='#ff453a'>{GLib.markup_escape_text(self.tr('installer_pwd_incorrect_err', 'Incorrect password, please try again.'))}</span>")
         lbl_error.set_visible(False)
         sheet.append(lbl_error)
 
@@ -2664,14 +2666,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         scroll.set_margin_top(6)
 
         terms_text = (
-            "УКРАЇНСЬКА\n\n"
-            "КОРПОРАЦІЯ macW1Y PROJECT / macW1Y\n"
-            "ЛІЦЕНЗІЙНА УГОДА ПРО ВИКОРИСТАННЯ ПРОГРАМНОГО ЗАБЕЗПЕЧЕННЯ macW1Y\n\n"
-            "Для використання в системах Linux / macW1Y\n\n"
-            "УВАЖНО ОЗНАЙОМТЕСЬ З ЦІЄЮ ЛІЦЕНЗІЙНОЮ УГОДОЮ\n\n"
-            "Цей програмний комплекс розповсюджується під ліцензією MIT / GPLv3. "
-            f"macW1Y розроблено виключно для особистого використання та кастомізації середовища GNOME на платформі {get_system_os_info()}. "
-            "Всі торгові марки належать їх законним власникам."
+            f"{self.tr('installer_terms_title', 'License Agreement')}\n\n"
+            "MIT / GPLv3\n\n"
+            f"{self.tr('installer_terms_desc', 'macW1Y is developed exclusively for personal use and customization of the GNOME desktop on Ubuntu Linux. All trademarks belong to their respective owners.')}\n\n"
+            f"{get_system_os_info()}"
         )
 
         lbl_content = Gtk.Label(label=terms_text)
@@ -2683,7 +2681,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         scroll.set_child(lbl_content)
         terms_inner.append(scroll)
 
-        lbl_footer = Gtk.Label(label="Після установки копія ліцензійної угоди буде збережена в системі та доступна в меню «Про цей macW1Y».\nЛіцензійну угоду також можна знайти на GitHub: https://github.com/w1nyear/macW1Y-GTK-Theme")
+        lbl_footer = Gtk.Label(label=self.tr(
+            "installer_terms_footer",
+            "After installation, a copy of the license agreement will be saved on the system and accessible in “About This macW1Y”.\nThe license agreement can also be found on GitHub: https://github.com/w1nyear/macW1Y-GTK-Theme"
+        ))
         lbl_footer.add_css_class("mac-subtitle")
         lbl_footer.set_wrap(True)
         lbl_footer.set_justify(Gtk.Justification.CENTER)
@@ -2817,7 +2818,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         spinner.start()
         sheet.append(spinner)
 
-        lbl = Gtk.Label(label="Завантаження інформації про інсталяцію...")
+        lbl = Gtk.Label(label=self.tr("installer_loading_info", "Loading installation information..."))
         lbl.add_css_class("mac-modal-title")
         lbl.set_valign(Gtk.Align.CENTER)
         sheet.append(lbl)
@@ -3030,12 +3031,12 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         def on_allow():
             pwd = entry.get_text()
             if not pwd:
-                lbl_err.set_markup("<span color='#ff453a'>Введіть пароль адміністратора.</span>")
+                lbl_err.set_markup(f"<span color='#ff453a'>{GLib.markup_escape_text(self.tr('installer_pwd_empty_err', 'Please enter password.'))}</span>")
                 lbl_err.set_visible(True)
                 return
 
             btn_allow.set_sensitive(False)
-            btn_allow.set_label("Перевірка...")
+            btn_allow.set_label(self.tr("installer_checking", "Verifying..."))
 
             def check_thread():
                 try:
@@ -3050,14 +3051,14 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
                 def finish():
                     btn_allow.set_sensitive(True)
-                    btn_allow.set_label("Дозволити")
+                    btn_allow.set_label(self.tr("installer_allow_btn", "Allow"))
                     if ok or "--preview" in sys.argv:
                         self.cached_password = pwd
                         self.hide_modal()
                         self.switch_to_screen("screen_progress")
                         self._start_worker_execution()
                     else:
-                        lbl_err.set_markup("<span color='#ff453a'>Невірний пароль. Спробуйте ще раз.</span>")
+                        lbl_err.set_markup(f"<span color='#ff453a'>{GLib.markup_escape_text(self.tr('installer_pwd_incorrect_err', 'Incorrect password, please try again.'))}</span>")
                         lbl_err.set_visible(True)
                         entry.set_text("")
                         entry.grab_focus()
@@ -3221,7 +3222,10 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         is_mock = "--preview" in sys.argv or "--mock-installer" in sys.argv or "-let_me_try_bradar" in sys.argv or "--let_me_try_bradar" in sys.argv or os.environ.get("MAC_MOCK_INSTALLER") == "1"
         if is_mock:
             print("Mock mode: reboot simulated")
-            self._show_simple_alert("Тестування завершено", "Встановлення macW1Y успішно протестовано в тестовому режимі!\nУ режимі муляжу перезавантаження комп'ютера не виконується.")
+            self._show_simple_alert(
+                self.tr("installer_test_done_title", "Testing Complete"),
+                self.tr("installer_mock_done", "macW1Y installation simulation completed successfully! In demo mode, computer is not restarted.")
+            )
             return
         kiosk_guard.leave()
         try:
@@ -3627,9 +3631,9 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         frac = max(0.0, min(1.0, pct / 100.0))
         self.bench_prog_bar.set_fraction(frac)
         sec = int(round(frac * 10.0))
-        elem_str = self.tr("elements_short", "ел.")
-        self.bench_lbl_status.set_text(f"Секунда {sec} з 10 ({n_elems} {elem_str})")
-        self.bench_lbl_detail.set_text(f"Поточна швидкість: {fps:.1f} FPS (мін. {min_fps:.1f} FPS)")
+        elem_str = self.tr("elements_short", "elems")
+        self.bench_lbl_status.set_text(self.tr("benchmark_progress_status", "Second {sec} of 10 ({n_elems} {elem_str})", sec=sec, n_elems=n_elems, elem_str=elem_str))
+        self.bench_lbl_detail.set_text(self.tr("benchmark_progress_detail", "Current speed: {fps} FPS (min. {min_fps} FPS)", fps=f"{fps:.1f}", min_fps=f"{min_fps:.1f}"))
         return False
 
     def _abort_benchmark(self):
@@ -3650,8 +3654,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.bench_res_fps.set_text(f"{peak_lbl}: {peak_fps:.1f} FPS")
         self.bench_res_rec.set_text(self.tr("benchmark_rec_shader", "Рекомендовано: Ефект Liquid Glass (шейдер скла)"))
         self.bench_res_desc.set_text(
-            f"Пікова продуктивність при 50 скляних елементах: {peak_fps:.1f} FPS. "
-            "Шейдер Liquid Glass оптимізований та працює плавно на будь-якій відеокарті."
+            self.tr("benchmark_res_desc_tpl", "Peak performance with 50 glass elements: {peak_fps} FPS. Liquid Glass shader is optimized and runs smoothly on your GPU.", peak_fps=f"{peak_fps:.1f}")
         )
 
         self.switch_to_screen("screen_benchmark_result")
@@ -3760,13 +3763,16 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
                                 except Exception:
                                     pass
                                 self._prog_tick_id = 0
-                            self._show_simple_alert("Помилка інсталяції", f"Процес завершився з кодом {rc}. Перевірте системні журнали.")
+                            self._show_simple_alert(
+                                self.tr("installer_err_title", "Installation Error"),
+                                self.tr("installer_err_proc", "Process exited with code {rc}. Check system logs.", rc=rc)
+                            )
 
                 GLib.idle_add(on_done)
 
             except Exception as e:
                 def on_err():
-                    self._show_simple_alert("Помилка", str(e))
+                    self._show_simple_alert(self.tr("error_title", "Error"), str(e))
                 GLib.idle_add(on_err)
 
         self.worker_thread = threading.Thread(target=run_thread, daemon=True)
@@ -3971,7 +3977,7 @@ class MacRecoveryApp(Gtk.Application):
             kiosk_guard.enter()
 
         act_about = Gio.SimpleAction.new("about", None)
-        act_about.connect("activate", lambda a, p: self.win._show_simple_alert("Про macW1Y", f"macW1Y Release (v{get_package_version()})\nmacW1Y Transformation Modpack for {get_system_os_info()}"))
+        act_about.connect("activate", lambda a, p: self.win._show_simple_alert(self.win.tr("menu_about", "About macW1Y"), f"macW1Y Release (v{get_package_version()})\nmacW1Y Transformation Modpack for {get_system_os_info()}"))
         self.add_action(act_about)
 
         act_reboot = Gio.SimpleAction.new("reboot", None)
@@ -3997,10 +4003,17 @@ class MacRecoveryApp(Gtk.Application):
         def _show_sysinfo():
             pkg_v = get_package_version()
             inst_v = get_installed_version()
-            inst_str = f"v{inst_v}" if inst_v else "Не встановлено"
+            inst_str = f"v{inst_v}" if inst_v else self.win.tr("not_installed", "Not installed")
             self.win._show_simple_alert(
-                "Інформація про систему",
-                f"ОС: {get_system_os_info()}\nВерсія інсталятора macW1Y: v{pkg_v}\nПоточна встановлена версія: {inst_str}\nДиск: {get_disk_capacity_info()}"
+                self.win.tr("menu_sysinfo", "System Information").rstrip("…."),
+                self.win.tr(
+                    "installer_sysinfo_tpl",
+                    "OS: {os_info}\nmacW1Y Installer Version: v{pkg_v}\nCurrent Installed Version: {inst_str}\nDisk: {disk_info}",
+                    os_info=get_system_os_info(),
+                    pkg_v=pkg_v,
+                    inst_str=inst_str,
+                    disk_info=get_disk_capacity_info(self.win.selected_language)
+                )
             )
 
         act_sysinfo = Gio.SimpleAction.new("sysinfo", None)

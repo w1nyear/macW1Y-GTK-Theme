@@ -222,7 +222,7 @@ def print_status():
     print("==================================================")
     print(f"Configured Profile : {cfg.get('profile', 'balanced')}")
     print(f"Effective Profile  : {eff.upper()} ({reason})")
-    print(f"Auto Power Adapt   : {'Увімкнено (Enabled)' if cfg.get('auto_power_adapt', True) else 'Вимкнено (Disabled)'}")
+    print(f"Auto Power Adapt   : {'Enabled' if cfg.get('auto_power_adapt', True) else 'Disabled'}")
     print("--------------------------------------------------")
     if bat["present"]:
         print(f"Power Supply       : {bat['status']} ({bat['capacity']}%)")

@@ -1,6 +1,6 @@
 {
   "name": "Ydotool Trigger",
-  "description": "Запускает эмуляцию нажатия клавиш через ydotool",
+  "description": "Emulates key presses via ydotool",
   "uuid": "run-cmd@custom.extension",
   "shell-version": [
     "46",

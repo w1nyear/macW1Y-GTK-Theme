@@ -146,8 +146,12 @@ def main():
         subprocess.run(["zenity", "--info", f"--title={info_title}", f"--text={info_text}", "--timeout=3"])
         subprocess.run(["/usr/local/bin/mac-sync-applications"])
     else:
-        err_title = "Помилка видалення" if loc == "uk" else "Uninstall Failed"
-        err_text = f"Не вдалося видалити {app_name} або операцію було скасовано." if loc == "uk" else f"Failed to uninstall {app_name} or operation was cancelled."
+        try:
+            err_title = mac_i18n.t("uninstall_err_title", "Uninstall Failed", override_locale=loc)
+            err_text = mac_i18n.tf("uninstall_err_text", {"app_name": app_name}, override_locale=loc)
+        except Exception:
+            err_title = "Помилка видалення" if loc.startswith("uk") else "Uninstall Failed"
+            err_text = f"Не вдалося видалити {app_name} або операцію було скасовано." if loc.startswith("uk") else f"Failed to uninstall {app_name} or operation was cancelled."
         subprocess.run(["zenity", "--warning", f"--title={err_title}", f"--text={err_text}", "--timeout=4"])
 
 if __name__ == "__main__":

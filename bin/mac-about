@@ -513,7 +513,21 @@ def find_device_asset(is_laptop: bool) -> str | None:
 
 def collect_hardware_info() -> dict:
     lang = detect_locale()
-    strings = STRINGS.get(lang, STRINGS["en"])
+    fallback_strings = STRINGS.get(lang, STRINGS["en"])
+    strings = dict(fallback_strings)
+    try:
+        sys.path.insert(0, '/usr/local/bin')
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import mac_i18n
+        raw_loc = None
+        locale_file = Path.home() / ".config" / "mac-styling" / "locale"
+        if locale_file.is_file():
+            raw_loc = locale_file.read_text(encoding="utf-8", errors="ignore").strip().lower() or None
+        ov_loc = raw_loc or mac_i18n.get_locale()
+        for k, v in fallback_strings.items():
+            strings[k] = mac_i18n.t(f"about_{k}", v, override_locale=ov_loc)
+    except Exception:
+        pass
     cache = load_cached_hwinfo()
     is_laptop = is_laptop_device(cache)
     device_name = detect_device_name(cache, is_laptop)

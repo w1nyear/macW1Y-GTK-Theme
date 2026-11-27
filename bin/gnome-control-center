@@ -74,5 +74,5 @@ for candidate in /usr/bin/gnome-control-center /usr/bin/gnome-control-center.ori
     fi
     exec "$candidate" "$@"
 done
-printf '%s\n' 'macW1Y: не знайдено оригінальний виконуваний файл gnome-control-center.' >&2
+printf '%s\n' 'macW1Y: original gnome-control-center binary not found.' >&2
 exit 127

@@ -6,6 +6,7 @@
 #include <glib.h>
 #include <glib-object.h>
 #include <gio/gio.h>
+#include "../src/mac_i18n.h"
 
 
 extern void *adw_preferences_group_new(void);
@@ -124,10 +125,10 @@ static void populate_macw1y_expander(MacW1YBinding *binding) {
                 void *row = binding->create_widget_func(item, binding->user_data);
                 if (row) {
                     if (is_extension_update_pending(uuid)) {
-                        adw_expander_row_set_subtitle(row, "⚠️ Доступне оновлення, але воно ще не перевірене macW1Y");
+                        adw_expander_row_set_subtitle(row, mac_tr("ext_mgr_unverified_sub", "⚠️ Update available, not yet verified by macW1Y"));
                         void *btn = gtk_button_new_from_icon_name("software-update-available-symbolic");
                         gtk_widget_set_valign(btn, 3);
-                        gtk_widget_set_tooltip_text(btn, "Перевірити неперевірене оновлення macW1Y");
+                        gtk_widget_set_tooltip_text(btn, mac_tr("ext_mgr_unverified_tip", "Review unverified macW1Y update"));
                         g_signal_connect_data(btn, "clicked", G_CALLBACK(on_warning_badge_clicked), g_strdup(uuid), (GClosureNotify)g_free, 0);
                         adw_expander_row_add_action(row, btn);
                     }
@@ -141,9 +142,17 @@ static void populate_macw1y_expander(MacW1YBinding *binding) {
         }
     }
 
-    char sub[128];
-    snprintf(sub, sizeof(sub), "Модпак трансформації macW1Y (%d розширень)", mac_count);
-    adw_expander_row_set_subtitle(binding->expander, sub);
+    const char *tmpl = mac_tr("ext_mgr_modpack_count", "macW1Y Transformation Modpack ({count} extensions)");
+    const char *ph = strstr(tmpl, "{count}");
+    if (ph) {
+        char *prefix = g_strndup(tmpl, (gsize)(ph - tmpl));
+        char *sub = g_strdup_printf("%s%d%s", prefix, mac_count, ph + 7);
+        adw_expander_row_set_subtitle(binding->expander, sub);
+        g_free(prefix);
+        g_free(sub);
+    } else {
+        adw_expander_row_set_subtitle(binding->expander, tmpl);
+    }
 }
 
 static void *find_ancestor_preferences_page(void *widget) {
@@ -205,7 +214,7 @@ void adw_preferences_group_bind_model(void *group, void *model, void *create_wid
             void *mac_expander = adw_expander_row_new();
 
             adw_preferences_row_set_title(mac_expander, "macW1Y");
-            adw_expander_row_set_subtitle(mac_expander, "Модпак трансформації macW1Y");
+            adw_expander_row_set_subtitle(mac_expander, mac_tr("ext_mgr_modpack_sub", "macW1Y Transformation Modpack"));
             adw_expander_row_set_icon_name(mac_expander, "preferences-desktop-theme-symbolic");
             adw_expander_row_set_expanded(mac_expander, FALSE);
 

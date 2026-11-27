@@ -209,8 +209,14 @@ def sync_tr(key, **kwargs):
     loc = get_app_locale()
     base = loc.split('_')[0]
     strings = SYNC_I18N.get(base, SYNC_I18N.get("en", {}))
-    tmpl = strings.get(key, SYNC_I18N["en"].get(key, key))
-    return tmpl.format(**kwargs)
+    fallback = strings.get(key, SYNC_I18N["en"].get(key, key))
+    try:
+        sys.path.insert(0, '/usr/local/bin')
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import mac_i18n
+        return mac_i18n.tf(f"sync_{key}", kwargs, fallback, override_locale=loc)
+    except Exception:
+        return fallback.format(**kwargs)
 
 
 _daemon_lock_fd = None

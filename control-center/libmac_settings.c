@@ -2232,48 +2232,52 @@ typedef struct {
     const char *title_light_en;
 } TintRowInfo;
 
-static const TintRowInfo s_tint_rows[] = {
-    { "liquid_tint_row", "Затемнення (тінт)", "Засвітлення (тінт)", "Oscurecido (tinte)", "Aclarado (tinte)", "Darkening (tint)", "Lightening (tint)" },
-    { "cc_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
-    { "menubar_tint_row", "Затемнення градієнтне", "Затемнення градієнтне", "Oscurecido degradado", "Oscurecido degradado", "Gradient darkening", "Gradient darkening" },
-    { "dock_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
-    { "label_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
-    { "alert_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
-    { "notification_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
-    { "spotlight_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
-    { "osd_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
-    { "alttab_tint_row", "Затемнення (тінт)", "Засвітлення (тінт)", "Oscurecido (tinte)", "Aclarado (tinte)", "Darkening (tint)", "Lightening (tint)" },
-    { "blur_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
-    { "menu_tint_row", "Затемнення", "Засвітлення", "Oscurecido", "Aclarado", "Darkening", "Lightening" },
-    { "widget_tint_row", "Затемнення фону", "Засвітлення фону", "Oscurecido de fondo", "Aclarado de fondo", "Darkening background", "Lightening background" },
-    { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+typedef struct {
+    const char *row_id;
+    const char *dark_key;
+    const char *dark_fb;
+    const char *light_key;
+    const char *light_fb;
+} TintRowI18n;
+
+static const TintRowI18n s_tint_rows_i18n[] = {
+    { "liquid_tint_row", "darkening_tint", "Darkening (tint)", "lightening_tint", "Lightening (tint)" },
+    { "cc_tint_row", "darkening_short", "Darkening", "lightening_short", "Lightening" },
+    { "menubar_tint_row", "gradient_darkening", "Gradient darkening", "gradient_darkening", "Gradient darkening" },
+    { "dock_tint_row", "darkening_short", "Darkening", "lightening_short", "Lightening" },
+    { "label_tint_row", "darkening_short", "Darkening", "lightening_short", "Lightening" },
+    { "alert_tint_row", "darkening_short", "Darkening", "lightening_short", "Lightening" },
+    { "notification_tint_row", "darkening_short", "Darkening", "lightening_short", "Lightening" },
+    { "spotlight_tint_row", "darkening_short", "Darkening", "lightening_short", "Lightening" },
+    { "osd_tint_row", "darkening_short", "Darkening", "lightening_short", "Lightening" },
+    { "alttab_tint_row", "darkening_tint", "Darkening (tint)", "lightening_tint", "Lightening (tint)" },
+    { "blur_tint_row", "darkening_short", "Darkening", "lightening_short", "Lightening" },
+    { "menu_tint_row", "darkening_short", "Darkening", "lightening_short", "Lightening" },
+    { "widget_tint_row", "darkening_bg", "Darkening background", "lightening_bg", "Lightening background" },
+    { NULL, NULL, NULL, NULL, NULL }
 };
 
 typedef struct {
     const char *group_id;
-    const char *desc_dark_uk;
-    const char *desc_light_uk;
-    const char *desc_dark_es;
-    const char *desc_light_es;
-    const char *desc_dark_en;
-    const char *desc_light_en;
-} TintGroupInfo;
+    const char *dark_key;
+    const char *light_key;
+} TintGroupI18n;
 
-static const TintGroupInfo s_tint_groups[] = {
-    { "liquid_group", "Налаштування параметрів Liquid Glass (розмиття, затінення, насиченість)", "Налаштування параметрів Liquid Glass (розмиття, засвітлення, насиченість)", "Ajustes de Liquid Glass (desenfoque, oscurecido, saturación)", "Ajustes de Liquid Glass (desenfoque, aclarado, saturación)", "Settings for Liquid Glass (blur, darkening, saturation)", "Settings for Liquid Glass (blur, lightening, saturation)" },
-    { "control_center_group", "Параметри розмиття та затемнення елементів центру керування", "Параметри розмиття та засвітлення елементів центру керування", "Ajustes de desenfoque y oscurecido de los botones del Centro de control", "Ajustes de desenfoque y aclarado de los botones del Centro de control", "Control Center button glass blur and darkening settings", "Control Center button glass blur and lightening settings" },
-    { "menubar_group", "Налаштування затемнення та розмиття верхньої панелі", "Налаштування затемнення та розмиття верхньої панелі", "Ajustes de oscurecido y desenfoque de la barra de menús superior", "Ajustes de oscurecido y desenfoque de la barra de menús superior", "Upper menubar darkening and blur settings", "Upper menubar darkening and blur settings" },
-    { "dock_group", "Параметри затемнення, розмиття та тіні нижньої панелі Док", "Параметри засвітлення, розмиття та тіні нижньої панелі Док", "Ajustes de oscurecido, desenfoque y sombra del Dock", "Ajustes de aclarado, desenfoque y sombra del Dock", "Dock darkening, blur and shadow settings", "Dock lightening, blur and shadow settings" },
-    { "label_group", "Параметри розмиття, затемнення та тіні бірок програм док-панелі", "Параметри розмиття, засвітлення та тіні бірок програм док-панелі", "Ajustes de desenfoque, oscurecido y sombra de las etiquetas del Dock", "Ajustes de desenfoque, aclarado y sombra de las etiquetas del Dock", "Dock label blur, darkening and shadow settings", "Dock label blur, lightening and shadow settings" },
-    { "alert_group", "Параметри затемнення, розмиття та тіні діалогових вікон попереджень", "Параметри засвітлення, розмиття та тіні діалогових вікон попереджень", "Ajustes de oscurecido, desenfoque y sombra de las ventanas de alerta", "Ajustes de aclarado, desenfoque y sombra de las ventanas de alerta", "Alert dialog darkening, blur and shadow settings", "Alert dialog lightening, blur and shadow settings" },
-    { "notification_group", "Параметри розмиття, затемнення та тіні для сповіщень та Центру повідомлень", "Параметри розмиття, засвітлення та тіні для сповіщень та Центру повідомлень", "Ajustes de desenfoque, oscurecido y sombra de las notificaciones", "Ajustes de desenfoque, aclarado y sombra de las notificaciones", "Notification blur, darkening and shadow settings", "Notification blur, lightening and shadow settings" },
-    { "spotlight_group", "Параметри розмиття, затемнення та тіні Spotlight і Spotlight меню", "Параметри розмиття, засвітлення та тіні Spotlight і Spotlight меню", "Ajustes de desenfoque, oscurecido y sombra de Spotlight", "Ajustes de desenfoque, aclarado y sombra de Spotlight", "Spotlight blur, darkening and shadow settings", "Spotlight blur, lightening and shadow settings" },
-    { "osd_group", "Параметри розмиття, затемнення та тіні скла екранних індикаторів", "Параметри розмиття, засвітлення та тіні скла екранних індикаторів", "Ajustes de desenfoque, oscurecido y sombra de los indicadores en pantalla", "Ajustes de desenfoque, aclarado y sombra de los indicadores en pantalla", "Screen indicator (OSD) blur, darkening and shadow settings", "Screen indicator (OSD) blur, lightening and shadow settings" },
-    { "alttab_group", "Параметри розмиття, затемнення та тіні перемикача програм", "Параметри розмиття, засвітлення та тіні перемикача програм", "Ajustes de desenfoque, oscurecido y sombra del selector de aplicaciones", "Ajustes de desenfoque, aclarado y sombra del selector de aplicaciones", "App switcher (Alt+Tab) blur, darkening and shadow settings", "App switcher (Alt+Tab) blur, lightening and shadow settings" },
-    { "blur_group", "Глобальні параметри фонового розмиття та затемнення", "Глобальні параметри фонового розмиття та засвітлення", "Ajustes globales de desenfoque y oscurecido de fondo", "Ajustes globales de desenfoque y aclarado de fondo", "Global background blur and darkening settings", "Global background blur and lightening settings" },
-    { "menu_group", "Глобальні параметри затемнення та розмиття контекстних меню", "Глобальні параметри засвітлення та розмиття контекстних меню", "Ajustes globales de oscurecido y desenfoque de menús contextuales", "Ajustes globales de aclarado y desenfoque de menús contextuales", "Context menu darkening and blur settings", "Context menu lightening and blur settings" },
-    { "widget_group", "Параметри заокруглення, тіні, розмиття та затемнення фону віджетів стільниці", "Параметри заокруглення, тіні, розмиття та засвітлення фону віджетів стільниці", "Ajustes de radio, sombra, desenfoque y oscurecido de los widgets del escritorio", "Ajustes de radio, sombra, desenfoque y aclarado de los widgets del escritorio", "Desktop widget radius, shadow, blur and darkening settings", "Desktop widget radius, shadow, blur and lightening settings" },
-    { NULL, NULL, NULL, NULL, NULL, NULL, NULL }
+static const TintGroupI18n s_tint_groups_i18n[] = {
+    { "liquid_group", "cc_grp_liquid_dark", "cc_grp_liquid_light" },
+    { "control_center_group", "cc_grp_cc_dark", "cc_grp_cc_light" },
+    { "menubar_group", "cc_grp_menubar_dark", "cc_grp_menubar_light" },
+    { "dock_group", "cc_grp_dock_dark", "cc_grp_dock_light" },
+    { "label_group", "cc_grp_label_dark", "cc_grp_label_light" },
+    { "alert_group", "cc_grp_alert_dark", "cc_grp_alert_light" },
+    { "notification_group", "cc_grp_notif_dark", "cc_grp_notif_light" },
+    { "spotlight_group", "cc_grp_spot_dark", "cc_grp_spot_light" },
+    { "osd_group", "cc_grp_osd_dark", "cc_grp_osd_light" },
+    { "alttab_group", "cc_grp_alttab_dark", "cc_grp_alttab_light" },
+    { "blur_group", "cc_grp_blur_dark", "cc_grp_blur_light" },
+    { "menu_group", "cc_grp_menu_dark", "cc_grp_menu_light" },
+    { "widget_group", "cc_grp_widget_dark", "cc_grp_widget_light" },
+    { NULL, NULL, NULL }
 };
 
 static void redraw_all_mac_styling_previews(void) {
@@ -2294,26 +2298,22 @@ static void redraw_all_mac_styling_previews(void) {
 
 static void update_mac_styling_tint_labels(GtkWidget *widget, gboolean is_light) {
     if (!widget) return;
-    const char *loc = mac_get_locale();
-    gboolean is_uk = (loc && (strcmp(loc, "uk") == 0 || strcmp(loc, "uk_UA") == 0));
-    gboolean is_es = (loc && (strcmp(loc, "es") == 0 || strncmp(loc, "es_", 3) == 0));
 
     if (GTK_IS_BUILDABLE(widget)) {
         const char *bid = gtk_buildable_get_buildable_id(GTK_BUILDABLE(widget));
         if (bid) {
-            for (int i = 0; s_tint_rows[i].row_id != NULL; i++) {
-                if (g_strcmp0(bid, s_tint_rows[i].row_id) == 0 && ADW_IS_PREFERENCES_ROW(widget)) {
-                    const char *target = is_light ? (is_uk ? s_tint_rows[i].title_light_uk : (is_es ? s_tint_rows[i].title_light_es : s_tint_rows[i].title_light_en))
-                                                  : (is_uk ? s_tint_rows[i].title_dark_uk : (is_es ? s_tint_rows[i].title_dark_es : s_tint_rows[i].title_dark_en));
-                    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(widget), target);
+            for (int i = 0; s_tint_rows_i18n[i].row_id != NULL; i++) {
+                if (g_strcmp0(bid, s_tint_rows_i18n[i].row_id) == 0 && ADW_IS_PREFERENCES_ROW(widget)) {
+                    const char *k = is_light ? s_tint_rows_i18n[i].light_key : s_tint_rows_i18n[i].dark_key;
+                    const char *fb = is_light ? s_tint_rows_i18n[i].light_fb : s_tint_rows_i18n[i].dark_fb;
+                    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(widget), mac_tr(k, fb));
                     break;
                 }
             }
-            for (int i = 0; s_tint_groups[i].group_id != NULL; i++) {
-                if (g_strcmp0(bid, s_tint_groups[i].group_id) == 0 && ADW_IS_PREFERENCES_GROUP(widget)) {
-                    const char *target = is_light ? (is_uk ? s_tint_groups[i].desc_light_uk : (is_es ? s_tint_groups[i].desc_light_es : s_tint_groups[i].desc_light_en))
-                                                  : (is_uk ? s_tint_groups[i].desc_dark_uk : (is_es ? s_tint_groups[i].desc_dark_es : s_tint_groups[i].desc_dark_en));
-                    adw_preferences_group_set_description(ADW_PREFERENCES_GROUP(widget), target);
+            for (int i = 0; s_tint_groups_i18n[i].group_id != NULL; i++) {
+                if (g_strcmp0(bid, s_tint_groups_i18n[i].group_id) == 0 && ADW_IS_PREFERENCES_GROUP(widget)) {
+                    const char *k = is_light ? s_tint_groups_i18n[i].light_key : s_tint_groups_i18n[i].dark_key;
+                    adw_preferences_group_set_description(ADW_PREFERENCES_GROUP(widget), mac_tr(k, ""));
                     break;
                 }
             }
@@ -4250,14 +4250,13 @@ static void menubar_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_move_to(cr, 30.0, 17.5);
     cairo_show_text(cr, "Finder");
 
+    const char *txt_file = mac_tr("file", "File");
+    const char *txt_edit = mac_tr("edit", "Edit");
+    const char *txt_view = mac_tr("view", "View");
+    const char *txt_window = mac_tr("window", "Window");
     const char *loc = mac_get_locale();
-    gboolean is_uk = (loc && (strcmp(loc, "uk") == 0 || strcmp(loc, "uk_UA") == 0));
-    gboolean is_es = (loc && (strcmp(loc, "es") == 0 || strncmp(loc, "es_", 3) == 0));
-    const char *txt_file = is_uk ? "Файл" : (is_es ? "Archivo" : "File");
-    const char *txt_edit = is_uk ? "Редагування" : (is_es ? "Edición" : "Edit");
-    const char *txt_view = is_uk ? "Вигляд" : (is_es ? "Visualización" : "View");
-    const char *txt_window = is_uk ? "Вікно" : (is_es ? "Ventana" : "Window");
-    const char *txt_clock = is_uk ? "Пн 2 лис 14:28" : (is_es ? "Lun 2 nov 14:28" : "Mon Nov 2 2:28 PM");
+    const char *txt_clock = (loc && g_str_has_prefix(loc, "uk")) ? "Пн 2 лис 14:28"
+                          : ((loc && g_str_has_prefix(loc, "es")) ? "Lun 2 nov 14:28" : "Mon Nov 2 2:28 PM");
 
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.85);
@@ -4947,7 +4946,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
 
     cairo_set_font_size(cr, 11.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
-    const char *title_txt = "Спорожнити Смітник?";
+    const char *title_txt = mac_tr("empty_trash_prompt", "Empty Trash?");
     cairo_text_extents(cr, title_txt, &ex_w);
     cairo_move_to(cr, cx + (cw - ex_w.width) / 2.0, cy + 49.0);
     cairo_show_text(cr, title_txt);
@@ -4956,7 +4955,7 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.65);
-    const char *sub_txt = "Цю дію неможливо скасувати.";
+    const char *sub_txt = mac_tr("preview_cant_undo", "This action cannot be undone.");
     cairo_text_extents(cr, sub_txt, &ex_w);
     cairo_move_to(cr, cx + (cw - ex_w.width) / 2.0, cy + 63.0);
     cairo_show_text(cr, sub_txt);
@@ -4978,9 +4977,10 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_stroke(cr);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.90);
-    cairo_text_extents(cr, "Скасувати", &ex_w);
+    const char *cancel_txt = mac_tr("cancel", "Cancel");
+    cairo_text_extents(cr, cancel_txt, &ex_w);
     cairo_move_to(cr, b1_x + (btn_w - ex_w.width) / 2.0, btn_y + 15.5);
-    cairo_show_text(cr, "Скасувати");
+    cairo_show_text(cr, cancel_txt);
 
 
     double b2_x = cx + cw - 18.0 - btn_w;
@@ -4990,9 +4990,10 @@ static void alerts_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
-    cairo_text_extents(cr, "Спорожнити", &ex_w);
+    const char *empty_txt = mac_tr("empty_trash_action", "Empty Trash");
+    cairo_text_extents(cr, empty_txt, &ex_w);
     cairo_move_to(cr, b2_x + (btn_w - ex_w.width) / 2.0, btn_y + 15.5);
-    cairo_show_text(cr, "Спорожнити");
+    cairo_show_text(cr, empty_txt);
 
     cairo_restore(cr);
 
@@ -5070,25 +5071,27 @@ static void notifications_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, i
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
     cairo_move_to(cr, nx + 58.0, ny + 22.0);
-    cairo_show_text(cr, "Повідомлення");
+    cairo_show_text(cr, mac_tr("preview_messages", "Messages"));
 
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.55);
     cairo_move_to(cr, nx + 150.0, ny + 22.0);
-    cairo_show_text(cr, "•  щойно");
+    char *just_now_txt = g_strdup_printf("•  %s", mac_tr("just_now", "Just now"));
+    cairo_show_text(cr, just_now_txt);
+    g_free(just_now_txt);
 
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 10.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.92);
     cairo_move_to(cr, nx + 58.0, ny + 38.0);
-    cairo_show_text(cr, "Олександр");
+    cairo_show_text(cr, mac_tr("preview_msg_sender", "Alex"));
 
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.80);
     cairo_move_to(cr, nx + 58.0, ny + 51.0);
-    cairo_show_text(cr, "Зустрінемось о 14:00 біля кав'ярні?");
+    cairo_show_text(cr, mac_tr("preview_msg_body", "Meet at 14:00 near the café?"));
 
     cairo_restore(cr);
 
@@ -5488,12 +5491,12 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
             cairo_set_font_size(cr, 12.0);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.38);
             cairo_move_to(cr, text_x + 4.0, text_y);
-            cairo_show_text(cr, "Пошук у Spotlight...");
+            cairo_show_text(cr, mac_tr("preview_spotlight_ph", "Spotlight Search…"));
         }
     } else {
         cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.72);
         cairo_move_to(cr, text_x, text_y);
-        cairo_show_text(cr, "Пошук у Spotlight...");
+        cairo_show_text(cr, mac_tr("preview_spotlight_ph", "Spotlight Search…"));
     }
 
 
@@ -5514,7 +5517,9 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
             cairo_set_font_size(cr, 9.5);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88 * badge_alpha);
             cairo_move_to(cr, bx + 7.5, by + 14.5);
-            cairo_show_text(cr, "⌘ Пробіл");
+            char *space_txt = g_strdup_printf("⌘ %s", mac_tr("preview_space_key", "Space"));
+            cairo_show_text(cr, space_txt);
+            g_free(space_txt);
         }
     }
 
@@ -5563,13 +5568,13 @@ static void spotlight_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int w
             cairo_set_font_size(cr, 13.0);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95 * content_alpha);
             cairo_move_to(cr, sx + 58.0, sy + 73.0);
-            cairo_show_text(cr, "Результати у інтернеті");
+            cairo_show_text(cr, mac_tr("preview_web_results", "Web Results"));
 
             cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
             cairo_set_font_size(cr, 10.5);
             cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.52 * content_alpha);
             cairo_move_to(cr, sx + 58.0, sy + 87.0);
-            cairo_show_text(cr, "Safari — веб-пошук");
+            cairo_show_text(cr, mac_tr("preview_safari_web", "Safari — Web Search"));
 
 
             double card_x = sx + 14.0;
@@ -5871,9 +5876,7 @@ static void alttab_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int widt
     cairo_stroke(cr);
 
     /* Selected app label close underneath */
-    const char *loc = mac_get_locale();
-    gboolean is_uk = (loc && (strcmp(loc, "uk") == 0 || strcmp(loc, "uk_UA") == 0));
-    const char *files_label = is_uk ? "Файли" : "Files";
+    const char *files_label = mac_tr("preview_files_app", "Files");
 
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 9.5);
@@ -5947,11 +5950,8 @@ static void blur_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
 
     draw_frosted_glass_card(cr, blurred_bg, bx, by, bw, bh, br, tint_a, 0.70, 0.16);
 
-    const char *loc = mac_get_locale();
-    gboolean is_uk = (loc && (strcmp(loc, "uk") == 0 || strcmp(loc, "uk_UA") == 0));
-    gboolean is_es = (loc && (strcmp(loc, "es") == 0 || strncmp(loc, "es_", 3) == 0));
-    const char *blur_title = is_uk ? "Глобальне розмиття (Blur)" : (is_es ? "Desenfoque global (Blur)" : "Global Blur");
-    const char *blur_sub = is_uk ? "Фонове системне скло та матовість" : (is_es ? "Cristal y opacidad del fondo del sistema" : "Background system glass and frosted matte");
+    const char *blur_title = mac_tr("preview_global_blur", "Global Blur");
+    const char *blur_sub = mac_tr("preview_global_blur_sub", "System background glass and frost");
 
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.5);
@@ -5968,8 +5968,8 @@ static void blur_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int width,
     double ar, ag, ab;
     get_system_accent_color(&ar, &ag, &ab);
     gboolean is_light = mac_is_light_mode();
-    const char *tint_word = is_light ? (is_uk ? "Засвітлення" : (is_es ? "Aclarado" : "Lightening"))
-                                     : (is_uk ? "Затемнення" : (is_es ? "Oscurecido" : "Darkening"));
+    const char *tint_word = is_light ? mac_tr("lightening_short", "Lightening")
+                                     : mac_tr("darkening_short", "Darkening");
     char val_txt[64];
     g_snprintf(val_txt, sizeof(val_txt), "Sigma: %d • %s: %d%%", state.blur_sigma, tint_word, state.blur_tint);
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
@@ -6107,7 +6107,7 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.98);
     cairo_move_to(cr, mx + 14.0, r1_y + 18.0);
-    cairo_show_text(cr, "Режим редагування");
+    cairo_show_text(cr, mac_tr("preview_edit_mode", "Edit Mode"));
 
 
     double sw_w = 32.0, sw_h = 18.0, sw_r = 9.0;
@@ -6137,11 +6137,11 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88);
     cairo_move_to(cr, mx + 14.0, my + 92.0);
-    cairo_show_text(cr, "Додати віджети...");
+    cairo_show_text(cr, mac_tr("preview_add_widgets", "Add Widgets…"));
 
 
     cairo_move_to(cr, mx + 14.0, my + 116.0);
-    cairo_show_text(cr, "Упорядкувати віджети");
+    cairo_show_text(cr, mac_tr("preview_arrange_widgets", "Arrange Widgets"));
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 11.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.45);
@@ -6153,7 +6153,7 @@ static void context_menu_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, in
     cairo_set_font_size(cr, 10.5);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.88);
     cairo_move_to(cr, mx + 14.0, my + 138.0);
-    cairo_show_text(cr, "Змінити шпалери...");
+    cairo_show_text(cr, mac_tr("preview_change_wallpaper", "Change Wallpaper…"));
 
     cairo_restore(cr);
 
@@ -6308,16 +6308,18 @@ static void widgets_preview_draw_func(GtkDrawingArea *area, cairo_t *cr, int wid
     cairo_set_font_size(cr, 11.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96);
     cairo_text_extents_t ex_t;
-    cairo_text_extents(cr, "КИЇВ", &ex_t);
+    const char *city_txt = mac_tr("preview_city_clock", "LONDON");
+    cairo_text_extents(cr, city_txt, &ex_t);
     cairo_move_to(cr, cx - ex_t.width / 2.0, wy + 106.0);
-    cairo_show_text(cr, "КИЇВ");
+    cairo_show_text(cr, city_txt);
 
     cairo_select_font_face(cr, "default", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
     cairo_set_font_size(cr, 9.0);
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.55);
-    cairo_text_extents(cr, "+0 ГОД", &ex_t);
+    const char *tz_txt = mac_tr("preview_tz_offset", "+0 HRS");
+    cairo_text_extents(cr, tz_txt, &ex_t);
     cairo_move_to(cr, cx - ex_t.width / 2.0, wy + 120.0);
-    cairo_show_text(cr, "+0 ГОД");
+    cairo_show_text(cr, tz_txt);
 
     cairo_restore(cr);
 
@@ -7458,10 +7460,7 @@ static GtkWidget *combo_gpu_games_w = NULL;
 static GtkWidget *gpu_reboot_row_w = NULL;
 
 static char *prettify_gpu_name(const char *raw) {
-    const char *loc = mac_get_locale();
-    gboolean is_uk = (loc && (strcmp(loc, "uk") == 0 || strcmp(loc, "uk_UA") == 0));
-    gboolean is_es = (loc && (strcmp(loc, "es") == 0 || strncmp(loc, "es_", 3) == 0));
-    if (!raw) return g_strdup(is_uk ? "Невідома відеокарта" : (is_es ? "Tarjeta gráfica desconocida" : "Unknown Graphics Card"));
+    if (!raw) return g_strdup(mac_tr("gpu_unknown", "Unknown Graphics Card"));
 
     char clean[256];
     g_strlcpy(clean, raw, sizeof(clean));
@@ -7589,10 +7588,7 @@ static void detect_system_gpus(void) {
 
 
     if (g_detected_gpu_count == 0) {
-        const char *loc = mac_get_locale();
-        gboolean is_uk = (loc && (strcmp(loc, "uk") == 0 || strcmp(loc, "uk_UA") == 0));
-        gboolean is_es = (loc && (strcmp(loc, "es") == 0 || strncmp(loc, "es_", 3) == 0));
-        g_strlcpy(g_detected_gpus[0].pretty_name, is_uk ? "Інтегрована відеокарта" : (is_es ? "Gráficos integrados" : "Integrated Graphics"), 128);
+        g_strlcpy(g_detected_gpus[0].pretty_name, mac_tr("gpu_integrated", "Integrated Graphics"), 128);
         g_detected_gpus[0].is_discrete = FALSE;
         g_detected_gpu_count = 1;
     }
@@ -8316,10 +8312,7 @@ static gboolean update_fan_rpms_timer_cb(gpointer user_data) {
         int rpm = d->is_gpu ? g_gpu_fan_rpm : g_cpu_fan_rpm;
         if (rpm > 0) {
             char sub_text[128];
-            const char *loc = mac_get_locale();
-            gboolean is_uk = (loc && (strcmp(loc, "uk") == 0 || strcmp(loc, "uk_UA") == 0));
-            gboolean is_es = (loc && (strcmp(loc, "es") == 0 || strncmp(loc, "es_", 3) == 0));
-            const char *rpm_fmt = is_uk ? "Авторегулювання швидкості • %d RPM" : (is_es ? "Ajuste automático de velocidad • %d RPM" : "Auto speed adjustment • %d RPM");
+            const char *rpm_fmt = mac_tr("fan_auto_rpm_fmt", "Auto speed adjustment • %d RPM");
             snprintf(sub_text, sizeof(sub_text), rpm_fmt, rpm);
             gtk_label_set_text(GTK_LABEL(d->subtitle_label), sub_text);
         }
@@ -8349,10 +8342,7 @@ static GtkWidget *create_fan_control_card(int profile_idx, gboolean is_gpu) {
     char sub_text[128];
     int rpm = is_gpu ? g_gpu_fan_rpm : g_cpu_fan_rpm;
     if (rpm > 0) {
-        const char *loc = mac_get_locale();
-        gboolean is_uk = (loc && (strcmp(loc, "uk") == 0 || strcmp(loc, "uk_UA") == 0));
-        gboolean is_es = (loc && (strcmp(loc, "es") == 0 || strncmp(loc, "es_", 3) == 0));
-        const char *rpm_fmt = is_uk ? "Авторегулювання швидкості • %d RPM" : (is_es ? "Ajuste automático de velocidad • %d RPM" : "Auto speed adjustment • %d RPM");
+        const char *rpm_fmt = mac_tr("fan_auto_rpm_fmt", "Auto speed adjustment • %d RPM");
         snprintf(sub_text, sizeof(sub_text), rpm_fmt, rpm);
     } else {
         snprintf(sub_text, sizeof(sub_text), "%s", mac_tr("fan_dynamic_range", "Динамічний діапазон авторегулювання швидкості"));
@@ -9825,7 +9815,7 @@ static void add_widget_to_desktop(GtkWidget *widget, const char *type, const cha
         if (anc) toast_overlay = ADW_TOAST_OVERLAY(anc);
     }
     if (toast_overlay) {
-        char *toast_msg = g_strdup_printf("Віджет «%s» додано на стільницю", label ? label : type);
+        char *toast_msg = g_strdup_printf(mac_tr("widget_added_toast_fmt", "Widget \"%s\" added to desktop"), label ? label : type);
         AdwToast *toast = adw_toast_new(toast_msg);
         adw_toast_set_timeout(toast, 2);
         adw_toast_overlay_add_toast(toast_overlay, toast);
@@ -9833,25 +9823,25 @@ static void add_widget_to_desktop(GtkWidget *widget, const char *type, const cha
     }
 }
 
-G_MODULE_EXPORT void on_dw_add_clock(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "clock", "Аналоговий годинник"); }
-G_MODULE_EXPORT void on_dw_add_digitalclock(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "digitalclock", "Цифровий годинник"); }
-G_MODULE_EXPORT void on_dw_add_binaryclock(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "binaryclock", "Бінарний годинник"); }
-G_MODULE_EXPORT void on_dw_add_calendar(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "calendar", "Календар"); }
-G_MODULE_EXPORT void on_dw_add_weather(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "weather", "Погода"); }
-G_MODULE_EXPORT void on_dw_add_photos(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "photos", "Фотогалерея"); }
-G_MODULE_EXPORT void on_dw_add_battery(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "battery", "Рівень заряду"); }
-G_MODULE_EXPORT void on_dw_add_music(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "music", "Музичний плеєр"); }
-G_MODULE_EXPORT void on_dw_add_todo(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "todo", "Список справ"); }
-G_MODULE_EXPORT void on_dw_add_github(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "github", "Активність GitHub"); }
-G_MODULE_EXPORT void on_dw_add_screentime(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "screentime", "Екранний час"); }
-G_MODULE_EXPORT void on_dw_add_system(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "system", "Системний монітор"); }
-G_MODULE_EXPORT void on_dw_add_notes(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "notes", "Нотатки"); }
-G_MODULE_EXPORT void on_dw_add_pomodoro(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "pomodoro", "Таймер Pomodoro"); }
-G_MODULE_EXPORT void on_dw_add_lava(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "lava", "Лава-лампа"); }
-G_MODULE_EXPORT void on_dw_add_stopwatch(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "stopwatch", "Секундомір"); }
-G_MODULE_EXPORT void on_dw_add_folder(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "folder", "Швидка папка"); }
-G_MODULE_EXPORT void on_dw_add_timer(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "timer", "Таймер зворотного відліку"); }
-G_MODULE_EXPORT void on_dw_add_applauncher(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "applauncher", "Панель запуску"); }
+G_MODULE_EXPORT void on_dw_add_clock(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "clock", mac_tr("widget_clock", "Analog Clock")); }
+G_MODULE_EXPORT void on_dw_add_digitalclock(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "digitalclock", mac_tr("widget_digitalclock", "Digital Clock")); }
+G_MODULE_EXPORT void on_dw_add_binaryclock(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "binaryclock", mac_tr("widget_binaryclock", "Binary Clock")); }
+G_MODULE_EXPORT void on_dw_add_calendar(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "calendar", mac_tr("widget_calendar", "Calendar")); }
+G_MODULE_EXPORT void on_dw_add_weather(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "weather", mac_tr("widget_weather", "Weather")); }
+G_MODULE_EXPORT void on_dw_add_photos(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "photos", mac_tr("widget_photos", "Photos")); }
+G_MODULE_EXPORT void on_dw_add_battery(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "battery", mac_tr("widget_battery", "Battery Level")); }
+G_MODULE_EXPORT void on_dw_add_music(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "music", mac_tr("widget_music", "Music Player")); }
+G_MODULE_EXPORT void on_dw_add_todo(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "todo", mac_tr("widget_todo", "To-Do List")); }
+G_MODULE_EXPORT void on_dw_add_github(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "github", mac_tr("widget_github", "GitHub Activity")); }
+G_MODULE_EXPORT void on_dw_add_screentime(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "screentime", mac_tr("widget_screentime", "Screen Time")); }
+G_MODULE_EXPORT void on_dw_add_system(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "system", mac_tr("widget_system", "System Monitor")); }
+G_MODULE_EXPORT void on_dw_add_notes(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "notes", mac_tr("widget_notes", "Notes")); }
+G_MODULE_EXPORT void on_dw_add_pomodoro(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "pomodoro", mac_tr("widget_pomodoro", "Pomodoro Timer")); }
+G_MODULE_EXPORT void on_dw_add_lava(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "lava", mac_tr("widget_lava", "Lava Lamp")); }
+G_MODULE_EXPORT void on_dw_add_stopwatch(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "stopwatch", mac_tr("widget_stopwatch", "Stopwatch")); }
+G_MODULE_EXPORT void on_dw_add_folder(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "folder", mac_tr("widget_folder", "Quick Folder")); }
+G_MODULE_EXPORT void on_dw_add_timer(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "timer", mac_tr("widget_timer", "Countdown Timer")); }
+G_MODULE_EXPORT void on_dw_add_applauncher(void *b, gpointer d) { (void)d; add_widget_to_desktop(GTK_WIDGET(b), "applauncher", mac_tr("widget_applauncher", "App Launcher")); }
 
 G_MODULE_EXPORT void on_widgets_picker_shown(AdwNavigationPage *page, gpointer user_data) {
     (void)page; (void)user_data;
@@ -10790,25 +10780,51 @@ G_MODULE_EXPORT void on_processing_keep_original_changed(void *widget, gpointer 
 
 G_MODULE_EXPORT void on_open_screenshots_folder_clicked(void *widget, gpointer data) {
     (void)widget; (void)data;
+    const char *pics = g_get_user_special_dir(G_USER_DIRECTORY_PICTURES);
     const char *home = g_get_home_dir();
-    if (!home) return;
-    char *dir = g_build_filename(home, "Зображення", "Знімки екрана", NULL);
+    char *dir = NULL;
+    if (pics) {
+        dir = g_build_filename(pics, "Screenshots", NULL);
+        if (!g_file_test(dir, G_FILE_TEST_EXISTS) && home) {
+            char *uk_dir = g_build_filename(pics, "Знімки екрана", NULL);
+            if (g_file_test(uk_dir, G_FILE_TEST_EXISTS)) { g_free(dir); dir = uk_dir; }
+            else g_free(uk_dir);
+        }
+    } else if (home) {
+        dir = g_build_filename(home, "Pictures", "Screenshots", NULL);
+    }
+    if (!dir) return;
     g_mkdir_with_parents(dir, 0755);
-    char *cmd = g_strdup_printf("xdg-open '%s' 2>/dev/null &", dir);
+    char *q = g_shell_quote(dir);
+    char *cmd = g_strdup_printf("xdg-open %s 2>/dev/null &", q);
     g_spawn_command_line_async(cmd, NULL);
     g_free(cmd);
+    g_free(q);
     g_free(dir);
 }
 
 G_MODULE_EXPORT void on_open_screencasts_folder_clicked(void *widget, gpointer data) {
     (void)widget; (void)data;
+    const char *vids = g_get_user_special_dir(G_USER_DIRECTORY_VIDEOS);
     const char *home = g_get_home_dir();
-    if (!home) return;
-    char *dir = g_build_filename(home, "Відео", "Трансляції з екрана", NULL);
+    char *dir = NULL;
+    if (vids) {
+        dir = g_build_filename(vids, "Screencasts", NULL);
+        if (!g_file_test(dir, G_FILE_TEST_EXISTS)) {
+            char *uk_dir = g_build_filename(vids, "Трансляції з екрана", NULL);
+            if (g_file_test(uk_dir, G_FILE_TEST_EXISTS)) { g_free(dir); dir = uk_dir; }
+            else g_free(uk_dir);
+        }
+    } else if (home) {
+        dir = g_build_filename(home, "Videos", "Screencasts", NULL);
+    }
+    if (!dir) return;
     g_mkdir_with_parents(dir, 0755);
-    char *cmd = g_strdup_printf("xdg-open '%s' 2>/dev/null &", dir);
+    char *q = g_shell_quote(dir);
+    char *cmd = g_strdup_printf("xdg-open %s 2>/dev/null &", q);
     g_spawn_command_line_async(cmd, NULL);
     g_free(cmd);
+    g_free(q);
     g_free(dir);
 }
 
@@ -13363,59 +13379,59 @@ static const char *get_panel_icon_name(const char *id) {
 }
 
 static const char *get_panel_title_fallback(const char *id) {
-    if (!id) return "Основні";
-    if (g_strcmp0(id, "system") == 0) return "Основні";
-    if (g_strcmp0(id, "wifi") == 0) return "Wi-Fi";
-    if (g_strcmp0(id, "bluetooth") == 0) return "Bluetooth";
-    if (g_strcmp0(id, "network") == 0) return "Мережа";
-    if (g_strcmp0(id, "display") == 0) return "Дисплеї";
-    if (g_strcmp0(id, "sound") == 0) return "Звук";
-    if (g_strcmp0(id, "power") == 0) return "Живлення";
-    if (g_strcmp0(id, "background") == 0) return "Шпалери";
-    if (g_strcmp0(id, "ubuntu") == 0) return "Вигляд";
-    if (g_strcmp0(id, "widgets") == 0) return "Віджети";
-    if (g_strcmp0(id, "multitasking") == 0) return "Багатозадачність";
-    if (g_strcmp0(id, "notifications") == 0) return "Сповіщення";
-    if (g_strcmp0(id, "search") == 0) return "Пошук";
-    if (g_strcmp0(id, "mouse") == 0) return "Миша";
-    if (g_strcmp0(id, "keyboard") == 0) return "Клавіатура";
-    if (g_strcmp0(id, "printers") == 0) return "Принтери";
-    if (g_strcmp0(id, "privacy") == 0) return "Конфіденційність";
-    if (g_strcmp0(id, "universal-access") == 0) return "Універсальний доступ";
-    if (g_strcmp0(id, "color") == 0) return "Колір";
-    if (g_strcmp0(id, "online-accounts") == 0) return "Облікові записи";
-    if (g_strcmp0(id, "sharing") == 0) return "Спільний доступ";
-    if (g_strcmp0(id, "applications") == 0) return "Програми";
-    if (g_strcmp0(id, "mac-styling") == 0) return "Mac стилізація";
-    return "Параметри";
+    if (!id) return mac_tr("cc_panel_general", "Основні");
+    if (g_strcmp0(id, "system") == 0) return mac_tr("cc_panel_general", "Основні");
+    if (g_strcmp0(id, "wifi") == 0) return mac_tr("wifi", "Wi-Fi");
+    if (g_strcmp0(id, "bluetooth") == 0) return mac_tr("bluetooth", "Bluetooth");
+    if (g_strcmp0(id, "network") == 0) return mac_tr("cc_panel_network", "Мережа");
+    if (g_strcmp0(id, "display") == 0) return mac_tr("display", "Дисплеї");
+    if (g_strcmp0(id, "sound") == 0) return mac_tr("sound", "Звук");
+    if (g_strcmp0(id, "power") == 0) return mac_tr("power", "Живлення");
+    if (g_strcmp0(id, "background") == 0) return mac_tr("cc_panel_wallpaper", "Шпалери");
+    if (g_strcmp0(id, "ubuntu") == 0) return mac_tr("cc_panel_appearance", "Вигляд");
+    if (g_strcmp0(id, "widgets") == 0) return mac_tr("widgets", "Віджети");
+    if (g_strcmp0(id, "multitasking") == 0) return mac_tr("multitasking", "Багатозадачність");
+    if (g_strcmp0(id, "notifications") == 0) return mac_tr("notifications", "Сповіщення");
+    if (g_strcmp0(id, "search") == 0) return mac_tr("search", "Пошук");
+    if (g_strcmp0(id, "mouse") == 0) return mac_tr("cc_panel_mouse", "Миша");
+    if (g_strcmp0(id, "keyboard") == 0) return mac_tr("cc_panel_keyboard", "Клавіатура");
+    if (g_strcmp0(id, "printers") == 0) return mac_tr("cc_panel_printers", "Принтери");
+    if (g_strcmp0(id, "privacy") == 0) return mac_tr("privacy", "Конфіденційність");
+    if (g_strcmp0(id, "universal-access") == 0) return mac_tr("cc_panel_accessibility", "Універсальний доступ");
+    if (g_strcmp0(id, "color") == 0) return mac_tr("cc_panel_color", "Колір");
+    if (g_strcmp0(id, "online-accounts") == 0) return mac_tr("cc_panel_accounts", "Облікові записи");
+    if (g_strcmp0(id, "sharing") == 0) return mac_tr("cc_panel_sharing", "Спільний доступ");
+    if (g_strcmp0(id, "applications") == 0) return mac_tr("apps", "Програми");
+    if (g_strcmp0(id, "mac-styling") == 0) return mac_tr("mac_styling", "Mac стилізація");
+    return mac_tr("settings", "Параметри");
 }
 
 static const char *get_panel_description(const char *id) {
-    if (!id) return "Налаштуйте основні параметри Mac, такі як оновлення ПЗ, мова пристрою та AirDrop.";
-    if (g_strcmp0(id, "system") == 0) return "Налаштуйте основні параметри Mac, такі як оновлення ПЗ, мова пристрою та AirDrop.";
-    if (g_strcmp0(id, "wifi") == 0) return "Підключення до бездротових мереж, налаштування відомих точок доступу та безпеки.";
-    if (g_strcmp0(id, "bluetooth") == 0) return "Підключення бездротових аксесуарів, мишей, клавіатур та навушників.";
-    if (g_strcmp0(id, "network") == 0) return "Налаштування дротових мережевих адаптерів, проксі-серверів та VPN.";
-    if (g_strcmp0(id, "display") == 0) return "Роздільна здатність, масштабування екрана, частота оновлення та колірні профілі.";
-    if (g_strcmp0(id, "sound") == 0) return "Гучність системи, вибір вихідних динаміків, мікрофонів та звукових ефектів.";
-    if (g_strcmp0(id, "power") == 0) return "Режими енергоспоживання, криві вентиляторів та стан акумулятора.";
-    if (g_strcmp0(id, "background") == 0) return "Вибір зображення робочого столу, динамічні шпалери та кольори.";
-    if (g_strcmp0(id, "ubuntu") == 0) return "Світле та темне оформлення, акцентні кольори, розмір значків та стиль інтерфейсу.";
-    if (g_strcmp0(id, "widgets") == 0) return "Налаштування розміщення, стилю та параметрів віджетів робочого столу.";
-    if (g_strcmp0(id, "multitasking") == 0) return "Гарячі кути, поведінка вікон, робочі простори та багатозадачність.";
-    if (g_strcmp0(id, "notifications") == 0) return "Керування сповіщеннями від програм, банерами та режимом не турбувати.";
-    if (g_strcmp0(id, "search") == 0) return "Джерела пошуку Spotlight, індексація файлів та швидкі команди.";
-    if (g_strcmp0(id, "mouse") == 0) return "Швидкість курсора, природне прокручування, жести трекпада та дотик.";
-    if (g_strcmp0(id, "keyboard") == 0) return "Джерела введення, комбінації клавіш, швидкість повторення та розкладки.";
-    if (g_strcmp0(id, "printers") == 0) return "Підключення принтерів, черги друку та сканери.";
-    if (g_strcmp0(id, "privacy") == 0) return "Дозволи для програм, доступ до камери, мікрофона, геопозиції та захист даних.";
-    if (g_strcmp0(id, "universal-access") == 0) return "Спеціальні можливості: збільшення, контрастність, екранний диктор і слух.";
-    if (g_strcmp0(id, "color") == 0) return "Колірні профілі монітора та калібрування дисплея.";
-    if (g_strcmp0(id, "online-accounts") == 0) return "Підключення хмарних сервісів, пошти, контактів та календарів.";
-    if (g_strcmp0(id, "sharing") == 0) return "Спільний доступ до файлів, віддалене керування та медіасервер.";
-    if (g_strcmp0(id, "applications") == 0) return "Типові програми, дозволи та керування встановленими додатками.";
-    if (g_strcmp0(id, "mac-styling") == 0) return "Налаштування розмиття скла Liquid Glass, прозорості та тіней системи.";
-    return "Керування системними параметрами та персоналізацією пристрою.";
+    if (!id) return mac_tr("cc_desc_system", "Налаштуйте основні параметри Mac, такі як оновлення ПЗ, мова пристрою та AirDrop.");
+    if (g_strcmp0(id, "system") == 0) return mac_tr("cc_desc_system", "Налаштуйте основні параметри Mac, такі як оновлення ПЗ, мова пристрою та AirDrop.");
+    if (g_strcmp0(id, "wifi") == 0) return mac_tr("cc_desc_wifi", "Підключення до бездротових мереж, налаштування відомих точок доступу та безпеки.");
+    if (g_strcmp0(id, "bluetooth") == 0) return mac_tr("cc_desc_bluetooth", "Підключення бездротових аксесуарів, мишей, клавіатур та навушників.");
+    if (g_strcmp0(id, "network") == 0) return mac_tr("cc_desc_network", "Налаштування дротових мережевих адаптерів, проксі-серверів та VPN.");
+    if (g_strcmp0(id, "display") == 0) return mac_tr("cc_desc_display", "Роздільна здатність, масштабування екрана, частота оновлення та колірні профілі.");
+    if (g_strcmp0(id, "sound") == 0) return mac_tr("cc_desc_sound", "Гучність системи, вибір вихідних динаміків, мікрофонів та звукових ефектів.");
+    if (g_strcmp0(id, "power") == 0) return mac_tr("cc_desc_power", "Режими енергоспоживання, криві вентиляторів та стан акумулятора.");
+    if (g_strcmp0(id, "background") == 0) return mac_tr("cc_desc_background", "Вибір зображення робочого столу, динамічні шпалери та кольори.");
+    if (g_strcmp0(id, "ubuntu") == 0) return mac_tr("cc_desc_ubuntu", "Світле та темне оформлення, акцентні кольори, розмір значків та стиль інтерфейсу.");
+    if (g_strcmp0(id, "widgets") == 0) return mac_tr("cc_desc_widgets", "Налаштування розміщення, стилю та параметрів віджетів робочого столу.");
+    if (g_strcmp0(id, "multitasking") == 0) return mac_tr("cc_desc_multitasking", "Гарячі кути, поведінка вікон, робочі простори та багатозадачність.");
+    if (g_strcmp0(id, "notifications") == 0) return mac_tr("cc_desc_notifications", "Керування сповіщеннями від програм, банерами та режимом не турбувати.");
+    if (g_strcmp0(id, "search") == 0) return mac_tr("cc_desc_search", "Джерела пошуку Spotlight, індексація файлів та швидкі команди.");
+    if (g_strcmp0(id, "mouse") == 0) return mac_tr("cc_desc_mouse", "Швидкість курсора, природне прокручування, жести трекпада та дотик.");
+    if (g_strcmp0(id, "keyboard") == 0) return mac_tr("cc_desc_keyboard", "Джерела введення, комбінації клавіш, швидкість повторення та розкладки.");
+    if (g_strcmp0(id, "printers") == 0) return mac_tr("cc_desc_printers", "Підключення принтерів, черги друку та сканери.");
+    if (g_strcmp0(id, "privacy") == 0) return mac_tr("cc_desc_privacy", "Дозволи для програм, доступ до камери, мікрофона, геопозиції та захист даних.");
+    if (g_strcmp0(id, "universal-access") == 0) return mac_tr("cc_desc_accessibility", "Спеціальні можливості: збільшення, контрастність, екранний диктор і слух.");
+    if (g_strcmp0(id, "color") == 0) return mac_tr("cc_desc_color", "Колірні профілі монітора та калібрування дисплея.");
+    if (g_strcmp0(id, "online-accounts") == 0) return mac_tr("cc_desc_accounts", "Підключення хмарних сервісів, пошти, контактів та календарів.");
+    if (g_strcmp0(id, "sharing") == 0) return mac_tr("cc_desc_sharing", "Спільний доступ до файлів, віддалене керування та медіасервер.");
+    if (g_strcmp0(id, "applications") == 0) return mac_tr("cc_desc_applications", "Типові програми, дозволи та керування встановленими додатками.");
+    if (g_strcmp0(id, "mac-styling") == 0) return mac_tr("cc_desc_mac_styling", "Налаштування розмиття скла Liquid Glass, прозорості та тіней системи.");
+    return mac_tr("cc_desc_default", "Керування системними параметрами та персоналізацією пристрою.");
 }
 
 static const char *get_panel_id_from_widget(GtkWidget *widget) {
@@ -14303,7 +14319,7 @@ static void update_panel_headerbar(AdwNavigationSplitView *split_view)
             (header_title && (g_strcmp0(header_title, "mac_styling") == 0 || g_strcmp0(header_title, "mac-styling") == 0))) {
             header_title = mac_tr("mac_styling", "Mac стилізація");
         }
-        gtk_label_set_text(GTK_LABEL(title_label), (header_title && header_title[0]) ? header_title : "Параметри");
+        gtk_label_set_text(GTK_LABEL(title_label), (header_title && header_title[0]) ? header_title : mac_tr("settings", "Параметри"));
 
 
         GList *history = g_object_get_data(G_OBJECT(split_view), "mac_panel_history");

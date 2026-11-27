@@ -352,8 +352,22 @@ def show_extension_warning_dialog(uuid):
     inst_v = meta.get("version", info.get("pinned_version", "custom")) if meta else "N/A"
     updates_state = load_updates()
     upd = updates_state.get("updates", {}).get(uuid, {})
-    avail_v = upd.get("available_version", "новий реліз")
-    components = ", ".join(info.get("macw1y_components", ["оформлення macW1Y"]))
+    avail_v = upd.get("available_version")
+    raw_comps = info.get("macw1y_components")
+
+    try:
+        sys.path.insert(0, "/usr/local/bin")
+        sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+        import mac_i18n
+        def _guard_t(k, fb): return mac_i18n.t(k, fb)
+        def _guard_tf(k, p, fb): return mac_i18n.tf(k, p, fb)
+    except Exception:
+        def _guard_t(k, fb): return fb
+        def _guard_tf(k, p, fb): return fb.format(**p) if p else fb
+
+    if not avail_v:
+        avail_v = _guard_t("ext_guard_new_release", "new release")
+    components = ", ".join(raw_comps if raw_comps else [_guard_t("ext_guard_default_comp", "macW1Y appearance")])
     
     try:
         import gi
@@ -370,48 +384,17 @@ def show_extension_warning_dialog(uuid):
                              flags=Gio.ApplicationFlags.FLAGS_NONE)
 
         def do_activate(self):
-            loc = "en"
-            try:
-                loc_f = os.path.expanduser("~/.config/mac-styling/locale")
-                if os.path.exists(loc_f):
-                    with open(loc_f, "r") as lf:
-                        loc = lf.read().strip().lower()
-                elif os.environ.get("LANG"):
-                    loc = os.environ.get("LANG", "").split(".")[0].split("_")[0].lower()
-            except Exception:
-                pass
-
-            if loc.startswith("pl"):
-                win.set_title("Kontrola wersji macW1Y")
-                body_text = (
-                    f"Uwaga: dla rozszerzenia «{info.get('name', uuid)}» dostępna jest nowsza wersja ({avail_v}).\n\n"
-                    f"macW1Y nie został jeszcze skonfigurowany ani przetestowany do pracy z nią. "
-                    f"Aktualizacja może zmienić wygląd, wyłączyć część funkcji lub spowodować "
-                    f"konflikty z Liquid Glass, paskiem menu, Dockiem lub innymi elementami.\n\n"
-                    f"• Bieżąca zablokowana wersja: {inst_v}\n"
-                    f"• Dostępna nowa wersja: {avail_v}\n"
-                    f"• Zależne komponenty macW1Y: {components}"
-                )
-                dlg_title = "Uwaga: dostępna nieprzetestowana aktualizacja"
-                btn_keep = "Zachowaj bieżącą wersję"
-                btn_update = "Zaktualizuj mimo to"
-            elif loc.startswith("uk"):
-                win.set_title("Контроль версій macW1Y")
-                body_text = (
-                    f"Увага: для розширення «{info.get('name', uuid)}» доступна новіша версія ({avail_v}).\n\n"
-                    f"macW1Y ще не налаштований і не протестований для роботи з нею. "
-                    f"Оновлення може змінити зовнішній вигляд, вимкнути частину функцій або спричинити "
-                    f"конфлікти з Liquid Glass, менюбаром, доком чи іншими компонентами.\n\n"
-                    f"• Поточна зафіксована версія: {inst_v}\n"
-                    f"• Доступна нова версія: {avail_v}\n"
-                    f"• Залежні компоненти macW1Y: {components}"
-                )
-                dlg_title = "Увага: доступне неперевірене оновлення"
-                btn_keep = "Зберегти поточну версію"
-                btn_update = "Оновити все одно"
-            else:
-                win.set_title("macW1Y Version Guard")
-                body_text = (
+            win = Adw.ApplicationWindow(application=self)
+            win.set_title(_guard_t("ext_guard_win_title", "macW1Y Version Guard"))
+            body_text = _guard_tf(
+                "ext_guard_body",
+                {
+                    "name": info.get("name", uuid),
+                    "avail_v": avail_v,
+                    "inst_v": inst_v,
+                    "components": components,
+                },
+                (
                     f"Warning: A newer version ({avail_v}) is available for extension \"{info.get('name', uuid)}\".\n\n"
                     f"macW1Y has not yet been configured or tested to work with it. "
                     f"Updating may alter the visual style, disable certain features, or cause "
@@ -419,10 +402,11 @@ def show_extension_warning_dialog(uuid):
                     f"• Current locked version: {inst_v}\n"
                     f"• Available new version: {avail_v}\n"
                     f"• Dependent macW1Y components: {components}"
-                )
-                dlg_title = "Warning: Untested update available"
-                btn_keep = "Keep Current Version"
-                btn_update = "Update Anyway"
+                ),
+            )
+            dlg_title = _guard_t("ext_guard_dlg_title", "Warning: Untested update available")
+            btn_keep = _guard_t("ext_guard_btn_keep", "Keep Current Version")
+            btn_update = _guard_t("ext_guard_btn_update", "Update Anyway")
             
             win.set_default_size(520, 320)
             
@@ -436,12 +420,12 @@ def show_extension_warning_dialog(uuid):
             def on_dialog_response(dlg, resp):
                 if resp == "keep":
                     cmd_set_decision(uuid, "keep_current")
-                    print(f"[{uuid}] Вибрано: Зберегти поточну версію.")
+                    print(f"[{uuid}] Selected: Keep current version.")
                 elif resp == "update":
-                    print(f"[{uuid}] Вибрано: Оновити все одно.")
+                    print(f"[{uuid}] Selected: Update anyway.")
                     # 1. Create mandatory backup
                     bkp = backup_extension(uuid)
-                    print(f"[{uuid}] Створено обов'язкову точку відновлення: {bkp}")
+                    print(f"[{uuid}] Mandatory restore backup created: {bkp}")
                     # 2. Mark update in progress
                     cmd_set_decision(uuid, "update_anyway")
                 win.close()

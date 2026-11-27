@@ -1859,13 +1859,58 @@ static void mac_bottom_query_data_free(MacBottomQueryData *qd)
     g_free(qd);
 }
 
-static const char *mac_uk_items_word(guint n)
+static void mac_gstring_replace_all(GString *gs, const char *needle, const char *repl)
 {
-    guint m10 = n % 10;
-    guint m100 = n % 100;
-    if (m10 == 1 && m100 != 11) return "об'єкт";
-    if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return "об'єкти";
-    return "об'єктів";
+    if (!gs || !needle || !*needle || !repl) return;
+    gsize nlen = strlen(needle);
+    gsize rlen = strlen(repl);
+    gsize pos = 0;
+    while (pos <= gs->len) {
+        char *found = strstr(gs->str + pos, needle);
+        if (!found) break;
+        gsize idx = (gsize)(found - gs->str);
+        g_string_erase(gs, (gssize)idx, (gssize)nlen);
+        g_string_insert_len(gs, (gssize)idx, repl, (gssize)rlen);
+        pos = idx + rlen;
+    }
+}
+
+static const char *mac_items_word(guint n)
+{
+    const char *loc = mac_get_locale();
+    gboolean is_slavic = (loc && (
+        g_str_has_prefix(loc, "uk") || g_str_has_prefix(loc, "ru") ||
+        g_str_has_prefix(loc, "be") || g_str_has_prefix(loc, "pl") ||
+        g_str_has_prefix(loc, "cs") || g_str_has_prefix(loc, "sk") ||
+        g_str_has_prefix(loc, "sr") || g_str_has_prefix(loc, "hr") ||
+        g_str_has_prefix(loc, "sl") || g_str_has_prefix(loc, "bg")));
+    if (is_slavic) {
+        guint m10 = n % 10;
+        guint m100 = n % 100;
+        if (m10 == 1 && m100 != 11) return mac_tr("item_singular", "item");
+        if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return mac_tr("item_few", "items");
+        return mac_tr("item_many", "items");
+    }
+    return n == 1 ? mac_tr("item_singular", "item") : mac_tr("item_many", "items");
+}
+
+static char *mac_format_selected_text(guint sel, guint total)
+{
+    char sel_buf[32], tot_buf[32];
+    g_snprintf(sel_buf, sizeof(sel_buf), "%u", sel);
+    g_snprintf(tot_buf, sizeof(tot_buf), "%u", total);
+    GString *gs = g_string_new(mac_tr("selected_of_total", "{sel} of {total} {items} selected"));
+    mac_gstring_replace_all(gs, "{sel}", sel_buf);
+    mac_gstring_replace_all(gs, "{total}", tot_buf);
+    mac_gstring_replace_all(gs, "{items}", mac_items_word(total));
+    return g_string_free(gs, FALSE);
+}
+
+static char *mac_format_free_text(const char *free_str)
+{
+    GString *gs = g_string_new(mac_tr("free_space_fmt", "{size} available"));
+    mac_gstring_replace_all(gs, "{size}", free_str ? free_str : "");
+    return g_string_free(gs, FALSE);
 }
 
 static char *mac_format_modified_date(GFileInfo *info)
@@ -1905,7 +1950,6 @@ static void mac_on_single_file_info_ready(GObject *src, GAsyncResult *res, gpoin
         return;
     }
 
-    gboolean uk = is_ukrainian_locale();
     const char *disp = g_file_info_get_display_name(info);
     char *bname_fallback = NULL;
     if (!disp || !*disp) {
@@ -1916,7 +1960,7 @@ static void mac_on_single_file_info_ready(GObject *src, GAsyncResult *res, gpoin
     GFileType ftype = g_file_info_get_file_type(info);
     char *size_str = NULL;
     if (ftype == G_FILE_TYPE_DIRECTORY) {
-        size_str = g_strdup(uk ? "Тека" : "Folder");
+        size_str = g_strdup(mac_tr("folder", "Folder"));
     } else {
         goffset sz = g_file_info_get_size(info);
         size_str = g_format_size((guint64)(sz > 0 ? sz : 0));
@@ -1925,7 +1969,7 @@ static void mac_on_single_file_info_ready(GObject *src, GAsyncResult *res, gpoin
     char *mod_str = mac_format_modified_date(info);
     char *meta = NULL;
     if (mod_str && *mod_str) {
-        meta = g_strdup_printf("  •  %s  •  %s %s", size_str, uk ? "Змінено:" : "Modified:", mod_str);
+        meta = g_strdup_printf("  •  %s  •  %s %s", size_str, mac_tr("modified_label", "Modified:"), mod_str);
     } else {
         meta = g_strdup_printf("  •  %s", size_str);
     }
@@ -1967,23 +2011,19 @@ static void mac_on_fs_free_ready(GObject *src, GAsyncResult *res, gpointer user_
     if (g_file_info_has_attribute(info, G_FILE_ATTRIBUTE_FILESYSTEM_FREE)) {
         guint64 free_bytes = g_file_info_get_attribute_uint64(info, G_FILE_ATTRIBUTE_FILESYSTEM_FREE);
         char *free_str = g_format_size(free_bytes);
-        gboolean uk = is_ukrainian_locale();
+        char *avail_txt = mac_format_free_text(free_str);
         char *txt = NULL;
         if (qd->sel_count > 1) {
-            txt = uk
-                ? g_strdup_printf("Вибрано %u з %u %s  •  Вільно: %s",
-                                  qd->sel_count, qd->total_count, mac_uk_items_word(qd->total_count), free_str)
-                : g_strdup_printf("%u of %u selected  •  %s available",
-                                  qd->sel_count, qd->total_count, free_str);
+            char *sel_txt = mac_format_selected_text(qd->sel_count, qd->total_count);
+            txt = g_strdup_printf("%s  •  %s", sel_txt, avail_txt);
+            g_free(sel_txt);
         } else {
-            txt = uk
-                ? g_strdup_printf("%u %s  •  Вільно: %s",
-                                  qd->total_count, mac_uk_items_word(qd->total_count), free_str)
-                : g_strdup_printf("%u %s  •  %s available",
-                                  qd->total_count, qd->total_count == 1 ? "item" : "items", free_str);
+            txt = g_strdup_printf("%u %s  •  %s",
+                                  qd->total_count, mac_items_word(qd->total_count), avail_txt);
         }
         gtk_label_set_text(GTK_LABEL(qd->ctx->bottom_info_meta_lbl), txt);
         g_free(txt);
+        g_free(avail_txt);
         g_free(free_str);
     }
 
@@ -2123,7 +2163,6 @@ static void mac_update_bottom_bars(MacNautilusCtx *ctx)
 
     GFile *loc = mac_get_active_slot_location(ctx);
     GFile *sel_loc = (sel_count == 1) ? mac_get_first_selected_location(ctx) : NULL;
-    gboolean uk = is_ukrainian_locale();
 
     if (ctx->bottom_path_stack && GTK_IS_STACK(ctx->bottom_path_stack)) {
         mac_close_bottom_path_entry(ctx);
@@ -2169,16 +2208,16 @@ static void mac_update_bottom_bars(MacNautilusCtx *ctx)
             char *disp_alloc = NULL;
             const char *disp = NULL;
             if (is_home) {
-                disp = uk ? "Домівка" : "Home";
+                disp = mac_tr("bookmark_home", "Home");
             } else if (is_root) {
                 char *uri = g_file_get_uri(f);
-                if (uri && g_str_has_prefix(uri, "trash:")) disp = uk ? "Кошик" : "Trash";
-                else if (uri && g_str_has_prefix(uri, "recent:")) disp = uk ? "Недавні" : "Recent";
+                if (uri && g_str_has_prefix(uri, "trash:")) disp = mac_tr("bookmark_trash", "Trash");
+                else if (uri && g_str_has_prefix(uri, "recent:")) disp = mac_tr("bookmark_recent", "Recent");
                 else {
                     disp_alloc = g_file_get_basename(f);
                     disp = (disp_alloc && *disp_alloc && g_strcmp0(disp_alloc, "/") != 0)
                         ? disp_alloc
-                        : (uk ? "Система" : "Macintosh HD");
+                        : mac_tr("system_disk", "Macintosh HD");
                 }
                 g_free(uri);
             } else {
@@ -2260,13 +2299,9 @@ static void mac_update_bottom_bars(MacNautilusCtx *ctx)
         gtk_widget_set_visible(ctx->bottom_info_name_lbl, FALSE);
         char *fallback = NULL;
         if (sel_count > 1) {
-            fallback = uk
-                ? g_strdup_printf("Вибрано %u з %u %s", sel_count, total_count, mac_uk_items_word(total_count))
-                : g_strdup_printf("%u of %u selected", sel_count, total_count);
+            fallback = mac_format_selected_text(sel_count, total_count);
         } else {
-            fallback = uk
-                ? g_strdup_printf("%u %s", total_count, mac_uk_items_word(total_count))
-                : g_strdup_printf("%u %s", total_count, total_count == 1 ? "item" : "items");
+            fallback = g_strdup_printf("%u %s", total_count, mac_items_word(total_count));
         }
         gtk_label_set_text(GTK_LABEL(ctx->bottom_info_meta_lbl), fallback);
         g_free(fallback);
@@ -2727,24 +2762,23 @@ static GtkWidget *mac_build_sort_popover(MacNautilusCtx *ctx)
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
 
-    gboolean uk = is_ukrainian_locale();
     static const struct {
-        const char *uk_label;
+        const char *i18n_key;
         const char *en_label;
         const char *icon;
         const char *key;
         gboolean desc;
     } sort_items[] = {
-        { "Назва (А–Я)", "Name (A–Z)", "view-sort-ascending-symbolic", "name", FALSE },
-        { "Назва (Я–А)", "Name (Z–A)", "view-sort-descending-symbolic", "name", TRUE },
-        { "Дата (новіші)", "Date (Newest)", "document-open-recent-symbolic", "date_modified", TRUE },
-        { "Дата (старіші)", "Date (Oldest)", "document-open-recent-symbolic", "date_modified", FALSE },
-        { "Розмір", "Size", "drive-harddisk-symbolic", "size", TRUE },
-        { "Тип", "Type", "folder-symbolic", "type", FALSE },
+        { "sort_name_az", "Name (A–Z)", "view-sort-ascending-symbolic", "name", FALSE },
+        { "sort_name_za", "Name (Z–A)", "view-sort-descending-symbolic", "name", TRUE },
+        { "sort_date_new", "Date (Newest)", "document-open-recent-symbolic", "date_modified", TRUE },
+        { "sort_date_old", "Date (Oldest)", "document-open-recent-symbolic", "date_modified", FALSE },
+        { "sort_size", "Size", "drive-harddisk-symbolic", "size", TRUE },
+        { "sort_type", "Type", "folder-symbolic", "type", FALSE },
     };
 
     for (size_t i = 0; i < G_N_ELEMENTS(sort_items); i++) {
-        GtkWidget *row = mac_make_popover_menu_row(uk ? sort_items[i].uk_label : sort_items[i].en_label, sort_items[i].icon);
+        GtkWidget *row = mac_make_popover_menu_row(mac_tr(sort_items[i].i18n_key, sort_items[i].en_label), sort_items[i].icon);
         MacSortActData *d = g_new0(MacSortActData, 1);
         d->ctx = ctx;
         d->popover = pop;
@@ -2764,7 +2798,7 @@ static GtkWidget *mac_build_sort_popover(MacNautilusCtx *ctx)
     GtkWidget *z_ico = gtk_image_new_from_icon_name("zoom-fit-best-symbolic");
     gtk_image_set_pixel_size(GTK_IMAGE(z_ico), 14);
     gtk_box_append(GTK_BOX(zoom_row), z_ico);
-    GtkWidget *z_lbl = gtk_label_new(uk ? "Масштаб" : "Icon Size");
+    GtkWidget *z_lbl = gtk_label_new(mac_tr("icon_size", "Icon Size"));
     gtk_label_set_xalign(GTK_LABEL(z_lbl), 0.0f);
     gtk_box_append(GTK_BOX(zoom_row), z_lbl);
     GtkWidget *z_pills = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
@@ -2795,18 +2829,18 @@ static GtkWidget *mac_build_sort_popover(MacNautilusCtx *ctx)
     gtk_box_append(GTK_BOX(vbox), zoom_row);
 
     static const struct {
-        const char *uk_label;
+        const char *i18n_key;
         const char *en_label;
         const char *icon;
         const char *action;
     } extra_items[] = {
-        { "Нова тека", "New Folder", "folder-new-symbolic", "view.new-folder" },
-        { "Приховані файли", "Hidden Files", "view-reveal-symbolic", "view.show-hidden-files" },
-        { "Термінал", "Open Terminal", "utilities-terminal-symbolic", "view.current-directory-xdg-terminal" },
+        { "new_folder", "New Folder", "folder-new-symbolic", "view.new-folder" },
+        { "hidden_files", "Hidden Files", "view-reveal-symbolic", "view.show-hidden-files" },
+        { "open_terminal", "Open Terminal", "utilities-terminal-symbolic", "view.current-directory-xdg-terminal" },
     };
 
     for (size_t i = 0; i < G_N_ELEMENTS(extra_items); i++) {
-        GtkWidget *row = mac_make_popover_menu_row(uk ? extra_items[i].uk_label : extra_items[i].en_label, extra_items[i].icon);
+        GtkWidget *row = mac_make_popover_menu_row(mac_tr(extra_items[i].i18n_key, extra_items[i].en_label), extra_items[i].icon);
         MacSortActData *d = g_new0(MacSortActData, 1);
         d->ctx = ctx;
         d->popover = pop;
@@ -4817,11 +4851,10 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
         gtk_widget_add_css_class(end_bar, "mac-end-toolbar");
         gtk_widget_set_valign(end_bar, GTK_ALIGN_CENTER);
 
-        gboolean uk = is_ukrainian_locale();
         /* 1. [ ≡ ▾ ] Sort / View Options Pill */
         GtkWidget *sort_btn = gtk_menu_button_new();
         gtk_widget_add_css_class(sort_btn, "mac-sort-pill");
-        gtk_widget_set_tooltip_text(sort_btn, mac_tr("sort_and_options", uk ? "Сортування та вигляд" : "Sort & View Options"));
+        gtk_widget_set_tooltip_text(sort_btn, mac_tr("sort_and_options", "Sort & View Options"));
         gtk_widget_set_valign(sort_btn, GTK_ALIGN_CENTER);
         gtk_widget_set_size_request(sort_btn, 56, 36);
         GtkWidget *sort_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
@@ -4836,7 +4869,7 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
 
         /* 3. ( i ) Get Info / Properties */
         ctx->info_btn = mac_create_circle_button("mac-finder-info-symbolic",
-                                                 mac_tr("get_info", uk ? "Властивості" : "Get Info"), NULL);
+                                                 mac_tr("get_info", "Get Info"), NULL);
         g_signal_connect(ctx->info_btn, "clicked", G_CALLBACK(mac_on_info_clicked), ctx);
         gtk_box_append(GTK_BOX(end_bar), ctx->info_btn);
 
@@ -4848,7 +4881,7 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
 
         GtkWidget *trash_btn = gtk_button_new();
         gtk_button_set_child(GTK_BUTTON(trash_btn), mac_make_finder_icon("mac-finder-trash-symbolic", 18));
-        gtk_widget_set_tooltip_text(trash_btn, mac_tr("move_to_trash", uk ? "Перемістити у кошик" : "Move to Trash"));
+        gtk_widget_set_tooltip_text(trash_btn, mac_tr("move_to_trash", "Move to Trash"));
         gtk_widget_set_size_request(trash_btn, 36, 36);
         gtk_widget_set_focus_on_click(trash_btn, FALSE);
         gtk_widget_add_css_class(trash_btn, "mac-pill-inner-btn");
@@ -4858,7 +4891,7 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
 
         GtkWidget *eject_btn = gtk_button_new();
         gtk_button_set_child(GTK_BUTTON(eject_btn), mac_make_finder_icon("mac-finder-eject-symbolic", 18));
-        gtk_widget_set_tooltip_text(eject_btn, mac_tr("eject_volume", uk ? "Вийняти" : "Eject"));
+        gtk_widget_set_tooltip_text(eject_btn, mac_tr("eject_volume", "Eject"));
         gtk_widget_set_size_request(eject_btn, 36, 36);
         gtk_widget_set_focus_on_click(eject_btn, FALSE);
         gtk_widget_add_css_class(eject_btn, "mac-pill-inner-btn");
@@ -4907,7 +4940,7 @@ static gboolean mac_fix_nautilus_window(gpointer user_data)
         /* 8. ( 🔍 ) Search toggle at far right (keep native stack intact to avoid GtkStack child warnings) */
         GtkWidget *search_toggle = gtk_toggle_button_new();
         gtk_button_set_child(GTK_BUTTON(search_toggle), mac_make_finder_icon("mac-finder-search-symbolic", 18));
-        gtk_widget_set_tooltip_text(search_toggle, mac_tr("search", uk ? "Пошук (Ctrl+F)" : "Search (Ctrl+F)"));
+        gtk_widget_set_tooltip_text(search_toggle, mac_tr("search", "Search"));
         gtk_actionable_set_action_name(GTK_ACTIONABLE(search_toggle), "slot.search-visible");
         gtk_widget_set_valign(search_toggle, GTK_ALIGN_CENTER);
         gtk_widget_set_halign(search_toggle, GTK_ALIGN_CENTER);

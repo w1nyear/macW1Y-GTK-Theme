@@ -16,9 +16,19 @@ for py_ver in ["python3.14", "python3.13", "python3.12", "python3.11", "python3.
 CONFIG_DIR = Path.home() / '.config' / 'mac-airdrop'
 CONFIG_FILE = CONFIG_DIR / 'config.json'
 PID_FILE = CONFIG_DIR / 'daemon.pid'
-DEFAULT_DROP_DIR = Path.home() / 'Завантажене' / 'AirDrop'
-if not DEFAULT_DROP_DIR.parent.exists():
-    DEFAULT_DROP_DIR = Path.home() / 'Downloads' / 'AirDrop'
+def _resolve_downloads_dir():
+    try:
+        out = subprocess.check_output(["xdg-user-dir", "DOWNLOAD"], text=True, stderr=subprocess.DEVNULL).strip()
+        if out and Path(out).is_dir():
+            return Path(out)
+    except Exception:
+        pass
+    for cand in (Path.home() / 'Downloads', Path.home() / 'Завантажене'):
+        if cand.is_dir():
+            return cand
+    return Path.home() / 'Downloads'
+
+DEFAULT_DROP_DIR = _resolve_downloads_dir() / 'AirDrop'
 
 def get_airdrop_locale():
     try:
@@ -146,8 +156,16 @@ def airdrop_tr(key, **kwargs):
     loc = get_airdrop_locale()
     base = loc.split('_')[0]
     strings = AIRDROP_I18N.get(base, AIRDROP_I18N.get("en", {}))
-    tmpl = strings.get(key, AIRDROP_I18N["en"].get(key, key))
-    return tmpl.format(**kwargs)
+    fallback = strings.get(key, AIRDROP_I18N["en"].get(key, key))
+    if key != "col_ip":
+        try:
+            sys.path.insert(0, '/usr/local/bin')
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            import mac_i18n
+            return mac_i18n.tf(f"airdrop_{key}", kwargs, fallback, override_locale=loc)
+        except Exception:
+            pass
+    return fallback.format(**kwargs)
 
 def get_wifi_interface():
     try:

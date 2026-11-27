@@ -97,6 +97,43 @@ case "$LOCALE" in
         ;;
 esac
 
+if command -v python3 >/dev/null 2>&1; then
+    _WINE_MAP=$(python3 - "$0" <<'PY' 2>/dev/null
+import os, sys
+script_dir = os.path.dirname(os.path.realpath(sys.argv[1]))
+for p in ("/usr/local/bin", script_dir):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+import mac_i18n
+vals = [
+    mac_i18n.t("wine_pick_title"),
+    mac_i18n.t("wine_filter"),
+    mac_i18n.t("wine_usage"),
+    mac_i18n.tf("wine_not_found", {"path": "%s"}) + "\\n",
+    mac_i18n.t("wine_setup_title"),
+    mac_i18n.t("wine_setup_msg"),
+    mac_i18n.t("wine_err_title"),
+    mac_i18n.t("wine_err_msg"),
+]
+for v in vals:
+    print(v.replace("\n", " "))
+PY
+)
+    if [ -n "$_WINE_MAP" ]; then
+        readarray -t _WINE_LINES <<< "$_WINE_MAP"
+        if [ "${#_WINE_LINES[@]}" -ge 8 ] && [ -n "${_WINE_LINES[0]}" ]; then
+            I18N_TITLE="${_WINE_LINES[0]}"
+            I18N_FILTER="${_WINE_LINES[1]} | *.exe *.EXE *.msi *.MSI *.bat *.BAT *.cmd *.CMD"
+            I18N_USAGE="${_WINE_LINES[2]}"
+            I18N_NOT_FOUND="${_WINE_LINES[3]%\\n}\n"
+            I18N_SETUP_TITLE="${_WINE_LINES[4]}"
+            I18N_SETUP_MSG="${_WINE_LINES[5]}"
+            I18N_ERR_TITLE="${_WINE_LINES[6]}"
+            I18N_ERR_MSG="${_WINE_LINES[7]}"
+        fi
+    fi
+fi
+
 if [ $# -lt 1 ]; then
     if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
         if command -v zenity >/dev/null 2>&1; then

@@ -13,11 +13,21 @@ UDEV_POWER_RULE = '/etc/udev/rules.d/99-mac-nvidia-power.rules'
 MODES = ['hybrid', 'apps_nvidia', 'nvidia', 'intel']
 
 MODE_DESCRIPTIONS = {
-    'hybrid': 'Гібридний (Intel — система • RTX 3050 — ігри)',
-    'apps_nvidia': 'Програми та HDMI на RTX 3050 (RTX 3050 постійно активна • вивід HDMI)',
-    'nvidia': 'Повна продуктивність (Все на RTX 3050)',
-    'intel': 'Енергозбереження (Тільки Intel UHD Graphics)'
+    'hybrid': 'Hybrid (Intel — system • NVIDIA — games)',
+    'apps_nvidia': 'Apps & HDMI on NVIDIA (NVIDIA always active • HDMI output)',
+    'nvidia': 'Full Performance (Everything on NVIDIA GPU)',
+    'intel': 'Power Saving (Intel UHD Graphics only)'
 }
+
+def get_mode_desc(mode):
+    fallback = MODE_DESCRIPTIONS.get(mode, 'Unknown')
+    try:
+        sys.path.insert(0, '/usr/local/bin')
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import mac_i18n
+        return mac_i18n.t(f"gpu_mode_{mode}", fallback)
+    except Exception:
+        return fallback
 
 NVIDIA_ENV_VARS = {
     '__NV_PRIME_RENDER_OFFLOAD': '1',
@@ -330,10 +340,10 @@ def print_status():
     print("=" * 50)
     print("  macW1Y Style GPU Manager for Hybrid Laptops")
     print("=" * 50)
-    print(f"Active Mode        : {mode} ({MODE_DESCRIPTIONS.get(mode, 'Unknown')})")
+    print(f"Active Mode        : {mode} ({get_mode_desc(mode)})")
     print(f"prime-select state : {prime}")
     print(f"Global NVIDIA Env  : {'Enabled (/etc/environment.d/99-mac-gpu.conf)' if os.path.exists(ENV_FILE) else 'Disabled (Default to Intel UHD)'}")
-    print(f"Targets            : Система={targets['system']}, Програми={targets['apps']}, Ігри={targets['games']}")
+    print(f"Targets            : System={targets['system']}, Apps={targets['apps']}, Games={targets['games']}")
     print(f"Pending Reboot     : {'YES' if targets['pending_reboot'] else 'NO'}")
     print("=" * 50)
 

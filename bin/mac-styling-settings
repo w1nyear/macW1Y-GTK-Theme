@@ -599,58 +599,20 @@ class MacStylingWindow(Adw.ApplicationWindow):
         self.update_alttab_preview()
 
     def _ss_t(self, key):
-        loc = get_locale().split("_")[0]
-        table = {
-            "uk": {
-                "group_title": "Меню знімку та запису екрана (Print Screen)",
-                "group_desc": "Параметри Liquid Glass, розмиття, тінту та тіні панелі скріншоту",
-                "preview_title": "Передогляд панелі Print Screen",
-                "preview_desc": "Інтерактивний вигляд скляної панелі захоплення знімку та відео",
-                "blur_desc": "Розмиття фонового скла панелі захоплення (px)",
-                "tint_desc": "Затемнення (тінт) скляної панелі та меню параметрів (%)",
-                "shadow_desc": "Інтенсивність та радіус тіні панелі скріншоту (%)",
-                "options": "Параметри",
-                "capture": "Зняти",
-                "record": "Записати",
-            },
-            "ru": {
-                "group_title": "Меню снимка и записи экрана (Print Screen)",
-                "group_desc": "Параметры Liquid Glass, размытия, тинта и тени панели снимка",
-                "preview_title": "Предпросмотр панели Print Screen",
-                "preview_desc": "Интерактивный вид стеклянной панели снимка и записи экрана",
-                "blur_desc": "Размытие фонового стекла панели (px)",
-                "tint_desc": "Затемнение (тинт) стеклянной панели (%)",
-                "shadow_desc": "Интенсивность и радиус тени панели (%)",
-                "options": "Параметры",
-                "capture": "Снять",
-                "record": "Записать",
-            },
-            "pl": {
-                "group_title": "Menu zrzutu i nagrywania ekranu (Print Screen)",
-                "group_desc": "Rozmycie, przyciemnienie i cień paska Liquid Glass przechwytywania",
-                "preview_title": "Podgląd paska Print Screen",
-                "preview_desc": "Interaktywny podgląd szklanego paska zrzutu i nagrywania",
-                "blur_desc": "Rozmycie szkła tła paska (px)",
-                "tint_desc": "Przyciemnienie szkła i menu opcji (%)",
-                "shadow_desc": "Intensywność i promień cienia paska (%)",
-                "options": "Opcje",
-                "capture": "Przechwyć",
-                "record": "Nagraj",
-            },
+        key_map = {
+            "group_title": ("ss_group_title", "Screenshot & Recording Menu (Print Screen)"),
+            "group_desc": ("ss_group_desc", "Liquid Glass blur, tint, and shadow settings for the capture bar"),
+            "preview_title": ("ss_preview_title", "Print Screen Bar Preview"),
+            "preview_desc": ("ss_preview_desc", "Interactive preview of the floating Liquid Glass capture toolbar"),
+            "blur_desc": ("ss_blur_desc", "Background Liquid Glass blur radius (px)"),
+            "tint_desc": ("ss_tint_desc", "Glass tint opacity for toolbar and options menu (%)"),
+            "shadow_desc": ("ss_shadow_desc", "Drop shadow strength and spread radius (%)"),
+            "options": ("ss_options", "Options"),
+            "capture": ("ss_capture", "Capture"),
+            "record": ("ss_record", "Record"),
         }
-        en = {
-            "group_title": "Screenshot & Recording Menu (Print Screen)",
-            "group_desc": "Liquid Glass blur, tint, and shadow settings for the capture bar",
-            "preview_title": "Print Screen Bar Preview",
-            "preview_desc": "Interactive preview of the floating Liquid Glass capture toolbar",
-            "blur_desc": "Background Liquid Glass blur radius (px)",
-            "tint_desc": "Glass tint opacity for toolbar and options menu (%)",
-            "shadow_desc": "Drop shadow strength and spread radius (%)",
-            "options": "Options",
-            "capture": "Capture",
-            "record": "Record",
-        }
-        return table.get(loc, en).get(key, en.get(key, key))
+        i18n_key, fallback = key_map.get(key, (key, key))
+        return t(i18n_key, fallback)
 
     def _on_ss_preview_mode_clicked(self, _btn, idx, is_vid):
         self._ss_preview_mode_is_video = bool(is_vid)
@@ -1326,9 +1288,9 @@ class MacStylingWindow(Adw.ApplicationWindow):
                     timeout=20
                 )
                 output = res.stdout
-                is_ok = (res.returncode == 0) and ("Всі компоненти macW1Y відповідають еталону" in output)
+                is_ok = (res.returncode == 0)
             except Exception as e:
-                output = f"Помилка виконання діагностики: {e}"
+                output = tf("diag_exec_error", {"err": e}, "Error running diagnostics: {err}")
                 is_ok = False
 
             def _update_ui():
@@ -1362,7 +1324,7 @@ class MacStylingWindow(Adw.ApplicationWindow):
                 output = res.stdout
                 is_ok = (res.returncode == 0)
             except Exception as e:
-                output = f"Помилка застосування теми: {e}"
+                output = tf("theme_apply_error", {"err": e}, "Error applying theme: {err}")
                 is_ok = False
 
             def _update_ui():
@@ -1415,17 +1377,8 @@ class MacStylingWindow(Adw.ApplicationWindow):
     def on_test_notif_clicked(self, _btn):
         self.apply_realtime()
         self.save_css()
-        loc = get_locale().split('_')[0]
-        test_msgs = {
-            "pl": ("Powiadomienie macW1Y", "Powiadomienie testowe z obsługą szerokiej karty 395px, cieni i natywnego szkła!"),
-            "uk": ("Сповіщення macW1Y", "Тестове сповіщення з підтримкою широкої картки 395px, тіней та нативного скла!"),
-            "de": ("macW1Y-Benachrichtigung", "Testbenachrichtigung mit Unterstützung für 395px-Karten, Schatten und natives Glas!"),
-            "fr": ("Notification macW1Y", "Notification de test prenant en charge les cartes larges de 395px, les ombres et le verre natif !"),
-            "es": ("Notificación de macW1Y", "¡Notificación de prueba compatible con tarjeta ancha de 395px, sombras y vidrio nativo!"),
-            "it": ("Notifica di macW1Y", "Notifica di test che supporta schede larghe 395px, ombre e vetro nativo!"),
-            "en": ("macW1Y Notification", "Test notification supporting wide 395px card, drop shadows and native glass!")
-        }
-        title, body = test_msgs.get(loc, test_msgs["en"])
+        title = t("ss_test_notif_title", "macW1Y Notification")
+        body = t("ss_test_notif_body", "Test notification supporting wide 395px card, drop shadows and native glass!")
         run_cmd(f'notify-send "{title}" "{body}"')
 
     def on_logout_clicked(self, _btn):

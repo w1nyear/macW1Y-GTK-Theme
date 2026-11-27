@@ -155,24 +155,15 @@ const MacScreenCastButton = GObject.registerClass({
 
     _buildMenu() {
         this.menu.box.add_style_class_name('mac-screencast-menu');
-        const lang = (GLib.get_language_names?.()?.[0] || '').toLowerCase();
-        let stopTxt = 'Stop';
-        try {
-            const locFile = GLib.build_filenamev([GLib.get_user_config_dir(), 'mac-styling', 'locale']);
-            let loc = lang;
-            if (GLib.file_test(locFile, GLib.FileTest.EXISTS)) {
-                const [ok, raw] = GLib.file_get_contents(locFile);
-                if (ok) loc = new TextDecoder().decode(raw).trim().toLowerCase();
-            }
-            if (loc.startsWith('uk')) stopTxt = 'Зупинити';
-            else if (loc.startsWith('ru')) stopTxt = 'Остановить';
-            else if (loc.startsWith('pl')) stopTxt = 'Zatrzymaj';
-            else if (loc.startsWith('de')) stopTxt = 'Stoppen';
-        } catch (_) {}
-        this._stopMenuItem = new PopupMenu.PopupMenuItem(stopTxt);
+        this._stopMenuItem = new PopupMenu.PopupMenuItem(t('stop', 'Stop'));
         this._stopMenuItem.connect('activate', () => {
             this.menu.close();
             this.stopAll();
+        });
+        this.menu.connect('open-state-changed', (_m, open) => {
+            if (open && this._stopMenuItem?.label) {
+                this._stopMenuItem.label.text = t('stop', 'Stop');
+            }
         });
         this.menu.addMenuItem(this._stopMenuItem);
     }

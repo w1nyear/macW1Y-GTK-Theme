@@ -18,6 +18,15 @@ import json
 def log(msg):
     print(f"[macW1Y Integrity] {msg}")
 
+def _int_tf(key, params, fallback):
+    try:
+        sys.path.insert(0, "/usr/local/bin")
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import mac_i18n
+        return mac_i18n.tf(key, params, fallback, override_locale=get_integrity_locale())
+    except Exception:
+        return fallback.format(**params) if params else fallback
+
 def check_integrity():
     issues = []
 
@@ -36,9 +45,9 @@ def check_integrity():
         if res.returncode != 0:
             for line in res.stdout.splitlines():
                 if "mismatch" in line or "missing" in line:
-                    issues.append(f"Змінено файли розширення: {line.strip('- ')}")
+                    issues.append(_int_tf("integrity_ext_modified", {"detail": line.strip('- ')}, "Extension files modified: {detail}"))
     except Exception as e:
-        issues.append(f"Помилка перевірки цілісності розширень: {e}")
+        issues.append(_int_tf("integrity_ext_check_err", {"err": e}, "Extension integrity check error: {err}"))
 
     # 2. Check pending unverified extension updates
     try:
@@ -46,7 +55,7 @@ def check_integrity():
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=15)
         for line in res.stdout.splitlines():
             if "PENDING UPDATE" in line:
-                issues.append(f"Доступне оновлення: {line.strip('- ')}")
+                issues.append(_int_tf("integrity_upd_avail", {"detail": line.strip('- ')}, "Update available: {detail}"))
     except Exception as e:
         pass
 
@@ -72,9 +81,9 @@ def check_integrity():
                     continue
                 cur = subprocess.check_output(["gsettings", "get", schema, key], text=True).strip().strip("'\"")
                 if cur != expected:
-                    issues.append(f"Невідповідність {key}: активна '{cur}', очікується '{expected}'")
+                    issues.append(_int_tf("integrity_ssot_mismatch", {"key": key, "cur": cur, "expected": expected}, "Mismatch {key}: active '{cur}', expected '{expected}'"))
         except Exception as e:
-            issues.append(f"Помилка перевірки маніфесту: {e}")
+            issues.append(_int_tf("integrity_manifest_err", {"err": e}, "Manifest verification error: {err}"))
 
     # 4. Check enabled extensions
     lock_candidates = [
@@ -94,7 +103,7 @@ def check_integrity():
                 missing = [uuid for uuid in lock if uuid not in enabled]
                 if not missing or attempt == 9:
                     for uuid in missing:
-                        issues.append(f"Критичне розширення вимкнено: {uuid}")
+                        issues.append(_int_tf("integrity_ext_disabled", {"uuid": uuid}, "Critical extension disabled: {uuid}"))
                     break
                 time.sleep(1)
         except Exception as e:

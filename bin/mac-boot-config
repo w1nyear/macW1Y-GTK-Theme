@@ -23,6 +23,21 @@ def rebuild_initramfs():
     except Exception:
         pass
 
+def _boot_tr(key, fallback):
+    try:
+        sys.path.insert(0, "/usr/local/bin")
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import mac_i18n
+        loc = None
+        user = get_target_user()
+        loc_f = os.path.expanduser(f"~{user}/.config/mac-styling/locale")
+        if os.path.exists(loc_f):
+            with open(loc_f, "r", encoding="utf-8") as f:
+                loc = f.read().strip().lower() or None
+        return mac_i18n.t(key, fallback, override_locale=loc)
+    except Exception:
+        return fallback
+
 def update_systemd_boot(timeout=None):
     for p in ["/boot/loader/loader.conf", "/efi/loader/loader.conf"]:
         if os.path.exists(p):
@@ -36,7 +51,7 @@ def update_systemd_boot(timeout=None):
                         content += f"\ntimeout {timeout}\n"
                 with open(p, "w") as f:
                     f.write(content)
-                notify_user("Параметри завантаження", "Конфігурацію systemd-boot збережено!")
+                notify_user(_boot_tr("boot_cfg_title", "Boot Settings"), _boot_tr("boot_systemd_saved", "systemd-boot configuration saved!"))
                 return True
             except Exception as e:
                 print("Error updating loader.conf:", e)
@@ -69,7 +84,7 @@ def notify_user(title, msg):
         uid = subprocess.check_output(["id", "-u", user], text=True).strip()
         bus = f"unix:path=/run/user/{uid}/bus"
         env = {**os.environ, "DBUS_SESSION_BUS_ADDRESS": bus, "XDG_RUNTIME_DIR": f"/run/user/{uid}"}
-        subprocess.run(["sudo", "-u", user, "env", f"DBUS_SESSION_BUS_ADDRESS={bus}", "gdbus", "call", "--session", "--dest", "org.freedesktop.Notifications", "--object-path", "/org/freedesktop/Notifications", "--method", "org.freedesktop.Notifications.Notify", "Параметри", "0", "", title, msg, "[]", "{}", "5000"], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["sudo", "-u", user, "env", f"DBUS_SESSION_BUS_ADDRESS={bus}", "gdbus", "call", "--session", "--dest", "org.freedesktop.Notifications", "--object-path", "/org/freedesktop/Notifications", "--method", "org.freedesktop.Notifications.Notify", _boot_tr("settings", "Settings"), "0", "", title, msg, "[]", "{}", "5000"], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception:
         pass
 
@@ -94,7 +109,7 @@ def get_grub_tools():
 
 def update_grub():
     if is_systemd_boot():
-        notify_user("Параметри завантаження", "Виявлено systemd-boot. Оновлення GRUB пропущено.")
+        notify_user(_boot_tr("boot_cfg_title", "Boot Settings"), _boot_tr("boot_systemd_skip_grub", "systemd-boot detected. GRUB update skipped."))
         return True
 
     mkconfig, cfg_path = get_grub_tools()
@@ -138,7 +153,7 @@ def update_grub():
     os.replace(temp_cfg, cfg_path)
     os.chmod(cfg_path, 0o600)
     subprocess.run(["sync"], check=False)
-    notify_user("Параметри завантаження", "Конфігурацію GRUB успішно збережено!")
+    notify_user(_boot_tr("boot_cfg_title", "Boot Settings"), _boot_tr("boot_grub_saved", "GRUB configuration saved successfully!"))
     return True
 
 def read_grub_default():
@@ -253,9 +268,9 @@ def set_pclogo(enable):
     write_grub_default(c)
     update_grub()
     if enable:
-        notify_user("Параметри завантаження", "Відображення логотипу ПК увімкнено.")
+        notify_user(_boot_tr("boot_cfg_title", "Boot Settings"), _boot_tr("boot_pclogo_on", "PC vendor boot logo enabled."))
     else:
-        notify_user("Параметри завантаження", "Логотип ПК вимкнено (замінено на яблучко macW1Y).")
+        notify_user(_boot_tr("boot_cfg_title", "Boot Settings"), _boot_tr("boot_pclogo_off", "PC vendor logo disabled (replaced with macW1Y Apple logo)."))
 
 def set_verbose(enable):
     c = read_grub_default()

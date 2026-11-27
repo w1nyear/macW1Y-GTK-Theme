@@ -77,18 +77,33 @@ def get_locale_code():
     return "en"
 
 SCREENSHOT_I18N = {
-    "pl": {"app": "Zrzut ekranu", "video_saved": "Nagranie ekranu zapisane", "original": "Oryginalna"},
-    "uk": {"app": "Скріншот", "video_saved": "Запис екрана збережено", "original": "Оригінальна"},
-    "de": {"app": "Bildschirmfoto", "video_saved": "Bildschirmaufnahme gespeichert", "original": "Original"},
-    "fr": {"app": "Capture d'écran", "video_saved": "Enregistrement d'écran enregistré", "original": "Originale"},
-    "es": {"app": "Captura de pantalla", "video_saved": "Grabación de pantalla guardada", "original": "Original"},
-    "it": {"app": "Schermata", "video_saved": "Registrazione dello schermo salvata", "original": "Originale"},
-    "en": {"app": "Screenshot", "video_saved": "Screen recording saved", "original": "Original"}
+    "pl": {"app": "Zrzut ekranu", "video_saved": "Nagranie ekranu zapisane", "original": "Oryginalna", "pick_folder_title": "Wybierz folder zapisu"},
+    "uk": {"app": "Скріншот", "video_saved": "Запис екрана збережено", "original": "Оригінальна", "pick_folder_title": "Виберіть папку збереження"},
+    "de": {"app": "Bildschirmfoto", "video_saved": "Bildschirmaufnahme gespeichert", "original": "Original", "pick_folder_title": "Speicherort auswählen"},
+    "fr": {"app": "Capture d'écran", "video_saved": "Enregistrement d'écran enregistré", "original": "Originale", "pick_folder_title": "Choisir l'emplacement"},
+    "es": {"app": "Captura de pantalla", "video_saved": "Grabación de pantalla guardada", "original": "Original", "pick_folder_title": "Elegir ubicación"},
+    "it": {"app": "Schermata", "video_saved": "Registrazione dello schermo salvata", "original": "Originale", "pick_folder_title": "Scegli posizione"},
+    "en": {"app": "Screenshot", "video_saved": "Screen recording saved", "original": "Original", "pick_folder_title": "Choose Save Location"}
+}
+
+_SS_I18N_MAP = {
+    "app": "screenshot",
+    "video_saved": "ss_video_saved",
+    "original": "original",
+    "pick_folder_title": "ss_pick_folder_title",
 }
 
 def ss_tr(key):
-    base = get_locale_code().split('_')[0]
-    return SCREENSHOT_I18N.get(base, SCREENSHOT_I18N["en"]).get(key, SCREENSHOT_I18N["en"].get(key, key))
+    loc = get_locale_code()
+    base = loc.split('_')[0]
+    fallback = SCREENSHOT_I18N.get(base, SCREENSHOT_I18N["en"]).get(key, SCREENSHOT_I18N["en"].get(key, key))
+    try:
+        sys.path.insert(0, '/usr/local/bin')
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import mac_i18n
+        return mac_i18n.t(_SS_I18N_MAP.get(key, key), fallback, override_locale=loc)
+    except Exception:
+        return fallback
 
 def resolve_shutter_sound():
     """Return the first installed camera shutter sound path, if any."""
@@ -463,14 +478,7 @@ def pick_folder_dialog():
         from gi.repository import Gtk, Gio
 
         result = {"path": ""}
-        loc = get_locale_code().split("_")[0]
-        titles = {
-            "uk": "Виберіть папку збереження",
-            "ru": "Выберите папку сохранения",
-            "pl": "Wybierz folder zapisu",
-            "de": "Speicherort auswählen",
-        }
-        title = titles.get(loc, "Choose Save Location")
+        title = ss_tr("pick_folder_title")
 
         class PickerApp(Gtk.Application):
             def __init__(self):

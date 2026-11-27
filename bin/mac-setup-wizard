@@ -95,7 +95,7 @@ def cmd_status():
     print("         macW1Y — macW1Y Setup Wizard Status (macSetupWizard)      ")
     print("===================================================================")
     print(f"  • Modpack Version:     macW1Y v{ver}")
-    print(f"  • macSetupWizard Flag: {flag} ({'Увімкнено (зʼявиться при наступному вході)' if flag == 1 else 'Вимкнено (робота налаштована)'})")
+    print(f"  • macSetupWizard Flag: {flag} ({'Enabled (will show on next login)' if flag == 1 else 'Disabled (setup complete)'})")
     
     js = """(() => {
         const home = imports.gi.GLib.get_home_dir();
@@ -119,7 +119,7 @@ def cmd_status():
     print("===================================================================")
 
 def cmd_start(force=True):
-    print("🚀 Запуск macW1Y Setup Wizard на екрані...")
+    print("🚀 Launching macW1Y Setup Wizard on screen...")
     js = f"""(() => {{
         const home = imports.gi.GLib.get_home_dir();
         return import('file://' + home + '/.local/share/gnome-shell/extensions/eval-helper@mactheme/macSetupWizard.js?v=' + Date.now())
@@ -128,9 +128,9 @@ def cmd_start(force=True):
     }})()"""
     ok, out = call_shell_eval(js)
     if ok:
-        print("  ✓ Setup Wizard успішно запущено.")
+        print("  ✓ Setup Wizard launched successfully.")
     else:
-        print(f"  ⚠️ Не вдалося викликати інтерфейс Shell: {out}", file=sys.stderr)
+        print(f"  ⚠️ Failed to invoke Shell interface: {out}", file=sys.stderr)
 
 def cmd_reset():
     set_flag(1)
@@ -141,7 +141,7 @@ def cmd_reset():
             .catch(() => false);
     })()"""
     call_shell_eval(js)
-    print("  ✓ macSetupWizard встановлено в 1. Меню зʼявиться при наступному вході в систему.")
+    print("  ✓ macSetupWizard set to 1. Menu will appear on next login.")
 
 def main():
     if len(sys.argv) < 2:
@@ -158,7 +158,7 @@ def main():
     elif arg == "set" and len(sys.argv) > 2:
         val = 1 if sys.argv[2] in ["1", "true", "True", "enable"] else 0
         set_flag(val)
-        print(f"  ✓ macSetupWizard встановлено в {val}")
+        print(f"  ✓ macSetupWizard set to {val}")
     elif arg in ["stop", "close", "hide"]:
         js = """(() => {
             const home = imports.gi.GLib.get_home_dir();
@@ -167,7 +167,7 @@ def main():
                 .catch(() => false);
         })()"""
         call_shell_eval(js)
-        print("  ✓ Setup Wizard зупинено.")
+        print("  ✓ Setup Wizard stopped.")
     else:
         print("Usage: mac-setup-wizard [status | start | reset | set 1|0 | stop]")
 

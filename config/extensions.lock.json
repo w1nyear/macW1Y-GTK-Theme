@@ -20,7 +20,7 @@
         "50",
         "51"
       ],
-      "sha256": "328a561d7e3eec828f0e7ac083c6aaf4fb3ce0c50741d3424b3ea1b7aa49ad8b",
+      "sha256": "9192e21b6c5a1aa193ca0adfa938f41b7f5a506c9ec307e3fe1bc1060616fcdc",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -31,8 +31,8 @@
       ],
       "has_custom_patches": true,
       "patch_description": "macW1Y Monterey style spotlight, main menu, finder naming, wine exclusions; clipboard dialog copy-and-close & click-to-paste injection",
-      "last_verified": "2026-11-04",
-      "pinned_sha256": "30dcaff5c37e0ee761aaa8379e16defb0ebe89ed46ef33d226d72399c23fee34"
+      "last_verified": "2026-11-27",
+      "pinned_sha256": "9192e21b6c5a1aa193ca0adfa938f41b7f5a506c9ec307e3fe1bc1060616fcdc"
     },
     "blur-my-shell@aunetx": {
       "uuid": "blur-my-shell@aunetx",
@@ -46,7 +46,7 @@
         "50",
         "51"
       ],
-      "sha256": "57932ed913748229964f7a5a2bb56cd876aa02ab0e04db03dd02c75a87c79a8c",
+      "sha256": "18069478caac9135377698f102ac7ac6df6873163679ed9e100c997a95b33b96",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -57,9 +57,9 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Full frosted blur on net.nokyan.Resources, removal of 345px clip, custom pipeline; macW1Y horizontal Cairo battery indicator",
-      "last_verified": "2026-11-26",
-      "pinned_sha256": "57932ed913748229964f7a5a2bb56cd876aa02ab0e04db03dd02c75a87c79a8c",
-      "dir_hash": "57932ed9"
+      "last_verified": "2026-11-27",
+      "pinned_sha256": "18069478caac9135377698f102ac7ac6df6873163679ed9e100c997a95b33b96",
+      "dir_hash": "18069478"
     },
     "compiz-alike-magic-lamp-effect@hermes83.github.com": {
       "uuid": "compiz-alike-magic-lamp-effect@hermes83.github.com",
@@ -247,7 +247,7 @@
         "50",
         "51"
       ],
-      "sha256": "7457d707e62b55c76130858412935d268c5f7feef0f062cf3b04c11e30a818a2",
+      "sha256": "ed62f84b5cc2150b8039102e723b52d10dcda6b2629f9fe5e2ce1c62d1522246",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -257,8 +257,8 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Local D-Bus EvalHelper service and macW1Y Alt+Tab switcher enhancements",
-      "last_verified": "2026-11-26",
-      "pinned_sha256": "7457d707e62b55c76130858412935d268c5f7feef0f062cf3b04c11e30a818a2",
+      "last_verified": "2026-11-27",
+      "pinned_sha256": "ed62f84b5cc2150b8039102e723b52d10dcda6b2629f9fe5e2ce1c62d1522246",
       "integrity_hash": "f5219cbdadcf16d4e5f75d8d3754abe7d184d9ea3fef62fcf5fb2ec510cd91b7",
       "integrity": "f5219cbdadcf16d4e5f75d8d3754abe7d184d9ea3fef62fcf5fb2ec510cd91b7"
     },
@@ -274,7 +274,7 @@
         "50",
         "51"
       ],
-      "sha256": "c2d4bab84a5cc654744474edefc66b4ee13a6c074322b3d774a671708e40d966",
+      "sha256": "6e932fec77f138d6bb7314f1b76674c3e3fb57b16951a1512c14053db212f13b",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -286,11 +286,11 @@
       ],
       "has_custom_patches": true,
       "patch_description": "macW1Y Control Center submenus (Wi-Fi, Bluetooth, Sound, Power Mode, Display) backed by hardware-accelerated BackdropGlass liquid glass shader with transparent background and no dark border; macW1Y Screen Recording and Screen Sharing menubar indicator (circular disc with square cutout) with live timer, details card, and stop controls; macW1Y Tahoe/Sequoia OSD segmented slider UI in Control Center for Volume and Brightness; TahoeSlider dragging repaint fix for volume/brightness; macW1Y horizontal Cairo battery indicator; fullscreen drag-to-top menubar reveal with 100% solid dark background and window shrink; authentic unfullscreen window shrink animation and menubar slide-down with solid dark dimming backdrop; fullscreen window controls on revealed panel and LMB headerbar/tabbar unfullscreen drag; authentic 22px OSD and CC slider rounded rectangle corner radius",
-      "last_verified": "2026-11-26",
+      "last_verified": "2026-11-27",
       "integrity_hash": "ec7c44ad7fa2c4fd48b21576722dd4c6bee2391fa0884ec33a6288af17545501",
-      "pinned_sha256": "c2d4bab84a5cc654744474edefc66b4ee13a6c074322b3d774a671708e40d966",
+      "pinned_sha256": "6e932fec77f138d6bb7314f1b76674c3e3fb57b16951a1512c14053db212f13b",
       "expected_hash": "d7d391f17d291fe98b899ee1af85d1bb9c11017ff2e7be5f6b5ab4a555211bcf",
-      "dir_hash": "c2d4bab8",
+      "dir_hash": "6e932fec",
       "integrity": "ec7c44ad7fa2c4fd48b21576722dd4c6bee2391fa0884ec33a6288af17545501"
     },
     "liquid-glass@thinkingcoding1231.gmail.com": {
@@ -386,7 +386,7 @@
         "50",
         "51"
       ],
-      "sha256": "502f8fffa371123ac9d14b7f61580e161b7c0bebc02282bc28d17b15d5d6801e",
+      "sha256": "b7d06813d1e41f188dfdfa3c7bf113610cc74c6f29a5d83ad63da1798f1f38bd",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -396,8 +396,8 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Local custom macW1Y touchpad gesture suite",
-      "last_verified": "2026-10-27",
-      "pinned_sha256": "6c3a65ffc33769cab51bdbe031b3fc266016014646b344e0c59c8697e11e54e0"
+      "last_verified": "2026-11-27",
+      "pinned_sha256": "b7d06813d1e41f188dfdfa3c7bf113610cc74c6f29a5d83ad63da1798f1f38bd"
     },
     "quick-settings-scroll@diskmth.fr": {
       "uuid": "quick-settings-scroll@diskmth.fr",
@@ -458,7 +458,7 @@
         "50",
         "51"
       ],
-      "sha256": "4dd35aecacd995a8a5aec5310af0c9dee14145431078fc5be7896364f8d079da",
+      "sha256": "4f69ed37b1f4625b23d2eff9609737886ed62db4323b141289ed301a8b79a57a",
       "status": "locked",
       "source": "local_custom",
       "macw1y_components": [
@@ -466,8 +466,8 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Local custom ydotool trigger",
-      "last_verified": "2026-11-02",
-      "pinned_sha256": "ebd1bac7764a63e6b71568bdd8b737a67393b05355255aa373c090e7582f554a"
+      "last_verified": "2026-11-27",
+      "pinned_sha256": "4f69ed37b1f4625b23d2eff9609737886ed62db4323b141289ed301a8b79a57a"
     },
     "top-bar-organizer@julian.gse.jsts.xyz": {
       "uuid": "top-bar-organizer@julian.gse.jsts.xyz",
@@ -551,7 +551,7 @@
         "50",
         "51"
       ],
-      "sha256": "9c7c954a93ed0c6d6385ecf9a5a580e315186fd2d1cc0d39ecffe97aefe390ac",
+      "sha256": "1640a0a0c2871132b4d1a768bfd3b6e8e6bee92841b20643674b292b3b6ea00e",
       "status": "locked",
       "source": "extensions.gnome.org",
       "macw1y_components": [
@@ -559,8 +559,8 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Curtain slide & fullscreen dimming elimination (Task 575); GDM lockscreen date and prompt positioning (Task 669); static-first GDM wallpaper and deferred video startup (Phase 7); corrected GDM module paths, isolated optional UI failures, restored native actors/state on teardown, and hardened video/player lifecycle (Phase 8)",
-      "last_verified": "2026-11-13",
-      "pinned_sha256": "ee13130c404ff94837da7f55dd13146fffd4f5d34f4d04c206598cbafd59f84c"
+      "last_verified": "2026-11-27",
+      "pinned_sha256": "1640a0a0c2871132b4d1a768bfd3b6e8e6bee92841b20643674b292b3b6ea00e"
     },
     "wifi-hotspot-quick-settings@aryan10.github.io": {
       "uuid": "wifi-hotspot-quick-settings@aryan10.github.io",
@@ -621,7 +621,7 @@
         "50",
         "51"
       ],
-      "sha256": "abbd5fce0041c63aaa4f6fa0cb2abcb00873bae360d20e2f1bea5d5eff3d94ea",
+      "sha256": "bb26e4fc8ac4d2fba04e0ff23757dae0b9289a32842241172e5c67a23083ee62",
       "status": "locked",
       "source": "github",
       "macw1y_components": [
@@ -631,8 +631,8 @@
       ],
       "has_custom_patches": true,
       "patch_description": "Liquid Glass GLSL shader scalar uniform binding fix, frosted card styling, and safe snippet support for GNOME 50",
-      "last_verified": "2026-11-17",
-      "pinned_sha256": "0e1b87b97356ba0a10540af8920a3886f4154b91be1b1c1ac564b1f119c55553"
+      "last_verified": "2026-11-27",
+      "pinned_sha256": "bb26e4fc8ac4d2fba04e0ff23757dae0b9289a32842241172e5c67a23083ee62"
     },
     "ubuntu-appindicators@ubuntu.com": {
       "uuid": "ubuntu-appindicators@ubuntu.com",
