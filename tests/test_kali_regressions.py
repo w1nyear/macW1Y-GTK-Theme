@@ -163,11 +163,20 @@ class LocalizationAndPathSafetyTests(unittest.TestCase):
         self.assertNotIn("_showOsd('Вставлено'", g_txt)
         self.assertIn("_tGesture('copied')", g_txt)
 
-        # 4. GRUB themes use English countdown text
+        # 4. GRUB themes use English countdown text and readable non-black dual-boot menu colors/heights
         for theme_rel in ("grub/macw1y-boot/theme.txt", "grub/macw1y-boot-usb/theme.txt", "grub/macw1y-boot-usb2/theme.txt"):
             txt = (ROOT / theme_rel).read_text(encoding="utf-8")
             self.assertNotIn("Завантаження через", txt, f"Ukrainian countdown left in {theme_rel}")
             self.assertIn("Booting in %d s", txt)
+            self.assertNotIn('item_color = "#000000"', txt, f"Invisible black item_color in {theme_rel}")
+            self.assertNotIn('selected_item_color = "#000000"', txt, f"Invisible black selected_item_color in {theme_rel}")
+            self.assertNotIn("item_height = 1080", txt, f"Fullscreen 1080 item_height hides dual-boot entries in {theme_rel}")
+
+        # 4b. Default mac-styling locale and installer GUI default to English
+        self.assertEqual((ROOT / "config/mac-styling/locale").read_text(encoding="utf-8").strip(), "en")
+        gui_txt = (ROOT / "bin/mac-installer-gui").read_text(encoding="utf-8")
+        self.assertNotIn('self.selected_language = "uk"', gui_txt)
+        self.assertNotIn('os.environ.get("LANG", "uk_UA.UTF-8")', gui_txt)
 
         # 5. Settings English .ui files exist and install.sh deploys locales/
         en_ui_dir = ROOT / "gnome-control-center-overlay/locales/en"

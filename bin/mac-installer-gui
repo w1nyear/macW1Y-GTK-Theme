@@ -94,8 +94,8 @@ LANGUAGE_I18N = {
     "fa": {"title": "انتخاب زبان", "subtitle": "زبان اصلی رابط کاربری سیستم را انتخاب کنید.", "continue": "ادامه", "restart": "راه‌اندازی مجدد"},
 }
 
-def get_sorted_languages(selected_locale="uk"):
-    base = (selected_locale or "uk").split(".")[0].replace("-", "_").lower().split("_")[0]
+def get_sorted_languages(selected_locale="en"):
+    base = (selected_locale or "en").split(".")[0].replace("-", "_").lower().split("_")[0]
     sys_lang = None
     for l in SUPPORTED_LANGUAGES:
         if l["code"] == selected_locale or l["code"] == base:
@@ -218,7 +218,7 @@ def get_user_avatar_path(username):
             return c
     return os.path.join(SCRIPT_DIR, "icons", "default-avatar.png")
 
-def get_disk_capacity_info(lang_code="uk"):
+def get_disk_capacity_info(lang_code="en"):
     try:
         total, used, free = shutil.disk_usage("/")
         total_gb = int(total / (1024**3))
@@ -1631,7 +1631,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.version = get_modpack_version()
         self.disk_info = get_disk_capacity_info()
 
-        self.selected_language = "uk"
+        self.selected_language = "en"
         if initial_lang:
             self.selected_language = initial_lang
         else:
@@ -1643,13 +1643,13 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
                         if v:
                             self.selected_language = v
                 else:
-                    sys_lang = os.environ.get("LANG", "uk_UA.UTF-8").split(".")[0].replace("-", "_").lower().split("_")[0]
+                    sys_lang = os.environ.get("LANG", "en_US.UTF-8").split(".")[0].replace("-", "_").lower().split("_")[0]
                     for l in SUPPORTED_LANGUAGES:
                         if l["code"] == sys_lang:
                             self.selected_language = l["code"]
                             break
             except Exception:
-                self.selected_language = "uk"
+                self.selected_language = "en"
 
         self.cached_password = cached_password or ""
         self.selected_action = action_override or "install"
@@ -1692,7 +1692,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
                 GLib.timeout_add(1400, lambda name=m_name: self._popup_menu_by_name(name))
 
     def tr(self, key, fallback="", **kwargs):
-        res = mac_i18n.t(key, fallback=fallback, override_locale=getattr(self, "selected_language", "uk"))
+        res = mac_i18n.t(key, fallback=fallback, override_locale=getattr(self, "selected_language", "en"))
         if kwargs:
             try:
                 return res.format(**kwargs)
@@ -2197,7 +2197,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         box.append(img_globe)
 
         # 2. Header Title & Subtitle
-        cur_lang = getattr(self, "selected_language", "uk")
+        cur_lang = getattr(self, "selected_language", "en")
         info = LANGUAGE_I18N.get(cur_lang, LANGUAGE_I18N["en"])
 
         self.lbl_lang_title = Gtk.Label(label=info["title"])
@@ -2591,7 +2591,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
 
         pkg_v = get_package_version()
         inst_v = get_installed_version()
-        is_uk = getattr(self, "selected_language", "uk") == "uk"
+        is_uk = getattr(self, "selected_language", "en") == "uk"
 
         if inst_v and inst_v != pkg_v:
             update_title = f"Оновлення до macW1Y {pkg_v}" if is_uk else f"Update to macW1Y {pkg_v}"
@@ -2783,7 +2783,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.lbl_wizard_title.set_margin_top(6)
         box.append(self.lbl_wizard_title)
 
-        is_uk = getattr(self, "selected_language", "uk") == "uk"
+        is_uk = getattr(self, "selected_language", "en") == "uk"
         if getattr(self, "selected_action", "install") == "clean_update":
             sub_text = f"Для налаштування оновлення macW1Y {ver} натисніть «Продовжити»." if is_uk else f"To configure macW1Y {ver} update, click Continue."
         else:
@@ -2915,7 +2915,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
     def morph_terms_to_welcome(self, animated=True):
         self.wizard_mode = "welcome"
         ver = get_package_version()
-        is_uk = getattr(self, "selected_language", "uk") == "uk"
+        is_uk = getattr(self, "selected_language", "en") == "uk"
         if getattr(self, "selected_action", "install") == "clean_update":
             sub_text = f"Для налаштування оновлення macW1Y {ver} натисніть «Продовжити»." if is_uk else f"To configure macW1Y {ver} update, click Continue."
         else:
@@ -3250,7 +3250,7 @@ class MacRecoveryInstallerWindow(Gtk.ApplicationWindow):
         self.prog_bar.set_fraction(0.02)
         prog_box.append(self.prog_bar)
 
-        self.lbl_prog_status = Gtk.Label(label="Підготовка до встановлення..." if getattr(self, "selected_language", "uk") == "uk" else self.tr("installer_stage1", "Preparing system setup…"))
+        self.lbl_prog_status = Gtk.Label(label="Підготовка до встановлення..." if getattr(self, "selected_language", "en") == "uk" else self.tr("installer_stage1", "Preparing system setup…"))
         self.lbl_prog_status.add_css_class("mac-subtitle")
         prog_box.append(self.lbl_prog_status)
 
