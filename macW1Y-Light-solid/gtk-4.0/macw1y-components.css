@@ -2174,17 +2174,6 @@ menu {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
   padding: 4px;
   min-width: 140px;
-  max-width: 480px;
-  width: auto;
-}
-
-/* Conditional popover indent: only indent plain items when menu has checkmarks/radios */
-popover.menu:has(check) modelbutton:not(:has(check)):not(:has(radio)):not(:has(image)) label,
-popover.menu:has(radio) modelbutton:not(:has(check)):not(:has(radio)):not(:has(image)) label {
-  margin-left: 24px;
-}
-popover.menu:not(:has(check)):not(:has(radio)) modelbutton label {
-  margin-left: 0;
 }
 
 popover modelbutton,
