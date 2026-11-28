@@ -24,6 +24,10 @@
    - **Локалізація (`config/i18n/translations_data.py`, `build_translations.py`)**: додано нові ключі `installer_time_calculating`, `installer_time_mins`, `installer_time_hm` для всіх мов, оновлено `bin/mac_i18n.py`, `mac_i18n.js` та `config/extensions.lock.json`.
    - **Валідація**: `python3 -m py_compile bin/mac-installer-gui` OK, `unittest` (67/67 OK), `bin/mac-extension-guard verify` (21/21 OK), `bin/mac-i18n-verify` PASS.
 
+773. Синхронізація актуальних налаштувань «Мас стилізація» та скла у репозиторій macW1Y:
+   - Перенесено поточні файли налаштувань із `~/.config/mac-styling/` (`styling.json`, `screenshot.json`, `screenshot-ui.json`, `control-center-animation.json`) у `config/mac-styling/`.
+   - Оновлено секцію `[org/gnome/shell/extensions/liquid-glass]` у `dconf/gnome-all.dconf` (параметри скла: `glass-chroma-strength=0.008`, `glass-rim-intensity=0.71`, `glass-sheen-intensity=0.3304`, `glass-specular-intensity=0.3`, `shadow-intensity=0.3`, `notification-blur-radius=3`, `osd-tint-strength=0.07`, яскравість меню/доку), щоб кожен користувач після встановлення отримував ідентичний вигляд скла та елементів.
+
 ================================================================================
                macW1Y v0.7 — Журнал виконаних завдань розробки
 ================================================================================

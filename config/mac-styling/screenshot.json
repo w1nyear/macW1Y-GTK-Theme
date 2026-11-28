@@ -8,7 +8,7 @@
   "video_codec": 0,
   "video_fps": 0,
   "screencast_cursor": true,
-  "record_audio": false,
+  "record_audio": true,
   "processing_enabled": false,
   "processing_target": 2,
   "processing_algorithm": 0,
