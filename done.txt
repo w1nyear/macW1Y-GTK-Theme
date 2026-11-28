@@ -18,6 +18,12 @@
    - **Шрифт термінала `Ptyxis` (Debian 13, Fedora 44, Ubuntu 26.10)**: додано сильний pattern-аліас `'SF Mono' -> 'Default Mono'` у `config/fonts.conf`, оновлено `dconf/gnome-all.dconf` на `'Default Mono 10.5'`, а в `install.sh --update` додано синхронізацію `fonts.conf`, `fc-cache -f` та міграцію `org.gnome.Ptyxis font-name`.
    - **Повторна послідовна перевірка 4 ВМ**: кожна ВМ перевірена по черзі (`arch` -> `debian` -> `fedora` -> `ubuntu`) із збереженням дисків і знімків `pre_macw1y`; усі 67 unit-тестів (`tests/`), `bin/mac-extension-guard verify` (21/21) та `bin/mac-i18n-verify` успішно пройдені.
 
+772. Оновлення інсталятора `mac-installer-gui` (меню-бар / контекстне меню в стилі macW1Y та реальний підрахунок ETA):
+   - **Редизайн `MacMenuPopover` (`bin/mac-installer-gui`)**: замінено `Gtk.PopoverMenu` на прямий `Gtk.Popover` із `Gtk.Box(VERTICAL)` без скролбару/слайдбару, напівпрозорим скляним тлом, зовнішнім заокругленням `20px` і круглими капсульними пунктами (`border-radius: 9999px`) з підтримкою правосторонніх гарячих клавіш і заголовків.
+   - **Точний розрахунок швидкості та ETA (`bin/mac-installer-gui`)**: додано реальний парсинг пакетних подій (`apt`/`dpkg` для Debian/Ubuntu, `dnf` для Fedora, `pacman` для Arch/CachyOS) під час `Stage 0/1` із лічильником пакунків у статусі та двофазною оцінкою залишкового часу через EMA (`_record_real_progress`, `_update_time_label`), включно з годинами, хвилинами й станом «Обчислення часу…» замість фіксованих «2 хвилини».
+   - **Локалізація (`config/i18n/translations_data.py`, `build_translations.py`)**: додано нові ключі `installer_time_calculating`, `installer_time_mins`, `installer_time_hm` для всіх мов, оновлено `bin/mac_i18n.py`, `mac_i18n.js` та `config/extensions.lock.json`.
+   - **Валідація**: `python3 -m py_compile bin/mac-installer-gui` OK, `unittest` (67/67 OK), `bin/mac-extension-guard verify` (21/21 OK), `bin/mac-i18n-verify` PASS.
+
 ================================================================================
                macW1Y v0.7 — Журнал виконаних завдань розробки
 ================================================================================
