@@ -17,6 +17,25 @@
    - Забезпечувати сумісність і підтримку всіх цільових систем: **Debian, Ubuntu, Fedora, Arch Linux, CachyOS** (без припущень під один дистрибутив).
    - Додавати або оновлювати **локалізацію під інші мови** для всіх нових або змінених текстів (`config/i18n/translations.json`, оновлення згенерованих модулів `mac_i18n.*`, перевірка `python3 bin/mac-i18n-verify`).
    - **Не хардкодити проект під один конкретний випуск ОС чи одну версію GNOME/GTK/пакунків** — код, сервіси, обгортки, UI-шаблони та скрипти мають адаптивно працювати на різних випусках (наприклад, GNOME 46–51+, різні релізи Debian/Ubuntu/Fedora/Arch/CachyOS), щоб не витрачати час на повторну міграцію в майбутньому.
+9. **ФОРМАТ СПИСКУ ЗМІН ДЛЯ РЕЛІЗУ (`What's new?`)**: Коли користувач просить сформувати список того, що нового зроблено (changelog / release notes), надсилати його **виключно** у наступному форматі — заголовок `What's new?`, порожній рядок, і далі короткі однорядкові пункти англійською без маркерів списку (у такому стилі, як приклад нижче):
+   ```text
+   What's new?
+
+   added Fedora, Arch Linux, CachyOS, Debian support (GNOME 46–51)
+   updated macW1Y installer UI (frosted capsule menubar, no scrollbar)
+   added real-time installation speed & accurate ETA calculation (apt, dnf, pacman)
+   updated GDM lockscreen (removed extra arrow overlap, cross-distro sync)
+   updated Nautilus Finder UI (D-Bus service & full styling across all distros)
+   updated Settings UI (GNOME 51 compatibility & full sidebar panels)
+   updated Print Screen UI (GNOME 51 Clutter.Orientation & frosted glass toolbar)
+   updated Liquid Glass & Mac Styling defaults (chroma, rim light, specular, blur)
+   updated GRUB macw1y-boot theme & multi-distro bootloader/SELinux support
+   updated Desktop Widgets (synthetic AC/Desktop battery fallback)
+   updated terminal font (Default Mono / SF Mono alias across distros)
+   updated 209-language localization (i18n/l10n) & extension integrity lock
+   updated lookatme screenshots
+   Fixed 15+ cross-distro bugs and stability issues
+   ```
 
 ---
 
