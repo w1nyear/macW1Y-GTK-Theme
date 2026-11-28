@@ -50,7 +50,7 @@ function getWorkspaceNames() {
 
 function getWorkspaceName(index) {
     const names = getWorkspaceNames();
-    const desk = t('desktop', t('bookmark_desktop', 'Робочий стіл'));
+    const desk = t('desktop', t('bookmark_desktop', 'Desktop'));
     if (names[index] && names[index].trim()) {
         const val = names[index].trim();
         const m = val.match(/^Робочий стіл\s*(\d+)$/i);
@@ -64,7 +64,7 @@ function getWorkspaceName(index) {
 
 function setWorkspaceName(index, name) {
     try {
-        const desk = t('desktop', t('bookmark_desktop', 'Робочий стіл'));
+        const desk = t('desktop', t('bookmark_desktop', 'Desktop'));
         const settings = new Gio.Settings({ schema_id: 'org.gnome.desktop.wm.preferences' });
         const names = settings.get_strv('workspace-names') || [];
         while (names.length <= index) {
@@ -764,7 +764,7 @@ class MacMissionControlSpacesBar extends St.BoxLayout {
         wsManager.append_new_workspace(false, global.get_current_time());
 
         const newIdx = newCount - 1;
-        const desk = t('desktop', t('bookmark_desktop', 'Робочий стіл'));
+        const desk = t('desktop', t('bookmark_desktop', 'Desktop'));
         const defaultName = `${desk} ${newCount}`;
         setWorkspaceName(newIdx, defaultName);
 

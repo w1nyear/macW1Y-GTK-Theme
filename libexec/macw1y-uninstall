@@ -289,7 +289,9 @@ restore_ui() {
     rm -rf "$TARGET_HOME/.icons/macW1Y"* "$TARGET_HOME/.icons/macw1y"*
     rm -rf "$TARGET_HOME/.local/share/icons/macW1Y"* "$TARGET_HOME/.local/share/icons/macw1y"*
     rm -rf "$TARGET_HOME/.local/share/fonts/SF_Pro" "$TARGET_HOME/.local/share/fonts/Default"*
-    rm -rf "$TARGET_HOME/.config/gtk-3.0" "$TARGET_HOME/.config/gtk-4.0"
+    # Remove macW1Y-specific CSS files without deleting user's entire gtk-3.0 / gtk-4.0 directories
+    rm -f "$TARGET_HOME/.config/gtk-3.0/macw1y-"*.css "$TARGET_HOME/.config/gtk-4.0/macw1y-"*.css 2>/dev/null || true
+    rm -f "$TARGET_HOME/.config/gtk-4.0/gtk-Dark.css" "$TARGET_HOME/.config/gtk-4.0/gtk-dark.css" 2>/dev/null || true
     rm -rf "$TARGET_HOME/.config/macW1Y" "$TARGET_HOME/.local/share/macW1Y"
     rm -rf "$TARGET_HOME/.local/share/sounds/macW1Y"
     rm -rf "$TARGET_HOME/.cache/mac-clipboard"
@@ -311,6 +313,9 @@ restore_ui() {
     rm -f "$TARGET_HOME/.config/environment.d/10-gnome-shell-overlay.conf"
     rm -f "$TARGET_HOME/.config/systemd/user/mac-app-manager.service"
     rm -f "$TARGET_HOME/.config/systemd/user/mac-screenshot-daemon.service"
+    run_as_user systemctl --user disable --now mac-monitor-persist.service 2>/dev/null || true
+    rm -f "$TARGET_HOME/.config/systemd/user/mac-monitor-persist.service"
+    rm -f "$TARGET_HOME/.local/bin/mac-monitor-persist"
     rm -f "$TARGET_HOME/.config/systemd/user/org.gnome.Shell@.service.d/mac-transition.conf*"
     run_as_user update-desktop-database "$TARGET_HOME/.local/share/applications" 2>/dev/null || true
 
@@ -528,23 +533,65 @@ EOF_CUSTOM
 }
 
 # ------------------------------------------------------------------------------
-# Меню та Вибір дій
+# State-Aware Rollback & Menu
 # ------------------------------------------------------------------------------
+STATE_DIR="${MACW1Y_STATE_DIR:-$TARGET_HOME/.local/state/macw1y}"
+
+run_state_rollback() {
+    local rb_args=("--state-dir" "$STATE_DIR" "rollback")
+    [ "$1" = "true" ] && rb_args+=("--dry-run")
+    [ "$2" = "true" ] && rb_args+=("--remove-new")
+    if [ -f "$STATE_DIR/install-manifest.json" ] && [ -x "$SCRIPT_DIR/libexec/macw1y-state.py" ]; then
+        log_step "Restoring recorded pre-installation state from $STATE_DIR/install-manifest.json"
+        if ! python3 "$SCRIPT_DIR/libexec/macw1y-state.py" "${rb_args[@]}"; then
+            log_error "State rollback reported partial failures (see above)."
+            return 1
+        fi
+        return 0
+    fi
+    return 2
+}
+
 run_full_uninstall() {
+    local rb_status=0
+    run_state_rollback "false" "true" || rb_status=$?
+    if [ "$rb_status" -eq 1 ]; then
+        log_warning "State rollback had partial failures; continuing with legacy cleanup."
+    fi
     restore_ui
     restore_system
     rm -rf "$TARGET_HOME/.config/mac-styling" 2>/dev/null || true
+    if [ "$rb_status" -eq 1 ]; then
+        log_error "Uninstall finished with partial rollback failures. Review messages above."
+        return 1
+    fi
     echo -e "\n${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
-    echo -e " ${C_BOLD}${C_GREEN}✔ ДЕІНСТАЛЯЦІЮ УСПІШНО ЗАВЕРШЕНО!${C_RESET}"
+    echo -e " ${C_BOLD}${C_GREEN}✔ UNINSTALL / ROLLBACK COMPLETED SUCCESSFULLY!${C_RESET}"
     echo -e "${C_GREEN}═══════════════════════════════════════════════════════════════════════${C_RESET}"
-    echo -e " Стандартний вигляд GNOME повністю відновлено.\n"
+    echo -e " Recorded user configuration has been restored (packages preserved).\n"
 }
 
 # CLI Flags
-if [ "$1" = "--all" ] || [ "$1" = "-y" ] || [ "$1" = "--yes" ]; then
+if [ "$1" = "--dry-run" ] || [ "$1" = "--plan" ]; then
+    print_banner
+    run_state_rollback "true" "false"
+    rb_rc=$?
+    if [ "$rb_rc" -eq 2 ]; then
+        echo "No install manifest found at $STATE_DIR/install-manifest.json."
+        echo "Dry-run would fall back to legacy macW1Y artifact cleanup (preserving ~/.config/gtk-3.0 and packages)."
+        exit 0
+    fi
+    exit "$rb_rc"
+elif [ "$1" = "--rollback" ]; then
+    print_banner
+    REMOVE_NEW="false"
+    [ "$2" = "--remove-new" ] && REMOVE_NEW="true"
+    run_state_rollback "false" "$REMOVE_NEW"
+    exit $?
+elif [ "$1" = "--all" ] || [ "$1" = "-y" ] || [ "$1" = "--yes" ]; then
     print_banner
     run_full_uninstall
-    exit 0
+    exit $?
 elif [ "$1" = "--ui" ]; then
     print_banner
     restore_ui

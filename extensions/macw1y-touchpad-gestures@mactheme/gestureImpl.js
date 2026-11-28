@@ -292,9 +292,9 @@ export default class GestureImpl {
         } else if (cmd === 'TRI_UP') {
             this._showCursor();
         } else if (cmd === 'CMD_COPY') {
-            this._showOsd(t('copied', 'Скопійовано'), 'edit-copy-symbolic');
+            this._showOsd(t('copied', 'Copied'), 'edit-copy-symbolic');
         } else if (cmd === 'CMD_PASTE') {
-            this._showOsd(t('pasted', 'Вставлено'), 'edit-paste-symbolic');
+            this._showOsd(t('pasted', 'Pasted'), 'edit-paste-symbolic');
         } else if (cmd === '4FG_TAP') {
             if (Main.overview.visible) {
                 Main.overview.hide();
@@ -561,12 +561,12 @@ export default class GestureImpl {
 
                     this._pinchTriggered = true;
                     this._sendToDaemon('CMD_COPY');
-                    this._showOsd(t('copied', 'Скопійовано'), 'edit-copy-symbolic');
+                    this._showOsd(t('copied', 'Copied'), 'edit-copy-symbolic');
                 } else if (scale >= 1.18) {
 
                     this._pinchTriggered = true;
                     this._sendToDaemon('CMD_PASTE');
-                    this._showOsd(t('pasted', 'Вставлено'), 'edit-paste-symbolic');
+                    this._showOsd(t('pasted', 'Pasted'), 'edit-paste-symbolic');
                 }
             }
         } else if (phase === Clutter.TouchpadGesturePhase.END || phase === Clutter.TouchpadGesturePhase.CANCEL) {

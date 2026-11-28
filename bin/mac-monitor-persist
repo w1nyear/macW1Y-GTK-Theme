@@ -1,0 +1,352 @@
+#!/usr/bin/env python3
+"""
+mac-monitor-persist — Remember Super+P (Windows+P) monitor preferences across reboots on GNOME Wayland.
+
+Uses org.gnome.Mutter.DisplayConfig over the session D-Bus:
+  - `save`:    Snapshot the active logical monitor layout keyed by the connected hardware fingerprint.
+  - `restore`: Re-apply the saved layout if the connected monitors match and current layout differs.
+  - `watch`:   Restore on startup, then listen for MonitorsChanged (e.g., Super+P) and auto-save
+               after a 1.5-second debounce so preferences persist across reboots.
+  - `status`:  Print current connected monitors, fingerprint, and saved profiles.
+"""
+
+import argparse
+import hashlib
+import json
+import os
+import pathlib
+import sys
+import time
+
+BUS_NAME = "org.gnome.Mutter.DisplayConfig"
+OBJECT_PATH = "/org/gnome/Mutter/DisplayConfig"
+INTERFACE = "org.gnome.Mutter.DisplayConfig"
+
+# ApplyMonitorsConfig methods: 0=verify, 1=temporary, 2=persistent
+APPLY_METHOD_TEMPORARY = 1
+APPLY_METHOD_PERSISTENT = 2
+
+
+def default_profile_path():
+    env_path = os.environ.get("MACW1Y_MONITOR_PROFILES")
+    if env_path:
+        return pathlib.Path(env_path)
+    return pathlib.Path.home() / ".config" / "mac-styling" / "monitor-profiles.json"
+
+
+def compute_hardware_fingerprint(monitors):
+    """
+    Build a stable fingerprint for the set of physically connected monitors.
+    Each monitor entry in GetCurrentState() is:
+      ((connector, vendor, product, serial), modes, props)
+    """
+    ids = []
+    for mon in monitors:
+        spec = mon[0]
+        connector, vendor, product, serial = spec[0], spec[1], spec[2], spec[3]
+        ids.append(f"{connector}|{vendor}|{product}|{serial}")
+    ids.sort()
+    digest = hashlib.sha256("\n".join(ids).encode("utf-8")).hexdigest()[:16]
+    return digest, ids
+
+
+def extract_current_modes(monitors):
+    """Return {connector: current_mode_id} for monitors that have an active current mode."""
+    current = {}
+    for mon in monitors:
+        connector = mon[0][0]
+        modes = mon[1]
+        for mode in modes:
+            mode_id = mode[0]
+            mode_props = mode[6] if len(mode) > 6 else {}
+            if mode_props.get("is-current"):
+                current[connector] = mode_id
+                break
+        if connector not in current:
+            for mode in modes:
+                mode_id = mode[0]
+                mode_props = mode[6] if len(mode) > 6 else {}
+                if mode_props.get("is-preferred"):
+                    current[connector] = mode_id
+                    break
+        if connector not in current and modes:
+            current[connector] = modes[0][0]
+    return current
+
+
+def snapshot_layout(state_tuple):
+    """
+    Convert a GetCurrentState() unpacked tuple:
+      (serial, monitors, logical_monitors, properties)
+    into a JSON-serializable profile dict.
+    """
+    serial, monitors, logical_monitors, props = state_tuple
+    fp, monitor_ids = compute_hardware_fingerprint(monitors)
+    mode_map = extract_current_modes(monitors)
+
+    saved_logical = []
+    for lm in logical_monitors:
+        # lm = (x, y, scale, transform, primary, monitors_list, props)
+        x, y, scale, transform, primary, lm_monitors = lm[0], lm[1], lm[2], lm[3], lm[4], lm[5]
+        entries = []
+        for spec in lm_monitors:
+            connector = spec[0]
+            mode_id = mode_map.get(connector)
+            if mode_id:
+                entries.append({
+                    "connector": connector,
+                    "mode_id": mode_id,
+                })
+        if entries:
+            saved_logical.append({
+                "x": int(x),
+                "y": int(y),
+                "scale": float(scale),
+                "transform": int(transform),
+                "primary": bool(primary),
+                "monitors": entries,
+            })
+
+    return {
+        "fingerprint": fp,
+        "connected_monitors": monitor_ids,
+        "layout_mode": int(props.get("layout-mode", 1)) if isinstance(props, dict) else 1,
+        "logical_monitors": saved_logical,
+        "saved_at": int(time.time()),
+    }
+
+
+def layouts_match(current_profile, saved_profile):
+    """Return True if two layout profiles represent the same active display configuration."""
+    if not current_profile or not saved_profile:
+        return False
+    cur_lms = current_profile.get("logical_monitors", [])
+    sav_lms = saved_profile.get("logical_monitors", [])
+    if len(cur_lms) != len(sav_lms):
+        return False
+
+    def norm(lms):
+        out = []
+        for lm in lms:
+            mons = tuple(sorted((m["connector"], m["mode_id"]) for m in lm["monitors"]))
+            out.append((
+                int(lm["x"]),
+                int(lm["y"]),
+                round(float(lm["scale"]), 3),
+                int(lm["transform"]),
+                bool(lm["primary"]),
+                mons,
+            ))
+        return sorted(out)
+
+    return norm(cur_lms) == norm(sav_lms)
+
+
+def build_apply_payload(serial, saved_profile, current_monitors):
+    """
+    Build arguments for org.gnome.Mutter.DisplayConfig.ApplyMonitorsConfig:
+      (u serial, u method, a(iiduba(ssa{sv})) logical_monitors, a{sv} properties)
+    Validates that every saved connector and mode_id still exists in current_monitors.
+    Returns None if the saved layout cannot be safely applied.
+    """
+    available_modes = {}
+    for mon in current_monitors:
+        connector = mon[0][0]
+        available_modes[connector] = {m[0] for m in mon[1]}
+
+    logical_arg = []
+    for lm in saved_profile.get("logical_monitors", []):
+        mon_configs = []
+        for m in lm.get("monitors", []):
+            conn = m["connector"]
+            mode_id = m["mode_id"]
+            if conn not in available_modes:
+                return None
+            if mode_id not in available_modes[conn]:
+                # Fall back to first available mode if exact mode ID changed
+                if not available_modes[conn]:
+                    return None
+                mode_id = next(iter(sorted(available_modes[conn])))
+            mon_configs.append((conn, mode_id, {}))
+        if not mon_configs:
+            continue
+        logical_arg.append((
+            int(lm["x"]),
+            int(lm["y"]),
+            float(lm["scale"]),
+            int(lm["transform"]),
+            bool(lm["primary"]),
+            mon_configs,
+        ))
+
+    if not logical_arg:
+        return None
+
+    return (int(serial), APPLY_METHOD_PERSISTENT, logical_arg, {})
+
+
+def load_profiles(path):
+    p = pathlib.Path(path)
+    if p.exists():
+        try:
+            return json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            pass
+    return {"version": 1, "profiles": {}}
+
+
+def save_profiles(path, data):
+    p = pathlib.Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    os.replace(tmp, p)
+
+
+def get_display_proxy():
+    from gi.repository import Gio
+    return Gio.DBusProxy.new_for_bus_sync(
+        Gio.BusType.SESSION,
+        Gio.DBusProxyFlags.NONE,
+        None,
+        BUS_NAME,
+        OBJECT_PATH,
+        INTERFACE,
+        None,
+    )
+
+
+def fetch_current_state(proxy):
+    res = proxy.call_sync("GetCurrentState", None, 0, 5000, None)
+    return res.unpack()
+
+
+def apply_monitors_config(proxy, payload):
+    from gi.repository import GLib
+    serial, method, logical_arg, props = payload
+    variant_logical = []
+    for x, y, scale, transform, primary, mon_configs in logical_arg:
+        variant_mons = []
+        for conn, mode_id, mprops in mon_configs:
+            variant_mons.append((conn, mode_id, {}))
+        variant_logical.append((x, y, scale, transform, primary, variant_mons))
+    params = GLib.Variant("(uua(iiduba(ssa{sv}))a{sv})", (serial, method, variant_logical, props))
+    proxy.call_sync("ApplyMonitorsConfig", params, 0, 5000, None)
+
+
+def cmd_save(profile_path, proxy=None):
+    proxy = proxy or get_display_proxy()
+    state = fetch_current_state(proxy)
+    snap = snapshot_layout(state)
+    if not snap["logical_monitors"]:
+        print("mac-monitor-persist: no active logical monitors to save.", file=sys.stderr)
+        return 1
+    store = load_profiles(profile_path)
+    store.setdefault("profiles", {})[snap["fingerprint"]] = snap
+    save_profiles(profile_path, store)
+    print(f"Saved monitor layout for hardware profile {snap['fingerprint']} ({len(snap['logical_monitors'])} logical display(s)).")
+    return 0
+
+
+def cmd_restore(profile_path, proxy=None):
+    proxy = proxy or get_display_proxy()
+    state = fetch_current_state(proxy)
+    serial, monitors = state[0], state[1]
+    current = snapshot_layout(state)
+    store = load_profiles(profile_path)
+    saved = store.get("profiles", {}).get(current["fingerprint"])
+    if not saved:
+        print(f"No saved profile for connected hardware {current['fingerprint']}; leaving current layout untouched.")
+        return 0
+    if layouts_match(current, saved):
+        print(f"Current monitor layout already matches saved profile {current['fingerprint']}.")
+        return 0
+    payload = build_apply_payload(serial, saved, monitors)
+    if not payload:
+        print("Saved monitor layout is incompatible with currently available modes; skipping restore.", file=sys.stderr)
+        return 1
+    apply_monitors_config(proxy, payload)
+    print(f"Restored monitor layout for hardware profile {current['fingerprint']}.")
+    return 0
+
+
+def cmd_status(profile_path):
+    store = load_profiles(profile_path)
+    print(f"Profile store: {profile_path}")
+    try:
+        proxy = get_display_proxy()
+        current = snapshot_layout(fetch_current_state(proxy))
+        print(f"Current hardware fingerprint: {current['fingerprint']}")
+        print(f"Connected monitors: {', '.join(current['connected_monitors'])}")
+        print(f"Active logical displays: {len(current['logical_monitors'])}")
+    except Exception as exc:
+        print(f"Live DisplayConfig unavailable: {exc}")
+    profiles = store.get("profiles", {})
+    print(f"Saved profiles: {len(profiles)}")
+    for fp, prof in profiles.items():
+        print(f"  - {fp}: {len(prof.get('logical_monitors', []))} logical display(s) [{', '.join(prof.get('connected_monitors', []))}]")
+    return 0
+
+
+def cmd_watch(profile_path, debounce_ms=1500):
+    from gi.repository import GLib
+
+    # Wait briefly for Mutter DisplayConfig to be ready on session startup, then restore
+    proxy = None
+    for _ in range(15):
+        try:
+            proxy = get_display_proxy()
+            cmd_restore(profile_path, proxy=proxy)
+            break
+        except Exception:
+            time.sleep(1)
+
+    if proxy is None:
+        print("mac-monitor-persist: unable to connect to org.gnome.Mutter.DisplayConfig.", file=sys.stderr)
+        return 1
+
+    timer_id = [0]
+
+    def on_debounced_save():
+        timer_id[0] = 0
+        try:
+            cmd_save(profile_path, proxy=proxy)
+        except Exception as exc:
+            print(f"mac-monitor-persist: save failed: {exc}", file=sys.stderr)
+        return False
+
+    def on_signal(_proxy, _sender, signal_name, _params):
+        if signal_name != "MonitorsChanged":
+            return
+        if timer_id[0]:
+            GLib.source_remove(timer_id[0])
+        timer_id[0] = GLib.timeout_add(debounce_ms, on_debounced_save)
+
+    proxy.connect("g-signal", on_signal)
+    loop = GLib.MainLoop()
+    try:
+        loop.run()
+    except KeyboardInterrupt:
+        pass
+    return 0
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Persist GNOME Super+P monitor layouts across reboots.")
+    parser.add_argument("action", choices=["save", "restore", "watch", "status"])
+    parser.add_argument("--profiles", default=str(default_profile_path()))
+    args = parser.parse_args()
+
+    if args.action == "save":
+        return cmd_save(args.profiles)
+    if args.action == "restore":
+        return cmd_restore(args.profiles)
+    if args.action == "watch":
+        return cmd_watch(args.profiles)
+    if args.action == "status":
+        return cmd_status(args.profiles)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

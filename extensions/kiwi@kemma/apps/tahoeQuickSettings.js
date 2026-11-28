@@ -201,6 +201,20 @@ function _qsGlassBrightness() {
     }
 }
 
+let _lastBrightnessWarnMs = 0;
+function _notifyBrightnessUnavailable() {
+    const now = Date.now();
+    if (now - _lastBrightnessWarnMs < 3000)
+        return;
+    _lastBrightnessWarnMs = now;
+    try {
+        Main.notify(
+            t('brightness_unavailable_title', 'Display Brightness Unavailable'),
+            t('brightness_unavailable_body', 'Brightness control is not supported on this monitor.')
+        );
+    } catch (_) {}
+}
+
 function _qsInt(key, dflt) {
     try {
         return _settings?.get_int?.(key) ?? dflt;
@@ -889,6 +903,7 @@ function _buildPanel() {
     });
     const art = new St.Bin({
         style_class: 'tahoe-qs-music-art',
+        x_expand: true,
         child: artIcon,
     });
     artWrap.add_child(art);
@@ -1083,20 +1098,27 @@ function _buildPanel() {
                 '/org/gnome/SettingsDaemon/Power/Screen',
                 'org.gnome.SettingsDaemon.Power.Screen',
                 null);
-            if (proxy) {
+            const b = proxy ? proxy.get_cached_property('Brightness') : null;
+            const bVal = b !== null ? b.unpack() : -1;
+            if (proxy && proxy.get_name_owner() && b !== null && bVal >= 0) {
                 haveBrightness = true;
                 state.screen = proxy;
-                try {
-                    const b = proxy.get_cached_property('Brightness');
-                    if (b !== null)
-                        disp.slider.value = b.unpack() / 100;
-                } catch (_) {
-
-                }
+                disp.slider.value = bVal / 100;
                 disp.slider.connect('notify::value', () => {
+                    if (state.dispGuard)
+                        return;
                     try {
-                        proxy.set('org.gnome.SettingsDaemon.Power.Screen', 'Brightness',
-                            GLib.Variant.new_int32(Math.round(disp.slider.value * 100)));
+                        proxy.call(
+                            'org.freedesktop.DBus.Properties.Set',
+                            new GLib.Variant('(ssv)', [
+                                'org.gnome.SettingsDaemon.Power.Screen',
+                                'Brightness',
+                                GLib.Variant.new_int32(Math.round(disp.slider.value * 100)),
+                            ]),
+                            Gio.DBusCallFlags.NONE,
+                            -1,
+                            null,
+                            null);
                     } catch (_) {
 
                     }
@@ -1124,14 +1146,48 @@ function _buildPanel() {
 
         }
     }
-    if (!haveBrightness) {
-
-        disp.box.opacity = 140;
+    if (haveBrightness) {
+        const stepBrightness = (delta) => {
+            try {
+                const cur = typeof disp.slider.value === 'number' ? disp.slider.value : 0.5;
+                disp.slider.value = Math.max(0.05, Math.min(1.0, Math.round((cur + delta) * 100) / 100));
+            } catch (_) {}
+        };
+        if (disp.iconL) {
+            disp.iconL.reactive = true;
+            disp.iconL.connect('button-press-event', () => {
+                stepBrightness(-0.10);
+                return Clutter.EVENT_STOP;
+            });
+        }
+        if (disp.iconR) {
+            disp.iconR.reactive = true;
+            disp.iconR.connect('button-press-event', () => {
+                stepBrightness(0.10);
+                return Clutter.EVENT_STOP;
+            });
+        }
+    } else {
+        disp.box.opacity = 165;
         try {
             disp.slider.reactive = false;
             disp.slider.can_focus = false;
-        } catch (_) {
-
+        } catch (_) {}
+        const onUnavailableClick = (_actor, event) => {
+            if (event && event.get_button && event.get_button() !== 1)
+                return Clutter.EVENT_PROPAGATE;
+            _notifyBrightnessUnavailable();
+            return Clutter.EVENT_STOP;
+        };
+        disp.box.reactive = true;
+        disp.box.connect('button-press-event', onUnavailableClick);
+        if (disp.iconL) {
+            disp.iconL.reactive = true;
+            disp.iconL.connect('button-press-event', onUnavailableClick);
+        }
+        if (disp.iconR) {
+            disp.iconR.reactive = true;
+            disp.iconR.connect('button-press-event', onUnavailableClick);
         }
     }
 
@@ -1146,13 +1202,43 @@ function _buildPanel() {
         }
         return Clutter.EVENT_PROPAGATE;
     });
+    const setSinkMuted = (sink, muted) => {
+        if (!sink) return;
+        if (typeof sink.change_is_muted === 'function')
+            sink.change_is_muted(muted);
+        else
+            sink.is_muted = muted;
+    };
+    const stepVolume = (delta) => {
+        try {
+            if (!state.sink || !state.control)
+                return;
+            const max = state.control.get_vol_max_norm() || 65536;
+            const cur = state.sink.is_muted ? 0 : (state.sink.volume / max);
+            const next = Math.max(0, Math.min(1, Math.round((cur + delta) * 100) / 100));
+            if (next <= 0.001) {
+                state.sink.volume = 0;
+                setSinkMuted(state.sink, true);
+            } else {
+                if (state.sink.is_muted)
+                    setSinkMuted(state.sink, false);
+                state.sink.volume = Math.round(next * max);
+            }
+            state.sink.push_volume();
+            snd.slider.value = next;
+        } catch (_) {}
+    };
     if (snd.iconL) {
         snd.iconL.reactive = true;
         snd.iconL.connect('button-press-event', () => {
-            try {
-                if (state.sink)
-                    state.sink.is_muted = !state.sink.is_muted;
-            } catch (_) {}
+            stepVolume(-0.05);
+            return Clutter.EVENT_STOP;
+        });
+    }
+    if (snd.iconR) {
+        snd.iconR.reactive = true;
+        snd.iconR.connect('button-press-event', () => {
+            stepVolume(0.05);
             return Clutter.EVENT_STOP;
         });
     }
@@ -1253,7 +1339,7 @@ function _buildPanel() {
                         const max = control.get_vol_max_norm() || 65536;
                         state.sink.volume = Math.round(snd.slider.value * max);
                         if (state.sink.is_muted && snd.slider.value > 0)
-                            state.sink.is_muted = false;
+                            setSinkMuted(state.sink, false);
                         state.sink.push_volume();
                     } catch (_) {
 
@@ -1742,20 +1828,20 @@ function _refreshPowerMode(pill) {
     if (!pill) return;
     try {
         const profile = _getPowerProfile();
-        let subtitle = t('power_balanced', 'Баланс');
+        let subtitle = t('power_balanced', 'Balanced');
         let iconName = 'power-profile-balanced-symbolic';
         let isActive = false;
 
         if (profile === 'performance') {
-            subtitle = t('power_performance', 'Швидкодія');
+            subtitle = t('power_performance', 'Performance');
             iconName = 'power-profile-performance-symbolic';
             isActive = true;
         } else if (profile === 'power-saver') {
-            subtitle = t('power_saver', 'Заощадження');
+            subtitle = t('power_saver', 'Power Saver');
             iconName = 'power-profile-power-saver-symbolic';
             isActive = false;
         } else {
-            subtitle = t('power_balanced', 'Баланс');
+            subtitle = t('power_balanced', 'Balanced');
             iconName = 'power-profile-balanced-symbolic';
             isActive = false;
         }
@@ -2378,11 +2464,17 @@ function _setArt(p, url) {
             return;
         p.artUrl = url;
         console.log(`[tahoe-qs-art] url=${url.slice(0, 100)}`);
-        const make = path => new St.Icon({
-            gicon: new Gio.FileIcon({file: Gio.File.new_for_path(path)}),
-            icon_size: 44,
-        });
-        const fallback = () => p.artBin.set_child(p.artIcon);
+        const applyArt = path => {
+            const uri = Gio.File.new_for_path(path).get_uri();
+            p.artBin.set_child(null);
+            p.artBin.set_style(
+                `background-image: url("${uri}"); background-size: cover; background-position: center;`
+            );
+        };
+        const fallback = () => {
+            p.artBin.set_style(null);
+            p.artBin.set_child(p.artIcon);
+        };
         let path = null;
         if (url.startsWith('file://'))
             path = Gio.File.new_for_uri(url).get_path();
@@ -2390,7 +2482,7 @@ function _setArt(p, url) {
             path = url;
         if (path && GLib.file_test(path, GLib.FileTest.EXISTS)) {
             console.log(`[tahoe-qs-art] local file ok: ${path.slice(0, 100)}`);
-            p.artBin.set_child(make(path));
+            applyArt(path);
             return;
         }
         if (!path && (url.startsWith('file://') || url.startsWith('/')))
@@ -2414,7 +2506,7 @@ function _setArt(p, url) {
                         out.write_bytes(bytes, null);
                         out.close(null);
                         console.log(`[tahoe-qs-art] cached: ${dst}`);
-                        p.artBin.set_child(make(dst));
+                        applyArt(dst);
                     } catch (e) {
                         console.log(`[tahoe-qs-art] download failed: ${e}`);
                     }
@@ -2424,6 +2516,7 @@ function _setArt(p, url) {
         fallback();
     } catch (_) {
         try {
+            p.artBin.set_style(null);
             p.artBin.set_child(p.artIcon);
         } catch (__) {
 
@@ -3068,7 +3161,7 @@ function _editCatalog() {
     return [
         {id: 'wifi', title: t('wifi', 'Wi-Fi'), icon: 'network-wireless-symbolic', category: 'connectivity'},
         {id: 'bt', title: t('bluetooth', 'Bluetooth'), icon: 'bluetooth-active-symbolic', category: 'connectivity'},
-        {id: 'air', title: t('power_mode_short', 'Режим'), icon: 'power-profile-performance-symbolic', category: 'connectivity'},
+        {id: 'air', title: t('power_mode_short', 'Mode'), icon: 'power-profile-performance-symbolic', category: 'connectivity'},
         {id: 'focus', title: t('focus', 'Focus'), gicon: g.focus, icon: 'weather-clear-night-symbolic', category: 'focus'},
         {id: 'display', title: t('display', 'Display'), icon: 'display-brightness-symbolic', category: 'display'},
         {id: 'dark', title: t('dark_mode', 'Dark Mode'), gicon: g.theme, icon: 'weather-clear-night-symbolic', category: 'display'},

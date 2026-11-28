@@ -624,7 +624,7 @@ if (!globalThis[EFFECT_CLASS_KEY]) {
         try {
             globalThis[EFFECT_CLASS_KEY] = defineLiquidGlassEffect();
         } catch (e) {
-            console.warn(`[desktop-widgets glass] get_static_snippet vfunc unavailable, using fallback: ${e}`);
+            // Expected on GNOME 50+ where ClutterShaderEffect::get_static_snippet is absent; fallback works cleanly.
             globalThis[EFFECT_CLASS_KEY] = defineLiquidGlassEffectCompat();
         }
     }

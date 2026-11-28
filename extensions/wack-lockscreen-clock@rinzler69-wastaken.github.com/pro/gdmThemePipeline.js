@@ -801,6 +801,7 @@ export class GdmWallpaperView {
         for (const monitor of Main.layoutManager.monitors) {
             const container = new St.Widget({
                 x: monitor.x, y: monitor.y, width: monitor.width, height: monitor.height,
+                clip_to_allocation: true,
                 effect: new Shell.BlurEffect({ name: 'blur' }),
             });
             container.get_effect('blur').set({ radius: 0, brightness: 1.0 });
@@ -937,9 +938,10 @@ export class GdmWallpaperView {
 
     _createStack(m, theme) {
         const s = theme.slide;
-        const root = new St.Widget({ width: m.monitor.width, height: m.monitor.height, opacity: 255 });
+        const root = new St.Widget({ width: m.monitor.width, height: m.monitor.height, opacity: 255, clip_to_allocation: true });
         const mk = image => new St.Widget({
             width: m.monitor.width, height: m.monitor.height,
+            clip_to_allocation: true,
             style: this._backgroundStyle(theme.meta, image),
         });
         let base;

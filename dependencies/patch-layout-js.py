@@ -120,6 +120,27 @@ def patch_layout_js(orig_text: str, template_text: str) -> str:
     if add_chrome_orig in out:
         out = out.replace(add_chrome_orig, add_chrome_safe, 1)
 
+    # Guard start-in-overview lookup when schema (e.g. Debian/Kali GNOME 50.5) lacks the key
+    start_ov_pat = re.compile(
+        r"        this\._startInOverview =\s*\n"
+        r"            Main\.sessionMode\.hasOverview &&\s*\n"
+        r"            global\.settings\.get_boolean\('start-in-overview'\);"
+    )
+    start_ov_safe = (
+        "        this._startInOverview = false;\n"
+        "        if (Main.sessionMode.hasOverview) {\n"
+        "            try {\n"
+        "                const schema = global.settings?.settings_schema;\n"
+        "                if (schema && typeof schema.has_key === 'function' && schema.has_key('start-in-overview')) {\n"
+        "                    this._startInOverview = global.settings.get_boolean('start-in-overview');\n"
+        "                }\n"
+        "            } catch (_e) {\n"
+        "                this._startInOverview = false;\n"
+        "            }\n"
+        "        }"
+    )
+    out = start_ov_pat.sub(start_ov_safe, out, count=1)
+
     return out
 
 

@@ -25,15 +25,15 @@ case " $* " in
 esac
 
 # 1. Manual Safe Mode bypass flags
-if [ -f "/etc/mactheme/disable-overlay" ] || [ -f "/tmp/disable-mactheme-overlay" ]; then
+if [ "${MACW1Y_DISABLE_SHELL_OVERLAY:-0}" = "1" ] || [ -f "/etc/mactheme/disable-overlay" ] || [ -f "/tmp/disable-mactheme-overlay" ]; then
     logger -t mactheme "Overlay disabled by administrator safe mode flag." 2>/dev/null || true
-    bypass_overlay
+    bypass_overlay "$@"
 fi
 
 # 2. Kernel command line safe mode check (nomactheme or safemode)
 if grep -qE "(nomactheme|safemode)" /proc/cmdline 2>/dev/null; then
     logger -t mactheme "Overlay bypassed due to kernel boot parameter." 2>/dev/null || true
-    bypass_overlay
+    bypass_overlay "$@"
 fi
 
 # 3. GNOME Shell Version Compatibility Guard (Supported: GNOME 45..52)
@@ -43,7 +43,7 @@ GNOME_MAJOR=$(echo "$GNOME_VER" | cut -d. -f1)
 if [ -n "$GNOME_MAJOR" ]; then
     if [ "$GNOME_MAJOR" -lt 45 ] || [ "$GNOME_MAJOR" -gt 52 ]; then
         logger -t mactheme "GNOME Shell version $GNOME_VER is outside tested range (45-52). Bypassing overlay for stability." 2>/dev/null || true
-        bypass_overlay
+        bypass_overlay "$@"
     fi
 fi
 
@@ -77,7 +77,7 @@ if [ "$IS_GDM" -eq 0 ] && [ -f "$WATCHDOG_LAUNCH" ]; then
         echo "$NOW" > "$WATCHDOG_FAILED" 2>/dev/null || true
         rm -f "$WATCHDOG_LAUNCH" 2>/dev/null || true
         logger -t mactheme "[WATCHDOG WARNING] GNOME Shell failed on previous launch (${DIFF}s ago). Bypassing overlay to guarantee clean desktop boot." 2>/dev/null || true
-        bypass_overlay
+        bypass_overlay "$@"
     fi
 fi
 
@@ -87,7 +87,7 @@ if [ "$IS_GDM" -eq 0 ] && [ -f "$WATCHDOG_FAILED" ]; then
     DIFF_FAIL=$((NOW - FAIL_TIME))
     if [ "$DIFF_FAIL" -ge 0 ] && [ "$DIFF_FAIL" -lt 120 ]; then
         logger -t mactheme "[WATCHDOG SAFE MODE] Recent failure detected (${DIFF_FAIL}s ago). Bypassing overlay." 2>/dev/null || true
-        bypass_overlay
+        bypass_overlay "$@"
     else
         rm -f "$WATCHDOG_FAILED" 2>/dev/null || true
     fi

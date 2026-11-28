@@ -3297,6 +3297,15 @@ window.nautilus-window gridview > child:selected label.caption,
 gridview > child:selected label.caption {{
   color: {"rgba(255, 255, 255, 0.70)" if is_dark else "rgba(0, 0, 0, 0.65)"};
 }}
+
+/* Keep Chromium/Chrome GTK4 headerbar uniformly opaque so the tab strip matches its left/right corner tiles */
+window.background.chromium headerbar,
+window.background.chromium headerbar:backdrop,
+window.background.chromium headerbar.header-bar.titlebar,
+window.background.chromium headerbar.header-bar.titlebar:backdrop {{
+  background-color: @window_bg_color;
+  background-image: none;
+}}
 """
     return css
 

@@ -46,8 +46,8 @@ DEFAULT_CONFIG = {
     "processing_algorithm": 0,   # 0=lanczos, 1=bicubic, 2=unsharp
     "processing_scope": 0,       # 0=both, 1=screenshots, 2=screencasts
     "keep_original": False,
-    "screenshots_dir": "~/Зображення/Знімки екрана",
-    "screencasts_dir": "~/Відео/Трансляції з екрана"
+    "screenshots_dir": "~/Pictures/Screenshots",
+    "screencasts_dir": "~/Videos/Screencasts"
 }
 
 def load_config():

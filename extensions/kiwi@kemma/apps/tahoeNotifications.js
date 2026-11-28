@@ -2338,11 +2338,11 @@ function _collapseNcGroups(p, merges = null) {
     const gr = new Map();
     const order = [];
     for (const b of kids) {
-        let app = String(b._macApp ?? '').trim() || t('notifications', 'Повідомлення');
+        let app = String(b._macApp ?? '').trim() || t('notifications', 'Notifications');
         if (/знім|screenshot|screen\s*capture/i.test(app) ||
             /знім|screenshot/i.test(b._notification?.title || '') ||
             (b._notification?.source?.id && /screenshot/i.test(b._notification.source.id))) {
-            app = t('screen_capture', 'Захоплення знімків екрана');
+            app = t('screen_capture', 'Screen Capture');
         }
         let g = gr.get(app);
         if (!g) {

@@ -61,11 +61,34 @@ NEW_VERSION="$(get_project_version "$SCRIPT_DIR")"
 
 source "$SCRIPT_DIR/dependencies/boot-tools.sh"
 
+# Default component selection: preserve full macW1Y v0.8 installation flow by default,
+# while allowing modular --only-components / --no-* / --with-* overrides and --dry-run planning.
+OPT_GTK="true"
+OPT_EXTENSIONS="true"
+OPT_ICONS="true"
+OPT_FONTS="true"
+OPT_WALLPAPERS="true"
+OPT_SOUNDS="true"
+OPT_GDM="true"
+OPT_SHELL_OVERLAY="true"
+OPT_GRUB="true"
+OPT_PLYMOUTH="true"
+OPT_GESTURES="true"
+OPT_NATIVE_LIBS="true"
+OPT_WRAPPERS="true"
+OPT_PERF_TWEAKS="true"
+OPT_SUDOERS="true"
+
+DRY_RUN="false"
+STATE_DIR="${MACW1Y_STATE_DIR:-$TARGET_HOME/.local/state/macw1y}"
+STAGE_FAILURES=()
+
 show_usage() {
     echo "Usage: ./install.sh [OPTIONS]"
     echo ""
     echo "Options:"
     echo "  --install, -i, --all, -y, --yes  Full installation of macW1Y release v${NEW_VERSION}"
+    echo "  --dry-run, --plan                Run preflight checks and print installation plan without changes"
     echo "  --update, -u                     Incremental update of existing installation to v${NEW_VERSION}"
     echo "  --clean-update, -c               Clean reinstall (complete removal of old files + fresh install)"
     echo "  -let_me_try_bradar               UI test simulation mode (runs visual interface with 10-second mock install)"
@@ -74,6 +97,8 @@ show_usage() {
     echo "  -debug_install, --debug_install  Interactive CLI installation & maintenance menu"
     echo "  --uninstall, -debug_uninstall    Completely uninstall macW1Y and restore original GNOME appearance"
     echo "  --benchmark, -benchmark          Run Liquid Glass GPU performance benchmark"
+    echo "  --only-components LIST           Install only comma-separated components (gtk,extensions,icons,fonts,wallpapers,sounds)"
+    echo "  --with-<name> / --no-<name>      Toggle gdm, shell-overlay, grub, plymouth, boot-themes, gestures, native-libs, wrappers, perf-tweaks, sudoers"
     echo "  --help, -h, -?                   Show all launch parameters and options"
 }
 
@@ -96,26 +121,88 @@ if [ "$1" = "--benchmark" ] || [ "$1" = "-benchmark" ]; then
     fi
 fi
 
-# Low-Spec, Eco Engine and Mock Simulation Detection
+# Modular Flags, Low-Spec, Eco Engine and Mock Simulation Detection
 APPLY_LOW_SPEC="false"
 MOCK_MODE="false"
 _CLEANED_ARGS=()
-for arg in "$@"; do
-    if [ "$arg" = "--low-spec" ] || [ "$arg" = "--eco" ] || [ "$arg" = "-e" ]; then
-        APPLY_LOW_SPEC="true"
-    elif [ "$arg" = "-let_me_try_bradar" ] || [ "$arg" = "--let_me_try_bradar" ]; then
-        MOCK_MODE="true"
-    else
-        _CLEANED_ARGS+=("$arg")
-    fi
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --dry-run|--plan) DRY_RUN="true" ;;
+        --low-spec|--eco|-e) APPLY_LOW_SPEC="true" ;;
+        -let_me_try_bradar|--let_me_try_bradar) MOCK_MODE="true" ;;
+        --gtk) OPT_GTK="true" ;;
+        --no-gtk) OPT_GTK="false" ;;
+        --extensions) OPT_EXTENSIONS="true" ;;
+        --no-extensions) OPT_EXTENSIONS="false" ;;
+        --icons) OPT_ICONS="true" ;;
+        --no-icons) OPT_ICONS="false" ;;
+        --fonts) OPT_FONTS="true" ;;
+        --no-fonts) OPT_FONTS="false" ;;
+        --wallpapers) OPT_WALLPAPERS="true" ;;
+        --no-wallpapers) OPT_WALLPAPERS="false" ;;
+        --sounds) OPT_SOUNDS="true" ;;
+        --no-sounds) OPT_SOUNDS="false" ;;
+        --with-gdm) OPT_GDM="true" ;;
+        --no-gdm) OPT_GDM="false" ;;
+        --with-shell-overlay) OPT_SHELL_OVERLAY="true" ;;
+        --no-shell-overlay) OPT_SHELL_OVERLAY="false" ;;
+        --with-grub) OPT_GRUB="true" ;;
+        --no-grub) OPT_GRUB="false" ;;
+        --with-plymouth) OPT_PLYMOUTH="true" ;;
+        --no-plymouth) OPT_PLYMOUTH="false" ;;
+        --with-boot-themes) OPT_GRUB="true"; OPT_PLYMOUTH="true" ;;
+        --no-boot-themes) OPT_GRUB="false"; OPT_PLYMOUTH="false" ;;
+        --with-gestures|--with-touchpad) OPT_GESTURES="true" ;;
+        --no-gestures|--no-touchpad) OPT_GESTURES="false" ;;
+        --with-native-libs) OPT_NATIVE_LIBS="true" ;;
+        --no-native-libs) OPT_NATIVE_LIBS="false" ;;
+        --with-wrappers) OPT_WRAPPERS="true" ;;
+        --no-wrappers) OPT_WRAPPERS="false" ;;
+        --with-perf-tweaks) OPT_PERF_TWEAKS="true" ;;
+        --no-perf-tweaks) OPT_PERF_TWEAKS="false" ;;
+        --with-sudoers) OPT_SUDOERS="true" ;;
+        --no-sudoers) OPT_SUDOERS="false" ;;
+        --only-components)
+            shift
+            OPT_GTK="false"; OPT_EXTENSIONS="false"; OPT_ICONS="false"
+            OPT_FONTS="false"; OPT_WALLPAPERS="false"; OPT_SOUNDS="false"
+            OPT_GDM="false"; OPT_SHELL_OVERLAY="false"; OPT_GRUB="false"
+            OPT_PLYMOUTH="false"; OPT_GESTURES="false"; OPT_NATIVE_LIBS="false"
+            OPT_WRAPPERS="false"; OPT_PERF_TWEAKS="false"; OPT_SUDOERS="false"
+            IFS=',' read -r -a _sel <<< "${1:-}"
+            for _c in "${_sel[@]}"; do
+                case "$_c" in
+                    gtk) OPT_GTK="true" ;;
+                    extensions) OPT_EXTENSIONS="true" ;;
+                    icons) OPT_ICONS="true" ;;
+                    fonts) OPT_FONTS="true" ;;
+                    wallpapers) OPT_WALLPAPERS="true" ;;
+                    sounds) OPT_SOUNDS="true" ;;
+                    gdm) OPT_GDM="true" ;;
+                    shell-overlay) OPT_SHELL_OVERLAY="true" ;;
+                    grub) OPT_GRUB="true" ;;
+                    plymouth) OPT_PLYMOUTH="true" ;;
+                    gestures|touchpad) OPT_GESTURES="true" ;;
+                    native-libs) OPT_NATIVE_LIBS="true" ;;
+                    wrappers) OPT_WRAPPERS="true" ;;
+                    perf-tweaks) OPT_PERF_TWEAKS="true" ;;
+                    sudoers) OPT_SUDOERS="true" ;;
+                    *) echo "Unknown component: $_c" >&2; exit 2 ;;
+                esac
+            done
+            ;;
+        *) _CLEANED_ARGS+=("$1") ;;
+    esac
+    shift
 done
 [ ${#_CLEANED_ARGS[@]} -gt 0 ] && set -- "${_CLEANED_ARGS[@]}" || set --
-export APPLY_LOW_SPEC
-export MOCK_MODE
+export APPLY_LOW_SPEC MOCK_MODE DRY_RUN STATE_DIR
 
 # GUI Installer Dispatcher
 GUI_WORKER="false"
-if [ "$1" = "--gui-worker" ]; then
+if [ "$DRY_RUN" = "true" ]; then
+    MAC_INSTALLER_CLI="1"
+elif [ "$1" = "--gui-worker" ]; then
     GUI_WORKER="true"
     shift
 elif [ "$1" = "--cli" ] || [ "$1" = "-cli" ]; then
@@ -265,6 +352,124 @@ require_root() {
         log_info "Administrator privileges (sudo) are required to apply system settings."
         sudo -v || { log_error "Failed to acquire sudo privileges. Exiting."; exit 1; }
     fi
+}
+
+macw1y_state() {
+    if [ -x "$SCRIPT_DIR/libexec/macw1y-state.py" ] && command -v python3 >/dev/null 2>&1; then
+        python3 "$SCRIPT_DIR/libexec/macw1y-state.py" --state-dir "$STATE_DIR" "$@"
+    fi
+}
+
+macw1y_set_gsetting() {
+    local schema="$1"
+    local key="$2"
+    local val="$3"
+    local cur=""
+    cur="$(run_as_user gsettings get "$schema" "$key" 2>/dev/null || true)"
+    if [ -n "$cur" ]; then
+        macw1y_state record-gsetting "$schema" "$key" --value "$cur" 2>/dev/null || true
+    else
+        macw1y_state record-gsetting "$schema" "$key" 2>/dev/null || true
+    fi
+    run_as_user gsettings set "$schema" "$key" "$val" 2>/dev/null || true
+}
+
+needs_root_privileges() {
+    if [ "$OPT_GDM" = "true" ] || [ "$OPT_SHELL_OVERLAY" = "true" ] || \
+       [ "$OPT_GRUB" = "true" ] || [ "$OPT_PLYMOUTH" = "true" ] || \
+       [ "$OPT_GESTURES" = "true" ] || [ "$OPT_NATIVE_LIBS" = "true" ] || \
+       [ "$OPT_WRAPPERS" = "true" ] || [ "$OPT_PERF_TWEAKS" = "true" ] || \
+       [ "$OPT_SUDOERS" = "true" ]; then
+        return 0
+    fi
+    return 1
+}
+
+run_preflight_checks() {
+    local preflight_ok=0
+    log_step "Preflight Checks (compatibility, dependencies, privileges, disk space)"
+
+    if ! python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR"; then
+        log_error "Platform compatibility check failed."
+        preflight_ok=1
+    fi
+
+    local missing_cmds=()
+    for req_cmd in python3 gsettings glib-compile-schemas; do
+        if ! command -v "$req_cmd" >/dev/null 2>&1; then
+            missing_cmds+=("$req_cmd")
+        fi
+    done
+    if [ ${#missing_cmds[@]} -gt 0 ]; then
+        log_warning "Missing runtime tools: ${missing_cmds[*]}"
+        preflight_ok=1
+    else
+        log_success "Core runtime tools present (python3, gsettings, glib-compile-schemas)."
+    fi
+
+    local free_mb
+    free_mb="$(python3 -c "import shutil; print(shutil.disk_usage('$TARGET_HOME').free // (1024*1024))" 2>/dev/null || echo 0)"
+    if [ "$free_mb" -lt 500 ]; then
+        log_error "Insufficient disk space in $TARGET_HOME: ${free_mb} MB free (500 MB required)."
+        preflight_ok=1
+    else
+        log_success "Disk space check passed: ${free_mb} MB free in $TARGET_HOME."
+    fi
+
+    if needs_root_privileges; then
+        log_info "Selected system components require root (sudo) privileges."
+        if ! command -v sudo >/dev/null 2>&1 && [ "$EUID" -ne 0 ]; then
+            log_error "sudo is not installed and current user is not root."
+            preflight_ok=1
+        fi
+    else
+        log_success "Selected components are user-scoped; no root privileges required for core install."
+    fi
+
+    return "$preflight_ok"
+}
+
+print_dry_run_plan() {
+    log_step "Dry-Run Installation Plan (no files or settings will be modified)"
+    echo "  Target user: $TARGET_USER ($TARGET_HOME)"
+    echo "  State manifest: $STATE_DIR/install-manifest.json"
+    echo ""
+    echo "  Core components:"
+    echo "    - GTK / Shell theme : $OPT_GTK"
+    echo "    - Shell extensions  : $OPT_EXTENSIONS"
+    echo "    - Icons & cursors   : $OPT_ICONS"
+    echo "    - Fonts             : $OPT_FONTS"
+    echo "    - Wallpapers        : $OPT_WALLPAPERS"
+    echo "    - Sounds            : $OPT_SOUNDS"
+    echo ""
+    echo "  System & integration components:"
+    echo "    - GDM theme         : $OPT_GDM"
+    echo "    - Shell overlay     : $OPT_SHELL_OVERLAY"
+    echo "    - GRUB theme        : $OPT_GRUB"
+    echo "    - Plymouth splash   : $OPT_PLYMOUTH"
+    echo "    - Touchpad gestures : $OPT_GESTURES"
+    echo "    - Native LD_PRELOAD : $OPT_NATIVE_LIBS"
+    echo "    - App wrappers      : $OPT_WRAPPERS"
+    echo "    - Perf tweaks       : $OPT_PERF_TWEAKS (low-spec: $APPLY_LOW_SPEC)"
+    echo "    - Sudoers rules     : $OPT_SUDOERS"
+    echo ""
+    if needs_root_privileges; then
+        echo "  Privilege requirement : sudo/root REQUIRED (system components enabled)"
+    else
+        echo "  Privilege requirement : unprivileged user mode (no system files modified)"
+    fi
+}
+
+run_stage() {
+    local stage_name="$1"
+    shift
+    macw1y_state record-component "$stage_name" 2>/dev/null || true
+    if ! "$@"; then
+        log_error "Stage failed: $stage_name"
+        STAGE_FAILURES+=("$stage_name")
+        return 1
+    fi
+    return 0
 }
 
 # ------------------------------------------------------------------------------
@@ -1010,36 +1215,44 @@ install_themes() {
         cp -r "$SCRIPT_DIR/gnome-shell-theme/"* "$THEMES_DIR/macW1Y-Dark/gnome-shell/"
     fi
     
-    if [ -f "$SCRIPT_DIR/lib/libmacpopover.so" ]; then
-        install_mac_shared_lib "$SCRIPT_DIR/lib/libmacpopover.so"
-        rm -f "$TARGET_HOME/.config/environment.d/10-mac-theme.conf" 2>/dev/null || true
-        sudo sed -i "/libmacpopover.so/d" /etc/environment 2>/dev/null || true
+    if [ "$OPT_NATIVE_LIBS" = "true" ]; then
+        require_root
+        if [ -f "$SCRIPT_DIR/lib/libmacpopover.so" ]; then
+            install_mac_shared_lib "$SCRIPT_DIR/lib/libmacpopover.so"
+            rm -f "$TARGET_HOME/.config/environment.d/10-mac-theme.conf" 2>/dev/null || true
+            sudo sed -i "/libmacpopover.so/d" /etc/environment 2>/dev/null || true
+        fi
+
+        if [ -f "$SCRIPT_DIR/lib/libmac_terminal.so" ]; then
+            install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_terminal.so"
+        fi
+        if [ -f "$SCRIPT_DIR/lib/libmac_memtrim.so" ]; then
+            install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_memtrim.so"
+        fi
+        if [ -f "$SCRIPT_DIR/lib/MacMemTrim-1.0.typelib" ]; then
+            install_mac_typelib "$SCRIPT_DIR/lib/MacMemTrim-1.0.typelib"
+        fi
+        
+        # Configuring macW1Y Nautilus Finder Sidebar and extensions
+        log_info "Installing macW1Y Nautilus Finder Sidebar and extensions..."
+        if [ -f "$SCRIPT_DIR/lib/libmac_nautilus.so" ]; then
+            install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_nautilus.so"
+        fi
+        if [ -f "$SCRIPT_DIR/lib/libmac_nautilus_menu.so" ]; then
+            install_nautilus_extension "$SCRIPT_DIR/lib/libmac_nautilus_menu.so"
+        fi
     fi
 
-    if [ -f "$SCRIPT_DIR/lib/libmac_terminal.so" ]; then
-        install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_terminal.so"
+    if [ "$OPT_WRAPPERS" = "true" ]; then
+        require_root
+        if [ -f "$SCRIPT_DIR/bin/ptyxis" ]; then
+            macw1y_state record-file /usr/local/bin/ptyxis --component wrappers 2>/dev/null || true
+            sudo cp -f "$SCRIPT_DIR/bin/ptyxis" /usr/local/bin/ptyxis
+            sudo chmod 755 /usr/local/bin/ptyxis
+        fi
+        macw1y_state record-file /usr/local/bin/nautilus --component wrappers 2>/dev/null || true
+        install_app_wrapper nautilus
     fi
-    if [ -f "$SCRIPT_DIR/bin/ptyxis" ]; then
-        sudo cp -f "$SCRIPT_DIR/bin/ptyxis" /usr/local/bin/ptyxis
-        sudo chmod 755 /usr/local/bin/ptyxis
-    fi
-
-    if [ -f "$SCRIPT_DIR/lib/libmac_memtrim.so" ]; then
-        install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_memtrim.so"
-    fi
-    if [ -f "$SCRIPT_DIR/lib/MacMemTrim-1.0.typelib" ]; then
-        install_mac_typelib "$SCRIPT_DIR/lib/MacMemTrim-1.0.typelib"
-    fi
-    
-    # Configuring macW1Y Nautilus Finder Sidebar and Applications section
-    log_info "Installing macW1Y Nautilus Finder Sidebar and extensions..."
-    if [ -f "$SCRIPT_DIR/lib/libmac_nautilus.so" ]; then
-        install_mac_shared_lib "$SCRIPT_DIR/lib/libmac_nautilus.so"
-    fi
-    if [ -f "$SCRIPT_DIR/lib/libmac_nautilus_menu.so" ]; then
-        install_nautilus_extension "$SCRIPT_DIR/lib/libmac_nautilus_menu.so"
-    fi
-    install_app_wrapper nautilus
 
     if [ -f "$SCRIPT_DIR/bin/mac-sync-applications" ]; then
         sudo cp -f "$SCRIPT_DIR/bin/mac-sync-applications" /usr/local/bin/mac-sync-applications
@@ -1577,9 +1790,19 @@ install_user_systemd_units() {
             sync_or_update_file "$SCRIPT_DIR/systemd/$unit_name" "$USER_SYSTEMD/$unit_name" false
         fi
     done
+    if [ -f "$SCRIPT_DIR/bin/mac-monitor-persist" ] && [ -f "$SCRIPT_DIR/systemd/mac-monitor-persist.service" ]; then
+        mkdir -p "$TARGET_HOME/.local/bin"
+        macw1y_state record-file "$TARGET_HOME/.local/bin/mac-monitor-persist" --component extensions 2>/dev/null || true
+        macw1y_state record-file "$USER_SYSTEMD/mac-monitor-persist.service" --component extensions 2>/dev/null || true
+        macw1y_state record-service "mac-monitor-persist.service" --scope user 2>/dev/null || true
+        cp -f "$SCRIPT_DIR/bin/mac-monitor-persist" "$TARGET_HOME/.local/bin/mac-monitor-persist"
+        chmod 755 "$TARGET_HOME/.local/bin/mac-monitor-persist"
+        sync_or_update_file "$SCRIPT_DIR/systemd/mac-monitor-persist.service" "$USER_SYSTEMD/mac-monitor-persist.service" false
+        chown "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.local/bin/mac-monitor-persist" 2>/dev/null || true
+    fi
     chown -R "${TARGET_USER}:${TARGET_USER}" "$USER_SYSTEMD" 2>/dev/null || true
     run_as_user systemctl --user daemon-reload 2>/dev/null || true
-    run_as_user systemctl --user enable --now mac-theme-sync.service mac-app-manager.service mac-screenshot-daemon.service mac-integrity-check.timer 2>/dev/null || true
+    run_as_user systemctl --user enable --now mac-theme-sync.service mac-app-manager.service mac-screenshot-daemon.service mac-integrity-check.timer mac-monitor-persist.service 2>/dev/null || true
 }
 
 install_mac_cli_and_overlays() {
@@ -1884,11 +2107,12 @@ install_gamemode() {
     
     # Security hardening: purge any legacy backdoor rules and deploy validated sudoers
     sudo rm -f /etc/sudoers.d/99-mactheme /etc/sudoers.d/99_mactheme 2>/dev/null || true
-    if [ -d "$SCRIPT_DIR/etc/sudoers.d" ]; then
+    if [ "$OPT_SUDOERS" = "true" ] && [ -d "$SCRIPT_DIR/etc/sudoers.d" ]; then
         for sf in "$SCRIPT_DIR/etc/sudoers.d/"*; do
             if [ -f "$sf" ]; then
                 sbase="$(basename "$sf")"
                 [ "$sbase" = "99-mactheme" ] && continue
+                macw1y_state record-file "/etc/sudoers.d/$sbase" --component sudoers 2>/dev/null || true
                 sudo cp -f "$sf" "/etc/sudoers.d/$sbase"
                 sudo chown root:root "/etc/sudoers.d/$sbase"
                 sudo chmod 440 "/etc/sudoers.d/$sbase"
@@ -1898,6 +2122,8 @@ install_gamemode() {
                 fi
             fi
         done
+    else
+        log_info "Skipping /etc/sudoers.d deployment (sudoers deployment disabled)."
     fi
 
     # 2b. Snap Cursor Override background synchronization service
@@ -2229,7 +2455,11 @@ install_gdm_transition() {
     fi
 
     sudo dconf update 2>/dev/null || true
-    install_gnome_shell_overlay
+    if [ "$OPT_SHELL_OVERLAY" = "true" ]; then
+        install_gnome_shell_overlay
+    else
+        log_info "Preserving packaged /usr/bin/gnome-shell (layout.js overlay disabled via flags)."
+    fi
     log_success "macW1Y GDM lock screen configured successfully!"
 }
 
@@ -2493,44 +2723,52 @@ finalize_installation() {
         run_as_user /usr/local/bin/mac-sanitize-favorites.sh 2>/dev/null || true
     fi
 
-    log_info "Configuring memory arena thresholds and trimming background services..."
-    sudo bash -c 'cat << "EOF_MEM" > /etc/environment
-PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
-MALLOC_ARENA_MAX=2
-MALLOC_TRIM_THRESHOLD_=131072
-MALLOC_MMAP_THRESHOLD_=131072
-EOF_MEM' 2>/dev/null || true
+    if [ "$OPT_PERF_TWEAKS" = "true" ]; then
+        log_info "Applying targeted memory arena thresholds (preserving existing /etc/environment)..."
+        require_root
+        sudo python3 "$SCRIPT_DIR/libexec/macw1y-state.py" --state-dir "$STATE_DIR" update-kv /etc/environment \
+            MALLOC_ARENA_MAX=2 MALLOC_TRIM_THRESHOLD_=131072 MALLOC_MMAP_THRESHOLD_=131072 || STAGE_FAILURES+=("etc-environment")
 
-    mkdir -p "$TARGET_HOME/.config/environment.d"
-    cat << 'EOF_MEMCONF' > "$TARGET_HOME/.config/environment.d/60-memory-opt.conf"
+        mkdir -p "$TARGET_HOME/.config/environment.d"
+        macw1y_state record-file "$TARGET_HOME/.config/environment.d/60-memory-opt.conf" --component perf-tweaks 2>/dev/null || true
+        cat << 'EOF_MEMCONF' > "$TARGET_HOME/.config/environment.d/60-memory-opt.conf"
 MALLOC_ARENA_MAX=2
 MALLOC_TRIM_THRESHOLD_=131072
 MALLOC_MMAP_THRESHOLD_=131072
 EOF_MEMCONF
-    chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/environment.d" 2>/dev/null || true
+        chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/environment.d" 2>/dev/null || true
 
-    # Mask unneeded evolution data services to conserve RAM
-    run_as_user systemctl --user stop evolution-addressbook-factory.service evolution-calendar-factory.service evolution-source-registry.service 2>/dev/null || true
-    run_as_user systemctl --user mask evolution-addressbook-factory.service evolution-calendar-factory.service evolution-source-registry.service 2>/dev/null || true
-    mkdir -p "$TARGET_HOME/.config/autostart"
-    cat << 'EOF_EVO' > "$TARGET_HOME/.config/autostart/org.gnome.Evolution-alarm-notify.desktop"
+        # Record and mask unneeded evolution data services to conserve RAM
+        for evo_svc in evolution-addressbook-factory.service evolution-calendar-factory.service evolution-source-registry.service; do
+            macw1y_state record-service "$evo_svc" --scope user 2>/dev/null || true
+            run_as_user systemctl --user stop "$evo_svc" 2>/dev/null || true
+            run_as_user systemctl --user mask "$evo_svc" 2>/dev/null || true
+        done
+        mkdir -p "$TARGET_HOME/.config/autostart"
+        macw1y_state record-file "$TARGET_HOME/.config/autostart/org.gnome.Evolution-alarm-notify.desktop" --component perf-tweaks 2>/dev/null || true
+        cat << 'EOF_EVO' > "$TARGET_HOME/.config/autostart/org.gnome.Evolution-alarm-notify.desktop"
 [Desktop Entry]
 Type=Application
 Name=Evolution Alarm Notify
 Hidden=true
 EOF_EVO
-    chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/autostart" 2>/dev/null || true
+        chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/autostart" 2>/dev/null || true
+
+        if [ "$APPLY_LOW_SPEC" = "true" ]; then
+            log_info "Applying Intel HD and low-spec hardware optimizations (ZRAM, sysctl, Eco profile)..."
+            if [ -x "/usr/local/bin/mac-lowspec-optimizer" ]; then
+                /usr/local/bin/mac-lowspec-optimizer apply || STAGE_FAILURES+=("low-spec")
+            elif [ -x "$SCRIPT_DIR/bin/mac-lowspec-optimizer" ]; then
+                "$SCRIPT_DIR/bin/mac-lowspec-optimizer" apply || STAGE_FAILURES+=("low-spec")
+            fi
+        fi
+    else
+        log_info "Preserving /etc/environment and background services (--no-perf-tweaks set)."
+    fi
 
     # Configure Liquid Glass downscale to 2 for optimal RAM footprint
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com glass-blur-downscale 2 2>/dev/null || true
-
-    if [ "$APPLY_LOW_SPEC" = "true" ]; then
-        log_info "Applying Intel HD and low-spec hardware optimizations (ZRAM, sysctl, Eco profile)..."
-        if [ -x "/usr/local/bin/mac-lowspec-optimizer" ]; then
-            /usr/local/bin/mac-lowspec-optimizer apply || true
-        elif [ -x "$SCRIPT_DIR/bin/mac-lowspec-optimizer" ]; then
-            "$SCRIPT_DIR/bin/mac-lowspec-optimizer" apply || true
-        fi
+    if [ "$OPT_EXTENSIONS" = "true" ]; then
+        macw1y_set_gsetting org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com glass-blur-downscale 2
     fi
 
     # Security hardening: ensure all system files are strictly owned by root:root and safe
@@ -2567,28 +2805,42 @@ EOF_EVO
 # Main Execution Modes (Run Modes)
 # ------------------------------------------------------------------------------
 
-# 1. Full Installation
+# 1. Full / Modular Installation
 run_full_install() {
+    STAGE_FAILURES=()
+    run_preflight_checks || return 1
+
+    if [ "$DRY_RUN" = "true" ]; then
+        print_dry_run_plan
+        return 0
+    fi
+
     ensure_gnome_desktop_environment
-    python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || return 1
     install_dependencies
     python3 "$SCRIPT_DIR/dependencies/check-platform.py" "$SCRIPT_DIR" || return 1
-    bash "$SCRIPT_DIR/dependencies/build-native.sh" "$SCRIPT_DIR/lib"
-    [ -d "$SCRIPT_DIR/control-center" ] && cp -f "$SCRIPT_DIR/lib/libmac_settings.so" "$SCRIPT_DIR/control-center/libmac_settings.so" 2>/dev/null || true
-    [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ] && cp -f "$SCRIPT_DIR/lib/libmac_settings.so" "$SCRIPT_DIR/gnome-control-center-overlay/libmac_settings.so" 2>/dev/null || true
-    sudo install -Dm644 "$SCRIPT_DIR/config/extensions.lock.json" /usr/share/mactheme/config/extensions.lock.json
-    install_fonts
-    install_themes
-    install_icons
-    install_sounds
-    install_wallpaper
-    install_extensions
-    install_settings_overlay
-    install_touchpad
-    install_gamemode
-    install_gdm_transition
-    install_plymouth
-    install_grub
+    if [ "$OPT_NATIVE_LIBS" = "true" ] || [ "$OPT_WRAPPERS" = "true" ]; then
+        run_stage "build-native" bash "$SCRIPT_DIR/dependencies/build-native.sh" "$SCRIPT_DIR/lib" || true
+        [ -d "$SCRIPT_DIR/control-center" ] && cp -f "$SCRIPT_DIR/lib/libmac_settings.so" "$SCRIPT_DIR/control-center/libmac_settings.so" 2>/dev/null || true
+        [ -d "$SCRIPT_DIR/gnome-control-center-overlay" ] && cp -f "$SCRIPT_DIR/lib/libmac_settings.so" "$SCRIPT_DIR/gnome-control-center-overlay/libmac_settings.so" 2>/dev/null || true
+    fi
+    sudo install -Dm644 "$SCRIPT_DIR/config/extensions.lock.json" /usr/share/mactheme/config/extensions.lock.json 2>/dev/null || true
+    [ "$OPT_FONTS" = "true" ] && { run_stage "fonts" install_fonts || true; }
+    [ "$OPT_GTK" = "true" ] && { run_stage "gtk" install_themes || true; }
+    [ "$OPT_ICONS" = "true" ] && { run_stage "icons" install_icons || true; }
+    [ "$OPT_SOUNDS" = "true" ] && { run_stage "sounds" install_sounds || true; }
+    [ "$OPT_WALLPAPERS" = "true" ] && { run_stage "wallpapers" install_wallpaper || true; }
+    [ "$OPT_EXTENSIONS" = "true" ] && { run_stage "extensions" install_extensions || true; }
+    [ "$OPT_WRAPPERS" = "true" ] && { run_stage "wrappers" install_settings_overlay || true; }
+    [ "$OPT_GESTURES" = "true" ] && { run_stage "gestures" install_touchpad || true; }
+    if [ "$OPT_PERF_TWEAKS" = "true" ] || [ "$OPT_WRAPPERS" = "true" ] || [ "$OPT_SUDOERS" = "true" ]; then
+        run_stage "gamemode" install_gamemode || true
+    fi
+    [ "$OPT_GDM" = "true" ] && { run_stage "gdm" install_gdm_transition || true; }
+    if [ "$OPT_SHELL_OVERLAY" = "true" ] && [ "$OPT_GDM" != "true" ]; then
+        run_stage "shell-overlay" install_gnome_shell_overlay || true
+    fi
+    [ "$OPT_PLYMOUTH" = "true" ] && { run_stage "plymouth" install_plymouth || true; }
+    [ "$OPT_GRUB" = "true" ] && { run_stage "grub" install_grub || true; }
     finalize_installation
 }
 
@@ -3137,44 +3389,52 @@ EOF
         run_as_user /usr/local/bin/mac-sanitize-favorites.sh 2>/dev/null || true
     fi
 
-    log_info "Configuring memory arena thresholds and trimming background services..."
-    sudo bash -c 'cat << "EOF_MEM" > /etc/environment
-PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
-MALLOC_ARENA_MAX=2
-MALLOC_TRIM_THRESHOLD_=131072
-MALLOC_MMAP_THRESHOLD_=131072
-EOF_MEM' 2>/dev/null || true
+    if [ "$OPT_PERF_TWEAKS" = "true" ]; then
+        log_info "Applying targeted memory arena thresholds (preserving existing /etc/environment)..."
+        require_root
+        sudo python3 "$SCRIPT_DIR/libexec/macw1y-state.py" --state-dir "$STATE_DIR" update-kv /etc/environment \
+            MALLOC_ARENA_MAX=2 MALLOC_TRIM_THRESHOLD_=131072 MALLOC_MMAP_THRESHOLD_=131072 || STAGE_FAILURES+=("etc-environment")
 
-    mkdir -p "$TARGET_HOME/.config/environment.d"
-    cat << 'EOF_MEMCONF' > "$TARGET_HOME/.config/environment.d/60-memory-opt.conf"
+        mkdir -p "$TARGET_HOME/.config/environment.d"
+        macw1y_state record-file "$TARGET_HOME/.config/environment.d/60-memory-opt.conf" --component perf-tweaks 2>/dev/null || true
+        cat << 'EOF_MEMCONF' > "$TARGET_HOME/.config/environment.d/60-memory-opt.conf"
 MALLOC_ARENA_MAX=2
 MALLOC_TRIM_THRESHOLD_=131072
 MALLOC_MMAP_THRESHOLD_=131072
 EOF_MEMCONF
-    chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/environment.d" 2>/dev/null || true
+        chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/environment.d" 2>/dev/null || true
 
-    # Mask unneeded evolution data services to conserve RAM
-    run_as_user systemctl --user stop evolution-addressbook-factory.service evolution-calendar-factory.service evolution-source-registry.service 2>/dev/null || true
-    run_as_user systemctl --user mask evolution-addressbook-factory.service evolution-calendar-factory.service evolution-source-registry.service 2>/dev/null || true
-    mkdir -p "$TARGET_HOME/.config/autostart"
-    cat << 'EOF_EVO' > "$TARGET_HOME/.config/autostart/org.gnome.Evolution-alarm-notify.desktop"
+        # Record and mask unneeded evolution data services to conserve RAM
+        for evo_svc in evolution-addressbook-factory.service evolution-calendar-factory.service evolution-source-registry.service; do
+            macw1y_state record-service "$evo_svc" --scope user 2>/dev/null || true
+            run_as_user systemctl --user stop "$evo_svc" 2>/dev/null || true
+            run_as_user systemctl --user mask "$evo_svc" 2>/dev/null || true
+        done
+        mkdir -p "$TARGET_HOME/.config/autostart"
+        macw1y_state record-file "$TARGET_HOME/.config/autostart/org.gnome.Evolution-alarm-notify.desktop" --component perf-tweaks 2>/dev/null || true
+        cat << 'EOF_EVO' > "$TARGET_HOME/.config/autostart/org.gnome.Evolution-alarm-notify.desktop"
 [Desktop Entry]
 Type=Application
 Name=Evolution Alarm Notify
 Hidden=true
 EOF_EVO
-    chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/autostart" 2>/dev/null || true
+        chown -R "${TARGET_USER}:${TARGET_USER}" "$TARGET_HOME/.config/autostart" 2>/dev/null || true
+
+        if [ "$APPLY_LOW_SPEC" = "true" ]; then
+            log_info "Applying Intel HD and low-spec hardware optimizations (ZRAM, sysctl, Eco profile)..."
+            if [ -x "/usr/local/bin/mac-lowspec-optimizer" ]; then
+                /usr/local/bin/mac-lowspec-optimizer apply || STAGE_FAILURES+=("low-spec")
+            elif [ -x "$SCRIPT_DIR/bin/mac-lowspec-optimizer" ]; then
+                "$SCRIPT_DIR/bin/mac-lowspec-optimizer" apply || STAGE_FAILURES+=("low-spec")
+            fi
+        fi
+    else
+        log_info "Preserving /etc/environment and background services (--no-perf-tweaks set)."
+    fi
 
     # Configure Liquid Glass downscale to 2 for optimal RAM footprint
-    run_as_user gsettings set org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com glass-blur-downscale 2 2>/dev/null || true
-
-    if [ "$APPLY_LOW_SPEC" = "true" ]; then
-        log_info "Applying Intel HD and low-spec hardware optimizations (ZRAM, sysctl, Eco profile)..."
-        if [ -x "/usr/local/bin/mac-lowspec-optimizer" ]; then
-            /usr/local/bin/mac-lowspec-optimizer apply || true
-        elif [ -x "$SCRIPT_DIR/bin/mac-lowspec-optimizer" ]; then
-            "$SCRIPT_DIR/bin/mac-lowspec-optimizer" apply || true
-        fi
+    if [ "$OPT_EXTENSIONS" = "true" ]; then
+        macw1y_set_gsetting org.gnome.shell.extensions.liquid-glass@thinkingcoding1231.gmail.com glass-blur-downscale 2
     fi
 
     # Security hardening: ensure all system files are strictly owned by root:root and safe
@@ -3561,6 +3821,10 @@ run_mock_installation() {
 if [ "$1" = "--help" ] || [ "$1" = "-h" ] || [ "$1" = "-?" ] || [ "$1" = "-help" ]; then
     show_usage
     exit 0
+elif [ "$DRY_RUN" = "true" ]; then
+    print_banner
+    run_full_install
+    exit $?
 elif [ "$MOCK_MODE" = "true" ]; then
     if [ "$1" = "-debug_uninstall" ] || [ "$1" = "--debug_uninstall" ] || [ "$1" = "--uninstall" ]; then
         print_banner

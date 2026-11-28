@@ -286,7 +286,6 @@ button-layout='close,minimize,maximize:'
 num-workspaces=3
 theme='macW1Y-Dark'
 titlebar-font='Inter Bold 11'
-workspace-names=['Робочий стіл 1', 'Робочий стіл 2', 'Робочий стіл 3']
 
 [org/gnome/evolution-data-server]
 migrated=true

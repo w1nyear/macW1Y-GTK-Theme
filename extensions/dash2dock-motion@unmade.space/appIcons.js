@@ -98,11 +98,6 @@ function isAppRunningInBackground(app, windowsCount) {
         return false;
     if (windowsCount > 0)
         return true;
-    if (app.state === Shell.AppState.RUNNING)
-        return true;
-    const pids = app.get_pids ? app.get_pids() : [];
-    if (pids && pids.length > 0)
-        return true;
 
     const id = app.get_id ? app.get_id() : '';
     if (id === 'launchpad.desktop' || id.startsWith('location:'))
@@ -114,22 +109,24 @@ function isAppRunningInBackground(app, windowsCount) {
     const exec = info.get_executable ? info.get_executable() : null;
     if (!exec)
         return false;
-    const base = GLib.path_get_basename(exec);
+    const base = GLib.path_get_basename(exec).toLowerCase();
     if (!base || base.endsWith('.sh'))
         return false;
 
-    const comms = getRunningProcessComms();
-    if (comms.has(base) || comms.has(base.slice(0, 15)))
-        return true;
-
-    if (base.includes('chrome') && (comms.has('chrome') || comms.has('google-chrome')))
-        return true;
-    if (base.includes('telegram') && (comms.has('telegram-deskto') || comms.has('Telegram')))
-        return true;
-    if (base.includes('steam') && (comms.has('steam') || comms.has('steamwebhelper')))
-        return true;
-    if (base.includes('opencode') && (comms.has('opencode') || comms.has('ai.opencode.desktop')))
-        return true;
+    // Only keep the running dot with 0 windows for true tray/background apps;
+    // regular GTK/GApplication apps linger in /proc briefly after closing their last window.
+    if (base.includes('telegram')) {
+        const comms = getRunningProcessComms();
+        return comms.has('telegram-deskto') || comms.has('Telegram');
+    }
+    if (base.includes('steam')) {
+        const comms = getRunningProcessComms();
+        return comms.has('steam') || comms.has('steamwebhelper');
+    }
+    if (base.includes('discord')) {
+        const comms = getRunningProcessComms();
+        return comms.has('Discord') || comms.has('discord');
+    }
 
     return false;
 }
@@ -428,22 +425,22 @@ export const DockAbstractAppIcon = GObject.registerClass({
         }
     }
 
-    _startBackgroundWatcher() {
+    _startBackgroundWatcher(delayMs = 150) {
         if (this._bgWatcherId)
             return;
-        this._bgWatcherId = GLib.timeout_add(GLib.PRIORITY_LOW, 2000, () => {
-            if (!this.running || this.windowsCount > 0) {
-                this._bgWatcherId = 0;
+        this._bgWatcherId = GLib.timeout_add(GLib.PRIORITY_DEFAULT_IDLE, delayMs, () => {
+            this._bgWatcherId = 0;
+            if (!this.running || this.windowsCount > 0)
                 return GLib.SOURCE_REMOVE;
-            }
             _cachedRunningComms = null;
             const stillRunning = isAppRunningInBackground(this.app, this.windowsCount);
             if (!stillRunning) {
                 this.running = false;
-                this._bgWatcherId = 0;
                 return GLib.SOURCE_REMOVE;
             }
-            return GLib.SOURCE_CONTINUE;
+            const nextDelay = delayMs < 400 ? 350 : 1500;
+            this._startBackgroundWatcher(nextDelay);
+            return GLib.SOURCE_REMOVE;
         });
     }
 
@@ -455,9 +452,11 @@ export const DockAbstractAppIcon = GObject.registerClass({
     }
 
     _updateRunningState() {
+        if (this.windowsCount === 0)
+            _cachedRunningComms = null;
         this.running = isAppRunningInBackground(this.app, this.windowsCount);
         if (this.running && this.windowsCount === 0)
-            this._startBackgroundWatcher();
+            this._startBackgroundWatcher(150);
         else
             this._stopBackgroundWatcher();
     }
@@ -2096,49 +2095,64 @@ function _updateTailPosition(label, position) {
         arrowY = Math.round(ly + pillHeight - 1.0);
     }
 
+    if (!tail || tail._macDestroyed || tail.is_finalized?.() || !tail.get_stage?.())
+        return;
+
     tail.set_size(Math.round(tailW), Math.round(tailH));
     tail.set_position(Math.round(posX), Math.round(posY));
-    try {
-        const tBox = new Clutter.ActorBox();
-        tBox.x1 = posX;
-        tBox.y1 = posY;
-        tBox.x2 = posX + tailW;
-        tBox.y2 = posY + tailH;
-        tail.allocate(tBox);
-    } catch (_) {}
-
-    if (label._blurActor) {
-        label._blurActor.set_size(pillWidth, pillHeight);
-        label._blurActor.set_position(lx, ly);
+    if (tail.visible) {
         try {
-            const bBox = new Clutter.ActorBox();
-            bBox.x1 = lx;
-            bBox.y1 = ly;
-            bBox.x2 = lx + pillWidth;
-            bBox.y2 = ly + pillHeight;
-            label._blurActor.allocate(bBox);
+            const tBox = new Clutter.ActorBox();
+            tBox.x1 = posX;
+            tBox.y1 = posY;
+            tBox.x2 = posX + tailW;
+            tBox.y2 = posY + tailH;
+            tail.allocate(tBox);
         } catch (_) {}
-        if (label._blurActor._blurEff && 'corner_radius' in label._blurActor._blurEff) {
-            label._blurActor._blurEff.corner_radius = Math.round(pillHeight / 2);
-        }
     }
 
-    if (label._blurArrowActor) {
-        label._blurArrowActor.set_size(arrowBoxW, arrowBoxH);
-        label._blurArrowActor.set_position(arrowX, arrowY);
-        try {
-            const aBox = new Clutter.ActorBox();
-            aBox.x1 = arrowX;
-            aBox.y1 = arrowY;
-            aBox.x2 = arrowX + arrowBoxW;
-            aBox.y2 = arrowY + arrowBoxH;
-            label._blurArrowActor.allocate(aBox);
-        } catch (_) {}
-        if (label._blurArrowActor._maskShader) {
+    const blurActor = label._blurActor;
+    if (blurActor && !blurActor._macDestroyed && !blurActor.is_finalized?.() && blurActor.get_stage?.()) {
+        blurActor.set_size(pillWidth, pillHeight);
+        blurActor.set_position(lx, ly);
+        if (blurActor.visible) {
             try {
-                label._blurArrowActor._maskShader.set_uniform_value('pos_side', _posToFloat(position));
+                const bBox = new Clutter.ActorBox();
+                bBox.x1 = lx;
+                bBox.y1 = ly;
+                bBox.x2 = lx + pillWidth;
+                bBox.y2 = ly + pillHeight;
+                blurActor.allocate(bBox);
             } catch (_) {}
         }
+        if (blurActor._blurEff && 'corner_radius' in blurActor._blurEff) {
+            blurActor._blurEff.corner_radius = Math.round(pillHeight / 2);
+        }
+    } else if (blurActor && (blurActor._macDestroyed || blurActor.is_finalized?.())) {
+        label._blurActor = null;
+    }
+
+    const blurArrowActor = label._blurArrowActor;
+    if (blurArrowActor && !blurArrowActor._macDestroyed && !blurArrowActor.is_finalized?.() && blurArrowActor.get_stage?.()) {
+        blurArrowActor.set_size(arrowBoxW, arrowBoxH);
+        blurArrowActor.set_position(arrowX, arrowY);
+        if (blurArrowActor.visible) {
+            try {
+                const aBox = new Clutter.ActorBox();
+                aBox.x1 = arrowX;
+                aBox.y1 = arrowY;
+                aBox.x2 = arrowX + arrowBoxW;
+                aBox.y2 = arrowY + arrowBoxH;
+                blurArrowActor.allocate(aBox);
+            } catch (_) {}
+        }
+        if (blurArrowActor._maskShader) {
+            try {
+                blurArrowActor._maskShader.set_uniform_value('pos_side', _posToFloat(position));
+            } catch (_) {}
+        }
+    } else if (blurArrowActor && (blurArrowActor._macDestroyed || blurArrowActor.is_finalized?.())) {
+        label._blurArrowActor = null;
     }
 
     tail.queue_repaint();
@@ -2160,7 +2174,7 @@ function _ensureLabelTail(label, position) {
         labelBlurEff.enabled = false;
     }
 
-    if (label._blurActor && (!label._blurActor.get_parent?.() || label._blurActor._isDisposed)) {
+    if (label._blurActor && (label._blurActor._macDestroyed || label._blurActor.is_finalized?.() || !label._blurActor.get_parent?.() || label._blurActor._isDisposed)) {
         try {
             Main.uiGroup.remove_child(label._blurActor);
             label._blurActor.destroy();
@@ -2168,7 +2182,7 @@ function _ensureLabelTail(label, position) {
         label._blurActor = null;
     }
 
-    if (label._blurArrowActor && (!label._blurArrowActor.get_parent?.() || label._blurArrowActor._isDisposed)) {
+    if (label._blurArrowActor && (label._blurArrowActor._macDestroyed || label._blurArrowActor.is_finalized?.() || !label._blurArrowActor.get_parent?.() || label._blurArrowActor._isDisposed)) {
         try {
             Main.uiGroup.remove_child(label._blurArrowActor);
             label._blurArrowActor.destroy();
@@ -2185,6 +2199,11 @@ function _ensureLabelTail(label, position) {
             reactive: false,
         });
         blurActor.set_style('background: rgba(0, 0, 0, 0.01) !important; border: none !important; box-shadow: none !important;');
+        blurActor.connect('destroy', () => {
+            blurActor._macDestroyed = true;
+            if (label._blurActor === blurActor)
+                label._blurActor = null;
+        });
         label._blurActor = blurActor;
 
         if (Blur?.BlurEffect) {
@@ -2222,6 +2241,11 @@ function _ensureLabelTail(label, position) {
             reactive: false,
         });
         arrowBlur.set_style('background: rgba(0, 0, 0, 0.01) !important; border: none !important; box-shadow: none !important;');
+        arrowBlur.connect('destroy', () => {
+            arrowBlur._macDestroyed = true;
+            if (label._blurArrowActor === arrowBlur)
+                label._blurArrowActor = null;
+        });
         label._blurArrowActor = arrowBlur;
 
         if (Blur?.BlurEffect) {
@@ -2565,8 +2589,8 @@ export function itemShowLabel() {
             other.remove_all_transitions();
             other.opacity = 0;
             other.hide();
-            for (const sub of [other._blurActor, other._arrowTailActor]) {
-                if (sub) {
+            for (const sub of [other._blurActor, other._arrowTailActor, other._blurArrowActor]) {
+                if (sub && !sub._macDestroyed && !sub.is_finalized?.() && sub.get_stage?.()) {
                     sub.remove_all_transitions();
                     sub.opacity = 0;
                     sub.hide();
